@@ -145,7 +145,7 @@ colliding with user columns named `.weights`.
 **Phase 0 build order** (from implementation plan Component sequence):
 
 1. `feature/test-helpers` — `tests/testthat/helper-test-data.R` ✅ DONE
-2. `feature/s7-classes` — `R/00-s7-classes.R`
+2. `feature/s7-classes` — `R/00-s7-classes.R` ✅ DONE
 3. `feature/metadata-system` — `R/01-metadata-system.R` (extractors + setters)
 4. `feature/validators` — `R/02-validators.R`
 5. `feature/as-survey` — `R/03-constructors.R` (as_survey() only)

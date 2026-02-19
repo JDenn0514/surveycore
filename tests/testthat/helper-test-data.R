@@ -218,7 +218,7 @@ test_invariants <- function(design) {
   }
 
   # Invariant 4: Replicate weights are numeric (survey_replicate only)
-  if (S7::inherits(design, survey_replicate)) {
+  if (S7::S7_inherits(design, survey_replicate)) {
     for (rw in design@variables$repweights) {
       testthat::expect_true(
         is.numeric(design@data[[rw]]),
@@ -228,7 +228,7 @@ test_invariants <- function(design) {
   }
 
   # Invariant 5: @metadata is a survey_metadata object; all labelled vars in @data
-  testthat::expect_true(S7::inherits(design@metadata, survey_metadata))
+  testthat::expect_true(S7::S7_inherits(design@metadata, survey_metadata))
   meta_vars <- names(design@metadata@variable_labels)
   if (length(meta_vars) > 0L) {
     testthat::expect_true(
