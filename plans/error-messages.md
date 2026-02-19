@@ -60,6 +60,9 @@ against the messages defined here.
 | 34 | S7 validator (`survey_taylor`) | Design variable is a list-column | ERROR | `surveycore_error_design_var_list` | `"Design variable {.field {var}} is a list-column. Design variables must be atomic vectors."` |
 | 35 | S7 validator (all) | PSU appears in multiple strata | WARN | `surveycore_warning_psu_multi_strata` | `"Some PSUs appear in more than one stratum: {.val {head(multi_strata_psus, 5)}}. If PSUs are nested within strata, set {.code nest = TRUE}."` |
 | 36 | `update_design()` | Any design variable update | WARN | *(inform, not warn)* | `"Survey design updated. This may affect statistical validity. Updated: {.field {changed_vars}}"` |
+| 37 | S7 validator (`survey_replicate`) | Replicate weight column not numeric | ERROR | `surveycore_error_repweights_not_numeric` | `"Replicate weight column {.field {rw}} must be numeric, not {.cls {class(rw_col)}}"` |
+| 38 | S7 validator (`survey_twophase`) | Subset column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"Subset column {.field {subset_var}} must be logical, not {.cls {col_class}}"` |
+| 39 | S7 validator (`survey_twophase`) | Phase 2 design var all-NA within Phase 2 subset | WARN | `surveycore_warning_phase2_all_na` | `"Phase 2 design variable {.field {v}} is all NA within the Phase 2 subset. Check rows where {.field {subset_var}} is TRUE."` |
 
 ---
 
@@ -100,5 +103,5 @@ Which test files cover which error table rows:
 | `test-constructors.R` | 1–26 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30 |
-| `test-s7-classes.R` | 31–35 |
+| `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
