@@ -1,10 +1,38 @@
 Package: surveycore
-Title: What the Package Does (One Line, Title Case)
+Title: Core Survey Analysis Infrastructure
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("Jacob", "Dennen", , "jdenn0514@gmail.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: MIT + file LICENSE
+Description: Provides S7-based infrastructure for survey analysis including
+    design objects, metadata preservation, and variance estimation. Forms the
+    foundation of the surveyverse ecosystem. Supports Taylor series, replicate
+    weight, and two-phase designs with a tidy-select interface for intuitive
+    design specification. Automatic preservation of haven-style variable and
+    value labels throughout all operations.
+License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.3.0)
+Imports:
+    S7 (>= 0.1.0),
+    rlang (>= 1.0.0),
+    tidyselect (>= 1.2.0),
+    cli (>= 3.6.0),
+    stats,
+    methods
+Suggests:
+    testthat (>= 3.0.0),
+    survey (>= 4.0),
+    srvyr (>= 1.0),
+    haven (>= 2.5.0),
+    dplyr (>= 1.1.0),
+    tibble,
+    covr,
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+URL: https://github.com/JDenn0514/surveycore
+BugReports: https://github.com/JDenn0514/surveycore/issues
+LazyData: true

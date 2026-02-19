@@ -65,7 +65,7 @@ surveyverse/
 
 ---
 
-### Package 3: surveyweights
+### Package 2: surveyweights
 
 **Purpose:** Survey weighting, calibration, and replicate weight creation
 
@@ -156,7 +156,7 @@ surveyverse/
 
 ---
 
-### Package 4: surveytidy
+### Package 3: surveytidy
 
 **Purpose:** Tidy verb implementations for survey objects
 
@@ -215,7 +215,7 @@ surveyverse/
 
 ---
 
-### Package 5: surveyverse
+### Package 4: surveyverse
 
 **Purpose:** Meta-package for easy installation and loading
 
@@ -949,7 +949,7 @@ get_means(svy, x = income, domain = age > 18)
 
 ---
 
-### Phase 3: Regression & Expansion (surveycore)
+### Phase 2: Regression & Expansion (surveycore)
 **Duration:** 2-3 weeks  
 **Status:** Planning
 
@@ -1048,102 +1048,7 @@ get_means(svy, x = income, domain = age > 18)
 
 ---
 
-### Phase 4: Polish & Release (all packages)
-**Duration:** 2-3 weeks  
-**Status:** Planning
-
-**Objectives:**
-- Complete documentation for all three packages
-- Build pkgdown websites
-- Performance optimization
-- Comprehensive testing
-- Prepare for 0.1.0 release
-
-**Deliverables:**
-
-1. **Documentation - surveycore:**
-   - Complete pkgdown website
-   - All vignettes polished
-   - Function reference organized by topic
-   - README with quick start examples
-   - NEWS.md with release notes
-   - Citation file (CITATION)
-   - Contributing guidelines
-
-2. **Documentation - surveytidy:**
-   - pkgdown website
-   - Vignettes:
-     - `tidy-survey-workflows.Rmd` - Using dplyr/tidyr with survey objects
-     - `domain-estimation.Rmd` - filter() vs subset()
-   - Function reference (all verbs)
-   - README with examples
-   - NEWS.md
-
-3. **Documentation - surveyverse:**
-   - Meta-package website
-   - README explaining ecosystem
-   - Quick start guide
-   - Links to other package sites
-   - NEWS.md
-
-4. **Performance Optimization:**
-   - Profile analysis functions
-   - Optimize hot paths (variance calculations)
-   - Benchmark against survey package
-   - Document performance characteristics
-   - Consider Rcpp for critical sections (if needed)
-
-5. **Testing - Comprehensive:**
-   - surveycore: >90% code coverage
-   - surveytidy: >90% code coverage
-   - Real-world dataset examples (from survey package or public data)
-   - Edge case handling documented
-   - Known limitations documented
-   - Cross-package integration tests
-
-6. **Optional - Reporting Functions:**
-   ```r
-   export_freqs(result, file, format = c("excel", "word", "html"))
-   export_means(result, file, format)
-   export_crosstab(result, file, format)
-   create_codebook(svy, file)
-   ```
-   
-   - Export analysis results with labels
-   - Multiple output formats
-   - Professional formatting
-   - Uses metadata for human-readable output
-
-7. **Release Preparation:**
-   - Version all three packages at 0.1.0
-   - CRAN checks pass (`R CMD check`)
-   - All examples run without errors
-   - Spell check on documentation
-   - URL check on documentation
-   - Reverse dependency checks (none yet, but check anyway)
-   - Update all version dependencies
-
-8. **Release Materials:**
-   - Blog post announcing release
-   - Twitter/social media announcement
-   - Comparison to survey/srvyr (migration guide)
-   - Example analysis showcasing features
-
-**Success Criteria:**
-- All three packages at 0.1.0
-- Complete documentation and websites
-- All tests passing
-- Performance acceptable (within 2x of survey package)
-- Ready for CRAN submission (if desired)
-- Clear migration path from survey/srvyr
-
-**Dependencies:**
-- Phase 0, 0.5, 1, 2 complete
-- All major features implemented
-
----
-
-### Phase 4: Polish & Release (all packages)
+### Phase 3: Polish & Release (all packages)
 **Duration:** 2-3 weeks  
 **Status:** Planning
 
@@ -1246,12 +1151,12 @@ get_means(svy, x = income, domain = age > 18)
 - Clear migration path from survey/srvyr/svrep
 
 **Dependencies:**
-- Phase 0, 0.5, 1, 2, 2.5, 3 complete
+- Phase 0, 0.5, 1, 2, 2.5 complete
 - All major features implemented
 
 ---
 
-### Phase 5: Extensions (future)
+### Phase 4: Extensions (future)
 **Status:** Future Planning
 
 **Potential Additions:**
@@ -1467,8 +1372,7 @@ surveyverse.tidysurvey.org/
 - Phase 2: 2 weeks  
 - Phase 2.5: 3 weeks (can be parallel to Phase 1-2)
 - Phase 3: 2 weeks
-- Phase 4: 2 weeks
-- **Total: ~13-16 weeks (without parallelization), ~11-13 weeks (with parallelization)**
+- **Total: ~11-13 weeks (without parallelization), ~9-11 weeks (with parallelization)**
 
 ### Realistic Timeline (Part-time, with reviews/iterations)
 - Phase 0: 3-4 weeks
@@ -1477,17 +1381,15 @@ surveyverse.tidysurvey.org/
 - Phase 2: 3-4 weeks
 - Phase 2.5: 4-5 weeks
 - Phase 3: 3-4 weeks
-- Phase 4: 3-4 weeks
-- **Total: ~23-30 weeks (5.5-7.5 months)**
+- **Total: ~20-26 weeks (5-6.5 months)**
 
 ### Key Milestones
 - **End of Phase 0:** Survey objects exist and work
 - **End of Phase 0.5:** Can use tidyverse verbs on survey objects
 - **End of Phase 1:** Can perform core survey analyses
-- **End of Phase 2:** Can do regression, crosstabs, have complete docs
+- **End of Phase 2:** Can do regression, crosstabs, complete vignettes
 - **End of Phase 2.5:** Can calibrate weights, create replicates, propensity weighting
-- **End of Phase 3:** Can do regression, crosstabs, complete core docs
-- **End of Phase 4:** Ready for 0.1.0 release
+- **End of Phase 3:** Ready for 0.1.0 release
 
 ---
 
@@ -1528,10 +1430,6 @@ surveyverse.tidysurvey.org/
 - ✅ >90% test coverage for surveyweights
 
 ### Phase 3
-- ✅ Additional regression features complete
-- ✅ Extended documentation complete
-
-### Phase 4
 - ✅ All four packages at 0.1.0
 - ✅ CRAN checks pass
 - ✅ Complete documentation
@@ -1546,7 +1444,7 @@ surveyverse.tidysurvey.org/
 1. ✅ **DECIDED:** S7 for class system
 2. ✅ **DECIDED:** Metadata in separate property (not on data.frame columns)
 3. ✅ **DECIDED:** Vendor survey variance code (with attribution)
-4. ✅ **DECIDED:** Three separate packages (surveycore, surveytidy, surveyverse)
+4. ✅ **DECIDED:** Four separate packages (surveycore, surveytidy, surveyweights, surveyverse)
 5. ✅ **DECIDED:** Replicate weights use type property, not subclasses
 
 ### Naming Decisions
