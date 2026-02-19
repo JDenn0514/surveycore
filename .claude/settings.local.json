@@ -25,7 +25,8 @@
       "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
       "Bash(pdftotext:*)",
       "Bash(pip3 install:*)",
-      "Bash(git-filter-repo:*)"
+      "Bash(git-filter-repo:*)",
+      "Bash(wc:*)"
     ]
   }
 }

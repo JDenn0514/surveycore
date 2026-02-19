@@ -172,15 +172,18 @@ survey_base <- S7::new_class(
     metadata  = S7::new_property(class = survey_metadata,
                                  default = quote(survey_metadata())),
     variables = S7::new_property(S7::class_list,    default = quote(list())),
-    # groups: names of active grouping variables (character(0) = ungrouped)
-    # set by group_by() in surveytidy; consumed by estimation functions
+    # RESERVED: Phase 0.5 (group_by support in surveytidy).
+    # DO NOT use @groups in Phase 0 validators or methods — it is always
+    # character(0) during Phase 0. Phase 0.5 will populate it via group_by().
+    # The property is included here so Phase 0.5 can use it without a breaking
+    # class definition change (any existing serialized objects would break).
     groups    = S7::new_property(S7::class_character, default = quote(character(0))),
     call      = S7::new_property(default = NULL)
   )
 )
 ```
 
-**Note on `groups`:** Initialized to `character(0)`. Set by `group_by()` in the surveytidy package (Phase 0.5). Estimation functions in Phase 1 use `@groups` to automatically apply subgroup analysis. Print output should show `Groups: var1, var2` when non-empty (mirroring dplyr grouped tibble output).
+**Note on `groups` (RESERVED):** Always `character(0)` in Phase 0. Set by `group_by()` in Phase 0.5 (surveytidy). Estimation functions in Phase 1+ use `@groups` to apply subgroup analysis. Print shows `Groups: var1, var2` when non-empty (mirroring dplyr). **Phase 0 validators must not check or condition on `@groups`.**
 
 #### Updated: survey_taylor Class
 
@@ -288,8 +291,9 @@ survey_taylor <- S7::new_class(
 #' The `variables` slot contains:
 #' \describe{
 #'   \item{weights}{Character string naming weight column}
-#'   \item{repweights}{Character vector naming replicate weight columns}
-#'   \item{repweight_matrix}{Matrix of replicate weights (cached)}
+#'   \item{repweights}{Character vector naming replicate weight columns.
+#'     The replicate weight matrix is computed on demand from these column names
+#'     inside variance estimation — it is not stored as a property.}
 #'   \item{type}{Character string: JK1, JK2, JKn, BRR, Fay, bootstrap, etc.}
 #'   \item{scale}{Numeric scaling factor}
 #'   \item{rscales}{Numeric vector of replicate-specific scales, or NULL}
@@ -569,6 +573,106 @@ extract_haven_metadata <- function(data) {
 - `exact = TRUE` prevents partial matching
 - `haven` stays in `Suggests`; this code works even if haven is not installed
 - Works with any package that sets these attribute conventions (sjlabelled, labelled, etc.)
+
+---
+
+---
+
+## Validator Architecture (3-Layer Contract)
+
+Before implementing constructors and validators, understand the strict separation
+of concerns across three layers. **No logic from one layer may be duplicated in
+another.**
+
+### Layer 1 — S7 Class Validator (`R/00-s7-classes.R`)
+
+**Scope:** Structural invariants only. Checks that the stored object is internally
+consistent AFTER construction. Called automatically by S7 on assignment.
+
+**What to check:**
+- Design variable column names exist in `@data`
+- Weight column is numeric
+- Non-NA weights are strictly positive
+- Replicate weight columns are numeric
+- Metadata variable names are a subset of `names(@data)`
+- Design variables are atomic (not list-columns)
+
+**What NOT to check:**
+- User input parsing (that's Layer 3)
+- Cross-field business rules like `nest = TRUE` requiring `strata` (Layer 3)
+- `@groups` — always `character(0)` in Phase 0; **never validate in Phase 0**
+
+### Layer 2 — Helper Validators (`R/02-validators.R`)
+
+**Scope:** Reusable validation functions called by constructors and update_design().
+Return `TRUE` invisibly on success; call `cli_abort()` or `cli_warn()` on failure.
+
+**Functions to implement:**
+- `.validate_weights(weights_var, data)` — existence, numeric, positive check
+- `.validate_design_vars(vars, data)` — all named columns exist + are atomic
+- `.validate_fpc(fpc_var, data)` — existence, no NAs
+- `.validate_repweights(repweights_vars, data)` — existence, all numeric
+- `.validate_psu_strata(ids, strata, data)` — cross-stratum PSU warning
+- `.validate_rscales(rscales, n_rep)` — length match check
+
+**Naming convention:** All helpers are internal (not exported), prefixed with `.`.
+
+### Layer 3 — Constructor Input Parsing (`R/03-constructors.R`)
+
+**Scope:** User-facing input validation only. Converts user-supplied arguments to
+the canonical form expected by Layer 1. Runs BEFORE the S7 object is created.
+
+**What to handle:**
+- Tidy-select resolution (quosures → column name strings)
+- Mutual exclusion: cannot specify both `probs` and `weights` inconsistently
+- Conversion: `probs` → `weights = 1/probs` column
+- SRS fallback: no ids/weights/probs → create `..surveycore_wt..` column + warn
+- Business rules requiring cross-argument checks:
+  - `nest = TRUE` requires `strata` (ERROR if strata is NULL)
+  - `weights` all-zero check (ERROR)
+  - `data` has 0 rows (ERROR) or 1 row (WARN)
+  - `strata` has only 1 unique value (WARN)
+  - `fpc` has NAs (ERROR)
+  - `scale`/`rscales` length mismatch (ERROR)
+
+---
+
+## Constructor Error Case Table
+
+Reference: `plans/error-messages.md` (canonical message text and error classes).
+The table below maps conditions to implementation location within `as_survey()`,
+`as_survey_rep()`, and `as_survey_twophase()`. All uses of `cli_abort()` must
+pass a `class = "surveycore_error_<condition>"` argument.
+
+| # | Condition | Level | Constructor | Layer |
+|---|-----------|-------|-------------|-------|
+| 1 | `data` not a data frame | ERROR | `as_survey()`, `as_survey_rep()`, `as_survey_twophase()` | 3 |
+| 2 | `data` has 0 rows | ERROR | all | 3 |
+| 3 | `data` has duplicate column names | ERROR | all | 3 |
+| 4 | `data` has 1 row | WARN | all | 3 |
+| 5 | Both `probs` and `weights`, inconsistent | ERROR | `as_survey()` | 3 |
+| 6 | Both `probs` and `weights`, consistent | INFO | `as_survey()` | 3 |
+| 7 | No weights/probs/ids (SRS fallback) | WARN | `as_survey()` | 3 |
+| 8 | `weights` matches 0 columns | ERROR | all | 3 |
+| 9 | `weights` matches >1 column | ERROR | all | 3 |
+| 10 | `weights` all zero | ERROR | all | 3 (via `.validate_weights`) |
+| 11 | `strata` matches >1 column | ERROR | `as_survey()` | 3 |
+| 12 | `strata` has 1 unique value | WARN | `as_survey()` | 3 (via `.validate_design_vars`) |
+| 13 | `fpc` matches >1 column | ERROR | `as_survey()` | 3 |
+| 14 | `fpc` column has NAs | ERROR | `as_survey()` | 3 (via `.validate_fpc`) |
+| 15 | `nest = TRUE` without `strata` | ERROR | `as_survey()` | 3 |
+| 16 | `repweights` matches 0 columns | ERROR | `as_survey_rep()` | 3 |
+| 17 | `rscales` length ≠ number of repweights | ERROR | `as_survey_rep()` | 3 (via `.validate_rscales`) |
+| 18 | `type` not valid (match.arg) | ERROR | `as_survey_rep()` | 3 |
+| 19 | `phase1` not `survey_taylor` | ERROR | `as_survey_twophase()` | 3 |
+| 20 | `subset` missing | ERROR | `as_survey_twophase()` | 3 |
+| 21 | `subset` matches >1 column | ERROR | `as_survey_twophase()` | 3 |
+| 22 | `subset` column not logical | ERROR | `as_survey_twophase()` | 3 |
+| 23 | `subset` all TRUE or all FALSE | ERROR | `as_survey_twophase()` | 3 |
+| 24 | `method = "simple"` + clustered Phase 1 | WARN | `as_survey_twophase()` | 3 |
+| 25 | `method = "full"` + no Phase 2 design info | WARN | `as_survey_twophase()` | 3 |
+| 26 | Phase 2 design var all-NA in Phase 2 rows | WARN | S7 validator | 1 |
+| 27–35 | (validators, metadata — see error-messages.md) | various | Layer 2 / Layer 1 | — |
 
 ---
 
@@ -888,10 +992,10 @@ as_survey_rep <- function(data,
     cli::cli_abort("{.arg repweights} must select at least one column")
   }
   repweights_vars <- names(repweights_cols)
-  
-  # Create replicate weight matrix
-  repweight_matrix <- as.matrix(data[, repweights_vars, drop = FALSE])
-  
+  # NOTE: repweight_matrix is NOT stored. The matrix is computed on demand
+  # inside variance estimation:  as.matrix(design@data[, design@variables$repweights])
+  # This is the single source of truth and avoids sync bugs when data changes.
+
   # Set default scale based on type if not provided
   if (is.null(scale)) {
     scale <- switch(type,
@@ -907,15 +1011,14 @@ as_survey_rep <- function(data,
   
   # Build variables list
   variables <- list(
-    weights = weights_var,
-    repweights = repweights_vars,
-    repweight_matrix = repweight_matrix,
-    type = type,
-    scale = scale,
-    rscales = rscales,
-    fpc = fpc,
-    fpctype = fpctype,
-    mse = mse
+    weights    = weights_var,
+    repweights = repweights_vars,  # column names only; no cached matrix
+    type       = type,
+    scale      = scale,
+    rscales    = rscales,
+    fpc        = fpc,
+    fpctype    = fpctype,
+    mse        = mse
   )
   
   # Extract metadata
@@ -1174,13 +1277,13 @@ update_design.survey_replicate <- function(x,
     x@variables$weights <- names(w_cols)
   }
 
-  # Update repweights and rebuild matrix
+  # Update repweights column name list
   repweights_quo <- rlang::enquo(repweights)
   if (!rlang::quo_is_null(repweights_quo)) {
     rw_cols <- tidyselect::eval_select(repweights_quo, x@data)
     x@variables$repweights <- names(rw_cols)
-    # Rebuild cached matrix — eagerly, to keep @variables$repweight_matrix in sync
-    x@variables$repweight_matrix <- as.matrix(x@data[, names(rw_cols), drop = FALSE])
+    # NOTE: No matrix to rebuild — repweight_matrix is not stored.
+    # Variance estimation computes: as.matrix(x@data[, x@variables$repweights])
   }
 
   if (validate) {
@@ -1199,10 +1302,33 @@ update_design.survey_replicate <- function(x,
 
 ### File: `R/04-methods-print.R`
 
-> **S7 Method Syntax Note:** All method definitions in this section use S7 registration
-> syntax (`S7::method(generic, class) <- function(...)`), NOT S3 syntax
-> (`generic.class <- function(...)`). S3 syntax does not work for S7 classes.
-> The code templates below have been updated to reflect this.
+> **S7 Method Syntax — REQUIRED for ALL print/summary/format methods:**
+>
+> All method definitions for S7 classes must use S7 registration syntax.
+> S3 method naming (`generic.class <- function(...)`) is **silently ignored**
+> for S7 objects — `print(design_obj)` will fall back to default S7 printing
+> with no error, making this the worst kind of bug to diagnose.
+>
+> **WRONG (S3 — silently ignored for S7 classes):**
+> ```r
+> print.survey_taylor   <- function(x, ...) { ... }
+> summary.survey_taylor <- function(object, ...) { ... }
+> ```
+>
+> **CORRECT (S7 — required):**
+> ```r
+> S7::method(print,   survey_taylor)   <- function(x, n = 10, ...) { ... }
+> S7::method(summary, survey_taylor)   <- function(object, ...) { ... }
+> S7::method(print,   survey_replicate) <- function(x, n = 10, ...) { ... }
+> S7::method(summary, survey_replicate) <- function(object, ...) { ... }
+> S7::method(print,   survey_twophase)  <- function(x, n = 10, ...) { ... }
+> S7::method(summary, survey_twophase)  <- function(object, ...) { ... }
+> ```
+>
+> This applies to ALL generics being dispatched on S7 classes, including
+> `print`, `summary`, `format`, `str`, and any dplyr generics in Phase 0.5.
+> The ONLY exception: functions using `UseMethod()` with a custom S3 generic
+> (e.g., `set_var_label.survey_base`) are legitimate S3 dispatch on S7 objects.
 
 ```r
 #' Print Survey Design
@@ -1504,10 +1630,8 @@ validate_psu_strata <- function(ids, strata, data) {
       rename_map[vars$repweights],
       vars$repweights
     )
-    # Rebuild column name list in matrix (dimnames)
-    if (!is.null(vars$repweight_matrix)) {
-      colnames(vars$repweight_matrix) <- vars$repweights
-    }
+    # NOTE: No repweight_matrix to update — it is not stored.
+    # Variance estimation computes the matrix on demand from the column names.
   }
 
   x@variables <- vars
@@ -1540,6 +1664,339 @@ validate_psu_strata <- function(ids, strata, data) {
 ---
 
 ## Testing Updates
+
+---
+
+### Test Helper Specification (`tests/testthat/helper-test-data.R`)
+
+This file must be implemented before any other test files. It provides the
+synthetic data generators and shared helpers used across the test suite.
+
+#### `make_survey_data()` — Synthetic Survey Data Generator
+
+```r
+#' Create synthetic survey data for testing
+#'
+#' Generates realistic but artificial survey data with known design structure.
+#' Use this for unit tests. Use example package datasets (nhanes_2017, etc.)
+#' only for numerical validation tests that compare against the survey package.
+#'
+#' @param n        Total rows (respondents). Default 500.
+#' @param n_psu    Number of primary sampling units. Default 50.
+#'                 PSU sizes vary (not uniform — more realistic).
+#' @param n_strata Number of strata. Default 5.
+#'                 PSUs are distributed across strata; weights vary by stratum.
+#' @param design   One of "taylor", "replicate", "twophase".
+#' @param type     Replicate type if design = "replicate". Default "brr".
+#' @param with_labels  Logical. If TRUE, add haven-style label attributes
+#'                     (requires haven in Suggests; uses skip_if_not_installed).
+#'
+#' @return A plain data.frame (never a tibble) with:
+#'   - Design columns: psu, ssu, strata, wt (and repwt_* if design="replicate")
+#'   - 3 numeric outcome vars: y1, y2, y3
+#'   - 1 categorical var: group (values "A", "B", "C")
+#'   - 1 logical var: phase2_ind (if design = "twophase")
+#'
+#' @keywords internal
+make_survey_data <- function(
+  n           = 500L,
+  n_psu       = 50L,
+  n_strata    = 5L,
+  design      = c("taylor", "replicate", "twophase"),
+  type        = "brr",
+  with_labels = FALSE
+) {
+  design <- match.arg(design)
+  set.seed(42L)  # reproducible across tests
+
+  # ... implementation ...
+}
+```
+
+**Design rules for `make_survey_data()`:**
+- PSU sizes must VARY (not equal) — use `sample(5:15, n_psu, replace = TRUE)`
+- Weights must VARY (not uniform) — generate stratum-specific weights
+- The data must make statistical sense (weights sum to reasonable population size)
+- For `design = "replicate"` with `type = "brr"`: generate `n_psu / 2` replicate
+  weights (BRR requires even number of PSUs, so ensure `n_psu` is even)
+- For `design = "twophase"`: create a logical `phase2_ind` column with ~40% TRUE
+
+**Dataset policy:**
+| Data source | When to use |
+|-------------|-------------|
+| `make_survey_data()` | All unit tests, validator tests, constructor tests |
+| `nhanes_2017` (package dataset) | Numerical comparison vs. `survey` package (Taylor SE) |
+| `acs_pums_wy` (package dataset) | Numerical comparison vs. `survey` package (replicate SE) |
+| Inline `data.frame(...)` | Edge cases: 1-row data, all-NA column, single PSU, etc. |
+
+**`skip_if_not_installed` convention:**
+All tests that use `survey` or `srvyr` packages must begin with:
+```r
+skip_if_not_installed("survey")
+```
+All tests that create `haven::labelled()` vectors must begin with:
+```r
+skip_if_not_installed("haven")
+```
+
+---
+
+#### `test_invariants()` — Invariant Checker
+
+```r
+#' Assert all 5 formal invariants on a survey object
+#'
+#' Call this after EVERY test that produces a survey object to verify the
+#' object satisfies all invariants from formal spec Section I.
+#'
+#' @param design A survey_taylor, survey_replicate, or survey_twophase object
+#' @keywords internal
+test_invariants <- function(design) {
+  # Invariant 1: Data structure
+  expect_true(is.data.frame(design@data))
+  expect_true(!is.null(design@data))
+  expect_gte(nrow(design@data), 1L)
+  expect_true(!anyDuplicated(names(design@data)))
+
+  # Invariant 2: Design variables exist and are atomic
+  design_vars <- .get_design_vars_flat(design)  # returns character vector
+  for (v in design_vars) {
+    expect_true(v %in% names(design@data),
+                info = paste("Design var", v, "missing from data"))
+    expect_true(is.atomic(design@data[[v]]),
+                info = paste("Design var", v, "is not atomic"))
+  }
+
+  # Invariant 3: Weights are numeric and positive
+  wt_var <- design@variables$weights
+  if (!is.null(wt_var)) {
+    wt_col <- design@data[[wt_var]]
+    expect_true(is.numeric(wt_col))
+    expect_true(all(wt_col[!is.na(wt_col)] > 0))
+  }
+
+  # Invariant 4: Replicate weights are numeric (survey_replicate only)
+  if (inherits(design, "survey_replicate")) {
+    for (rw in design@variables$repweights) {
+      expect_true(is.numeric(design@data[[rw]]),
+                  info = paste("Replicate weight", rw, "is not numeric"))
+    }
+  }
+
+  # Invariant 5: Metadata variable names subset of data names
+  meta_vars <- names(design@metadata@variable_labels)
+  if (length(meta_vars) > 0) {
+    expect_true(all(meta_vars %in% names(design@data)),
+                info = "Metadata references variables not in data")
+  }
+
+  invisible(design)
+}
+```
+
+**Rule:** `test_invariants(design)` must be called in every `test_that()` block
+that creates or modifies a survey object.
+
+---
+
+### `test-variance-estimation.R` Template
+
+This file validates that vendored variance functions produce results numerically
+equivalent to the `survey` package. It is the core correctness test for Phase 0.
+
+```r
+# test-variance-estimation.R
+# Numerical validation: surveycore variance == survey package variance
+# Tolerance: 1e-10 for point estimates, 1e-8 for variance estimates
+
+# ---------------------------------------------------------------------------
+# Block 1: Taylor Series Linearization
+# ---------------------------------------------------------------------------
+
+test_that("Taylor SE matches survey package — NHANES stratified cluster", {
+  skip_if_not_installed("survey")
+
+  # Build surveycore design
+  sc_design <- as_survey(
+    nhanes_2017,
+    ids     = sdmvpsu,
+    strata  = sdmvstra,
+    weights = wtmec2yr
+  )
+
+  # Build survey package design (for comparison)
+  sv_design <- survey::svydesign(
+    ids     = ~sdmvpsu,
+    strata  = ~sdmvstra,
+    weights = ~wtmec2yr,
+    data    = nhanes_2017,
+    nest    = TRUE
+  )
+
+  # Point estimate comparison
+  sc_mean <- get_mean(sc_design, bpxsy1)
+  sv_mean <- survey::svymean(~bpxsy1, sv_design, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["bpxsy1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   SE(sv_mean)[["bpxsy1"]],   tolerance = 1e-8)
+})
+
+# ---------------------------------------------------------------------------
+# Block 2: Replicate Weights
+# ---------------------------------------------------------------------------
+
+test_that("Replicate SE matches survey package — ACS PUMS BRR", {
+  skip_if_not_installed("survey")
+
+  # ACS PUMS Wyoming uses BRR replicate weights (repwt1..repwt80)
+  sc_rep <- as_survey_rep(
+    acs_pums_wy,
+    weights    = pwgtp,
+    repweights = starts_with("pwgtp"),
+    type       = "BRR"
+  )
+
+  sv_rep <- survey::svrepdesign(
+    weights    = ~pwgtp,
+    repweights = acs_pums_wy[, grep("^pwgtp[0-9]", names(acs_pums_wy))],
+    type       = "BRR",
+    data       = acs_pums_wy
+  )
+
+  sc_total <- get_total(sc_rep, agep)
+  sv_total <- survey::svytotal(~agep, sv_rep, na.rm = TRUE)
+
+  expect_equal(sc_total$total, coef(sv_total)[["agep"]], tolerance = 1e-10)
+  expect_equal(sc_total$se,    SE(sv_total)[["agep"]],   tolerance = 1e-8)
+})
+
+# ---------------------------------------------------------------------------
+# Block 3: Two-Phase Design
+# ---------------------------------------------------------------------------
+
+test_that("Two-phase SE matches survey package — synthetic", {
+  skip_if_not_installed("survey")
+
+  # Use synthetic two-phase data for reproducibility
+  d <- make_survey_data(n = 500, design = "twophase")
+  phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
+
+  sc_two <- as_survey_twophase(phase1, subset = phase2_ind)
+  sv_two <- survey::twophase(
+    id     = list(~psu, ~1),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    subset  = ~phase2_ind,
+    data    = d
+  )
+
+  sc_mean <- get_mean(sc_two, y1)
+  sv_mean <- survey::svymean(~y1, sv_two, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   SE(sv_mean)[["y1"]],   tolerance = 1e-8)
+})
+```
+
+---
+
+### Error Path Sections for Test Files
+
+Each test file below includes an "Error Paths" section that maps to the
+canonical error table in `plans/error-messages.md`. Use BOTH:
+- `expect_error(..., class = "surveycore_error_<condition>")` — typed error class
+- `expect_snapshot(error = TRUE, ...)` — exact CLI message text (golden test)
+
+#### `test-constructors.R` — Error Paths
+
+Covers error table rows 1–26 from `error-messages.md`:
+
+```r
+# --- Error Paths: as_survey() ---
+
+test_that("as_survey errors: data not a data frame [row 1]", {
+  expect_error(
+    as_survey(list(x = 1:5), weights = x),
+    class = "surveycore_error_not_data_frame"
+  )
+  expect_snapshot(error = TRUE,
+    as_survey(list(x = 1:5), weights = x)
+  )
+})
+
+test_that("as_survey errors: empty data [row 2]", {
+  expect_error(
+    as_survey(data.frame(), weights = x),
+    class = "surveycore_error_empty_data"
+  )
+})
+
+test_that("as_survey errors: nest=TRUE without strata [row 15]", {
+  d <- data.frame(psu = 1:10, wt = rep(1, 10), y = rnorm(10))
+  expect_error(
+    as_survey(d, ids = psu, weights = wt, nest = TRUE),
+    class = "surveycore_error_nest_without_strata"
+  )
+})
+
+test_that("as_survey warns: single stratum [row 12]", {
+  d <- data.frame(st = rep("A", 10), wt = rep(1, 10), y = rnorm(10))
+  expect_warning(
+    as_survey(d, weights = wt, strata = st),
+    class = "surveycore_warning_single_stratum"
+  )
+})
+
+# --- Error Paths: as_survey_rep() ---
+
+test_that("as_survey_rep errors: rscales length mismatch [row 17]", {
+  d <- make_survey_data(design = "replicate")
+  expect_error(
+    as_survey_rep(d, weights = wt, repweights = starts_with("repwt"),
+                  type = "BRR", rscales = c(1, 2)),  # wrong length
+    class = "surveycore_error_rscales_length"
+  )
+})
+
+# --- Error Paths: as_survey_twophase() ---
+
+test_that("as_survey_twophase errors: degenerate subset [row 23]", {
+  d <- make_survey_data(design = "twophase")
+  d$all_true <- TRUE
+  phase1 <- as_survey(d, ids = psu, weights = wt)
+  expect_error(
+    as_survey_twophase(phase1, subset = all_true),
+    class = "surveycore_error_subset_degenerate"
+  )
+})
+```
+
+#### `test-validators.R` — Error Paths
+
+Covers error table rows 27–35:
+
+```r
+test_that("set_var_label errors: variable not in data [row 27]", {
+  design <- as_survey(make_survey_data(), weights = wt)
+  expect_error(
+    set_var_label(design, nonexistent_var, "A label"),
+    class = "surveycore_error_var_not_found"
+  )
+})
+
+test_that("S7 validator errors: non-positive weight [row 33]", {
+  # Force a bad weight past the constructor by direct property assignment
+  d <- make_survey_data()
+  d$wt[1] <- -1
+  expect_error(
+    survey_taylor(data = d, variables = list(weights = "wt", ids = NULL,
+                  strata = NULL, fpc = NULL, nest = FALSE, probs_provided = FALSE)),
+    class = "surveycore_error_weights_nonpositive"
+  )
+})
+```
+
+---
 
 ### File: `tests/testthat/test-tidy-select.R` (NEW)
 

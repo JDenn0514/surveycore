@@ -107,7 +107,10 @@ survey_base (abstract)
 │   └── variables contains:
 │       ├── weights: character (length 1)
 │       ├── repweights: character vector (names of rep weight cols)
-│       ├── repweight_matrix: matrix (cached, nrow = nrow(data))
+│       │   # NOTE: repweight_matrix is NOT stored — computed on demand inside
+│       │   # variance estimation from data[, repweights]. This avoids sync bugs
+│       │   # when data is mutated. Add as cached property only if benchmarking
+│       │   # shows a performance need (Phase 3+).
 │       ├── type: character (one of: JK1, JK2, JKn, BRR, Fay, bootstrap, etc.)
 │       ├── scale: numeric (length 1)
 │       ├── rscales: numeric vector | NULL
@@ -273,11 +276,11 @@ as_survey_rep(
 
 **Repweights Storage:**
 ```r
-# Store both column names AND matrix
+# Store column names only — NOT the matrix.
+# The matrix is computed on demand inside variance estimation functions:
+#   as.matrix(design@data[, design@variables$repweights, drop = FALSE])
+# This is the single source of truth and avoids sync bugs when data changes.
 variables$repweights <- names(tidyselect::eval_select(repweights_expr, data))
-variables$repweight_matrix <- as.matrix(data[, variables$repweights])
-
-# Matrix is cached view - rebuild when data changes
 ```
 
 **Return Value:**
@@ -542,7 +545,8 @@ update_design(
 **Behavior:**
 - Updates design variables on the object
 - When `validate = TRUE` (default): re-runs ALL invariant checks from Section I on the updated object
-- For `survey_replicate`: rebuilds `repweight_matrix` from the new repweight columns in data
+- For `survey_replicate`: updates `repweights` column name list only — no matrix to rebuild
+  (matrix is always computed on demand from `data[, repweights]` inside variance estimation)
 - Issues `cli_inform()` noting which design variables were changed
 - Use case: After modifying data, need to update design
 
@@ -1127,6 +1131,51 @@ extract_haven_metadata <- function(data) {
 - Called automatically in `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`
 - No warning if no haven attributes present (silent no-op)
 
+**Edge Cases (all must be handled explicitly in implementation):**
+
+1. **`label = character(0)` (zero-length string vector):**
+   Treat as `NULL` — do not store in `variable_labels`.
+   ```r
+   if (!is.null(var_lbl) && length(var_lbl) > 0 && nzchar(var_lbl)) { ... }
+   # NOT: if (!is.null(var_lbl) && nzchar(var_lbl))  ← crashes on character(0)
+   ```
+
+2. **`labels` attribute with `NA` as a key:**
+   Preserve as-is. R allows `NA` as a vector name (`c(NA = 1L, "Yes" = 2L)`).
+   haven uses `NA`-keyed entries to represent user-defined missing values.
+   Do NOT drop entries with `NA` names during extraction.
+   ```r
+   # Correct: just store val_lbl as-is
+   val_lab[[col_name]] <- val_lbl  # NA-keyed entries preserved
+   ```
+
+3. **`haven_labelled_spss` with `na_values` / `na_range` attributes:**
+   SPSS files read by haven may have additional attributes `na_values` (a
+   numeric/character vector of declared missing codes) and `na_range` (a
+   length-2 numeric vector giving a range of missing codes). Extract and store
+   these under a new `missing_values` key in `@metadata`:
+   ```r
+   na_vals  <- attr(col, "na_values", exact = TRUE)
+   na_range <- attr(col, "na_range",  exact = TRUE)
+   if (!is.null(na_vals) || !is.null(na_range)) {
+     metadata@missing_values[[col_name]] <- list(
+       na_values = na_vals,
+       na_range  = na_range
+     )
+   }
+   ```
+   **Note:** This requires adding a `missing_values` property to `survey_metadata`
+   (type `class_list`, default `list()`). Add this in `00-s7-classes.R`.
+
+4. **`labels` attribute present but empty (`named integer(0)`):**
+   Treat as no labels — do not store in `value_labels`.
+   The guard `length(val_lbl) > 0` in the reference implementation already
+   handles this, but it must be tested explicitly.
+   ```r
+   # named integer(0) → length = 0 → condition fails → not stored. Correct.
+   if (!is.null(val_lbl) && length(val_lbl) > 0) { ... }
+   ```
+
 ---
 
 ### 7.3 Namespace Management
@@ -1151,21 +1200,34 @@ import(tidyverse)
 
 ## VIII. Output Formatting
 
-### 8.1 print.survey_base()
+### 8.1 print() for survey objects
 
-**Signature:**
+> **S7 Method Syntax:** Print methods must be registered via `S7::method()`,
+> NOT as S3 methods (`print.survey_taylor <- ...`). S3 syntax is silently ignored
+> for S7 objects. Use:
+> ```r
+> S7::method(print, survey_taylor) <- function(x, n = 10, ...) { ... }
+> S7::method(print, survey_replicate) <- function(x, n = 10, ...) { ... }
+> S7::method(print, survey_twophase) <- function(x, n = 10, ...) { ... }
+> ```
+> The same applies to `summary` methods:
+> ```r
+> S7::method(summary, survey_taylor) <- function(object, ...) { ... }
+> ```
+
+**Effective signature (parameters are the same for all design types):**
 ```r
-print.survey_base(
-  x,
-  n = 10,
-  design_info = FALSE,
-  weights_info = FALSE,
-  strata_info = FALSE,
-  cluster_info = FALSE,
-  metadata_info = FALSE,
-  full = FALSE,
-  ...
-)
+# S7::method(print, survey_taylor) <- function(
+#   x,
+#   n            = 10,
+#   design_info  = FALSE,
+#   weights_info = FALSE,
+#   strata_info  = FALSE,
+#   cluster_info = FALSE,
+#   metadata_info = FALSE,
+#   full         = FALSE,
+#   ...
+# )
 ```
 
 **Default Output:**
