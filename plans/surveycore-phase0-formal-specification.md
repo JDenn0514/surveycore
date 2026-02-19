@@ -316,6 +316,67 @@ Passing two separate survey objects would lose the phase 1 context required for
 variance estimation. This hybrid approach takes a validated phase 1 survey object
 (familiar to users) and adds the phase 2 spec via the same tidy-select interface.
 
+**Validation Rules:**
+
+1. **Degenerate subset (ERROR):**
+   ```r
+   subset_vals <- phase1@data[[subset_var]]
+   if (all(subset_vals) || !any(subset_vals)) {
+     cli::cli_abort(c(
+       "x" = "{.arg subset} column {.field {subset_var}} must contain both TRUE and FALSE values.",
+       "i" = "Found {sum(subset_vals)} TRUE out of {length(subset_vals)} rows.",
+       "i" = "For two-phase designs, Phase 2 must be a strict subset of Phase 1."
+     ))
+   }
+   ```
+
+2. **`method = "simple"` with clustered Phase 1 (WARNING):**
+   ```r
+   if (method == "simple" && !is.null(phase1@variables$ids)) {
+     cli::cli_warn(c(
+       "!" = "{.code method = \"simple\"} ignores the Phase 1 cluster design.",
+       "i" = "Phase 1 has PSU variable(s): {.field {phase1@variables$ids}}.",
+       "i" = "This understates variance for clustered Phase 1 designs.",
+       "i" = "Use {.code method = \"full\"} or {.code method = \"approx\"} unless Phase 1 is truly unclustered."
+     ))
+   }
+   ```
+
+3. **`method = "full"` with no Phase 2 design information (WARNING):**
+   ```r
+   no_phase2_info <- is.null(ids2_var) && is.null(strata2_var) &&
+                     is.null(probs2_var) && is.null(fpc2_var)
+   if (method == "full" && no_phase2_info) {
+     cli::cli_warn(c(
+       "!" = "No Phase 2 design information provided with {.code method = \"full\"}.",
+       "i" = "Phase 2 selection will be treated as simple random subsampling within Phase 1 strata.",
+       "i" = "If Phase 2 inclusion probabilities are available, provide them via {.arg probs2}.",
+       "i" = "Example: {.code probs2 = subsamprate} if your data has a subsampling rate column."
+     ))
+   }
+   ```
+
+4. **Phase 2 design columns all-NA within Phase 2 subset (WARNING — in S7 validator):**
+
+   This check belongs in the `survey_twophase` S7 validator, not the constructor, because
+   it requires inspecting actual data values rather than column names.
+
+   ```r
+   # In survey_twophase validator:
+   phase2_rows <- self@data[[self@variables$subset]]
+   for (var in c(self@variables$phase2$ids,
+                 self@variables$phase2$strata,
+                 self@variables$phase2$probs,
+                 self@variables$phase2$fpc)) {
+     if (!is.null(var) && all(is.na(self@data[[var]][phase2_rows]))) {
+       cli::cli_warn(c(
+         "!" = "Phase 2 design variable {.field {var}} is all NA within the Phase 2 subset.",
+         "i" = "Check that {.field {var}} is populated for rows where {.field {self@variables$subset}} is TRUE."
+       ))
+     }
+   }
+   ```
+
 **Return Value:**
 - Object of class `survey_twophase`
 
@@ -336,6 +397,15 @@ d2_strat <- as_survey_twophase(
   strata2 = treatment_arm,  # phase 2 strata (column in phase1@data)
   subset  = in_phase2,
   method  = "full"
+)
+
+# GSS example: subsamprate column holds Phase 2 inclusion probabilities
+phase1_gss <- as_survey(gss, ids = vpsu, strata = vstrat, weights = wtssnrps)
+gss_twophase <- as_survey_twophase(
+  phase1_gss,
+  probs2 = subsamprate,     # Phase 2 inclusion probability (0.4 or 1.0)
+  subset = in_phase2_module, # logical: TRUE if row answered the subsampled module
+  method = "full"
 )
 ```
 
@@ -849,6 +919,7 @@ For all vendored functions:
 - Specifying both probs and weights (inconsistent values)
 - Setting metadata for non-existent variables
 - Type mismatches
+- Degenerate `subset` in `as_survey_twophase()` (all TRUE or all FALSE)
 
 #### WARNINGS
 - Modifying weight column in mutate()
@@ -857,6 +928,9 @@ For all vendored functions:
 - Unusual design patterns (single PSU strata)
 - Missing metadata when expected
 - SRS created without weights or population size (totals will be wrong)
+- `method = "simple"` in `as_survey_twophase()` when Phase 1 has PSUs (understates variance)
+- `method = "full"` in `as_survey_twophase()` when no Phase 2 design info provided (probs2, strata2, ids2, fpc2 all NULL)
+- Phase 2 design variable is all-NA within Phase 2 subset rows (in S7 validator)
 
 #### INFORMS (informational messages, not warnings)
 - Design variable renamed and @variables automatically updated
