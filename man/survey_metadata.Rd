@@ -36,4 +36,19 @@ transformation history for variables in a survey design object.
 Automatically populated from haven-style attributes when
 \code{\link[srvyr:as_survey]{srvyr::as_survey()}} or related constructors are called.
 }
+\seealso{
+Other metadata: 
+\code{\link{extract_question_preface}()},
+\code{\link{extract_val_labels}()},
+\code{\link{extract_var_label}()},
+\code{\link{extract_var_note}()},
+\code{\link{set_question_preface}()},
+\code{\link{set_question_prefaces}()},
+\code{\link{set_val_labels}()},
+\code{\link{set_value_labels}()},
+\code{\link{set_var_label}()},
+\code{\link{set_var_note}()},
+\code{\link{set_variable_labels}()},
+\code{\link{set_variable_notes}()}
+}
 \concept{metadata}
