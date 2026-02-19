@@ -12,7 +12,7 @@ vendored variance estimation code.
 - **Name:** surveycore
 - **Purpose:** Core survey infrastructure — S7 objects, metadata, variance estimation
 - **Target Audience:** Anyone conducting survey research; tidyverse users
-- **Current Status:** Planning phase (Phase 0 not yet started)
+- **Current Status:** Phase 0 in progress (test helpers done; S7 classes next)
 - **License:** GPL-3 (required by vendored survey package code)
 
 ## Vision & Goals
@@ -118,6 +118,49 @@ tests/testthat/
 When converting probs to weights internally, use `"..surveycore_wt.."` to avoid
 colliding with user columns named `.weights`.
 
+## Before Starting Any Implementation
+
+**Read these files first — in this order — before writing any code:**
+
+1. `.claude/rules/code-style.md` — indentation, S7 method syntax, error conventions, function design
+2. `.claude/rules/testing-standards.md` — test structure, coverage requirements, assertion patterns
+3. `.claude/rules/r-package-conventions.md` — roxygen2, NAMESPACE, exports, R CMD check hygiene
+4. `.claude/rules/github-strategy.md` — branching model, commit format, PR workflow
+
+**Then read the planning documents:**
+
+5. `plans/surveycore-phase0-formal-specification.md` — authoritative for WHAT to build and how it behaves
+6. `plans/phase-0-implementation-plan-v2.md` — authoritative for HOW to organize code and build order
+7. `plans/error-messages.md` — canonical table of all error/warning classes and CLI message templates
+
+**Workflow requirements (non-negotiable):**
+
+- Every non-trivial change lives on a feature branch — never commit implementation code directly to `main`
+- Branch naming: `feature/`, `fix/`, `test/`, `docs/`, `chore/` (see github-strategy.md Section 4)
+- All commits use Conventional Commits format: `feat(scope): description` (see github-strategy.md Section 6)
+- One PR per test file granularity (see github-strategy.md Section 5 for the full component-to-PR map)
+- Run `devtools::document()` before committing any file that changes roxygen2 content
+- Run `devtools::check()` before opening a PR
+
+**Phase 0 build order** (from implementation plan Component sequence):
+
+1. `feature/test-helpers` — `tests/testthat/helper-test-data.R` ✅ DONE
+2. `feature/s7-classes` — `R/00-s7-classes.R`
+3. `feature/metadata-system` — `R/01-metadata-system.R` (extractors + setters)
+4. `feature/validators` — `R/02-validators.R`
+5. `feature/as-survey` — `R/03-constructors.R` (as_survey() only)
+6. `feature/as-survey-rep` — `R/03-constructors.R` (as_survey_rep())
+7. `feature/as-survey-twophase` — `R/03-constructors.R` (as_survey_twophase())
+8. `feature/update-design` — `R/08-update-design.R`
+9. `feature/print-methods` — `R/04-methods-print.R`
+10. `feature/utils` — `R/07-utils.R`
+11. `feature/conversion-to-survey` — `R/05-methods-conversion.R` (to svydesign/tbl_svy)
+12. `feature/conversion-from-survey` — `R/05-methods-conversion.R` (from svydesign/tbl_svy)
+13. `feature/variance-taylor` — `R/06-variance-estimation.R` (Taylor series)
+14. `feature/variance-replicate` — `R/06-variance-estimation.R` (replicate weights)
+
+---
+
 ## Working With This Codebase
 
 1. **Follow established patterns** — consistency across the codebase matters
@@ -135,6 +178,14 @@ All planning documents are in `plans/`:
 - `surveycore-phase0-formal-specification.md` — authoritative spec for Phase 0 behavior
 - `phase-0-implementation-plan-v2.md` — step-by-step build instructions for Phase 0
 - `GUIDE-using-phase0-docs.md` — how to use the Phase 0 documents together
+- `error-messages.md` — canonical error/warning class names and CLI message templates
+
+All finalized decisions are in `.claude/rules/`:
+- `code-style.md` — R style, S7 patterns, error conventions, function design
+- `testing-standards.md` — test structure, coverage, assertion patterns, test data
+- `r-package-conventions.md` — roxygen2, NAMESPACE, exports, R CMD check hygiene
+- `github-strategy.md` — branching, commits, PRs, CI/CD, release process
 
 **The formal specification is authoritative for behavior.**
 **The implementation plan is authoritative for file organization.**
+**The rules files are authoritative for all style and workflow decisions.**
