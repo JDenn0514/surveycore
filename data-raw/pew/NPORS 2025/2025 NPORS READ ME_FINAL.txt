@@ -1,0 +1,9 @@
+PEW RESEARCH CENTER
+2025 National Public Opinion Reference Survey (NPORS)
+Dates: Feb. 5 to Jun. 18, 2025
+Sample: National address-based sample from the U.S. Postal Service Computerized Delivery Sequence File
+Modes: Online, Paper, and Telephone
+Language: English and Spanish
+n=5,022
+
+Sample sizes for some subgroups are small. This is particularly the case for men and women under 30. As a result, there is greater uncertainty for these group than others. Researchers should review the confidence intervals of such subgroups to determine the level of certainty they can draw from the estimates.
