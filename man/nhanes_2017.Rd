@@ -62,10 +62,21 @@ and \code{wtmec2yr} as the weight for examination-based analyses:
 )
 }\if{html}{\out{</div>}}
 
-\strong{Variable labels:} Each column retains its original NHANES variable label
-as an R attribute (e.g., \code{attr(nhanes_2017$riagendr, "label")} returns
-\code{"Gender"}). These are used by \code{extract_haven_metadata()} to auto-populate
-the surveycore metadata system.
+Use \code{wtint2yr} instead of \code{wtmec2yr} for interview-only variables
+(e.g., income, education).
+
+\strong{Metadata:}
+All columns carry variable labels and value labels as R attributes,
+automatically extracted into surveycore's metadata system when you call
+\code{as_survey()}.
+\itemize{
+\item \strong{Variable labels} (\code{"label"} attribute): A human-readable description of
+each column. Example: \code{attr(nhanes_2017$riagendr, "label")} returns
+\code{"Gender"}.
+\item \strong{Value labels} (\code{"labels"} attribute): A named numeric vector mapping
+each code to its meaning. Example: \code{attr(nhanes_2017$riagendr, "labels")}
+returns \code{c(Male = 1, Female = 2)}.
+}
 
 \strong{Source files:} DEMO_J.xpt (demographics) merged with BPX_J.xpt (blood
 pressure) on \code{seqn}. Prepared by \code{data-raw/download-nhanes.R}.
@@ -77,7 +88,13 @@ head(nhanes_2017)
 # Restrict to exam participants for blood pressure analysis
 exam_only <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
-# Check variable label
+# Inspect variable label
 attr(nhanes_2017$riagendr, "label")
+
+# Inspect value labels
+attr(nhanes_2017$riagendr, "labels")
+
+# Inspect value labels for race/ethnicity
+attr(nhanes_2017$ridreth3, "labels")
 }
 \keyword{datasets}

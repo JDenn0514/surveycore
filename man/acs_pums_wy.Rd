@@ -84,6 +84,13 @@ file — ideal for fast tests and examples.
 \strong{Income adjustment:} Income variables (\code{pincp}, \code{wagp}) are in survey-year
 dollars. Multiply by \code{adjinc / 1e6} to convert to 2022 inflation-adjusted
 dollars before comparing across ACS years.
+
+\strong{Metadata:}
+The ACS PUMS source is a plain CSV with no embedded labels. Columns in
+\code{acs_pums_wy} carry no \code{"label"}, \code{"labels"}, or \code{"question_preface"}
+attributes. Variable descriptions are documented here in \code{?acs_pums_wy} and
+in \code{data-raw/README.md}. Use \code{set_variable_labels()} and
+\code{set_value_labels()} to attach labels manually before analysis if needed.
 }
 \examples{
 # Wyoming population represented
