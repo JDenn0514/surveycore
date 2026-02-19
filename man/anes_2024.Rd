@@ -5,9 +5,7 @@
 \alias{anes_2024}
 \title{ANES 2024: American National Election Studies Time Series}
 \format{
-A data frame with 5,521 rows and 19 variables.
-
-\strong{Design variables:}
+A data frame with 5,521 rows and 19 variables:
 \describe{
 \item{v240103a}{Pre-election weight (FTF+Web combined). Use for
 variables asked before November 5, 2024.}
@@ -17,26 +15,14 @@ variables asked after November 5, 2024.}
 variance estimation.}
 \item{v240103d}{Stratum (FTF+Web combined). Use as the stratification
 variable.}
-}
-
-\strong{Case and sample variables:}
-\describe{
 \item{v240001}{2024 Time Series Case ID. Unique respondent identifier.}
 \item{v240003}{Sample type: \code{1} = Panel, \code{2} = Fresh Web, \code{3} = Fresh
 FTF, \code{4} = GSS.}
 \item{v240002c}{Pre/Post interview completion: \code{1} = Pre-election only,
 \code{2} = Pre- and post-election.}
-}
-
-\strong{Geographic:}
-\describe{
 \item{v243002}{State FIPS code.}
 \item{v243007}{Census region: \code{1} = Northeast, \code{2} = Midwest,
 \code{3} = South, \code{4} = West.}
-}
-
-\strong{Demographics:}
-\describe{
 \item{v241458x}{Age on Election Day (summary). Top-coded at 80.
 \code{-2} = missing.}
 \item{v241550}{Sex: \code{1} = male, \code{2} = female.}
@@ -48,10 +34,6 @@ Other/Multiracial non-Hispanic.}
 \code{5} = graduate degree.}
 \item{v241566x}{Household income (28 categories from < $5,000 to
 $250,000+).}
-}
-
-\strong{Political attitudes:}
-\describe{
 \item{v241177}{Liberal-conservative self-placement (7-point scale):
 \code{1} = extremely liberal, \code{7} = extremely conservative.
 \code{99} = haven't thought about this.}
@@ -59,10 +41,6 @@ $250,000+).}
 \code{2} = not very strong.}
 \item{v241223}{Party identification lean (Independents): \code{1} = closer to
 Republican, \code{2} = neither, \code{3} = closer to Democrat.}
-}
-
-\strong{Post-election variables (pre/post completers only):}
-\describe{
 \item{v242066}{Did respondent vote for President (POST): \code{1} = yes,
 \code{2} = no.}
 \item{v242067}{Presidential vote choice (POST): \code{1} = Harris,

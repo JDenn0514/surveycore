@@ -5,26 +5,15 @@
 \alias{acs_pums_wy}
 \title{ACS PUMS 2022 1-Year: Wyoming Persons}
 \format{
-A data frame with 5,962 rows and 96 variables. The first 3 variables
-are design variables, the next 80 are replicate weights, and the final 13
-are person characteristics:
-
-\strong{Design variables:}
+A data frame with 5,962 rows and 96 variables. Variables
+\code{pwgtp1}–\code{pwgtp80} are eighty successive difference replicate weights for
+variance estimation; the remaining 16 variables are:
 \describe{
 \item{puma}{Public Use Microdata Area code. Use as the cluster ID (PSU)
 for variance estimation.}
 \item{st}{State FIPS code (all \code{56} = Wyoming).}
 \item{pwgtp}{Person weight. Represents the number of people in the
 Wyoming population that this record represents.}
-}
-
-\strong{Replicate weights (\code{pwgtp1}–\code{pwgtp80}):}
-Eighty successive difference replicate weights for variance estimation via
-the successive difference replication (SDR) method. Use with
-\code{as_survey_rep(..., type = "successive-difference")}.
-
-\strong{Person characteristics:}
-\describe{
 \item{agep}{Age (0–99 years).}
 \item{sex}{Sex: \code{1} = male, \code{2} = female.}
 \item{rac1p}{Recoded detailed race: \code{1} = White alone, \code{2} = Black or
@@ -54,6 +43,86 @@ not in the labor force.}
 \item{adjinc}{Adjustment factor for income and earnings. Divide by
 1,000,000 and multiply income variables to convert to 2022 constant
 dollars.}
+\item{pwgtp1}{Successive difference replicate weight 1 of 80.}
+\item{pwgtp2}{Successive difference replicate weight 2 of 80.}
+\item{pwgtp3}{Successive difference replicate weight 3 of 80.}
+\item{pwgtp4}{Successive difference replicate weight 4 of 80.}
+\item{pwgtp5}{Successive difference replicate weight 5 of 80.}
+\item{pwgtp6}{Successive difference replicate weight 6 of 80.}
+\item{pwgtp7}{Successive difference replicate weight 7 of 80.}
+\item{pwgtp8}{Successive difference replicate weight 8 of 80.}
+\item{pwgtp9}{Successive difference replicate weight 9 of 80.}
+\item{pwgtp10}{Successive difference replicate weight 10 of 80.}
+\item{pwgtp11}{Successive difference replicate weight 11 of 80.}
+\item{pwgtp12}{Successive difference replicate weight 12 of 80.}
+\item{pwgtp13}{Successive difference replicate weight 13 of 80.}
+\item{pwgtp14}{Successive difference replicate weight 14 of 80.}
+\item{pwgtp15}{Successive difference replicate weight 15 of 80.}
+\item{pwgtp16}{Successive difference replicate weight 16 of 80.}
+\item{pwgtp17}{Successive difference replicate weight 17 of 80.}
+\item{pwgtp18}{Successive difference replicate weight 18 of 80.}
+\item{pwgtp19}{Successive difference replicate weight 19 of 80.}
+\item{pwgtp20}{Successive difference replicate weight 20 of 80.}
+\item{pwgtp21}{Successive difference replicate weight 21 of 80.}
+\item{pwgtp22}{Successive difference replicate weight 22 of 80.}
+\item{pwgtp23}{Successive difference replicate weight 23 of 80.}
+\item{pwgtp24}{Successive difference replicate weight 24 of 80.}
+\item{pwgtp25}{Successive difference replicate weight 25 of 80.}
+\item{pwgtp26}{Successive difference replicate weight 26 of 80.}
+\item{pwgtp27}{Successive difference replicate weight 27 of 80.}
+\item{pwgtp28}{Successive difference replicate weight 28 of 80.}
+\item{pwgtp29}{Successive difference replicate weight 29 of 80.}
+\item{pwgtp30}{Successive difference replicate weight 30 of 80.}
+\item{pwgtp31}{Successive difference replicate weight 31 of 80.}
+\item{pwgtp32}{Successive difference replicate weight 32 of 80.}
+\item{pwgtp33}{Successive difference replicate weight 33 of 80.}
+\item{pwgtp34}{Successive difference replicate weight 34 of 80.}
+\item{pwgtp35}{Successive difference replicate weight 35 of 80.}
+\item{pwgtp36}{Successive difference replicate weight 36 of 80.}
+\item{pwgtp37}{Successive difference replicate weight 37 of 80.}
+\item{pwgtp38}{Successive difference replicate weight 38 of 80.}
+\item{pwgtp39}{Successive difference replicate weight 39 of 80.}
+\item{pwgtp40}{Successive difference replicate weight 40 of 80.}
+\item{pwgtp41}{Successive difference replicate weight 41 of 80.}
+\item{pwgtp42}{Successive difference replicate weight 42 of 80.}
+\item{pwgtp43}{Successive difference replicate weight 43 of 80.}
+\item{pwgtp44}{Successive difference replicate weight 44 of 80.}
+\item{pwgtp45}{Successive difference replicate weight 45 of 80.}
+\item{pwgtp46}{Successive difference replicate weight 46 of 80.}
+\item{pwgtp47}{Successive difference replicate weight 47 of 80.}
+\item{pwgtp48}{Successive difference replicate weight 48 of 80.}
+\item{pwgtp49}{Successive difference replicate weight 49 of 80.}
+\item{pwgtp50}{Successive difference replicate weight 50 of 80.}
+\item{pwgtp51}{Successive difference replicate weight 51 of 80.}
+\item{pwgtp52}{Successive difference replicate weight 52 of 80.}
+\item{pwgtp53}{Successive difference replicate weight 53 of 80.}
+\item{pwgtp54}{Successive difference replicate weight 54 of 80.}
+\item{pwgtp55}{Successive difference replicate weight 55 of 80.}
+\item{pwgtp56}{Successive difference replicate weight 56 of 80.}
+\item{pwgtp57}{Successive difference replicate weight 57 of 80.}
+\item{pwgtp58}{Successive difference replicate weight 58 of 80.}
+\item{pwgtp59}{Successive difference replicate weight 59 of 80.}
+\item{pwgtp60}{Successive difference replicate weight 60 of 80.}
+\item{pwgtp61}{Successive difference replicate weight 61 of 80.}
+\item{pwgtp62}{Successive difference replicate weight 62 of 80.}
+\item{pwgtp63}{Successive difference replicate weight 63 of 80.}
+\item{pwgtp64}{Successive difference replicate weight 64 of 80.}
+\item{pwgtp65}{Successive difference replicate weight 65 of 80.}
+\item{pwgtp66}{Successive difference replicate weight 66 of 80.}
+\item{pwgtp67}{Successive difference replicate weight 67 of 80.}
+\item{pwgtp68}{Successive difference replicate weight 68 of 80.}
+\item{pwgtp69}{Successive difference replicate weight 69 of 80.}
+\item{pwgtp70}{Successive difference replicate weight 70 of 80.}
+\item{pwgtp71}{Successive difference replicate weight 71 of 80.}
+\item{pwgtp72}{Successive difference replicate weight 72 of 80.}
+\item{pwgtp73}{Successive difference replicate weight 73 of 80.}
+\item{pwgtp74}{Successive difference replicate weight 74 of 80.}
+\item{pwgtp75}{Successive difference replicate weight 75 of 80.}
+\item{pwgtp76}{Successive difference replicate weight 76 of 80.}
+\item{pwgtp77}{Successive difference replicate weight 77 of 80.}
+\item{pwgtp78}{Successive difference replicate weight 78 of 80.}
+\item{pwgtp79}{Successive difference replicate weight 79 of 80.}
+\item{pwgtp80}{Successive difference replicate weight 80 of 80.}
 }
 }
 \source{

@@ -5,17 +5,111 @@
 \alias{pew_jewish_2020}
 \title{Pew Jewish Americans 2020}
 \format{
-A data frame with 5,881 rows and 130 variables.
-
-\strong{Design variables (101 columns):}
+A data frame with 5,881 rows and 130 variables. Variables
+\code{extweight1}–\code{extweight100} are jackknife replicate weights; the remaining
+30 variables are:
 \describe{
 \item{extweight}{Full-sample base weight. Use for all estimates.}
-}
-\code{extweight1}–\code{extweight100}: 100 jackknife replicate weights for variance
-estimation. Use with \code{as_survey_rep(..., type = "JK1")}.
-
-\strong{Identity and classification:}
-\describe{
+\item{extweight1}{Jackknife replicate weight 1 of 100.}
+\item{extweight2}{Jackknife replicate weight 2 of 100.}
+\item{extweight3}{Jackknife replicate weight 3 of 100.}
+\item{extweight4}{Jackknife replicate weight 4 of 100.}
+\item{extweight5}{Jackknife replicate weight 5 of 100.}
+\item{extweight6}{Jackknife replicate weight 6 of 100.}
+\item{extweight7}{Jackknife replicate weight 7 of 100.}
+\item{extweight8}{Jackknife replicate weight 8 of 100.}
+\item{extweight9}{Jackknife replicate weight 9 of 100.}
+\item{extweight10}{Jackknife replicate weight 10 of 100.}
+\item{extweight11}{Jackknife replicate weight 11 of 100.}
+\item{extweight12}{Jackknife replicate weight 12 of 100.}
+\item{extweight13}{Jackknife replicate weight 13 of 100.}
+\item{extweight14}{Jackknife replicate weight 14 of 100.}
+\item{extweight15}{Jackknife replicate weight 15 of 100.}
+\item{extweight16}{Jackknife replicate weight 16 of 100.}
+\item{extweight17}{Jackknife replicate weight 17 of 100.}
+\item{extweight18}{Jackknife replicate weight 18 of 100.}
+\item{extweight19}{Jackknife replicate weight 19 of 100.}
+\item{extweight20}{Jackknife replicate weight 20 of 100.}
+\item{extweight21}{Jackknife replicate weight 21 of 100.}
+\item{extweight22}{Jackknife replicate weight 22 of 100.}
+\item{extweight23}{Jackknife replicate weight 23 of 100.}
+\item{extweight24}{Jackknife replicate weight 24 of 100.}
+\item{extweight25}{Jackknife replicate weight 25 of 100.}
+\item{extweight26}{Jackknife replicate weight 26 of 100.}
+\item{extweight27}{Jackknife replicate weight 27 of 100.}
+\item{extweight28}{Jackknife replicate weight 28 of 100.}
+\item{extweight29}{Jackknife replicate weight 29 of 100.}
+\item{extweight30}{Jackknife replicate weight 30 of 100.}
+\item{extweight31}{Jackknife replicate weight 31 of 100.}
+\item{extweight32}{Jackknife replicate weight 32 of 100.}
+\item{extweight33}{Jackknife replicate weight 33 of 100.}
+\item{extweight34}{Jackknife replicate weight 34 of 100.}
+\item{extweight35}{Jackknife replicate weight 35 of 100.}
+\item{extweight36}{Jackknife replicate weight 36 of 100.}
+\item{extweight37}{Jackknife replicate weight 37 of 100.}
+\item{extweight38}{Jackknife replicate weight 38 of 100.}
+\item{extweight39}{Jackknife replicate weight 39 of 100.}
+\item{extweight40}{Jackknife replicate weight 40 of 100.}
+\item{extweight41}{Jackknife replicate weight 41 of 100.}
+\item{extweight42}{Jackknife replicate weight 42 of 100.}
+\item{extweight43}{Jackknife replicate weight 43 of 100.}
+\item{extweight44}{Jackknife replicate weight 44 of 100.}
+\item{extweight45}{Jackknife replicate weight 45 of 100.}
+\item{extweight46}{Jackknife replicate weight 46 of 100.}
+\item{extweight47}{Jackknife replicate weight 47 of 100.}
+\item{extweight48}{Jackknife replicate weight 48 of 100.}
+\item{extweight49}{Jackknife replicate weight 49 of 100.}
+\item{extweight50}{Jackknife replicate weight 50 of 100.}
+\item{extweight51}{Jackknife replicate weight 51 of 100.}
+\item{extweight52}{Jackknife replicate weight 52 of 100.}
+\item{extweight53}{Jackknife replicate weight 53 of 100.}
+\item{extweight54}{Jackknife replicate weight 54 of 100.}
+\item{extweight55}{Jackknife replicate weight 55 of 100.}
+\item{extweight56}{Jackknife replicate weight 56 of 100.}
+\item{extweight57}{Jackknife replicate weight 57 of 100.}
+\item{extweight58}{Jackknife replicate weight 58 of 100.}
+\item{extweight59}{Jackknife replicate weight 59 of 100.}
+\item{extweight60}{Jackknife replicate weight 60 of 100.}
+\item{extweight61}{Jackknife replicate weight 61 of 100.}
+\item{extweight62}{Jackknife replicate weight 62 of 100.}
+\item{extweight63}{Jackknife replicate weight 63 of 100.}
+\item{extweight64}{Jackknife replicate weight 64 of 100.}
+\item{extweight65}{Jackknife replicate weight 65 of 100.}
+\item{extweight66}{Jackknife replicate weight 66 of 100.}
+\item{extweight67}{Jackknife replicate weight 67 of 100.}
+\item{extweight68}{Jackknife replicate weight 68 of 100.}
+\item{extweight69}{Jackknife replicate weight 69 of 100.}
+\item{extweight70}{Jackknife replicate weight 70 of 100.}
+\item{extweight71}{Jackknife replicate weight 71 of 100.}
+\item{extweight72}{Jackknife replicate weight 72 of 100.}
+\item{extweight73}{Jackknife replicate weight 73 of 100.}
+\item{extweight74}{Jackknife replicate weight 74 of 100.}
+\item{extweight75}{Jackknife replicate weight 75 of 100.}
+\item{extweight76}{Jackknife replicate weight 76 of 100.}
+\item{extweight77}{Jackknife replicate weight 77 of 100.}
+\item{extweight78}{Jackknife replicate weight 78 of 100.}
+\item{extweight79}{Jackknife replicate weight 79 of 100.}
+\item{extweight80}{Jackknife replicate weight 80 of 100.}
+\item{extweight81}{Jackknife replicate weight 81 of 100.}
+\item{extweight82}{Jackknife replicate weight 82 of 100.}
+\item{extweight83}{Jackknife replicate weight 83 of 100.}
+\item{extweight84}{Jackknife replicate weight 84 of 100.}
+\item{extweight85}{Jackknife replicate weight 85 of 100.}
+\item{extweight86}{Jackknife replicate weight 86 of 100.}
+\item{extweight87}{Jackknife replicate weight 87 of 100.}
+\item{extweight88}{Jackknife replicate weight 88 of 100.}
+\item{extweight89}{Jackknife replicate weight 89 of 100.}
+\item{extweight90}{Jackknife replicate weight 90 of 100.}
+\item{extweight91}{Jackknife replicate weight 91 of 100.}
+\item{extweight92}{Jackknife replicate weight 92 of 100.}
+\item{extweight93}{Jackknife replicate weight 93 of 100.}
+\item{extweight94}{Jackknife replicate weight 94 of 100.}
+\item{extweight95}{Jackknife replicate weight 95 of 100.}
+\item{extweight96}{Jackknife replicate weight 96 of 100.}
+\item{extweight97}{Jackknife replicate weight 97 of 100.}
+\item{extweight98}{Jackknife replicate weight 98 of 100.}
+\item{extweight99}{Jackknife replicate weight 99 of 100.}
+\item{extweight100}{Jackknife replicate weight 100 of 100.}
 \item{qkey}{Unique respondent identifier.}
 \item{jewishcat}{Jewish identity category: \code{1} = Jews by religion,
 \code{2} = Jews of no religion, \code{3} = Jewish background,
@@ -23,10 +117,6 @@ estimation. Use with \code{as_survey_rep(..., type = "JK1")}.
 \item{finalmode}{Collection mode: \code{1} = CAWI (online),
 \code{2} = Teleform (mail),
 \code{3} = Screener CAWI + Extended Teleform.}
-}
-
-\strong{Geography and demographics:}
-\describe{
 \item{region}{Census region: \code{1} = Northeast, \code{2} = Midwest,
 \code{3} = South, \code{4} = West.}
 \item{sexask}{Sex: \code{1} = male, \code{2} = female, \code{99} = not answered.}
@@ -39,10 +129,6 @@ subgroups and combinations).}
 \item{hisp}{Hispanic origin: \code{1} = yes, \code{2} = no.}
 \item{racecmb}{Race (5 categories).}
 \item{racethn}{Race-ethnicity (4 categories).}
-}
-
-\strong{Attitudes:}
-\describe{
 \item{presapp}{Presidential approval (Trump): \code{1} = Strongly approve,
 \code{2} = Somewhat approve, \code{3} = Somewhat disapprove,
 \code{4} = Strongly disapprove.}
@@ -52,37 +138,24 @@ subgroups and combinations).}
 \code{2} = Good, \code{3} = Only fair, \code{4} = Poor.}
 \item{localrating}{Community as a place to live: \code{1} = Excellent,
 \code{2} = Good, \code{3} = Only fair, \code{4} = Poor.}
-}
-
-\strong{Battery 1 — Religious identity (select-all-that-apply, 4 variables):}
-\code{relconsider_a}–\code{relconsider_d} share \code{question_preface} = \code{"Aside from religion, do you consider yourself to be any of the following in any way (for example, ethnically, culturally, or because of your family's background)?"} Values: \code{1} = Selected, \code{2} = Not selected, \code{99} = Refused.
-\describe{
-\item{relconsider_a}{Jewish.}
-\item{relconsider_b}{Catholic.}
-\item{relconsider_c}{Mormon.}
-\item{relconsider_d}{Muslim.}
-}
-
-\strong{Battery 2 — Religious background (select-all-that-apply, 4 variables):}
-\code{relraised_a}–\code{relraised_d} share \code{question_preface} = \code{"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."} Values: \code{1} = Selected,
-\code{2} = Not selected, \code{99} = Refused.
-\describe{
-\item{relraised_a}{Jewish.}
-\item{relraised_b}{Catholic.}
-\item{relraised_c}{Mormon.}
-\item{relraised_d}{Muslim.}
-}
-
-\strong{Battery 3 — Discrimination perceptions (rating scale, 6 variables):}
-\code{discrim_a}–\code{discrim_f} share \code{question_preface} = \code{"Please tell us how much discrimination there is against each of these groups in our society today."} Values: \code{1} = A lot, \code{2} = Some, \code{3} = Not much,
-\code{4} = None at all, \code{99} = Not answered.
-\describe{
-\item{discrim_a}{Evangelical Christians.}
-\item{discrim_b}{Muslims.}
-\item{discrim_c}{Jews.}
-\item{discrim_d}{Blacks.}
-\item{discrim_e}{Hispanics.}
-\item{discrim_f}{Gays and lesbians.}
+\item{relconsider_a}{Jewish. Battery 1: religious identity
+(select-all-that-apply). See Details for question text.}
+\item{relconsider_b}{Catholic. Battery 1: religious identity.}
+\item{relconsider_c}{Mormon. Battery 1: religious identity.}
+\item{relconsider_d}{Muslim. Battery 1: religious identity.}
+\item{relraised_a}{Jewish. Battery 2: religious background
+(select-all-that-apply). See Details for question text.}
+\item{relraised_b}{Catholic. Battery 2: religious background.}
+\item{relraised_c}{Mormon. Battery 2: religious background.}
+\item{relraised_d}{Muslim. Battery 2: religious background.}
+\item{discrim_a}{Evangelical Christians. Battery 3: discrimination
+perceptions (rating scale). See Details for question text.}
+\item{discrim_b}{Muslims. Battery 3: discrimination perceptions.}
+\item{discrim_c}{Jews. Battery 3: discrimination perceptions.}
+\item{discrim_d}{Blacks. Battery 3: discrimination perceptions.}
+\item{discrim_e}{Hispanics. Battery 3: discrimination perceptions.}
+\item{discrim_f}{Gays and lesbians. Battery 3: discrimination
+perceptions.}
 }
 }
 \source{
@@ -118,6 +191,15 @@ weights alongside the main weight.
 respondents into five mutually exclusive categories used in the published
 Pew report. Use \code{jewishcat} rather than constructing your own
 classification from the raw religion variables.
+
+\strong{Battery question stems:}
+\itemize{
+\item \strong{Battery 1} (\code{relconsider_a}–\code{relconsider_d}): \code{"Aside from religion, do you consider yourself to be any of the following in any way (for example, ethnically, culturally, or because of your family's background)?"} Values: \code{1} = Selected, \code{2} = Not selected, \code{99} = Refused.
+\item \strong{Battery 2} (\code{relraised_a}–\code{relraised_d}): \code{"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."} Values: \code{1} = Selected,
+\code{2} = Not selected, \code{99} = Refused.
+\item \strong{Battery 3} (\code{discrim_a}–\code{discrim_f}): \code{"Please tell us how much discrimination there is against each of these groups in our society today."} Values: \code{1} = A lot, \code{2} = Some, \code{3} = Not much,
+\code{4} = None at all, \code{99} = Not answered.
+}
 
 \strong{Metadata:}
 All columns carry variable labels and value labels as R attributes from the

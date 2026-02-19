@@ -5,9 +5,7 @@
 \alias{gss_2024}
 \title{GSS 2024: General Social Survey}
 \format{
-A data frame with 3,309 rows and 27 variables.
-
-\strong{Design variables:}
+A data frame with 3,309 rows and 27 variables:
 \describe{
 \item{vpsu}{Variance primary sampling unit. Use as the cluster ID for
 variance estimation.}
@@ -17,19 +15,11 @@ weight.}
 \item{wtssnrps}{Person post-stratification weight adjusted for
 differential non-response. Preferred when non-response bias is a
 concern.}
-}
-
-\strong{Case variables:}
-\describe{
 \item{id}{Respondent ID. Unique case identifier.}
 \item{year}{Survey year (all \code{2024} in this extract).}
 \item{ballot}{Ballot form (\code{A}, \code{B}, \code{C}, or \code{D}). The GSS uses a
 split-ballot design; not all questions appear on every ballot.
 Inapplicable items are coded \code{-100}.}
-}
-
-\strong{Demographics:}
-\describe{
 \item{age}{Age in years (\code{89} = 89 or older).}
 \item{sex}{Sex: \code{1} = male, \code{2} = female.}
 \item{race}{Race: \code{1} = white, \code{2} = black, \code{3} = other.}
@@ -42,19 +32,11 @@ Hispanic origin.}
 $170,000+).}
 \item{marital}{Marital status: \code{1} = married, \code{2} = widowed,
 \code{3} = divorced, \code{4} = separated, \code{5} = never married.}
-}
-
-\strong{Employment:}
-\describe{
 \item{wrkstat}{Labor force status: \code{1} = full time, \code{2} = part time,
 \code{3} = temporarily not working, \code{4} = unemployed, \code{5} = retired,
 \code{6} = in school, \code{7} = keeping house, \code{8} = other.}
 \item{hrs1}{Hours worked last week (for employed respondents only).}
 \item{adults}{Number of adults in household (\code{8} = 8 or more).}
-}
-
-\strong{Social and political attitudes:}
-\describe{
 \item{partyid}{Party identification: \code{0} = strong Democrat,
 \code{3} = Independent, \code{6} = strong Republican, \code{7} = other party.}
 \item{polviews}{Political views: \code{1} = extremely liberal,

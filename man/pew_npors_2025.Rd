@@ -5,9 +5,10 @@
 \alias{pew_npors_2025}
 \title{Pew NPORS 2025: National Public Opinion Reference Survey}
 \format{
-A data frame with 5,022 rows and 65 variables.
-
-\strong{Design variables:}
+A data frame with 5,022 rows and 65 variables. The 11 \verb{smuse_*}
+variables form a battery asking about social media platform use and share a
+\code{"question_preface"} attribute. All other variables are documented
+individually below:
 \describe{
 \item{respid}{Case ID. Unique respondent identifier.}
 \item{stratum}{Sampling stratum (10 levels, defined by census block
@@ -16,10 +17,6 @@ group demographics).}
 adaptive mode adjustment.}
 \item{weight}{Final weight — \code{basewt} after raking to Census population
 targets. Use for all population-level estimates.}
-}
-
-\strong{Mode and language:}
-\describe{
 \item{mode}{Data collection mode: \code{1} = Online, \code{2} = Paper,
 \code{3} = Phone.}
 \item{language}{Language interview completed in: \code{1} = English,
@@ -27,10 +24,6 @@ targets. Use for all population-level estimates.}
 \item{languageinitial}{Language interview started in.}
 \item{interview_start}{Interview start timestamp.}
 \item{interview_end}{Interview end timestamp.}
-}
-
-\strong{Topical items:}
-\describe{
 \item{econ1mod}{Economic conditions in your community today
 (Excellent / Good / Fair / Poor).}
 \item{econ1bmod}{Economic conditions one year from now
@@ -45,41 +38,27 @@ all safe).}
 basics).}
 \item{vet1}{Military service in household.}
 \item{vol12_cps}{Volunteered for any organization in past 12 months.}
-}
-
-\strong{Internet and technology:}
-\describe{
 \item{eminuse}{Uses internet or email at least occasionally.}
 \item{intmob}{Accesses internet on a mobile device.}
 \item{intfreq}{Internet use frequency (6 categories).}
 \item{intfreq_collapsed}{Internet use frequency (4 categories, derived).}
 \item{home4nw2}{Subscribes to home internet service.}
 \item{bbhome}{Home internet type (dial-up, broadband, etc.).}
+\item{smuse_fb}{Facebook. Part of social media use battery (see Details).}
+\item{smuse_yt}{YouTube. Part of social media use battery (see Details).}
+\item{smuse_x}{X (formerly Twitter). Part of social media use battery.}
+\item{smuse_ig}{Instagram. Part of social media use battery.}
+\item{smuse_sc}{Snapchat. Part of social media use battery.}
+\item{smuse_wa}{WhatsApp. Part of social media use battery.}
+\item{smuse_tt}{TikTok. Part of social media use battery.}
+\item{smuse_rd}{Reddit. Part of social media use battery.}
+\item{smuse_bsk}{Bluesky. Part of social media use battery.}
+\item{smuse_th}{Threads. Part of social media use battery.}
+\item{smuse_ts}{Truth Social. Part of social media use battery.}
 \item{radio}{Listens to radio.}
 \item{device1a}{Has a cell phone.}
 \item{smart2}{Cell phone is a smartphone.}
 \item{nhisll}{Has a working landline telephone at home.}
-}
-
-\strong{Social media use battery (\verb{smuse_*}, 11 variables):}
-All 11 \verb{smuse_*} variables share \code{question_preface} = \code{"Please indicate whether or not you ever use the following websites or apps."} Values:
-\code{1} = Selected, \code{2} = Not selected, \code{99} = Refused.
-\describe{
-\item{smuse_fb}{Facebook.}
-\item{smuse_yt}{YouTube.}
-\item{smuse_x}{X (formerly Twitter).}
-\item{smuse_ig}{Instagram.}
-\item{smuse_sc}{Snapchat.}
-\item{smuse_wa}{WhatsApp.}
-\item{smuse_tt}{TikTok.}
-\item{smuse_rd}{Reddit.}
-\item{smuse_bsk}{Bluesky.}
-\item{smuse_th}{Threads.}
-\item{smuse_ts}{Truth Social.}
-}
-
-\strong{Religion:}
-\describe{
 \item{relig}{Current religion (12 categories).}
 \item{religcat1}{Religion (4 categories: Protestant, Catholic,
 Unaffiliated, Other).}
@@ -89,10 +68,7 @@ Unaffiliated, Other).}
 (6 categories).}
 \item{relimp}{Importance of religion in life (Very – Not at all).}
 \item{pray}{Prayer frequency outside of services (7 categories).}
-}
-
-\strong{Demographics:}
-\describe{
+\item{educcat}{Education level (categorical).}
 \item{hisp}{Hispanic origin.}
 \item{racecmb}{Race (5 categories).}
 \item{racethn}{Race-ethnicity (5 categories including Asian
@@ -106,10 +82,6 @@ non-Hispanic).}
 $150,000+).}
 \item{cregion}{Census region (NE / MW / S / W).}
 \item{metro}{Metropolitan area indicator.}
-}
-
-\strong{Politics and civic engagement:}
-\describe{
 \item{registration}{Registered to vote at current address.}
 \item{party}{Party affiliation (Rep / Dem / Ind / Other).}
 \item{partyln}{Party lean for Independents (Rep / Dem).}
@@ -149,6 +121,11 @@ post-stratification — use Taylor series linearization. NPORS has no PSU
 
 Use \code{basewt} instead of \code{weight} for sensitivity analyses comparing
 pre- and post-raking estimates.
+
+\strong{Social media battery:} All 11 \verb{smuse_*} variables share the question
+stem \code{"Please indicate whether or not you ever use the following websites or apps."} Values: \code{1} = Selected, \code{2} = Not selected, \code{99} = Refused.
+Each variable additionally carries a \code{"question_preface"} attribute with
+this shared stem.
 
 \strong{Metadata:}
 All columns carry variable labels and value labels as R attributes from the

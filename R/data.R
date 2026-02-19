@@ -97,26 +97,15 @@
 #' the least-populous U.S. state, making this the smallest state-level PUMS
 #' file — ideal for fast tests and examples.
 #'
-#' @format A data frame with 5,962 rows and 96 variables. The first 3 variables
-#' are design variables, the next 80 are replicate weights, and the final 13
-#' are person characteristics:
-#'
-#' **Design variables:**
+#' @format A data frame with 5,962 rows and 96 variables. Variables
+#' `pwgtp1`–`pwgtp80` are eighty successive difference replicate weights for
+#' variance estimation; the remaining 16 variables are:
 #' \describe{
 #'   \item{puma}{Public Use Microdata Area code. Use as the cluster ID (PSU)
 #'     for variance estimation.}
 #'   \item{st}{State FIPS code (all `56` = Wyoming).}
 #'   \item{pwgtp}{Person weight. Represents the number of people in the
 #'     Wyoming population that this record represents.}
-#' }
-#'
-#' **Replicate weights (`pwgtp1`–`pwgtp80`):**
-#' Eighty successive difference replicate weights for variance estimation via
-#' the successive difference replication (SDR) method. Use with
-#' `as_survey_rep(..., type = "successive-difference")`.
-#'
-#' **Person characteristics:**
-#' \describe{
 #'   \item{agep}{Age (0–99 years).}
 #'   \item{sex}{Sex: `1` = male, `2` = female.}
 #'   \item{rac1p}{Recoded detailed race: `1` = White alone, `2` = Black or
@@ -146,6 +135,86 @@
 #'   \item{adjinc}{Adjustment factor for income and earnings. Divide by
 #'     1,000,000 and multiply income variables to convert to 2022 constant
 #'     dollars.}
+#'   \item{pwgtp1}{Successive difference replicate weight 1 of 80.}
+#'   \item{pwgtp2}{Successive difference replicate weight 2 of 80.}
+#'   \item{pwgtp3}{Successive difference replicate weight 3 of 80.}
+#'   \item{pwgtp4}{Successive difference replicate weight 4 of 80.}
+#'   \item{pwgtp5}{Successive difference replicate weight 5 of 80.}
+#'   \item{pwgtp6}{Successive difference replicate weight 6 of 80.}
+#'   \item{pwgtp7}{Successive difference replicate weight 7 of 80.}
+#'   \item{pwgtp8}{Successive difference replicate weight 8 of 80.}
+#'   \item{pwgtp9}{Successive difference replicate weight 9 of 80.}
+#'   \item{pwgtp10}{Successive difference replicate weight 10 of 80.}
+#'   \item{pwgtp11}{Successive difference replicate weight 11 of 80.}
+#'   \item{pwgtp12}{Successive difference replicate weight 12 of 80.}
+#'   \item{pwgtp13}{Successive difference replicate weight 13 of 80.}
+#'   \item{pwgtp14}{Successive difference replicate weight 14 of 80.}
+#'   \item{pwgtp15}{Successive difference replicate weight 15 of 80.}
+#'   \item{pwgtp16}{Successive difference replicate weight 16 of 80.}
+#'   \item{pwgtp17}{Successive difference replicate weight 17 of 80.}
+#'   \item{pwgtp18}{Successive difference replicate weight 18 of 80.}
+#'   \item{pwgtp19}{Successive difference replicate weight 19 of 80.}
+#'   \item{pwgtp20}{Successive difference replicate weight 20 of 80.}
+#'   \item{pwgtp21}{Successive difference replicate weight 21 of 80.}
+#'   \item{pwgtp22}{Successive difference replicate weight 22 of 80.}
+#'   \item{pwgtp23}{Successive difference replicate weight 23 of 80.}
+#'   \item{pwgtp24}{Successive difference replicate weight 24 of 80.}
+#'   \item{pwgtp25}{Successive difference replicate weight 25 of 80.}
+#'   \item{pwgtp26}{Successive difference replicate weight 26 of 80.}
+#'   \item{pwgtp27}{Successive difference replicate weight 27 of 80.}
+#'   \item{pwgtp28}{Successive difference replicate weight 28 of 80.}
+#'   \item{pwgtp29}{Successive difference replicate weight 29 of 80.}
+#'   \item{pwgtp30}{Successive difference replicate weight 30 of 80.}
+#'   \item{pwgtp31}{Successive difference replicate weight 31 of 80.}
+#'   \item{pwgtp32}{Successive difference replicate weight 32 of 80.}
+#'   \item{pwgtp33}{Successive difference replicate weight 33 of 80.}
+#'   \item{pwgtp34}{Successive difference replicate weight 34 of 80.}
+#'   \item{pwgtp35}{Successive difference replicate weight 35 of 80.}
+#'   \item{pwgtp36}{Successive difference replicate weight 36 of 80.}
+#'   \item{pwgtp37}{Successive difference replicate weight 37 of 80.}
+#'   \item{pwgtp38}{Successive difference replicate weight 38 of 80.}
+#'   \item{pwgtp39}{Successive difference replicate weight 39 of 80.}
+#'   \item{pwgtp40}{Successive difference replicate weight 40 of 80.}
+#'   \item{pwgtp41}{Successive difference replicate weight 41 of 80.}
+#'   \item{pwgtp42}{Successive difference replicate weight 42 of 80.}
+#'   \item{pwgtp43}{Successive difference replicate weight 43 of 80.}
+#'   \item{pwgtp44}{Successive difference replicate weight 44 of 80.}
+#'   \item{pwgtp45}{Successive difference replicate weight 45 of 80.}
+#'   \item{pwgtp46}{Successive difference replicate weight 46 of 80.}
+#'   \item{pwgtp47}{Successive difference replicate weight 47 of 80.}
+#'   \item{pwgtp48}{Successive difference replicate weight 48 of 80.}
+#'   \item{pwgtp49}{Successive difference replicate weight 49 of 80.}
+#'   \item{pwgtp50}{Successive difference replicate weight 50 of 80.}
+#'   \item{pwgtp51}{Successive difference replicate weight 51 of 80.}
+#'   \item{pwgtp52}{Successive difference replicate weight 52 of 80.}
+#'   \item{pwgtp53}{Successive difference replicate weight 53 of 80.}
+#'   \item{pwgtp54}{Successive difference replicate weight 54 of 80.}
+#'   \item{pwgtp55}{Successive difference replicate weight 55 of 80.}
+#'   \item{pwgtp56}{Successive difference replicate weight 56 of 80.}
+#'   \item{pwgtp57}{Successive difference replicate weight 57 of 80.}
+#'   \item{pwgtp58}{Successive difference replicate weight 58 of 80.}
+#'   \item{pwgtp59}{Successive difference replicate weight 59 of 80.}
+#'   \item{pwgtp60}{Successive difference replicate weight 60 of 80.}
+#'   \item{pwgtp61}{Successive difference replicate weight 61 of 80.}
+#'   \item{pwgtp62}{Successive difference replicate weight 62 of 80.}
+#'   \item{pwgtp63}{Successive difference replicate weight 63 of 80.}
+#'   \item{pwgtp64}{Successive difference replicate weight 64 of 80.}
+#'   \item{pwgtp65}{Successive difference replicate weight 65 of 80.}
+#'   \item{pwgtp66}{Successive difference replicate weight 66 of 80.}
+#'   \item{pwgtp67}{Successive difference replicate weight 67 of 80.}
+#'   \item{pwgtp68}{Successive difference replicate weight 68 of 80.}
+#'   \item{pwgtp69}{Successive difference replicate weight 69 of 80.}
+#'   \item{pwgtp70}{Successive difference replicate weight 70 of 80.}
+#'   \item{pwgtp71}{Successive difference replicate weight 71 of 80.}
+#'   \item{pwgtp72}{Successive difference replicate weight 72 of 80.}
+#'   \item{pwgtp73}{Successive difference replicate weight 73 of 80.}
+#'   \item{pwgtp74}{Successive difference replicate weight 74 of 80.}
+#'   \item{pwgtp75}{Successive difference replicate weight 75 of 80.}
+#'   \item{pwgtp76}{Successive difference replicate weight 76 of 80.}
+#'   \item{pwgtp77}{Successive difference replicate weight 77 of 80.}
+#'   \item{pwgtp78}{Successive difference replicate weight 78 of 80.}
+#'   \item{pwgtp79}{Successive difference replicate weight 79 of 80.}
+#'   \item{pwgtp80}{Successive difference replicate weight 80 of 80.}
 #' }
 #'
 #' @details
@@ -197,9 +266,7 @@
 #' (n = 5,521). This extract uses the FTF + Web combined design variables
 #' (`v240103a`–`v240103d`), the recommended set for most analyses.
 #'
-#' @format A data frame with 5,521 rows and 19 variables.
-#'
-#' **Design variables:**
+#' @format A data frame with 5,521 rows and 19 variables:
 #' \describe{
 #'   \item{v240103a}{Pre-election weight (FTF+Web combined). Use for
 #'     variables asked before November 5, 2024.}
@@ -209,26 +276,14 @@
 #'     variance estimation.}
 #'   \item{v240103d}{Stratum (FTF+Web combined). Use as the stratification
 #'     variable.}
-#' }
-#'
-#' **Case and sample variables:**
-#' \describe{
 #'   \item{v240001}{2024 Time Series Case ID. Unique respondent identifier.}
 #'   \item{v240003}{Sample type: `1` = Panel, `2` = Fresh Web, `3` = Fresh
 #'     FTF, `4` = GSS.}
 #'   \item{v240002c}{Pre/Post interview completion: `1` = Pre-election only,
 #'     `2` = Pre- and post-election.}
-#' }
-#'
-#' **Geographic:**
-#' \describe{
 #'   \item{v243002}{State FIPS code.}
 #'   \item{v243007}{Census region: `1` = Northeast, `2` = Midwest,
 #'     `3` = South, `4` = West.}
-#' }
-#'
-#' **Demographics:**
-#' \describe{
 #'   \item{v241458x}{Age on Election Day (summary). Top-coded at 80.
 #'     `-2` = missing.}
 #'   \item{v241550}{Sex: `1` = male, `2` = female.}
@@ -240,10 +295,6 @@
 #'     `5` = graduate degree.}
 #'   \item{v241566x}{Household income (28 categories from < $5,000 to
 #'     $250,000+).}
-#' }
-#'
-#' **Political attitudes:**
-#' \describe{
 #'   \item{v241177}{Liberal-conservative self-placement (7-point scale):
 #'     `1` = extremely liberal, `7` = extremely conservative.
 #'     `99` = haven't thought about this.}
@@ -251,10 +302,6 @@
 #'     `2` = not very strong.}
 #'   \item{v241223}{Party identification lean (Independents): `1` = closer to
 #'     Republican, `2` = neither, `3` = closer to Democrat.}
-#' }
-#'
-#' **Post-election variables (pre/post completers only):**
-#' \describe{
 #'   \item{v242066}{Did respondent vote for President (POST): `1` = yes,
 #'     `2` = no.}
 #'   \item{v242067}{Presidential vote choice (POST): `1` = Harris,
@@ -330,9 +377,7 @@
 #' annually or biennially since 1972). All 3,309 respondents from the 2024
 #' cross-section are included.
 #'
-#' @format A data frame with 3,309 rows and 27 variables.
-#'
-#' **Design variables:**
+#' @format A data frame with 3,309 rows and 27 variables:
 #' \describe{
 #'   \item{vpsu}{Variance primary sampling unit. Use as the cluster ID for
 #'     variance estimation.}
@@ -342,19 +387,11 @@
 #'   \item{wtssnrps}{Person post-stratification weight adjusted for
 #'     differential non-response. Preferred when non-response bias is a
 #'     concern.}
-#' }
-#'
-#' **Case variables:**
-#' \describe{
 #'   \item{id}{Respondent ID. Unique case identifier.}
 #'   \item{year}{Survey year (all `2024` in this extract).}
 #'   \item{ballot}{Ballot form (`A`, `B`, `C`, or `D`). The GSS uses a
 #'     split-ballot design; not all questions appear on every ballot.
 #'     Inapplicable items are coded `-100`.}
-#' }
-#'
-#' **Demographics:**
-#' \describe{
 #'   \item{age}{Age in years (`89` = 89 or older).}
 #'   \item{sex}{Sex: `1` = male, `2` = female.}
 #'   \item{race}{Race: `1` = white, `2` = black, `3` = other.}
@@ -367,19 +404,11 @@
 #'     $170,000+).}
 #'   \item{marital}{Marital status: `1` = married, `2` = widowed,
 #'     `3` = divorced, `4` = separated, `5` = never married.}
-#' }
-#'
-#' **Employment:**
-#' \describe{
 #'   \item{wrkstat}{Labor force status: `1` = full time, `2` = part time,
 #'     `3` = temporarily not working, `4` = unemployed, `5` = retired,
 #'     `6` = in school, `7` = keeping house, `8` = other.}
 #'   \item{hrs1}{Hours worked last week (for employed respondents only).}
 #'   \item{adults}{Number of adults in household (`8` = 8 or more).}
-#' }
-#'
-#' **Social and political attitudes:**
-#' \describe{
 #'   \item{partyid}{Party identification: `0` = strong Democrat,
 #'     `3` = Independent, `6` = strong Republican, `7` = other party.}
 #'   \item{polviews}{Political views: `1` = extremely liberal,
@@ -475,9 +504,10 @@
 #' or by telephone in English or Spanish. All 65 columns from the public
 #' release file are retained.
 #'
-#' @format A data frame with 5,022 rows and 65 variables.
-#'
-#' **Design variables:**
+#' @format A data frame with 5,022 rows and 65 variables. The 11 `smuse_*`
+#' variables form a battery asking about social media platform use and share a
+#' `"question_preface"` attribute. All other variables are documented
+#' individually below:
 #' \describe{
 #'   \item{respid}{Case ID. Unique respondent identifier.}
 #'   \item{stratum}{Sampling stratum (10 levels, defined by census block
@@ -486,10 +516,6 @@
 #'     adaptive mode adjustment.}
 #'   \item{weight}{Final weight — `basewt` after raking to Census population
 #'     targets. Use for all population-level estimates.}
-#' }
-#'
-#' **Mode and language:**
-#' \describe{
 #'   \item{mode}{Data collection mode: `1` = Online, `2` = Paper,
 #'     `3` = Phone.}
 #'   \item{language}{Language interview completed in: `1` = English,
@@ -497,10 +523,6 @@
 #'   \item{languageinitial}{Language interview started in.}
 #'   \item{interview_start}{Interview start timestamp.}
 #'   \item{interview_end}{Interview end timestamp.}
-#' }
-#'
-#' **Topical items:**
-#' \describe{
 #'   \item{econ1mod}{Economic conditions in your community today
 #'     (Excellent / Good / Fair / Poor).}
 #'   \item{econ1bmod}{Economic conditions one year from now
@@ -515,42 +537,27 @@
 #'     basics).}
 #'   \item{vet1}{Military service in household.}
 #'   \item{vol12_cps}{Volunteered for any organization in past 12 months.}
-#' }
-#'
-#' **Internet and technology:**
-#' \describe{
 #'   \item{eminuse}{Uses internet or email at least occasionally.}
 #'   \item{intmob}{Accesses internet on a mobile device.}
 #'   \item{intfreq}{Internet use frequency (6 categories).}
 #'   \item{intfreq_collapsed}{Internet use frequency (4 categories, derived).}
 #'   \item{home4nw2}{Subscribes to home internet service.}
 #'   \item{bbhome}{Home internet type (dial-up, broadband, etc.).}
+#'   \item{smuse_fb}{Facebook. Part of social media use battery (see Details).}
+#'   \item{smuse_yt}{YouTube. Part of social media use battery (see Details).}
+#'   \item{smuse_x}{X (formerly Twitter). Part of social media use battery.}
+#'   \item{smuse_ig}{Instagram. Part of social media use battery.}
+#'   \item{smuse_sc}{Snapchat. Part of social media use battery.}
+#'   \item{smuse_wa}{WhatsApp. Part of social media use battery.}
+#'   \item{smuse_tt}{TikTok. Part of social media use battery.}
+#'   \item{smuse_rd}{Reddit. Part of social media use battery.}
+#'   \item{smuse_bsk}{Bluesky. Part of social media use battery.}
+#'   \item{smuse_th}{Threads. Part of social media use battery.}
+#'   \item{smuse_ts}{Truth Social. Part of social media use battery.}
 #'   \item{radio}{Listens to radio.}
 #'   \item{device1a}{Has a cell phone.}
 #'   \item{smart2}{Cell phone is a smartphone.}
 #'   \item{nhisll}{Has a working landline telephone at home.}
-#' }
-#'
-#' **Social media use battery (`smuse_*`, 11 variables):**
-#' All 11 `smuse_*` variables share `question_preface` = `"Please indicate
-#' whether or not you ever use the following websites or apps."` Values:
-#' `1` = Selected, `2` = Not selected, `99` = Refused.
-#' \describe{
-#'   \item{smuse_fb}{Facebook.}
-#'   \item{smuse_yt}{YouTube.}
-#'   \item{smuse_x}{X (formerly Twitter).}
-#'   \item{smuse_ig}{Instagram.}
-#'   \item{smuse_sc}{Snapchat.}
-#'   \item{smuse_wa}{WhatsApp.}
-#'   \item{smuse_tt}{TikTok.}
-#'   \item{smuse_rd}{Reddit.}
-#'   \item{smuse_bsk}{Bluesky.}
-#'   \item{smuse_th}{Threads.}
-#'   \item{smuse_ts}{Truth Social.}
-#' }
-#'
-#' **Religion:**
-#' \describe{
 #'   \item{relig}{Current religion (12 categories).}
 #'   \item{religcat1}{Religion (4 categories: Protestant, Catholic,
 #'     Unaffiliated, Other).}
@@ -560,10 +567,7 @@
 #'     (6 categories).}
 #'   \item{relimp}{Importance of religion in life (Very – Not at all).}
 #'   \item{pray}{Prayer frequency outside of services (7 categories).}
-#' }
-#'
-#' **Demographics:**
-#' \describe{
+#'   \item{educcat}{Education level (categorical).}
 #'   \item{hisp}{Hispanic origin.}
 #'   \item{racecmb}{Race (5 categories).}
 #'   \item{racethn}{Race-ethnicity (5 categories including Asian
@@ -577,10 +581,6 @@
 #'     $150,000+).}
 #'   \item{cregion}{Census region (NE / MW / S / W).}
 #'   \item{metro}{Metropolitan area indicator.}
-#' }
-#'
-#' **Politics and civic engagement:**
-#' \describe{
 #'   \item{registration}{Registered to vote at current address.}
 #'   \item{party}{Party affiliation (Rep / Dem / Ind / Other).}
 #'   \item{partyln}{Party lean for Independents (Rep / Dem).}
@@ -605,6 +605,12 @@
 #' Use `basewt` instead of `weight` for sensitivity analyses comparing
 #' pre- and post-raking estimates.
 #'
+#' **Social media battery:** All 11 `smuse_*` variables share the question
+#' stem `"Please indicate whether or not you ever use the following websites
+#' or apps."` Values: `1` = Selected, `2` = Not selected, `99` = Refused.
+#' Each variable additionally carries a `"question_preface"` attribute with
+#' this shared stem.
+#'
 #' **Metadata:**
 #' All columns carry variable labels and value labels as R attributes from the
 #' original SPSS file. The 11 `smuse_*` battery variables additionally carry
@@ -623,8 +629,7 @@
 #' - **Question preface** (`"question_preface"` attribute): The shared question
 #'   stem for battery items, set on all `smuse_*` columns. Example:
 #'   `attr(pew_npors_2025$smuse_fb, "question_preface")` returns
-#'   `"Please indicate whether or not you ever use the following websites or
-#'   apps."`.
+#'   `"Please indicate whether or not you ever use the following websites or apps."`.
 #'
 #' @source
 #' Pew Research Center. 2025 National Public Opinion Reference Survey.
@@ -659,17 +664,111 @@
 #' contain Jewish respondents. The dataset carries 100 jackknife replicate
 #' weights alongside the main weight.
 #'
-#' @format A data frame with 5,881 rows and 130 variables.
-#'
-#' **Design variables (101 columns):**
+#' @format A data frame with 5,881 rows and 130 variables. Variables
+#' `extweight1`–`extweight100` are jackknife replicate weights; the remaining
+#' 30 variables are:
 #' \describe{
 #'   \item{extweight}{Full-sample base weight. Use for all estimates.}
-#' }
-#' `extweight1`–`extweight100`: 100 jackknife replicate weights for variance
-#' estimation. Use with `as_survey_rep(..., type = "JK1")`.
-#'
-#' **Identity and classification:**
-#' \describe{
+#'   \item{extweight1}{Jackknife replicate weight 1 of 100.}
+#'   \item{extweight2}{Jackknife replicate weight 2 of 100.}
+#'   \item{extweight3}{Jackknife replicate weight 3 of 100.}
+#'   \item{extweight4}{Jackknife replicate weight 4 of 100.}
+#'   \item{extweight5}{Jackknife replicate weight 5 of 100.}
+#'   \item{extweight6}{Jackknife replicate weight 6 of 100.}
+#'   \item{extweight7}{Jackknife replicate weight 7 of 100.}
+#'   \item{extweight8}{Jackknife replicate weight 8 of 100.}
+#'   \item{extweight9}{Jackknife replicate weight 9 of 100.}
+#'   \item{extweight10}{Jackknife replicate weight 10 of 100.}
+#'   \item{extweight11}{Jackknife replicate weight 11 of 100.}
+#'   \item{extweight12}{Jackknife replicate weight 12 of 100.}
+#'   \item{extweight13}{Jackknife replicate weight 13 of 100.}
+#'   \item{extweight14}{Jackknife replicate weight 14 of 100.}
+#'   \item{extweight15}{Jackknife replicate weight 15 of 100.}
+#'   \item{extweight16}{Jackknife replicate weight 16 of 100.}
+#'   \item{extweight17}{Jackknife replicate weight 17 of 100.}
+#'   \item{extweight18}{Jackknife replicate weight 18 of 100.}
+#'   \item{extweight19}{Jackknife replicate weight 19 of 100.}
+#'   \item{extweight20}{Jackknife replicate weight 20 of 100.}
+#'   \item{extweight21}{Jackknife replicate weight 21 of 100.}
+#'   \item{extweight22}{Jackknife replicate weight 22 of 100.}
+#'   \item{extweight23}{Jackknife replicate weight 23 of 100.}
+#'   \item{extweight24}{Jackknife replicate weight 24 of 100.}
+#'   \item{extweight25}{Jackknife replicate weight 25 of 100.}
+#'   \item{extweight26}{Jackknife replicate weight 26 of 100.}
+#'   \item{extweight27}{Jackknife replicate weight 27 of 100.}
+#'   \item{extweight28}{Jackknife replicate weight 28 of 100.}
+#'   \item{extweight29}{Jackknife replicate weight 29 of 100.}
+#'   \item{extweight30}{Jackknife replicate weight 30 of 100.}
+#'   \item{extweight31}{Jackknife replicate weight 31 of 100.}
+#'   \item{extweight32}{Jackknife replicate weight 32 of 100.}
+#'   \item{extweight33}{Jackknife replicate weight 33 of 100.}
+#'   \item{extweight34}{Jackknife replicate weight 34 of 100.}
+#'   \item{extweight35}{Jackknife replicate weight 35 of 100.}
+#'   \item{extweight36}{Jackknife replicate weight 36 of 100.}
+#'   \item{extweight37}{Jackknife replicate weight 37 of 100.}
+#'   \item{extweight38}{Jackknife replicate weight 38 of 100.}
+#'   \item{extweight39}{Jackknife replicate weight 39 of 100.}
+#'   \item{extweight40}{Jackknife replicate weight 40 of 100.}
+#'   \item{extweight41}{Jackknife replicate weight 41 of 100.}
+#'   \item{extweight42}{Jackknife replicate weight 42 of 100.}
+#'   \item{extweight43}{Jackknife replicate weight 43 of 100.}
+#'   \item{extweight44}{Jackknife replicate weight 44 of 100.}
+#'   \item{extweight45}{Jackknife replicate weight 45 of 100.}
+#'   \item{extweight46}{Jackknife replicate weight 46 of 100.}
+#'   \item{extweight47}{Jackknife replicate weight 47 of 100.}
+#'   \item{extweight48}{Jackknife replicate weight 48 of 100.}
+#'   \item{extweight49}{Jackknife replicate weight 49 of 100.}
+#'   \item{extweight50}{Jackknife replicate weight 50 of 100.}
+#'   \item{extweight51}{Jackknife replicate weight 51 of 100.}
+#'   \item{extweight52}{Jackknife replicate weight 52 of 100.}
+#'   \item{extweight53}{Jackknife replicate weight 53 of 100.}
+#'   \item{extweight54}{Jackknife replicate weight 54 of 100.}
+#'   \item{extweight55}{Jackknife replicate weight 55 of 100.}
+#'   \item{extweight56}{Jackknife replicate weight 56 of 100.}
+#'   \item{extweight57}{Jackknife replicate weight 57 of 100.}
+#'   \item{extweight58}{Jackknife replicate weight 58 of 100.}
+#'   \item{extweight59}{Jackknife replicate weight 59 of 100.}
+#'   \item{extweight60}{Jackknife replicate weight 60 of 100.}
+#'   \item{extweight61}{Jackknife replicate weight 61 of 100.}
+#'   \item{extweight62}{Jackknife replicate weight 62 of 100.}
+#'   \item{extweight63}{Jackknife replicate weight 63 of 100.}
+#'   \item{extweight64}{Jackknife replicate weight 64 of 100.}
+#'   \item{extweight65}{Jackknife replicate weight 65 of 100.}
+#'   \item{extweight66}{Jackknife replicate weight 66 of 100.}
+#'   \item{extweight67}{Jackknife replicate weight 67 of 100.}
+#'   \item{extweight68}{Jackknife replicate weight 68 of 100.}
+#'   \item{extweight69}{Jackknife replicate weight 69 of 100.}
+#'   \item{extweight70}{Jackknife replicate weight 70 of 100.}
+#'   \item{extweight71}{Jackknife replicate weight 71 of 100.}
+#'   \item{extweight72}{Jackknife replicate weight 72 of 100.}
+#'   \item{extweight73}{Jackknife replicate weight 73 of 100.}
+#'   \item{extweight74}{Jackknife replicate weight 74 of 100.}
+#'   \item{extweight75}{Jackknife replicate weight 75 of 100.}
+#'   \item{extweight76}{Jackknife replicate weight 76 of 100.}
+#'   \item{extweight77}{Jackknife replicate weight 77 of 100.}
+#'   \item{extweight78}{Jackknife replicate weight 78 of 100.}
+#'   \item{extweight79}{Jackknife replicate weight 79 of 100.}
+#'   \item{extweight80}{Jackknife replicate weight 80 of 100.}
+#'   \item{extweight81}{Jackknife replicate weight 81 of 100.}
+#'   \item{extweight82}{Jackknife replicate weight 82 of 100.}
+#'   \item{extweight83}{Jackknife replicate weight 83 of 100.}
+#'   \item{extweight84}{Jackknife replicate weight 84 of 100.}
+#'   \item{extweight85}{Jackknife replicate weight 85 of 100.}
+#'   \item{extweight86}{Jackknife replicate weight 86 of 100.}
+#'   \item{extweight87}{Jackknife replicate weight 87 of 100.}
+#'   \item{extweight88}{Jackknife replicate weight 88 of 100.}
+#'   \item{extweight89}{Jackknife replicate weight 89 of 100.}
+#'   \item{extweight90}{Jackknife replicate weight 90 of 100.}
+#'   \item{extweight91}{Jackknife replicate weight 91 of 100.}
+#'   \item{extweight92}{Jackknife replicate weight 92 of 100.}
+#'   \item{extweight93}{Jackknife replicate weight 93 of 100.}
+#'   \item{extweight94}{Jackknife replicate weight 94 of 100.}
+#'   \item{extweight95}{Jackknife replicate weight 95 of 100.}
+#'   \item{extweight96}{Jackknife replicate weight 96 of 100.}
+#'   \item{extweight97}{Jackknife replicate weight 97 of 100.}
+#'   \item{extweight98}{Jackknife replicate weight 98 of 100.}
+#'   \item{extweight99}{Jackknife replicate weight 99 of 100.}
+#'   \item{extweight100}{Jackknife replicate weight 100 of 100.}
 #'   \item{qkey}{Unique respondent identifier.}
 #'   \item{jewishcat}{Jewish identity category: `1` = Jews by religion,
 #'     `2` = Jews of no religion, `3` = Jewish background,
@@ -677,10 +776,6 @@
 #'   \item{finalmode}{Collection mode: `1` = CAWI (online),
 #'     `2` = Teleform (mail),
 #'     `3` = Screener CAWI + Extended Teleform.}
-#' }
-#'
-#' **Geography and demographics:**
-#' \describe{
 #'   \item{region}{Census region: `1` = Northeast, `2` = Midwest,
 #'     `3` = South, `4` = West.}
 #'   \item{sexask}{Sex: `1` = male, `2` = female, `99` = not answered.}
@@ -693,10 +788,6 @@
 #'   \item{hisp}{Hispanic origin: `1` = yes, `2` = no.}
 #'   \item{racecmb}{Race (5 categories).}
 #'   \item{racethn}{Race-ethnicity (4 categories).}
-#' }
-#'
-#' **Attitudes:**
-#' \describe{
 #'   \item{presapp}{Presidential approval (Trump): `1` = Strongly approve,
 #'     `2` = Somewhat approve, `3` = Somewhat disapprove,
 #'     `4` = Strongly disapprove.}
@@ -706,44 +797,24 @@
 #'     `2` = Good, `3` = Only fair, `4` = Poor.}
 #'   \item{localrating}{Community as a place to live: `1` = Excellent,
 #'     `2` = Good, `3` = Only fair, `4` = Poor.}
-#' }
-#'
-#' **Battery 1 — Religious identity (select-all-that-apply, 4 variables):**
-#' `relconsider_a`–`relconsider_d` share `question_preface` = `"Aside from
-#' religion, do you consider yourself to be any of the following in any way
-#' (for example, ethnically, culturally, or because of your family's
-#' background)?"` Values: `1` = Selected, `2` = Not selected, `99` = Refused.
-#' \describe{
-#'   \item{relconsider_a}{Jewish.}
-#'   \item{relconsider_b}{Catholic.}
-#'   \item{relconsider_c}{Mormon.}
-#'   \item{relconsider_d}{Muslim.}
-#' }
-#'
-#' **Battery 2 — Religious background (select-all-that-apply, 4 variables):**
-#' `relraised_a`–`relraised_d` share `question_preface` = `"Please indicate
-#' whether you were raised in any of the following traditions or had a parent
-#' from any of the following backgrounds."` Values: `1` = Selected,
-#' `2` = Not selected, `99` = Refused.
-#' \describe{
-#'   \item{relraised_a}{Jewish.}
-#'   \item{relraised_b}{Catholic.}
-#'   \item{relraised_c}{Mormon.}
-#'   \item{relraised_d}{Muslim.}
-#' }
-#'
-#' **Battery 3 — Discrimination perceptions (rating scale, 6 variables):**
-#' `discrim_a`–`discrim_f` share `question_preface` = `"Please tell us how
-#' much discrimination there is against each of these groups in our society
-#' today."` Values: `1` = A lot, `2` = Some, `3` = Not much,
-#' `4` = None at all, `99` = Not answered.
-#' \describe{
-#'   \item{discrim_a}{Evangelical Christians.}
-#'   \item{discrim_b}{Muslims.}
-#'   \item{discrim_c}{Jews.}
-#'   \item{discrim_d}{Blacks.}
-#'   \item{discrim_e}{Hispanics.}
-#'   \item{discrim_f}{Gays and lesbians.}
+#'   \item{relconsider_a}{Jewish. Battery 1: religious identity
+#'     (select-all-that-apply). See Details for question text.}
+#'   \item{relconsider_b}{Catholic. Battery 1: religious identity.}
+#'   \item{relconsider_c}{Mormon. Battery 1: religious identity.}
+#'   \item{relconsider_d}{Muslim. Battery 1: religious identity.}
+#'   \item{relraised_a}{Jewish. Battery 2: religious background
+#'     (select-all-that-apply). See Details for question text.}
+#'   \item{relraised_b}{Catholic. Battery 2: religious background.}
+#'   \item{relraised_c}{Mormon. Battery 2: religious background.}
+#'   \item{relraised_d}{Muslim. Battery 2: religious background.}
+#'   \item{discrim_a}{Evangelical Christians. Battery 3: discrimination
+#'     perceptions (rating scale). See Details for question text.}
+#'   \item{discrim_b}{Muslims. Battery 3: discrimination perceptions.}
+#'   \item{discrim_c}{Jews. Battery 3: discrimination perceptions.}
+#'   \item{discrim_d}{Blacks. Battery 3: discrimination perceptions.}
+#'   \item{discrim_e}{Hispanics. Battery 3: discrimination perceptions.}
+#'   \item{discrim_f}{Gays and lesbians. Battery 3: discrimination
+#'     perceptions.}
 #' }
 #'
 #' @details
@@ -764,6 +835,21 @@
 #' Pew report. Use `jewishcat` rather than constructing your own
 #' classification from the raw religion variables.
 #'
+#' **Battery question stems:**
+#'
+#' - **Battery 1** (`relconsider_a`–`relconsider_d`): `"Aside from religion,
+#'   do you consider yourself to be any of the following in any way (for
+#'   example, ethnically, culturally, or because of your family's
+#'   background)?"` Values: `1` = Selected, `2` = Not selected, `99` = Refused.
+#' - **Battery 2** (`relraised_a`–`relraised_d`): `"Please indicate whether
+#'   you were raised in any of the following traditions or had a parent from
+#'   any of the following backgrounds."` Values: `1` = Selected,
+#'   `2` = Not selected, `99` = Refused.
+#' - **Battery 3** (`discrim_a`–`discrim_f`): `"Please tell us how much
+#'   discrimination there is against each of these groups in our society
+#'   today."` Values: `1` = A lot, `2` = Some, `3` = Not much,
+#'   `4` = None at all, `99` = Not answered.
+#'
 #' **Metadata:**
 #' All columns carry variable labels and value labels as R attributes from the
 #' original Stata file. The three battery variable groups additionally carry a
@@ -782,8 +868,7 @@
 #' - **Question preface** (`"question_preface"` attribute): The shared question
 #'   stem for each battery group. Example:
 #'   `attr(pew_jewish_2020$discrim_a, "question_preface")` returns
-#'   `"Please tell us how much discrimination there is against each of these
-#'   groups in our society today."`.
+#'   `"Please tell us how much discrimination there is against each of these groups in our society today."`.
 #'
 #' @source
 #' Pew Research Center. Jewish Americans in 2020 (Extended Dataset).
