@@ -825,7 +825,7 @@
 #' svy <- as_survey_rep(
 #'   pew_jewish_2020,
 #'   weights    = extweight,
-#'   repweights = starts_with("extweight") & !matches("^extweight$"),
+#'   repweights = extweight1:extweight100,
 #'   type       = "JK1"
 #' )
 #' ```
