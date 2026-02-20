@@ -303,6 +303,8 @@ Use the appropriate markup type consistently:
 - **`"v"` bullets** — imperative: `"Use {.fn as.numeric} to convert."` or `"Set {.arg fpc = NULL} to skip FPC."`
 - Never `"You must..."` or `"You provided..."` — the user is never addressed directly
 
+For the full inline markup reference (50+ classes, pluralization, progress bars, theming), see the `cli` skill in `.claude/skills/cli/`.
+
 ---
 
 ## 4. Function Design
