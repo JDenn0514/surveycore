@@ -32,12 +32,14 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 
 ## Vendored Functions
 
-> **Status:** Not yet vendored. This table will be populated when Phase 0 Step 9
-> (Variance Estimation) begins.
+| surveycore name | Adapted from | survey version | Modified? | Notes |
+|-----------------|-------------|----------------|-----------|-------|
+| `.svy_onestrat()` | `survey:::onestrat` | 4.4.8 | Yes | cli errors; `getOption("survey.adjust.domain.lonely")` removed |
+| `.svy_onestage()` | `survey:::onestage` | 4.4.8 | Yes | `vapply` instead of `sapply`; cli error format |
+| `.svy_multistage()` | `survey:::multistage` | 4.4.8 | Yes | RCPP path removed; renamed `fpcs` param to `popmat` for clarity |
+| `.svy_recvar()` | `survey:::svyrecvar` | 4.4.8 | Yes | RCPP dispatch and post-strata handling removed (Phase 0 scope) |
 
-| Function name | Source file in `survey` | survey version | Approx. lines | Modified? | Notes |
-|---------------|------------------------|----------------|---------------|-----------|-------|
-| *(to be filled)* | *(to be filled)* | *(to be filled)* | *(to be filled)* | *(to be filled)* | *(to be filled)* |
+All four functions live in `R/06-variance-estimation.R`. Each carries the file-level attribution header.
 
 ## Functions to Vendor (Phase 0 Scope)
 
