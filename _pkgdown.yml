@@ -2,7 +2,16 @@ url: https://jdenn0514.github.io/surveycore/
 
 template:
   bootstrap: 5
-  bootswatch: cosmo
+  bslib:
+    font_scale: 1.0
+    base_font: {google: "Roboto"}
+    code_font: {google: "Inter"}
+    heading_font: {google: "Roboto"}
+    bg: "#fcfbf9"         # lighten springwood background
+    fg: "#000000"         # contrast ratio: 15.76 for text
+    primary: "#14A2FCFF"  # light blue link text
+    navbar-bg: "#e5f3f7"  # change nav bar background
+    navbar-light-hover-color: "#14A2FCFF"
 
 home:
   title: "surveycore — Modern Survey Analysis Infrastructure"
@@ -11,6 +20,9 @@ home:
     label preservation, and exact variance estimation.
 
 navbar:
+  type: "light"
+  bg: "#e5f3f7"  # apparently this plus navbar-bg needs to be set to same color?
+  pill-active: "#000000"
   structure:
     left:  [intro, reference, news]
     right: [github]
