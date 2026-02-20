@@ -1,0 +1,98 @@
+url: https://jdenn0514.github.io/surveycore/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+
+home:
+  title: "surveycore — Modern Survey Analysis Infrastructure"
+  description: >
+    S7-based survey design objects with tidy-select interface, automatic
+    label preservation, and exact variance estimation.
+
+navbar:
+  structure:
+    left:  [intro, reference, news]
+    right: [github]
+  components:
+    github:
+      icon: fab fa-github
+      href: https://github.com/JDenn0514/surveycore
+
+reference:
+  - title: "Survey design constructors"
+    desc: >
+      Create survey design objects from a data frame. All use a tidy-select
+      interface — bare column names, no formula syntax.
+    contents:
+      - as_survey
+      - as_survey_rep
+      - as_survey_twophase
+      - update_design
+
+  - title: "Estimation"
+    desc: >
+      Compute weighted estimates with design-correct standard errors.
+    contents:
+      - get_means
+      - get_totals
+
+  - title: "Metadata — setters"
+    desc: >
+      Assign variable labels, value labels, question prefaces, and notes.
+      Single-variable setters accept bare names; plural setters accept named lists.
+    contents:
+      - set_var_label
+      - set_variable_labels
+      - set_val_labels
+      - set_value_labels
+      - set_question_preface
+      - set_question_prefaces
+      - set_var_note
+      - set_variable_notes
+
+  - title: "Metadata — extractors"
+    desc: >
+      Retrieve metadata for a single variable.
+    contents:
+      - extract_var_label
+      - extract_val_labels
+      - extract_question_preface
+      - extract_var_note
+
+  - title: "Conversion"
+    desc: >
+      Convert between surveycore objects, `survey::svydesign`, and `srvyr::tbl_svy`.
+    contents:
+      - as_svydesign
+      - from_svydesign
+      - as_tbl_svy
+      - from_tbl_svy
+
+  - title: "S7 class objects"
+    desc: >
+      S7 classes exported for use in downstream packages and extension code.
+      Use `S7::S7_inherits(x, survey_taylor)` for class testing.
+    contents:
+      - survey_base
+      - survey_taylor
+      - survey_replicate
+      - survey_twophase
+      - survey_metadata
+
+  - title: "Utilities"
+    desc: Internal helpers exported for use in extension packages.
+    contents:
+      - survey_data
+      - SURVEYCORE_DOMAIN_COL
+
+  - title: "Example datasets"
+    desc: >
+      Real-world survey datasets included for testing and illustration.
+    contents:
+      - nhanes_2017
+      - acs_pums_wy
+      - anes_2024
+      - gss_2024
+      - pew_jewish_2020
+      - pew_npors_2025

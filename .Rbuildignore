@@ -9,3 +9,6 @@
 ^data-raw$
 ^plans$
 ^VENDORED\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
