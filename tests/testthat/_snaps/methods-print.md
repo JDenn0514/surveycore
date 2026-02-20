@@ -118,7 +118,7 @@
       
       * Weights: wt
       * Replicates: 5 BRR replicate weight column(s)
-      * Scale: 0.25
+      * Scale: 0.2
       * MSE: TRUE
       * FPC: not specified
       
@@ -264,7 +264,7 @@
       * Range: 6.04 – 22.97
       * Mean: 12.5
       * CV: 0.323
-      Scale: 0.25
+      Scale: 0.2
       MSE: TRUE
       
       Metadata: 0 of 13 variable(s) labeled

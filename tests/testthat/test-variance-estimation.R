@@ -257,30 +257,26 @@ test_that("get_totals() returns correct structure", {
 # Block 8: Error paths
 # ---------------------------------------------------------------------------
 
-test_that("get_means() errors on non-survey_taylor design", {
-  d <- make_survey_data(design = "replicate")
-  rep_design <- as_survey_rep(
-    d,
-    weights    = wt,
-    repweights = starts_with("repwt"),
-    type       = "BRR"
+test_that("get_means() errors on two-phase design (not yet implemented)", {
+  d <- make_survey_data(design = "twophase", seed = 1)
+  phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
+  two    <- suppressWarnings(
+    as_survey_twophase(phase1, subset = phase2_ind)
   )
   expect_error(
-    get_means(rep_design, y1),
+    get_means(two, y1),
     class = "surveycore_error_unsupported_class"
   )
 })
 
-test_that("get_totals() errors on non-survey_taylor design", {
-  d <- make_survey_data(design = "replicate")
-  rep_design <- as_survey_rep(
-    d,
-    weights    = wt,
-    repweights = starts_with("repwt"),
-    type       = "BRR"
+test_that("get_totals() errors on two-phase design (not yet implemented)", {
+  d <- make_survey_data(design = "twophase", seed = 1)
+  phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
+  two    <- suppressWarnings(
+    as_survey_twophase(phase1, subset = phase2_ind)
   )
   expect_error(
-    get_totals(rep_design, y1),
+    get_totals(two, y1),
     class = "surveycore_error_unsupported_class"
   )
 })
@@ -339,4 +335,123 @@ test_that("get_totals() computes correct weighted total for trivial case", {
   d  <- as_survey(df, weights = w)
   result <- get_totals(d, y)
   expect_equal(result$total, 20, tolerance = 1e-14)
+})
+
+# ---------------------------------------------------------------------------
+# Block 10: Replicate weight variance — numerical comparison
+# ---------------------------------------------------------------------------
+
+test_that("get_means() replicate SE matches survey::svymean() — BRR design", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(n = 200, n_psu = 20, n_strata = 4,
+                        design = "replicate", type = "brr", seed = 7)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sv <- survey::svrepdesign(
+    weights    = d$wt,
+    repweights = d[, repwt_cols],
+    type       = "BRR",
+    mse        = TRUE,
+    data       = d
+  )
+
+  sc_mean <- get_means(sc, y1)
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
+test_that("get_totals() replicate SE matches survey::svytotal() — BRR design", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(n = 200, n_psu = 20, n_strata = 4,
+                        design = "replicate", type = "brr", seed = 7)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sv <- survey::svrepdesign(
+    weights    = d$wt,
+    repweights = d[, repwt_cols],
+    type       = "BRR",
+    mse        = TRUE,
+    data       = d
+  )
+
+  sc_total <- get_totals(sc, y1)
+  sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_total$total, coef(sv_total)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se,    as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+})
+
+test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(n = 200, n_psu = 20, n_strata = 4,
+                        design = "replicate", type = "jk1", seed = 15)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Compute scale explicitly to avoid survey package "guessing" warning.
+  n_rep <- length(repwt_cols)
+  jk1_scale <- (n_rep - 1L) / n_rep
+
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "JK1")
+  sv <- suppressWarnings(survey::svrepdesign(
+    weights    = d$wt,
+    repweights = d[, repwt_cols],
+    type       = "JK1",
+    scale      = jk1_scale,
+    mse        = TRUE,
+    data       = d
+  ))
+
+  sc_mean <- get_means(sc, y1)
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
+test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 22)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols),
+                      type = "BRR", mse = FALSE)
+  sv <- survey::svrepdesign(
+    weights    = d$wt,
+    repweights = d[, repwt_cols],
+    type       = "BRR",
+    mse        = FALSE,
+    data       = d
+  )
+
+  sc_mean <- get_means(sc, y1)
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
+test_that("get_means() and get_totals() work for survey_replicate (return structure)", {
+  d <- make_survey_data(n = 100, n_psu = 10, design = "replicate", type = "brr", seed = 3)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+
+  m <- get_means(sc, y1)
+  expect_named(m, c("variable", "mean", "se"))
+  expect_identical(m$variable, "y1")
+  expect_true(is.finite(m$mean))
+  expect_gte(m$se, 0)
+
+  t <- get_totals(sc, y1)
+  expect_named(t, c("variable", "total", "se"))
+  expect_true(is.finite(t$total))
+  expect_gte(t$se, 0)
 })

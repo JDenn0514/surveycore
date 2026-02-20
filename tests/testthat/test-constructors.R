@@ -536,10 +536,13 @@ test_that("as_survey_rep() accepts explicit scale argument", {
   expect_equal(d@variables$scale, 0.5)
 })
 
-test_that("as_survey_rep() computes BRR default scale = 0.25", {
-  df <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 9L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
-  expect_equal(d@variables$scale, 0.25)
+test_that("as_survey_rep() computes BRR default scale = 1/R", {
+  # BRR scale = 1/R (matching survey::svrepdesign() default)
+  # n_psu = 20 → R = 10 BRR replicates → scale = 1/10 = 0.1
+  df    <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 9L)
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  d     <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
+  expect_equal(d@variables$scale, 1 / n_rep)
 })
 
 test_that("as_survey_rep() computes JK1 default scale = (R-1)/R", {

@@ -300,6 +300,124 @@
 
 
 # ===========================================================================
+# Section 3b: Replicate weight variance computation
+# (adapted from survey package, Thomas Lumley, GPL-2/GPL-3)
+# ===========================================================================
+
+# Variance of replicate statistics.
+# Adapted from survey:::svrVar.
+# thetas: numeric vector of per-replicate estimates.
+# scale, rscales: variance scale factors from the design.
+# mse: TRUE = compare to full-sample estimate (coef); FALSE = compare to
+#      mean of replicates.
+# coef: the full-sample estimate (used only when mse = TRUE).
+.svy_rep_var <- function(thetas, scale, rscales, mse = TRUE, coef = NULL) {
+  # Drop NA replicates
+  ok  <- !is.na(thetas)
+  if (!any(ok)) cli::cli_abort(
+    c("x" = "All replicates produced NA estimates."),
+    class = "surveycore_error_all_replicates_na"
+  )
+  if (any(!ok)) {
+    rscales <- rscales[ok]
+    thetas  <- thetas[ok]
+  }
+
+  if (isTRUE(mse)) {
+    meantheta <- coef
+  } else {
+    meantheta <- mean(thetas[rscales > 0])
+  }
+
+  sum((thetas - meantheta)^2 * rscales) * scale
+}
+
+# Compute weighted mean and its variance for a survey_replicate design.
+# Uses the replicate-weight variance estimator.
+#
+# Survey package default (combined.weights = TRUE): replicate weights are
+# full survey weights, so the replicate mean is sum(repwt * y) / sum(repwt).
+# The base weights are used only for the full-sample mean denominator.
+#
+# Returns list(mean, var, se).
+.replicate_mean <- function(design, y_col, na.rm = TRUE) {
+  data <- design@data
+  vars <- design@variables
+
+  y <- data[[y_col]]
+  w <- data[[vars$weights]]    # base/full-sample weights
+
+  # Handle na.rm
+  if (na.rm) {
+    keep <- !is.na(y)
+    y       <- y[keep]
+    w       <- w[keep]
+    rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
+  } else {
+    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  }
+
+  # Full-sample weighted mean (same formula regardless of combined.weights)
+  psum    <- sum(w)
+  wt_mean <- sum(y * w) / psum
+
+  # Per-replicate means (combined.weights = TRUE: repweights are full weights)
+  n_rep     <- ncol(rep_mat)
+  rep_means <- vapply(seq_len(n_rep), function(r) {
+    wr <- rep_mat[, r]
+    sum(y * wr) / sum(wr)   # combined.weights = TRUE formula
+  }, numeric(1L))
+
+  v <- .svy_rep_var(
+    rep_means,
+    scale   = vars$scale,
+    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
+    mse     = isTRUE(vars$mse),
+    coef    = wt_mean
+  )
+
+  list(mean = wt_mean, var = v, se = sqrt(v))
+}
+
+# Compute weighted total and its variance for a survey_replicate design.
+# Returns list(total, var, se).
+.replicate_total <- function(design, y_col, na.rm = TRUE) {
+  data <- design@data
+  vars <- design@variables
+
+  y <- data[[y_col]]
+  w <- data[[vars$weights]]
+
+  if (na.rm) {
+    keep <- !is.na(y)
+    y       <- y[keep]
+    w       <- w[keep]
+    rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
+  } else {
+    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  }
+
+  wt_total <- sum(y * w)    # full-sample weighted total
+
+  n_rep      <- ncol(rep_mat)
+  rep_totals <- vapply(seq_len(n_rep), function(r) {
+    wr <- rep_mat[, r]
+    sum(y * wr)   # combined.weights = TRUE
+  }, numeric(1L))
+
+  v <- .svy_rep_var(
+    rep_totals,
+    scale   = vars$scale,
+    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
+    mse     = isTRUE(vars$mse),
+    coef    = wt_total
+  )
+
+  list(total = wt_total, var = v, se = sqrt(v))
+}
+
+
+# ===========================================================================
 # Section 4: Public estimation stubs (Phase 0)
 # ===========================================================================
 
@@ -335,11 +453,20 @@
 #' @family estimation
 #' @export
 get_means <- function(design, var, na.rm = TRUE) {
-  if (!S7::S7_inherits(design, survey_taylor)) {
+  if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg design} must be a {.cls survey_taylor} object.",
-        "i" = "Replicate-weight and two-phase support will be added in Phase 1."
+        "x" = "{.arg design} must be a surveycore design object.",
+        "i" = "Got class {.cls {class(design)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_design"
+    )
+  }
+  if (S7::S7_inherits(design, survey_twophase)) {
+    cli::cli_abort(
+      c(
+        "x" = "Two-phase design support for {.fn get_means} is not yet implemented.",
+        "i" = "It will be added in Phase 1."
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -355,7 +482,6 @@ get_means <- function(design, var, na.rm = TRUE) {
       class = "surveycore_error_var_not_found"
     )
   }
-
   if (!is.numeric(design@data[[var_name]])) {
     cli::cli_abort(
       c(
@@ -366,7 +492,11 @@ get_means <- function(design, var, na.rm = TRUE) {
     )
   }
 
-  result <- .taylor_mean(design, var_name, na.rm = na.rm)
+  result <- if (S7::S7_inherits(design, survey_taylor)) {
+    .taylor_mean(design, var_name, na.rm = na.rm)
+  } else {
+    .replicate_mean(design, var_name, na.rm = na.rm)
+  }
   list(variable = var_name, mean = result$mean, se = result$se)
 }
 
@@ -403,11 +533,20 @@ get_means <- function(design, var, na.rm = TRUE) {
 #' @family estimation
 #' @export
 get_totals <- function(design, var, na.rm = TRUE) {
-  if (!S7::S7_inherits(design, survey_taylor)) {
+  if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg design} must be a {.cls survey_taylor} object.",
-        "i" = "Replicate-weight and two-phase support will be added in Phase 1."
+        "x" = "{.arg design} must be a surveycore design object.",
+        "i" = "Got class {.cls {class(design)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_design"
+    )
+  }
+  if (S7::S7_inherits(design, survey_twophase)) {
+    cli::cli_abort(
+      c(
+        "x" = "Two-phase design support for {.fn get_totals} is not yet implemented.",
+        "i" = "It will be added in Phase 1."
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -423,7 +562,6 @@ get_totals <- function(design, var, na.rm = TRUE) {
       class = "surveycore_error_var_not_found"
     )
   }
-
   if (!is.numeric(design@data[[var_name]])) {
     cli::cli_abort(
       c(
@@ -434,6 +572,10 @@ get_totals <- function(design, var, na.rm = TRUE) {
     )
   }
 
-  result <- .taylor_total(design, var_name, na.rm = na.rm)
+  result <- if (S7::S7_inherits(design, survey_taylor)) {
+    .taylor_total(design, var_name, na.rm = na.rm)
+  } else {
+    .replicate_total(design, var_name, na.rm = na.rm)
+  }
   list(variable = var_name, total = result$total, se = result$se)
 }
