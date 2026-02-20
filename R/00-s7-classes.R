@@ -89,7 +89,7 @@ survey_metadata <- S7::new_class(
 #' }
 #'
 #' @keywords internal
-#' @noRd
+#' @export
 survey_base <- S7::new_class(
   "survey_base",
   abstract = TRUE,
