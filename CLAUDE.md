@@ -181,7 +181,10 @@ structure, coverage requirements, assertion patterns 3.
 `../survey-standards/.claude/rules/r-package-conventions.md` — roxygen2,
 NAMESPACE, exports, R CMD check hygiene 4.
 `../survey-standards/.claude/rules/github-strategy.md` — branching
-model, commit format, PR workflow
+model, commit format, PR workflow 5.
+`../survey-standards/.claude/rules/changelog-workflow.md` — changelog
+entries (required before every PR) and decisions log (required after
+plan mode)
 
 **Package-specific (surveycore only):** - `.claude/rules/` — any
 package-specific rules or extensions
