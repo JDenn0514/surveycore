@@ -272,7 +272,7 @@ as_tbl_svy <- function(x) {
 # design objects that do not preserve the original column name.
 #' @noRd
 .find_col_by_value <- function(data, vals) {
-  if (is.null(vals) || length(vals) == 0L) return(NULL)
+  if (is.null(vals) || length(vals) == 0L) return(NULL) # nocov — callers always pass non-NULL
   for (nm in names(data)) {
     col <- data[[nm]]
     if ((is.numeric(col) || is.logical(col)) &&

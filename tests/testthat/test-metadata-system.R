@@ -515,3 +515,32 @@ test_that("set_var_label() and extract_var_label() roundtrip for design col (wt)
   d <- set_var_label(d, wt, "Survey weight")
   expect_identical(extract_var_label(d, wt), "Survey weight")
 })
+
+
+# ── Coverage: .check_is_survey() error path ──────────────────────────────────
+
+test_that(".check_is_survey() errors for plain list input", {
+  expect_error(
+    extract_var_label(list(x = 1), x),
+    class = "surveycore_error_not_survey"
+  )
+})
+
+test_that(".check_is_survey() errors for data.frame input", {
+  expect_error(
+    extract_val_labels(data.frame(y = 1:3), y),
+    class = "surveycore_error_not_survey"
+  )
+})
+
+
+# ── Coverage: .validate_val_labels() strict = TRUE path ──────────────────────
+
+test_that(".validate_val_labels() errors in strict mode with unlabeled values [direct]", {
+  var    <- c(1L, 2L, 3L, 1L, 2L)    # value 3 is unlabeled
+  labels <- c(a = 1L, b = 2L)
+  expect_error(
+    surveycore:::.validate_val_labels(var, labels, var_name = "x", strict = TRUE),
+    class = "surveycore_error_missing_labels"
+  )
+})

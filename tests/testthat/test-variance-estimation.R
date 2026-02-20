@@ -455,3 +455,212 @@ test_that("get_means() and get_totals() work for survey_replicate (return struct
   expect_true(is.finite(t$total))
   expect_gte(t$se, 0)
 })
+
+
+# ---------------------------------------------------------------------------
+# Block 11: Error paths — non-survey inputs to get_means()/get_totals()
+# ---------------------------------------------------------------------------
+
+test_that("get_means() errors for non-survey-design object", {
+  expect_error(
+    get_means(data.frame(x = 1:5, y = rnorm(5)), y),
+    class = "surveycore_error_not_survey_design"
+  )
+})
+
+test_that("get_totals() errors for non-survey-design object", {
+  expect_error(
+    get_totals(list(x = 1), x),
+    class = "surveycore_error_not_survey_design"
+  )
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 12: na.rm = FALSE paths
+# ---------------------------------------------------------------------------
+
+test_that("get_means() na.rm = FALSE with FPC returns NA when data has NA", {
+  set.seed(42)
+  df <- data.frame(
+    y   = c(rnorm(49), NA_real_),
+    w   = runif(50, 0.5, 2),
+    fpc = rep(1000L, 50)
+  )
+  sc     <- as_survey(df, weights = w, fpc = fpc)
+  result <- get_means(sc, y, na.rm = FALSE)
+  expect_true(is.na(result$mean))
+})
+
+test_that("get_means() na.rm = FALSE on replicate design covers .replicate_mean FALSE path", {
+  df         <- make_survey_data(n = 50L, n_psu = 10L,
+                                 design = "replicate", type = "brr", seed = 200L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sc         <- as_survey_rep(df, weights = wt,
+                               repweights = all_of(repwt_cols), type = "BRR")
+  # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
+  result <- get_means(sc, y1, na.rm = FALSE)
+  expect_true(is.finite(result$mean))
+  expect_true(is.finite(result$se))
+})
+
+test_that("get_totals() na.rm = FALSE on replicate design covers .replicate_total FALSE path", {
+  df         <- make_survey_data(n = 50L, n_psu = 10L,
+                                 design = "replicate", type = "brr", seed = 201L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sc         <- as_survey_rep(df, weights = wt,
+                               repweights = all_of(repwt_cols), type = "BRR")
+  # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
+  result <- get_totals(sc, y1, na.rm = FALSE)
+  expect_true(is.finite(result$total))
+  expect_true(is.finite(result$se))
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 13: Fraction FPC (sampling fraction path in .taylor_build_inputs)
+# ---------------------------------------------------------------------------
+
+test_that("get_means() with fraction FPC (values <= 1) converts to population sizes", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n  <- 100L
+  df <- data.frame(
+    y        = rnorm(n),
+    w        = runif(n, 0.5, 2),
+    fpc_frac = rep(0.1, n)     # sampling fraction
+  )
+  sc     <- as_survey(df, weights = w, fpc = fpc_frac)
+  sv     <- survey::svydesign(ids = ~1, weights = ~w, fpc = ~fpc_frac, data = df)
+  sc_est <- get_means(sc, y)
+  sv_est <- survey::svymean(~y, sv, na.rm = TRUE)
+  expect_equal(sc_est$mean, coef(sv_est)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 14: Lonely PSU — 1-PSU stratum covers .svy_onestrat switch (lines 62-74)
+# ---------------------------------------------------------------------------
+
+# Shared fixture: design where stratum B has exactly 1 PSU
+make_lonely_design <- function() {
+  set.seed(42)
+  data.frame(
+    y      = rnorm(30),
+    w      = runif(30, 0.5, 2),
+    strata = c(rep("A", 20), rep("B", 10)),
+    psu    = c(rep(1L, 10), rep(2L, 10), rep(3L, 10))
+  )
+}
+
+test_that("get_means() works with lonely PSU (lonely.psu = 'remove', default)", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "remove")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  result <- get_means(sc, y)
+  expect_true(is.finite(result$mean))
+})
+
+test_that("get_means() works with lonely PSU (lonely.psu = 'certainty')", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "certainty")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  result <- get_means(sc, y)
+  expect_true(is.finite(result$mean))
+})
+
+test_that("get_means() works with lonely PSU (lonely.psu = 'average')", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "average")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  result <- get_means(sc, y)
+  # Mean is still finite; SE may be NA due to NA variance contribution
+  expect_true(is.finite(result$mean))
+})
+
+test_that("get_means() works with lonely PSU (lonely.psu = 'adjust')", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "adjust")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  # suppressWarnings: base R "NAs introduced by coercion" is expected for 'adjust'
+  result <- suppressWarnings(get_means(sc, y))
+  expect_true(is.finite(result$mean))
+})
+
+test_that("get_means() errors with lonely PSU (lonely.psu = 'fail')", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "fail")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  expect_error(
+    get_means(sc, y),
+    class = "surveycore_error_lonely_psu"
+  )
+})
+
+test_that("get_means() errors with unknown lonely.psu option", {
+  old_opt <- getOption("survey.lonely.psu")
+  options(survey.lonely.psu = "bogus_option")
+  on.exit(options(survey.lonely.psu = old_opt), add = TRUE)
+  df <- make_lonely_design()
+  sc <- as_survey(df, ids = psu, weights = w, strata = strata, nest = TRUE)
+  expect_error(
+    get_means(sc, y),
+    class = "surveycore_error_lonely_psu"
+  )
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 15: Complete census FPC (f ≈ 0) — .svy_onestrat line 37
+# ---------------------------------------------------------------------------
+
+test_that("get_means() returns zero SE when FPC indicates complete census (fpc = nPSU)", {
+  # fpc == nPSU for each stratum → f = (fpc-nPSU)/fpc = 0 → variance is 0
+  df <- data.frame(
+    y      = rnorm(20),
+    w      = rep(1, 20),
+    strata = rep(c("A", "B"), each = 10),
+    psu    = rep(1:5, 4),       # 5 unique PSUs per stratum
+    fpc    = rep(5L, 20)        # fpc == nPSU
+  )
+  sc     <- as_survey(df, ids = psu, weights = w, strata = strata, fpc = fpc, nest = TRUE)
+  result <- get_means(sc, y)
+  expect_equal(result$se, 0, tolerance = 1e-10)
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 16: .svy_rep_var() with NA replicates (lines 317–323)
+# ---------------------------------------------------------------------------
+
+test_that(".svy_rep_var() skips NA replicates and returns finite variance [direct]", {
+  thetas  <- c(1.2, 1.3, NA_real_, 1.1, 1.4)
+  rscales <- rep(1L, 5L)
+  v <- surveycore:::.svy_rep_var(
+    thetas, scale = 0.2, rscales = rscales, mse = TRUE, coef = 1.25
+  )
+  expect_true(is.finite(v))
+  expect_gte(v, 0)
+})
+
+test_that(".svy_rep_var() errors when all replicates are NA [direct]", {
+  thetas  <- rep(NA_real_, 5L)
+  rscales <- rep(1L, 5L)
+  expect_error(
+    surveycore:::.svy_rep_var(
+      thetas, scale = 0.2, rscales = rscales, mse = TRUE, coef = 1.25
+    ),
+    class = "surveycore_error_all_replicates_na"
+  )
+})

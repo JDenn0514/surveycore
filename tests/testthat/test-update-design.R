@@ -215,3 +215,42 @@ test_that("update_design() preserves unchanged design vars", {
   expect_identical(d2@variables$strata, d@variables$strata)
   expect_identical(d2@variables$fpc,    d@variables$fpc)
 })
+
+
+# ── Coverage: .resolve_update_arg() error when expression selects >1 column ─
+
+test_that("update_design() errors when strata arg selects multiple columns", {
+  df     <- make_survey_data(n = 200L, seed = 60L)
+  df$st2 <- df$strata
+  d      <- as_survey(df, weights = wt)
+  expect_error(
+    update_design(d, strata = starts_with("st")),
+    class = "surveycore_error_strata_multiple"
+  )
+})
+
+test_that("update_design() errors when weights arg selects multiple columns", {
+  df     <- make_survey_data(n = 200L, seed = 61L)
+  df$wt2 <- df$wt * 1.1
+  d      <- as_survey(df, weights = wt)
+  expect_error(
+    update_design(d, weights = starts_with("wt")),
+    class = "surveycore_error_weights_multiple"
+  )
+})
+
+
+# ── Coverage: validate = FALSE path for survey_replicate ────────────────────
+
+test_that("update_design() validate=FALSE skips validation for survey_replicate", {
+  df        <- make_survey_data(n = 100L, n_psu = 20L,
+                                design = "replicate", type = "brr", seed = 70L)
+  df$bad_wt <- -1
+  d         <- as_survey_rep(df, weights = wt,
+                              repweights = tidyselect::starts_with("repwt"),
+                              type = "BRR")
+  d@data    <- df
+  expect_no_error(
+    suppressMessages(update_design(d, weights = bad_wt, validate = FALSE))
+  )
+})

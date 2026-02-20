@@ -1168,3 +1168,86 @@ test_that("as_survey_twophase() accepts bare name for ids2", {
   test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
+
+
+# ── Coverage: as_survey() probs error paths ──────────────────────────────────
+
+test_that("as_survey() errors when probs expression matches no columns", {
+  df <- data.frame(x = 1:5, wt = 1:5)
+  expect_error(
+    as_survey(df, probs = tidyselect::starts_with("nonexistent_xyz")),
+    class = "surveycore_error_weights_not_found"
+  )
+})
+
+test_that("as_survey() errors when probs expression selects multiple columns", {
+  df <- data.frame(x = 1:5, prob1 = rep(0.1, 5), prob2 = rep(0.2, 5))
+  expect_error(
+    as_survey(df, probs = starts_with("prob")),
+    class = "surveycore_error_weights_multiple"
+  )
+})
+
+
+# ── Coverage: as_survey_rep() fpc multiple columns ───────────────────────────
+
+test_that("as_survey_rep() errors when fpc expression selects multiple columns", {
+  df <- data.frame(
+    y    = 1:5,
+    wt   = rep(1, 5),
+    r1   = rep(1, 5),
+    fpc1 = rep(1000L, 5),
+    fpc2 = rep(2000L, 5)
+  )
+  expect_error(
+    as_survey_rep(df, weights = wt, repweights = r1, type = "JK1",
+                  fpc = starts_with("fpc")),
+    class = "surveycore_error_fpc_multiple"
+  )
+})
+
+
+# ── Coverage: as_survey_twophase() additional error paths ────────────────────
+
+test_that("as_survey_twophase() errors when subset matches 0 columns", {
+  df     <- make_survey_data(n = 100L, design = "twophase", seed = 90L)
+  phase1 <- as_survey(df, weights = wt)
+  expect_error(
+    as_survey_twophase(phase1,
+                       subset = tidyselect::starts_with("nonexistent_xyz")),
+    class = "surveycore_error_subset_missing"
+  )
+})
+
+test_that("as_survey_twophase() errors when strata2 selects multiple columns", {
+  df      <- make_survey_data(n = 100L, design = "twophase", seed = 91L)
+  df$st2a <- df$strata
+  df$st2b <- df$strata
+  phase1  <- as_survey(df, weights = wt)
+  expect_error(
+    as_survey_twophase(phase1, strata2 = starts_with("st2"), subset = phase2_ind),
+    class = "surveycore_error_strata_multiple"
+  )
+})
+
+test_that("as_survey_twophase() errors when probs2 selects multiple columns", {
+  df        <- make_survey_data(n = 100L, design = "twophase", seed = 92L)
+  df$prob2a <- runif(nrow(df), 0.3, 0.8)
+  df$prob2b <- runif(nrow(df), 0.3, 0.8)
+  phase1    <- as_survey(df, weights = wt)
+  expect_error(
+    as_survey_twophase(phase1, probs2 = starts_with("prob2"), subset = phase2_ind),
+    class = "surveycore_error_weights_multiple"
+  )
+})
+
+test_that("as_survey_twophase() errors when fpc2 selects multiple columns", {
+  df       <- make_survey_data(n = 100L, design = "twophase", seed = 93L)
+  df$fpc2a <- rep(1000L, nrow(df))
+  df$fpc2b <- rep(2000L, nrow(df))
+  phase1   <- as_survey(df, weights = wt)
+  expect_error(
+    as_survey_twophase(phase1, fpc2 = starts_with("fpc2"), subset = phase2_ind),
+    class = "surveycore_error_fpc_multiple"
+  )
+})

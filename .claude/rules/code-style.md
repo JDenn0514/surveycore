@@ -23,7 +23,7 @@
 | Getter return values | Visible (no `invisible()`) |
 | Argument order | `x`/`data` first → required NSE → required scalar → optional NSE → optional scalar → `...` |
 | Internal helper placement | Inline if used in 1 file; `07-utils.R` if used in 2+ files |
-| Dispatch rule | `UseMethod()` for new generics; `S7::method()` for extending existing generics |
+| Dispatch rule | `S7::method()` for extending existing generics; plain function + `S7::S7_inherits()` for surveycore-owned generics |
 | Error structure | `"x"` + `"i"` + optional `"v"` bullets; `class=` on every `cli_abort()` |
 | Warning classes | `class=` on every `cli_warn()` too |
 | Message language | Declarative for `"x"`/`"i"` bullets; imperative for `"v"` bullet |
@@ -367,15 +367,32 @@ set_var_label <- function(x, var, label)
 | Situation | Use |
 |-----------|-----|
 | Extending an existing generic (`print`, `summary`, `format`, `rename`, `filter`, `select`, etc.) | `S7::method(generic, class) <- function(...) { }` |
-| Creating a new generic owned by surveycore (`set_var_label`, `as_survey`, `extract_var_label`, `update_design`, etc.) | `UseMethod("name")` + `name.survey_base <- function(...) { }` |
+| Creating a new generic owned by surveycore (`set_var_label`, `as_survey`, `extract_var_label`, `update_design`, etc.) | Plain function + `S7::S7_inherits()` for type validation |
+
+**Important:** S3 dispatch does NOT work for S7 objects. S7 uses namespaced class names
+(`"surveycore::survey_base"`). `UseMethod()` would look for a method named
+`set_var_label.surveycore::survey_base`, which is not a legal R function name.
+Use a plain function with explicit `S7::S7_inherits()` type checking instead.
 
 ```r
 # CORRECT — extending print (existing generic)
 S7::method(print, survey_taylor) <- function(x, n = 10, ...) { ... }
 
 # CORRECT — new surveycore-owned generic
+# Plain function; S7::S7_inherits() validates the type explicitly.
+set_var_label <- function(x, var, label) {
+  if (!S7::S7_inherits(x, survey_base)) {
+    cli::cli_abort(
+      c("x" = "{.arg x} must be a survey design object."),
+      class = "surveycore_error_not_survey_object"
+    )
+  }
+  # implementation
+}
+
+# WRONG — UseMethod() cannot find name.surveycore::survey_base methods
 set_var_label <- function(x, var, label) UseMethod("set_var_label")
-set_var_label.survey_base <- function(x, var, label) { ... }
+set_var_label.survey_base <- function(x, var, label) { ... }  # never dispatched
 
 # WRONG — S3 dispatch silently ignored for S7 objects when generic is S7-aware
 print.survey_taylor <- function(x, n = 10, ...) { ... }   # never dispatched

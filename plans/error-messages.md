@@ -63,6 +63,9 @@ against the messages defined here.
 | 37 | S7 validator (`survey_replicate`) | Replicate weight column not numeric | ERROR | `surveycore_error_repweights_not_numeric` | `"Replicate weight column {.field {rw}} must be numeric, not {.cls {class(rw_col)}}"` |
 | 38 | S7 validator (`survey_twophase`) | Subset column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"Subset column {.field {subset_var}} must be logical, not {.cls {col_class}}"` |
 | 39 | S7 validator (`survey_twophase`) | Phase 2 design var all-NA within Phase 2 subset | WARN | `surveycore_warning_phase2_all_na` | `"Phase 2 design variable {.field {v}} is all NA within the Phase 2 subset. Check rows where {.field {subset_var}} is TRUE."` |
+| 40 | `filter()` (surveytidy) | filter() produces all-FALSE domain | WARN | `surveycore_warning_empty_domain` | `"filter() produced an empty domain — no rows match the supplied condition. Variance estimation on this domain will fail."` |
+| 41 | `mutate()` (surveytidy) | mutate() modifies the weight column | WARN | `surveycore_warning_weight_modified` | `"mutate() modified the weight column {.field {wt_var}}. This changes the survey design. Use {.fn update_design} to update the weight column explicitly."` |
+| 42 | `subset()` (surveytidy) | subset() physically removes rows | WARN | `surveycore_warning_physical_subset` | `"subset() physically removes rows from the survey data. This is different from filter(), which preserves all rows for correct variance estimation. Subpopulation analyses should use filter() instead."` |
 
 ---
 

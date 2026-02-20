@@ -500,3 +500,73 @@ test_that("from_tbl_svy() rejects a plain data.frame", {
     class = "surveycore_error_not_tbl_svy"
   )
 })
+
+
+# ── Coverage additions ────────────────────────────────────────────────────────
+
+# 30. as_svydesign() for JK1 replicate design (scale_arg non-NULL path, line 129)
+test_that("as_svydesign() converts JK1 replicate design (scale arg non-NULL path)", {
+  skip_if_not_installed("survey")
+  df  <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L,
+                          design = "replicate", type = "jk1", seed = 300L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d   <- as_survey_rep(df, weights = wt,
+                       repweights = tidyselect::all_of(repwt_cols), type = "JK1")
+  sv  <- as_svydesign(d)
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+# 31. as_svydesign() for twophase with SRS phase1 (p1$ids NULL → ~1, line 158)
+test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
+  skip_if_not_installed("survey")
+  df     <- make_survey_data(n = 100L, design = "twophase", seed = 301L)
+  # phase1 with no ids (SRS) — p1$ids will be NULL
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  d2     <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  sv     <- suppressWarnings(as_svydesign(d2))
+  expect_true(inherits(sv, "survey.design"))
+})
+
+# 32. as_svydesign() for twophase with phase2 ids (p2$ids non-NULL → line 166)
+test_that("as_svydesign() handles twophase design with phase2 ids", {
+  skip_if_not_installed("survey")
+  df     <- make_survey_data(n = 100L, design = "twophase", seed = 302L)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  d2     <- suppressWarnings(
+    as_survey_twophase(phase1, ids2 = psu, subset = phase2_ind)
+  )
+  sv     <- suppressWarnings(as_svydesign(d2))
+  expect_true(inherits(sv, "survey.design"))
+})
+
+# 33. from_svydesign() for SRS design covers .vars_from_formula(~1) → NULL (line 265)
+test_that("from_svydesign() handles SRS design with ids = ~1 (.vars_from_formula NULL path)", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  df <- data.frame(y = rnorm(50), w = runif(50, 0.5, 2))
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+  d  <- from_svydesign(sv)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_null(d@variables$ids)
+})
+
+# 34. from_svydesign() for replicate with external weight vector (lines 413-414)
+test_that("from_svydesign() for replicate with external weights adds ..surveycore_wt.. column", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n        <- 20L
+  df       <- data.frame(y = rnorm(n))          # no weight column in data
+  ext_wts  <- runif(n, 0.5, 2)                  # external weight vector
+  rep_data <- matrix(runif(n * 4L), ncol = 4L)
+  sv       <- survey::svrepdesign(
+    data       = df,
+    weights    = ext_wts,    # passed as vector, not formula — won't be in data
+    repweights = rep_data,
+    type       = "BRR",
+    combined.weights = TRUE
+  )
+  d <- from_svydesign(sv)
+  expect_true(S7::S7_inherits(d, survey_replicate))
+  # The fallback weight column should be added
+  expect_true("..surveycore_wt.." %in% names(d@data))
+})

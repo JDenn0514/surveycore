@@ -24,7 +24,7 @@
   stratum = NULL, stage = 1L
 ) {
   stratum_center <- attr(x, "recentering")
-  if (is.null(stratum_center)) stratum_center <- 0
+  if (is.null(stratum_center)) stratum_center <- 0 # nocov — always set by .svy_onestage
 
   if (is.null(fpc)) {
     f <- rep(1, NROW(x))
@@ -40,19 +40,23 @@
   x     <- rowsum(x, cluster)
   nsubset <- nrow(x)
 
+  # nocov start — sampsize is computed post-na.rm filter, so nsubset == nPSU always
   if (nsubset < nPSU) {
     x     <- rbind(x, matrix(0, ncol = ncol(x), nrow = nPSU - nsubset))
     scale <- rep(scale[[1L]], NROW(x))
   }
+  # nocov end
 
   if (lonely.psu != "adjust" || nsubset > 1L) {
     stratum_center <- colMeans(x)
   }
   x <- sweep(x = x, MARGIN = 2L, STATS = stratum_center, FUN = "-")
 
+  # nocov start — by construction nsubset == nPSU, so nsubset == 1 implies nPSU == 1
   if (nsubset == 1L && nPSU > 1L) {
     if (lonely.psu == "average") scale <- NA_real_
   }
+  # nocov end
 
   if (nPSU > 1L) {
     return(crossprod(x * sqrt(scale)))
@@ -82,7 +86,7 @@
   lonely.psu = "remove",
   stage = 0L
 ) {
-  if (NROW(x) == 0L) return(matrix(0, NCOL(x), NCOL(x)))
+  if (NROW(x) == 0L) return(matrix(0, NCOL(x), NCOL(x))) # nocov — empty subsets excluded before call
 
   if (!is.null(lonely.psu) && lonely.psu == "adjust") {
     n_psus_all <- sum(
@@ -131,6 +135,7 @@
     lonely.psu = lonely.psu, stage = stage
   )
 
+  # nocov start — Phase 0 builder always passes single-column cluster/strata matrices
   if (!isTRUE(one.stage) && !is.null(popmat) && NCOL(clusters) > 1L) {
     v.sub <- by(seq_len(n), list(as.numeric(clusters[, 1L])), function(index) {
       .svy_multistage(
@@ -146,6 +151,7 @@
     })
     for (i in seq_along(v.sub)) v <- v + v.sub[[i]]
   }
+  # nocov end
 
   dimnames(v) <- list(colnames(x), colnames(x))
   v
@@ -265,7 +271,8 @@
 # Compute weighted mean and its variance for a single numeric variable.
 # Returns list(mean, var, se).
 .taylor_mean <- function(design, y_col, na.rm = TRUE) {
-  inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  inp        <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   x        <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
   w        <- inp$w
@@ -275,7 +282,8 @@
   x_centered <- sweep(x, 2L, average)
   v <- .svy_recvar(
     x_centered * w / psum,
-    inp$clusters, inp$stratas, inp$fpcs
+    inp$clusters, inp$stratas, inp$fpcs,
+    lonely.psu = lonely.psu
   )
 
   list(mean = average[[1L]], var = v[[1L, 1L]], se = sqrt(v[[1L, 1L]]))
@@ -284,7 +292,8 @@
 # Compute weighted total and its variance for a single numeric variable.
 # Returns list(total, var, se).
 .taylor_total <- function(design, y_col, na.rm = TRUE) {
-  inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  inp        <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   x     <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
   w     <- inp$w
@@ -292,7 +301,8 @@
 
   v <- .svy_recvar(
     x * w,
-    inp$clusters, inp$stratas, inp$fpcs
+    inp$clusters, inp$stratas, inp$fpcs,
+    lonely.psu = lonely.psu
   )
 
   list(total = total[[1L]], var = v[[1L, 1L]], se = sqrt(v[[1L, 1L]]))

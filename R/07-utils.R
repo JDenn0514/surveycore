@@ -39,10 +39,17 @@ survey_data <- function(x) {
 }
 
 
-# ── Internal constants ────────────────────────────────────────────────────────
+# ── Exported constants ────────────────────────────────────────────────────────
 
-# Column name used by filter() (Phase 0.5 / surveytidy) to mark domain
-# membership. Double-dot prefix and suffix minimise collision with user columns.
+#' Internal Domain Column Name Constant
+#'
+#' The name of the logical column added to `@data` by `filter()` (from
+#' `surveytidy`) to mark domain membership. Exposed here so that sibling
+#' packages (`surveytidy`, `surveyweights`) can reference it without
+#' using `:::`.
+#'
+#' @keywords internal
+#' @export
 SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 
@@ -69,9 +76,13 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # Return a flat character vector of all design-variable column names.
 # NULL entries are dropped by c(). Unique names are returned.
 # Works for survey_taylor, survey_replicate, and survey_twophase.
-# Used by conversion methods (05-methods-conversion.R) and variance
-# estimation (06-variance-estimation.R) to enumerate design columns.
-#' @noRd
+# Used by conversion methods (05-methods-conversion.R), variance
+# estimation (06-variance-estimation.R), and surveytidy verbs.
+# Exported (with @export) so surveytidy can call surveycore::.get_design_vars_flat()
+# without needing :::. The . prefix is intentional — this is not part of
+# the public user-facing API.
+#' @keywords internal
+#' @export
 .get_design_vars_flat <- function(design) {
   if (S7::S7_inherits(design, survey_taylor)) {
     unique(c(
@@ -91,7 +102,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     p2_cols <- if (!is.null(p2)) {
       unlist(p2[!vapply(p2, is.null, logical(1L))], use.names = FALSE)
     } else {
-      character(0L)
+      character(0L) # nocov — p2 is always initialized as a list by as_survey_twophase()
     }
     unique(c(
       p1$ids, p1$weights, p1$strata, p1$fpc,
@@ -99,7 +110,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       design@variables$subset
     ))
   } else {
-    character(0L)
+    character(0L) # nocov — defensive: all known types handled above
   }
 }
 
@@ -144,6 +155,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     )
     Filter(Negate(is.null), raw)
   } else {
-    list()
+    list() # nocov — defensive: all known types handled above
   }
 }

@@ -24,7 +24,7 @@
 .data_for_print <- function(x) {
   visible <- x@variables[["visible_vars"]]
   data <- if (!is.null(visible)) {
-    x@data[, visible, drop = FALSE]
+    x@data[, visible, drop = FALSE] # nocov — Phase 0.5 only
   } else {
     x@data
   }
@@ -37,13 +37,13 @@
 #' @noRd
 .print_hidden_note <- function(design_vars, data_shown) {
   hidden <- setdiff(design_vars, names(data_shown))
-  if (length(hidden) > 0L) {
+  if (length(hidden) > 0L) { # nocov start — Phase 0.5 only
     cli::cli_text("")
     cli::cli_bullets(c(
       "i" = "Design variables preserved but hidden: {.field {hidden}}.",
       "i" = "Use {.code print(x, full = TRUE)} to show all variables."
     ))
-  }
+  } # nocov end
   invisible(NULL)
 }
 
