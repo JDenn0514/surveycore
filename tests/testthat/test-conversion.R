@@ -570,3 +570,24 @@ test_that("from_svydesign() for replicate with external weights adds ..surveycor
   # The fallback weight column should be added
   expect_true("..surveycore_wt.." %in% names(d@data))
 })
+
+# 35. from_svydesign() for twophase with inline subset (lines 447-448 fallback)
+test_that("from_svydesign() twophase with inline subset creates ..surveycore_subset.. column", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n  <- 30L
+  df <- data.frame(x = rnorm(n), wt = rep(1, n))
+  # subset is an inline logical vector — not a column in df, so .find_col_by_value returns NULL
+  sub_lgl <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.5, 0.5))
+  sv <- survey::twophase(
+    id      = list(~1, ~1),
+    strata  = list(NULL, NULL),
+    probs   = list(NULL, NULL),
+    data    = df,
+    subset  = sub_lgl
+  )
+  d <- suppressWarnings(from_svydesign(sv))
+  expect_true(S7::S7_inherits(d, survey_twophase))
+  # The fallback subset column must have been created
+  expect_true("..surveycore_subset.." %in% names(d@data))
+})
