@@ -482,7 +482,7 @@ Prepared by <code>data-raw/prepare-pew-jewish-2020.R</code>.</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">extweight</span>,</span>
-<span>  repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"extweight"</span><span class="op">)</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu">matches</span><span class="op">(</span><span class="st">"^extweight$"</span><span class="op">)</span>,</span>
+<span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
 <span>  type       <span class="op">=</span> <span class="st">"JK1"</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
 <p><strong>Jewish identity classification:</strong> The <code>jewishcat</code> variable classifies
