@@ -164,11 +164,10 @@ computes the matrix on demand:
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># ACS PUMS Wyoming: 80 successive-difference replicate weights</span></span></span>
-<span class="r-in"><span><span class="co"># matches() selects only pwgtp1-pwgtp80, excluding the main weight pwgtp</span></span></span>
 <span class="r-in"><span><span class="va">d_acs</span> <span class="op">&lt;-</span> <span class="fu">as_survey_rep</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">acs_pums_wy</span>,</span></span>
 <span class="r-in"><span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
-<span class="r-in"><span>  repweights <span class="op">=</span> <span class="fu">matches</span><span class="op">(</span><span class="st">"^pwgtp[0-9]+$"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span></span>
 <span class="r-in"><span>  type       <span class="op">=</span> <span class="st">"successive-difference"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>

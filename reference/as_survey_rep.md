@@ -125,11 +125,10 @@ Other constructors:
 
 ``` r
 # ACS PUMS Wyoming: 80 successive-difference replicate weights
-# matches() selects only pwgtp1-pwgtp80, excluding the main weight pwgtp
 d_acs <- as_survey_rep(
   acs_pums_wy,
   weights    = pwgtp,
-  repweights = matches("^pwgtp[0-9]+$"),
+  repweights = pwgtp1:pwgtp80,
   type       = "successive-difference"
 )
 
