@@ -14,13 +14,13 @@ survey_taylor(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey data. Prefer
-\code{\link[srvyr:as_survey]{srvyr::as_survey()}} over calling this constructor directly.}
+\code{\link[=as_survey]{as_survey()}} over calling this constructor directly.}
 
 \item{metadata}{A \link{survey_metadata} object. Created automatically by
-\code{\link[srvyr:as_survey]{srvyr::as_survey()}}.}
+\code{\link[=as_survey]{as_survey()}}.}
 
 \item{variables}{A named list of design specification (ids, weights,
-strata, fpc, nest, probs_provided). Set automatically by \code{\link[srvyr:as_survey]{srvyr::as_survey()}}.}
+strata, fpc, nest, probs_provided). Set automatically by \code{\link[=as_survey]{as_survey()}}.}
 
 \item{groups}{Reserved for Phase 0.5 (group_by support in surveytidy).
 Always \code{character(0)} in Phase 0.}
@@ -32,7 +32,7 @@ A \code{survey_taylor} object.
 }
 \description{
 A survey design object using Taylor series (linearization) for variance
-estimation. Create with \code{\link[srvyr:as_survey]{srvyr::as_survey()}}.
+estimation. Create with \code{\link[=as_survey]{as_survey()}}.
 }
 \section{Design variables (\verb{@variables})}{
 
@@ -46,14 +46,17 @@ column, or \code{NULL}.}
 \item{\code{nest}}{Logical. \code{TRUE} if cluster IDs are nested within strata
 (i.e., the same ID value in two strata refers to two distinct PSUs).}
 \item{\code{probs_provided}}{Logical. \code{TRUE} if the user supplied \code{probs}
-rather than \code{weights} to \code{\link[srvyr:as_survey]{srvyr::as_survey()}}.}
+rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 }
 }
 
 \seealso{
-\code{\link[srvyr:as_survey]{srvyr::as_survey()}} to create a \code{survey_taylor} object.
+\code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object.
 
 Other constructors: 
+\code{\link{as_survey}()},
+\code{\link{as_survey_rep}()},
+\code{\link{as_survey_twophase}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_twophase}()}
 }

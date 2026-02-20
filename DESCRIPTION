@@ -20,15 +20,15 @@ Imports:
     rlang (>= 1.0.0),
     tidyselect (>= 1.2.0),
     cli (>= 3.6.0),
-    stats,
-    methods
+    tibble (>= 3.1.0),
+    stats
 Suggests:
     testthat (>= 3.0.0),
+    withr (>= 2.5.0),
     survey (>= 4.0),
     srvyr (>= 1.0),
     haven (>= 2.5.0),
     dplyr (>= 1.1.0),
-    tibble,
     covr,
     knitr,
     rmarkdown

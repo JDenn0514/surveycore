@@ -183,14 +183,24 @@ test_invariants <- function(design) {
     label = "@data has no duplicate column names"
   )
 
-  # Invariant 2: All named design columns exist in @data and are atomic
-  # .get_design_vars_flat() defined in R/07-utils.R
-  design_vars <- c(
-    design@variables$ids,
-    design@variables$weights,
-    design@variables$strata,
-    design@variables$fpc
-  )
+  # Invariant 2: All named design columns exist in @data and are atomic.
+  # survey_twophase has a nested variables structure; handle it separately.
+  if (S7::S7_inherits(design, survey_twophase)) {
+    p1 <- design@variables$phase1
+    p2 <- design@variables$phase2
+    design_vars <- c(
+      p1$ids, p1$weights, p1$strata, p1$fpc,
+      if (!is.null(p2)) c(p2$ids, p2$strata, p2$probs, p2$fpc),
+      design@variables$subset
+    )
+  } else {
+    design_vars <- c(
+      design@variables$ids,
+      design@variables$weights,
+      design@variables$strata,
+      design@variables$fpc
+    )
+  }
   design_vars <- design_vars[!is.null(design_vars)]
   for (v in design_vars) {
     testthat::expect_true(
@@ -203,8 +213,13 @@ test_invariants <- function(design) {
     )
   }
 
-  # Invariant 3: Weights are numeric and strictly positive (no NAs, no zeros)
-  wt_var <- design@variables$weights
+  # Invariant 3: Weights are numeric and strictly positive.
+  # For survey_twophase, weights live under @variables$phase1$weights.
+  wt_var <- if (S7::S7_inherits(design, survey_twophase)) {
+    design@variables$phase1$weights
+  } else {
+    design@variables$weights
+  }
   if (!is.null(wt_var)) {
     wt_col <- design@data[[wt_var]]
     testthat::expect_true(
@@ -223,6 +238,17 @@ test_invariants <- function(design) {
       testthat::expect_true(
         is.numeric(design@data[[rw]]),
         label = paste0("replicate weight column '", rw, "' is numeric")
+      )
+    }
+  }
+
+  # Additional check for survey_twophase: subset column must be logical
+  if (S7::S7_inherits(design, survey_twophase)) {
+    subset_var <- design@variables$subset
+    if (!is.null(subset_var) && subset_var %in% names(design@data)) {
+      testthat::expect_true(
+        is.logical(design@data[[subset_var]]),
+        label = paste0("subset column '", subset_var, "' is logical")
       )
     }
   }

@@ -2217,7 +2217,7 @@ Before considering Phase 0 complete, verify:
 - [ ] Tidy-select helpers work (starts_with, etc.)
 - [ ] All metadata functions implemented (singular + plural)
 - [ ] Value label validation is lenient with warning
-- [ ] update_design() function works
+- [x] update_design() function works
 - [ ] All error messages use cli with clear formatting
 - [ ] Print methods support `full` option
 - [ ] All exported functions documented with tidy-select examples

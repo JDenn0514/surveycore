@@ -34,7 +34,7 @@ A \code{survey_metadata} object.
 Stores variable labels, value labels, question prefaces, notes, and
 transformation history for variables in a survey design object.
 Automatically populated from haven-style attributes when
-\code{\link[srvyr:as_survey]{srvyr::as_survey()}} or related constructors are called.
+\code{\link[=as_survey]{as_survey()}} or related constructors are called.
 }
 \seealso{
 Other metadata: 

@@ -146,12 +146,12 @@ colliding with user columns named `.weights`.
 
 1. `feature/test-helpers` — `tests/testthat/helper-test-data.R` ✅ DONE
 2. `feature/s7-classes` — `R/00-s7-classes.R` ✅ DONE
-3. `feature/metadata-system` — `R/01-metadata-system.R` (extractors + setters)
-4. `feature/validators` — `R/02-validators.R`
-5. `feature/as-survey` — `R/03-constructors.R` (as_survey() only)
-6. `feature/as-survey-rep` — `R/03-constructors.R` (as_survey_rep())
-7. `feature/as-survey-twophase` — `R/03-constructors.R` (as_survey_twophase())
-8. `feature/update-design` — `R/08-update-design.R`
+3. `feature/metadata-system` — `R/01-metadata-system.R` (extractors + setters) ✅ DONE
+4. `feature/validators` — `R/02-validators.R` ✅ DONE
+5. `feature/as-survey` — `R/03-constructors.R` (as_survey() only) ✅ DONE
+6. `feature/as-survey-rep` — `R/03-constructors.R` (as_survey_rep()) ✅ DONE
+7. `feature/as-survey-twophase` — `R/03-constructors.R` (as_survey_twophase()) ✅ DONE
+8. `feature/update-design` — `R/08-update-design.R` ✅ DONE
 9. `feature/print-methods` — `R/04-methods-print.R`
 10. `feature/utils` — `R/07-utils.R`
 11. `feature/conversion-to-survey` — `R/05-methods-conversion.R` (to svydesign/tbl_svy)

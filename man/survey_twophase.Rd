@@ -15,13 +15,13 @@ survey_twophase(
 \arguments{
 \item{data}{A \code{data.frame} containing the survey data (all Phase 1 rows,
 with a logical indicator for Phase 2 membership). Prefer
-\code{\link[srvyr:as_survey_twophase]{srvyr::as_survey_twophase()}} over calling this constructor directly.}
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} over calling this constructor directly.}
 
 \item{metadata}{A \link{survey_metadata} object. Inherited from the Phase 1
-design when using \code{\link[srvyr:as_survey_twophase]{srvyr::as_survey_twophase()}}.}
+design when using \code{\link[=as_survey_twophase]{as_survey_twophase()}}.}
 
 \item{variables}{A named list of design specification (phase1, phase2,
-subset, method). Set automatically by \code{\link[srvyr:as_survey_twophase]{srvyr::as_survey_twophase()}}.}
+subset, method). Set automatically by \code{\link[=as_survey_twophase]{as_survey_twophase()}}.}
 
 \item{groups}{Reserved for Phase 0.5. Always \code{character(0)} in Phase 0.}
 
@@ -32,7 +32,7 @@ A \code{survey_twophase} object.
 }
 \description{
 A survey design object for two-phase (double) sampling. Create with
-\code{\link[srvyr:as_survey_twophase]{srvyr::as_survey_twophase()}}.
+\code{\link[=as_survey_twophase]{as_survey_twophase()}}.
 }
 \section{Design variables (\verb{@variables})}{
 
@@ -49,9 +49,12 @@ indicates Phase 2 membership (\code{TRUE} = selected into Phase 2).}
 }
 
 \seealso{
-\code{\link[srvyr:as_survey_twophase]{srvyr::as_survey_twophase()}} to create a \code{survey_twophase} object.
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} to create a \code{survey_twophase} object.
 
 Other constructors: 
+\code{\link{as_survey}()},
+\code{\link{as_survey_rep}()},
+\code{\link{as_survey_twophase}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_taylor}()}
 }
