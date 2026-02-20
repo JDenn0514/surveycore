@@ -26,15 +26,11 @@ full coding scheme. A warning is issued if some observed data values lack a
 label.
 }
 \examples{
-df <- data.frame(sex = c(1L, 2L, 1L), wt = c(1, 1, 1))
-d  <- survey_taylor(
-  data = df,
-  variables = list(
-    ids = NULL, weights = "wt", strata = NULL,
-    fpc = NULL, nest = FALSE, probs_provided = FALSE
-  )
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
+d <- set_val_labels(
+  d, ridstatr, c("Interview only" = 1L, "Interview + exam" = 2L)
 )
-d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
 
 }
 \seealso{

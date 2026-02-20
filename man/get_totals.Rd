@@ -29,14 +29,11 @@ using the appropriate variance estimator for the survey design type.
 For \code{survey_taylor} designs, Taylor series linearization is used.
 }
 \examples{
-df <- data.frame(
-  psu = rep(1:5, each = 4),
-  st  = rep(c("A", "B"), each = 10),
-  wt  = rep(c(2, 3, 2, 4, 3), each = 4),
-  y   = rnorm(20)
-)
-d <- as_survey(df, ids = psu, strata = st, weights = wt)
-get_totals(d, y)
+# ACS PUMS Wyoming: estimated total population by age
+d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
+                   repweights = matches("^pwgtp[0-9]+$"),
+                   type = "successive-difference")
+get_totals(d, agep)
 
 }
 \seealso{

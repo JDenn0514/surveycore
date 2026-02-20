@@ -20,8 +20,8 @@
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @return A `data.frame` with all variables, including design variables.
 #' @examples
-#' df <- data.frame(y = rnorm(10), w = runif(10, 0.5, 2))
-#' d  <- as_survey(df, weights = w)
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #' head(survey_data(d))
 #' @family constructors
 #' @export

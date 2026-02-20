@@ -66,32 +66,22 @@
 #' estimated without weights or population size.
 #'
 #' @examples
-#' df <- data.frame(
-#'   id  = 1:100,
-#'   psu = rep(1:10, each = 10),
-#'   st  = rep(c("A", "B"), 50),
-#'   wt  = runif(100, 0.5, 2),
-#'   fpc = rep(500L, 100),
-#'   y   = rnorm(100)
+#' # Full NHANES design: stratified cluster with PSU IDs nested within strata
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids     = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata  = sdmvstra,
+#'   nest    = TRUE
 #' )
 #'
-#' # Simple random sample (no weights specified)
-#' d_srs <- as_survey(df)
+#' # Stratified design without PSU cluster IDs
+#' d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 #'
-#' # Weighted sample
-#' d_wt <- as_survey(df, weights = wt)
-#'
-#' # Stratified
-#' d_strat <- as_survey(df, weights = wt, strata = st)
-#'
-#' # Cluster
-#' d_clust <- as_survey(df, ids = psu, weights = wt)
-#'
-#' # Stratified cluster with FPC
-#' d_full <- as_survey(df, ids = psu, weights = wt, strata = st, fpc = fpc)
-#'
-#' # NHANES-style: PSU IDs nested within strata
-#' d_nhanes <- as_survey(df, ids = psu, weights = wt, strata = st, nest = TRUE)
+#' # Blood pressure analysis: filter to exam participants, use MEC weight
+#' exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
+#' d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
+#'                   strata = sdmvstra, nest = TRUE)
 #'
 #' @seealso
 #'   [as_survey_rep()] for replicate-weight designs,
@@ -456,21 +446,21 @@ as_survey <- function(
 #' `as.matrix(design@data[, design@variables$repweights])`.
 #'
 #' @examples
-#' # ACS PUMS Wyoming: BRR design with 80 replicate weights (pwgtp1-pwgtp80)
-#' # starts_with() selects all 80 replicates in one expression
+#' # ACS PUMS Wyoming: 80 successive-difference replicate weights
+#' # matches() selects only pwgtp1-pwgtp80, excluding the main weight pwgtp
 #' d_acs <- as_survey_rep(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
-#'   repweights = starts_with("pwgtp"),
-#'   type       = "ACS"
+#'   repweights = matches("^pwgtp[0-9]+$"),
+#'   type       = "successive-difference"
 #' )
 #'
 #' # Explicit replicate columns using c()
-#' d_brr <- as_survey_rep(
+#' d_sub <- as_survey_rep(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-#'   type       = "BRR"
+#'   type       = "JK1"
 #' )
 #'
 #' @seealso

@@ -27,15 +27,12 @@ columns in the data. If no match is found, a \code{..surveycore_wt..} column is
 added.
 }
 \examples{
-df <- data.frame(
-  id  = 1:20,
-  wt  = runif(20, 0.5, 2),
-  st  = rep(c("A", "B"), 10),
-  y   = rnorm(20)
-)
 if (requireNamespace("survey", quietly = TRUE)) {
-  sv <- survey::svydesign(ids = ~1, weights = ~wt, strata = ~st, data = df)
-  d  <- from_svydesign(sv)
+  sv <- survey::svydesign(
+    ids = ~sdmvpsu, weights = ~wtint2yr, strata = ~sdmvstra,
+    data = nhanes_2017, nest = TRUE
+  )
+  d <- from_svydesign(sv)
   survey_data(d)
 }
 

@@ -42,16 +42,11 @@
 #'   object.
 #'
 #' @examples
-#' df <- data.frame(
-#'   id  = 1:20,
-#'   wt  = runif(20, 0.5, 2),
-#'   st  = rep(c("A", "B"), 10),
-#'   y   = rnorm(20)
-#' )
-#' d <- as_survey(df, weights = wt, strata = st)
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #' if (requireNamespace("survey", quietly = TRUE)) {
 #'   sv <- as_svydesign(d)
-#'   survey::svymean(~y, sv)
+#'   survey::svymean(~ridageyr, sv, na.rm = TRUE)
 #' }
 #'
 #' @seealso [from_svydesign()] to convert back from a `survey` design
@@ -201,8 +196,8 @@ as_svydesign <- function(x) {
 #' @return A `srvyr::tbl_svy` object.
 #'
 #' @examples
-#' df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-#' d  <- as_survey(df, weights = w)
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #' if (requireNamespace("survey", quietly = TRUE) &&
 #'     requireNamespace("srvyr",  quietly = TRUE)) {
 #'   ts <- as_tbl_svy(d)
@@ -308,15 +303,12 @@ as_tbl_svy <- function(x) {
 #' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #'
 #' @examples
-#' df <- data.frame(
-#'   id  = 1:20,
-#'   wt  = runif(20, 0.5, 2),
-#'   st  = rep(c("A", "B"), 10),
-#'   y   = rnorm(20)
-#' )
 #' if (requireNamespace("survey", quietly = TRUE)) {
-#'   sv <- survey::svydesign(ids = ~1, weights = ~wt, strata = ~st, data = df)
-#'   d  <- from_svydesign(sv)
+#'   sv <- survey::svydesign(
+#'     ids = ~sdmvpsu, weights = ~wtint2yr, strata = ~sdmvstra,
+#'     data = nhanes_2017, nest = TRUE
+#'   )
+#'   d <- from_svydesign(sv)
 #'   survey_data(d)
 #' }
 #'
@@ -480,11 +472,11 @@ from_svydesign <- function(x) {
 #' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #'
 #' @examples
-#' df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
 #' if (requireNamespace("survey", quietly = TRUE) &&
 #'     requireNamespace("srvyr",  quietly = TRUE)) {
 #'   ts <- srvyr::as_survey(
-#'     survey::svydesign(ids = ~1, weights = ~w, data = df)
+#'     survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
+#'       strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
 #'   )
 #'   d <- from_tbl_svy(ts)
 #' }

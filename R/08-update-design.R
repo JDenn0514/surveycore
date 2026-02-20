@@ -62,17 +62,14 @@
 #' @return The modified survey object, invisibly.
 #'
 #' @examples
-#' df <- data.frame(
-#'   id  = 1:50,
-#'   wt  = runif(50, 0.5, 2),
-#'   wt2 = runif(50, 0.5, 2),
-#'   st  = rep(c("A", "B"), 25),
-#'   y   = rnorm(50)
-#' )
-#' d <- as_survey(df, weights = wt, strata = st)
+#' # NHANES has two weight columns for different analysis types;
+#' # start with the MEC examination weight for exam participants
+#' exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
+#' d <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #'
-#' # Update the weight column
-#' d_updated <- update_design(d, weights = wt2)
+#' # Switch to interview weight for interview-based variables
+#' d_updated <- update_design(d, weights = wtint2yr)
 #'
 #' @seealso
 #'   [as_survey()] to create a `survey_taylor` object,

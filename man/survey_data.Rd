@@ -18,8 +18,8 @@ This is a thin accessor for \code{x@data} that provides a stable public name
 independent of the S7 property structure.
 }
 \examples{
-df <- data.frame(y = rnorm(10), w = runif(10, 0.5, 2))
-d  <- as_survey(df, weights = w)
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
 head(survey_data(d))
 }
 \seealso{

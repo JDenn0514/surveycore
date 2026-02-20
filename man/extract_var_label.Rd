@@ -21,16 +21,11 @@ Returns the variable label for a single variable in a survey design object,
 or \code{NULL} if no label has been set.
 }
 \examples{
-df <- data.frame(age = 25:30, wt = rep(1, 6))
-d  <- survey_taylor(
-  data = df,
-  variables = list(
-    ids = NULL, weights = "wt", strata = NULL,
-    fpc = NULL, nest = FALSE, probs_provided = FALSE
-  )
-)
-d <- set_var_label(d, age, "Age in years")
-extract_var_label(d, age)
+# nhanes_2017 carries haven-style labels auto-extracted by as_survey()
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
+extract_var_label(d, riagendr)   # "Gender"
+extract_var_label(d, ridageyr)   # "Age in years at screening"
 
 }
 \seealso{

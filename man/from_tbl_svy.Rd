@@ -18,11 +18,11 @@ to \code{\link[=from_svydesign]{from_svydesign()}}. A \code{tbl_svy} IS a \code{
 is structurally identical. Requires both \code{survey} and \code{srvyr}.
 }
 \examples{
-df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
 if (requireNamespace("survey", quietly = TRUE) &&
     requireNamespace("srvyr",  quietly = TRUE)) {
   ts <- srvyr::as_survey(
-    survey::svydesign(ids = ~1, weights = ~w, data = df)
+    survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
+      strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
   )
   d <- from_tbl_svy(ts)
 }

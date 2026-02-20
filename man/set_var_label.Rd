@@ -21,18 +21,12 @@ The modified survey object, invisibly.
 Sets the variable label for a single variable in a survey design object.
 }
 \examples{
-df <- data.frame(age = 25:30, wt = rep(1, 6))
-d  <- survey_taylor(
-  data = df,
-  variables = list(
-    ids = NULL, weights = "wt", strata = NULL,
-    fpc = NULL, nest = FALSE, probs_provided = FALSE
-  )
-)
-d <- set_var_label(d, age, "Age in years")
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
+d <- set_var_label(d, indfmpir, "Income-to-poverty ratio")
 
 # Pipe-friendly
-d <- d |> set_var_label(age, "Age in years")
+d <- d |> set_var_label(bpxsy1, "Systolic BP (1st reading)")
 
 }
 \seealso{

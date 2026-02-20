@@ -65,16 +65,11 @@
 #' @return A character string, or `NULL` if no label has been set.
 #'
 #' @examples
-#' df <- data.frame(age = 25:30, wt = rep(1, 6))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
-#' )
-#' d <- set_var_label(d, age, "Age in years")
-#' extract_var_label(d, age)
+#' # nhanes_2017 carries haven-style labels auto-extracted by as_survey()
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' extract_var_label(d, riagendr)   # "Gender"
+#' extract_var_label(d, ridageyr)   # "Age in years at screening"
 #'
 #' @seealso [set_var_label()] to set a variable label
 #' @family metadata
@@ -98,16 +93,10 @@ extract_var_label <- function(x, var) {
 #' @return A named vector (e.g., `c(Male = 1L, Female = 2L)`), or `NULL`.
 #'
 #' @examples
-#' df <- data.frame(sex = c(1L, 2L, 1L), wt = c(1, 1, 1))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
-#' )
-#' d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
-#' extract_val_labels(d, sex)
+#' # nhanes_2017 carries haven-style value labels auto-extracted by as_survey()
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' extract_val_labels(d, riagendr)   # c(Male = 1, Female = 2)
 #'
 #' @seealso [set_val_labels()] to set value labels
 #' @family metadata
@@ -175,18 +164,12 @@ extract_var_note <- function(x, var) {
 #' @return The modified survey object, invisibly.
 #'
 #' @examples
-#' df <- data.frame(age = 25:30, wt = rep(1, 6))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
-#' )
-#' d <- set_var_label(d, age, "Age in years")
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_var_label(d, indfmpir, "Income-to-poverty ratio")
 #'
 #' # Pipe-friendly
-#' d <- d |> set_var_label(age, "Age in years")
+#' d <- d |> set_var_label(bpxsy1, "Systolic BP (1st reading)")
 #'
 #' @seealso [set_variable_labels()] for setting multiple labels at once,
 #'   [extract_var_label()] to retrieve a label
@@ -226,15 +209,11 @@ set_var_label <- function(x, var, label) {
 #' @return The modified survey object, invisibly.
 #'
 #' @examples
-#' df <- data.frame(sex = c(1L, 2L, 1L), wt = c(1, 1, 1))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_val_labels(
+#'   d, ridstatr, c("Interview only" = 1L, "Interview + exam" = 2L)
 #' )
-#' d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
 #'
 #' @seealso [set_value_labels()] for setting labels for multiple variables,
 #'   [extract_val_labels()] to retrieve value labels
@@ -350,22 +329,16 @@ set_var_note <- function(x, var, note) {
 #' @return The modified survey object, invisibly.
 #'
 #' @examples
-#' df <- data.frame(age = 25:30, income = 1:6, wt = rep(1, 6))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
-#' )
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #' d <- set_variable_labels(
 #'   d,
-#'   age    = "Age in years",
-#'   income = "Annual household income"
+#'   bpxsy1 = "Systolic BP, 1st reading (mm Hg)",
+#'   bpxdi1 = "Diastolic BP, 1st reading (mm Hg)"
 #' )
 #'
 #' # Programmatic with list splicing
-#' lbls <- list(age = "Age in years", income = "Annual household income")
+#' lbls <- list(bpxsy1 = "Systolic BP", bpxdi1 = "Diastolic BP")
 #' d <- set_variable_labels(d, !!!lbls)
 #'
 #' @seealso [set_var_label()] for setting a single label
@@ -402,18 +375,12 @@ set_variable_labels <- function(x, ...) {
 #' @return The modified survey object, invisibly.
 #'
 #' @examples
-#' df <- data.frame(sex = c(1L, 2L), edu = c(1L, 3L), wt = c(1, 1))
-#' d  <- survey_taylor(
-#'   data = df,
-#'   variables = list(
-#'     ids = NULL, weights = "wt", strata = NULL,
-#'     fpc = NULL, nest = FALSE, probs_provided = FALSE
-#'   )
-#' )
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
 #' d <- set_value_labels(
 #'   d,
-#'   sex = c(Male = 1L, Female = 2L),
-#'   edu = c("Less than HS" = 1L, "Some college" = 3L)
+#'   riagendr = c(Male = 1L, Female = 2L),
+#'   ridstatr = c("Interview only" = 1L, "Interview + exam" = 2L)
 #' )
 #'
 #' @seealso [set_val_labels()] for setting value labels for a single variable
