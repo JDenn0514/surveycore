@@ -32,7 +32,8 @@
 
 <div id="surveycore-package-development" class="section level1">
 
-<div class="section level2">
+<p><strong>Part of the <a href="../survey-standards/ECOSYSTEM.html">surveyverse ecosystem</a> — see there for ecosystem vision, architecture, and how surveycore relates to other packages.</strong></p>
+<hr><div class="section level2">
 <h2 id="project-overview">Project Overview<a class="anchor" aria-label="anchor" href="#project-overview"></a></h2>
 <p>surveycore is the foundation package of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for the <code>survey</code> and <code>srvyr</code> packages in R. It provides S7-based survey design objects, a metadata/label system, and vendored variance estimation code.</p>
 </div>
@@ -177,15 +178,9 @@
 <div class="section level2">
 <h2 id="before-starting-any-implementation">Before Starting Any Implementation<a class="anchor" aria-label="anchor" href="#before-starting-any-implementation"></a></h2>
 <p><strong>Read these files first — in this order — before writing any code:</strong></p>
-<ol style="list-style-type: decimal"><li>
-<code>.claude/rules/code-style.md</code> — indentation, S7 method syntax, error conventions, function design</li>
-<li>
-<code>.claude/rules/testing-standards.md</code> — test structure, coverage requirements, assertion patterns</li>
-<li>
-<code>.claude/rules/r-package-conventions.md</code> — roxygen2, NAMESPACE, exports, R CMD check hygiene</li>
-<li>
-<code>.claude/rules/github-strategy.md</code> — branching model, commit format, PR workflow</li>
-</ol><p><strong>Then read the planning documents:</strong></p>
+<p><strong>Shared standards (all surveyverse packages follow these):</strong> 1. <code>../survey-standards/.claude/rules/code-style.md</code> — indentation, S7 method syntax, error conventions, function design 2. <code>../survey-standards/.claude/rules/testing-standards.md</code> — test structure, coverage requirements, assertion patterns 3. <code>../survey-standards/.claude/rules/r-package-conventions.md</code> — roxygen2, NAMESPACE, exports, R CMD check hygiene 4. <code>../survey-standards/.claude/rules/github-strategy.md</code> — branching model, commit format, PR workflow</p>
+<p><strong>Package-specific (surveycore only):</strong> - <code>.claude/rules/</code> — any package-specific rules or extensions</p>
+<p><strong>Then read the planning documents:</strong></p>
 <ol start="5" style="list-style-type: decimal"><li>
 <code>plans/surveycore-phase0-formal-specification.md</code> — authoritative for WHAT to build and how it behaves</li>
 <li>
