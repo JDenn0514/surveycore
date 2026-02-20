@@ -225,7 +225,7 @@
 #' svy <- as_survey_rep(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
-#'   repweights = starts_with("pwgtp") & !matches("^pwgtp$"),
+#'   repweights = pwgtp1:pwgtp80,
 #'   type       = "successive-difference"
 #' )
 #' ```
