@@ -54,8 +54,7 @@
 #'   survey::svymean(~y, sv)
 #' }
 #'
-#' @seealso `from_svydesign()` to convert back from a `survey` design
-#'   (implemented in step 12)
+#' @seealso [from_svydesign()] to convert back from a `survey` design
 #' @family conversion
 #' @export
 as_svydesign <- function(x) {
@@ -209,8 +208,7 @@ as_svydesign <- function(x) {
 #'   ts <- as_tbl_svy(d)
 #' }
 #'
-#' @seealso `from_tbl_svy()` to convert back from a `tbl_svy` object
-#'   (implemented in step 12)
+#' @seealso [from_tbl_svy()] to convert back from a `tbl_svy` object
 #' @family conversion
 #' @export
 as_tbl_svy <- function(x) {
@@ -248,4 +246,284 @@ as_tbl_svy <- function(x) {
   }
 
   srvyr::as_survey(as_svydesign(x))
+}
+
+
+# ── Internal helpers for from_svydesign ───────────────────────────────────────
+
+# Extract variable names from a formula or call expression.
+# Returns NULL when f is NULL, when f is ~1 (no variables), or on error.
+# Examples:
+#   ~wt          → "wt"
+#   ~psu + ssu   → c("psu", "ssu")
+#   ~1           → NULL
+#   NULL         → NULL
+#' @noRd
+.vars_from_formula <- function(f) {
+  if (is.null(f)) return(NULL)
+  vars <- tryCatch(all.vars(f), error = function(e) character(0L))
+  if (length(vars) == 0L) NULL else vars
+}
+
+
+# Find the first column in data whose numeric values exactly match vals.
+# Returns the column name, or NULL if no matching column exists.
+# Used to recover weight/subset column names from stored vectors in survey
+# design objects that do not preserve the original column name.
+#' @noRd
+.find_col_by_value <- function(data, vals) {
+  if (is.null(vals) || length(vals) == 0L) return(NULL)
+  for (nm in names(data)) {
+    col <- data[[nm]]
+    if ((is.numeric(col) || is.logical(col)) &&
+        length(col) == length(vals) &&
+        isTRUE(all.equal(
+          as.numeric(col), as.numeric(vals),
+          check.attributes = FALSE
+        ))) {
+      return(nm)
+    }
+  }
+  NULL
+}
+
+
+# ── from_svydesign ────────────────────────────────────────────────────────────
+
+#' Convert a survey Package Design to a surveycore Design Object
+#'
+#' Converts a `survey` package design object (`svydesign`, `svrepdesign`, or
+#' `twophase`) to the corresponding surveycore S7 object. The data, design
+#' variables, and replicate weights are preserved; metadata (variable labels,
+#' value labels) is not — the `survey` package has no metadata system.
+#'
+#' Weight column names are recovered from the design call when available. When
+#' the call does not contain a formula (e.g., weights were passed as a vector),
+#' the weight column is identified by matching the stored weight values against
+#' columns in the data. If no match is found, a `..surveycore_wt..` column is
+#' added.
+#'
+#' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
+#'   or `srvyr::tbl_svy` object.
+#' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#'
+#' @examples
+#' df <- data.frame(
+#'   id  = 1:20,
+#'   wt  = runif(20, 0.5, 2),
+#'   st  = rep(c("A", "B"), 10),
+#'   y   = rnorm(20)
+#' )
+#' if (requireNamespace("survey", quietly = TRUE)) {
+#'   sv <- survey::svydesign(ids = ~1, weights = ~wt, strata = ~st, data = df)
+#'   d  <- from_svydesign(sv)
+#'   survey_data(d)
+#' }
+#'
+#' @seealso [as_svydesign()] to convert in the other direction
+#' @family conversion
+#' @export
+from_svydesign <- function(x) {
+  if (!requireNamespace("survey", quietly = TRUE)) {
+    # nocov start
+    cli::cli_abort(
+      c(
+        "x" = "{.pkg survey} must be installed to use {.fn from_svydesign}.",
+        "v" = "Install it with {.code install.packages(\"survey\")}."
+      ),
+      class = "surveycore_error_pkg_not_installed"
+    )
+    # nocov end
+  }
+
+  if (inherits(x, "twophase2") || inherits(x, "twophase")) {
+    .from_svydesign_twophase(x)
+  } else if (inherits(x, "svyrep.design")) {
+    .from_svydesign_replicate(x)
+  } else if (inherits(x, "survey.design")) {
+    .from_svydesign_taylor(x)
+  } else {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg x} must be a {.pkg survey} design object ",
+          "({.cls svydesign}, {.cls svyrep.design}, or {.cls twophase})."
+        ),
+        "i" = "Got {.cls {class(x)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_design"
+    )
+  }
+}
+
+
+# svydesign / tbl_svy → survey_taylor
+#' @noRd
+.from_svydesign_taylor <- function(x) {
+  data <- as.data.frame(x$variables)
+
+  # tbl_svy stores its call as srvyr's quoteless_text (not a language object).
+  # Use tryCatch so atomic / non-language calls degrade to NULL gracefully.
+  .call_vars <- function(nm) {
+    tryCatch(.vars_from_formula(x$call[[nm]]), error = function(e) NULL)
+  }
+
+  ids_var    <- .call_vars("ids")
+  strata_var <- .call_vars("strata")
+  fpc_raw    <- .call_vars("fpc")
+  fpc_var    <- if (!is.null(fpc_raw)) fpc_raw[[1L]] else NULL
+  nest       <- tryCatch(isTRUE(x$call$nest), error = function(e) FALSE)
+
+  # Weight column: try the call formula first, then value-matching.
+  weights_var <- .call_vars("weights")
+  if (is.null(weights_var)) {
+    weights_var <- .find_col_by_value(data, 1 / x$prob)
+  }
+  if (is.null(weights_var)) {
+    weights_var <- "..surveycore_wt.."
+    data[[weights_var]] <- 1 / x$prob
+  }
+
+  variables <- list(
+    ids            = ids_var,
+    weights        = weights_var,
+    strata         = strata_var,
+    fpc            = fpc_var,
+    nest           = nest,
+    probs_provided = FALSE
+  )
+
+  survey_taylor(
+    data      = data,
+    variables = variables,
+    metadata  = survey_metadata()
+  )
+}
+
+
+# svyrep.design → survey_replicate
+#' @noRd
+.from_svydesign_replicate <- function(x) {
+  data     <- as.data.frame(x$variables)
+  rep_cols <- colnames(x$repweights)
+
+  # Weight column: find by matching pweights to data columns.
+  weights_var <- .find_col_by_value(data, x$pweights)
+  if (is.null(weights_var)) {
+    weights_var <- "..surveycore_wt.."
+    data[[weights_var]] <- x$pweights
+  }
+
+  variables <- list(
+    weights        = weights_var,
+    repweights     = rep_cols,
+    type           = x$type,
+    scale          = x$scale,
+    rscales        = x$rscales,
+    mse            = isTRUE(x$mse),
+    fpc            = NULL,
+    fpctype        = "fraction",
+    probs_provided = FALSE
+  )
+
+  survey_replicate(
+    data      = data,
+    variables = variables,
+    metadata  = survey_metadata()
+  )
+}
+
+
+# twophase / twophase2 → survey_twophase
+#' @noRd
+.from_svydesign_twophase <- function(x) {
+  # Convert the phase 1 full design to survey_taylor.
+  phase1_sc  <- .from_svydesign_taylor(x$phase1$full)
+  phase1_data <- phase1_sc@data
+
+  # Locate the subset column by matching x$subset to logical columns in data.
+  subset_var <- .find_col_by_value(phase1_data, as.numeric(x$subset))
+  if (is.null(subset_var)) {
+    subset_var <- "..surveycore_subset.."
+    phase1_data[[subset_var]] <- x$subset
+  }
+
+  # Derive method from the class: twophase2 → "full", twophase → "approx".
+  method <- if (inherits(x, "twophase2")) "full" else "approx"
+
+  variables <- list(
+    phase1 = phase1_sc@variables,
+    phase2 = NULL,
+    subset = subset_var,
+    method = method
+  )
+
+  survey_twophase(
+    data      = phase1_data,
+    variables = variables,
+    metadata  = survey_metadata()
+  )
+}
+
+
+# ── from_tbl_svy ──────────────────────────────────────────────────────────────
+
+#' Convert an srvyr tbl_svy to a surveycore Design Object
+#'
+#' Converts an `srvyr` `tbl_svy` to a surveycore design object by delegating
+#' to [from_svydesign()]. A `tbl_svy` IS a `survey.design`, so the conversion
+#' is structurally identical. Requires both `survey` and `srvyr`.
+#'
+#' @param x A `srvyr::tbl_svy` object.
+#' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#'
+#' @examples
+#' df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
+#' if (requireNamespace("survey", quietly = TRUE) &&
+#'     requireNamespace("srvyr",  quietly = TRUE)) {
+#'   ts <- srvyr::as_survey(
+#'     survey::svydesign(ids = ~1, weights = ~w, data = df)
+#'   )
+#'   d <- from_tbl_svy(ts)
+#' }
+#'
+#' @seealso [as_tbl_svy()] to convert in the other direction
+#' @family conversion
+#' @export
+from_tbl_svy <- function(x) {
+  if (!requireNamespace("survey", quietly = TRUE)) {
+    # nocov start
+    cli::cli_abort(
+      c(
+        "x" = "{.pkg survey} must be installed to use {.fn from_tbl_svy}.",
+        "v" = "Install it with {.code install.packages(\"survey\")}."
+      ),
+      class = "surveycore_error_pkg_not_installed"
+    )
+    # nocov end
+  }
+  if (!requireNamespace("srvyr", quietly = TRUE)) {
+    # nocov start
+    cli::cli_abort(
+      c(
+        "x" = "{.pkg srvyr} must be installed to use {.fn from_tbl_svy}.",
+        "v" = "Install it with {.code install.packages(\"srvyr\")}."
+      ),
+      class = "surveycore_error_pkg_not_installed"
+    )
+    # nocov end
+  }
+
+  if (!inherits(x, "tbl_svy")) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg x} must be a {.cls tbl_svy} object.",
+        "i" = "Got {.cls {class(x)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_tbl_svy"
+    )
+  }
+
+  # tbl_svy inherits from survey.design — delegate directly.
+  from_svydesign(x)
 }

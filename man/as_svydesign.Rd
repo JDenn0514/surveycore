@@ -38,10 +38,11 @@ if (requireNamespace("survey", quietly = TRUE)) {
 
 }
 \seealso{
-\code{from_svydesign()} to convert back from a \code{survey} design
-(implemented in step 12)
+\code{\link[=from_svydesign]{from_svydesign()}} to convert back from a \code{survey} design
 
 Other conversion: 
-\code{\link{as_tbl_svy}()}
+\code{\link{as_tbl_svy}()},
+\code{\link{from_svydesign}()},
+\code{\link{from_tbl_svy}()}
 }
 \concept{conversion}

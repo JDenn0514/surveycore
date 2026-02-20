@@ -1,8 +1,8 @@
 # tests/testthat/test-conversion.R
 #
 # Tests for conversion functions in R/05-methods-conversion.R.
-# Step 11 covers as_svydesign() and as_tbl_svy().
-# Step 12 will add from_svydesign() and from_tbl_svy() tests.
+# Step 11: as_svydesign(), as_tbl_svy()
+# Step 12: from_svydesign(), from_tbl_svy()
 #
 # All blocks that exercise survey/srvyr use skip_if_not_installed().
 #
@@ -28,6 +28,29 @@
 #    13. survey_taylor → tbl_svy
 #   as_tbl_svy() — error on non-survey input
 #    14. rejects plain data.frame
+#   from_svydesign() — happy paths
+#    15. svydesign (Taylor) → survey_taylor
+#    16. svyrep.design (BRR) → survey_replicate
+#    17. twophase → survey_twophase
+#   from_svydesign() — output class
+#    18. returns survey_taylor for svydesign
+#    19. returns survey_replicate for svyrep.design
+#    20. returns survey_twophase for twophase
+#   from_svydesign() — data preserved
+#    21. data rows match
+#    22. original columns preserved in @data
+#   from_svydesign() — design variables recovered
+#    23. strata column recovered from Taylor design
+#    24. repweight columns recovered from replicate design
+#   from_svydesign() — numerical round-trip
+#    25. svymean round-trip for Taylor design [numerical]
+#    26. svymean round-trip for replicate design [numerical]
+#   from_svydesign() — error on non-survey input
+#    27. rejects plain data.frame
+#   from_tbl_svy() — happy path
+#    28. tbl_svy → survey_taylor
+#   from_tbl_svy() — error on non-tbl_svy input
+#    29. rejects plain data.frame
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -240,5 +263,240 @@ test_that("as_tbl_svy() rejects a plain data.frame", {
   expect_error(
     as_tbl_svy(data.frame(x = 1)),
     class = "surveycore_error_not_survey_object"
+  )
+})
+
+
+# ── 15–17. from_svydesign() — happy paths ────────────────────────────────────
+
+test_that("from_svydesign() converts svydesign to survey_taylor without error", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+    data = df, nest = TRUE
+  )
+  d <- from_svydesign(sv)
+  expect_true(!is.null(d))
+})
+
+test_that("from_svydesign() converts svyrep.design to survey_replicate without error", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L, n_psu = 10L, n_strata = 2L,
+    design = "replicate", type = "brr", seed = 42L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    weights    = df$wt,
+    repweights = df[, repwt_cols],
+    type       = "BRR",
+    mse        = TRUE,
+    data       = df
+  )
+  d <- from_svydesign(sv)
+  expect_true(!is.null(d))
+})
+
+test_that("from_svydesign() converts twophase design to survey_twophase without error", {
+  skip_if_not_installed("survey")
+  df    <- make_survey_data(n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = 42L)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  d_sc  <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  sv_tp <- suppressWarnings(as_svydesign(d_sc))
+  d     <- suppressWarnings(from_svydesign(sv_tp))
+  expect_true(!is.null(d))
+})
+
+
+# ── 18–20. from_svydesign() — output class ───────────────────────────────────
+
+test_that("from_svydesign(svydesign) returns a survey_taylor object", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+    data = df, nest = TRUE
+  )
+  d <- from_svydesign(sv)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+})
+
+test_that("from_svydesign(svyrep.design) returns a survey_replicate object", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L, n_psu = 10L, n_strata = 2L,
+    design = "replicate", type = "brr", seed = 42L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    weights = df$wt, repweights = df[, repwt_cols],
+    type = "BRR", mse = TRUE, data = df
+  )
+  d <- from_svydesign(sv)
+  expect_true(S7::S7_inherits(d, survey_replicate))
+})
+
+test_that("from_svydesign(twophase) returns a survey_twophase object", {
+  skip_if_not_installed("survey")
+  df    <- make_survey_data(n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = 42L)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  d_sc  <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  sv_tp <- suppressWarnings(as_svydesign(d_sc))
+  d     <- suppressWarnings(from_svydesign(sv_tp))
+  expect_true(S7::S7_inherits(d, survey_twophase))
+})
+
+
+# ── 21–22. from_svydesign() — data preserved ─────────────────────────────────
+
+test_that("from_svydesign() preserves all data rows", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+    data = df, nest = TRUE
+  )
+  d <- from_svydesign(sv)
+  test_invariants(d)
+  expect_identical(nrow(d@data), nrow(df))
+})
+
+test_that("from_svydesign() preserves original columns in @data", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+    data = df, nest = TRUE
+  )
+  d <- from_svydesign(sv)
+  expect_true(all(names(df) %in% names(d@data)))
+})
+
+
+# ── 23–24. from_svydesign() — design variables recovered ─────────────────────
+
+test_that("from_svydesign() recovers strata column name from Taylor design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+    data = df, nest = TRUE
+  )
+  d <- from_svydesign(sv)
+  expect_identical(d@variables$strata, "strata")
+})
+
+test_that("from_svydesign() recovers replicate weight column names", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L, n_psu = 10L, n_strata = 2L,
+    design = "replicate", type = "brr", seed = 42L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    weights = df$wt, repweights = df[, repwt_cols],
+    type = "BRR", mse = TRUE, data = df
+  )
+  d <- from_svydesign(sv)
+  expect_identical(d@variables$repweights, repwt_cols)
+})
+
+
+# ── 25–26. from_svydesign() — numerical round-trip ───────────────────────────
+
+test_that("from_svydesign() + as_svydesign() Taylor round-trip agrees [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 77L)
+
+  # Direct survey design
+  sv_direct <- survey::svydesign(
+    ids     = ~psu,
+    weights = ~wt,
+    strata  = ~strata,
+    fpc     = ~fpc,
+    data    = df,
+    nest    = TRUE
+  )
+
+  # Round-trip: survey → surveycore → survey
+  d_sc      <- from_svydesign(sv_direct)
+  sv_rt     <- as_svydesign(d_sc)
+
+  m_direct <- survey::svymean(~y1, sv_direct)
+  m_rt     <- survey::svymean(~y1, sv_rt)
+
+  expect_equal(coef(m_direct)[["y1"]], coef(m_rt)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(m_direct)),
+    as.numeric(survey::SE(m_rt)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("from_svydesign() + as_svydesign() replicate round-trip agrees [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L, n_psu = 10L, n_strata = 2L,
+    design = "replicate", type = "brr", seed = 77L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  sv_direct <- survey::svrepdesign(
+    weights    = df$wt,
+    repweights = df[, repwt_cols],
+    type       = "BRR",
+    mse        = TRUE,
+    data       = df
+  )
+
+  d_sc  <- from_svydesign(sv_direct)
+  sv_rt <- as_svydesign(d_sc)
+
+  m_direct <- survey::svymean(~y1, sv_direct)
+  m_rt     <- survey::svymean(~y1, sv_rt)
+
+  expect_equal(coef(m_direct)[["y1"]], coef(m_rt)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(m_direct)),
+    as.numeric(survey::SE(m_rt)),
+    tolerance = 1e-8
+  )
+})
+
+
+# ── 27. from_svydesign() — error on non-survey input ─────────────────────────
+
+test_that("from_svydesign() rejects a plain data.frame", {
+  skip_if_not_installed("survey")
+  expect_error(
+    from_svydesign(data.frame(x = 1)),
+    class = "surveycore_error_not_survey_design"
+  )
+})
+
+
+# ── 28. from_tbl_svy() — happy path ──────────────────────────────────────────
+
+test_that("from_tbl_svy() converts tbl_svy to survey_taylor", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d  <- make_taylor()
+  test_invariants(d)
+  ts <- as_tbl_svy(d)
+  d2 <- from_tbl_svy(ts)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+  expect_identical(nrow(d2@data), nrow(d@data))
+})
+
+
+# ── 29. from_tbl_svy() — error on non-tbl_svy input ─────────────────────────
+
+test_that("from_tbl_svy() rejects a plain data.frame", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  expect_error(
+    from_tbl_svy(data.frame(x = 1)),
+    class = "surveycore_error_not_tbl_svy"
   )
 })
