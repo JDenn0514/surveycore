@@ -225,6 +225,12 @@ as_survey <- function(
     strata_var <- NULL
   } else {
     strata_cols <- tidyselect::eval_select(strata_quo, data)
+    if (length(strata_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg strata} matched no columns in {.arg data}"),
+        class = "surveycore_error_strata_not_found"
+      )
+    }
     if (length(strata_cols) > 1L) {
       cli::cli_abort(
         c(
@@ -245,6 +251,12 @@ as_survey <- function(
     fpc_var <- NULL
   } else {
     fpc_cols <- tidyselect::eval_select(fpc_quo, data)
+    if (length(fpc_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
+        class = "surveycore_error_fpc_not_found"
+      )
+    }
     if (length(fpc_cols) > 1L) {
       cli::cli_abort(
         c(
@@ -573,6 +585,12 @@ as_survey_rep <- function(
     fpc_var <- NULL
   } else {
     fpc_cols <- tidyselect::eval_select(fpc_quo, data)
+    if (length(fpc_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
+        class = "surveycore_error_fpc_not_found"
+      )
+    }
     if (length(fpc_cols) > 1L) {
       cli::cli_abort(
         c(
@@ -594,6 +612,9 @@ as_survey_rep <- function(
 
   # Validate repweights columns are numeric (Layer 2)
   .validate_repweights(repweights_vars, data)
+
+  # Validate fpc column if provided (no NAs allowed)
+  .validate_fpc(fpc_var, data)
 
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)

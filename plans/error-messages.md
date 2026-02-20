@@ -34,9 +34,11 @@ against the messages defined here.
 | 8 | `as_survey()` | `weights` selects 0 columns | ERROR | `surveycore_error_weights_not_found` | `"{.arg weights} matched no columns in {.arg data}"` |
 | 9 | `as_survey()` | `weights` selects >1 column | ERROR | `surveycore_error_weights_multiple` | `"{.arg weights} must select exactly one column, not {length(weights_cols)}"` |
 | 10 | `as_survey()` | `weights` all zero | ERROR | `surveycore_error_weights_all_zero` | `"All values in {.arg weights} ({.field {weights_var}}) are zero or missing — no valid weights"` |
-| 11 | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
+| 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
+| 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
-| 13 | `as_survey()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
+| 13 | `as_survey()` / `as_survey_rep()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
+| 13b | `as_survey()` / `as_survey_rep()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
 | 14 | `as_survey()` | `fpc` column contains `NA` | ERROR | `surveycore_error_fpc_na` | `"{.arg fpc} column {.field {fpc_var}} contains {sum(is.na(fpc_col))} NA value(s). FPC must be fully observed."` |
 | 15 | `as_survey()` | `nest = TRUE` with no `strata` | ERROR | `surveycore_error_nest_without_strata` | `"{.arg nest = TRUE} requires {.arg strata} to be specified"` |
 | 16 | `as_survey_rep()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |

@@ -1251,3 +1251,45 @@ test_that("as_survey_twophase() errors when fpc2 selects multiple columns", {
     class = "surveycore_error_fpc_multiple"
   )
 })
+
+
+# ── Coverage: zero-length guards (bugs fixed) ─────────────────────────────────
+
+test_that("as_survey() errors when strata expression matches no columns", {
+  df <- data.frame(x = 1:10, wt = rep(1, 10))
+  expect_error(
+    as_survey(df, weights = wt, strata = tidyselect::starts_with("nonexistent_xyz")),
+    class = "surveycore_error_strata_not_found"
+  )
+})
+
+test_that("as_survey() errors when fpc expression matches no columns", {
+  df <- data.frame(x = 1:10, wt = rep(1, 10))
+  expect_error(
+    as_survey(df, weights = wt, fpc = tidyselect::starts_with("nonexistent_xyz")),
+    class = "surveycore_error_fpc_not_found"
+  )
+})
+
+test_that("as_survey_rep() errors when fpc expression matches no columns", {
+  df <- data.frame(
+    y  = 1:10, wt = rep(1, 10), r1 = rep(1, 10), r2 = rep(1, 10)
+  )
+  expect_error(
+    as_survey_rep(df, weights = wt, repweights = c(r1, r2), type = "BRR",
+                  fpc = tidyselect::starts_with("nonexistent_xyz")),
+    class = "surveycore_error_fpc_not_found"
+  )
+})
+
+test_that("as_survey_rep() validates fpc column for NAs", {
+  df <- data.frame(
+    y   = 1:10, wt = rep(1, 10), r1 = rep(1, 10), r2 = rep(1, 10),
+    fpc = c(100L, NA_integer_, rep(100L, 8L))
+  )
+  expect_error(
+    as_survey_rep(df, weights = wt, repweights = c(r1, r2), type = "BRR",
+                  fpc = fpc),
+    class = "surveycore_error_fpc_na"
+  )
+})

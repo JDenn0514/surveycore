@@ -591,3 +591,25 @@ test_that("from_svydesign() twophase with inline subset creates ..surveycore_sub
   # The fallback subset column must have been created
   expect_true("..surveycore_subset.." %in% names(d@data))
 })
+
+# 36. visible_vars present after round-trip (from_svydesign Taylor and replicate)
+test_that("from_svydesign() taylor result has visible_vars key in @variables", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  df <- data.frame(x = rnorm(30), w = runif(30, 0.5, 2), s = rep(1:3, 10))
+  sv <- survey::svydesign(ids = ~1, weights = ~w, strata = ~s, data = df)
+  d  <- from_svydesign(sv)
+  expect_true("visible_vars" %in% names(d@variables))
+})
+
+test_that("from_svydesign() replicate result has visible_vars key in @variables", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n   <- 20L
+  df  <- data.frame(y = rnorm(n), wt = runif(n, 1, 3))
+  rep <- matrix(runif(n * 4L), ncol = 4L)
+  sv  <- survey::svrepdesign(data = df, weights = ~wt, repweights = rep,
+                              type = "BRR", combined.weights = TRUE)
+  d   <- from_svydesign(sv)
+  expect_true("visible_vars" %in% names(d@variables))
+})

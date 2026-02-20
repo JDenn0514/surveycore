@@ -390,7 +390,8 @@ from_svydesign <- function(x) {
     strata         = strata_var,
     fpc            = fpc_var,
     nest           = nest,
-    probs_provided = FALSE
+    probs_provided = FALSE,
+    visible_vars   = NULL
   )
 
   survey_taylor(
@@ -423,7 +424,8 @@ from_svydesign <- function(x) {
     mse            = isTRUE(x$mse),
     fpc            = NULL,
     fpctype        = "fraction",
-    probs_provided = FALSE
+    probs_provided = FALSE,
+    visible_vars   = NULL
   )
 
   survey_replicate(
