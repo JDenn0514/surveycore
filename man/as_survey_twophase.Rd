@@ -106,6 +106,7 @@ d2b <- as_survey_twophase(
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_rep}()},
+\code{\link{survey_data}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}

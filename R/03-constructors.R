@@ -366,7 +366,8 @@ as_survey <- function(
     strata         = strata_var,
     fpc            = fpc_var,
     nest           = isTRUE(nest),
-    probs_provided = probs_provided
+    probs_provided = probs_provided,
+    visible_vars   = NULL
   )
 
   # ── Extract haven-style metadata ────────────────────────────────────────────
@@ -616,14 +617,15 @@ as_survey_rep <- function(
   # ── Build @variables list ───────────────────────────────────────────────────
 
   variables <- list(
-    weights    = weights_var,
-    repweights = repweights_vars,
-    type       = type,
-    scale      = scale,
-    rscales    = rscales,
-    fpc        = fpc_var,
-    fpctype    = fpctype,
-    mse        = isTRUE(mse)
+    weights      = weights_var,
+    repweights   = repweights_vars,
+    type         = type,
+    scale        = scale,
+    rscales      = rscales,
+    fpc          = fpc_var,
+    fpctype      = fpctype,
+    mse          = isTRUE(mse),
+    visible_vars = NULL
   )
 
   # ── Extract haven-style metadata ────────────────────────────────────────────
@@ -940,10 +942,11 @@ as_survey_twophase <- function(
   )
 
   variables <- list(
-    phase1 = phase1@variables,
-    phase2 = phase2_vars,
-    subset = subset_var,
-    method = method
+    phase1       = phase1@variables,
+    phase2       = phase2_vars,
+    subset       = subset_var,
+    method       = method,
+    visible_vars = NULL
   )
 
   # ── Inherit metadata from phase1 ────────────────────────────────────────────

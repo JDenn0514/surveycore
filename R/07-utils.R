@@ -1,0 +1,149 @@
+# R/07-utils.R
+#
+# Utility functions used across two or more source files.
+# Single-use helpers live at the top of their respective source files.
+# See .claude/rules/code-style.md Section 4 for placement rules.
+#
+# Note: .update_design_var_names() and .rename_metadata_keys() live in
+# R/02-validators.R because they were first needed by the validator test
+# infrastructure and are co-located with their associated validation logic.
+
+
+# ── Exported accessor ─────────────────────────────────────────────────────────
+
+#' Access the Data Component of a Survey Design Object
+#'
+#' Returns the underlying data frame stored in a survey design object.
+#' This is a thin accessor for `x@data` that provides a stable public name
+#' independent of the S7 property structure.
+#'
+#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#' @return A `data.frame` with all variables, including design variables.
+#' @examples
+#' df <- data.frame(y = rnorm(10), w = runif(10, 0.5, 2))
+#' d  <- as_survey(df, weights = w)
+#' head(survey_data(d))
+#' @family constructors
+#' @export
+survey_data <- function(x) {
+  if (!S7::S7_inherits(x, survey_base)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg x} must be a survey design object.",
+        "i" = "Got {.cls {class(x)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_object"
+    )
+  }
+  x@data
+}
+
+
+# ── Internal constants ────────────────────────────────────────────────────────
+
+# Column name used by filter() (Phase 0.5 / surveytidy) to mark domain
+# membership. Double-dot prefix and suffix minimise collision with user columns.
+SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
+
+
+# ── Internal tidy-select resolver ─────────────────────────────────────────────
+
+# Resolve a tidy-select quosure against a data frame.
+# Returns a character vector of selected column names, or NULL when expr is a
+# NULL quosure. Count validation is left to callers — error classes differ by
+# argument (weights, strata, fpc, etc.).
+# Used by constructors and Phase 0.5 dplyr verbs in surveytidy.
+#
+# @param expr  A quosure (from rlang::enquo()). NULL quosure → returns NULL.
+# @param data  A data.frame to evaluate the selection against.
+# @return Character vector of column names, or NULL.
+#' @noRd
+.resolve_tidy_select <- function(expr, data) {
+  if (rlang::quo_is_null(expr)) return(NULL)
+  names(tidyselect::eval_select(expr, data))
+}
+
+
+# ── Internal design-variable helpers ─────────────────────────────────────────
+
+# Return a flat character vector of all design-variable column names.
+# NULL entries are dropped by c(). Unique names are returned.
+# Works for survey_taylor, survey_replicate, and survey_twophase.
+# Used by conversion methods (05-methods-conversion.R) and variance
+# estimation (06-variance-estimation.R) to enumerate design columns.
+#' @noRd
+.get_design_vars_flat <- function(design) {
+  if (S7::S7_inherits(design, survey_taylor)) {
+    unique(c(
+      design@variables$ids,
+      design@variables$weights,
+      design@variables$strata,
+      design@variables$fpc
+    ))
+  } else if (S7::S7_inherits(design, survey_replicate)) {
+    unique(c(
+      design@variables$weights,
+      design@variables$repweights
+    ))
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    p1      <- design@variables$phase1
+    p2      <- design@variables$phase2
+    p2_cols <- if (!is.null(p2)) {
+      unlist(p2[!vapply(p2, is.null, logical(1L))], use.names = FALSE)
+    } else {
+      character(0L)
+    }
+    unique(c(
+      p1$ids, p1$weights, p1$strata, p1$fpc,
+      p2_cols,
+      design@variables$subset
+    ))
+  } else {
+    character(0L)
+  }
+}
+
+# Return a named list mapping slot names to column name(s).
+# Slots whose value is NULL are omitted from the result.
+# unlist()ing the result gives all design variable names.
+# Used by Phase 0.5 dplyr verbs (rename, select) for slot-level granularity
+# and by conversion methods to identify which role each column plays.
+#' @noRd
+.get_design_vars <- function(design) {
+  if (S7::S7_inherits(design, survey_taylor)) {
+    Filter(
+      Negate(is.null),
+      list(
+        ids     = design@variables$ids,
+        weights = design@variables$weights,
+        strata  = design@variables$strata,
+        fpc     = design@variables$fpc
+      )
+    )
+  } else if (S7::S7_inherits(design, survey_replicate)) {
+    Filter(
+      Negate(is.null),
+      list(
+        weights    = design@variables$weights,
+        repweights = design@variables$repweights
+      )
+    )
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    p1  <- design@variables$phase1
+    p2  <- design@variables$phase2
+    raw <- list(
+      ids     = p1$ids,
+      weights = p1$weights,
+      strata  = p1$strata,
+      fpc     = p1$fpc,
+      ids2    = if (!is.null(p2)) p2$ids    else NULL,
+      strata2 = if (!is.null(p2)) p2$strata else NULL,
+      probs2  = if (!is.null(p2)) p2$probs  else NULL,
+      fpc2    = if (!is.null(p2)) p2$fpc    else NULL,
+      subset  = design@variables$subset
+    )
+    Filter(Negate(is.null), raw)
+  } else {
+    list()
+  }
+}

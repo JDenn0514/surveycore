@@ -265,3 +265,53 @@ test_invariants <- function(design) {
 
   invisible(design)
 }
+
+# ------------------------------------------------------------------------------
+# make_all_designs()
+# ------------------------------------------------------------------------------
+
+#' Create all three survey design types for cross-design testing
+#'
+#' Convenience wrapper that returns one survey object of each class.
+#' Use in verb tests to iterate over all design types with a for loop.
+#'
+#' @param seed   Random seed passed to make_survey_data(). Default 42L.
+#' @return A named list with elements: taylor, replicate, twophase.
+#' @keywords internal
+make_all_designs <- function(seed = 42L) {
+  # Taylor series design
+  df_t <- make_survey_data(
+    n = 100L, n_psu = 10L, n_strata = 2L,
+    design = "taylor", seed = seed
+  )
+  taylor <- as_survey(
+    df_t,
+    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  )
+
+  # Replicate weights design
+  df_r <- make_survey_data(
+    n = 100L, n_psu = 10L, n_strata = 2L,
+    design = "replicate", type = "brr", seed = seed
+  )
+  repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
+  replicate  <- as_survey_rep(
+    df_r,
+    weights    = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type       = "BRR"
+  )
+
+  # Two-phase design
+  df_p <- make_survey_data(
+    n = 100L, n_psu = 10L, n_strata = 2L,
+    design = "twophase", seed = seed
+  )
+  phase1   <- as_survey(
+    df_p,
+    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  )
+  twophase <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+
+  list(taylor = taylor, replicate = replicate, twophase = twophase)
+}

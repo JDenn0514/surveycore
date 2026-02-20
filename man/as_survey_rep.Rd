@@ -113,6 +113,7 @@ d_brr <- as_survey_rep(
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_twophase}()},
+\code{\link{survey_data}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}
