@@ -36,11 +36,11 @@ Other conversion:
 ## Examples
 
 ``` r
-df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
 if (requireNamespace("survey", quietly = TRUE) &&
     requireNamespace("srvyr",  quietly = TRUE)) {
   ts <- srvyr::as_survey(
-    survey::svydesign(ids = ~1, weights = ~w, data = df)
+    survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
+      strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
   )
   d <- from_tbl_svy(ts)
 }

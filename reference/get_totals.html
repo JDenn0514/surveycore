@@ -85,24 +85,19 @@ before computing the total. Set to <code>FALSE</code> to propagate <code>NA</cod
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  psu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  st  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  wt  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">3</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  y   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">df</span>, ids <span class="op">=</span> <span class="va">psu</span>, strata <span class="op">=</span> <span class="va">st</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"3"</span>. If PSUs are nested within</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   strata, set `nest = TRUE`.</span>
-<span class="r-in"><span><span class="fu">get_totals</span><span class="op">(</span><span class="va">d</span>, <span class="va">y</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># ACS PUMS Wyoming: estimated total population by age</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span><span class="va">acs_pums_wy</span>, weights <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
+<span class="r-in"><span>                   repweights <span class="op">=</span> <span class="fu">matches</span><span class="op">(</span><span class="st">"^pwgtp[0-9]+$"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                   type <span class="op">=</span> <span class="st">"successive-difference"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">get_totals</span><span class="op">(</span><span class="va">d</span>, <span class="va">agep</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $variable</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "y"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "agep"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $total</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 9.168519</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 23089173</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 10.36028</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 40314.74</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

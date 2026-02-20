@@ -85,24 +85,18 @@ before computing the mean. Set to <code>FALSE</code> to propagate <code>NA</code
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  psu <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  st  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  wt  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">3</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  y   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">df</span>, ids <span class="op">=</span> <span class="va">psu</span>, strata <span class="op">=</span> <span class="va">st</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"3"</span>. If PSUs are nested within</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   strata, set `nest = TRUE`.</span>
-<span class="r-in"><span><span class="fu">get_means</span><span class="op">(</span><span class="va">d</span>, <span class="va">y</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># NHANES 2017-2018: estimated mean age of U.S. civilian population</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">get_means</span><span class="op">(</span><span class="va">d</span>, <span class="va">ridageyr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $variable</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "y"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "ridageyr"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mean</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.03564473</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 38.42397</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1617288</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.5244057</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

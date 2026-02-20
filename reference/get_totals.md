@@ -51,23 +51,18 @@ Other estimation:
 ## Examples
 
 ``` r
-df <- data.frame(
-  psu = rep(1:5, each = 4),
-  st  = rep(c("A", "B"), each = 10),
-  wt  = rep(c(2, 3, 2, 4, 3), each = 4),
-  y   = rnorm(20)
-)
-d <- as_survey(df, ids = psu, strata = st, weights = wt)
-#> Warning: ! Some PSUs appear in more than one stratum: "3". If PSUs are nested within
-#>   strata, set `nest = TRUE`.
-get_totals(d, y)
+# ACS PUMS Wyoming: estimated total population by age
+d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
+                   repweights = matches("^pwgtp[0-9]+$"),
+                   type = "successive-difference")
+get_totals(d, agep)
 #> $variable
-#> [1] "y"
+#> [1] "agep"
 #> 
 #> $total
-#> [1] 9.168519
+#> [1] 23089173
 #> 
 #> $se
-#> [1] 10.36028
+#> [1] 40314.74
 #> 
 ```

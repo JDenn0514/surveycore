@@ -33,14 +33,21 @@ Other constructors:
 ## Examples
 
 ``` r
-df <- data.frame(y = rnorm(10), w = runif(10, 0.5, 2))
-d  <- as_survey(df, weights = w)
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
 head(survey_data(d))
-#>              y         w
-#> 1 -0.098550690 1.9507087
-#> 2  0.034766060 0.6290585
-#> 3  0.386127022 0.8606919
-#> 4  0.020831228 1.4583256
-#> 5  0.007586777 1.2550926
-#> 6  0.930844030 0.8757849
+#>    seqn sdmvpsu sdmvstra  wtmec2yr  wtint2yr ridstatr riagendr ridageyr
+#> 1 93703       2      145  8539.731  9246.492        2        2        2
+#> 2 93704       1      143 42566.615 37338.768        2        1        2
+#> 3 93705       2      145  8338.420  8614.571        2        2       66
+#> 4 93706       2      134  8723.440  8548.633        2        1       18
+#> 5 93707       1      138  7064.610  6769.345        2        1       13
+#> 6 93708       2      138 14372.489 13329.451        2        2       66
+#>   ridreth3 indfmpir dmdeduc2 bpxsy1 bpxdi1 bpxpls
+#> 1        6     5.00       NA     NA     NA     NA
+#> 2        3     5.00       NA     NA     NA     NA
+#> 3        4     0.82        2     NA     NA     52
+#> 4        6       NA       NA    112     74     82
+#> 5        7     1.88       NA    128     38    100
+#> 6        6     1.63        1     NA     NA     68
 ```

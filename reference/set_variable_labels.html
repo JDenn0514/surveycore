@@ -81,22 +81,16 @@ use.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fl">25</span><span class="op">:</span><span class="fl">30</span>, income <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, wt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span>  <span class="op">&lt;-</span> <span class="fu"><a href="survey_taylor.html">survey_taylor</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  data <span class="op">=</span> <span class="va">df</span>,</span></span>
-<span class="r-in"><span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    ids <span class="op">=</span> <span class="cn">NULL</span>, weights <span class="op">=</span> <span class="st">"wt"</span>, strata <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
-<span class="r-in"><span>    fpc <span class="op">=</span> <span class="cn">NULL</span>, nest <span class="op">=</span> <span class="cn">FALSE</span>, probs_provided <span class="op">=</span> <span class="cn">FALSE</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">set_variable_labels</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">d</span>,</span></span>
-<span class="r-in"><span>  age    <span class="op">=</span> <span class="st">"Age in years"</span>,</span></span>
-<span class="r-in"><span>  income <span class="op">=</span> <span class="st">"Annual household income"</span></span></span>
+<span class="r-in"><span>  bpxsy1 <span class="op">=</span> <span class="st">"Systolic BP, 1st reading (mm Hg)"</span>,</span></span>
+<span class="r-in"><span>  bpxdi1 <span class="op">=</span> <span class="st">"Diastolic BP, 1st reading (mm Hg)"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Programmatic with list splicing</span></span></span>
-<span class="r-in"><span><span class="va">lbls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="st">"Age in years"</span>, income <span class="op">=</span> <span class="st">"Annual household income"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">lbls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>bpxsy1 <span class="op">=</span> <span class="st">"Systolic BP"</span>, bpxdi1 <span class="op">=</span> <span class="st">"Diastolic BP"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">set_variable_labels</span><span class="op">(</span><span class="va">d</span>, <span class="op">!</span><span class="op">!</span><span class="op">!</span><span class="va">lbls</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

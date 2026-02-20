@@ -116,17 +116,14 @@ existence, weight column type and positivity, etc.).</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  id  <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>,</span></span>
-<span class="r-in"><span>  wt  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  wt2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  st  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="fl">25</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  y   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>, strata <span class="op">=</span> <span class="va">st</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># NHANES has two weight columns for different analysis types;</span></span></span>
+<span class="r-in"><span><span class="co"># start with the MEC examination weight for exam participants</span></span></span>
+<span class="r-in"><span><span class="va">exam</span> <span class="op">&lt;-</span> <span class="va">nhanes_2017</span><span class="op">[</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">ridstatr</span> <span class="op">==</span> <span class="fl">2</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">exam</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span></span>
+<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Update the weight column</span></span></span>
-<span class="r-in"><span><span class="va">d_updated</span> <span class="op">&lt;-</span> <span class="fu">update_design</span><span class="op">(</span><span class="va">d</span>, weights <span class="op">=</span> <span class="va">wt2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Switch to interview weight for interview-based variables</span></span></span>
+<span class="r-in"><span><span class="va">d_updated</span> <span class="op">&lt;-</span> <span class="fu">update_design</span><span class="op">(</span><span class="va">d</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Survey design updated. This may affect statistical validity.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated: <span style="color: #00BB00;">weights</span></span>
 <span class="r-in"><span></span></span>

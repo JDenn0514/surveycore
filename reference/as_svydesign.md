@@ -42,17 +42,12 @@ Other conversion:
 ## Examples
 
 ``` r
-df <- data.frame(
-  id  = 1:20,
-  wt  = runif(20, 0.5, 2),
-  st  = rep(c("A", "B"), 10),
-  y   = rnorm(20)
-)
-d <- as_survey(df, weights = wt, strata = st)
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- as_svydesign(d)
-  survey::svymean(~y, sv)
+  survey::svymean(~ridageyr, sv, na.rm = TRUE)
 }
-#>       mean     SE
-#> y -0.15598 0.2015
+#>            mean     SE
+#> ridageyr 38.424 0.5244
 ```

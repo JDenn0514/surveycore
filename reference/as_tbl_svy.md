@@ -40,8 +40,8 @@ Other conversion:
 ## Examples
 
 ``` r
-df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-d  <- as_survey(df, weights = w)
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
 if (requireNamespace("survey", quietly = TRUE) &&
     requireNamespace("srvyr",  quietly = TRUE)) {
   ts <- as_tbl_svy(d)

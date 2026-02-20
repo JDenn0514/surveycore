@@ -109,37 +109,20 @@ Other constructors:
 ## Examples
 
 ``` r
-df <- data.frame(
-  id  = 1:100,
-  psu = rep(1:10, each = 10),
-  st  = rep(c("A", "B"), 50),
-  wt  = runif(100, 0.5, 2),
-  fpc = rep(500L, 100),
-  y   = rnorm(100)
+# Full NHANES design: stratified cluster with PSU IDs nested within strata
+d <- as_survey(
+  nhanes_2017,
+  ids     = sdmvpsu,
+  weights = wtint2yr,
+  strata  = sdmvstra,
+  nest    = TRUE
 )
 
-# Simple random sample (no weights specified)
-d_srs <- as_survey(df)
-#> Warning: ! No weights or population size provided.
-#> ℹ Treating as equal-probability SRS with unknown population size.
-#> ✔ Valid: means, proportions, correlations, and their standard errors.
-#> ✖ Invalid: population totals (will equal sample totals, not population totals).
-#> ℹ To fix: provide `fpc` = population size, or `weights` = N / n.
+# Stratified design without PSU cluster IDs
+d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 
-# Weighted sample
-d_wt <- as_survey(df, weights = wt)
-
-# Stratified
-d_strat <- as_survey(df, weights = wt, strata = st)
-
-# Cluster
-d_clust <- as_survey(df, ids = psu, weights = wt)
-
-# Stratified cluster with FPC
-d_full <- as_survey(df, ids = psu, weights = wt, strata = st, fpc = fpc)
-#> Warning: ! Some PSUs appear in more than one stratum: "1", "10", "2", "3", and "4". If
-#>   PSUs are nested within strata, set `nest = TRUE`.
-
-# NHANES-style: PSU IDs nested within strata
-d_nhanes <- as_survey(df, ids = psu, weights = wt, strata = st, nest = TRUE)
+# Blood pressure analysis: filter to exam participants, use MEC weight
+exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
+d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
+                  strata = sdmvstra, nest = TRUE)
 ```

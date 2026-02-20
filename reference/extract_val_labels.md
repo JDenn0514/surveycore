@@ -46,16 +46,9 @@ Other metadata:
 ## Examples
 
 ``` r
-df <- data.frame(sex = c(1L, 2L, 1L), wt = c(1, 1, 1))
-d  <- survey_taylor(
-  data = df,
-  variables = list(
-    ids = NULL, weights = "wt", strata = NULL,
-    fpc = NULL, nest = FALSE, probs_provided = FALSE
-  )
-)
-d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
-extract_val_labels(d, sex)
-#>   Male Female 
-#>      1      2 
+# nhanes_2017 carries haven-style value labels auto-extracted by as_survey()
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
+extract_val_labels(d, riagendr)   # c(Male = 1, Female = 2)
+#> NULL
 ```

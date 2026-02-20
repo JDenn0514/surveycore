@@ -71,16 +71,23 @@ independent of the S7 property structure.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, w <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span>  <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">df</span>, weights <span class="op">=</span> <span class="va">w</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">survey_data</span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              y         w</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.098550690 1.9507087</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  0.034766060 0.6290585</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.386127022 0.8606919</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  0.020831228 1.4583256</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  0.007586777 1.2550926</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  0.930844030 0.8757849</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    seqn sdmvpsu sdmvstra  wtmec2yr  wtint2yr ridstatr riagendr ridageyr</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 93703       2      145  8539.731  9246.492        2        2        2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 93704       1      143 42566.615 37338.768        2        1        2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 93705       2      145  8338.420  8614.571        2        2       66</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 93706       2      134  8723.440  8548.633        2        1       18</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 93707       1      138  7064.610  6769.345        2        1       13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 93708       2      138 14372.489 13329.451        2        2       66</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ridreth3 indfmpir dmdeduc2 bpxsy1 bpxdi1 bpxpls</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        6     5.00       NA     NA     NA     NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        3     5.00       NA     NA     NA     NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        4     0.82        2     NA     NA     52</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        6       NA       NA    112     74     82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        7     1.88       NA    128     38    100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        6     1.63        1     NA     NA     68</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

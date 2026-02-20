@@ -47,21 +47,15 @@ Other metadata:
 ## Examples
 
 ``` r
-df <- data.frame(age = 25:30, income = 1:6, wt = rep(1, 6))
-d  <- survey_taylor(
-  data = df,
-  variables = list(
-    ids = NULL, weights = "wt", strata = NULL,
-    fpc = NULL, nest = FALSE, probs_provided = FALSE
-  )
-)
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
 d <- set_variable_labels(
   d,
-  age    = "Age in years",
-  income = "Annual household income"
+  bpxsy1 = "Systolic BP, 1st reading (mm Hg)",
+  bpxdi1 = "Diastolic BP, 1st reading (mm Hg)"
 )
 
 # Programmatic with list splicing
-lbls <- list(age = "Age in years", income = "Annual household income")
+lbls <- list(bpxsy1 = "Systolic BP", bpxdi1 = "Diastolic BP")
 d <- set_variable_labels(d, !!!lbls)
 ```

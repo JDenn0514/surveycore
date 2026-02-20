@@ -124,20 +124,20 @@ Other constructors:
 ## Examples
 
 ``` r
-# ACS PUMS Wyoming: BRR design with 80 replicate weights (pwgtp1-pwgtp80)
-# starts_with() selects all 80 replicates in one expression
+# ACS PUMS Wyoming: 80 successive-difference replicate weights
+# matches() selects only pwgtp1-pwgtp80, excluding the main weight pwgtp
 d_acs <- as_survey_rep(
   acs_pums_wy,
   weights    = pwgtp,
-  repweights = starts_with("pwgtp"),
-  type       = "ACS"
+  repweights = matches("^pwgtp[0-9]+$"),
+  type       = "successive-difference"
 )
 
 # Explicit replicate columns using c()
-d_brr <- as_survey_rep(
+d_sub <- as_survey_rep(
   acs_pums_wy,
   weights    = pwgtp,
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-  type       = "BRR"
+  type       = "JK1"
 )
 ```

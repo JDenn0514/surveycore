@@ -51,23 +51,17 @@ Other estimation:
 ## Examples
 
 ``` r
-df <- data.frame(
-  psu = rep(1:5, each = 4),
-  st  = rep(c("A", "B"), each = 10),
-  wt  = rep(c(2, 3, 2, 4, 3), each = 4),
-  y   = rnorm(20)
-)
-d <- as_survey(df, ids = psu, strata = st, weights = wt)
-#> Warning: ! Some PSUs appear in more than one stratum: "3". If PSUs are nested within
-#>   strata, set `nest = TRUE`.
-get_means(d, y)
+# NHANES 2017-2018: estimated mean age of U.S. civilian population
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+               strata = sdmvstra, nest = TRUE)
+get_means(d, ridageyr)
 #> $variable
-#> [1] "y"
+#> [1] "ridageyr"
 #> 
 #> $mean
-#> [1] 0.03564473
+#> [1] 38.42397
 #> 
 #> $se
-#> [1] 0.1617288
+#> [1] 0.5244057
 #> 
 ```
