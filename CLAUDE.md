@@ -1,5 +1,9 @@
 # surveycore Package Development
 
+**Part of the [surveyverse ecosystem](../survey-standards/ECOSYSTEM.md) — see there for ecosystem vision, architecture, and how surveycore relates to other packages.**
+
+---
+
 ## Project Overview
 
 surveycore is the foundation package of the surveyverse ecosystem — a modern,
@@ -122,10 +126,14 @@ colliding with user columns named `.weights`.
 
 **Read these files first — in this order — before writing any code:**
 
-1. `.claude/rules/code-style.md` — indentation, S7 method syntax, error conventions, function design
-2. `.claude/rules/testing-standards.md` — test structure, coverage requirements, assertion patterns
-3. `.claude/rules/r-package-conventions.md` — roxygen2, NAMESPACE, exports, R CMD check hygiene
-4. `.claude/rules/github-strategy.md` — branching model, commit format, PR workflow
+**Shared standards (all surveyverse packages follow these):**
+1. `../survey-standards/.claude/rules/code-style.md` — indentation, S7 method syntax, error conventions, function design
+2. `../survey-standards/.claude/rules/testing-standards.md` — test structure, coverage requirements, assertion patterns
+3. `../survey-standards/.claude/rules/r-package-conventions.md` — roxygen2, NAMESPACE, exports, R CMD check hygiene
+4. `../survey-standards/.claude/rules/github-strategy.md` — branching model, commit format, PR workflow
+
+**Package-specific (surveycore only):**
+- `.claude/rules/` — any package-specific rules or extensions
 
 **Then read the planning documents:**
 
