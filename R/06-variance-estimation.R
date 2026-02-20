@@ -529,7 +529,7 @@ get_means <- function(design, var, na.rm = TRUE) {
 #' @examples
 #' # ACS PUMS Wyoming: estimated total population by age
 #' d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
-#'                    repweights = matches("^pwgtp[0-9]+$"),
+#'                    repweights = pwgtp1:pwgtp80,
 #'                    type = "successive-difference")
 #' get_totals(d, agep)
 #'
