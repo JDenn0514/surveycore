@@ -27,6 +27,9 @@ be formally specified in Phase 2.5.}
 A \code{survey_calibrated} object.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+}
+\details{
 Creates a survey design object for non-probability samples and post-hoc
 calibrated designs (e.g., raked online panels, post-stratified samples).
 Accepts pre-computed calibration weights and optionally stores calibration
@@ -91,4 +94,3 @@ Other constructors:
 \code{\link{survey_twophase}()}
 }
 \concept{constructors}
-\keyword{internal}

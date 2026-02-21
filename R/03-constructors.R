@@ -979,6 +979,8 @@ as_survey_twophase <- function(
 
 #' Create a Calibrated / Non-Probability Survey Design
 #'
+#' `r lifecycle::badge("experimental")`
+#'
 #' Creates a survey design object for non-probability samples and post-hoc
 #' calibrated designs (e.g., raked online panels, post-stratified samples).
 #' Accepts pre-computed calibration weights and optionally stores calibration
@@ -1042,7 +1044,6 @@ as_survey_twophase <- function(
 #'   [as_survey_rep()] for replicate-weight designs
 #'
 #' @family constructors
-#' @keywords internal
 #' @export
 as_survey_calibrated <- function(
   data,

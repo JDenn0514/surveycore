@@ -164,16 +164,62 @@ make_survey_data <- function(
 # test_invariants()
 # ------------------------------------------------------------------------------
 
-#' Assert all 5 formal invariants on a survey object
+#' Assert all formal invariants on a survey object
 #'
 #' Call this at the start of EVERY test_that() block that creates or modifies
 #' a survey object. Checks all invariants from formal spec Section I.
 #'
-#' @param design A survey_taylor, survey_replicate, or survey_twophase object.
+#' @param design A survey_taylor, survey_replicate, survey_twophase, or
+#'   survey_calibrated object.
 #' @return Returns design invisibly on success. Throws testthat failure on any
 #'   violated invariant.
 #' @keywords internal
 test_invariants <- function(design) {
+
+  # survey_calibrated has a different @variables structure — handle separately
+  if (S7::S7_inherits(design, survey_calibrated)) {
+    testthat::expect_true(is.data.frame(design@data))
+    testthat::expect_false(is.null(design@data))
+    testthat::expect_gte(nrow(design@data), 1L)
+    testthat::expect_false(
+      anyDuplicated(names(design@data)) > 0L,
+      label = "@data has no duplicate column names"
+    )
+
+    testthat::expect_true(
+      "weights" %in% names(design@variables),
+      label = "@variables has 'weights' key"
+    )
+    testthat::expect_true(
+      "probs_provided" %in% names(design@variables),
+      label = "@variables has 'probs_provided' key"
+    )
+
+    wt_var <- design@variables$weights
+    if (!is.null(wt_var)) {
+      testthat::expect_true(
+        wt_var %in% names(design@data),
+        label = paste0("weight column '", wt_var, "' present in @data")
+      )
+      wt_col <- design@data[[wt_var]]
+      testthat::expect_true(is.numeric(wt_col), label = "weight column is numeric")
+      testthat::expect_true(
+        all(wt_col[!is.na(wt_col)] > 0),
+        label = "weight column has all positive values"
+      )
+    }
+
+    testthat::expect_true(S7::S7_inherits(design@metadata, survey_metadata))
+    meta_vars <- names(design@metadata@variable_labels)
+    if (length(meta_vars) > 0L) {
+      testthat::expect_true(
+        all(meta_vars %in% names(design@data)),
+        label = "all metadata-labelled vars present in @data"
+      )
+    }
+
+    return(invisible(design))
+  }
   # Invariant 1: @data is a non-NULL data.frame with >= 1 row, no duplicate names
   testthat::expect_true(is.data.frame(design@data))
   testthat::expect_false(is.null(design@data))

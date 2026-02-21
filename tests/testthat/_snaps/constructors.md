@@ -215,3 +215,52 @@
       Error in `as_survey_twophase()`:
       x `subset` column all_true must contain both TRUE and FALSE values. Found 200 TRUE out of 200 rows.
 
+# as_survey_calibrated() rejects non-data-frame input
+
+    Code
+      as_survey_calibrated(list(y = 1:10, w = rep(1, 10)), weights = w)
+    Condition
+      Error in `as_survey_calibrated()`:
+      x `data` must be a data frame, not <list>
+
+# as_survey_calibrated() rejects empty data
+
+    Code
+      as_survey_calibrated(empty, weights = w)
+    Condition
+      Error in `as_survey_calibrated()`:
+      x `data` must have at least one row
+
+# as_survey_calibrated() rejects duplicate column names
+
+    Code
+      as_survey_calibrated(df, weights = w)
+    Condition
+      Error in `as_survey_calibrated()`:
+      x Column names in `data` must be unique. Duplicates: w
+
+# as_survey_calibrated() rejects missing weights argument
+
+    Code
+      as_survey_calibrated(df)
+    Condition
+      Error in `as_survey_calibrated()`:
+      x `weights` is required for `as_survey_calibrated()`.
+      i Supply the column name of your calibration weight variable (e.g., `weights = cal_wt`).
+
+# as_survey_calibrated() rejects weights selecting multiple columns
+
+    Code
+      as_survey_calibrated(df, weights = c(w1, w2))
+    Condition
+      Error in `as_survey_calibrated()`:
+      x `weights` must select exactly 1 column, not 2
+
+# as_survey_calibrated() rejects non-positive weights
+
+    Code
+      as_survey_calibrated(df, weights = w)
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column w has 1 non-positive value(s). All non-NA weights must be > 0.
+
