@@ -1,8 +1,8 @@
 ^surveycore\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
-^LICENSE$
 ^\.github$
+^changelog$
 ^README\.Rmd$
 ^\.claude$
 ^CLAUDE\.md$

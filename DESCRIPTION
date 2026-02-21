@@ -9,7 +9,7 @@ Description: Provides S7-based infrastructure for survey analysis including
     weight, and two-phase designs with a tidy-select interface for intuitive
     design specification. Automatic preservation of haven-style variable and
     value labels throughout all operations.
-License: GPL-3
+License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
