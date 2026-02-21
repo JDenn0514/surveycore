@@ -4,6 +4,8 @@
 **Created:** February 2025
 **Status:** Authoritative — spec prose and plan templates must match this table exactly.
 
+**Phase 1 rows:** 43–53 (analysis functions)
+
 ---
 
 ## Purpose
@@ -68,6 +70,17 @@ against the messages defined here.
 | 40 | `filter()` (surveytidy) | filter() produces all-FALSE domain | WARN | `surveycore_warning_empty_domain` | `"filter() produced an empty domain — no rows match the supplied condition. Variance estimation on this domain will fail."` |
 | 41 | `mutate()` (surveytidy) | mutate() modifies the weight column | WARN | `surveycore_warning_weight_modified` | `"mutate() modified the weight column {.field {wt_var}}. This changes the survey design. Use {.fn update_design} to update the weight column explicitly."` |
 | 42 | `subset()` (surveytidy) | subset() physically removes rows | WARN | `surveycore_warning_physical_subset` | `"subset() physically removes rows from the survey data. This is different from filter(), which preserves all rows for correct variance estimation. Subpopulation analyses should use filter() instead."` |
+| 43 | `get_means()`, `get_totals()`, `get_corr()`, `get_ratios()` | Non-numeric column passed | ERROR | `surveycore_error_non_numeric_variable` | `"{.arg x} must be numeric, not {.cls {class(col)}}. Column {.field {var}} cannot be used with {.fn {fn_name}}."` |
+| 44 | `get_corr()` | Fewer than 2 variables supplied | ERROR | `surveycore_error_insufficient_variables` | `"{.fn get_corr} requires at least 2 variables, but {.arg x} resolved to {length(vars)} variable{?s}."` |
+| 45 | all `get_*()` | Unknown value for `variance` argument | ERROR | `surveycore_error_invalid_variance_arg` | `'{.arg variance} must be {.val NULL}, {.val "se"}, {.val "ci"}, or {.val "moe"}, not {.val {variance}}.'` |
+| 46 | all `get_*()` | Unknown value for `name_style` argument | ERROR | `surveycore_error_invalid_name_style` | `'{.arg name_style} must be {.val "surveycore"} or {.val "broom"}, not {.val {name_style}}.'` |
+| 47 | `get_quantiles()` | `probs` outside (0,1) or length 0 | ERROR | `surveycore_error_invalid_probs` | `"{.arg probs} must be a non-empty numeric vector with all values in (0, 1). Invalid value{?s}: {.val {bad_probs}}."` |
+| 48 | `get_ratios()` | All denominator values are zero | ERROR | `surveycore_error_ratio_zero_denominator` | `"All values of the denominator ({.field {denom_var}}) are zero. Cannot compute ratio."` |
+| 49 | all `get_*()` | Any cell has unweighted `n < 5` | WARN | `surveycore_warning_small_cell` | `"{n_small} cell{?s} {?has/have} fewer than 5 unweighted observations. Estimates in these cells are unreliable."` |
+| 50 | all `get_*()` | A grouping variable has only one observed level | WARN | `surveycore_warning_single_level` | `"Grouping variable {.field {var}} has only one observed level ({.val {level}}). Grouped estimates will have a single row."` |
+| 51 | `get_corr()` | Non-numeric variable in `x` silently dropped | WARN | `surveycore_warning_corr_non_numeric` | `"{.fn get_corr} requires numeric variables. Dropping non-numeric column{?s}: {.field {dropped}}."` |
+| 52 | `get_freqs()` multi-var | Variables have different non-NULL question prefaces | WARN | `surveycore_warning_mixed_prefaces` | `"{length(unique_prefaces)} different question prefaces found across {length(vars)} variables. Variables with different prefaces may not belong in the same {.fn get_freqs} call. Prefaces stored in {.code meta(result)$question_prefaces}."` |
+| 53 | all numeric `get_*()` | Focal variable all NA with `na.rm = FALSE` | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
 
 ---
 
@@ -110,3 +123,10 @@ Which test files cover which error table rows:
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
+| `test-analysis-helpers.R` | (shared helpers; no direct error rows — tested via functions) |
+| `test-analysis-freqs.R` | 45, 46, 49, 50, 52 |
+| `test-analysis-means.R` | 43, 45, 46, 49, 50, 53 |
+| `test-analysis-totals.R` | 43, 45, 46, 49, 50, 53 |
+| `test-analysis-corr.R` | 43, 44, 45, 46, 49, 50, 51, 53 |
+| `test-analysis-quantiles.R` | 45, 46, 47, 49, 50, 53 |
+| `test-analysis-ratios.R` | 43, 45, 46, 48, 49, 50, 53 |
