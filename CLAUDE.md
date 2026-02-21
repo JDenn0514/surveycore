@@ -170,6 +170,23 @@ colliding with user columns named `.weights`.
 
 ---
 
+## R CMD Check Gotchas
+
+### Examples must load Imports packages explicitly
+R CMD check runs examples in a fresh session with only `library(surveycore)` loaded. surveycore's
+own exported functions are available, but functions from packages in **Imports** (cli, rlang, S7,
+etc.) are **not** on the search path unless explicitly loaded. If an example calls a bare function
+from an Imports package, add a `library()` call at the top of the block:
+
+```r
+#' @examples
+#' library(S7)           # if example calls S7 functions directly
+#' d <- as_survey(df, weights = wt)
+```
+
+In practice, surveycore examples only call its own exported API (`as_survey()`, `survey_data()`,
+etc.), so this rarely bites — but keep it in mind when writing new examples.
+
 ## Working With This Codebase
 
 1. **Follow established patterns** — consistency across the codebase matters
