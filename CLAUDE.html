@@ -228,6 +228,18 @@
 <code>feature/variance-replicate</code> — <code>R/06-variance-estimation.R</code> (replicate weights)</li>
 </ol><hr></div>
 <div class="section level2">
+<h2 id="r-cmd-check-gotchas">R CMD Check Gotchas<a class="anchor" aria-label="anchor" href="#r-cmd-check-gotchas"></a></h2>
+<div class="section level3">
+<h3 id="examples-must-load-imports-packages-explicitly">Examples must load Imports packages explicitly<a class="anchor" aria-label="anchor" href="#examples-must-load-imports-packages-explicitly"></a></h3>
+<p>R CMD check runs examples in a fresh session with only <code><a href="https://github.com/JDenn0514/surveycore" class="external-link">library(surveycore)</a></code> loaded. surveycore’s own exported functions are available, but functions from packages in <strong>Imports</strong> (cli, rlang, S7, etc.) are <strong>not</strong> on the search path unless explicitly loaded. If an example calls a bare function from an Imports package, add a <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> call at the top of the block:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#' @examples</span></span>
+<span><span class="co">#' library(S7)           # if example calls S7 functions directly</span></span>
+<span><span class="co">#' d &lt;- as_survey(df, weights = wt)</span></span></code></pre></div>
+<p>In practice, surveycore examples only call its own exported API (<code><a href="reference/as_survey.html">as_survey()</a></code>, <code><a href="reference/survey_data.html">survey_data()</a></code>, etc.), so this rarely bites — but keep it in mind when writing new examples.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="working-with-this-codebase">Working With This Codebase<a class="anchor" aria-label="anchor" href="#working-with-this-codebase"></a></h2>
 <ol style="list-style-type: decimal"><li>
 <strong>Follow established patterns</strong> — consistency across the codebase matters</li>

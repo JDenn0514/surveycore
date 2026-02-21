@@ -239,6 +239,31 @@ package-specific rules or extensions
 
 ------------------------------------------------------------------------
 
+## R CMD Check Gotchas
+
+### Examples must load Imports packages explicitly
+
+R CMD check runs examples in a fresh session with only
+[`library(surveycore)`](https://github.com/JDenn0514/surveycore) loaded.
+surveycore’s own exported functions are available, but functions from
+packages in **Imports** (cli, rlang, S7, etc.) are **not** on the search
+path unless explicitly loaded. If an example calls a bare function from
+an Imports package, add a
+[`library()`](https://rdrr.io/r/base/library.html) call at the top of
+the block:
+
+``` r
+#' @examples
+#' library(S7)           # if example calls S7 functions directly
+#' d <- as_survey(df, weights = wt)
+```
+
+In practice, surveycore examples only call its own exported API
+([`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
+[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
+etc.), so this rarely bites — but keep it in mind when writing new
+examples.
+
 ## Working With This Codebase
 
 1.  **Follow established patterns** — consistency across the codebase
