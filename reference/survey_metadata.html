@@ -51,7 +51,8 @@ Automatically populated from haven-style attributes when
 <span>  value_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  question_prefaces <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  notes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  transformations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  transformations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  weighting_history <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -81,6 +82,15 @@ question battery preface text.</p></dd>
 <dt id="arg-transformations">transformations<a class="anchor" aria-label="anchor" href="#arg-transformations"></a></dt>
 <dd><p>A named list tracking variable transformation
 history (populated automatically during operations).</p></dd>
+
+
+<dt id="arg-weighting-history">weighting_history<a class="anchor" aria-label="anchor" href="#arg-weighting-history"></a></dt>
+<dd><p>A list recording weighting operations applied to
+the survey object (e.g., raking, trimming). Each entry is written by
+a <span class="pkg">surveyweights</span> function and contains the operation name,
+parameters, effective sample size before/after, and design effect.
+Always <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> until a <span class="pkg">surveyweights</span> weighting function is
+applied. Reserved for Phase 2.5.</p></dd>
 
 </dl></div>
     <div class="section level2">

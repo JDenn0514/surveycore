@@ -14,7 +14,8 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
-  transformations = list()
+  transformations = list(),
+  weighting_history = list()
 )
 ```
 
@@ -43,6 +44,15 @@ survey_metadata(
 
   A named list tracking variable transformation history (populated
   automatically during operations).
+
+- weighting_history:
+
+  A list recording weighting operations applied to the survey object
+  (e.g., raking, trimming). Each entry is written by a surveyweights
+  function and contains the operation name, parameters, effective sample
+  size before/after, and design effect. Always
+  [`list()`](https://rdrr.io/r/base/list.html) until a surveyweights
+  weighting function is applied. Reserved for Phase 2.5.
 
 ## Value
 

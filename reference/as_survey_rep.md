@@ -115,7 +115,9 @@ to add variable metadata
 
 Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
+[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
+[`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
