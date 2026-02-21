@@ -8,6 +8,7 @@
 #   survey_taylor     — Taylor series linearization design
 #   survey_replicate  — replicate weights design
 #   survey_twophase   — two-phase sampling design
+#   survey_calibrated — calibrated/non-probability design (Phase 2.5 skeleton)
 #
 # Validators implement Layer 1 structural invariants only (per 3-layer
 # validator architecture in phase-0-implementation-plan-v2.md). User-input
@@ -34,6 +35,12 @@
 #' @param notes A named list mapping variable names to analyst notes.
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
+#' @param weighting_history A list recording weighting operations applied to
+#'   the survey object (e.g., raking, trimming). Each entry is written by
+#'   a \pkg{surveyweights} function and contains the operation name,
+#'   parameters, effective sample size before/after, and design effect.
+#'   Always `list()` until a \pkg{surveyweights} weighting function is
+#'   applied. Reserved for Phase 2.5.
 #'
 #' @return A `survey_metadata` object.
 #'
@@ -59,6 +66,14 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     transformations   = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    # RESERVED: Phase 2.5 — populated by surveyweights calibration functions.
+    # Each entry records one weighting operation (rake, trim_weights, etc.)
+    # with parameters, effective n before/after, and design effect.
+    # Always list() until surveyweights writes to it.
+    weighting_history = S7::new_property(
       S7::class_list,
       default = quote(list())
     )
@@ -539,6 +554,132 @@ survey_twophase <- S7::new_class(
             }
           }
         }
+      }
+    }
+
+    NULL
+  }
+)
+
+
+# ── survey_calibrated ──────────────────────────────────────────────────────────
+
+#' Calibrated / Non-Probability Survey Design
+#'
+#' A survey design object for non-probability samples and post-hoc calibrated
+#' designs (e.g., raked online panels, post-stratified samples). Create with
+#' [as_survey_calibrated()].
+#'
+#' @section Phase 2.5 skeleton:
+#' This class is a **skeleton** added in Phase 0 to reserve its place in the
+#' class hierarchy. The constructor [as_survey_calibrated()] accepts
+#' pre-computed calibration weights and stores calibration provenance from
+#' \pkg{surveyweights} output.
+#'
+#' Full functionality — including bootstrap variance with re-calibration on
+#' each replicate — will be implemented in Phase 2.5 alongside the
+#' \pkg{surveyweights} package. Until then, estimation uses SRS-based variance
+#' (same assumption as [as_survey()] with weights only).
+#'
+#' @section Non-probability samples:
+#' Unlike [as_survey()], [as_survey_rep()], and [as_survey_twophase()], this
+#' class does **not** assume a probability sampling design. Standard errors
+#' produced from a `survey_calibrated` object rest on a model-assisted SRS
+#' assumption, which is consistent with common practice for calibrated
+#' non-probability samples (e.g., raked online panels). See
+#' `vignette("creating-survey-objects")` for guidance on when this is
+#' appropriate and what the limitations are.
+#'
+#' @param data A `data.frame` containing the survey data. Prefer
+#'   [as_survey_calibrated()] over calling this constructor directly.
+#' @param metadata A [survey_metadata] object. Created automatically by
+#'   [as_survey_calibrated()].
+#' @param variables A named list of design specification (`weights`,
+#'   `probs_provided`). Set automatically by [as_survey_calibrated()].
+#' @param calibration The calibration provenance object returned by a
+#'   \pkg{surveyweights} calibration function (e.g., `surveyweights::rake()`),
+#'   or `NULL` if calibration was performed externally. Stores the
+#'   calibration targets, variables, and trimming parameters for
+#'   reproducibility and future bootstrap re-calibration. Default `NULL`.
+#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param call Language object capturing the construction call.
+#'
+#' @section Design variables (`@variables`):
+#' \describe{
+#'   \item{`weights`}{Character string naming the (calibrated) weight column.}
+#'   \item{`probs_provided`}{Always `FALSE` for calibrated designs.}
+#' }
+#'
+#' @section Calibration provenance (`@calibration`):
+#' When calibration is performed via \pkg{surveyweights}, the returned calibration
+#' object is stored here. It contains the calibration targets, variables used,
+#' trimming cap, effective sample size before and after, and design effect.
+#' `NULL` when calibration was performed externally (e.g., via `anesrake`).
+#'
+#' @return A `survey_calibrated` object.
+#' @usage survey_calibrated(
+#'   data = data.frame(),
+#'   metadata = survey_metadata(),
+#'   variables = list(),
+#'   groups = character(0),
+#'   call = NULL,
+#'   calibration = NULL
+#' )
+#' @seealso [as_survey_calibrated()] to create a `survey_calibrated` object.
+#' @family constructors
+#' @export
+survey_calibrated <- S7::new_class(
+  "survey_calibrated",
+  parent    = survey_base,
+  properties = list(
+    # Stores calibration provenance from surveyweights output.
+    # NULL when calibration was done externally.
+    # RESERVED for full population in Phase 2.5.
+    calibration = S7::new_property(default = NULL)
+  ),
+  validator = function(self) {
+
+    weights_var <- self@variables$weights
+
+    # ── Weight column must exist in @data ─────────────────────────────────────
+    if (!is.null(weights_var) && !weights_var %in% names(self@data)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Weight column {.field {weights_var}} not found in {.arg data}"
+          )
+        ),
+        class = "surveycore_error_design_var_missing"
+      )
+    }
+
+    # ── Weight column must be numeric ─────────────────────────────────────────
+    if (!is.null(weights_var) && weights_var %in% names(self@data)) {
+      wt_col <- self@data[[weights_var]]
+
+      if (!is.numeric(wt_col)) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Weight column {.field {weights_var}} must be numeric, ",
+              "not {.cls {class(wt_col)}}"
+            )
+          ),
+          class = "surveycore_error_weights_not_numeric"
+        )
+      }
+
+      n_bad <- sum(!is.na(wt_col) & wt_col <= 0)
+      if (n_bad > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Weight column {.field {weights_var}} has {n_bad} ",
+              "non-positive value(s). All non-NA weights must be > 0."
+            )
+          ),
+          class = "surveycore_error_weights_nonpositive"
+        )
       }
     }
 

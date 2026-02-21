@@ -55,8 +55,10 @@ rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 
 Other constructors: 
 \code{\link{as_survey}()},
+\code{\link{as_survey_calibrated}()},
 \code{\link{as_survey_rep}()},
 \code{\link{as_survey_twophase}()},
+\code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_twophase}()}

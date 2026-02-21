@@ -9,7 +9,8 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
-  transformations = list()
+  transformations = list(),
+  weighting_history = list()
 )
 }
 \arguments{
@@ -26,6 +27,13 @@ question battery preface text.}
 
 \item{transformations}{A named list tracking variable transformation
 history (populated automatically during operations).}
+
+\item{weighting_history}{A list recording weighting operations applied to
+the survey object (e.g., raking, trimming). Each entry is written by
+a \pkg{surveyweights} function and contains the operation name,
+parameters, effective sample size before/after, and design effect.
+Always \code{list()} until a \pkg{surveyweights} weighting function is
+applied. Reserved for Phase 2.5.}
 }
 \value{
 A \code{survey_metadata} object.

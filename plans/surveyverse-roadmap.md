@@ -1,8 +1,8 @@
 # Surveyverse Ecosystem - High-Level Roadmap
 
-**Version:** 0.1.0 Development Roadmap  
-**Last Updated:** February 2025  
-**Status:** Planning Phase
+**Version:** 0.2.0 Development Roadmap
+**Last Updated:** February 2026
+**Status:** Phase 0 complete; Phase 0.5 next
 
 ---
 
@@ -41,13 +41,16 @@ surveyverse/
 **Purpose:** Core survey infrastructure and analysis functions
 
 **Key Components:**
-- S7 class system (survey_base, survey_taylor, survey_replicate, survey_twophase)
-- Metadata system (variable labels, value labels, question prefaces, transformations, notes)
+- S7 class system (survey_base, survey_taylor, survey_replicate, survey_twophase,
+  survey_calibrated)
+- Metadata system (variable labels, value labels, question prefaces, transformations,
+  notes, weighting_history)
 - Vendored variance estimation code from `survey` package (with attribution and refactoring)
 - Analysis functions: `get_freqs()`, `get_means()`, `get_diffs()`, `get_corr()`, `get_totals()`, `get_quantiles()`, `get_ratios()`
 - Regression: `survey_glm()`, `clean()`
 - Crosstabs: `get_crosstab()`
-- Object creation: `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`
+- Object creation: `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`,
+  `as_survey_calibrated()` (skeleton in Phase 0; full implementation in Phase 2.5)
 - Conversion utilities: `as_svydesign()`, `as_tbl_svy()`
 
 **Dependencies:**
@@ -242,42 +245,57 @@ library(surveyverse)
 ### S7 Class Hierarchy
 
 ```
-survey_metadata                    # Metadata container
+survey_metadata                      # Metadata container
 └── properties:
-    ├── variable_labels: list     # name → label
-    ├── value_labels: list        # name → named vector
-    ├── question_prefaces: list   # name → preface text
-    ├── transformations: list     # name → transformation history
-    └── notes: list               # name → user notes
+    ├── variable_labels: list       # name → label
+    ├── value_labels: list          # name → named vector
+    ├── question_prefaces: list     # name → preface text
+    ├── transformations: list       # name → transformation history (dplyr ops)
+    ├── notes: list                 # name → user notes
+    └── weighting_history: list     # ordered log of weighting operations applied
+                                    # (RESERVED: Phase 2.5 — surveyweights writes to this)
 
-survey_base                        # Abstract base class
+survey_base                          # Abstract base class
 ├── properties:
 │   ├── data: data.frame
 │   ├── metadata: survey_metadata
-│   ├── weights: numeric
-│   └── groups: character         # active grouping variables
+│   ├── variables: list              # design specification (varies by subclass)
+│   ├── groups: character            # active grouping variables (Phase 0.5)
+│   └── call: language               # construction call
 └── subclasses:
     ├── survey_taylor
-    │   └── properties:
-    │       ├── ids: list         # cluster identifiers (multi-stage)
-    │       ├── strata: character # stratification variable(s)
-    │       ├── fpc: list        # finite population corrections
-    │       └── nest: logical     # whether PSUs nest in strata
+    │   └── @variables keys:
+    │       ├── ids: character[]    # cluster ID column names
+    │       ├── weights: character  # weight column name
+    │       ├── strata: character   # strata column name
+    │       ├── fpc: character      # FPC column name
+    │       ├── nest: logical       # whether PSUs nest in strata
+    │       └── probs_provided: logical
     │
     ├── survey_replicate
-    │   └── properties:
-    │       ├── repweights: matrix      # replicate weight matrix
-    │       ├── type: character         # "BRR", "JK", "bootstrap", etc.
-    │       ├── scale: numeric          # scaling factor
-    │       ├── rscales: numeric        # replicate-specific scales
-    │       ├── rho: numeric           # Fay parameter (if applicable)
-    │       └── mse: logical           # variance estimation approach
+    │   └── @variables keys:
+    │       ├── weights: character
+    │       ├── repweights: character[] # replicate weight column names
+    │       ├── type: character         # "BRR", "JK1", "JK2", "bootstrap", etc.
+    │       ├── scale: numeric
+    │       ├── rscales: numeric[]
+    │       ├── fpc: character
+    │       ├── fpctype: character
+    │       └── mse: logical
     │
-    └── survey_twophase
-        └── properties:
-            ├── phase1: survey_base    # Phase 1 design
-            ├── phase2: survey_base    # Phase 2 design  
-            └── method: character      # estimation method
+    ├── survey_twophase
+    │   └── @variables keys:
+    │       ├── phase1: list           # phase 1 design variables
+    │       ├── phase2: list           # phase 2 design columns
+    │       ├── subset: character      # phase 2 membership indicator column
+    │       └── method: character      # "full", "approx", "simple"
+    │
+    └── survey_calibrated              # SKELETON — Phase 2.5 full implementation
+        ├── @variables keys:
+        │   ├── weights: character     # calibrated weight column name
+        │   └── probs_provided: FALSE  # always FALSE for calibrated designs
+        └── @calibration               # provenance object from surveyweights
+                                       # NULL when calibration was external
 
 survey_glm_fit                     # Regression output
 ├── properties:
@@ -787,11 +805,13 @@ get_means(svy, x = income, domain = age > 18)
 ---
 
 ### Phase 2.5: Weighting & Calibration (surveyweights package)
-**Duration:** 3-4 weeks  
+**Duration:** 3-4 weeks
 **Status:** Planning
 
 **Objectives:**
+- Complete `survey_calibrated` class and `as_survey_calibrated()` (skeleton already in surveycore Phase 0)
 - Implement calibration and raking methods
+- Implement weighting history provenance in `@metadata@weighting_history`
 - Create replicate weight generation functions
 - Add nonresponse adjustment capabilities
 - Implement propensity score weighting
@@ -799,19 +819,31 @@ get_means(svy, x = income, domain = age > 18)
 
 **Deliverables:**
 
-1. **Calibration Methods:**
+1. **Complete `survey_calibrated` / `as_survey_calibrated()`:**
+   - Full bootstrap variance with re-calibration on each replicate (the key
+     statistical improvement over using `as_survey()` with calibration weights)
+   - `calibration` argument formally accepts the provenance object returned
+     by `surveyweights::rake()` and related functions
+   - Estimation functions (`get_means()`, etc.) dispatch on `survey_calibrated`
+     and use bootstrap variance by default
+   - `as_survey_calibrated()` gains `variance = c("bootstrap", "srs")` argument
+   - Phase 0 skeleton already in surveycore; full implementation here
+
+2. **Calibration Methods:**
    ```r
    calibrate(svy, formula, population, method = c("raking", "linear", "logit"))
    rake(svy, formulas, population_margins)
    poststratify(svy, strata, population)
    ```
-   
+
    - General calibration to known totals
    - Raking (iterative proportional fitting)
    - Post-stratification
    - Multiple calibration methods (raking, linear, logit)
    - Updates weights in survey object
-   - Preserves metadata
+   - **Writes calibration provenance to `@calibration`** (if used with
+     `survey_calibrated`) and **appends to `@metadata@weighting_history`**
+   - Preserves all other metadata
 
 2. **Sample-Based Calibration:**
    ```r
@@ -1013,8 +1045,11 @@ get_means(svy, x = income, domain = age > 18)
    - Design effect calculations (deff, deft)
 
 5. **Documentation - Vignettes:**
+   - `creating-survey-objects.Rmd` - **Primary entry point**: decision guide for
+     which constructor to use, detailed coverage of all arguments (especially
+     replicate weight types), real codebook examples, non-probability sample
+     guidance. Planned in `plans/vignette-creating-survey-objects.md`.
    - `getting-started.Rmd` - Basic workflow, object creation, simple analysis
-   - `survey-designs.Rmd` - All design types, when to use each, examples
    - `analysis-functions.Rmd` - Complete guide to all get_*() functions
    - `regression.Rmd` - survey_glm() usage, interpretation, diagnostics
    - `metadata-labels.Rmd` - Working with labels, metadata system
@@ -1180,11 +1215,10 @@ get_means(svy, x = income, domain = age > 18)
    - Automated reports: `create_survey_report()`
    - Publication-ready tables
 
-4. **Calibration & Weighting:**
-   - `survey_calibrated` class
-   - Post-stratification: `poststratify()`
-   - Raking: `rake()`
-   - Trim weights: `trim_weights()`
+4. **Additional Calibration Methods:**
+   - Advanced small-area estimation
+   - Model-calibration (GREG estimator)
+   - Entropy balancing
 
 5. **Database Integration:**
    - `survey_db` class for large surveys
@@ -1396,7 +1430,9 @@ surveyverse.tidysurvey.org/
 ## Success Metrics
 
 ### Phase 0
-- ✅ Can create all three design types
+- ✅ Can create all three design types (Taylor, replicate, two-phase)
+- ✅ survey_calibrated skeleton in place (class + as_survey_calibrated() stub)
+- ✅ weighting_history slot added to survey_metadata (reserved for Phase 2.5)
 - ✅ S7 validation catches errors
 - ✅ Metadata system works correctly
 - ✅ Can convert to/from survey/srvyr
