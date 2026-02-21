@@ -340,3 +340,25 @@ NULL
 
   metadata
 }
+
+
+# ── .delete_metadata_col ───────────────────────────────────────────────────────
+
+# Deletes per-column metadata for `col` from every @metadata slot.
+# Used by surveytidy's select() when a column is dropped from a survey design.
+# Leaves @metadata@weighting_history untouched — that slot is design-level, not
+# per-column.
+#
+# `design`: a survey_base subclass object.
+# `col`:    character(1) — the column name to purge from all metadata slots.
+#' @noRd
+.delete_metadata_col <- function(design, col) {
+  md <- design@metadata
+  md@variable_labels[[col]]   <- NULL
+  md@value_labels[[col]]      <- NULL
+  md@question_prefaces[[col]] <- NULL
+  md@notes[[col]]             <- NULL
+  md@transformations[[col]]   <- NULL
+  design@metadata <- md
+  design
+}
