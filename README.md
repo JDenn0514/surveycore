@@ -1,14 +1,18 @@
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # surveycore
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/JDenn0514/surveycore/graph/badge.svg)](https://app.codecov.io/gh/JDenn0514/surveycore)
+[![Codecov test
+coverage](https://codecov.io/gh/JDenn0514/surveycore/graph/badge.svg)](https://app.codecov.io/gh/JDenn0514/surveycore)
 <!-- badges: end -->
 
-**surveycore** is the foundation of the surveyverse ecosystem — a modern,
-tidyverse-compatible replacement for the `survey` and `srvyr` packages in R.
+**surveycore** is the foundation of the surveyverse ecosystem — a
+modern, tidyverse-compatible replacement for the `survey` and `srvyr`
+packages in R.
 
 It provides S7-based survey design objects with:
 
@@ -16,28 +20,35 @@ It provides S7-based survey design objects with:
 - Automatic preservation of haven-style variable labels and value labels
 - Exact variance estimation (Taylor linearization, replicate weights,
   two-phase designs)
-- Seamless conversion to and from `survey::svydesign` and `srvyr::tbl_svy`
+- Seamless conversion to and from `survey::svydesign` and
+  `srvyr::tbl_svy`
 
 ## Installation
 
-```r
+``` r
+# From CRAN:
+install.packages("surveycore")
+
+# Development version from GitHub:
 # install.packages("pak")
 pak::pak("JDenn0514/surveycore")
 ```
 
 ## What Phase 0 provides
 
-- **S7 survey objects**: `survey_taylor`, `survey_replicate`, `survey_twophase`
-- **Constructors**: `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`
-- **Metadata system**: `set_var_label()`, `set_val_labels()`, `extract_var_label()`,
-  `extract_val_labels()` — with automatic haven attribute import
-- **Variance estimation**: `get_means()`, `get_totals()` — Taylor linearization
-  and replicate weights
-- **Design utilities**: `update_design()`, `as_svydesign()`, `from_svydesign()`,
-  `as_tbl_svy()`, `from_tbl_svy()`
+- **S7 survey objects**: `survey_taylor`, `survey_replicate`,
+  `survey_twophase`
+- **Constructors**: `as_survey()`, `as_survey_rep()`,
+  `as_survey_twophase()`
+- **Metadata system**: `set_var_label()`, `set_val_labels()`,
+  `extract_var_label()`, `extract_val_labels()` — with automatic haven
+  attribute import
+- **Variance estimation**: `get_means()`, `get_totals()` — Taylor
+  linearization and replicate weights
+- **Design utilities**: `update_design()`, `as_svydesign()`,
+  `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()`
 
 ## Basic usage
-
 
 ``` r
 library(surveycore)
@@ -97,7 +108,6 @@ get_totals(d, income)
 
 ## Complex survey designs
 
-
 ``` r
 # ── Replicate weights (BRR) ───────────────────────────────────────────────────
 df_rep <- data.frame(
@@ -139,9 +149,8 @@ d_rep
 
 ## Variable labels
 
-surveycore preserves haven-style labels automatically when reading `.xpt` or
-`.sav` files. You can also set labels manually:
-
+surveycore preserves haven-style labels automatically when reading
+`.xpt` or `.sav` files. You can also set labels manually:
 
 ``` r
 d2 <- set_var_label(d, income, "Annual household income (USD)")
@@ -155,7 +164,6 @@ extract_var_label(d2, age)
 
 ## Conversion to/from survey and srvyr
 
-
 ``` r
 # To survey::svydesign
 svy <- as_svydesign(d)
@@ -167,7 +175,7 @@ d_rt <- from_svydesign(svy)
 d_rt
 ```
 
-## What's coming
+## What’s coming
 
 - **Phase 0.5** — `filter()`, `select()`, `mutate()`, `group_by()` verbs
   via the `surveytidy` package
@@ -179,5 +187,5 @@ d_rt
 ## License
 
 GPL-3. Variance estimation code vendored from the
-[`survey`](https://cran.r-project.org/package=survey) package (Thomas Lumley,
-GPL-2/GPL-3) — see `VENDORED.md` for full attribution.
+[`survey`](https://cran.r-project.org/package=survey) package (Thomas
+Lumley, GPL-2/GPL-3) — see `VENDORED.md` for full attribution.

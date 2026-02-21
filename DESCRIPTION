@@ -2,12 +2,12 @@ Package: surveycore
 Title: Core Survey Analysis Infrastructure
 Version: 0.1.0
 Authors@R:
-    person("Jacob", "Dennen", , "jdenn0514@gmail.com", role = c("aut", "cre"))
-Description: Provides S7-based infrastructure for survey analysis including
+    person("Jacob", "Dennen", , "jdenn0514@gmail.com", role = c("aut", "cre", "cph"))
+Description: Provides 'S7'-based infrastructure for survey analysis including
     design objects, metadata preservation, and variance estimation. Forms the
     foundation of the surveyverse ecosystem. Supports Taylor series, replicate
-    weight, and two-phase designs with a tidy-select interface for intuitive
-    design specification. Automatic preservation of haven-style variable and
+    weight, and two-phase designs with a 'tidyselect' interface for intuitive
+    design specification. Automatic preservation of 'haven'-style variable and
     value labels throughout all operations.
 License: GPL (>= 3)
 Encoding: UTF-8

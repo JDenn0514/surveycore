@@ -160,7 +160,7 @@ perceptions.}
 }
 \source{
 Pew Research Center. Jewish Americans in 2020 (Extended Dataset).
-\url{https://www.pewresearch.org/datasets} (free account required to
+\url{https://www.pewresearch.org/datasets/} (free account required to
 download raw data; the processed \code{.rda} is included in the package).
 Prepared by \verb{data-raw/prepare-pew-jewish-2020.R}.
 }

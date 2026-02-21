@@ -633,7 +633,7 @@
 #'
 #' @source
 #' Pew Research Center. 2025 National Public Opinion Reference Survey.
-#' \url{https://www.pewresearch.org/datasets} (free account required to
+#' \url{https://www.pewresearch.org/datasets/} (free account required to
 #' download raw data; the processed `.rda` is included in the package).
 #' Prepared by `data-raw/prepare-pew-npors-2025.R`.
 #'
@@ -872,7 +872,7 @@
 #'
 #' @source
 #' Pew Research Center. Jewish Americans in 2020 (Extended Dataset).
-#' \url{https://www.pewresearch.org/datasets} (free account required to
+#' \url{https://www.pewresearch.org/datasets/} (free account required to
 #' download raw data; the processed `.rda` is included in the package).
 #' Prepared by `data-raw/prepare-pew-jewish-2020.R`.
 #'
