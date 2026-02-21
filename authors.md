@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Jacob Dennen**. Author, maintainer.
+- **Jacob Dennen**. Author, maintainer, copyright holder.
 
 ## Citation
 

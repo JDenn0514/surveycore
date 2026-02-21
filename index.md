@@ -17,6 +17,10 @@ It provides S7-based survey design objects with:
 ## Installation
 
 ``` r
+# From CRAN:
+install.packages("surveycore")
+
+# Development version from GitHub:
 # install.packages("pak")
 pak::pak("JDenn0514/surveycore")
 ```

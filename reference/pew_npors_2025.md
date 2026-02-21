@@ -287,7 +287,7 @@ documented individually below:
 ## Source
 
 Pew Research Center. 2025 National Public Opinion Reference Survey.
-<https://www.pewresearch.org/datasets> (free account required to
+<https://www.pewresearch.org/datasets/> (free account required to
 download raw data; the processed `.rda` is included in the package).
 Prepared by `data-raw/prepare-pew-npors-2025.R`.
 
