@@ -2,10 +2,11 @@
 #
 # Constructor functions for survey design objects.
 #
-# Functions defined here (Phase 0, steps 5–7):
-#   as_survey()          — creates a survey_taylor object (Taylor series design)
-#   as_survey_rep()      — creates a survey_replicate object (replicate weights)
-#   as_survey_twophase() — creates a survey_twophase object (two-phase sampling)
+# Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
+#   as_survey()             — creates a survey_taylor object (Taylor series design)
+#   as_survey_rep()         — creates a survey_replicate object (replicate weights)
+#   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
+#   as_survey_calibrated()  — creates a survey_calibrated object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
@@ -970,5 +971,185 @@ as_survey_twophase <- function(
     metadata  = metadata,
     variables = variables,
     call      = call
+  )
+}
+
+
+# ── as_survey_calibrated ───────────────────────────────────────────────────────
+
+#' Create a Calibrated / Non-Probability Survey Design
+#'
+#' Creates a survey design object for non-probability samples and post-hoc
+#' calibrated designs (e.g., raked online panels, post-stratified samples).
+#' Accepts pre-computed calibration weights and optionally stores calibration
+#' provenance from \pkg{surveyweights} output for reproducibility.
+#'
+#' @section Phase 2.5 skeleton:
+#' This constructor is a **skeleton**. The resulting `survey_calibrated` object
+#' supports estimation via a model-assisted SRS variance assumption — the same
+#' as calling [as_survey()] with weights only. Full bootstrap re-calibration
+#' variance (which re-applies the raking procedure on each replicate) will be
+#' implemented in Phase 2.5 alongside the \pkg{surveyweights} package.
+#'
+#' @section When to use:
+#' Use `as_survey_calibrated()` instead of [as_survey()] when:
+#' \itemize{
+#'   \item Your data comes from a non-probability sample (online panel, quota
+#'     sample, MTurk/Prolific, etc.)
+#'   \item You have calibration or raking weights but no probability sampling
+#'     design structure (no PSU IDs, strata, etc.)
+#'   \item You want to explicitly record the provenance of your calibration
+#'     weights for reproducibility
+#' }
+#'
+#' If your data comes from a probability sample with known design structure,
+#' use [as_survey()], [as_survey_rep()], or [as_survey_twophase()] instead.
+#'
+#' @section Variance estimation note:
+#' Standard errors from a `survey_calibrated` object assume simple random
+#' sampling within the calibrated weights. This is consistent with common
+#' applied practice for raked non-probability samples, but is technically
+#' a model-assisted approximation rather than design-based variance. See
+#' `vignette("creating-survey-objects")` for details and limitations.
+#'
+#' @param data A `data.frame` containing the survey responses with
+#'   pre-computed calibration weights. Must have at least one row and
+#'   unique column names.
+#' @param weights <[`tidy-select`][tidyselect::language]> Calibration weight
+#'   column (a single column, values strictly > 0). Typically produced by
+#'   an external raking function (e.g., `anesrake::anesrake()`) or a
+#'   \pkg{surveyweights} calibration function.
+#' @param calibration Optional. The calibration provenance object returned by
+#'   a \pkg{surveyweights} calibration function (e.g., `surveyweights::rake()`).
+#'   Stored in `@calibration` for reproducibility. Supply `NULL` (the default)
+#'   when calibration was performed externally and provenance metadata is not
+#'   available. The object's structure is defined by \pkg{surveyweights} and will
+#'   be formally specified in Phase 2.5.
+#'
+#' @return A `survey_calibrated` object.
+#'
+#' @examples
+#' # Minimal: pre-computed calibration weights from an external tool
+#' df <- data.frame(
+#'   y      = rnorm(200),
+#'   age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
+#'   cal_wt = runif(200, 0.5, 2.5)
+#' )
+#' d <- as_survey_calibrated(df, weights = cal_wt)
+#'
+#' @seealso
+#'   [as_survey()] for probability designs with Taylor variance,
+#'   [as_survey_rep()] for replicate-weight designs
+#'
+#' @family constructors
+#' @keywords internal
+#' @export
+as_survey_calibrated <- function(
+  data,
+  weights,
+  calibration = NULL
+) {
+  call <- match.call()
+
+  # ── Layer 3: data-level validation ─────────────────────────────────────────
+
+  # Error 1: data must be a data frame
+  if (!is.data.frame(data)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg data} must be a data frame, not ",
+          "{.cls {class(data)[[1L]]}}"
+        )
+      ),
+      class = "surveycore_error_not_data_frame"
+    )
+  }
+
+  # Error 2: data must have at least one row
+  if (nrow(data) == 0L) {
+    cli::cli_abort(
+      c("x" = "{.arg data} must have at least one row"),
+      class = "surveycore_error_empty_data"
+    )
+  }
+
+  # Error 3: column names must be unique
+  if (anyDuplicated(names(data)) > 0L) {
+    dupes <- unique(names(data)[duplicated(names(data))])
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Column names in {.arg data} must be unique. ",
+          "Duplicates: {.field {dupes}}"
+        )
+      ),
+      class = "surveycore_error_duplicate_names"
+    )
+  }
+
+  # Warning 4: single-row data cannot support variance estimation
+  if (nrow(data) == 1L) {
+    cli::cli_warn(
+      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
+      class = "surveycore_warning_single_row"
+    )
+  }
+
+  # ── Resolve weights (required) ──────────────────────────────────────────────
+
+  weights_quo <- rlang::enquo(weights)
+
+  if (rlang::quo_is_missing(weights_quo)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg weights} is required for {.fn as_survey_calibrated}.",
+        "i" = paste0(
+          "Supply the column name of your calibration weight variable ",
+          "(e.g., {.code weights = cal_wt})."
+        )
+      ),
+      class = "surveycore_error_weights_missing"
+    )
+  }
+
+  weights_cols <- tidyselect::eval_select(weights_quo, data)
+  if (length(weights_cols) != 1L) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg weights} must select exactly 1 column, ",
+          "not {length(weights_cols)}"
+        )
+      ),
+      class = "surveycore_error_weights_multiple"
+    )
+  }
+  weights_var <- names(weights_cols)
+
+  # ── Validate weight values ──────────────────────────────────────────────────
+
+  .validate_weights(weights_var, data)
+
+  # ── Extract haven metadata ──────────────────────────────────────────────────
+
+  metadata <- .extract_haven_metadata(data)
+
+  # ── Build @variables ────────────────────────────────────────────────────────
+
+  variables <- list(
+    weights        = weights_var,
+    probs_provided = FALSE,
+    visible_vars   = NULL
+  )
+
+  # ── Construct and return survey_calibrated object ───────────────────────────
+
+  survey_calibrated(
+    data        = data,
+    metadata    = metadata,
+    variables   = variables,
+    calibration = calibration,
+    call        = call
   )
 }

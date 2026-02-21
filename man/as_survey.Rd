@@ -97,8 +97,10 @@ d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 \code{\link[=set_var_label]{set_var_label()}}, \code{\link[=set_variable_labels]{set_variable_labels()}} to add variable metadata
 
 Other constructors: 
+\code{\link{as_survey_calibrated}()},
 \code{\link{as_survey_rep}()},
 \code{\link{as_survey_twophase}()},
+\code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_taylor}()},
