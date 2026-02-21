@@ -419,6 +419,124 @@ S7::method(print, survey_twophase) <- function(
 }
 
 
+# ── print.survey_calibrated ───────────────────────────────────────────────
+
+# Print a Calibrated / Non-Probability Survey Design
+#
+# @param x A survey_calibrated object.
+# @param n Maximum number of data rows to print. Default 10L.
+# @param design_info Show design specification section?
+# @param weights_info Show weight distribution statistics?
+# @param metadata_info Show metadata summary?
+# @param full If TRUE, show all sections.
+# @param ... Passed to tibble print.
+# @return x, invisibly.
+# Class defined in R/00-s7-classes.R
+S7::method(print, survey_calibrated) <- function(
+  x,
+  n             = 10L,
+  design_info   = FALSE,
+  weights_info  = FALSE,
+  metadata_info = FALSE,
+  full          = FALSE,
+  ...
+) {
+  if (full) {
+    design_info <- weights_info <- metadata_info <- TRUE
+  }
+
+  # ── Header ────────────────────────────────────────────────────────────────
+  cli::cli_h1("Survey Design")
+  cli::cli_text("{.cls survey_calibrated} (calibrated / non-probability) [experimental]")
+  cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+
+  if (length(x@groups) > 0L) {
+    cli::cli_text("Groups: {.field {x@groups}}")
+  }
+
+  if (weights_info) {
+    wts        <- x@data[[x@variables$weights]]
+    weighted_n <- round(sum(wts, na.rm = TRUE))
+    cli::cli_text("Weighted N: {.val {weighted_n}}")
+  }
+
+  # ── Design specification ──────────────────────────────────────────────────
+  if (design_info) {
+    cli::cli_text("")
+    cli::cli_h2("Design specification")
+
+    wts_var <- x@variables$weights
+    cli::cli_bullets(c("*" = "Weights: {.field {wts_var}}"))
+
+    cal_label <- if (!is.null(x@calibration)) "stored" else "none stored"
+    cli::cli_bullets(c("*" = "Calibration provenance: {cal_label}"))
+
+    cli::cli_text("")
+    cli::cli_text("Design variables: {.field {wts_var}}")
+  }
+
+  # ── Weight distribution ───────────────────────────────────────────────────
+  if (weights_info) {
+    wts <- x@data[[x@variables$weights]]
+    cli::cli_text("")
+    cli::cli_h2("Weight distribution")
+    .print_weight_distribution(wts)
+  }
+
+  # ── Metadata ──────────────────────────────────────────────────────────────
+  if (metadata_info) {
+    n_labeled <- length(x@metadata@variable_labels)
+    cli::cli_text("")
+    cli::cli_h2("Metadata")
+    cli::cli_text("{n_labeled} variable(s) labeled")
+  }
+
+  # ── Data ──────────────────────────────────────────────────────────────────
+  cli::cli_text("")
+  data_shown <- .data_for_print(x)
+  print(data_shown, n = n, ...)
+
+  .print_hidden_note(x@variables$weights, data_shown)
+
+  invisible(x)
+}
+
+
+# ── summary.survey_calibrated ─────────────────────────────────────────────
+
+# Summarise a Calibrated / Non-Probability Survey Design
+# @param object A survey_calibrated object.
+# @return object, invisibly.
+# Class defined in R/00-s7-classes.R
+S7::method(summary, survey_calibrated) <- function(object, ...) {
+  x <- object
+
+  cli::cli_h1("Survey Design Summary")
+  cli::cli_text("Type: calibrated / non-probability [experimental]")
+  cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+
+  wts_var    <- x@variables$weights
+  wts        <- x@data[[wts_var]]
+  weighted_n <- round(sum(wts, na.rm = TRUE))
+  cli::cli_text("Weighted N: {.val {weighted_n}}")
+
+  cli::cli_text("")
+  cli::cli_h2("Design")
+  cli::cli_text("Weights: {.field {wts_var}}")
+  .print_weight_distribution(wts)
+
+  cal_label <- if (!is.null(x@calibration)) "stored" else "none stored"
+  cli::cli_text("Calibration provenance: {cal_label}")
+
+  cli::cli_text("")
+  n_labeled <- length(x@metadata@variable_labels)
+  n_total   <- ncol(x@data)
+  cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
+
+  invisible(x)
+}
+
+
 # ── summary.survey_taylor ──────────────────────────────────────────────────
 
 # Summarise a Taylor Series Survey Design

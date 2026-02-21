@@ -40,6 +40,7 @@ reference:
       - as_survey
       - as_survey_rep
       - as_survey_twophase
+      - as_survey_calibrated
       - update_design
 
   - title: "Estimation"
@@ -90,6 +91,7 @@ reference:
       - survey_taylor
       - survey_replicate
       - survey_twophase
+      - survey_calibrated
       - survey_metadata
 
   - title: "Utilities"

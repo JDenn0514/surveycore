@@ -498,10 +498,12 @@ get_means <- function(design, var, na.rm = TRUE) {
     )
   }
 
-  result <- if (S7::S7_inherits(design, survey_taylor)) {
-    .taylor_mean(design, var_name, na.rm = na.rm)
-  } else {
+  # survey_replicate → replicate variance
+  # survey_taylor and survey_calibrated → Taylor/SRS variance
+  result <- if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_mean(design, var_name, na.rm = na.rm)
+  } else {
+    .taylor_mean(design, var_name, na.rm = na.rm)
   }
   list(variable = var_name, mean = result$mean, se = result$se)
 }
@@ -575,10 +577,12 @@ get_totals <- function(design, var, na.rm = TRUE) {
     )
   }
 
-  result <- if (S7::S7_inherits(design, survey_taylor)) {
-    .taylor_total(design, var_name, na.rm = na.rm)
-  } else {
+  # survey_replicate → replicate variance
+  # survey_taylor and survey_calibrated → Taylor/SRS variance
+  result <- if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_total(design, var_name, na.rm = na.rm)
+  } else {
+    .taylor_total(design, var_name, na.rm = na.rm)
   }
   list(variable = var_name, total = result$total, se = result$se)
 }
