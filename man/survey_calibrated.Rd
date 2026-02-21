@@ -95,3 +95,4 @@ Other constructors:
 \code{\link{survey_twophase}()}
 }
 \concept{constructors}
+\keyword{internal}

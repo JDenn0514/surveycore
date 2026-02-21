@@ -627,6 +627,7 @@ survey_twophase <- S7::new_class(
 #' )
 #' @seealso [as_survey_calibrated()] to create a `survey_calibrated` object.
 #' @family constructors
+#' @keywords internal
 #' @export
 survey_calibrated <- S7::new_class(
   "survey_calibrated",

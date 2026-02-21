@@ -1042,6 +1042,7 @@ as_survey_twophase <- function(
 #'   [as_survey_rep()] for replicate-weight designs
 #'
 #' @family constructors
+#' @keywords internal
 #' @export
 as_survey_calibrated <- function(
   data,
