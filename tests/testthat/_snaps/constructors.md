@@ -262,5 +262,206 @@
       as_survey_calibrated(df, weights = w)
     Condition
       Error in `.validate_weights()`:
-      x Weight column w has 1 non-positive value(s). All non-NA weights must be > 0.
+      x Weight column w has 1 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where w is 0 or negative.
+
+# print() produces correct output for survey_calibrated (default)
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 2
+             y     w
+         <int> <dbl>
+       1     1     1
+       2     2     1
+       3     3     1
+       4     4     1
+       5     5     1
+       6     6     1
+       7     7     1
+       8     8     1
+       9     9     1
+      10    10     1
+
+# print(d, full = TRUE) produces correct output for survey_calibrated
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design specification --
+      
+      * Weights: w
+      * Calibration provenance: none stored
+      
+      Design variables: w
+      
+      
+      -- Weight distribution --
+      
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 10 x 2
+             y     w
+         <int> <dbl>
+       1     1     1
+       2     2     1
+       3     3     1
+       4     4     1
+       5     5     1
+       6     6     1
+       7     7     1
+       8     8     1
+       9     9     1
+      10    10     1
+
+# print(d, design_info = TRUE) produces correct output for survey_calibrated
+
+    Code
+      print(d, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 10
+      
+      
+      -- Design specification --
+      
+      * Weights: w
+      * Calibration provenance: none stored
+      
+      Design variables: w
+      
+    Output
+      # A tibble: 10 x 2
+             y     w
+         <int> <dbl>
+       1     1     1
+       2     2     1
+       3     3     1
+       4     4     1
+       5     5     1
+       6     6     1
+       7     7     1
+       8     8     1
+       9     9     1
+      10    10     1
+
+# print(d, weights_info = TRUE) produces correct output for survey_calibrated
+
+    Code
+      print(d, weights_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Weight distribution --
+      
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      
+    Output
+      # A tibble: 10 x 2
+             y     w
+         <int> <dbl>
+       1     1     1
+       2     2     1
+       3     3     1
+       4     4     1
+       5     5     1
+       6     6     1
+       7     7     1
+       8     8     1
+       9     9     1
+      10    10     1
+
+# print(d, metadata_info = TRUE) produces correct output for survey_calibrated
+
+    Code
+      print(d, metadata_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 10
+      
+      
+      -- Metadata --
+      
+      1 variable(s) labeled
+      
+    Output
+      # A tibble: 10 x 2
+             y     w
+         <int> <dbl>
+       1     1     1
+       2     2     1
+       3     3     1
+       4     4     1
+       5     5     1
+       6     6     1
+       7     7     1
+       8     8     1
+       9     9     1
+      10    10     1
+
+# summary() produces correct output for survey_calibrated
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: calibrated / non-probability [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      Weights: w
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      Calibration provenance: none stored
+      
+      Metadata: 0 of 2 variable(s) labeled
+
+# as_survey_calibrated() rejects non-numeric weight column
+
+    Code
+      as_survey_calibrated(df, weights = w)
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column w must be numeric.
+      i Got <character>.
+      v Convert with `as.numeric(w)`.
 

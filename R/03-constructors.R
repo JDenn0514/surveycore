@@ -103,49 +103,7 @@ as_survey <- function(
   call <- match.call()
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
-
-  # Error 1: data must be a data frame
-  if (!is.data.frame(data)) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg data} must be a data frame, not ",
-          "{.cls {class(data)[[1L]]}}"
-        )
-      ),
-      class = "surveycore_error_not_data_frame"
-    )
-  }
-
-  # Error 2: data must have at least one row
-  if (nrow(data) == 0L) {
-    cli::cli_abort(
-      c("x" = "{.arg data} must have at least one row"),
-      class = "surveycore_error_empty_data"
-    )
-  }
-
-  # Error 3: column names must be unique
-  if (anyDuplicated(names(data)) > 0L) {
-    dupes <- unique(names(data)[duplicated(names(data))])
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "Column names in {.arg data} must be unique. ",
-          "Duplicates: {.field {dupes}}"
-        )
-      ),
-      class = "surveycore_error_duplicate_names"
-    )
-  }
-
-  # Warning 4: single-row data cannot support variance estimation
-  if (nrow(data) == 1L) {
-    cli::cli_warn(
-      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
-      class = "surveycore_warning_single_row"
-    )
-  }
+  .validate_data_frame(data)
 
   # ── Resolve tidy-select expressions ────────────────────────────────────────
 
@@ -158,109 +116,26 @@ as_survey <- function(
     ids_vars <- names(ids_cols)
   }
 
-  # probs (must select exactly one column)
-  probs_quo <- rlang::enquo(probs)
-  if (rlang::quo_is_null(probs_quo)) {
-    probs_var <- NULL
-  } else {
-    probs_cols <- tidyselect::eval_select(probs_quo, data)
-    if (length(probs_cols) == 0L) {
-      cli::cli_abort(
-        c("x" = "{.arg probs} matched no columns in {.arg data}"),
-        class = "surveycore_error_weights_not_found"
-      )
-    }
-    if (length(probs_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg probs} must select exactly one column, not ",
-            "{length(probs_cols)}"
-          )
-        ),
-        class = "surveycore_error_weights_multiple"
-      )
-    }
-    probs_var <- names(probs_cols)
-  }
-
-  # weights (must select exactly one column)
-  weights_quo <- rlang::enquo(weights)
-  if (rlang::quo_is_null(weights_quo)) {
-    weights_var <- NULL
-  } else {
-    weights_cols <- tidyselect::eval_select(weights_quo, data)
-    if (length(weights_cols) == 0L) {
-      cli::cli_abort(
-        c("x" = "{.arg weights} matched no columns in {.arg data}"),
-        class = "surveycore_error_weights_not_found"
-      )
-    }
-    if (length(weights_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg weights} must select exactly one column, not ",
-            "{length(weights_cols)}"
-          )
-        ),
-        class = "surveycore_error_weights_multiple"
-      )
-    }
-    weights_var <- names(weights_cols)
-  }
-
-  # strata (must select exactly one column)
-  strata_quo <- rlang::enquo(strata)
-  if (rlang::quo_is_null(strata_quo)) {
-    strata_var <- NULL
-  } else {
-    strata_cols <- tidyselect::eval_select(strata_quo, data)
-    if (length(strata_cols) == 0L) {
-      cli::cli_abort(
-        c("x" = "{.arg strata} matched no columns in {.arg data}"),
-        class = "surveycore_error_strata_not_found"
-      )
-    }
-    if (length(strata_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg strata} must select exactly one column, not ",
-            "{length(strata_cols)}"
-          )
-        ),
-        class = "surveycore_error_strata_multiple"
-      )
-    }
-    strata_var <- names(strata_cols)
-  }
-
-  # fpc (must select exactly one column)
-  fpc_quo <- rlang::enquo(fpc)
-  if (rlang::quo_is_null(fpc_quo)) {
-    fpc_var <- NULL
-  } else {
-    fpc_cols <- tidyselect::eval_select(fpc_quo, data)
-    if (length(fpc_cols) == 0L) {
-      cli::cli_abort(
-        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
-        class = "surveycore_error_fpc_not_found"
-      )
-    }
-    if (length(fpc_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg fpc} must select exactly one column, not ",
-            "{length(fpc_cols)}"
-          )
-        ),
-        class = "surveycore_error_fpc_multiple"
-      )
-    }
-    fpc_var <- names(fpc_cols)
-  }
+  probs_var   <- .resolve_single_col(
+    rlang::enquo(probs), data, "probs",
+    class_none  = "surveycore_error_weights_not_found",
+    class_multi = "surveycore_error_weights_multiple"
+  )
+  weights_var <- .resolve_single_col(
+    rlang::enquo(weights), data, "weights",
+    class_none  = "surveycore_error_weights_not_found",
+    class_multi = "surveycore_error_weights_multiple"
+  )
+  strata_var  <- .resolve_single_col(
+    rlang::enquo(strata), data, "strata",
+    class_none  = "surveycore_error_strata_not_found",
+    class_multi = "surveycore_error_strata_multiple"
+  )
+  fpc_var     <- .resolve_single_col(
+    rlang::enquo(fpc), data, "fpc",
+    class_none  = "surveycore_error_fpc_not_found",
+    class_multi = "surveycore_error_fpc_multiple"
+  )
 
   # ── Probs / weights reconciliation ─────────────────────────────────────────
 
@@ -287,18 +162,19 @@ as_survey <- function(
       paste0(
         "Using {.arg weights}; provided {.arg probs} is consistent ",
         "(weights = 1/probs)"
-      )
+      ),
+      class = "surveycore_inform_probs_weights_consistent"
     )
     probs_provided <- TRUE
   } else if (!is.null(probs_var) && is.null(weights_var)) {
     # Only probs provided — convert to weights
-    weights_var    <- "..surveycore_wt.."
+    weights_var         <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- 1 / data[[probs_var]]
     probs_provided <- TRUE
   } else if (is.null(probs_var) && is.null(weights_var)) {
     # Neither probs nor weights — SRS fallback
     # Warning 7: no weights or probs (SRS fallback)
-    weights_var         <- "..surveycore_wt.."
+    weights_var         <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- rep(1L, nrow(data))
     probs_provided      <- FALSE
 
@@ -489,73 +365,17 @@ as_survey_rep <- function(
   fpctype <- match.arg(fpctype)
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
-
-  # Error 1: data must be a data frame
-  if (!is.data.frame(data)) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg data} must be a data frame, not ",
-          "{.cls {class(data)[[1L]]}}"
-        )
-      ),
-      class = "surveycore_error_not_data_frame"
-    )
-  }
-
-  # Error 2: data must have at least one row
-  if (nrow(data) == 0L) {
-    cli::cli_abort(
-      c("x" = "{.arg data} must have at least one row"),
-      class = "surveycore_error_empty_data"
-    )
-  }
-
-  # Error 3: column names must be unique
-  if (anyDuplicated(names(data)) > 0L) {
-    dupes <- unique(names(data)[duplicated(names(data))])
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "Column names in {.arg data} must be unique. ",
-          "Duplicates: {.field {dupes}}"
-        )
-      ),
-      class = "surveycore_error_duplicate_names"
-    )
-  }
-
-  # Warning 4: single-row data cannot support variance estimation
-  if (nrow(data) == 1L) {
-    cli::cli_warn(
-      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
-      class = "surveycore_warning_single_row"
-    )
-  }
+  .validate_data_frame(data)
 
   # ── Resolve tidy-select expressions ────────────────────────────────────────
 
-  # weights (must select exactly one column)
-  weights_quo  <- rlang::enquo(weights)
-  weights_cols <- tidyselect::eval_select(weights_quo, data)
-  if (length(weights_cols) == 0L) {
-    cli::cli_abort(
-      c("x" = "{.arg weights} matched no columns in {.arg data}"),
-      class = "surveycore_error_weights_not_found"
-    )
-  }
-  if (length(weights_cols) > 1L) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg weights} must select exactly one column, not ",
-          "{length(weights_cols)}"
-        )
-      ),
-      class = "surveycore_error_weights_multiple"
-    )
-  }
-  weights_var <- names(weights_cols)
+  # weights (required; must select exactly one column)
+  weights_var <- .resolve_single_col(
+    rlang::enquo(weights), data, "weights",
+    required    = TRUE,
+    class_none  = "surveycore_error_weights_not_found",
+    class_multi = "surveycore_error_weights_multiple"
+  )
 
   # repweights (must select at least one column)
   repweights_quo  <- rlang::enquo(repweights)
@@ -569,31 +389,11 @@ as_survey_rep <- function(
   repweights_vars <- names(repweights_cols)
   n_rep           <- length(repweights_vars)
 
-  # fpc (optional; must select exactly one column if provided)
-  fpc_quo <- rlang::enquo(fpc)
-  if (rlang::quo_is_null(fpc_quo)) {
-    fpc_var <- NULL
-  } else {
-    fpc_cols <- tidyselect::eval_select(fpc_quo, data)
-    if (length(fpc_cols) == 0L) {
-      cli::cli_abort(
-        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
-        class = "surveycore_error_fpc_not_found"
-      )
-    }
-    if (length(fpc_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg fpc} must select exactly one column, not ",
-            "{length(fpc_cols)}"
-          )
-        ),
-        class = "surveycore_error_fpc_multiple"
-      )
-    }
-    fpc_var <- names(fpc_cols)
-  }
+  fpc_var <- .resolve_single_col(
+    rlang::enquo(fpc), data, "fpc",
+    class_none  = "surveycore_error_fpc_not_found",
+    class_multi = "surveycore_error_fpc_multiple"
+  )
 
   # ── Business-rule validations ───────────────────────────────────────────────
 
@@ -823,15 +623,35 @@ as_survey_twophase <- function(
   # ── Error 23: subset must be non-degenerate ──────────────────────────────────
 
   subset_vals <- data[[subset_var]]
-  n_true      <- sum(subset_vals, na.rm = TRUE)
-  n_total     <- length(subset_vals)
-  if (all(subset_vals, na.rm = TRUE) || !any(subset_vals, na.rm = TRUE)) {
+
+  # Warning: NAs in subset column mean some rows have unknown Phase 2
+  # membership — flag this so users are not surprised by downstream behavior.
+  n_na <- sum(is.na(subset_vals))
+  if (n_na > 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg subset} column {.field {subset_var}} contains {n_na} ",
+          "NA value(s)."
+        ),
+        "i" = paste0(
+          "Rows with NA are excluded from Phase 2. ",
+          "This may affect variance estimation."
+        )
+      ),
+      class = "surveycore_warning_subset_na"
+    )
+  }
+
+  n_true  <- sum(subset_vals, na.rm = TRUE)
+  n_false <- sum(!subset_vals, na.rm = TRUE)
+  if (n_true == 0L || n_false == 0L) {
     cli::cli_abort(
       c(
         "x" = paste0(
           "{.arg subset} column {.field {subset_var}} must contain both ",
-          "TRUE and FALSE values. ",
-          "Found {n_true} TRUE out of {n_total} rows."
+          "TRUE and FALSE values (non-NA). ",
+          "Found {n_true} TRUE and {n_false} FALSE (non-NA) value(s)."
         )
       ),
       class = "surveycore_error_subset_degenerate"
@@ -849,65 +669,21 @@ as_survey_twophase <- function(
     ids2_vars <- if (length(ids2_cols) == 0L) NULL else names(ids2_cols)
   }
 
-  # strata2 (must select exactly one column)
-  strata2_quo <- rlang::enquo(strata2)
-  if (rlang::quo_is_null(strata2_quo)) {
-    strata2_var <- NULL
-  } else {
-    strata2_cols <- tidyselect::eval_select(strata2_quo, data)
-    if (length(strata2_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg strata2} must select exactly one column, not ",
-            "{length(strata2_cols)}"
-          )
-        ),
-        class = "surveycore_error_strata_multiple"
-      )
-    }
-    strata2_var <- if (length(strata2_cols) == 0L) NULL else names(strata2_cols)
-  }
-
-  # probs2 (must select exactly one column)
-  probs2_quo <- rlang::enquo(probs2)
-  if (rlang::quo_is_null(probs2_quo)) {
-    probs2_var <- NULL
-  } else {
-    probs2_cols <- tidyselect::eval_select(probs2_quo, data)
-    if (length(probs2_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg probs2} must select exactly one column, not ",
-            "{length(probs2_cols)}"
-          )
-        ),
-        class = "surveycore_error_weights_multiple"
-      )
-    }
-    probs2_var <- if (length(probs2_cols) == 0L) NULL else names(probs2_cols)
-  }
-
-  # fpc2 (must select exactly one column)
-  fpc2_quo <- rlang::enquo(fpc2)
-  if (rlang::quo_is_null(fpc2_quo)) {
-    fpc2_var <- NULL
-  } else {
-    fpc2_cols <- tidyselect::eval_select(fpc2_quo, data)
-    if (length(fpc2_cols) > 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg fpc2} must select exactly one column, not ",
-            "{length(fpc2_cols)}"
-          )
-        ),
-        class = "surveycore_error_fpc_multiple"
-      )
-    }
-    fpc2_var <- if (length(fpc2_cols) == 0L) NULL else names(fpc2_cols)
-  }
+  strata2_var <- .resolve_single_col(
+    rlang::enquo(strata2), data, "strata2",
+    class_none  = "surveycore_error_strata_not_found",
+    class_multi = "surveycore_error_strata_multiple"
+  )
+  probs2_var  <- .resolve_single_col(
+    rlang::enquo(probs2), data, "probs2",
+    class_none  = "surveycore_error_weights_not_found",
+    class_multi = "surveycore_error_weights_multiple"
+  )
+  fpc2_var    <- .resolve_single_col(
+    rlang::enquo(fpc2), data, "fpc2",
+    class_none  = "surveycore_error_fpc_not_found",
+    class_multi = "surveycore_error_fpc_multiple"
+  )
 
   # ── Warning 24: method = "simple" with clustered Phase 1 ────────────────────
 
@@ -1053,49 +829,7 @@ as_survey_calibrated <- function(
   call <- match.call()
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
-
-  # Error 1: data must be a data frame
-  if (!is.data.frame(data)) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg data} must be a data frame, not ",
-          "{.cls {class(data)[[1L]]}}"
-        )
-      ),
-      class = "surveycore_error_not_data_frame"
-    )
-  }
-
-  # Error 2: data must have at least one row
-  if (nrow(data) == 0L) {
-    cli::cli_abort(
-      c("x" = "{.arg data} must have at least one row"),
-      class = "surveycore_error_empty_data"
-    )
-  }
-
-  # Error 3: column names must be unique
-  if (anyDuplicated(names(data)) > 0L) {
-    dupes <- unique(names(data)[duplicated(names(data))])
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "Column names in {.arg data} must be unique. ",
-          "Duplicates: {.field {dupes}}"
-        )
-      ),
-      class = "surveycore_error_duplicate_names"
-    )
-  }
-
-  # Warning 4: single-row data cannot support variance estimation
-  if (nrow(data) == 1L) {
-    cli::cli_warn(
-      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
-      class = "surveycore_warning_single_row"
-    )
-  }
+  .validate_data_frame(data)
 
   # ── Resolve weights (required) ──────────────────────────────────────────────
 
@@ -1114,19 +848,11 @@ as_survey_calibrated <- function(
     )
   }
 
-  weights_cols <- tidyselect::eval_select(weights_quo, data)
-  if (length(weights_cols) != 1L) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg weights} must select exactly 1 column, ",
-          "not {length(weights_cols)}"
-        )
-      ),
-      class = "surveycore_error_weights_multiple"
-    )
-  }
-  weights_var <- names(weights_cols)
+  weights_var <- .resolve_single_col(
+    weights_quo, data, "weights",
+    class_none  = "surveycore_error_weights_not_found",
+    class_multi = "surveycore_error_weights_multiple"
+  )
 
   # ── Validate weight values ──────────────────────────────────────────────────
 
@@ -1141,6 +867,10 @@ as_survey_calibrated <- function(
   variables <- list(
     weights        = weights_var,
     probs_provided = FALSE,
+    ids            = NULL,
+    strata         = NULL,
+    fpc            = NULL,
+    nest           = FALSE,
     visible_vars   = NULL
   )
 

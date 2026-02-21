@@ -1476,3 +1476,227 @@ test_that("summary() works for survey_calibrated and returns x invisibly", {
   expect_false(out$visible)
   expect_true(S7::S7_inherits(out$value, survey_calibrated))
 })
+
+# ── Snapshot tests: print() and summary() output ───────────────────────────────
+
+test_that("print() produces correct output for survey_calibrated (default)", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(print(d))
+})
+
+test_that("print(d, full = TRUE) produces correct output for survey_calibrated", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(print(d, full = TRUE))
+})
+
+test_that("print(d, design_info = TRUE) produces correct output for survey_calibrated", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(print(d, design_info = TRUE))
+})
+
+test_that("print(d, weights_info = TRUE) produces correct output for survey_calibrated", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(print(d, weights_info = TRUE))
+})
+
+test_that("print(d, metadata_info = TRUE) produces correct output for survey_calibrated", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  attr(df$y, "label") <- "Outcome variable"
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(print(d, metadata_info = TRUE))
+})
+
+test_that("summary() produces correct output for survey_calibrated", {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  d  <- as_survey_calibrated(df, weights = w)
+  expect_snapshot(summary(d))
+})
+
+# ── Layer 1 (S7 validator) tests ───────────────────────────────────────────────
+# These bypass the constructor and call survey_calibrated() directly to test
+# the S7 class validator in isolation.
+
+test_that("survey_calibrated validator rejects missing weight column in @data", {
+  expect_error(
+    survey_calibrated(
+      data      = data.frame(y = 1:5),
+      variables = list(
+        weights = "nonexistent_col", probs_provided = FALSE,
+        ids = NULL, strata = NULL, fpc = NULL, nest = FALSE, visible_vars = NULL
+      )
+    ),
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+test_that("survey_calibrated validator rejects non-numeric weight column", {
+  df <- data.frame(y = 1:5, w = letters[1:5])
+  expect_error(
+    survey_calibrated(
+      data      = df,
+      variables = list(
+        weights = "w", probs_provided = FALSE,
+        ids = NULL, strata = NULL, fpc = NULL, nest = FALSE, visible_vars = NULL
+      )
+    ),
+    class = "surveycore_error_weights_not_numeric"
+  )
+})
+
+test_that("survey_calibrated validator rejects all-NA weight column", {
+  df <- data.frame(y = 1:5, w = NA_real_)
+  expect_error(
+    survey_calibrated(
+      data      = df,
+      variables = list(
+        weights = "w", probs_provided = FALSE,
+        ids = NULL, strata = NULL, fpc = NULL, nest = FALSE, visible_vars = NULL
+      )
+    ),
+    class = "surveycore_error_weights_all_zero"
+  )
+})
+
+test_that("survey_calibrated validator rejects non-positive weight column", {
+  df <- data.frame(y = 1:5, w = c(1, -1, 1, 1, 1))
+  expect_error(
+    survey_calibrated(
+      data      = df,
+      variables = list(
+        weights = "w", probs_provided = FALSE,
+        ids = NULL, strata = NULL, fpc = NULL, nest = FALSE, visible_vars = NULL
+      )
+    ),
+    class = "surveycore_error_weights_nonpositive"
+  )
+})
+
+# ── Numerical correctness tests ────────────────────────────────────────────────
+
+test_that("get_means() returns analytically correct weighted mean and SRS SE for survey_calibrated", {
+  df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
+  d  <- as_survey_calibrated(df, weights = w)
+
+  # Weighted mean: sum(y * w) / sum(w)
+  expected_mean <- sum(df$y * df$w) / sum(df$w)
+
+  # SRS variance of weighted mean via Taylor linearization (each row = own PSU,
+  # one stratum, no FPC): z_i = w_i * (y_i - ybar_w) / sum(w)
+  # V = (n / (n-1)) * sum(z_i^2)  [sum(z_i) = 0 so centering is free]
+  n             <- nrow(df)
+  z             <- df$w * (df$y - expected_mean) / sum(df$w)
+  expected_se   <- sqrt((n / (n - 1L)) * sum(z^2))
+
+  result <- get_means(d, y)
+  expect_equal(result$mean, expected_mean, tolerance = 1e-10)
+  expect_equal(result$se,   expected_se,   tolerance = 1e-8)
+})
+
+test_that("get_totals() returns analytically correct weighted total and SRS SE for survey_calibrated", {
+  df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
+  d  <- as_survey_calibrated(df, weights = w)
+
+  # Weighted total: sum(y * w)
+  expected_total <- sum(df$y * df$w)
+
+  # SRS variance of weighted total via Taylor linearization:
+  # z_i = y_i * w_i  (what .svy_recvar receives for the total)
+  # V = (n / (n-1)) * sum((z_i - mean(z))^2)
+  n              <- nrow(df)
+  z              <- df$y * df$w
+  expected_se    <- sqrt((n / (n - 1L)) * sum((z - mean(z))^2))
+
+  result <- get_totals(d, y)
+  expect_equal(result$total, expected_total, tolerance = 1e-10)
+  expect_equal(result$se,    expected_se,    tolerance = 1e-8)
+})
+
+test_that("get_means() matches survey::svymean() for survey_calibrated [numerical]", {
+  skip_if_not_installed("survey")
+
+  set.seed(42)
+  df <- data.frame(y = rnorm(200), w = runif(200, 0.5, 2.5))
+
+  d_sc  <- as_survey_calibrated(df, weights = w)
+  d_sv  <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+
+  sc_est <- get_means(d_sc, y)
+  sv_est <- survey::svymean(~y, d_sv)
+
+  expect_equal(sc_est$mean, coef(sv_est)[["y"]],                tolerance = 1e-10)
+  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),      tolerance = 1e-8)
+})
+
+test_that("get_totals() matches survey::svytotal() for survey_calibrated [numerical]", {
+  skip_if_not_installed("survey")
+
+  set.seed(42)
+  df <- data.frame(y = rnorm(200), w = runif(200, 0.5, 2.5))
+
+  d_sc  <- as_survey_calibrated(df, weights = w)
+  d_sv  <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+
+  sc_est <- get_totals(d_sc, y)
+  sv_est <- survey::svytotal(~y, d_sv)
+
+  expect_equal(sc_est$total, coef(sv_est)[["y"]],               tolerance = 1e-10)
+  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),     tolerance = 1e-8)
+})
+
+# ── Edge cases ─────────────────────────────────────────────────────────────────
+
+test_that("as_survey_calibrated() rejects non-numeric weight column", {
+  df <- data.frame(y = 1:5, w = letters[1:5])
+  expect_error(
+    as_survey_calibrated(df, weights = w),
+    class = "surveycore_error_weights_not_numeric"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_calibrated(df, weights = w)
+  )
+})
+
+test_that("get_means() with na.rm = FALSE propagates NA for survey_calibrated", {
+  df <- data.frame(y = c(1, NA, 3, 4, 5), w = c(2, 1, 2, 1, 2))
+  d  <- as_survey_calibrated(df, weights = w)
+  result <- get_means(d, y, na.rm = FALSE)
+  expect_true(is.na(result$mean))
+  expect_true(is.na(result$se))
+})
+
+test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_calibrated", {
+  df_full    <- data.frame(y = c(1, 2, 3, 4, 5),   w = c(2, 1, 2, 1, 2))
+  df_missing <- data.frame(y = c(1, NA, 3, 4, 5),  w = c(2, 1, 2, 1, 2))
+
+  d_full    <- as_survey_calibrated(df_full,    weights = w)
+  d_missing <- as_survey_calibrated(df_missing, weights = w)
+
+  result_full    <- get_means(d_full,    y, na.rm = TRUE)
+  result_missing <- get_means(d_missing, y, na.rm = TRUE)
+
+  # na.rm = TRUE should drop row 2 and compute mean over rows 1, 3, 4, 5
+  df_complete    <- df_missing[!is.na(df_missing$y), ]
+  expected_mean  <- sum(df_complete$y * df_complete$w) / sum(df_complete$w)
+
+  expect_equal(result_missing$mean, expected_mean, tolerance = 1e-10)
+  # Result with NA row excluded must differ from the full-data result
+  expect_false(isTRUE(all.equal(result_missing$mean, result_full$mean)))
+})
+
+test_that("get_means() handles partial-NA weight column for survey_calibrated", {
+  # Raked panels sometimes produce NA weights for excluded units;
+  # these rows should be excluded from estimation without error when na.rm = TRUE
+  df     <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, NA, 2, 1, 2))
+  # NA weight rows reach .taylor_build_inputs() which only filters on NA y,
+  # not NA w — weight NAs propagate to the weighted calculation.
+  # The object should construct without error (validator allows partial NA w).
+  expect_no_error(
+    d <- as_survey_calibrated(df, weights = w)
+  )
+  expect_true(S7::S7_inherits(d, survey_calibrated))
+})

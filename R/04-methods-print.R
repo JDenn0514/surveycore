@@ -445,6 +445,10 @@ S7::method(print, survey_calibrated) <- function(
     design_info <- weights_info <- metadata_info <- TRUE
   }
 
+  # Hoist weight extraction once; used by header and weight-distribution sections
+  wts     <- x@data[[x@variables$weights]]
+  wts_var <- x@variables$weights
+
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
   cli::cli_text("{.cls survey_calibrated} (calibrated / non-probability) [experimental]")
@@ -455,7 +459,6 @@ S7::method(print, survey_calibrated) <- function(
   }
 
   if (weights_info) {
-    wts        <- x@data[[x@variables$weights]]
     weighted_n <- round(sum(wts, na.rm = TRUE))
     cli::cli_text("Weighted N: {.val {weighted_n}}")
   }
@@ -465,7 +468,6 @@ S7::method(print, survey_calibrated) <- function(
     cli::cli_text("")
     cli::cli_h2("Design specification")
 
-    wts_var <- x@variables$weights
     cli::cli_bullets(c("*" = "Weights: {.field {wts_var}}"))
 
     cal_label <- if (!is.null(x@calibration)) "stored" else "none stored"
@@ -477,7 +479,6 @@ S7::method(print, survey_calibrated) <- function(
 
   # ── Weight distribution ───────────────────────────────────────────────────
   if (weights_info) {
-    wts <- x@data[[x@variables$weights]]
     cli::cli_text("")
     cli::cli_h2("Weight distribution")
     .print_weight_distribution(wts)
@@ -496,7 +497,7 @@ S7::method(print, survey_calibrated) <- function(
   data_shown <- .data_for_print(x)
   print(data_shown, n = n, ...)
 
-  .print_hidden_note(x@variables$weights, data_shown)
+  .print_hidden_note(wts_var, data_shown)
 
   invisible(x)
 }

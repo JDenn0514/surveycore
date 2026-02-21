@@ -28,6 +28,60 @@
 NULL
 
 
+# ── .validate_data_frame ──────────────────────────────────────────────────────
+
+# Validates the `data` argument shared by as_survey(), as_survey_rep(), and
+# as_survey_calibrated() (Layer 3, errors 1–4 from error-messages.md).
+# Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
+#' @noRd
+.validate_data_frame <- function(data) {
+  # Error 1: data must be a data frame
+  if (!is.data.frame(data)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg data} must be a data frame, not ",
+          "{.cls {class(data)[[1L]]}}"
+        )
+      ),
+      class = "surveycore_error_not_data_frame"
+    )
+  }
+
+  # Error 2: data must have at least one row
+  if (nrow(data) == 0L) {
+    cli::cli_abort(
+      c("x" = "{.arg data} must have at least one row"),
+      class = "surveycore_error_empty_data"
+    )
+  }
+
+  # Error 3: column names must be unique
+  if (anyDuplicated(names(data)) > 0L) {
+    dupes <- unique(names(data)[duplicated(names(data))])
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Column names in {.arg data} must be unique. ",
+          "Duplicates: {.field {dupes}}"
+        )
+      ),
+      class = "surveycore_error_duplicate_names"
+    )
+  }
+
+  # Warning 4: single-row data cannot support variance estimation
+  if (nrow(data) == 1L) {
+    cli::cli_warn(
+      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
+      class = "surveycore_warning_single_row"
+    )
+  }
+
+  invisible(TRUE)
+}
+
+
 # ── .validate_weights ──────────────────────────────────────────────────────────
 
 # Validates that `weights_var` column exists in `data`, is numeric, and has
@@ -52,10 +106,9 @@ NULL
   if (!is.numeric(wt_col)) {
     cli::cli_abort(
       c(
-        "x" = paste0(
-          "Weight column {.field {weights_var}} must be numeric, ",
-          "not {.cls {class(wt_col)}}."
-        )
+        "x" = "Weight column {.field {weights_var}} must be numeric.",
+        "i" = "Got {.cls {class(wt_col)}}.",
+        "v" = "Convert with {.code as.numeric({.field {weights_var}})}."
       ),
       class = "surveycore_error_weights_not_numeric"
     )
@@ -66,10 +119,9 @@ NULL
   if (length(non_na) == 0L || all(non_na == 0)) {
     cli::cli_abort(
       c(
-        "x" = paste0(
-          "All values in {.arg weights} ({.field {weights_var}}) are zero ",
-          "or missing \u2014 no valid weights."
-        )
+        "x" = "All values in weight column {.field {weights_var}} are zero or missing.",
+        "i" = "No valid (non-NA, positive) weights found.",
+        "v" = "Check {.field {weights_var}} for data issues or supply a different column."
       ),
       class = "surveycore_error_weights_all_zero"
     )
@@ -80,10 +132,9 @@ NULL
   if (n_bad > 0L) {
     cli::cli_abort(
       c(
-        "x" = paste0(
-          "Weight column {.field {weights_var}} has {n_bad} non-positive ",
-          "value(s). All non-NA weights must be > 0."
-        )
+        "x" = "Weight column {.field {weights_var}} has {n_bad} non-positive value(s).",
+        "i" = "All non-NA weights must be strictly greater than 0.",
+        "v" = "Remove or replace rows where {.field {weights_var}} is 0 or negative."
       ),
       class = "surveycore_error_weights_nonpositive"
     )
@@ -201,20 +252,25 @@ NULL
     )
   }
 
-  # Numeric check (first non-numeric column triggers the error)
-  for (rw in repweights_vars) {
-    rw_col <- data[[rw]]
-    if (!is.numeric(rw_col)) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "Replicate weight column {.field {rw}} must be numeric, ",
-            "not {.cls {class(rw_col)}}."
-          )
+  # Numeric check — collect ALL non-numeric columns before aborting
+  # (consistent with .validate_design_vars() which collects all missing vars)
+  not_numeric <- repweights_vars[!vapply(
+    repweights_vars, function(rw) is.numeric(data[[rw]]), logical(1L)
+  )]
+  if (length(not_numeric) > 0L) {
+    bad_classes <- vapply(
+      not_numeric, function(rw) class(data[[rw]])[[1L]], character(1L)
+    )
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{length(not_numeric)} replicate weight column(s) are not numeric: ",
+          "{.field {not_numeric}}."
         ),
-        class = "surveycore_error_repweights_not_numeric"
-      )
-    }
+        "i" = "Classes: {.cls {bad_classes}}."
+      ),
+      class = "surveycore_error_repweights_not_numeric"
+    )
   }
 
   invisible(TRUE)
