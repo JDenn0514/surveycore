@@ -202,6 +202,9 @@ interface — bare column names, no formula syntax.
   : Create a Replicate Weights Survey Design
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
   : Create a Two-Phase Survey Design
+- [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+  **\[experimental\]** : Create a Calibrated / Non-Probability Survey
+  Design
 - [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
   : Update Design Variables on an Existing Survey Object
 
@@ -278,6 +281,8 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
   : Replicate Weights Survey Design
 - [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
   : Two-Phase Survey Design
+- [`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
+  : Calibrated / Non-Probability Survey Design
 - [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   : Survey Metadata Container
 

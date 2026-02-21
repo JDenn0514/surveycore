@@ -1,9 +1,6 @@
 # Create a Calibrated / Non-Probability Survey Design
 
-Creates a survey design object for non-probability samples and post-hoc
-calibrated designs (e.g., raked online panels, post-stratified samples).
-Accepts pre-computed calibration weights and optionally stores
-calibration provenance from surveyweights output for reproducibility.
+**\[experimental\]**
 
 ## Usage
 
@@ -38,6 +35,13 @@ as_survey_calibrated(data, weights, calibration = NULL)
 ## Value
 
 A `survey_calibrated` object.
+
+## Details
+
+Creates a survey design object for non-probability samples and post-hoc
+calibrated designs (e.g., raked online panels, post-stratified samples).
+Accepts pre-computed calibration weights and optionally stores
+calibration provenance from surveyweights output for reproducibility.
 
 ## Phase 2.5 skeleton
 
