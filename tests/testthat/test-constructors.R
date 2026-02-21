@@ -24,7 +24,7 @@ test_that("as_survey() creates survey_taylor for simple random sample (no args)"
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, NULL)
   expect_identical(d@variables$strata, NULL)
-  expect_identical(d@variables$weights, "..surveycore_wt..")
+  expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_false(d@variables$probs_provided)
 })
 
@@ -107,9 +107,9 @@ test_that("as_survey() converts probs to weights (1/probs) stored as ..surveycor
   df      <- data.frame(y = 1:5, prob = rep(0.2, 5))
   d       <- as_survey(df, probs = prob)
   test_invariants(d)
-  expect_identical(d@variables$weights, "..surveycore_wt..")
+  expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_true(d@variables$probs_provided)
-  expect_equal(d@data[["..surveycore_wt.."]], rep(5, 5))
+  expect_equal(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(5, 5))
 })
 
 test_that("as_survey() uses weights when both probs and weights are consistent", {
@@ -122,7 +122,7 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
     {
       d <- as_survey(df, probs = prob, weights = wt)
     },
-    regexp = "consistent"
+    class = "surveycore_inform_probs_weights_consistent"
   )
   test_invariants(d)
   expect_identical(d@variables$weights, "wt")
@@ -225,7 +225,7 @@ test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]
   df <- data.frame(y = 1:10)
   d  <- suppressWarnings(as_survey(df))
   test_invariants(d)
-  expect_identical(d@data[["..surveycore_wt.."]], rep(1L, 10L))
+  expect_identical(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(1L, 10L))
 })
 
 # Row 8: weights selects 0 columns
@@ -1069,6 +1069,32 @@ test_that("as_survey_twophase() errors when subset is all FALSE [row 23]", {
   phase1 <- as_survey(df, weights = wt)
   expect_error(
     as_survey_twophase(phase1, subset = all_false),
+    class = "surveycore_error_subset_degenerate"
+  )
+})
+
+# Row 23b: subset column contains NA values (new warning)
+test_that("as_survey_twophase() warns when subset column has NA values [row 23b]", {
+  df              <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                                      design = "twophase", seed = 30L)
+  df$phase2_na    <- df$phase2_ind
+  df$phase2_na[1] <- NA  # introduce one NA
+  phase1 <- as_survey(df, weights = wt)
+  expect_warning(
+    as_survey_twophase(phase1, subset = phase2_na),
+    class = "surveycore_warning_subset_na"
+  )
+})
+
+test_that("as_survey_twophase() degenerate check uses non-NA count in message [row 23]", {
+  # All-TRUE case with some NAs — message should mention n_false = 0, not n_total
+  df           <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                                   design = "twophase", seed = 31L)
+  df$all_true  <- TRUE
+  df$all_true[1] <- NA
+  phase1 <- as_survey(df, weights = wt)
+  expect_error(
+    suppressWarnings(as_survey_twophase(phase1, subset = all_true)),
     class = "surveycore_error_subset_degenerate"
   )
 })

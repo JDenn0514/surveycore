@@ -322,6 +322,14 @@ as_survey <- function(
 #' computes the matrix on demand:
 #' `as.matrix(design@data[, design@variables$repweights])`.
 #'
+#' @section Memory usage:
+#' Each call to an estimation function (e.g., [get_means()], [get_totals()])
+#' materialises the full replicate weight matrix from the data frame. For large
+#' designs (e.g., ACS PUMS with 500k+ rows × 80 replicates), this is roughly
+#' `nrow * n_replicates * 8` bytes per call (~363 MB for ACS Wyoming × 80).
+#' If you are estimating many variables, this is repeated for each call.
+#' This behaviour matches the `survey` package reference implementation.
+#'
 #' @examples
 #' # ACS PUMS Wyoming: 80 successive-difference replicate weights
 #' d_acs <- as_survey_rep(
@@ -369,10 +377,10 @@ as_survey_rep <- function(
 
   # ── Resolve tidy-select expressions ────────────────────────────────────────
 
-  # weights (required; must select exactly one column)
+  # weights (must select exactly one column; R function signature already
+  # requires it — no default, so missing arg is caught by R before we run)
   weights_var <- .resolve_single_col(
     rlang::enquo(weights), data, "weights",
-    required    = TRUE,
     class_none  = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )

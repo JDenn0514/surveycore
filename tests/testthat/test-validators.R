@@ -12,6 +12,50 @@
 #   - test_invariants() when creating/modifying survey objects
 
 
+# ── .validate_data_frame ──────────────────────────────────────────────────────
+
+test_that(".validate_data_frame() returns TRUE for a valid data frame", {
+  df <- data.frame(x = 1:5, y = rnorm(5))
+  expect_true(.validate_data_frame(df))
+})
+
+test_that(".validate_data_frame() errors for non-data-frame input", {
+  expect_error(
+    .validate_data_frame(list(x = 1:5)),
+    class = "surveycore_error_not_data_frame"
+  )
+  expect_error(
+    .validate_data_frame(matrix(1:6, nrow = 3)),
+    class = "surveycore_error_not_data_frame"
+  )
+})
+
+test_that(".validate_data_frame() errors for 0-row data frame", {
+  empty_df <- data.frame(x = numeric(0))
+  expect_error(
+    .validate_data_frame(empty_df),
+    class = "surveycore_error_empty_data"
+  )
+})
+
+test_that(".validate_data_frame() errors for duplicate column names", {
+  df        <- data.frame(x = 1:3, y = 4:6)
+  names(df) <- c("x", "x")
+  expect_error(
+    .validate_data_frame(df),
+    class = "surveycore_error_duplicate_names"
+  )
+})
+
+test_that(".validate_data_frame() warns for 1-row data frame", {
+  single_row <- data.frame(x = 1, y = 2)
+  expect_warning(
+    .validate_data_frame(single_row),
+    class = "surveycore_warning_single_row"
+  )
+})
+
+
 # ── .validate_weights ──────────────────────────────────────────────────────────
 
 test_that(".validate_weights() returns TRUE for valid positive weights", {
@@ -212,6 +256,24 @@ test_that(".validate_repweights() errors when repweight column is not numeric", 
     .validate_repweights(c("repwt_1", "repwt_2"), df),
     class = "surveycore_error_repweights_not_numeric"
   )
+})
+
+test_that(".validate_repweights() reports ALL non-numeric columns in one error", {
+  # Multiple bad columns: should all appear in the single error, not one by one
+  df <- data.frame(
+    x      = 1:3,
+    repwt_1 = c("a", "b", "c"),  # character
+    repwt_2 = c(1.0, 1.1, 0.9), # numeric — OK
+    repwt_3 = c(TRUE, FALSE, TRUE) # logical — not numeric
+  )
+  err <- tryCatch(
+    .validate_repweights(c("repwt_1", "repwt_2", "repwt_3"), df),
+    error = function(e) e
+  )
+  expect_s3_class(err, "surveycore_error_repweights_not_numeric")
+  # Both bad columns should be mentioned (not just the first one)
+  expect_match(conditionMessage(err), "repwt_1")
+  expect_match(conditionMessage(err), "repwt_3")
 })
 
 

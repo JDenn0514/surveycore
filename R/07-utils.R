@@ -102,13 +102,15 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   arg_nm,
   required    = FALSE,
   class_none  = "surveycore_error_design_var_missing",
-  class_multi = "surveycore_error_design_var_missing"
+  class_multi = "surveycore_error_design_var_missing",
+  call        = rlang::caller_call()
 ) {
   if (rlang::quo_is_null(expr)) {
     if (required) {
       cli::cli_abort(
         c("x" = "{.arg {arg_nm}} is required but was not provided."),
-        class = class_none
+        class = class_none,
+        call  = call
       )
     }
     return(NULL)
@@ -118,8 +120,9 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
   if (length(cols) == 0L) {
     cli::cli_abort(
-      c("x" = "{.arg {arg_nm}} matched no columns in {.arg data}."),
-      class = class_none
+      c("x" = "{.arg {arg_nm}} matched no columns in {.arg data}"),
+      class = class_none,
+      call  = call
     )
   }
 
@@ -128,10 +131,11 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       c(
         "x" = paste0(
           "{.arg {arg_nm}} must select exactly one column, ",
-          "not {length(cols)}."
+          "not {length(cols)}"
         )
       ),
-      class = class_multi
+      class = class_multi,
+      call  = call
     )
   }
 

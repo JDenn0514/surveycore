@@ -213,7 +213,7 @@
       as_survey_twophase(phase1, subset = all_true)
     Condition
       Error in `as_survey_twophase()`:
-      x `subset` column all_true must contain both TRUE and FALSE values. Found 200 TRUE out of 200 rows.
+      x `subset` column all_true must contain both TRUE and FALSE values (non-NA). Found 200 TRUE and 0 FALSE (non-NA) value(s).
 
 # as_survey_calibrated() rejects non-data-frame input
 
@@ -254,7 +254,7 @@
       as_survey_calibrated(df, weights = c(w1, w2))
     Condition
       Error in `as_survey_calibrated()`:
-      x `weights` must select exactly 1 column, not 2
+      x `weights` must select exactly one column, not 2
 
 # as_survey_calibrated() rejects non-positive weights
 

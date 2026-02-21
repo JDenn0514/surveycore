@@ -34,7 +34,7 @@ NULL
 # as_survey_calibrated() (Layer 3, errors 1–4 from error-messages.md).
 # Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
 #' @noRd
-.validate_data_frame <- function(data) {
+.validate_data_frame <- function(data, call = rlang::caller_call()) {
   # Error 1: data must be a data frame
   if (!is.data.frame(data)) {
     cli::cli_abort(
@@ -44,7 +44,8 @@ NULL
           "{.cls {class(data)[[1L]]}}"
         )
       ),
-      class = "surveycore_error_not_data_frame"
+      class = "surveycore_error_not_data_frame",
+      call  = call
     )
   }
 
@@ -52,7 +53,8 @@ NULL
   if (nrow(data) == 0L) {
     cli::cli_abort(
       c("x" = "{.arg data} must have at least one row"),
-      class = "surveycore_error_empty_data"
+      class = "surveycore_error_empty_data",
+      call  = call
     )
   }
 
@@ -66,7 +68,8 @@ NULL
           "Duplicates: {.field {dupes}}"
         )
       ),
-      class = "surveycore_error_duplicate_names"
+      class = "surveycore_error_duplicate_names",
+      call  = call
     )
   }
 
@@ -74,7 +77,8 @@ NULL
   if (nrow(data) == 1L) {
     cli::cli_warn(
       c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
-      class = "surveycore_warning_single_row"
+      class = "surveycore_warning_single_row",
+      call  = call
     )
   }
 

@@ -109,6 +109,9 @@
   })
 
   p        <- NCOL(x)
+  # Note: factor(strata) in tapply() above already computes unique levels;
+  # nlevels(factor(strata)) would avoid the re-scan, but changing vendored code
+  # for this micro-optimisation is not worth the maintenance risk.
   nstrat   <- length(unique(strata))
   nokstrat <- sum(vapply(stratvars, function(m) !any(is.na(m)), logical(1L)))
 
@@ -230,13 +233,11 @@
   strata_mat   <- matrix(strata_id, ncol = 1L)
 
   # --- Build FPC structure ---
-  # sampsize[i] = number of unique PSUs in stratum of obs i
-  sampsize_vec <- integer(n)
-  for (s in unique(strata_id)) {
-    s_idx <- strata_id == s
-    sampsize_vec[s_idx] <- length(unique(psu_id[s_idx]))
-  }
-  sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
+  # sampsize[i] = number of unique PSUs in stratum of obs i.
+  # Use tapply for O(N log N) instead of the O(N*S) for-loop alternative.
+  psu_per_stratum  <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
+  sampsize_vec     <- as.integer(psu_per_stratum[as.character(strata_id)])
+  sampsize_mat     <- matrix(sampsize_vec, ncol = 1L)
 
   # popsize: NULL (no FPC) or per-row population sizes
   popsize_mat <- if (!is.null(fpc_col_full)) {
@@ -342,24 +343,30 @@
   sum((thetas - meantheta)^2 * rscales) * scale
 }
 
-# Compute weighted mean and its variance for a survey_replicate design.
-# Uses the replicate-weight variance estimator.
+# Shared scaffolding for replicate-weight variance estimation.
 #
 # Survey package default (combined.weights = TRUE): replicate weights are
 # full survey weights, so the replicate mean is sum(repwt * y) / sum(repwt).
-# The base weights are used only for the full-sample mean denominator.
+# The base weights are used only for the full-sample statistic denominator.
 #
-# Returns list(mean, var, se).
-.replicate_mean <- function(design, y_col, na.rm = TRUE) {
+# @param design       A survey_replicate object.
+# @param y_col        Character(1). Name of the response column.
+# @param na.rm        Logical. Exclude NA y values before estimation?
+# @param full_stat_fn function(y, w) → scalar. Full-sample statistic.
+# @param rep_stat_fn  function(y, rep_mat) → numeric(n_rep). Per-replicate
+#                     statistics, vectorised over the replicate weight matrix
+#                     using BLAS matrix operations.
+# @return list(stat, var, se) where stat is the full-sample estimate.
+#' @noRd
+.replicate_estimate <- function(design, y_col, na.rm, full_stat_fn, rep_stat_fn) {
   data <- design@data
   vars <- design@variables
 
   y <- data[[y_col]]
   w <- data[[vars$weights]]    # base/full-sample weights
 
-  # Handle na.rm
   if (na.rm) {
-    keep <- !is.na(y)
+    keep    <- !is.na(y)
     y       <- y[keep]
     w       <- w[keep]
     rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
@@ -367,63 +374,46 @@
     rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   }
 
-  # Full-sample weighted mean (same formula regardless of combined.weights)
-  psum    <- sum(w)
-  wt_mean <- sum(y * w) / psum
-
-  # Per-replicate means (combined.weights = TRUE: repweights are full weights)
-  n_rep     <- ncol(rep_mat)
-  rep_means <- vapply(seq_len(n_rep), function(r) {
-    wr <- rep_mat[, r]
-    sum(y * wr) / sum(wr)   # combined.weights = TRUE formula
-  }, numeric(1L))
+  n_rep    <- ncol(rep_mat)
+  full_est <- full_stat_fn(y, w)
+  rep_ests <- rep_stat_fn(y, rep_mat)   # vectorised; see callers below
 
   v <- .svy_rep_var(
-    rep_means,
+    rep_ests,
     scale   = vars$scale,
     rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
     mse     = isTRUE(vars$mse),
-    coef    = wt_mean
+    coef    = full_est
   )
 
-  list(mean = wt_mean, var = v, se = sqrt(v))
+  list(stat = full_est, var = v, se = sqrt(v))
+}
+
+# Compute weighted mean and its variance for a survey_replicate design.
+# Returns list(mean, var, se).
+.replicate_mean <- function(design, y_col, na.rm = TRUE) {
+  res <- .replicate_estimate(
+    design, y_col, na.rm,
+    full_stat_fn = function(y, w) sum(y * w) / sum(w),
+    # BLAS matrix multiply: (y %*% rep_mat) gives row sums, colSums(rep_mat)
+    # gives column (replicate) weight sums. Both are O(N*R) with BLAS.
+    rep_stat_fn  = function(y, rep_mat) {
+      as.numeric(y %*% rep_mat) / colSums(rep_mat)
+    }
+  )
+  list(mean = res$stat, var = res$var, se = res$se)
 }
 
 # Compute weighted total and its variance for a survey_replicate design.
 # Returns list(total, var, se).
 .replicate_total <- function(design, y_col, na.rm = TRUE) {
-  data <- design@data
-  vars <- design@variables
-
-  y <- data[[y_col]]
-  w <- data[[vars$weights]]
-
-  if (na.rm) {
-    keep <- !is.na(y)
-    y       <- y[keep]
-    w       <- w[keep]
-    rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
-  } else {
-    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  }
-
-  wt_total <- sum(y * w)    # full-sample weighted total
-
-  n_rep      <- ncol(rep_mat)
-  rep_totals <- vapply(seq_len(n_rep), function(r) {
-    wr <- rep_mat[, r]
-    sum(y * wr)   # combined.weights = TRUE
-  }, numeric(1L))
-
-  v <- .svy_rep_var(
-    rep_totals,
-    scale   = vars$scale,
-    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
-    mse     = isTRUE(vars$mse),
-    coef    = wt_total
+  res <- .replicate_estimate(
+    design, y_col, na.rm,
+    full_stat_fn = function(y, w) sum(y * w),
+    # BLAS matrix multiply: (y %*% rep_mat) gives per-replicate weighted totals.
+    rep_stat_fn  = function(y, rep_mat) as.numeric(y %*% rep_mat)
   )
-
-  list(total = wt_total, var = v, se = sqrt(v))
+  list(total = res$stat, var = res$var, se = res$se)
 }
 
 
