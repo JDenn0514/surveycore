@@ -1080,10 +1080,19 @@ test_that("as_survey_twophase() warns when subset column has NA values [row 23b]
   df$phase2_na    <- df$phase2_ind
   df$phase2_na[1] <- NA  # introduce one NA
   phase1 <- as_survey(df, weights = wt)
-  expect_warning(
-    as_survey_twophase(phase1, subset = phase2_na),
-    class = "surveycore_warning_subset_na"
+  # Suppress secondary warnings (e.g. surveycore_warning_full_no_phase2) so only
+  # the expected surveycore_warning_subset_na class is visible to expect_warning.
+  got_na_warn <- FALSE
+  suppressWarnings(
+    withCallingHandlers(
+      as_survey_twophase(phase1, subset = phase2_na),
+      surveycore_warning_subset_na = function(w) {
+        got_na_warn <<- TRUE
+        invokeRestart("muffleWarning")
+      }
+    )
   )
+  expect_true(got_na_warn, label = "surveycore_warning_subset_na was raised")
 })
 
 test_that("as_survey_twophase() degenerate check uses non-NA count in message [row 23]", {
