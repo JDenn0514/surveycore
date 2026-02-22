@@ -204,8 +204,12 @@ test_invariants <- function(design) {
       wt_col <- design@data[[wt_var]]
       testthat::expect_true(is.numeric(wt_col), label = "weight column is numeric")
       testthat::expect_true(
+        sum(!is.na(wt_col)) > 0L,
+        label = "weight column has at least one non-NA value"
+      )
+      testthat::expect_true(
         all(wt_col[!is.na(wt_col)] > 0),
-        label = "weight column has all positive values"
+        label = "weight column has all positive non-NA values"
       )
     }
 
@@ -359,5 +363,17 @@ make_all_designs <- function(seed = 42L) {
   )
   twophase <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
 
-  list(taylor = taylor, replicate = replicate, twophase = twophase)
+  # Calibrated design (non-probability, weights only)
+  df_c <- make_survey_data(
+    n = 100L, n_psu = 10L, n_strata = 2L,
+    design = "taylor", seed = seed
+  )
+  calibrated <- as_survey_calibrated(df_c, weights = wt)
+
+  list(
+    taylor     = taylor,
+    replicate  = replicate,
+    twophase   = twophase,
+    calibrated = calibrated
+  )
 }

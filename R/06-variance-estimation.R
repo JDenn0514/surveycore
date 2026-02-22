@@ -109,6 +109,9 @@
   })
 
   p        <- NCOL(x)
+  # Note: factor(strata) in tapply() above already computes unique levels;
+  # nlevels(factor(strata)) would avoid the re-scan, but changing vendored code
+  # for this micro-optimisation is not worth the maintenance risk.
   nstrat   <- length(unique(strata))
   nokstrat <- sum(vapply(stratvars, function(m) !any(is.na(m)), logical(1L)))
 
@@ -230,13 +233,11 @@
   strata_mat   <- matrix(strata_id, ncol = 1L)
 
   # --- Build FPC structure ---
-  # sampsize[i] = number of unique PSUs in stratum of obs i
-  sampsize_vec <- integer(n)
-  for (s in unique(strata_id)) {
-    s_idx <- strata_id == s
-    sampsize_vec[s_idx] <- length(unique(psu_id[s_idx]))
-  }
-  sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
+  # sampsize[i] = number of unique PSUs in stratum of obs i.
+  # Use tapply for O(N log N) instead of the O(N*S) for-loop alternative.
+  psu_per_stratum  <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
+  sampsize_vec     <- as.integer(psu_per_stratum[as.character(strata_id)])
+  sampsize_mat     <- matrix(sampsize_vec, ncol = 1L)
 
   # popsize: NULL (no FPC) or per-row population sizes
   popsize_mat <- if (!is.null(fpc_col_full)) {
@@ -342,24 +343,30 @@
   sum((thetas - meantheta)^2 * rscales) * scale
 }
 
-# Compute weighted mean and its variance for a survey_replicate design.
-# Uses the replicate-weight variance estimator.
+# Shared scaffolding for replicate-weight variance estimation.
 #
 # Survey package default (combined.weights = TRUE): replicate weights are
 # full survey weights, so the replicate mean is sum(repwt * y) / sum(repwt).
-# The base weights are used only for the full-sample mean denominator.
+# The base weights are used only for the full-sample statistic denominator.
 #
-# Returns list(mean, var, se).
-.replicate_mean <- function(design, y_col, na.rm = TRUE) {
+# @param design       A survey_replicate object.
+# @param y_col        Character(1). Name of the response column.
+# @param na.rm        Logical. Exclude NA y values before estimation?
+# @param full_stat_fn function(y, w) → scalar. Full-sample statistic.
+# @param rep_stat_fn  function(y, rep_mat) → numeric(n_rep). Per-replicate
+#                     statistics, vectorised over the replicate weight matrix
+#                     using BLAS matrix operations.
+# @return list(stat, var, se) where stat is the full-sample estimate.
+#' @noRd
+.replicate_estimate <- function(design, y_col, na.rm, full_stat_fn, rep_stat_fn) {
   data <- design@data
   vars <- design@variables
 
   y <- data[[y_col]]
   w <- data[[vars$weights]]    # base/full-sample weights
 
-  # Handle na.rm
   if (na.rm) {
-    keep <- !is.na(y)
+    keep    <- !is.na(y)
     y       <- y[keep]
     w       <- w[keep]
     rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
@@ -367,63 +374,46 @@
     rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   }
 
-  # Full-sample weighted mean (same formula regardless of combined.weights)
-  psum    <- sum(w)
-  wt_mean <- sum(y * w) / psum
-
-  # Per-replicate means (combined.weights = TRUE: repweights are full weights)
-  n_rep     <- ncol(rep_mat)
-  rep_means <- vapply(seq_len(n_rep), function(r) {
-    wr <- rep_mat[, r]
-    sum(y * wr) / sum(wr)   # combined.weights = TRUE formula
-  }, numeric(1L))
+  n_rep    <- ncol(rep_mat)
+  full_est <- full_stat_fn(y, w)
+  rep_ests <- rep_stat_fn(y, rep_mat)   # vectorised; see callers below
 
   v <- .svy_rep_var(
-    rep_means,
+    rep_ests,
     scale   = vars$scale,
     rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
     mse     = isTRUE(vars$mse),
-    coef    = wt_mean
+    coef    = full_est
   )
 
-  list(mean = wt_mean, var = v, se = sqrt(v))
+  list(stat = full_est, var = v, se = sqrt(v))
+}
+
+# Compute weighted mean and its variance for a survey_replicate design.
+# Returns list(mean, var, se).
+.replicate_mean <- function(design, y_col, na.rm = TRUE) {
+  res <- .replicate_estimate(
+    design, y_col, na.rm,
+    full_stat_fn = function(y, w) sum(y * w) / sum(w),
+    # BLAS matrix multiply: (y %*% rep_mat) gives row sums, colSums(rep_mat)
+    # gives column (replicate) weight sums. Both are O(N*R) with BLAS.
+    rep_stat_fn  = function(y, rep_mat) {
+      as.numeric(y %*% rep_mat) / colSums(rep_mat)
+    }
+  )
+  list(mean = res$stat, var = res$var, se = res$se)
 }
 
 # Compute weighted total and its variance for a survey_replicate design.
 # Returns list(total, var, se).
 .replicate_total <- function(design, y_col, na.rm = TRUE) {
-  data <- design@data
-  vars <- design@variables
-
-  y <- data[[y_col]]
-  w <- data[[vars$weights]]
-
-  if (na.rm) {
-    keep <- !is.na(y)
-    y       <- y[keep]
-    w       <- w[keep]
-    rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
-  } else {
-    rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  }
-
-  wt_total <- sum(y * w)    # full-sample weighted total
-
-  n_rep      <- ncol(rep_mat)
-  rep_totals <- vapply(seq_len(n_rep), function(r) {
-    wr <- rep_mat[, r]
-    sum(y * wr)   # combined.weights = TRUE
-  }, numeric(1L))
-
-  v <- .svy_rep_var(
-    rep_totals,
-    scale   = vars$scale,
-    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
-    mse     = isTRUE(vars$mse),
-    coef    = wt_total
+  res <- .replicate_estimate(
+    design, y_col, na.rm,
+    full_stat_fn = function(y, w) sum(y * w),
+    # BLAS matrix multiply: (y %*% rep_mat) gives per-replicate weighted totals.
+    rep_stat_fn  = function(y, rep_mat) as.numeric(y %*% rep_mat)
   )
-
-  list(total = wt_total, var = v, se = sqrt(v))
+  list(total = res$stat, var = res$var, se = res$se)
 }
 
 
@@ -431,17 +421,76 @@
 # Section 4: Public estimation stubs (Phase 0)
 # ===========================================================================
 
+# Shared input validation for all get_*() estimation functions.
+# Checks: design is a survey_base subclass, not twophase, variable exists,
+# variable is numeric. Returns invisible(TRUE) on success.
+#' @noRd
+.validate_estimation_input <- function(design, var_name) {
+  if (!S7::S7_inherits(design, survey_base)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg design} must be a surveycore design object.",
+        "i" = "Got {.cls {class(design)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_design"
+    )
+  }
+  if (S7::S7_inherits(design, survey_twophase)) {
+    cli::cli_abort(
+      c(
+        "x" = "Two-phase designs are not yet supported in estimation functions.",
+        "i" = "Support for {.cls survey_twophase} will be added in Phase 1."
+      ),
+      class = "surveycore_error_unsupported_class"
+    )
+  }
+  if (!var_name %in% names(design@data)) {
+    cli::cli_abort(
+      c(
+        "x" = "Variable {.field {var_name}} not found in the survey data.",
+        "i" = "Available variables: {.field {names(design@data)}}."
+      ),
+      class = "surveycore_error_var_not_found"
+    )
+  }
+  if (!is.numeric(design@data[[var_name]])) {
+    cli::cli_abort(
+      c(
+        "x" = "Variable {.field {var_name}} must be numeric.",
+        "i" = "Got {.cls {class(design@data[[var_name]])}}."
+      ),
+      class = "surveycore_error_var_not_numeric"
+    )
+  }
+  invisible(TRUE)
+}
+
+
 #' Estimate Weighted Mean for a Survey Design
 #'
 #' Computes the weighted mean and its standard error for a single variable
 #' using the appropriate variance estimator for the survey design type.
-#' For `survey_taylor` designs, Taylor series linearization is used.
 #'
-#' @param design A `survey_taylor` design object created by [as_survey()].
+#' @param design A survey design object. Supported classes: [survey_taylor]
+#'   (created by [as_survey()]), [survey_replicate] (created by
+#'   [as_survey_rep()]), and [survey_calibrated] (created by
+#'   [as_survey_calibrated()]). Two-phase designs ([survey_twophase]) are
+#'   not yet supported.
 #' @param var <[`tidy-select`][tidyselect::language]> A single unquoted
 #'   variable name to estimate the mean of.
 #' @param na.rm Logical. If `TRUE` (default), missing values are excluded
 #'   before computing the mean. Set to `FALSE` to propagate `NA`.
+#'
+#' @section Variance estimation by design type:
+#' \describe{
+#'   \item{`survey_taylor`}{Taylor series linearization.}
+#'   \item{`survey_replicate`}{Replicate-weight variance estimator.}
+#'   \item{`survey_calibrated`}{SRS-based (model-assisted) variance.
+#'     Standard errors assume simple random sampling within the calibrated
+#'     weights. This is consistent with common practice for raked
+#'     non-probability samples but may understate uncertainty. Full
+#'     bootstrap re-calibration variance will be available in Phase 2.5.}
+#' }
 #'
 #' @return A named list with elements:
 #'   \describe{
@@ -459,44 +508,8 @@
 #' @family estimation
 #' @export
 get_means <- function(design, var, na.rm = TRUE) {
-  if (!S7::S7_inherits(design, survey_base)) {
-    cli::cli_abort(
-      c(
-        "x" = "{.arg design} must be a surveycore design object.",
-        "i" = "Got class {.cls {class(design)[[1L]]}}."
-      ),
-      class = "surveycore_error_not_survey_design"
-    )
-  }
-  if (S7::S7_inherits(design, survey_twophase)) {
-    cli::cli_abort(
-      c(
-        "x" = "Two-phase design support for {.fn get_means} is not yet implemented.",
-        "i" = "It will be added in Phase 1."
-      ),
-      class = "surveycore_error_unsupported_class"
-    )
-  }
-
   var_name <- rlang::as_name(rlang::ensym(var))
-  if (!var_name %in% names(design@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in the survey data.",
-        "i" = "Available variables: {.field {names(design@data)}}."
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  if (!is.numeric(design@data[[var_name]])) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} must be numeric.",
-        "i" = "Got class {.cls {class(design@data[[var_name]])}}."
-      ),
-      class = "surveycore_error_var_not_numeric"
-    )
-  }
+  .validate_estimation_input(design, var_name)
 
   # survey_replicate → replicate variance
   # survey_taylor and survey_calibrated → Taylor/SRS variance
@@ -513,13 +526,27 @@ get_means <- function(design, var, na.rm = TRUE) {
 #'
 #' Computes the weighted total and its standard error for a single variable
 #' using the appropriate variance estimator for the survey design type.
-#' For `survey_taylor` designs, Taylor series linearization is used.
 #'
-#' @param design A `survey_taylor` design object created by [as_survey()].
+#' @param design A survey design object. Supported classes: [survey_taylor]
+#'   (created by [as_survey()]), [survey_replicate] (created by
+#'   [as_survey_rep()]), and [survey_calibrated] (created by
+#'   [as_survey_calibrated()]). Two-phase designs ([survey_twophase]) are
+#'   not yet supported.
 #' @param var <[`tidy-select`][tidyselect::language]> A single unquoted
 #'   variable name to estimate the total of.
 #' @param na.rm Logical. If `TRUE` (default), missing values are excluded
 #'   before computing the total. Set to `FALSE` to propagate `NA`.
+#'
+#' @section Variance estimation by design type:
+#' \describe{
+#'   \item{`survey_taylor`}{Taylor series linearization.}
+#'   \item{`survey_replicate`}{Replicate-weight variance estimator.}
+#'   \item{`survey_calibrated`}{SRS-based (model-assisted) variance.
+#'     Standard errors assume simple random sampling within the calibrated
+#'     weights. This is consistent with common practice for raked
+#'     non-probability samples but may understate uncertainty. Full
+#'     bootstrap re-calibration variance will be available in Phase 2.5.}
+#' }
 #'
 #' @return A named list with elements:
 #'   \describe{
@@ -538,44 +565,8 @@ get_means <- function(design, var, na.rm = TRUE) {
 #' @family estimation
 #' @export
 get_totals <- function(design, var, na.rm = TRUE) {
-  if (!S7::S7_inherits(design, survey_base)) {
-    cli::cli_abort(
-      c(
-        "x" = "{.arg design} must be a surveycore design object.",
-        "i" = "Got class {.cls {class(design)[[1L]]}}."
-      ),
-      class = "surveycore_error_not_survey_design"
-    )
-  }
-  if (S7::S7_inherits(design, survey_twophase)) {
-    cli::cli_abort(
-      c(
-        "x" = "Two-phase design support for {.fn get_totals} is not yet implemented.",
-        "i" = "It will be added in Phase 1."
-      ),
-      class = "surveycore_error_unsupported_class"
-    )
-  }
-
   var_name <- rlang::as_name(rlang::ensym(var))
-  if (!var_name %in% names(design@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in the survey data.",
-        "i" = "Available variables: {.field {names(design@data)}}."
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  if (!is.numeric(design@data[[var_name]])) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} must be numeric.",
-        "i" = "Got class {.cls {class(design@data[[var_name]])}}."
-      ),
-      class = "surveycore_error_var_not_numeric"
-    )
-  }
+  .validate_estimation_input(design, var_name)
 
   # survey_replicate → replicate variance
   # survey_taylor and survey_calibrated → Taylor/SRS variance

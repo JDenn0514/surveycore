@@ -1,8 +1,8 @@
 # surveycore Phase 1 — Formal Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** February 2026
-**Status:** Approved for Implementation
+**Status:** Updated per architecture review (2026-02-21)
 
 ---
 
@@ -32,7 +32,27 @@ Six analysis functions added to the `surveycore` package:
 
 The Phase 0 stubs for `get_means()` and `get_totals()` in
 `R/06-variance-estimation.R` are **replaced** by full implementations in new
-files. The stub code is removed once the new implementations are merged.
+files.
+
+### Stub Migration (atomic)
+
+The stub removal and the new implementations ship in a **single PR**. That PR
+must also update `tests/testthat/test-variance-estimation.R` to use the Phase
+1 output structure. The Phase 0 stub signatures differ from Phase 1:
+
+| | Phase 0 stub | Phase 1 full |
+|---|---|---|
+| Signature | `get_means(design, var)` | `get_means(design, x, group=NULL, variance="ci", ...)` |
+| Output columns | `mean`, `se`, `n` | `mean`, `[se]`, `[ci_low, ci_high]`, `[moe]`, `n` + `.meta` attr |
+| Output class | plain tibble | `c("survey_means", "survey_result", "tbl_df", ...)` |
+
+The oracle tests in `test-variance-estimation.R` must be **expanded** (not
+just migrated) — `sc_est$mean` and `sc_est$se` column checks remain; add
+`sc_est$ci_low` etc. for the full variance output.
+
+CI must be green before the stub-removal PR is merged. Do not remove stubs in
+one commit and fix tests in a follow-up — this deliberately breaks CI and
+violates the 0-errors-before-PR rule.
 
 ### What Phase 1 Does NOT Deliver
 
@@ -50,15 +70,17 @@ files. The stub code is removed once the new implementations are merged.
 
 ```
 R/
+├── 09-meta.R                 # meta() generic + survey_result base class (Section 2.3)
 ├── 09-analysis-helpers.R     # Shared internal helpers (Section 2.2)
 ├── 10-analysis-freqs.R       # get_freqs()
 ├── 11-analysis-means.R       # get_means(), get_totals()
 ├── 12-analysis-corr.R        # get_corr()
 ├── 13-analysis-quantiles.R   # get_quantiles(), get_ratios()
-└── (06-variance-estimation.R stubs removed)
+└── (06-variance-estimation.R stubs removed atomically with test-variance-estimation.R update)
 
 tests/testthat/
-├── test-analysis-helpers.R   # .build_meta(), meta(), .make_result_tibble(), .apply_name_style()
+├── test-analysis-helpers.R   # .build_meta(), .make_result_tibble(), .apply_name_style(),
+│                             #   .validate_shared_args(), .resolve_groups(), .apply_domain()
 ├── test-analysis-freqs.R
 ├── test-analysis-means.R
 ├── test-analysis-totals.R
@@ -119,6 +141,26 @@ Assembles a result tibble from a list of per-group estimate rows, builds the
 structured metadata object via `.build_meta()`, attaches it as
 `attr(result, ".meta")`, and applies the S3 class hierarchy.
 
+**`rows_list` contract:** Each element is a named list representing the
+estimate columns for one group combination. `.make_result_tibble()` binds
+them via `vctrs::vec_rbind()` and checks required keys before binding.
+
+Required keys by function:
+
+| Function | Required keys in each `rows_list` element |
+|---|---|
+| `get_freqs()` | `pct`, `n` (+ `se`/`ci_low`/`ci_high`/`moe` per `variance`; + `n_weighted` if requested) |
+| `get_means()` | `mean`, `n` (+ variance cols) |
+| `get_totals()` | `total` (+ variance cols; `n` only when variable supplied) |
+| `get_corr()` | `r`, `p_value`, `n`, `statistic`, `df` (+ variance cols) |
+| `get_quantiles()` | `quantile`, `estimate`, `n` (+ variance cols) |
+| `get_ratios()` | `ratio`, `n` (+ variance cols) |
+
+`.make_result_tibble()` must call `stopifnot()` on required keys before
+binding — failure here is a programmer error, not a user error, so `stopifnot()`
+(not `cli_abort()`) is correct. This surfaces implementation inconsistencies
+at test time rather than silently producing wrong output.
+
 The assembled object always has classes:
 ```r
 c(class_name, "survey_result", "tbl_df", "tbl", "data.frame")
@@ -159,6 +201,61 @@ named vector of label → raw value mappings, or `NULL` for numeric/unlabelled
 variables. Single-variable functions supply `list(var_name = c(...))` or
 `list(var_name = NULL)`.
 
+#### `.validate_shared_args(variance, conf_level, name_style, valid_variance, call)`
+
+Validates the cross-cutting arguments that appear identically on all six
+`get_*()` functions. **Every `get_*()` function must call this as its first
+action**, before any estimation logic or tidy-select resolution.
+
+```r
+.validate_shared_args <- function(
+  variance,
+  conf_level,
+  name_style,
+  valid_variance = c("se", "ci", "moe"),  # override for get_corr() to add "both"
+  call = rlang::caller_env()
+) {
+  if (!is.null(variance) && !variance %in% valid_variance) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg variance} must be {.or {.val {valid_variance}}} or {.val NULL}.",
+        "i" = "Got {.val {variance}}."
+      ),
+      class = "surveycore_error_invalid_variance_arg",
+      call  = call
+    )
+  }
+  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+      conf_level <= 0 || conf_level >= 1) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg conf_level} must be a single number strictly between 0 and 1.",
+        "i" = "Got {.val {conf_level}}."
+      ),
+      class = "surveycore_error_invalid_conf_level",
+      call  = call
+    )
+  }
+  if (!name_style %in% c("surveycore", "broom")) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg name_style} must be {.val \"surveycore\"} or {.val \"broom\"}.",
+        "i" = "Got {.val {name_style}}."
+      ),
+      class = "surveycore_error_invalid_name_style",
+      call  = call
+    )
+  }
+  invisible(TRUE)
+}
+```
+
+This is the single canonical source for all three validation errors. Never
+duplicate these checks inside individual `get_*()` functions.
+
+`surveycore_error_invalid_conf_level` is a new error class introduced here;
+add it to `plans/error-messages.md` when implementing.
+
 #### `.apply_name_style(result, name_style)`
 
 Renames columns at the very end of each `get_*()` function based on
@@ -185,7 +282,7 @@ Supported styles:
 
 ---
 
-### 2.3 The `meta()` Generic (R/09-analysis-helpers.R)
+### 2.3 The `meta()` Generic (R/09-meta.R)
 
 ```r
 #' Extract metadata from a survey result
@@ -346,10 +443,10 @@ survey_result          ← base class: shared print/format method
 └── survey_ratios      ← get_ratios()
 ```
 
-The `survey_result` class owns `print()` and `format()` — subclasses do not
-need their own print methods unless their output requires special rendering
-(only `survey_corr` has a non-default print due to hidden columns; see
-Section VII).
+The `survey_result` class owns `print()` and `format()` — no subclass print
+methods are needed for Phase 1. All six result types print as ordinary tibbles.
+`statistic` and `df` in `get_corr()` output are always-visible columns (see
+Section VI).
 
 ### 2.6 Cross-Cutting Arguments
 
@@ -557,8 +654,16 @@ get_freqs(d, x = c(q1, q2), names_to = "item", values_to = "response",
   percentage scale as well (i.e., `se` is SE of the percentage, not the
   proportion).
 - With `na.rm = TRUE` (default), NA values in the variable are excluded from
-  all counts and proportions. NA does not appear as a level.
-- The n column counts non-NA respondents when `na.rm = TRUE`.
+  all counts and proportions. NA does not appear as a level. The `n` column
+  counts non-NA respondents.
+- With `na.rm = FALSE`, NA values appear as their own level in the output — one
+  additional row with the variable value equal to `NA`. The denominator for all
+  proportions (including the non-NA levels) **includes** the NA count, so the
+  column sums to 100% across all rows including the NA row. This matches
+  `table(x, useNA = "always")` semantics. NA appears as the last row regardless
+  of factor ordering.
+- If the entire focal variable is NA and `na.rm = FALSE`, the function errors
+  with `surveycore_error_all_na`.
 
 ---
 
@@ -732,18 +837,10 @@ get_corr(
 
 ### 6.2 Output Structure — Long Format (default)
 
-**Default visible columns:**
+**Output columns:**
 ```
-var1   var2   r   ci_low   ci_high   p_value   n
+var1   var2   r   ci_low   ci_high   p_value   statistic   df   n
 ```
-
-**Always computed and present in the underlying tibble** (accessible via
-`$`, `select()`, `glimpse()`) **but hidden by the print method:**
-```
-statistic   df
-```
-
-To expose them in the printed output, call `print(result, details = TRUE)`.
 
 - `var1`, `var2`: variable names (character). When `label_vars = TRUE`
   (default) and variable labels are set in metadata, these cells show labels
@@ -752,10 +849,10 @@ To expose them in the printed output, call `print(result, details = TRUE)`.
 - `r`: correlation coefficient.
 - `ci_low`, `ci_high`: confidence interval bounds.
 - `p_value`: two-tailed p-value.
+- `statistic`: t-statistic. Always present and visible.
+- `df`: degrees of freedom for the t-test. Always present and visible.
 - `n`: **pairwise** sample size. With `na.rm = TRUE`, different pairs may have
   different `n` due to variable-specific missing data.
-- `statistic`: t-statistic (hidden by default).
-- `df`: degrees of freedom for the t-test (hidden by default).
 - `method`: stored in `meta(result)$method`, not a column.
 
 **`redundant = FALSE` (default):** each pair appears once (lower triangle).
@@ -767,29 +864,25 @@ For a 3-variable input `c(a, b, c)`, rows are: `(a,b)`, `(a,c)`, `(b,c)`.
 **Examples:**
 ```r
 get_corr(d, x = c(income, bmi, age))
-  var1    var2     r    ci_low  ci_high  p_value     n
-1 income  bmi    0.24    0.15    0.33    <0.001    500
-2 income  age    0.31    0.23    0.39    <0.001    500
-3 bmi     age    0.08   -0.01    0.17     0.077    498
+  var1    var2     r    ci_low  ci_high  p_value  statistic    df     n
+1 income  bmi    0.24    0.15    0.33    <0.001     5.12      498   500
+2 income  age    0.31    0.23    0.39    <0.001     7.35      498   500
+3 bmi     age    0.08   -0.01    0.17     0.077     1.78      496   498
 
 # n differs for bmi-age (2 missing bmi values, na.rm = TRUE)
 
-print(result, details = TRUE)
-  var1    var2     r    ci_low  ci_high  p_value  statistic    df     n
-1 income  bmi    0.24    0.15    0.33    <0.001     5.12      498   500
-
 get_corr(d, x = c(income, bmi), variance = "se")
-  var1    var2     r      se   p_value     n
-1 income  bmi    0.24   0.046   <0.001   500
+  var1    var2     r      se   p_value  statistic    df     n
+1 income  bmi    0.24   0.046   <0.001     5.12      498   500
 
 get_corr(d, x = c(income, bmi, age), redundant = TRUE)
-  var1    var2     r     ...
-1 income  bmi    0.24   ...
-2 income  age    0.31   ...
-3 bmi     income  0.24  ...   # mirrored
-4 bmi     age    0.08   ...
-5 age     income  0.31  ...   # mirrored
-6 age     bmi    0.08   ...   # mirrored
+  var1    var2        r     ...
+1 income  bmi       0.24   ...
+2 income  age       0.31   ...
+3 bmi     income    0.24   ...   # mirrored
+4 bmi     age       0.08   ...
+5 age     income    0.31   ...   # mirrored
+6 age     bmi       0.08   ...   # mirrored
 ```
 
 ### 6.3 Output Structure — Wide Format
@@ -880,10 +973,16 @@ get_quantiles(d, income, probs = 0.5, group = region)
 
 ### 7.3 Statistical Details
 
-- Uses `survey::svyquantile()` linearization internally (via vendored or
-  equivalent logic).
-- CIs via the `survey` package's default method for quantile CIs
-  (interpolation-based).
+- Quantile variance estimation uses Woodruff's method (linearization of the
+  CDF), implemented via **vendored internal functions** extracted from
+  `survey::svyquantile()` — consistent with the independence principle in
+  `CLAUDE.md` ("no runtime dependency on survey or srvyr packages"). Add GPL
+  attribution in `R/13-analysis-quantiles.R` as with all vendored code.
+  Before implementing, read the survey package source to scope the vendoring;
+  the relevant internals are `svyquantile()`, `oldsvyquantile()`, and their
+  helper `wtd.quantile()`.
+- CIs use the survey package's default interpolation-based method for quantile
+  CIs (same method as `survey::svyquantile(ci = TRUE)`).
 - Throws `surveycore_error_unsupported_class` for `survey_twophase`.
 
 ---
@@ -999,6 +1098,7 @@ The following classes are introduced in Phase 1:
 | `surveycore_error_non_numeric_variable` | Non-numeric column passed to `get_means()`, `get_totals()`, `get_corr()`, `get_ratios()` | Error |
 | `surveycore_error_insufficient_variables` | Fewer than 2 variables passed to `get_corr()` | Error |
 | `surveycore_error_invalid_variance_arg` | Unknown value for `variance` argument | Error |
+| `surveycore_error_invalid_conf_level` | `conf_level` not a single number in (0, 1) | Error |
 | `surveycore_error_invalid_name_style` | Unknown value for `name_style` argument | Error |
 | `surveycore_error_invalid_probs` | `probs` outside (0,1) or length 0 | Error |
 | `surveycore_error_ratio_zero_denominator` | All denominator values are zero | Error |
@@ -1050,25 +1150,84 @@ strict tolerances. These tests live in `test-analysis-*.R` and always call
 
 ### 11.2 Test Categories Per Function
 
-Infrastructure tests for shared helpers (`.build_meta()`, `meta()`,
-`.make_result_tibble()`, `.apply_name_style()`) live in
-`test-analysis-helpers.R` and run independently of any single function.
-Per-function test files call these helpers via the public `get_*()` API.
+Infrastructure tests for shared helpers (`.build_meta()`, `.make_result_tibble()`,
+`.apply_name_style()`, `.validate_shared_args()`, `.resolve_groups()`,
+`.apply_domain()`) live in `test-analysis-helpers.R` and run independently of
+any single function. Per-function test files call these helpers via the public
+`get_*()` API.
+
+#### `test_result_invariants(result, expected_class)`
+
+Defined in `tests/testthat/helper-test-data.R`. Called as the **first
+assertion** in every happy-path test block that creates a result object — the
+direct parallel to `test_invariants()` for design objects.
+
+```r
+test_result_invariants <- function(result, expected_class) {
+  # 1. Correct S3 class hierarchy
+  expect_true(inherits(result, expected_class))
+  expect_true(inherits(result, "survey_result"))
+  expect_true(tibble::is_tibble(result))
+  # 2. meta() returns non-NULL list
+  m <- meta(result)
+  expect_false(is.null(m))
+  expect_type(m, "list")
+  # 3. Required meta keys always present (never absent)
+  expect_true(all(
+    c("design_type", "conf_level", "call", "group_names", "group_labels")
+    %in% names(m)
+  ))
+  # 4. group_names is always character vector (never NULL)
+  expect_type(m$group_names, "character")
+  # 5. value_labels always populated
+  expect_true("value_labels" %in% names(m))
+}
+```
+
+Add this function to `helper-test-data.R` before writing any test file.
+
+#### Per-function test categories
 
 Every function's test file covers:
 
-1. **Happy path** — basic call, correct class, correct columns, `test_invariants()` does not apply (result is not a survey object) but result is a valid tibble with the right class.
-2. **Numerical oracle** — point estimates and SEs match `survey::` within tolerance for both Taylor and replicate designs.
-3. **Grouped analysis** — `group =` argument; `@groups` via `group_by()`; both ANDed.
-4. **Domain estimation** — `filter()` then analysis; verify `n` counts in-domain non-NA rows only; verify SE uses the full design (not the filtered subset) by comparing against physical subsetting; confirm `surveycore_warning_physical_subset` fires on physical subset; `surveycore_warning_small_cell` fires when the domain produces cells with n < 5.
-5. **`variance` argument** — each value (`NULL`, `"se"`, `"ci"`, `"moe"`); correct columns present/absent.
-6. **`label_values`** — correct label conversion when labels set on focal variable and on group variables; fallback to raw when unset.
-7. **`label_vars`** — variable labels appear in `names_to` column (`get_freqs()` multi-var) and `var1`/`var2` columns (`get_corr()`) when labels set; raw names when unset or `label_vars = FALSE`; argument accepted without error on the 4 no-op functions.
-8. **`meta()` contract** — all fields present and correctly populated (`design_type`, `conf_level`, `call`, `group_names`, `group_labels`, `variable`/`variables`, `variable_label`/`variable_labels`, `question_preface`/`question_prefaces`, `value_labels`); `NULL` behavior correct for unlabeled metadata; `value_labels` populated regardless of `label_values`.
+1. **Happy path** — basic call, correct class, correct columns; call
+   `test_result_invariants(result, "survey_*")` as the first assertion.
+2. **Numerical oracle** — point estimates and SEs match `survey::` within
+   tolerance for both Taylor and replicate designs (`skip_if_not_installed("survey")`).
+3. **Grouped analysis** — `group =` argument; `@groups` via `group_by()`;
+   both ANDed (`skip_if_not_installed("surveytidy")`); deduplication when the
+   same variable appears in both.
+4. **Domain estimation** — three-way oracle (`skip_if_not_installed("survey")`
+   and `skip_if_not_installed("surveytidy")`):
+   - Point estimate matches `survey::` domain estimation (e.g.
+     `survey::svymean(~y, subset(sv_design, condition))`) within `1e-10`
+   - SE matches `survey::` domain SE within `1e-8`
+   - SE is **strictly greater than** the SE from physical subsetting (proves
+     domain estimation is not silently implemented as physical subsetting)
+   Also verify: `n` counts in-domain non-NA rows only; `surveycore_warning_small_cell`
+   fires when the domain produces cells with n < 5.
+5. **`variance` argument** — each value (`NULL`, `"se"`, `"ci"`, `"moe"`);
+   correct columns present/absent.
+6. **`label_values`** — correct label conversion when labels set on focal
+   variable and on group variables; fallback to raw when unset.
+7. **`label_vars`** — variable labels appear in `names_to` column
+   (`get_freqs()` multi-var) and `var1`/`var2` columns (`get_corr()`) when
+   labels set; raw names when unset or `label_vars = FALSE`; argument accepted
+   without error on the 4 no-op functions.
+8. **`meta()` contract** — all fields present and correctly populated
+   (`design_type`, `conf_level`, `call`, `group_names`, `group_labels`,
+   `variable`/`variables`, `variable_label`/`variable_labels`,
+   `question_preface`/`question_prefaces`, `value_labels`); `NULL` behavior
+   correct for unlabeled metadata; **`value_labels` populated regardless of
+   `label_values`** — explicitly call with `label_values = FALSE` and assert
+   `meta(result)$value_labels` is still populated.
 9. **`name_style = "broom"`** — correct column renames.
 10. **Error paths** — every row in the error table (Section X) covered.
-11. **Edge cases** — single group level, all-NA column, n=1 group, zero-weight rows, very small design.
-12. **Multi-variable** (`get_freqs()` only) — `names_to` uses variable labels; fallback; stacking; `surveycore_warning_mixed_prefaces` fires when prefaces differ.
+11. **Edge cases** — single group level, all-NA column, n=1 group, zero-weight
+    rows, very small design.
+12. **Multi-variable** (`get_freqs()` only) — `names_to` uses variable labels;
+    fallback; stacking; `surveycore_warning_mixed_prefaces` fires when prefaces
+    differ.
 
 ### 11.3 Edge Cases Requiring Explicit Tests
 
@@ -1089,6 +1248,9 @@ Every function's test file covers:
 - `get_corr()`: `label_vars = TRUE` with labels set → labels in `var1`/`var2`; `label_vars = FALSE` → raw names
 - All functions: `meta()$value_labels` is `NULL` for numeric variables; named vector for labelled categorical
 - All functions: grouped call where one group has n=1 → `surveycore_warning_small_cell`
+- All functions: same variable in both `@groups` and `group=` → silently
+  deduplicated by `.resolve_groups()`; result has one column for that variable,
+  not two; no warning fired
 
 ---
 
@@ -1105,32 +1267,62 @@ Phase 1 is complete when all of the following pass:
 - [ ] `name_style = "broom"` produces columns matching broom conventions
 - [ ] `variance` argument works for all 6 functions
 - [ ] Groups from `@groups` and `group =` are correctly ANDed
-- [ ] Domain estimation (via `filter()`) produces correct SEs vs. physical subsetting
+- [ ] Domain estimation (via `filter()`) three-way oracle passes: point ≈ `survey::` on domain, SE ≈ `survey::` domain SE, SE > physical-subsetting SE
 - [ ] `label_vars = TRUE` shows variable labels in `names_to` (`get_freqs()` multi-var) and `var1`/`var2` (`get_corr()`)
 - [ ] `label_vars = FALSE` shows raw variable names in all cases
 - [ ] `meta()` returns a correctly structured list for all 6 functions
-- [ ] `meta()$value_labels` populated regardless of `label_values` argument
+- [ ] `meta()$value_labels` populated regardless of `label_values` argument (tested explicitly with `label_values = FALSE`)
 - [ ] `meta()$question_preface` / `question_prefaces` populated when set; `NULL` when unset
 - [ ] `surveycore_warning_mixed_prefaces` fires when `get_freqs()` multi-var variables have different non-NULL prefaces
-- [ ] Phase 0 stubs (`get_means()`, `get_totals()` in R/06) removed and replaced
-- [ ] `plans/error-messages.md` updated with all Phase 1 error/warning classes
+- [ ] Phase 0 stubs (`get_means()`, `get_totals()` in R/06) removed and `test-variance-estimation.R` updated in one atomic PR; CI green before merge
+- [ ] `plans/error-messages.md` updated with all Phase 1 error/warning classes (including `surveycore_error_invalid_conf_level`)
+- [ ] `tests/testthat/helper-test-data.R` extended with `test_result_invariants()`
 
 ---
 
-## XIII. Dependencies on Phase 0.5 (surveytidy)
+## XIII. Integration with surveytidy (Phase 0.5)
 
-Phase 1 functions **read** two things set by surveytidy:
+**Phase 0.5 is complete.** The `surveytidy` package (`../surveytidy`) ships
+`group_by()`, `ungroup()`, and `filter()` for survey design objects.
 
-1. **`design@groups`** (set by `group_by()`) — read by `.resolve_groups()`
-2. **`SURVEYCORE_DOMAIN_COL` column** (set by `filter()`) — read by `.apply_domain()`
+Phase 1 functions read two things set by surveytidy:
 
-Phase 1 does not **require** surveytidy to be installed or loaded. If neither
-of these is set, the functions operate ungrouped and without domain
-restriction — all Phase 1 functions work correctly without surveytidy present.
+1. **`design@groups`** — set by `surveytidy::group_by()`; character vector of
+   column names. Always `character(0)` when `group_by()` has not been called.
+2. **`SURVEYCORE_DOMAIN_COL` column** (`"..surveycore_domain.."`) — set by
+   `surveytidy::filter()`; logical vector (`TRUE` = in-domain). Absent from
+   `@data` when `filter()` has not been called.
 
-This means Phase 1 can be developed and tested independently of Phase 0.5
-completion status. The integration is purely contractual: Phase 1 reads
-slots that Phase 0.5 populates, but falls back gracefully when they are absent.
+Phase 1 does not **require** surveytidy to be installed. Graceful fallbacks:
+- `@groups = character(0)` → ungrouped
+- No domain column → all rows in-domain
+
+#### surveytidy contract details (for Phase 1 implementors)
+
+- `filter()` stores the domain mask as a **logical vector** (not 0/1 integer).
+  Multiple `filter()` calls AND their conditions together — the column is
+  updated in-place.
+- `group_by()` stores resolved column names in `@groups`. The underlying
+  `@data` is **not** a `grouped_df` — there is no `dplyr::group_vars()` to call
+  on `@data`. Read `@groups` directly.
+- `group_by(.add = TRUE)` appends to existing `@groups`; `ungroup()` clears it.
+
+#### Integration testing
+
+Tests that use surveytidy features (grouped analysis, domain estimation) must
+add `skip_if_not_installed("surveytidy")` at the block level. Use real
+surveytidy calls — `surveytidy::group_by()`, `surveytidy::filter()` — rather
+than manually setting `@groups` or adding the domain column directly.
+
+```r
+test_that("get_means() respects @groups from group_by()", {
+  skip_if_not_installed("surveytidy")
+  d_grouped <- surveytidy::group_by(d, region)
+  result    <- get_means(d_grouped, income)
+  test_result_invariants(result, "survey_means")
+  expect_equal(nrow(result), length(unique(d@data$region)))
+})
+```
 
 ---
 

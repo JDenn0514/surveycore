@@ -646,38 +646,48 @@ survey_calibrated <- S7::new_class(
     if (!is.null(weights_var) && !weights_var %in% names(self@data)) {
       cli::cli_abort(
         c(
-          "x" = paste0(
-            "Weight column {.field {weights_var}} not found in {.arg data}"
-          )
+          "x" = "Weight column {.field {weights_var}} not found in {.arg data}.",
+          "i" = "This is an internal consistency error in the {.cls survey_calibrated} object.",
+          "v" = "Use {.fn as_survey_calibrated} instead of calling the constructor directly."
         ),
         class = "surveycore_error_design_var_missing"
       )
     }
 
-    # ── Weight column must be numeric ─────────────────────────────────────────
+    # ── Weight column must be numeric and have at least one valid value ────────
     if (!is.null(weights_var) && weights_var %in% names(self@data)) {
       wt_col <- self@data[[weights_var]]
 
       if (!is.numeric(wt_col)) {
         cli::cli_abort(
           c(
-            "x" = paste0(
-              "Weight column {.field {weights_var}} must be numeric, ",
-              "not {.cls {class(wt_col)}}"
-            )
+            "x" = "Weight column {.field {weights_var}} must be numeric.",
+            "i" = "Got {.cls {class(wt_col)}}.",
+            "v" = "Convert with {.code as.numeric({.field {weights_var}})} before calling {.fn as_survey_calibrated}."
           ),
           class = "surveycore_error_weights_not_numeric"
         )
       }
 
-      n_bad <- sum(!is.na(wt_col) & wt_col <= 0)
+      non_na <- wt_col[!is.na(wt_col)]
+      if (length(non_na) == 0L) {
+        cli::cli_abort(
+          c(
+            "x" = "Weight column {.field {weights_var}} has no non-NA values.",
+            "i" = "All weights are {.val NA} \u2014 no valid weights for estimation.",
+            "v" = "Check {.field {weights_var}} for missing data before calling {.fn as_survey_calibrated}."
+          ),
+          class = "surveycore_error_weights_all_zero"
+        )
+      }
+
+      n_bad <- sum(non_na <= 0)
       if (n_bad > 0L) {
         cli::cli_abort(
           c(
-            "x" = paste0(
-              "Weight column {.field {weights_var}} has {n_bad} ",
-              "non-positive value(s). All non-NA weights must be > 0."
-            )
+            "x" = "Weight column {.field {weights_var}} has {n_bad} non-positive value(s).",
+            "i" = "All non-NA weights must be strictly greater than 0.",
+            "v" = "Remove or replace rows where {.field {weights_var}} is 0 or negative."
           ),
           class = "surveycore_error_weights_nonpositive"
         )

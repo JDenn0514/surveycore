@@ -53,7 +53,16 @@ survey_data <- function(x) {
 SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 
-# ── Internal tidy-select resolver ─────────────────────────────────────────────
+# ── Internal constants ────────────────────────────────────────────────────────
+
+# Name of the synthetic weight column added to @data when the user supplies
+# neither weights nor probs (SRS fallback) or when probs are converted to
+# weights internally. Using a named constant prevents typos and makes a
+# sentinel rename safe.
+.SURVEYCORE_WT_COL <- "..surveycore_wt.."
+
+
+# ── Internal tidy-select resolvers ───────────────────────────────────────────
 
 # Resolve a tidy-select quosure against a data frame.
 # Returns a character vector of selected column names, or NULL when expr is a
@@ -68,6 +77,69 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 .resolve_tidy_select <- function(expr, data) {
   if (rlang::quo_is_null(expr)) return(NULL)
   names(tidyselect::eval_select(expr, data))
+}
+
+# Resolve a tidy-select quosure that must select EXACTLY ONE column.
+# Returns the single column name on success, or NULL if expr is a NULL
+# quosure (i.e., the argument was omitted / defaulted to NULL).
+#
+# Fires typed errors when 0 or > 1 columns are selected, so callers can
+# pass argument-specific error classes rather than inlining the 12-line
+# boilerplate for every single-column argument.
+#
+# @param expr        A quosure (from rlang::enquo()).
+# @param data        A data.frame to evaluate the selection against.
+# @param arg_nm      Character(1). Argument name shown in error messages.
+# @param required    Logical(1). If TRUE, a NULL quosure → abort (missing).
+#                    If FALSE (default), a NULL quosure → return NULL.
+# @param class_none  Error class when 0 columns selected.
+# @param class_multi Error class when > 1 column selected.
+# @return Character(1) column name, or NULL.
+#' @noRd
+.resolve_single_col <- function(
+  expr,
+  data,
+  arg_nm,
+  required    = FALSE,
+  class_none  = "surveycore_error_design_var_missing",
+  class_multi = "surveycore_error_design_var_missing",
+  call        = rlang::caller_call()
+) {
+  if (rlang::quo_is_null(expr)) {
+    if (required) {
+      cli::cli_abort(
+        c("x" = "{.arg {arg_nm}} is required but was not provided."),
+        class = class_none,
+        call  = call
+      )
+    }
+    return(NULL)
+  }
+
+  cols <- tidyselect::eval_select(expr, data)
+
+  if (length(cols) == 0L) {
+    cli::cli_abort(
+      c("x" = "{.arg {arg_nm}} matched no columns in {.arg data}"),
+      class = class_none,
+      call  = call
+    )
+  }
+
+  if (length(cols) > 1L) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg {arg_nm}} must select exactly one column, ",
+          "not {length(cols)}"
+        )
+      ),
+      class = class_multi,
+      call  = call
+    )
+  }
+
+  names(cols)
 }
 
 

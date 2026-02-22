@@ -7,7 +7,11 @@
 get_totals(design, var, na.rm = TRUE)
 }
 \arguments{
-\item{design}{A \code{survey_taylor} design object created by \code{\link[=as_survey]{as_survey()}}.}
+\item{design}{A survey design object. Supported classes: \link{survey_taylor}
+(created by \code{\link[=as_survey]{as_survey()}}), \link{survey_replicate} (created by
+\code{\link[=as_survey_rep]{as_survey_rep()}}), and \link{survey_calibrated} (created by
+\code{\link[=as_survey_calibrated]{as_survey_calibrated()}}). Two-phase designs (\link{survey_twophase}) are
+not yet supported.}
 
 \item{var}{<\code{\link[tidyselect:language]{tidy-select}}> A single unquoted
 variable name to estimate the total of.}
@@ -26,8 +30,20 @@ A named list with elements:
 \description{
 Computes the weighted total and its standard error for a single variable
 using the appropriate variance estimator for the survey design type.
-For \code{survey_taylor} designs, Taylor series linearization is used.
 }
+\section{Variance estimation by design type}{
+
+\describe{
+\item{\code{survey_taylor}}{Taylor series linearization.}
+\item{\code{survey_replicate}}{Replicate-weight variance estimator.}
+\item{\code{survey_calibrated}}{SRS-based (model-assisted) variance.
+Standard errors assume simple random sampling within the calibrated
+weights. This is consistent with common practice for raked
+non-probability samples but may understate uncertainty. Full
+bootstrap re-calibration variance will be available in Phase 2.5.}
+}
+}
+
 \examples{
 # ACS PUMS Wyoming: estimated total population by age
 d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
