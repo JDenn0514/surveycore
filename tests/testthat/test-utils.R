@@ -7,20 +7,31 @@
 # R/02-validators.R and are tested in test-validators.R.
 #
 # Test structure:
-#   1. survey_data() — happy path (all three design types)
+#   1. survey_data() — happy path (all three design types + survey_calibrated)
 #   2. survey_data() — rejects non-survey input
 #   3. .get_design_vars_flat() — survey_taylor
 #   4. .get_design_vars_flat() — survey_replicate
-#   5. .get_design_vars_flat() — survey_twophase
+#   5. .get_design_vars_flat() — survey_twophase (no p2 info)
 #   6. .get_design_vars_flat() — NULL design variables dropped
-#   7. .get_design_vars() — survey_taylor named list
-#   8. .get_design_vars() — survey_replicate named list
-#   9. .get_design_vars() — survey_twophase named list
-#  10. .resolve_tidy_select() — NULL quosure → NULL
-#  11. .resolve_tidy_select() — bare name → character vector
-#  12. .resolve_tidy_select() — c() → multiple column names
-#  13. .resolve_tidy_select() — starts_with() helper
-#  14. SURVEYCORE_DOMAIN_COL — correct constant value
+#   7. .get_design_vars_flat() — survey_twophase with p2 design info
+#   8. .get_design_vars_flat() — survey_calibrated returns character(0)
+#   9. .get_design_vars() — survey_taylor named list
+#  10. .get_design_vars() — survey_replicate named list
+#  11. .get_design_vars() — survey_twophase named list (no p2 info)
+#  12. .get_design_vars() — survey_twophase with p2 design info
+#  13. .get_design_vars() — survey_calibrated returns empty list
+#  14. .resolve_tidy_select() — NULL quosure → NULL
+#  15. .resolve_tidy_select() — bare name → character vector
+#  16. .resolve_tidy_select() — c() → multiple column names
+#  17. .resolve_tidy_select() — starts_with() helper
+#  18. .resolve_single_col() — NULL quosure, required = FALSE → NULL
+#  19. .resolve_single_col() — NULL quosure, required = TRUE → error
+#  20. .resolve_single_col() — single column match → char(1)
+#  21. .resolve_single_col() — 0 columns → error with class_none
+#  22. .resolve_single_col() — >1 columns → error with class_multi
+#  23. .resolve_single_col() — custom error classes forwarded
+#  24. SURVEYCORE_DOMAIN_COL — correct constant value
+#  25. .SURVEYCORE_WT_COL — correct constant value
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -47,8 +58,32 @@ make_twophase <- function(seed = 42L) {
   suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
 }
 
+make_twophase_with_p2 <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    wt        = runif(30L, 0.8, 1.5),
+    arm       = rep(c("A", "B", "C"), 10L),
+    sampfrac  = rep(c(0.5, 0.6, 0.4), 10L),
+    in_phase2 = c(rep(TRUE, 15L), rep(FALSE, 15L)),
+    y         = rnorm(30L)
+  )
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  as_survey_twophase(
+    phase1,
+    strata2 = arm,
+    probs2  = sampfrac,
+    subset  = in_phase2,
+    method  = "full"
+  )
+}
 
-# ── 1. survey_data() — happy path ────────────────────────────────────────────
+make_calibrated <- function() {
+  df <- data.frame(y = 1:10, w = rep(1, 10))
+  as_survey_calibrated(df, weights = w)
+}
+
+
+# ── 1. survey_data() — happy path ───────────────────────────────────────────
 
 test_that("survey_data() returns @data as a data.frame for survey_taylor", {
   d <- make_taylor()
@@ -70,6 +105,13 @@ test_that("survey_data() returns @data for survey_twophase", {
   expect_identical(survey_data(d), d@data)
 })
 
+test_that("survey_data() returns @data for survey_calibrated", {
+  d <- make_calibrated()
+  result <- survey_data(d)
+  expect_true(is.data.frame(result))
+  expect_identical(result, d@data)
+})
+
 
 # ── 2. survey_data() — rejects non-survey input ──────────────────────────────
 
@@ -88,7 +130,7 @@ test_that("survey_data() rejects a list", {
 })
 
 
-# ── 3. .get_design_vars_flat() — survey_taylor ───────────────────────────────
+# ── 3. .get_design_vars_flat() — survey_taylor ──────────────────────────────
 
 test_that(".get_design_vars_flat() returns all design var names for survey_taylor", {
   d    <- make_taylor()
@@ -120,7 +162,7 @@ test_that(".get_design_vars_flat() returns weights and repweights for survey_rep
 })
 
 
-# ── 5. .get_design_vars_flat() — survey_twophase ────────────────────────────
+# ── 5. .get_design_vars_flat() — survey_twophase (no p2 info) ───────────────
 
 test_that(".get_design_vars_flat() returns phase1, phase2, and subset vars for survey_twophase", {
   d    <- make_twophase()
@@ -146,7 +188,38 @@ test_that(".get_design_vars_flat() does not include 'NULL' or NA in result", {
 })
 
 
-# ── 7. .get_design_vars() — survey_taylor named list ────────────────────────
+# ── 7. .get_design_vars_flat() — survey_twophase with p2 design info ────────
+
+test_that(".get_design_vars_flat() includes p2 column names for survey_twophase with p2 info", {
+  d    <- make_twophase_with_p2()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  # Phase 1 weight column
+  expect_true("wt" %in% flat)
+  # Phase 2 strata and probs columns
+  expect_true("arm"      %in% flat)
+  expect_true("sampfrac" %in% flat)
+  # Subset column
+  expect_true("in_phase2" %in% flat)
+})
+
+test_that(".get_design_vars_flat() returns unique names for twophase with p2 info", {
+  d    <- make_twophase_with_p2()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  expect_identical(flat, unique(flat))
+})
+
+
+# ── 8. .get_design_vars_flat() — survey_calibrated returns character(0) ──────
+
+test_that(".get_design_vars_flat() returns character(0) for survey_calibrated", {
+  d    <- make_calibrated()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  expect_true(is.character(flat))
+  expect_length(flat, 0L)
+})
+
+
+# ── 9. .get_design_vars() — survey_taylor named list ────────────────────────
 
 test_that(".get_design_vars() returns a named list for survey_taylor", {
   d    <- make_taylor()
@@ -179,7 +252,7 @@ test_that(".get_design_vars() can be unlist()ed to a char vector", {
 })
 
 
-# ── 8. .get_design_vars() — survey_replicate named list ─────────────────────
+# ── 10. .get_design_vars() — survey_replicate named list ────────────────────
 
 test_that(".get_design_vars() returns weights and repweights for survey_replicate", {
   d    <- make_rep()
@@ -192,7 +265,7 @@ test_that(".get_design_vars() returns weights and repweights for survey_replicat
 })
 
 
-# ── 9. .get_design_vars() — survey_twophase named list ──────────────────────
+# ── 11. .get_design_vars() — survey_twophase named list (no p2 info) ────────
 
 test_that(".get_design_vars() returns phase1 vars and subset for survey_twophase", {
   d    <- make_twophase()
@@ -213,7 +286,38 @@ test_that(".get_design_vars() unlist() gives all design var names for survey_two
 })
 
 
-# ── 10. .resolve_tidy_select() — NULL quosure → NULL ────────────────────────
+# ── 12. .get_design_vars() — survey_twophase with p2 design info ─────────────
+
+test_that(".get_design_vars() includes strata2 and probs2 slots for twophase with p2 info", {
+  d    <- make_twophase_with_p2()
+  vars <- surveycore:::.get_design_vars(d)
+  # Phase 2 info slots present
+  expect_true("strata2" %in% names(vars))
+  expect_true("probs2"  %in% names(vars))
+  # ids2 and fpc2 were not provided — absent
+  expect_false("ids2" %in% names(vars))
+  expect_false("fpc2" %in% names(vars))
+})
+
+test_that(".get_design_vars() strata2/probs2 slots hold correct column names", {
+  d    <- make_twophase_with_p2()
+  vars <- surveycore:::.get_design_vars(d)
+  expect_identical(vars$strata2, "arm")
+  expect_identical(vars$probs2,  "sampfrac")
+})
+
+
+# ── 13. .get_design_vars() — survey_calibrated returns empty list ─────────────
+
+test_that(".get_design_vars() returns an empty list for survey_calibrated", {
+  d    <- make_calibrated()
+  vars <- surveycore:::.get_design_vars(d)
+  expect_true(is.list(vars))
+  expect_length(vars, 0L)
+})
+
+
+# ── 14. .resolve_tidy_select() — NULL quosure → NULL ────────────────────────
 
 test_that(".resolve_tidy_select() returns NULL for a NULL quosure", {
   df     <- data.frame(x = 1:3, y = 4:6)
@@ -222,7 +326,7 @@ test_that(".resolve_tidy_select() returns NULL for a NULL quosure", {
 })
 
 
-# ── 11. .resolve_tidy_select() — bare name → character vector ───────────────
+# ── 15. .resolve_tidy_select() — bare name → character vector ───────────────
 
 test_that(".resolve_tidy_select() resolves a bare name to a column name", {
   df     <- data.frame(x = 1:3, y = 4:6, wt = runif(3))
@@ -238,7 +342,7 @@ test_that(".resolve_tidy_select() returns a character vector", {
 })
 
 
-# ── 12. .resolve_tidy_select() — c() → multiple column names ────────────────
+# ── 16. .resolve_tidy_select() — c() → multiple column names ────────────────
 
 test_that(".resolve_tidy_select() resolves c() to multiple column names", {
   df     <- data.frame(psu = 1:3, ssu = 1:3, y = rnorm(3))
@@ -247,7 +351,7 @@ test_that(".resolve_tidy_select() resolves c() to multiple column names", {
 })
 
 
-# ── 13. .resolve_tidy_select() — starts_with() helper ───────────────────────
+# ── 17. .resolve_tidy_select() — starts_with() helper ───────────────────────
 
 test_that(".resolve_tidy_select() resolves starts_with() to matching column names", {
   df <- data.frame(
@@ -260,11 +364,161 @@ test_that(".resolve_tidy_select() resolves starts_with() to matching column name
 })
 
 
-# ── 14. SURVEYCORE_DOMAIN_COL — correct constant value ──────────────────────
+# ── 18. .resolve_single_col() — NULL quosure, required = FALSE → NULL ────────
+
+test_that(".resolve_single_col() returns NULL for a NULL quosure when required = FALSE", {
+  df     <- data.frame(x = 1:3, y = 4:6)
+  result <- surveycore:::.resolve_single_col(rlang::quo(NULL), df, "myarg")
+  expect_null(result)
+})
+
+test_that(".resolve_single_col() returns NULL for a NULL quosure (default required = FALSE)", {
+  df <- data.frame(wt = runif(3))
+  # Omit required= — defaults to FALSE
+  result <- surveycore:::.resolve_single_col(rlang::quo(NULL), df, "weights")
+  expect_null(result)
+})
+
+
+# ── 19. .resolve_single_col() — NULL quosure, required = TRUE → error ────────
+
+test_that(".resolve_single_col() errors for a NULL quosure when required = TRUE", {
+  df <- data.frame(x = 1:3, y = 4:6)
+  expect_error(
+    surveycore:::.resolve_single_col(rlang::quo(NULL), df, "myarg", required = TRUE),
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+test_that(".resolve_single_col() required=TRUE error uses class_none", {
+  df <- data.frame(x = 1:3)
+  expect_error(
+    surveycore:::.resolve_single_col(
+      rlang::quo(NULL), df, "weights",
+      required   = TRUE,
+      class_none = "surveycore_error_weights_not_found"
+    ),
+    class = "surveycore_error_weights_not_found"
+  )
+})
+
+
+# ── 20. .resolve_single_col() — single column match → char(1) ────────────────
+
+test_that(".resolve_single_col() returns the column name for a single match", {
+  df     <- data.frame(x = 1:3, wt = runif(3))
+  result <- surveycore:::.resolve_single_col(rlang::quo(wt), df, "weights")
+  expect_identical(result, "wt")
+})
+
+test_that(".resolve_single_col() returns a character scalar (length 1)", {
+  df     <- data.frame(a = 1:3, b = 4:6, c = 7:9)
+  result <- surveycore:::.resolve_single_col(rlang::quo(b), df, "myarg")
+  expect_true(is.character(result))
+  expect_length(result, 1L)
+})
+
+test_that(".resolve_single_col() resolves starts_with() when exactly one column matches", {
+  df     <- data.frame(wt_final = runif(3), y = 1:3)
+  result <- surveycore:::.resolve_single_col(
+    rlang::quo(tidyselect::starts_with("wt_")), df, "weights"
+  )
+  expect_identical(result, "wt_final")
+})
+
+
+# ── 21. .resolve_single_col() — 0 columns → error with class_none ────────────
+
+test_that(".resolve_single_col() errors with class_none when 0 columns match", {
+  df <- data.frame(x = 1:3, y = 4:6)
+  expect_error(
+    surveycore:::.resolve_single_col(
+      rlang::quo(tidyselect::starts_with("zzz")), df, "weights"
+    ),
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+test_that(".resolve_single_col() uses caller-supplied class_none for 0-match error", {
+  df <- data.frame(x = 1:3)
+  expect_error(
+    surveycore:::.resolve_single_col(
+      rlang::quo(tidyselect::starts_with("zzz")), df, "fpc",
+      class_none = "surveycore_error_fpc_not_found"
+    ),
+    class = "surveycore_error_fpc_not_found"
+  )
+})
+
+
+# ── 22. .resolve_single_col() — >1 columns → error with class_multi ──────────
+
+test_that(".resolve_single_col() errors with class_multi when >1 columns match", {
+  df <- data.frame(wt_a = runif(3), wt_b = runif(3), y = 1:3)
+  expect_error(
+    surveycore:::.resolve_single_col(
+      rlang::quo(tidyselect::starts_with("wt_")), df, "weights"
+    ),
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+test_that(".resolve_single_col() uses caller-supplied class_multi for multi-match error", {
+  df <- data.frame(st_a = 1:3, st_b = 1:3, y = 1:3)
+  expect_error(
+    surveycore:::.resolve_single_col(
+      rlang::quo(tidyselect::starts_with("st_")), df, "strata",
+      class_multi = "surveycore_error_strata_multiple"
+    ),
+    class = "surveycore_error_strata_multiple"
+  )
+})
+
+test_that(".resolve_single_col() errors when c() selects two columns", {
+  df <- data.frame(x = 1:3, y = 1:3, z = 1:3)
+  expect_error(
+    surveycore:::.resolve_single_col(rlang::quo(c(x, y)), df, "ids"),
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+
+# ── 23. .resolve_single_col() — call attribution ──────────────────────────────
+
+test_that(".resolve_single_col() surfaces the calling function name in errors", {
+  # When called from a wrapper, the error's call should name the wrapper,
+  # not .resolve_single_col() itself (thanks to call = rlang::caller_call()).
+  df <- data.frame(x = 1:3)
+
+  .my_wrapper <- function() {
+    surveycore:::.resolve_single_col(
+      rlang::quo(tidyselect::starts_with("zzz")), df, "weights"
+    )
+  }
+
+  err <- tryCatch(.my_wrapper(), error = function(e) e)
+  expect_s3_class(err, "surveycore_error_design_var_missing")
+  # conditionCall() reflects the immediate caller (.my_wrapper), not
+  # .resolve_single_col() — this is the intended UX behavior.
+  expect_true(!is.null(conditionCall(err)))
+})
+
+
+# ── 24. SURVEYCORE_DOMAIN_COL — correct constant value ──────────────────────
 
 test_that("SURVEYCORE_DOMAIN_COL is the expected string constant", {
   expect_identical(
     surveycore:::SURVEYCORE_DOMAIN_COL,
     "..surveycore_domain.."
+  )
+})
+
+
+# ── 25. .SURVEYCORE_WT_COL — correct constant value ──────────────────────────
+
+test_that(".SURVEYCORE_WT_COL is the expected string constant", {
+  expect_identical(
+    surveycore:::.SURVEYCORE_WT_COL,
+    "..surveycore_wt.."
   )
 })
