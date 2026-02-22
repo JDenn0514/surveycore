@@ -148,6 +148,17 @@ computes the matrix on demand:
 <code>as.matrix(design@data[, design@variables$repweights])</code>.</p>
     </div>
     <div class="section level2">
+    <h2 id="memory-usage">Memory usage<a class="anchor" aria-label="anchor" href="#memory-usage"></a></h2>
+
+
+<p>Each call to an estimation function (e.g., <code><a href="get_means.html">get_means()</a></code>, <code><a href="get_totals.html">get_totals()</a></code>)
+materialises the full replicate weight matrix from the data frame. For large
+designs (e.g., ACS PUMS with 500k+ rows × 80 replicates), this is roughly
+<code>nrow * n_replicates * 8</code> bytes per call (~363 MB for ACS Wyoming × 80).
+If you are estimating many variables, this is repeated for each call.
+This behaviour matches the <code>survey</code> package reference implementation.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="as_survey.html">as_survey()</a></code> for Taylor series designs,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code> for two-phase designs,

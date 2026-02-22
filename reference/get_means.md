@@ -1,8 +1,7 @@
 # Estimate Weighted Mean for a Survey Design
 
 Computes the weighted mean and its standard error for a single variable
-using the appropriate variance estimator for the survey design type. For
-`survey_taylor` designs, Taylor series linearization is used.
+using the appropriate variance estimator for the survey design type.
 
 ## Usage
 
@@ -14,8 +13,20 @@ get_means(design, var, na.rm = TRUE)
 
 - design:
 
-  A `survey_taylor` design object created by
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).
+  A survey design object. Supported classes:
+  [survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
+  (created by
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
+  [survey_replicate](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)
+  (created by
+  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)),
+  and
+  [survey_calibrated](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
+  (created by
+  [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)).
+  Two-phase designs
+  ([survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md))
+  are not yet supported.
 
 - var:
 
@@ -42,6 +53,24 @@ A named list with elements:
 - `se`:
 
   Numeric. Standard error of the mean.
+
+## Variance estimation by design type
+
+- `survey_taylor`:
+
+  Taylor series linearization.
+
+- `survey_replicate`:
+
+  Replicate-weight variance estimator.
+
+- `survey_calibrated`:
+
+  SRS-based (model-assisted) variance. Standard errors assume simple
+  random sampling within the calibrated weights. This is consistent with
+  common practice for raked non-probability samples but may understate
+  uncertainty. Full bootstrap re-calibration variance will be available
+  in Phase 2.5.
 
 ## See also
 

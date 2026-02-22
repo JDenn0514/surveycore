@@ -103,6 +103,18 @@ column names are stored in `@variables$repweights`. Variance estimation
 computes the matrix on demand:
 `as.matrix(design@data[, design@variables$repweights])`.
 
+## Memory usage
+
+Each call to an estimation function (e.g.,
+[`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md))
+materialises the full replicate weight matrix from the data frame. For
+large designs (e.g., ACS PUMS with 500k+ rows × 80 replicates), this is
+roughly `nrow * n_replicates * 8` bytes per call (~363 MB for ACS
+Wyoming × 80). If you are estimating many variables, this is repeated
+for each call. This behaviour matches the `survey` package reference
+implementation.
+
 ## See also
 
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
