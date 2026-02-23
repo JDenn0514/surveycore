@@ -24,6 +24,9 @@ first; this file covers only what is specific to surveycore.
 
 ## File mapping
 
+Phase 0 source-to-test mapping. Phase 1 and later follow the same one-to-one convention —
+each new `R/NN-name.R` gets a corresponding `tests/testthat/test-name.R`.
+
 | Source file | Test file |
 |-------------|-----------|
 | `R/00-s7-classes.R` | `tests/testthat/test-s7-classes.R` |

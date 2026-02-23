@@ -142,38 +142,9 @@ as_svydesign <- function(...) { ... }
 
 ## 3. Return Value Visibility (surveycore-specific)
 
-surveycore has strict conventions about which functions return visibly vs invisibly:
-
-```r
-# Setters — ALWAYS invisible
-set_var_label <- function(x, var, label) {
-  # ... modify x ...
-  invisible(x)  # User gets feedback through side effects, not printing
-}
-
-# Getters — ALWAYS visible
-extract_var_label <- function(x, var) {
-  x@metadata@variable_labels[[var_name]]  # User expects to see the result
-}
-
-# Constructors — ALWAYS visible
-as_survey <- function(data, ...) {
-  # ... build survey object ...
-  d  # Visible return; user expects to see what was created
-}
-
-# Print/summary methods — ALWAYS invisible
-S7::method(print, survey_taylor) <- function(x, ...) {
-  # ... print representation ...
-  invisible(x)  # User only wants to see the print output
-}
-
-# Validators (internal) — ALWAYS invisible
-.validate_weights <- function(weights) {
-  # ... check constraints ...
-  invisible(TRUE)  # Internal check; not meant to be seen
-}
-```
+Return visibility rules are defined in `code-style.md §4` (the return value visibility table).
+The surveycore-specific additions in the Quick Reference above (setters → `invisible(x)`,
+getters → visible) are the same rules applied to surveycore's naming conventions.
 
 ---
 

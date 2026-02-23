@@ -8,9 +8,23 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 
 ---
 
+## Current Phase Status
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | Tagged v0.1.0 |
+| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
+| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`) | 🟡 Spec written, implementation not yet started | See `plans/survey-srs-formal-specification.md` |
+| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`) | ❌ Not started | Required before Phase 1 |
+| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ❌ Not started | Requires Prereq PR 1 + Phase 0.75 |
+
+**Next action:** Implement `feature/survey-srs` (spec at `plans/survey-srs-formal-specification.md`), then Phase 0.75.
+
+---
+
 ## Class Naming Conventions
 
-- S7 classes: `survey_base`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_calibrated`
+- S7 classes: `survey_base`, `survey_srs`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_calibrated`
 - GLM fit class: `survey_glm_fit` (constructor function is `survey_glm()`)
 - Result classes: `survey_mean`, `survey_total`, `survey_freq`, etc. (S3 built on tibble)
 
@@ -54,7 +68,11 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/surveycore-phase0-formal-specification.md` — authoritative Phase 0 spec
-- `plans/phase-0-implementation-plan-v2.md` — Phase 0 build order (all complete as of v0.1.0)
+- `plans/phase-1-formal-specification.md` — authoritative Phase 1 spec (analysis functions)
+- `plans/phase-1-implementation-plan.md` — Phase 1 build order and PR sequence
+- `plans/claude-decisions-phase-1.md` — pre-implementation review decisions for Phase 1
+- `plans/survey-srs-formal-specification.md` — authoritative spec for `survey_srs` class + `as_survey_srs()` + SRS variance
+- `plans/phase-0.75-twophase-variance.md` — Phase 0.75 implementation plan (two-phase variance)
+- `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
 - `.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md` — Phase 0 implementation details (archived)

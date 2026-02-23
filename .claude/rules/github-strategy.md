@@ -130,23 +130,14 @@ docs/readme-usage-examples
 
 ---
 
-## 5. Component-to-PR Mapping (Phase 0)
+## 5. PR Granularity
 
-The implementation plan has 9 components of varying size. **One PR per test file** is the granularity heuristic. Large components are split; small ones stay together.
+**One PR per logical unit of work.** For analysis functions: one PR per function (or tightly
+related pair). Never bundle multiple unrelated functions into one PR because it's faster.
 
-| Implementation Plan Component | PRs | Branch names |
-|-------------------------------|-----|-------------|
-| Component 1: S7 Classes | 1 | `feature/s7-classes` |
-| Component 2: Metadata System | 2 | `feature/metadata-extractors`, `feature/metadata-setters` |
-| Component 3: Constructors | 3 | `feature/as-survey`, `feature/as-survey-rep`, `feature/as-survey-twophase` |
-| Component 4: Update Design | 1 | `feature/update-design` |
-| Component 5: Print Methods | 1 | `feature/print-methods` |
-| Component 6: Validators | 1 | `feature/validators` |
-| Conversion (05-methods-conversion.R) | 2 | `feature/conversion-to-survey`, `feature/conversion-from-survey` |
-| Variance Estimation | 2 | `feature/variance-taylor`, `feature/variance-replicate` |
-| Test infrastructure | 1 | `feature/test-helpers` |
-
-**Approximate total: ~15 PRs for Phase 0.** Each is a focused, reviewable unit.
+Phase-specific PR maps live in each phase's implementation plan
+(e.g., `plans/phase-1-implementation-plan.md`). The implementation plan is the source of truth
+for branch names and PR scope — not this file.
 
 ---
 
@@ -173,7 +164,7 @@ The implementation plan has 9 components of varying size. **One PR per test file
 | `perf` | Performance improvement (Phase 3+) |
 
 ### Scopes (optional but useful)
-Use the file/module name as scope: `classes`, `constructors`, `metadata`, `validators`, `print`, `variance`, `conversion`
+Use the file/module name as scope: `classes`, `constructors`, `metadata`, `validators`, `print`, `variance`, `conversion`, `analysis`, `utils`
 
 ### Examples
 ```
@@ -216,6 +207,9 @@ Create `.github/PULL_REQUEST_TEMPLATE.md`:
 ```
 
 The last item ensures the squash commit message on `main` will be correctly formatted.
+
+Changelog entry format (required before every PR) is defined in
+`.claude/skills/changelog-workflow.md`.
 
 ---
 

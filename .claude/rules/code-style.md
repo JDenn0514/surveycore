@@ -17,7 +17,7 @@
 | Style guide | tidyverse style (via air) |
 | Property access | Direct `@` everywhere; accessor functions for `@data` and `@metadata` only |
 | S7 method file org | Methods grouped by type in dedicated files (`04-methods-print.R`, etc.) |
-| Class membership test | `S7::inherits(x, survey_taylor)` — class object, never a string |
+| Class membership test | `S7::S7_inherits(x, survey_taylor)` — class object, never a string |
 | `@variables` absent keys | All keys always present; unspecified values as `NULL` |
 | Setter return values | `invisible(x)` |
 | Getter return values | Visible (no `invisible()`) |
@@ -161,11 +161,11 @@ S7::method(print, survey_taylor) <- function(x, n = 10, ...) {
 ```
 
 ### Class membership testing
-Always use **`S7::inherits(x, ClassName)`** with the class object — never a string.
+Always use **`S7::S7_inherits(x, ClassName)`** with the class object — never a string.
 
 ```r
 # Correct — class object; rename caught at load time
-if (!S7::inherits(phase1, survey_taylor)) {
+if (!S7::S7_inherits(phase1, survey_taylor)) {
   cli::cli_abort(...)
 }
 

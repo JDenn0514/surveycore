@@ -12,6 +12,10 @@ description: >
 
 # CRAN Submission
 
+> **Surveyverse projects:** R CMD check targets (0 errors, 0 warnings, ≤2 notes),
+> pre-approved notes, and `devtools::check()` cadence are defined in
+> `r-package-conventions.md §3`. Those rules take precedence over generic guidance here.
+
 ## The four-stage arc
 
 | Stage | What you're doing | Reference |

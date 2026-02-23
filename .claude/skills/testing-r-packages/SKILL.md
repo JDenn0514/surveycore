@@ -10,12 +10,12 @@ source: "https://github.com/posit-dev/skills (MIT License, © Posit, PBC)"
 Modern best practices for R package testing using testthat 3+.
 
 > **Surveyverse projects:** This skill covers generic testthat patterns.
-> Project decisions (flat `test_that()` only — no `describe()`, coverage
-> targets, `# nocov` policy, error testing patterns) are in
-> `.claude/rules/testing-standards.md`. Package-specific conventions
-> (`test_invariants()`, data generators, numerical tolerances) are in
+> Project decisions — including the **ban on `describe()` blocks** (flat
+> `test_that()` only), coverage targets, `# nocov` policy, and error testing
+> patterns — are in `.claude/rules/testing-standards.md`. Package-specific
+> conventions (`test_invariants()`, data generators, numerical tolerances) are in
 > `.claude/rules/testing-{package}.md`. Those rules take precedence over
-> generic guidance here.
+> generic guidance here, including any examples in this skill that use `describe()`.
 
 ## Initial Setup
 
