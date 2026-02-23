@@ -62,7 +62,7 @@ make_taylor <- function(seed = 42L) {
 
 make_srs <- function(seed = 42L) {
   df <- make_survey_data(n = 30L, n_psu = 10L, n_strata = 2L, seed = seed)
-  suppressWarnings(as_survey(df))
+  as_survey_srs(df, weights = wt)
 }
 
 make_rep <- function(seed = 42L) {
@@ -96,7 +96,7 @@ test_that("as_svydesign() converts survey_taylor without error", {
 
 # ── 2. as_svydesign() — SRS survey_taylor happy path ─────────────────────────
 
-test_that("as_svydesign() converts SRS survey_taylor without error", {
+test_that("as_svydesign() converts survey_srs without error", {
   skip_if_not_installed("survey")
   d  <- make_srs()
   test_invariants(d)
@@ -520,8 +520,8 @@ test_that("as_svydesign() converts JK1 replicate design (scale arg non-NULL path
 test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
   skip_if_not_installed("survey")
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 301L)
-  # phase1 with no ids (SRS) — p1$ids will be NULL
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  # phase1 with no ids (SRS-like) — p1$ids will be NULL
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
   sv     <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
@@ -531,7 +531,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
 test_that("as_svydesign() handles twophase design with phase2 ids", {
   skip_if_not_installed("survey")
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 302L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressWarnings(
     as_survey_twophase(phase1, ids2 = psu, subset = phase2_ind)
   )

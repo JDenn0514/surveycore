@@ -176,6 +176,12 @@ make_survey_data <- function(
 #' @keywords internal
 test_invariants <- function(design) {
 
+  # survey_srs has an additional @variables key (fpc_type) — check it here
+  # before the general invariants run.
+  if (S7::S7_inherits(design, survey_srs)) {
+    testthat::expect_true("fpc_type" %in% names(design@variables))
+  }
+
   # survey_calibrated has a different @variables structure — handle separately
   if (S7::S7_inherits(design, survey_calibrated)) {
     testthat::expect_true(is.data.frame(design@data))
@@ -317,6 +323,73 @@ test_invariants <- function(design) {
 }
 
 # ------------------------------------------------------------------------------
+# test_result_invariants()
+# ------------------------------------------------------------------------------
+
+#' Assert all formal invariants on a survey result object
+#'
+#' Call this as the FIRST assertion in every test_that() block that creates a
+#' result from a get_*() function. The direct parallel to test_invariants()
+#' for design objects.
+#'
+#' @param result A survey_freqs, survey_means, survey_totals, survey_corr,
+#'   survey_quantiles, or survey_ratios object.
+#' @param expected_class The specific S3 class string expected (e.g.,
+#'   "survey_means").
+#' @return Returns result invisibly on success. Throws testthat failure on any
+#'   violated invariant.
+#' @keywords internal
+test_result_invariants <- function(result, expected_class) {
+  # 1. Correct S3 class hierarchy
+  testthat::expect_true(
+    inherits(result, expected_class),
+    label = paste0("result inherits from ", expected_class)
+  )
+  testthat::expect_true(
+    inherits(result, "survey_result"),
+    label = "result inherits from survey_result"
+  )
+  testthat::expect_true(
+    tibble::is_tibble(result),
+    label = "result is a tibble"
+  )
+
+  # 2. meta() returns a non-NULL list
+  m <- meta(result)
+  testthat::expect_false(is.null(m), label = "meta() is not NULL")
+  testthat::expect_type(m, "list")
+
+  # 3. Required meta keys always present (never absent)
+  required_common_keys <- c(
+    "design_type", "conf_level", "call", "group_names", "group_labels"
+  )
+  testthat::expect_true(
+    all(required_common_keys %in% names(m)),
+    label = "all required meta keys present"
+  )
+
+  # 4. group_names is always a character vector (never NULL)
+  testthat::expect_type(m$group_names, "character")
+
+  # 5. value_labels is always a non-empty named list
+  testthat::expect_true(
+    "value_labels" %in% names(m),
+    label = "value_labels key present in meta"
+  )
+  testthat::expect_type(m$value_labels, "list")
+  testthat::expect_gt(
+    length(m$value_labels), 0L,
+    label = "value_labels is non-empty"
+  )
+  testthat::expect_false(
+    is.null(names(m$value_labels)),
+    label = "value_labels is a named list"
+  )
+
+  invisible(result)
+}
+
+# ------------------------------------------------------------------------------
 # make_all_designs()
 # ------------------------------------------------------------------------------
 
@@ -326,7 +399,7 @@ test_invariants <- function(design) {
 #' Use in verb tests to iterate over all design types with a for loop.
 #'
 #' @param seed   Random seed passed to make_survey_data(). Default 42L.
-#' @return A named list with elements: taylor, replicate, twophase.
+#' @return A named list with elements: srs, taylor, replicate, twophase, calibrated.
 #' @keywords internal
 make_all_designs <- function(seed = 42L) {
   # Taylor series design
@@ -370,7 +443,15 @@ make_all_designs <- function(seed = 42L) {
   )
   calibrated <- as_survey_calibrated(df_c, weights = wt)
 
+  # Simple random sample design
+  df_s <- make_survey_data(
+    n = 100L, n_psu = 10L, n_strata = 2L,
+    design = "taylor", seed = seed
+  )
+  srs <- as_survey_srs(df_s, weights = wt)
+
   list(
+    srs        = srs,
     taylor     = taylor,
     replicate  = replicate,
     twophase   = twophase,

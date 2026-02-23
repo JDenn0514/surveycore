@@ -8,6 +8,7 @@
 #   survey_taylor     — Taylor series linearization design
 #   survey_replicate  — replicate weights design
 #   survey_twophase   — two-phase sampling design
+#   survey_srs        — simple random sample design
 #   survey_calibrated — calibrated/non-probability design (Phase 2.5 skeleton)
 #
 # Validators implement Layer 1 structural invariants only (per 3-layer
@@ -85,10 +86,11 @@ survey_metadata <- S7::new_class(
 
 #' Abstract Base Survey Design Class
 #'
-#' All survey design objects (`survey_taylor`, `survey_replicate`,
-#' `survey_twophase`) inherit from `survey_base`. This class is abstract
-#' and cannot be instantiated directly — use [as_survey()],
-#' [as_survey_rep()], or [as_survey_twophase()] instead.
+#' All survey design objects (`survey_srs`, `survey_taylor`,
+#' `survey_replicate`, `survey_twophase`, `survey_calibrated`) inherit from
+#' `survey_base`. This class is abstract and cannot be instantiated directly —
+#' use [as_survey()], [as_survey_rep()], [as_survey_twophase()], or
+#' [as_survey_calibrated()] instead.
 #'
 #' @section Properties:
 #' \describe{
@@ -555,6 +557,133 @@ survey_twophase <- S7::new_class(
           }
         }
       }
+    }
+
+    NULL
+  }
+)
+
+
+# ── survey_srs ─────────────────────────────────────────────────────────────────
+
+#' Simple Random Sample Survey Design
+#'
+#' A survey design object for equal-probability simple random samples — surveys
+#' where every unit had an equal chance of selection and there is no clustering
+#' or stratification. Create via [as_survey()] with no `ids`, `strata`, or
+#' `fpc` arguments.
+#'
+#' @section When to use this class:
+#' Use `survey_srs` (via `as_survey(df)` or `as_survey(df, weights = w)` with
+#' no design structure) when:
+#' - The sample was drawn by simple random sampling (every unit equally likely
+#'   to be selected)
+#' - There are no clusters or strata to specify
+#' - You want the standard SRS variance formula: `s²/n × (1 - f)` where
+#'   `f = n/N` is the sampling fraction (0 when population size is unknown)
+#'
+#' For non-probability samples or post-hoc calibrated weights (raking,
+#' post-stratification, propensity matching), use [as_survey_calibrated()]
+#' instead.
+#'
+#' For complex probability samples with known design structure (PSUs, strata),
+#' use [as_survey()] with `ids`, `strata`, and/or `fpc` — which creates a
+#' `survey_taylor` object.
+#'
+#' @param data A `data.frame` containing the survey data. Prefer [as_survey()]
+#'   over calling this constructor directly.
+#' @param metadata A [survey_metadata] object. Created automatically by
+#'   [as_survey()].
+#' @param variables A named list of design specification. Set automatically by
+#'   [as_survey()].
+#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param call Language object capturing the construction call.
+#'
+#' @section Design variables (`@variables`):
+#' \describe{
+#'   \item{`weights`}{Character string naming the weight column, or `NULL` for
+#'     uniform weights (all equal; auto-generated as `"..surveycore_wt.."`).}
+#'   \item{`probs_provided`}{Logical. `TRUE` if the user supplied sampling
+#'     probabilities rather than weights.}
+#'   \item{`fpc`}{Character string naming a finite population correction column,
+#'     or `NULL`. When `NULL`, assumes infinite population (`f = 0`).}
+#'   \item{`fpc_type`}{Character string: `"population"` when the FPC column
+#'     contains population sizes (values > 1), `"fraction"` when it contains
+#'     sampling fractions (values in (0, 1]), or `NULL` when no FPC is
+#'     specified.}
+#'   \item{`ids`}{Always `NULL`. SRS has no cluster structure.}
+#'   \item{`strata`}{Always `NULL`. SRS has no stratification.}
+#'   \item{`nest`}{Always `FALSE`.}
+#' }
+#'
+#' @return A `survey_srs` object.
+#' @usage survey_srs(
+#'   data = data.frame(),
+#'   metadata = survey_metadata(),
+#'   variables = list(),
+#'   groups = character(0),
+#'   call = NULL
+#' )
+#' @seealso [as_survey_srs()] to create a `survey_srs` object directly;
+#'   [as_survey()] for Taylor series designs.
+#' @family constructors
+#' @export
+survey_srs <- S7::new_class(
+  "survey_srs",
+  parent    = survey_base,
+  properties = list(),
+  validator = function(self) {
+
+    weights_var <- self@variables$weights
+    fpc_var     <- self@variables$fpc
+
+    # ── Weight column must exist in @data ─────────────────────────────────────
+    if (!is.null(weights_var) && !weights_var %in% names(self@data)) {
+      cli::cli_abort(
+        c(
+          "x" = "Weight column {.field {weights_var}} not found in {.arg data}.",
+          "i" = "This is an internal consistency error in the {.cls survey_srs} object.",
+          "v" = "Use {.fn as_survey} instead of calling the constructor directly."
+        ),
+        class = "surveycore_error_design_var_missing"
+      )
+    }
+
+    # ── Weight column must be numeric and positive ────────────────────────────
+    if (!is.null(weights_var) && weights_var %in% names(self@data)) {
+      wt_col <- self@data[[weights_var]]
+
+      if (!is.numeric(wt_col)) {
+        cli::cli_abort(
+          c(
+            "x" = "Weight column {.field {weights_var}} must be numeric, not {.cls {class(wt_col)}}."
+          ),
+          class = "surveycore_error_weights_not_numeric"
+        )
+      }
+
+      n_bad <- sum(!is.na(wt_col) & wt_col <= 0)
+      if (n_bad > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Weight column {.field {weights_var}} has {n_bad} ",
+              "non-positive value(s). All non-NA weights must be > 0."
+            )
+          ),
+          class = "surveycore_error_weights_nonpositive"
+        )
+      }
+    }
+
+    # ── FPC column must exist in @data if specified ───────────────────────────
+    if (!is.null(fpc_var) && !fpc_var %in% names(self@data)) {
+      cli::cli_abort(
+        c(
+          "x" = "FPC column {.field {fpc_var}} not found in {.arg data}."
+        ),
+        class = "surveycore_error_design_var_missing"
+      )
     }
 
     NULL

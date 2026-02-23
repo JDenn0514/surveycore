@@ -21,6 +21,14 @@
 #  15. summary.survey_taylor — invisible return
 #  16. summary.survey_replicate — output (snapshot)
 #  17. summary.survey_twophase — output (snapshot)
+#  18. print.survey_srs — default output (snapshot)
+#  19. print.survey_srs — design_info with population FPC (snapshot)
+#  20. print.survey_srs — design_info with fraction FPC (snapshot)
+#  21. print.survey_srs — full = TRUE (snapshot)
+#  22. print.survey_srs — uniform auto-weights label
+#  23. print.survey_srs — invisible return
+#  24. summary.survey_srs — keys and types
+#  25. summary.survey_srs — fpc_specified / fpc_type
 #
 # Note: cli output (cli_h1/h2/text/bullets) goes to message(), not stdout.
 # Use capture.output(type = "message") to capture cli output in tests.
@@ -36,10 +44,25 @@ make_taylor_design <- function(seed = 42L) {
   as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
 }
 
-# SRS design (no design vars — uses ..surveycore_wt..)
+# Taylor design with no ids/strata and auto-weights (tests print/summary "none" branches)
+# Directly constructed to bypass SRS dispatch (as_survey() without ids/strata
+# now creates survey_srs; survey_srs print/summary added in Step 3)
 make_srs_design <- function(seed = 42L) {
   df <- make_survey_data(n = 30L, n_psu = 10L, n_strata = 2L, seed = seed)
-  suppressWarnings(as_survey(df))
+  wt_col <- surveycore:::.SURVEYCORE_WT_COL
+  df[[wt_col]] <- rep(1L, nrow(df))
+  survey_taylor(
+    data      = df,
+    metadata  = survey_metadata(),
+    variables = list(
+      ids            = NULL,
+      weights        = wt_col,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      probs_provided = FALSE
+    )
+  )
 }
 
 # replicate weights design (BRR)
@@ -322,4 +345,113 @@ test_that("summary.survey_twophase returns object invisibly", {
   test_invariants(d)
   result <- suppressMessages(summary(d))
   expect_identical(result, d)
+})
+
+
+# ── 18. print.survey_srs — default output ────────────────────────────────────
+
+test_that("print.survey_srs default output matches snapshot", {
+  d <- as_survey_srs(
+    data.frame(y = 1:10, wt = rep(2, 10)),
+    weights = wt
+  )
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(print(d))
+})
+
+
+# ── 19. print.survey_srs — design_info with population FPC ───────────────────
+
+test_that("print.survey_srs design_info=TRUE with population FPC matches snapshot", {
+  df <- data.frame(y = 1:5, wt = rep(2, 5), pop = rep(100L, 5))
+  d  <- as_survey_srs(df, weights = wt, fpc = pop)
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(print(d, design_info = TRUE))
+})
+
+
+# ── 20. print.survey_srs — design_info with fraction FPC ─────────────────────
+
+test_that("print.survey_srs design_info=TRUE with fraction FPC matches snapshot", {
+  df <- data.frame(y = 1:5, wt = rep(2, 5), frac = rep(0.1, 5))
+  d  <- as_survey_srs(df, weights = wt, fpc = frac)
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(print(d, design_info = TRUE))
+})
+
+
+# ── 21. print.survey_srs — full = TRUE ───────────────────────────────────────
+
+test_that("print.survey_srs full=TRUE output matches snapshot", {
+  d <- as_survey_srs(
+    data.frame(y = 1:5, wt = rep(2, 5)),
+    weights = wt
+  )
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(print(d, full = TRUE))
+})
+
+
+# ── 22. print.survey_srs — uniform auto-weights label ────────────────────────
+
+test_that("print.survey_srs shows 'uniform (auto-assigned)' for no-weights design", {
+  d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(print(d, design_info = TRUE), type = "message")
+  expect_true(any(grepl("uniform \\(auto-assigned\\)", out)))
+})
+
+
+# ── 23. print.survey_srs — invisible return ───────────────────────────────────
+
+test_that("print.survey_srs returns object invisibly", {
+  d      <- as_survey_srs(data.frame(y = 1:5, wt = rep(1, 5)), weights = wt)
+  result <- withVisible(suppressMessages(print(d)))
+  expect_false(result$visible)
+  expect_true(S7::S7_inherits(result$value, survey_srs))
+})
+
+
+# ── 24. summary.survey_srs — keys and types ──────────────────────────────────
+
+test_that("summary.survey_srs returns a list with correct keys", {
+  d   <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
+  test_invariants(d)
+  s   <- summary(d)
+  expected_keys <- c("class", "n", "weighted_n", "fpc_specified",
+                     "fpc_type", "n_var_labels", "n_val_labels")
+  expect_true(all(expected_keys %in% names(s)))
+  expect_identical(s$class,      "survey_srs")
+  expect_identical(s$n,          10L)
+  expect_equal(s$weighted_n,    20)   # 10 rows × weight 2; round() returns double
+  expect_false(s$fpc_specified)
+  expect_null(s$fpc_type)
+  expect_identical(s$n_var_labels, 0L)
+  expect_identical(s$n_val_labels, 0L)
+})
+
+
+# ── 25. summary.survey_srs — fpc_specified / fpc_type ────────────────────────
+
+test_that("summary.survey_srs reflects population FPC correctly", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), pop = rep(100L, 5))
+  d  <- as_survey_srs(df, weights = wt, fpc = pop)
+  test_invariants(d)
+  s  <- summary(d)
+  expect_true(s$fpc_specified)
+  expect_identical(s$fpc_type, "population")
+})
+
+test_that("summary.survey_srs reflects fraction FPC correctly", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), frac = rep(0.1, 5))
+  d  <- as_survey_srs(df, weights = wt, fpc = frac)
+  test_invariants(d)
+  s  <- summary(d)
+  expect_true(s$fpc_specified)
+  expect_identical(s$fpc_type, "fraction")
 })

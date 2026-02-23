@@ -295,3 +295,121 @@
       
       Metadata: 0 of 9 variable(s) labeled
 
+# print.survey_srs default output matches snapshot
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 2
+             y    wt
+         <int> <dbl>
+       1     1     2
+       2     2     2
+       3     3     2
+       4     4     2
+       5     5     2
+       6     6     2
+       7     7     2
+       8     8     2
+       9     9     2
+      10    10     2
+
+# print.survey_srs design_info=TRUE with population FPC matches snapshot
+
+    Code
+      print(d, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 5
+      
+      
+      -- Design --
+      
+      * Weights: wt
+      * FPC: pop (population sizes)
+      * Sampling fraction: 0.05
+      
+    Output
+      # A tibble: 5 x 3
+            y    wt   pop
+        <int> <dbl> <int>
+      1     1     2   100
+      2     2     2   100
+      3     3     2   100
+      4     4     2   100
+      5     5     2   100
+
+# print.survey_srs design_info=TRUE with fraction FPC matches snapshot
+
+    Code
+      print(d, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 5
+      
+      
+      -- Design --
+      
+      * Weights: wt
+      * FPC: frac (sampling fractions)
+      * Sampling fraction: 0.1
+      
+    Output
+      # A tibble: 5 x 3
+            y    wt  frac
+        <int> <dbl> <dbl>
+      1     1     2   0.1
+      2     2     2   0.1
+      3     3     2   0.1
+      4     4     2   0.1
+      5     5     2   0.1
+
+# print.survey_srs full=TRUE output matches snapshot
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 5
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      * Weights: wt
+      * FPC: not specified
+      
+      
+      -- Weight distribution --
+      
+      * Range: 2 – 2
+      * Mean: 2
+      * CV: 0
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 5 x 2
+            y    wt
+        <int> <dbl>
+      1     1     2
+      2     2     2
+      3     3     2
+      4     4     2
+      5     5     2
+

@@ -27,7 +27,7 @@
 # as_survey() errors when probs and weights are inconsistent [row 5]
 
     Code
-      as_survey(df, probs = prob, weights = wt)
+      as_survey(df, probs = prob, weights = wt, strata = strata)
     Condition
       Error in `as_survey()`:
       x Cannot specify both `probs` and `weights` with inconsistent values. `weights` should equal 1 / `probs`
@@ -37,7 +37,11 @@
     Code
       as_survey(df, weights = starts_with("zzz"))
     Condition
-      Error in `as_survey()`:
+      Warning:
+      ! No `ids` or `strata` specified.
+      i Creating a <survey_srs> design (equal-probability SRS).
+      v Use `as_survey_srs()` to create SRS designs without this warning.
+      Error in `as_survey_srs()`:
       x `weights` matched no columns in `data`
 
 # as_survey() errors when weights expression selects multiple columns [row 9]
@@ -45,7 +49,11 @@
     Code
       as_survey(df, weights = starts_with("wt"))
     Condition
-      Error in `as_survey()`:
+      Warning:
+      ! No `ids` or `strata` specified.
+      i Creating a <survey_srs> design (equal-probability SRS).
+      v Use `as_survey_srs()` to create SRS designs without this warning.
+      Error in `as_survey_srs()`:
       x `weights` must select exactly one column, not 2
 
 # as_survey() errors when strata expression selects multiple columns [row 11]
@@ -61,7 +69,11 @@
     Code
       as_survey(df, weights = wt, fpc = starts_with("fpc"))
     Condition
-      Error in `as_survey()`:
+      Warning:
+      ! No `ids` or `strata` specified.
+      i Creating a <survey_srs> design (equal-probability SRS).
+      v Use `as_survey_srs()` to create SRS designs without this warning.
+      Error in `as_survey_srs()`:
       x `fpc` must select exactly one column, not 2
 
 # as_survey() errors when fpc column has NA values [row 14]
@@ -69,6 +81,10 @@
     Code
       as_survey(df, weights = wt, fpc = fpc)
     Condition
+      Warning:
+      ! No `ids` or `strata` specified.
+      i Creating a <survey_srs> design (equal-probability SRS).
+      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `.validate_fpc()`:
       x `fpc` column fpc contains 1 NA value(s). FPC must be fully observed.
       v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
@@ -464,4 +480,132 @@
       x Weight column w must be numeric.
       i Got <character>.
       v Convert with `as.numeric(w)`.
+
+# as_survey_srs() rejects both weights and probs supplied
+
+    Code
+      as_survey_srs(df, weights = wt, probs = p)
+    Condition
+      Error in `as_survey_srs()`:
+      x Supply `weights` or `probs`, not both.
+      i Use `weights` for sampling weights or `probs` for sampling probabilities.
+
+# as_survey_srs() rejects non-data-frame data
+
+    Code
+      as_survey_srs(list(y = 1:5))
+    Condition
+      Error in `as_survey_srs()`:
+      x `data` must be a data frame, not <list>
+
+# as_survey_srs() rejects empty data frame
+
+    Code
+      as_survey_srs(df)
+    Condition
+      Error in `as_survey_srs()`:
+      x `data` must have at least one row
+
+# as_survey_srs() rejects weights selector that matches no columns
+
+    Code
+      as_survey_srs(df, weights = starts_with("zzz_nonexistent"))
+    Condition
+      Error in `as_survey_srs()`:
+      x `weights` matched no columns in `data`
+
+# as_survey_srs() rejects zero weight values
+
+    Code
+      as_survey_srs(df, weights = wt)
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column wt has 1 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where wt is 0 or negative.
+
+# as_survey_srs() rejects non-positive FPC values
+
+    Code
+      as_survey_srs(df, weights = wt, fpc = fpc_col)
+    Condition
+      Error in `as_survey_srs()`:
+      x `fpc` column fpc_col has 1 non-positive value(s). FPC values must be > 0.
+      i FPC must be either population sizes (> 1) or sampling fractions (0 < f ≤ 1).
+
+# as_survey_srs() rejects FPC that mixes >1 and ≤1 values
+
+    Code
+      as_survey_srs(df, weights = wt, fpc = fpc_col)
+    Condition
+      Error in `as_survey_srs()`:
+      x `fpc` column fpc_col mixes values > 1 (population sizes) and values ≤ 1 (sampling fractions). All FPC values must be consistently one type.
+      i Use all values > 1 for population sizes, or all values in (0, 1] for sampling fractions.
+
+# as_survey_srs() rejects FPC population size smaller than sample
+
+    Code
+      as_survey_srs(df, weights = wt, fpc = fpc_col)
+    Condition
+      Error in `as_survey_srs()`:
+      x `fpc` column fpc_col has 10 value(s) smaller than the sample size (10). Population size cannot be smaller than the number of sampled units.
+      i Check your FPC column. For sampling fractions, supply values in (0, 1] instead.
+
+# as_survey_srs() rejects FPC column with NA values
+
+    Code
+      as_survey_srs(df, weights = wt, fpc = fpc_col)
+    Condition
+      Error in `.validate_fpc()`:
+      x `fpc` column fpc_col contains 1 NA value(s). FPC must be fully observed.
+      v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
+
+# as_survey() fallback warning snapshot matches expected message
+
+    Code
+      as_survey(df, weights = wt)
+    Condition
+      Warning:
+      ! No `ids` or `strata` specified.
+      i Creating a <survey_srs> design (equal-probability SRS).
+      v Use `as_survey_srs()` to create SRS designs without this warning.
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 5
+      
+    Output
+      # A tibble: 5 x 2
+            y    wt
+        <int> <dbl>
+      1     1     1
+      2     2     1
+      3     3     1
+      4     4     1
+      5     5     1
+
+# as_survey_srs() no-weights warning snapshot matches expected message
+
+    Code
+      as_survey_srs(df)
+    Condition
+      Warning:
+      ! No `weights` provided to `as_survey_srs()`. Assigning uniform weights (`..surveycore_wt.. = 1`).
+      i Population size unknown — total estimates will use `Σw_i = n` as the estimated N.
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 5
+      
+    Output
+      # A tibble: 5 x 2
+            y ..surveycore_wt..
+        <int>             <int>
+      1     1                 1
+      2     2                 1
+      3     3                 1
+      4     4                 1
+      5     5                 1
 

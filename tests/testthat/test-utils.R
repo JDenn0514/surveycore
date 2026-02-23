@@ -63,11 +63,12 @@ make_twophase_with_p2 <- function(seed = 42L) {
   df <- data.frame(
     wt        = runif(30L, 0.8, 1.5),
     arm       = rep(c("A", "B", "C"), 10L),
+    strata    = rep(c("S1", "S2"), 15L),
     sampfrac  = rep(c(0.5, 0.6, 0.4), 10L),
     in_phase2 = c(rep(TRUE, 15L), rep(FALSE, 15L)),
     y         = rnorm(30L)
   )
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   as_survey_twophase(
     phase1,
     strata2 = arm,

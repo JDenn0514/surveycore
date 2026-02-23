@@ -85,6 +85,12 @@ against the messages defined here.
 | 53 | all numeric `get_*()` | Focal variable all NA with `na.rm = FALSE` | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
 | 54 | all `get_*()` | `variance = "cv"` but estimate is 0 or negative | WARN | `surveycore_warning_cv_undefined` | `'{.arg variance = "cv"} is undefined for {n_undef} cell{?s} where the estimate is 0 or negative. {.code cv} set to {.code NA} for those cells.'` |
 | 55 | `get_freqs()` | All values of focal variable are `NA` with `na.rm = TRUE` | WARN | `surveycore_warning_all_na_freqs` | `"All values of {.field {var}} are {.code NA} with {.arg na.rm = TRUE}. Returning 0 rows."` |
+| 56 | `as_survey_srs()` | Both `weights` and `probs` supplied | ERROR | `surveycore_error_weights_probs_both` | `"Supply {.arg weights} or {.arg probs}, not both."` |
+| 57 | `as_survey_srs()` | `fpc` column has non-positive values | ERROR | `surveycore_error_fpc_nonpositive` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} non-positive value(s). FPC values must be > 0."` |
+| 58 | `as_survey_srs()` | `fpc` column mixes values > 1 and ≤ 1 | ERROR | `surveycore_error_fpc_ambiguous` | `"{.arg fpc} column {.field {fpc_var}} mixes values > 1 (population sizes) and values \u2264 1 (sampling fractions). All FPC values must be consistently one type."` |
+| 59 | `as_survey_srs()` | `fpc` population size < sample size | ERROR | `surveycore_error_fpc_below_sample` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} value(s) smaller than the sample size ({n}). Population size cannot be smaller than the number of sampled units."` |
+| 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | WARN | `surveycore_warning_as_survey_srs_fallback` | `c("!" = "No {.arg ids} or {.arg strata} specified.", "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).", "v" = "Use {.fn as_survey_srs} to create SRS designs without this warning.")` |
+| 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
 
 ---
 
@@ -122,7 +128,7 @@ Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–26 |
+| `test-constructors.R` | 1–26, 56–61 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |
