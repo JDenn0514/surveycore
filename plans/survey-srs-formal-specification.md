@@ -134,17 +134,30 @@ are Layer 3 constructor checks in `as_survey_srs()`.
 as_survey_srs <- function(
   data,
   weights = NULL,
+  probs   = NULL,
   fpc     = NULL
 )
 ```
 
-No `ids`, `strata`, `nest`, or `probs` arguments. `survey_srs` is definitionally
-equal-probability — these arguments don't apply.
+No `ids`, `strata`, or `nest` arguments — SRS is definitionally equal-probability.
+`probs` is accepted as an alternative to `weights`; they are mutually exclusive.
 
 ### Layer 3 input validation (in order)
 
 All existing data-level checks from `as_survey()` apply unchanged (rows 1–4 in
 error table: not_data_frame, empty_data, duplicate_names, single_row_warning).
+
+These checks must be implemented via the existing `.validate_weights()`,
+`.validate_fpc()`, and `.resolve_single_col()` helpers — not reimplemented inline.
+
+**`weights`/`probs` mutual exclusion:** If both `weights` and `probs` are non-NULL,
+abort with `surveycore_error_weights_probs_both`. This check fires before any
+column resolution.
+
+**`probs` → `weights` conversion:** If `probs` is non-NULL and `weights` is NULL,
+resolve `probs` via tidy-select, compute `weights_col = 1 / probs_col`, store in
+`data[["..surveycore_wt.."]]`, and set `probs_provided = TRUE`. Then proceed
+through the weight validation checks below using the converted column.
 
 Weight-specific checks:
 
@@ -153,9 +166,11 @@ Weight-specific checks:
 | `weights` matches 0 columns | tidy-select resolves to nothing | `surveycore_error_weights_not_found` |
 | `weights` matches > 1 column | tidy-select resolves to multiple | `surveycore_error_weights_multiple` |
 | All weights are zero | entire column is 0 or NA | `surveycore_error_weights_all_zero` |
-| No `weights` provided | `weights = NULL` | `surveycore_warning_srs_no_weights` (row 7) |
+| No `weights` provided | `weights = NULL` | `surveycore_warning_srs_no_weights` (row 60) |
 
-When `weights = NULL`, auto-assign uniform weights: `data[["..surveycore_wt.."]] <- rep(1L, nrow(data))`. The `surveycore_warning_srs_no_weights` warning fires with the message from row 7.
+When `weights = NULL`, auto-assign uniform weights: `data[["..surveycore_wt.."]] <- rep(1L, nrow(data))`. The `surveycore_warning_srs_no_weights` warning fires with the message from row 60.
+
+**Partial NA weights:** A weight column with some NA rows and the rest positive passes all checks. This is intentional and consistent with `survey_taylor` behavior. Variance computation uses `na.rm = TRUE`, so only non-NA rows contribute to estimates. The `weights_all_zero` check (entire column 0 or NA) is the only NA-related weight check.
 
 FPC-specific checks (only when `fpc` is not `NULL`):
 
@@ -166,7 +181,11 @@ FPC-specific checks (only when `fpc` is not `NULL`):
 | `fpc` column contains `NA` | any NA in FPC column | `surveycore_error_fpc_na` |
 | `fpc` column has non-positive values | any value ≤ 0 | `surveycore_error_fpc_nonpositive` (NEW — row 56) |
 | `fpc` column mixes >1 and ≤1 values | both ranges present | `surveycore_error_fpc_ambiguous` (NEW — row 57) |
-| `fpc` column is population size AND any value < n | N < sample size | `surveycore_error_fpc_below_sample` (NEW — row 58) |
+| `fpc` column is population size AND any value < n | any individual FPC value < n_used | `surveycore_error_fpc_below_sample` (NEW — row 58) |
+
+The `fpc_below_sample` check is **per-row**: it fires when any individual FPC value is less than `n_used`. FPC values varying across rows is itself a misuse of `survey_srs` (heterogeneous population sizes imply stratification; use `survey_taylor`), so the per-row check catches the most common practical error. The message template's `{n_bad}` is the count of rows where `fpc_val < n_used`.
+
+Run FPC checks in this order: (1) NA check, (2) nonpositive, (3) ambiguous, (4) below_sample. This ordering catches obviously invalid values before statistically nuanced checks and ensures consistent snapshot output when multiple conditions fire on the same column.
 
 ### `fpc_type` detection
 
@@ -188,19 +207,42 @@ population was sampled — `fpc_type = "fraction"`, `f = 1`, variance = 0.)
 
 ```r
 variables <- list(
-  weights        = weights_var,   # character column name, or "..surveycore_wt.."
-  fpc            = fpc_var,       # character column name, or NULL
-  fpc_type       = fpc_type,      # "population", "fraction", or NULL
-  probs_provided = FALSE,
+  weights        = weights_var,       # character column name, or "..surveycore_wt.."
+  fpc            = fpc_var,           # character column name, or NULL
+  fpc_type       = fpc_type,          # "population", "fraction", or NULL
+  probs_provided = probs_provided,    # TRUE if caller supplied probs; FALSE otherwise
   ids            = NULL,
   strata         = NULL,
   nest           = FALSE
 )
 ```
 
+`probs_provided` is `TRUE` when `probs` was non-NULL (after conversion);
+`FALSE` when `weights` was supplied directly or uniform weights were auto-assigned.
+
+### Constructor call
+
+```r
+survey_srs(data = data, variables = variables, call = match.call())
+```
+
+`call = match.call()` captures the user's call expression, consistent with `as_survey()` and `as_survey_rep()`.
+
 ### Return value
 
 A `survey_srs` object. Visible (not wrapped in `invisible()`).
+
+### Documentation
+
+Roxygen2 tags required for `as_survey_srs()` (consistent with `as_survey()` and
+`as_survey_rep()`):
+
+- `@family constructors`
+- `@seealso [as_survey()]`
+- `@return A \code{survey_srs} object.`
+- `@examples` — one minimal runnable example: `as_survey_srs(data.frame(y = 1:5))`
+- `@param data`, `@param weights`, `@param fpc` — follow the fuller treatment
+  for survey-specific arguments per `surveycore-conventions.md` §1
 
 ---
 
@@ -233,22 +275,52 @@ cli::cli_warn(
 This warning fires **in addition to** any `surveycore_warning_srs_no_weights`
 warning if no weights were provided. The two warnings are separate and both
 are suppressible independently via `suppressWarnings()` or `withCallingHandlers()`.
+`surveycore_warning_as_survey_srs_fallback` fires inside `as_survey()`, before
+the call to `as_survey_srs()`. `surveycore_warning_srs_no_weights` fires inside
+`as_survey_srs()`.
+
+### Required refactoring of `as_survey()`
+
+The existing `as_survey()` resolves `weights`, `probs`, and the no-weights
+fallback before any dispatch decision is possible. Implementing "all processing
+in `as_survey_srs()`" requires restructuring `as_survey()` as follows:
+
+1. **Dispatch check first.** Insert the ids/strata check (both NULL?) at the
+   top of `as_survey()`, before any weight or probs resolution.
+
+2. **SRS path: forward raw quosures and early-return.**
+   ```r
+   if (is_srs_dispatch) {
+     cli::cli_warn(...)   # row 59 fallback warning
+     return(as_survey_srs(data, weights = weights, probs = probs, fpc = fpc))
+   }
+   ```
+   `weights`, `probs`, and `fpc` are forwarded as unresolved quosures. All
+   column resolution, probs→weights conversion, and `@variables` construction
+   happen inside `as_survey_srs()`. `as_survey()` returns immediately.
+
+3. **Taylor path: unchanged.** The existing weight/probs resolution and
+   no-weights warning code (row 7) remain in `as_survey()` for the Taylor path
+   (when ids or strata are non-NULL). Row 7 never fires on the SRS path because
+   `as_survey()` has already returned.
+
+4. **Warning order.** `surveycore_warning_as_survey_srs_fallback` (row 59)
+   fires inside `as_survey()` before the `as_survey_srs()` call.
+   `surveycore_warning_srs_no_weights` (row 60) fires inside `as_survey_srs()`
+   if no weights/probs were provided. When both fire, row 59 always precedes
+   row 60 — snapshot tests depend on this order.
 
 ### `as_survey()` argument forwarding
 
-When dispatching to `survey_srs`, `as_survey()` forwards:
+`as_survey()` forwards to `as_survey_srs()`:
 - `data` — unchanged
-- `weights` — forwarded as-is
-- `fpc` — forwarded as-is (FPC without ids/strata is valid for SRS)
+- `weights` — raw quosure, unresolved
+- `probs` — raw quosure, unresolved
+- `fpc` — raw quosure, unresolved
 
-The `probs`, `nest`, and `ids`/`strata` arguments are ignored (they are `NULL`
-by the dispatch condition).
-
-### `as_survey()` after dispatch
-
-Once the dispatch decision is made, `as_survey()` calls `as_survey_srs()` with
-the resolved arguments. No weight or FPC processing is duplicated — all
-validation and `@variables` construction happens inside `as_survey_srs()`.
+`nest`, `ids`, and `strata` are not forwarded (they are `NULL` by the dispatch
+condition). No conversion, validation, or `@variables` construction is done in
+`as_survey()` for the SRS path.
 
 ---
 
@@ -324,7 +396,9 @@ list(
 )
 ```
 
-Printed invisibly; `summary()` returns the list visibly.
+`summary()` returns the list visibly. The result auto-prints as a plain list
+when called interactively. (The `print` *method for `survey_srs`* — not
+`summary` — returns `invisible(x)`.)
 
 ---
 
@@ -334,10 +408,12 @@ New rows to add to `plans/error-messages.md`:
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
+| 55 | `as_survey_srs()` | Both `weights` and `probs` supplied | ERROR | `surveycore_error_weights_probs_both` | `"Supply {.arg weights} or {.arg probs}, not both."` |
 | 56 | `as_survey_srs()` | `fpc` column has non-positive values | ERROR | `surveycore_error_fpc_nonpositive` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} non-positive value(s). FPC values must be > 0."` |
 | 57 | `as_survey_srs()` | `fpc` column mixes values > 1 and ≤ 1 | ERROR | `surveycore_error_fpc_ambiguous` | `"{.arg fpc} column {.field {fpc_var}} mixes values > 1 (population sizes) and values ≤ 1 (sampling fractions). All FPC values must be consistently one type."` |
 | 58 | `as_survey_srs()` | `fpc` population size < sample size | ERROR | `surveycore_error_fpc_below_sample` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} value(s) smaller than the sample size ({n}). Population size cannot be smaller than the number of sampled units."` |
-| 59 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | WARN | `surveycore_warning_as_survey_srs_fallback` | `"No {.arg ids} or {.arg strata} specified. Creating a {.cls survey_srs} design. Use {.fn as_survey_srs} to create SRS designs without this warning."` |
+| 59 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | WARN | `surveycore_warning_as_survey_srs_fallback` | `c("!" = "No {.arg ids} or {.arg strata} specified.", "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).", "v" = "Use {.fn as_survey_srs} to create SRS designs without this warning.")` |
+| 60 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
 
 ---
 
@@ -345,7 +421,7 @@ New rows to add to `plans/error-messages.md`:
 
 ### Formula
 
-For a `survey_srs` design with `n` observations, weights `wᵢ`, and variable `yᵢ`:
+Let `n_used` be the effective sample size: the count of non-NA observations in the outcome variable when `na.rm = TRUE`, or `nrow(data)` when `na.rm = FALSE`. For a `survey_srs` design with outcome `yᵢ` and weights `wᵢ`:
 
 **Weighted mean:**
 
@@ -356,9 +432,9 @@ For a `survey_srs` design with `n` observations, weights `wᵢ`, and variable `y
 **Sampling fraction:**
 
 ```
-f = n / N     if fpc_type == "population"  (N = mean of fpc column)
-f = mean(fpc) if fpc_type == "fraction"
-f = 0         if fpc = NULL
+f = n_used / N  if fpc_type == "population"  (N = mean of fpc column)
+f = mean(fpc)   if fpc_type == "fraction"
+f = 0           if fpc = NULL
 ```
 
 For SRS, FPC values within a design are all equal (one value for the whole
@@ -368,35 +444,42 @@ sample). If they vary across rows, use the mean — and this is a misuse of
 **Sample variance (unweighted):**
 
 ```
-s² = Σ(yᵢ - ȳ)² / (n - 1)
+s² = Σ(yᵢ - ȳ)² / (n_used - 1)
 ```
 
 SRS weights are proportional to the same constant (N/n), so the unweighted and
 weighted sample variances are identical for a true SRS design. We use the
 unweighted formula here for clarity and numerical stability.
 
+> **Verification required before committing oracle tests:** `make_survey_data()`
+> generates lognormal weights (non-uniform). Before writing the oracle test
+> tolerances, run `survey::svymean()` against the formula on non-uniform-weight
+> data to confirm they agree at `1e-10`. If they diverge, document the
+> discrepancy and the correct tolerance in a comment at the top of the
+> `.srs_mean()` implementation in `R/06-variance-estimation.R`.
+
 **Variance of the mean:**
 
 ```
-var(ȳ) = (1 - f) × s² / n
+var(ȳ) = (1 - f) × s² / n_used
 SE(ȳ) = √var(ȳ)
 ```
 
 **Degrees of freedom:**
 
 ```
-df = n - 1
+df = n_used - 1
 ```
 
-CIs use a t-distribution with `df = n - 1` degrees of freedom.
+CIs use a t-distribution with `df = n_used - 1` degrees of freedom.
 
 **Total estimation:**
 
 ```
 T̂ = Σ(wᵢ yᵢ)
-var(T̂) = N² × (1 - f) × s² / n     if fpc_type == "population"
-var(T̂) = (Σwᵢ)² × (1 - f) × s² / n  if fpc_type == "fraction"
-var(T̂) = (Σwᵢ)² × s² / n            if fpc = NULL
+var(T̂) = N² × (1 - f) × s² / n_used     if fpc_type == "population"
+var(T̂) = (Σwᵢ)² × (1 - f) × s² / n_used  if fpc_type == "fraction"
+var(T̂) = (Σwᵢ)² × s² / n_used            if fpc = NULL
 SE(T̂)  = √var(T̂)
 ```
 
@@ -447,10 +530,15 @@ approximation path for non-probability samples).
 | Condition | Behavior |
 |---|---|
 | All `yᵢ` are NA and `na.rm = TRUE` | Return `mean = NA_real_`, `se = NA_real_`, `df = 0L` (no error — consistent with `survey_taylor`) |
-| All `yᵢ` are NA and `na.rm = FALSE` | Return `mean = NA_real_`, `se = NA_real_` (NA propagation) |
+| All `yᵢ` are NA and `na.rm = FALSE` | Return `mean = NA_real_`, `se = NA_real_`, `df = nrow(data) - 1` (NA propagation; full `n` used for `df`) |
+| Some `yᵢ` are NA and `na.rm = FALSE` | Return `mean = NA_real_`, `se = NA_real_`, `df = nrow(data) - 1` (standard R NA arithmetic propagates through `Σwᵢyᵢ`; all rows counted for `df`) |
 | `n = 1` after NA removal | Return `mean = y₁`, `se = NA_real_`, `df = 0L` — variance undefined for n=1 |
 | `fpc_type = "fraction"` with all fpc = 1 (census) | `f = 1`, `var(ȳ) = 0`, `se = 0` — correct |
 | Weights all equal (uniform SRS) | Formula produces same result as unweighted formula |
+
+**`df` rule:** `df` is always `n_used - 1` (per the definition above). When
+`na.rm = FALSE`, `n_used = nrow(data)`, so `df = nrow(data) - 1`. This rule
+applies to both `.srs_mean()` and `.srs_total()`.
 
 ---
 
@@ -468,6 +556,18 @@ will also correctly find `NULL`. No existing generic code needs to change.
 
 ## X. Test Requirements
 
+### `helper-test-data.R` — update `test_invariants()`
+
+Add a `survey_srs` branch to `test_invariants()` in `helper-test-data.R` that verifies the SRS-specific invariant:
+
+```r
+if (S7::S7_inherits(design, survey_srs)) {
+  expect_true("fpc_type" %in% names(design@variables))
+}
+```
+
+This branch fires in every constructor test block that calls `test_invariants(design)` on a `survey_srs` object, ensuring a constructor that omits `fpc_type` from `@variables` is caught immediately.
+
 ### `test-s7-classes.R` — new blocks for `survey_srs`
 
 | # | Description | Pattern |
@@ -476,7 +576,7 @@ will also correctly find `NULL`. No existing generic code needs to change.
 | 2 | Validator rejects non-numeric weight column | `class=` only |
 | 3 | Validator rejects non-positive values in weight column | `class=` only |
 | 4 | Validator rejects FPC column absent from `@data` | `class=` only |
-| 5 | All `@variables` keys present after construction | `expect_true(all(keys %in% names(...)))` |
+| 5 | All `@variables` keys present after construction | `keys <- c("weights", "fpc", "fpc_type", "probs_provided", "ids", "strata", "nest"); expect_true(all(keys %in% names(...)))` |
 | 6 | `@variables$ids` is always NULL | `expect_null` |
 | 7 | `@variables$strata` is always NULL | `expect_null` |
 
@@ -495,17 +595,20 @@ will also correctly find `NULL`. No existing generic code needs to change.
 | 7 | `@variables$fpc_type == "fraction"` when FPC ∈ (0, 1] |
 | 8 | `@variables$fpc_type` is NULL when no FPC |
 | 9 | `as_survey()` with no ids/strata creates `survey_srs` (fires `srs_fallback` warning) |
+| 9b | Creates `survey_srs` with `probs` — `@variables$probs_provided == TRUE` and weights stored as `1 / probs` |
 
 **Error paths** (dual pattern: `class=` + `expect_snapshot`):
 
 | # | Condition tested | Error class |
 |---|---|---|
-| 10 | Non-data-frame `data` | `surveycore_error_not_data_frame` |
+| 10 | Both `weights` and `probs` supplied | `surveycore_error_weights_probs_both` |
+| 11 | Non-data-frame `data` | `surveycore_error_not_data_frame` |
 | 11 | Zero-row `data` | `surveycore_error_empty_data` |
 | 12 | `weights` matches 0 columns | `surveycore_error_weights_not_found` |
 | 13 | `weights` matches > 1 column | `surveycore_error_weights_multiple` |
 | 14 | All weights zero | `surveycore_error_weights_all_zero` |
 | 15 | `fpc` matches 0 columns | `surveycore_error_fpc_not_found` |
+| 15b | `fpc` matches > 1 column | `surveycore_error_fpc_multiple` |
 | 16 | `fpc` column has NAs | `surveycore_error_fpc_na` |
 | 17 | `fpc` column has non-positive values | `surveycore_error_fpc_nonpositive` |
 | 18 | `fpc` column mixes >1 and ≤1 values | `surveycore_error_fpc_ambiguous` |
@@ -529,6 +632,18 @@ will also correctly find `NULL`. No existing generic code needs to change.
 | 4 | `print(srs_design, full = TRUE)` — all sections |
 | 5 | `print(srs_design)` — uniform weights (no FPC) |
 
+### `summary.survey_srs` tests (in `test-methods-print.R`)
+
+| # | Description | Pattern |
+|---|---|---|
+| 6 | `summary()` returns a list with all 7 keys present | `expect_identical(sort(names(s)), sort(c("class", "n", "weighted_n", "fpc_specified", "fpc_type", "n_var_labels", "n_val_labels")))` |
+| 7 | `summary()$n == nrow(x@data)` | `expect_identical` |
+| 8 | `summary()$fpc_specified` is `FALSE` when no FPC | `expect_false` |
+| 9 | `summary()$fpc_specified` is `TRUE` when FPC given | `expect_true` |
+| 10 | `summary()$fpc_type` is `NULL` when no FPC | `expect_null` |
+| 11 | `summary()$fpc_type == "population"` when FPC > 1 | `expect_identical` |
+| 12 | `summary()$fpc_type == "fraction"` when FPC ∈ (0, 1] | `expect_identical` |
+
 ### `test-variance-estimation.R` — oracle tests
 
 All oracle tests use `skip_if_not_installed("survey")`.
@@ -544,6 +659,21 @@ Reference: `survey::svydesign(ids = ~1, weights = ~w, fpc = ~fpc_col, data = df)
 | 5 | Mean | FPC as sampling fraction | point: `1e-10`, SE: `1e-8` |
 | 6 | Mean | NA removal (`na.rm = TRUE`) | point: `1e-10`, SE: `1e-8` |
 | 7 | Mean | Uniform weights (auto-assigned) | point: `1e-10`, SE: `1e-8` |
+| 8 | Total | FPC as sampling fraction | point: `1e-10`, SE: `1e-8` |
+| 9 | Total | NA removal (`na.rm = TRUE`) | point: `1e-10`, SE: `1e-8` |
+
+**`.srs_mean()` and `.srs_total()` edge cases** (non-oracle, inline data):
+
+`.srs_mean()`:
+- All `yᵢ` NA, `na.rm = TRUE` → `mean = NA_real_`, `se = NA_real_`, `df = 0L`
+- All `yᵢ` NA, `na.rm = FALSE` → `mean = NA_real_`, `se = NA_real_`, `df = nrow(data) - 1`
+- **Some `yᵢ` NA, `na.rm = FALSE`** → `mean = NA_real_`, `se = NA_real_`, `df = nrow(data) - 1` (NA propagates via standard R arithmetic)
+- `n = 1` after NA removal → `mean = y₁`, `se = NA_real_`, `df = 0L`
+
+`.srs_total()`:
+- All `yᵢ` NA, `na.rm = TRUE` → `total = NA_real_`, `se = NA_real_`, `df = 0L`
+- **Some `yᵢ` NA, `na.rm = FALSE`** → `total = NA_real_`, `se = NA_real_`, `df = nrow(data) - 1`
+- `n = 1` after NA removal → `total = w₁y₁`, `se = NA_real_`, `df = 0L`
 
 Use `make_survey_data(n = 500, seed = 42)` as the data source, then drop
 `ids`/`strata`/`fpc` columns when constructing the SRS oracle comparison.
@@ -556,8 +686,10 @@ Add to `plans/error-messages.md` coverage table:
 
 | Test file | Error rows covered |
 |---|---|
-| `test-constructors.R` | 1–26, **56–59** |
+| `test-constructors.R` | 1–26, **55–60** |
 | `test-s7-classes.R` | 31–35, 37–39 *(no new rows for SRS validator — uses existing classes)* |
+
+**Note:** Rows 7 and 60 share the same class name (`surveycore_warning_srs_no_weights`) but fire from different functions: row 7 fires from `as_survey()` on the Taylor path (no weights provided to a clustered design); row 60 fires from `as_survey_srs()` (no weights provided to an SRS constructor). The coverage table entry `55–60` for `test-constructors.R` covers row 60. Row 7 is covered by the existing `test-constructors.R` Taylor-path warning tests (rows 1–26).
 
 ---
 
@@ -567,9 +699,10 @@ This PR is complete when:
 
 - [ ] `devtools::check()` — 0 errors, 0 warnings, ≤ 2 notes
 - [ ] `devtools::test()` — all tests pass, no failures
-- [ ] Oracle tests pass for all 7 variance scenarios (tolerances in Section X)
-- [ ] `plans/error-messages.md` updated with rows 56–59
-- [ ] Coverage map in `plans/error-messages.md` updated (rows 56–59 → `test-constructors.R`)
+- [ ] Oracle tests pass for all 9 variance scenarios (tolerances in Section X)
+- [ ] Formula verified against `survey::svymean()` on non-uniform weights; result documented in a comment in `R/06-variance-estimation.R`
+- [ ] `plans/error-messages.md` updated with rows 55–60
+- [ ] Coverage map in `plans/error-messages.md` updated (rows 55–60 → `test-constructors.R`)
 - [ ] Print snapshots committed (`tests/testthat/_snaps/test-methods-print.md`)
 - [ ] Constructor error snapshots committed (`tests/testthat/_snaps/test-constructors.md`)
 - [ ] `R/04-methods-print.R` file header comment updated to include `survey_srs`
@@ -589,6 +722,6 @@ This PR is complete when:
 | `tests/testthat/test-constructors.R` | New blocks for `as_survey_srs()` |
 | `tests/testthat/test-methods-print.R` | New snapshots for `survey_srs` print |
 | `tests/testthat/test-variance-estimation.R` | New oracle blocks for SRS variance |
-| `tests/testthat/helper-test-data.R` | Update `make_all_designs()` to include `srs` |
+| `tests/testthat/helper-test-data.R` | (1) Update `make_all_designs()` to include `srs` via `as_survey_srs(df_s, weights = wt)` directly (not `as_survey()` — avoids spurious warnings); (2) Add `survey_srs` branch to `test_invariants()` that checks `"fpc_type" %in% names(design@variables)` |
 | `plans/error-messages.md` | Add rows 56–59; update coverage map |
 | `CLAUDE.md` | Update phase table; add spec reference |

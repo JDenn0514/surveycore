@@ -65,7 +65,9 @@ as_svydesign <- function(x) {
     # nocov end
   }
 
-  if (S7::S7_inherits(x, survey_taylor)) {
+  if (S7::S7_inherits(x, survey_srs)) {
+    .as_svydesign_srs(x)
+  } else if (S7::S7_inherits(x, survey_taylor)) {
     .as_svydesign_taylor(x)
   } else if (S7::S7_inherits(x, survey_replicate)) {
     .as_svydesign_replicate(x)
@@ -80,6 +82,18 @@ as_svydesign <- function(x) {
       class = "surveycore_error_not_survey_object"
     )
   }
+}
+
+
+# survey_srs → survey::svydesign (ids = ~1, no strata)
+#' @noRd
+.as_svydesign_srs <- function(x) {
+  survey::svydesign(
+    ids     = ~1,
+    weights = .to_formula(x@variables$weights),
+    fpc     = .to_formula(x@variables$fpc),
+    data    = x@data
+  )
 }
 
 

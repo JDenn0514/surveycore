@@ -77,7 +77,7 @@ df <- data.frame(
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
   y         = rnorm(20)
 )
-phase1 <- as_survey(df, weights = wt)
+phase1 <- as_survey(df, ids = id, weights = wt)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 
 # With Phase 2 stratification and inclusion probabilities
@@ -89,7 +89,7 @@ df2 <- data.frame(
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
   y           = rnorm(30)
 )
-phase1b <- as_survey(df2, weights = wt)
+phase1b <- as_survey(df2, ids = id, weights = wt)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,
@@ -107,9 +107,11 @@ Other constructors:
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
 \code{\link{as_survey_rep}()},
+\code{\link{as_survey_srs}()},
 \code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
 \code{\link{survey_replicate}()},
+\code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}
 }

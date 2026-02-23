@@ -38,6 +38,7 @@ reference:
       interface — bare column names, no formula syntax.
     contents:
       - as_survey
+      - as_survey_srs
       - as_survey_rep
       - as_survey_twophase
       - as_survey_calibrated
@@ -88,6 +89,7 @@ reference:
       Use `S7::S7_inherits(x, survey_taylor)` for class testing.
     contents:
       - survey_base
+      - survey_srs
       - survey_taylor
       - survey_replicate
       - survey_twophase

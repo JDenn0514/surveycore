@@ -1,12 +1,13 @@
 # tests/testthat/test-constructors.R
 #
-# Tests for R/03-constructors.R — as_survey(), as_survey_rep(),
+# Tests for R/03-constructors.R — as_survey_srs(), as_survey(), as_survey_rep(),
 # and as_survey_twophase().
 #
 # Coverage (per plans/error-messages.md):
 #   Rows 1–15: as_survey() errors and warnings
 #   Rows 1–4, 8–10, 16–18: as_survey_rep() errors and warnings
 #   Rows 19–25: as_survey_twophase() errors and warnings
+#   Rows 56–61: as_survey_srs() errors and warnings
 #
 # Test structure (per .claude/rules/testing-standards.md):
 #   1. Happy paths  (one block per design type)
@@ -17,22 +18,27 @@
 
 # ── Happy paths ───────────────────────────────────────────────────────────────
 
-test_that("as_survey() creates survey_taylor for simple random sample (no args)", {
+test_that("as_survey() dispatches to survey_srs for SRS (no ids or strata)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  d  <- suppressWarnings(as_survey(df))  # SRS warning expected
+  expect_warning(
+    d <- as_survey(df),
+    class = "surveycore_warning_as_survey_srs_fallback"
+  )
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_true(S7::S7_inherits(d, survey_srs))
   expect_identical(d@variables$ids, NULL)
   expect_identical(d@variables$strata, NULL)
-  expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_false(d@variables$probs_provided)
 })
 
-test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
+test_that("as_survey() dispatches to survey_srs for weighted SRS (weights only)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  d  <- as_survey(df, weights = wt)
+  expect_warning(
+    d <- as_survey(df, weights = wt),
+    class = "surveycore_warning_as_survey_srs_fallback"
+  )
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_true(S7::S7_inherits(d, survey_srs))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$ids, NULL)
   expect_false(d@variables$probs_provided)
@@ -114,13 +120,15 @@ test_that("as_survey() converts probs to weights (1/probs) stored as ..surveycor
 
 test_that("as_survey() uses weights when both probs and weights are consistent", {
   df <- data.frame(
-    y    = 1:5,
-    prob = rep(0.2, 5),
-    wt   = rep(5, 5)   # consistent: 1/0.2 = 5
+    y      = 1:5,
+    prob   = rep(0.2, 5),
+    wt     = rep(5, 5),   # consistent: 1/0.2 = 5
+    strata = c("A", "A", "B", "B", "B")
   )
+  # Use strata to stay on Taylor path (SRS path rejects both probs+weights)
   expect_message(
     {
-      d <- as_survey(df, probs = prob, weights = wt)
+      d <- as_survey(df, probs = prob, weights = wt, strata = strata)
     },
     class = "surveycore_inform_probs_weights_consistent"
   )
@@ -195,21 +203,26 @@ test_that("as_survey() warns when data has 1 row [row 4]", {
 test_that("as_survey() still returns a valid object after single-row warning [row 4]", {
   single_row <- data.frame(x = 42, w = 1)
   d <- suppressWarnings(as_survey(single_row, weights = w))
-  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_true(S7::S7_inherits(d, survey_srs))
 })
 
-# Row 5: probs and weights inconsistent
+# Row 5: probs and weights inconsistent (Taylor path — needs ids or strata)
 test_that("as_survey() errors when probs and weights are inconsistent [row 5]", {
   df <- data.frame(
-    y    = 1:5,
-    prob = rep(0.2, 5),   # implies weight = 5
-    wt   = rep(3, 5)      # inconsistent
+    y      = 1:5,
+    prob   = rep(0.2, 5),   # implies weight = 5
+    wt     = rep(3, 5),     # inconsistent
+    strata = c("A", "A", "B", "B", "B")
   )
+  # Use strata to stay on Taylor path (SRS path errors differently for both supplied)
   expect_error(
-    as_survey(df, probs = prob, weights = wt),
+    as_survey(df, probs = prob, weights = wt, strata = strata),
     class = "surveycore_error_probs_weights_conflict"
   )
-  expect_snapshot(error = TRUE, as_survey(df, probs = prob, weights = wt))
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, probs = prob, weights = wt, strata = strata)
+  )
 })
 
 # Row 7: SRS warning (no weights/probs/ids)
@@ -351,9 +364,9 @@ test_that("as_survey() handles weights with NA values mixed in (valid)", {
 test_that("as_survey() with tibble input (inherits data.frame)", {
   skip_if_not_installed("tibble")
   tb <- tibble::tibble(y = 1:10, wt = runif(10, 0.5, 2))
-  d  <- as_survey(tb, weights = wt)
+  d  <- suppressWarnings(as_survey(tb, weights = wt))
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_true(S7::S7_inherits(d, survey_srs))
 })
 
 test_that("as_survey() populates all expected @variables keys", {
@@ -795,7 +808,7 @@ test_that("as_survey_twophase() creates survey_twophase for minimal two-phase de
 
 test_that("as_survey_twophase() creates survey_twophase with method = 'approx'", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 2L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind, method = "approx")
   )
@@ -806,7 +819,7 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'approx'",
 test_that("as_survey_twophase() creates survey_twophase with method = 'simple' (no clusters)", {
   # No PSUs in Phase 1 -> no 'simple' warning
   df <- make_survey_data(n = 200, design = "twophase", seed = 3L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind, method = "simple")
   )
@@ -816,7 +829,7 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'simple' (
 
 test_that("as_survey_twophase() stores Phase 2 stratification in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 4L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, strata2 = strata, subset = phase2_ind)
   )
@@ -831,7 +844,7 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 5L)
   # Add a fake probs2 column
   df$subsamprate <- rep(0.4, nrow(df))
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, probs2 = subsamprate, subset = phase2_ind,
                        method = "full")
@@ -842,7 +855,7 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
 
 test_that("as_survey_twophase() stores Phase 2 cluster ids in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 6L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, ids2 = psu, subset = phase2_ind)
   )
@@ -852,7 +865,7 @@ test_that("as_survey_twophase() stores Phase 2 cluster ids in @variables$phase2"
 
 test_that("as_survey_twophase() stores Phase 2 fpc in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 7L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, fpc2 = fpc, subset = phase2_ind)
   )
@@ -876,7 +889,7 @@ test_that("as_survey_twophase() stores Phase 1 @variables in @variables$phase1",
 
 test_that("as_survey_twophase() inherits metadata from phase1", {
   df <- make_survey_data(n = 200, design = "twophase", with_labels = TRUE, seed = 9L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -890,7 +903,7 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
 
 test_that("as_survey_twophase() stores call in @call", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 10L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -900,7 +913,7 @@ test_that("as_survey_twophase() stores call in @call", {
 
 test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 11L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -911,7 +924,7 @@ test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
 
 test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not provided", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 12L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -939,7 +952,7 @@ test_that("as_survey_twophase() warns when method = 'simple' with clustered Phas
 
 test_that("as_survey_twophase() does NOT warn for method = 'simple' when Phase 1 has no PSUs [row 24]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 14L)
-  phase1 <- as_survey(df, weights = wt)  # no ids
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))  # no ids
   expect_no_warning(
     as_survey_twophase(phase1, subset = phase2_ind, method = "simple"),
     message = "surveycore_warning_simple_clustered"
@@ -949,7 +962,7 @@ test_that("as_survey_twophase() does NOT warn for method = 'simple' when Phase 1
 # Row 25: method = "full" with no Phase 2 design info
 test_that("as_survey_twophase() warns when method = 'full' with no Phase 2 info [row 25]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 15L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_warning(
     as_survey_twophase(phase1, subset = phase2_ind, method = "full"),
     class = "surveycore_warning_full_no_phase2"
@@ -959,7 +972,7 @@ test_that("as_survey_twophase() warns when method = 'full' with no Phase 2 info 
 test_that("as_survey_twophase() does NOT warn for method = 'full' when Phase 2 probs provided [row 25]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 16L)
   df$prob2 <- rep(0.4, nrow(df))
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_no_warning(
     as_survey_twophase(phase1, probs2 = prob2, subset = phase2_ind,
                        method = "full"),
@@ -979,7 +992,7 @@ test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 
 
 test_that("as_survey_twophase() snapshot: method = 'full' + no Phase 2 info warning", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 18L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_snapshot(
     as_survey_twophase(phase1, subset = phase2_ind, method = "full")
   )
@@ -1011,7 +1024,7 @@ test_that("as_survey_twophase() errors when phase1 is a survey_replicate [row 19
 # Row 20: subset not provided
 test_that("as_survey_twophase() errors when subset is not provided [row 20]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 21L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1),
     class = "surveycore_error_subset_missing"
@@ -1024,7 +1037,7 @@ test_that("as_survey_twophase() errors when subset selects multiple columns [row
   df <- make_survey_data(n = 200, design = "twophase", seed = 22L)
   # Add a second logical column with same prefix
   df$phase2_ind2 <- runif(nrow(df)) < 0.4
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, subset = starts_with("phase2_ind")),
     class = "surveycore_error_subset_multiple"
@@ -1040,7 +1053,7 @@ test_that("as_survey_twophase() errors when subset column is not logical [row 22
   df <- make_survey_data(n = 200, design = "twophase", seed = 23L)
   # Replace logical phase2_ind with integer
   df$phase2_int <- as.integer(df$phase2_ind)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, subset = phase2_int),
     class = "surveycore_error_subset_not_logical"
@@ -1055,7 +1068,7 @@ test_that("as_survey_twophase() errors when subset column is not logical [row 22
 test_that("as_survey_twophase() errors when subset is all TRUE [row 23]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 24L)
   df$all_true <- TRUE
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, subset = all_true),
     class = "surveycore_error_subset_degenerate"
@@ -1066,7 +1079,7 @@ test_that("as_survey_twophase() errors when subset is all TRUE [row 23]", {
 test_that("as_survey_twophase() errors when subset is all FALSE [row 23]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 25L)
   df$all_false <- FALSE
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, subset = all_false),
     class = "surveycore_error_subset_degenerate"
@@ -1079,7 +1092,7 @@ test_that("as_survey_twophase() warns when subset column has NA values [row 23b]
                                       design = "twophase", seed = 30L)
   df$phase2_na    <- df$phase2_ind
   df$phase2_na[1] <- NA  # introduce one NA
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   # Suppress secondary warnings (e.g. surveycore_warning_full_no_phase2) so only
   # the expected surveycore_warning_subset_na class is visible to expect_warning.
   got_na_warn <- FALSE
@@ -1101,7 +1114,7 @@ test_that("as_survey_twophase() degenerate check uses non-NA count in message [r
                                    design = "twophase", seed = 31L)
   df$all_true  <- TRUE
   df$all_true[1] <- NA
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     suppressWarnings(as_survey_twophase(phase1, subset = all_true)),
     class = "surveycore_error_subset_degenerate"
@@ -1116,7 +1129,7 @@ test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
   # Add a secondary sampling unit column for Phase 2
   df$psu2 <- rep(1:5, length.out = nrow(df))
   df$ssu2 <- rep(1:4, length.out = nrow(df))
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, ids2 = c(psu2, ssu2), subset = phase2_ind)
   )
@@ -1126,7 +1139,7 @@ test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
 
 test_that("as_survey_twophase() preserves all Phase 1 data columns in @data", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 27L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -1138,10 +1151,11 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
   df <- data.frame(
     id        = 1:20,
     wt        = rep(2, 20),
+    strata    = rep(c("A", "B"), 10),
     in_phase2 = c(TRUE, rep(FALSE, 19)),
     y         = rnorm(20)
   )
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   # 1 TRUE and 19 FALSE — not degenerate
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = in_phase2)
@@ -1153,7 +1167,7 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
 test_that("as_survey_twophase() with method = 'full' and strata2 does not warn [row 25]", {
   # Providing strata2 counts as Phase 2 design info
   df <- make_survey_data(n = 200, design = "twophase", seed = 28L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_no_warning(
     as_survey_twophase(phase1, strata2 = strata, subset = phase2_ind,
                        method = "full"),
@@ -1163,7 +1177,7 @@ test_that("as_survey_twophase() with method = 'full' and strata2 does not warn [
 
 test_that("as_survey_twophase() populates all expected @variables keys", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 29L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -1176,7 +1190,7 @@ test_that("as_survey_twophase() populates all expected @variables keys", {
 
 test_that("as_survey_twophase() accepts bare name for subset", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 30L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, subset = phase2_ind)
   )
@@ -1186,7 +1200,7 @@ test_that("as_survey_twophase() accepts bare name for subset", {
 
 test_that("as_survey_twophase() accepts bare name for strata2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 31L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, strata2 = strata, subset = phase2_ind)
   )
@@ -1196,7 +1210,7 @@ test_that("as_survey_twophase() accepts bare name for strata2", {
 
 test_that("as_survey_twophase() accepts bare name for ids2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 32L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- suppressWarnings(
     as_survey_twophase(phase1, ids2 = psu, subset = phase2_ind)
   )
@@ -1246,7 +1260,7 @@ test_that("as_survey_rep() errors when fpc expression selects multiple columns",
 
 test_that("as_survey_twophase() errors when subset matches 0 columns", {
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 90L)
-  phase1 <- as_survey(df, weights = wt)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1,
                        subset = tidyselect::starts_with("nonexistent_xyz")),
@@ -1258,7 +1272,7 @@ test_that("as_survey_twophase() errors when strata2 selects multiple columns", {
   df      <- make_survey_data(n = 100L, design = "twophase", seed = 91L)
   df$st2a <- df$strata
   df$st2b <- df$strata
-  phase1  <- as_survey(df, weights = wt)
+  phase1  <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, strata2 = starts_with("st2"), subset = phase2_ind),
     class = "surveycore_error_strata_multiple"
@@ -1269,7 +1283,7 @@ test_that("as_survey_twophase() errors when probs2 selects multiple columns", {
   df        <- make_survey_data(n = 100L, design = "twophase", seed = 92L)
   df$prob2a <- runif(nrow(df), 0.3, 0.8)
   df$prob2b <- runif(nrow(df), 0.3, 0.8)
-  phase1    <- as_survey(df, weights = wt)
+  phase1    <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, probs2 = starts_with("prob2"), subset = phase2_ind),
     class = "surveycore_error_weights_multiple"
@@ -1280,7 +1294,7 @@ test_that("as_survey_twophase() errors when fpc2 selects multiple columns", {
   df       <- make_survey_data(n = 100L, design = "twophase", seed = 93L)
   df$fpc2a <- rep(1000L, nrow(df))
   df$fpc2b <- rep(2000L, nrow(df))
-  phase1   <- as_survey(df, weights = wt)
+  phase1   <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   expect_error(
     as_survey_twophase(phase1, fpc2 = starts_with("fpc2"), subset = phase2_ind),
     class = "surveycore_error_fpc_multiple"
@@ -1734,4 +1748,275 @@ test_that("get_means() handles partial-NA weight column for survey_calibrated", 
     d <- as_survey_calibrated(df, weights = w)
   )
   expect_true(S7::S7_inherits(d, survey_calibrated))
+})
+
+
+# ── as_survey_srs() — happy paths ─────────────────────────────────────────────
+
+# Row 1: explicit weights → survey_srs class
+test_that("as_survey_srs() creates survey_srs with explicit weights", {
+  df <- data.frame(y = 1:10, wt = runif(10, 0.5, 2))
+  d  <- as_survey_srs(df, weights = wt)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_identical(d@variables$weights, "wt")
+  expect_identical(d@variables$ids,     NULL)
+  expect_identical(d@variables$strata,  NULL)
+  expect_false(d@variables$nest)
+  expect_false(d@variables$probs_provided)
+  expect_null(d@variables$fpc_type)
+})
+
+# Row 2: FPC as population sizes → fpc_type == "population"
+test_that("as_survey_srs() detects fpc_type = 'population' for FPC > 1", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10), N = rep(1000L, 10))
+  d  <- as_survey_srs(df, weights = wt, fpc = N)
+  test_invariants(d)
+  expect_identical(d@variables$fpc,      "N")
+  expect_identical(d@variables$fpc_type, "population")
+})
+
+# Row 3: FPC as sampling fractions → fpc_type == "fraction"
+test_that("as_survey_srs() detects fpc_type = 'fraction' for FPC in (0,1]", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10), f = rep(0.01, 10))
+  d  <- as_survey_srs(df, weights = wt, fpc = f)
+  test_invariants(d)
+  expect_identical(d@variables$fpc,      "f")
+  expect_identical(d@variables$fpc_type, "fraction")
+})
+
+# Row 4: no weights → uniform weights auto-assigned
+test_that("as_survey_srs() auto-assigns uniform weights when none provided", {
+  df <- data.frame(y = 1:5)
+  expect_warning(
+    d <- as_survey_srs(df),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  test_invariants(d)
+  wt_col <- d@data[[d@variables$weights]]
+  expect_true(all(wt_col == 1L))
+  expect_false(d@variables$probs_provided)
+})
+
+# Row 5: returns survey_srs class (not survey_taylor)
+test_that("as_survey_srs() returns survey_srs, not survey_taylor", {
+  df <- data.frame(y = 1:10, wt = runif(10, 1, 3))
+  d  <- as_survey_srs(df, weights = wt)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_false(S7::S7_inherits(d, survey_taylor))
+})
+
+# Row 6: @variables$fpc_type == "population" when FPC > 1
+test_that("as_survey_srs() stores fpc_type 'population' in @variables", {
+  df <- data.frame(y = 1:20, wt = rep(2, 20), N = rep(500L, 20))
+  d  <- as_survey_srs(df, weights = wt, fpc = N)
+  expect_identical(d@variables$fpc_type, "population")
+})
+
+# Row 7: @variables$fpc_type == "fraction" when FPC in (0,1]
+test_that("as_survey_srs() stores fpc_type 'fraction' in @variables", {
+  df <- data.frame(y = 1:20, wt = rep(2, 20), f = rep(0.04, 20))
+  d  <- as_survey_srs(df, weights = wt, fpc = f)
+  expect_identical(d@variables$fpc_type, "fraction")
+})
+
+# Row 8: @variables$fpc_type is NULL when no FPC
+test_that("as_survey_srs() stores fpc_type = NULL when no FPC provided", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  d  <- as_survey_srs(df, weights = wt)
+  expect_null(d@variables$fpc_type)
+  expect_null(d@variables$fpc)
+})
+
+# Row 9: as_survey() with no ids/strata creates survey_srs (fallback warning)
+test_that("as_survey() fallback to survey_srs fires surveycore_warning_as_survey_srs_fallback", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  expect_warning(
+    d <- as_survey(df, weights = wt),
+    class = "surveycore_warning_as_survey_srs_fallback"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_srs))
+})
+
+# Row 9b: probs supplied → @variables$probs_provided == TRUE, weights = 1/probs
+test_that("as_survey_srs() accepts probs and converts to weights", {
+  df <- data.frame(y = 1:5, p = c(0.1, 0.2, 0.1, 0.05, 0.1))
+  d  <- as_survey_srs(df, probs = p)
+  test_invariants(d)
+  expect_true(d@variables$probs_provided)
+  wt_col <- d@data[[d@variables$weights]]
+  expected_wt <- 1 / df$p
+  expect_equal(wt_col, expected_wt, tolerance = 1e-10)
+})
+
+
+# ── as_survey_srs() — error paths (rows 56–59 + existing shared rows) ─────────
+
+# Row 56: both weights and probs supplied (dual pattern)
+test_that("as_survey_srs() rejects both weights and probs supplied", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), p = rep(0.1, 5))
+  expect_error(
+    as_survey_srs(df, weights = wt, probs = p),
+    class = "surveycore_error_weights_probs_both"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt, probs = p)
+  )
+})
+
+# Shared row 1: not a data frame
+test_that("as_survey_srs() rejects non-data-frame data", {
+  expect_error(
+    as_survey_srs(list(y = 1:5)),
+    class = "surveycore_error_not_data_frame"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(list(y = 1:5))
+  )
+})
+
+# Shared row 2: empty data frame
+test_that("as_survey_srs() rejects empty data frame", {
+  df <- data.frame(y = numeric(0))
+  expect_error(
+    as_survey_srs(df),
+    class = "surveycore_error_empty_data"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df)
+  )
+})
+
+# Shared row 8: weights column not found (use tidyselect helper with 0 matches)
+test_that("as_survey_srs() rejects weights selector that matches no columns", {
+  df <- data.frame(y = 1:5)
+  expect_error(
+    as_survey_srs(df, weights = starts_with("zzz_nonexistent")),
+    class = "surveycore_error_weights_not_found"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = starts_with("zzz_nonexistent"))
+  )
+})
+
+# Shared row 9: weights column is non-positive (zero weight)
+test_that("as_survey_srs() rejects zero weight values", {
+  df <- data.frame(y = 1:5, wt = c(1, 0, 1, 1, 1))
+  expect_error(
+    as_survey_srs(df, weights = wt),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt)
+  )
+})
+
+# Row 57: FPC non-positive values (dual pattern)
+test_that("as_survey_srs() rejects non-positive FPC values", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), fpc_col = c(500, 0, 500, 500, 500))
+  expect_error(
+    as_survey_srs(df, weights = wt, fpc = fpc_col),
+    class = "surveycore_error_fpc_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt, fpc = fpc_col)
+  )
+})
+
+# Row 58: FPC ambiguous — mixes > 1 and ≤ 1 (dual pattern)
+test_that("as_survey_srs() rejects FPC that mixes >1 and ≤1 values", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), fpc_col = c(500, 0.5, 500, 500, 500))
+  expect_error(
+    as_survey_srs(df, weights = wt, fpc = fpc_col),
+    class = "surveycore_error_fpc_ambiguous"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt, fpc = fpc_col)
+  )
+})
+
+# Row 59: FPC population size below sample size (dual pattern)
+test_that("as_survey_srs() rejects FPC population size smaller than sample", {
+  # 10 rows, population size = 5 < n = 10
+  df <- data.frame(y = 1:10, wt = rep(1, 10), fpc_col = rep(5L, 10))
+  expect_error(
+    as_survey_srs(df, weights = wt, fpc = fpc_col),
+    class = "surveycore_error_fpc_below_sample"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt, fpc = fpc_col)
+  )
+})
+
+# Existing FPC NA check (shared row from error-messages.md)
+test_that("as_survey_srs() rejects FPC column with NA values", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5), fpc_col = c(500L, NA, 500L, 500L, 500L))
+  expect_error(
+    as_survey_srs(df, weights = wt, fpc = fpc_col),
+    class = "surveycore_error_fpc_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_srs(df, weights = wt, fpc = fpc_col)
+  )
+})
+
+
+# ── as_survey_srs() — warning paths ──────────────────────────────────────────
+
+# Row 61: no weights warning (result is still constructed correctly)
+test_that("as_survey_srs() fires srs_no_weights warning and still returns object", {
+  df <- data.frame(y = 1:10)
+  expect_warning(
+    d <- as_survey_srs(df),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
+})
+
+# Row 60: as_survey() fallback warning — both warnings fire in order when no weights
+test_that("as_survey() fallback fires srs_fallback then srs_no_weights warnings", {
+  df <- data.frame(y = 1:5)
+  # Both warnings fire: first fallback (row 60), then srs_no_weights (row 61)
+  warns <- list()
+  withCallingHandlers(
+    {
+      d <- as_survey(df)
+    },
+    warning = function(w) {
+      warns[[length(warns) + 1L]] <<- class(w)[[1L]]
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_identical(warns[[1L]], "surveycore_warning_as_survey_srs_fallback")
+  expect_identical(warns[[2L]], "surveycore_warning_srs_no_weights")
+})
+
+
+# ── as_survey_srs() — snapshot for fallback warning ──────────────────────────
+
+test_that("as_survey() fallback warning snapshot matches expected message", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5))
+  expect_snapshot(
+    as_survey(df, weights = wt)
+  )
+})
+
+test_that("as_survey_srs() no-weights warning snapshot matches expected message", {
+  df <- data.frame(y = 1:5)
+  expect_snapshot(
+    as_survey_srs(df)
+  )
 })

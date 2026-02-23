@@ -11,7 +11,7 @@
 test_that("update_design() updates weights on survey_taylor", {
   df    <- make_survey_data(n = 200L, seed = 1L)
   df$wt2 <- df$wt * 1.1
-  d     <- as_survey(df, weights = wt)
+  d     <- as_survey(df, weights = wt, strata = strata)
   d2    <- suppressMessages(update_design(d, weights = wt2))
   test_invariants(d2)
   expect_identical(d2@variables$weights, "wt2")
@@ -20,7 +20,7 @@ test_that("update_design() updates weights on survey_taylor", {
 test_that("update_design() updates strata on survey_taylor", {
   df     <- make_survey_data(n = 200L, seed = 2L)
   df$st2 <- df$strata
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressMessages(update_design(d, strata = st2))
   test_invariants(d2)
   expect_identical(d2@variables$strata, "st2")
@@ -49,7 +49,7 @@ test_that("update_design() updates ids on survey_taylor", {
 test_that("update_design() updates fpc on survey_taylor", {
   df      <- make_survey_data(n = 200L, seed = 5L)
   df$fpc2 <- df$fpc + 10L
-  d       <- as_survey(df, weights = wt, fpc = fpc)
+  d       <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2      <- suppressMessages(update_design(d, fpc = fpc2))
   test_invariants(d2)
   expect_identical(d2@variables$fpc, "fpc2")
@@ -90,7 +90,7 @@ test_that("update_design() updates repweights on survey_replicate", {
 test_that("update_design() emits inform message listing changed vars", {
   df     <- make_survey_data(n = 200L, seed = 20L)
   df$wt2 <- df$wt * 1.1
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   expect_message(
     update_design(d, weights = wt2),
     regexp = "Survey design updated"
@@ -100,7 +100,7 @@ test_that("update_design() emits inform message listing changed vars", {
 test_that("update_design() inform message names the changed variable", {
   df     <- make_survey_data(n = 200L, seed = 21L)
   df$wt2 <- df$wt * 1.1
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   expect_message(
     update_design(d, weights = wt2),
     regexp = "weights"
@@ -109,7 +109,7 @@ test_that("update_design() inform message names the changed variable", {
 
 test_that("update_design() emits no message when no args provided", {
   df <- make_survey_data(n = 200L, seed = 22L)
-  d  <- as_survey(df, weights = wt)
+  d  <- as_survey(df, weights = wt, strata = strata)
   expect_no_message(update_design(d))
 })
 
@@ -126,7 +126,7 @@ test_that("update_design() emits no message when all args are NULL", {
 
 test_that("update_design() validate=TRUE catches invalid weight column", {
   df        <- make_survey_data(n = 200L, seed = 30L)
-  d         <- as_survey(df, weights = wt)
+  d         <- as_survey(df, weights = wt, strata = strata)
   df$bad_wt <- -1  # all negative
   d@data    <- df
   expect_error(
@@ -137,7 +137,7 @@ test_that("update_design() validate=TRUE catches invalid weight column", {
 
 test_that("update_design() validate=FALSE skips structural validation", {
   df        <- make_survey_data(n = 200L, seed = 31L)
-  d         <- as_survey(df, weights = wt)
+  d         <- as_survey(df, weights = wt, strata = strata)
   df$bad_wt <- -1  # all negative
   d@data    <- df
   # No error even though weight column is invalid
@@ -149,7 +149,7 @@ test_that("update_design() validate=FALSE skips structural validation", {
 test_that("update_design() validate=TRUE result passes test_invariants()", {
   df     <- make_survey_data(n = 200L, seed = 32L)
   df$wt2 <- df$wt * 1.1
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressMessages(update_design(d, weights = wt2, validate = TRUE))
   test_invariants(d2)
 })
@@ -159,7 +159,7 @@ test_that("update_design() validate=TRUE result passes test_invariants()", {
 
 test_that("update_design() errors for survey_twophase with unsupported class", {
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 40L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
   expect_error(
     update_design(d2, weights = wt),
@@ -190,7 +190,7 @@ test_that("update_design() no-op (all NULL) returns object unchanged", {
 
 test_that("update_design() returns invisibly", {
   df <- make_survey_data(n = 200L, seed = 51L)
-  d  <- as_survey(df, weights = wt)
+  d  <- as_survey(df, weights = wt, strata = strata)
   result <- withVisible(update_design(d))
   expect_false(result$visible)
 })
@@ -198,7 +198,7 @@ test_that("update_design() returns invisibly", {
 test_that("update_design() supports tidy-select bare names", {
   df     <- make_survey_data(n = 200L, seed = 52L)
   df$wt2 <- df$wt * 1.1
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   d2     <- suppressMessages(update_design(d, weights = wt2))
   expect_identical(d2@variables$weights, "wt2")
 })
@@ -222,7 +222,7 @@ test_that("update_design() preserves unchanged design vars", {
 test_that("update_design() errors when strata arg selects multiple columns", {
   df     <- make_survey_data(n = 200L, seed = 60L)
   df$st2 <- df$strata
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   expect_error(
     update_design(d, strata = starts_with("st")),
     class = "surveycore_error_strata_multiple"
@@ -232,7 +232,7 @@ test_that("update_design() errors when strata arg selects multiple columns", {
 test_that("update_design() errors when weights arg selects multiple columns", {
   df     <- make_survey_data(n = 200L, seed = 61L)
   df$wt2 <- df$wt * 1.1
-  d      <- as_survey(df, weights = wt)
+  d      <- as_survey(df, weights = wt, strata = strata)
   expect_error(
     update_design(d, weights = starts_with("wt")),
     class = "surveycore_error_weights_multiple"
