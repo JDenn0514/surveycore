@@ -34,6 +34,21 @@ The Phase 0 stubs for `get_means()` and `get_totals()` in
 `R/06-variance-estimation.R` are **replaced** by full implementations in new
 files.
 
+### Supported Design Classes
+
+All six `get_*()` functions support these design classes:
+
+| Class | Variance method | Notes |
+|---|---|---|
+| `survey_taylor` | Taylor series linearization | Full design-based variance |
+| `survey_replicate` | Replicate weights formula | Full design-based variance |
+| `survey_srs` | Standard SRS: `s²/n × (1-f)` | Equal-probability samples; `f = 0` when FPC unknown |
+| `survey_calibrated` | Weighted SRS approximation | Conservative; see Section 2.7 |
+| `survey_twophase` | **Requires Phase 0.75** | All six functions throw `surveycore_error_unsupported_class` until the two-phase variance code is vendored in Phase 0.75 |
+
+`survey_srs` is the class returned by `as_survey(df)` with no design arguments.
+`survey_calibrated` is the class returned by `as_survey_calibrated(df, weights = w)`.
+
 ### Stub Migration (atomic)
 
 The stub removal and the new implementations ship in a **single PR**. That PR
@@ -141,9 +156,15 @@ Assembles a result tibble from a list of per-group estimate rows, builds the
 structured metadata object via `.build_meta()`, attaches it as
 `attr(result, ".meta")`, and applies the S3 class hierarchy.
 
-**`rows_list` contract:** Each element is a named list representing the
-estimate columns for one group combination. `.make_result_tibble()` binds
-them via `vctrs::vec_rbind()` and checks required keys before binding.
+**Accumulation pattern:** Each `get_*()` function accumulates results using
+**column-by-column vectors**, not a list of row-lists. In the per-group loop,
+each estimate is appended to a named vector (one vector per output column).
+After the loop, `.make_result_tibble()` receives these parallel vectors and
+assembles the tibble via `tibble::tibble()`. This approach uses only `tibble`
+(already in `Imports`) and eliminates any dependency on `vctrs` or `dplyr`
+for result assembly.
+
+`.make_result_tibble()` validates required keys before building the tibble.
 
 Required keys by function:
 
@@ -212,18 +233,21 @@ action**, before any estimation logic or tidy-select resolution.
   variance,
   conf_level,
   name_style,
-  valid_variance = c("se", "ci", "moe"),  # override for get_corr() to add "both"
+  valid_variance = c("se", "ci", "var", "cv", "moe"),
   call = rlang::caller_env()
 ) {
-  if (!is.null(variance) && !variance %in% valid_variance) {
-    cli::cli_abort(
-      c(
-        "x" = "{.arg variance} must be {.or {.val {valid_variance}}} or {.val NULL}.",
-        "i" = "Got {.val {variance}}."
-      ),
-      class = "surveycore_error_invalid_variance_arg",
-      call  = call
-    )
+  if (!is.null(variance)) {
+    bad_vals <- setdiff(variance, valid_variance)
+    if (length(bad_vals) > 0L) {
+      cli::cli_abort(
+        c(
+          "x" = "{.arg variance} values must be from {.or {.val {valid_variance}}}.",
+          "i" = "Unknown value{?s}: {.val {bad_vals}}."
+        ),
+        class = "surveycore_error_invalid_variance_arg",
+        call  = call
+      )
+    }
   }
   if (!is.numeric(conf_level) || length(conf_level) != 1L ||
       conf_level <= 0 || conf_level >= 1) {
@@ -253,8 +277,44 @@ action**, before any estimation logic or tidy-select resolution.
 This is the single canonical source for all three validation errors. Never
 duplicate these checks inside individual `get_*()` functions.
 
-`surveycore_error_invalid_conf_level` is a new error class introduced here;
-add it to `plans/error-messages.md` when implementing.
+`surveycore_error_invalid_conf_level` is defined in `plans/error-messages.md`
+(Phase 1 row).
+
+#### Meta-Key Constants
+
+To prevent the `meta_args` contract from being defined in multiple places,
+each function's required meta-keys are defined as named constants at the top
+of `R/09-analysis-helpers.R`:
+
+```r
+FREQS_SINGLE_META_KEYS <- c(
+  "mode", "variable", "variable_label", "question_preface", "value_labels"
+)
+FREQS_MULTI_META_KEYS <- c(
+  "mode", "variables", "variable_labels", "question_prefaces", "value_labels"
+)
+MEANS_META_KEYS <- c(
+  "variable", "variable_label", "question_preface", "value_labels"
+)
+TOTALS_META_KEYS <- c(
+  "variable", "variable_label", "question_preface", "value_labels"
+)
+CORR_META_KEYS <- c(
+  "variables", "variable_labels", "question_prefaces", "method"
+)
+QUANTILES_META_KEYS <- c(
+  "variable", "variable_label", "question_preface", "value_labels", "probs"
+)
+RATIOS_META_KEYS <- c(
+  "numerator", "numerator_label", "denominator", "denominator_label",
+  "question_prefaces"
+)
+```
+
+`.make_result_tibble()` accepts a `required_meta_keys` argument and validates
+with `stopifnot(all(required_meta_keys %in% names(meta_args)))`. Each
+`get_*()` function passes its constant. Adding a new meta field requires
+updating only the constant — not the validation logic.
 
 #### `.apply_name_style(result, name_style)`
 
@@ -308,7 +368,7 @@ meta.survey_result <- function(x, ...) attr(x, ".meta")
 
 | Field | Type | Description |
 |---|---|---|
-| `design_type` | `character(1)` | `"taylor"` \| `"replicate"` \| `"twophase"` |
+| `design_type` | `character(1)` | `"taylor"` \| `"replicate"` \| `"twophase"` \| `"srs"` \| `"calibrated"` |
 | `conf_level` | `numeric(1)` | Confidence level used; e.g. `0.95` |
 | `call` | `language` | Matched call |
 | `group_names` | `character` | Grouping variable names; `character(0)` if none |
@@ -472,17 +532,36 @@ columns in `get_corr()`.
 contain no cells where a variable name appears as a value. The argument is
 present on all six functions for API uniformity.
 
+#### NA values in grouping variables
+
+When a grouping variable (from `group =` or `@groups`) contains `NA` values,
+rows with `NA` in that grouping variable are **excluded from all groups**.
+They do not appear in the output and are not counted in `n`. This matches
+`dplyr::group_by()` semantics and is documented in the `@param group` entry
+for each function. Add one edge case test per function verifying this behavior.
+
 #### The `variance` argument
 
-Controls which uncertainty columns appear in the output tibble.
+Controls which uncertainty columns appear in the output tibble. `variance`
+accepts `NULL` or a **character vector** of one or more values from
+`c("se", "ci", "var", "cv", "moe")`. Multiple values are combined.
 
-| Value | Columns added |
-|---|---|
-| `NULL` | None — no uncertainty columns |
-| `"se"` | `se` |
-| `"ci"` | `ci_low`, `ci_high` |
-| `"moe"` | `moe` (margin of error = half CI width = `qt(...) * se`) |
-| `"both"` | `se`, `ci_low`, `ci_high` (get_corr() only) |
+| Value | Columns added | Notes |
+|---|---|---|
+| `NULL` | None | No uncertainty columns |
+| `"se"` | `se` | Standard error |
+| `"ci"` | `ci_low`, `ci_high` | Confidence interval bounds |
+| `"var"` | `var` | Variance (`se²`) |
+| `"cv"` | `cv` | Coefficient of variation (`se / estimate × 100`); fires `surveycore_warning_cv_undefined` when estimate = 0 or negative |
+| `"moe"` | `moe` | Margin of error = `qt((1 + conf_level)/2, df) × se` |
+
+When multiple values are supplied (e.g., `variance = c("se", "ci")`), all
+corresponding columns are added. Column order when multiple present:
+`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`.
+
+`"cv"` is accepted by all six functions. For functions where the estimate can
+be 0 or negative (e.g., `get_corr()` when `r ≈ 0`), `cv` is `NA` for those
+cells and `surveycore_warning_cv_undefined` fires.
 
 **Default by function:**
 
@@ -503,6 +582,8 @@ freedom:
 - `survey_taylor`: `degf = sum(PSUs per stratum) - number of strata`
 - `survey_replicate`: `degf = number of replicates - 1`
 - `survey_twophase`: `degf` from phase 1 design
+- `survey_srs`: `degf = n - 1`
+- `survey_calibrated`: `degf = n - 1` (conservative)
 
 The critical value is `qt((1 + conf_level) / 2, df = degf)`.
 
@@ -664,6 +745,14 @@ get_freqs(d, x = c(q1, q2), names_to = "item", values_to = "response",
   of factor ordering.
 - If the entire focal variable is NA and `na.rm = FALSE`, the function errors
   with `surveycore_error_all_na`.
+- With `na.rm = TRUE` and all values `NA`, the function returns a 0-row
+  tibble and fires `surveycore_warning_all_na_freqs`.
+- Throws `surveycore_error_unsupported_class` for `survey_twophase` until
+  Phase 0.75 is complete.
+- For `survey_srs`, proportions use the standard SRS variance formula.
+- For `survey_calibrated`, standard errors use the weighted SRS approximation
+  (conservative; SEs may be slightly overstated compared to proper calibration
+  variance, which requires Phase 2.5).
 
 ---
 
@@ -723,9 +812,14 @@ get_means(d, income, variance = "se", name_style = "broom")
 
 ### 4.3 Statistical Details
 
-- Uses `.taylor_mean()` / `.replicate_mean()` from `R/06-variance-estimation.R`.
-- Throws `surveycore_error_unsupported_class` for `survey_twophase` (Phase 1
-  scope; twophase estimation is Phase 3).
+- Uses `.taylor_mean()` / `.replicate_mean()` / `.srs_mean()` /
+  `.calibrated_mean()` from `R/06-variance-estimation.R` (dispatched by
+  design class).
+- `survey_srs`: uses standard SRS variance formula (`s²/n × (1-f)`; `f = 0`
+  when FPC unknown).
+- `survey_calibrated`: uses weighted SRS approximation (conservative).
+- `survey_twophase`: throws `surveycore_error_unsupported_class` until
+  Phase 0.75 is complete.
 - `x` must resolve to a single numeric column. Throws
   `surveycore_error_non_numeric_variable` if the column is not numeric.
 
@@ -770,7 +864,7 @@ no-variable case). Group columns appear first.
 
 **Output columns:**
 ```
-[group_names...]   total   [se]   [ci_low  ci_high]   [moe]   n
+[group_names...]   total   [se]   [var]   [cv]   [ci_low  ci_high]   [moe]   [n]
 ```
 
 - `total`: the weighted sum estimate.
@@ -806,12 +900,17 @@ get_totals(d, income, group = region, variance = "ci")
 
 ### 5.3 Statistical Details
 
-- Uses `.taylor_total()` / `.replicate_total()` from `R/06-variance-estimation.R`.
+- Uses `.taylor_total()` / `.replicate_total()` / `.srs_total()` /
+  `.calibrated_total()` from `R/06-variance-estimation.R` (dispatched by
+  design class).
 - No-variable mode: equivalent to `svytotal(~1, design)`.
 - Variable mode: equivalent to `svytotal(~x, design)`.
+- `survey_srs`: uses standard SRS variance formula.
+- `survey_calibrated`: uses weighted SRS approximation (conservative).
+- `survey_twophase`: throws `surveycore_error_unsupported_class` until
+  Phase 0.75 is complete.
 - Throws `surveycore_error_non_numeric_variable` if a non-numeric variable is
   supplied.
-- Throws `surveycore_error_unsupported_class` for `survey_twophase`.
 
 ---
 
@@ -826,7 +925,7 @@ get_corr(
   format       = c("long", "wide"),
   redundant    = FALSE,           # if FALSE: lower triangle only (no A-B and B-A)
   diagonal     = FALSE,           # if FALSE: exclude self-correlations
-  variance     = "ci",            # NULL | "se" | "ci" | "both"
+  variance     = "ci",            # NULL or character vector: "se","ci","var","cv","moe"
   conf_level   = 0.95,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -909,15 +1008,30 @@ get_corr(d, x = c(income, bmi, age), format = "wide")
 - **Phase 1 scope: Pearson correlation only.** Spearman and Kendall are
   deferred to Phase 2. The `method` argument is not exposed in Phase 1;
   `meta(result)$method` is always `"pearson"`.
-- SE computed via the Fisher Z transform delta method:
-  `se_r = sqrt(1 / (n - 3))` in the Z space, back-transformed.
-- CI: Fisher Z CI back-transformed to correlation scale.
-- p-value: two-tailed from `t = r * sqrt(n-2) / sqrt(1 - r^2)` with `df = n - 2`.
-- For `survey_taylor` and `survey_replicate`, variance uses the design's
-  linearization or replicate machinery rather than the simple 1/(n-3) formula.
+- **Implementation — variance-covariance approach:** Pearson correlation is
+  computed via the design-based variance-covariance matrix:
+  `r(X, Y) = Cov(X, Y) / sqrt(Var(X) × Var(Y))`. The SE of `r` is derived
+  using the delta method applied to the variance of `(Var(X), Cov(X,Y),
+  Var(Y))` from the survey design's linearization or replicate machinery.
+  This is consistent with srvyr's implementation via `survey::svyvar()`.
+- **Educational context only (SRS case):** For a simple random sample,
+  `se_r ≈ sqrt(1/(n-3))` via the Fisher Z transform, back-transformed to the
+  r scale. The actual implementation always uses the design-based
+  variance-covariance approach above, which reduces to this formula for
+  SRS-equivalent designs.
+- **CI:** Fisher Z CI back-transformed to the correlation scale.
+- **p-value:** Two-tailed from `t = r × sqrt(n-2) / sqrt(1 - r²)` with
+  `df = n - 2`.
+- **Numerical oracle:** `survey::svyvar()` is the oracle for both the
+  correlation estimate (`r`, tolerance `1e-10`) and the SE (tolerance `1e-8`)
+  for all design types — Taylor, replicate, and SRS. This replaces the
+  structural-only oracle previously specified for complex designs.
+- `survey_srs`: uses SRS variance formula for the covariance.
+- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_twophase`: throws `surveycore_error_unsupported_class` until
+  Phase 0.75 is complete.
 - Throws `surveycore_error_insufficient_variables` if fewer than 2 variables
   are supplied.
-- Throws `surveycore_error_unsupported_class` for `survey_twophase`.
 
 ---
 
@@ -983,7 +1097,10 @@ get_quantiles(d, income, probs = 0.5, group = region)
   helper `wtd.quantile()`.
 - CIs use the survey package's default interpolation-based method for quantile
   CIs (same method as `survey::svyquantile(ci = TRUE)`).
-- Throws `surveycore_error_unsupported_class` for `survey_twophase`.
+- `survey_srs`: uses SRS Woodruff variance.
+- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_twophase`: throws `surveycore_error_unsupported_class` until
+  Phase 0.75 is complete.
 
 ---
 
@@ -1039,7 +1156,10 @@ get_ratios(d, hospital_visits, person_years, group = region)
 - Equivalent to `survey::svyratio()`.
 - Variance via the delta method for ratios: linearized as
   `y_i - R * x_i` where R is the full-sample ratio estimate.
-- Throws `surveycore_error_unsupported_class` for `survey_twophase`.
+- `survey_srs`: uses delta method with SRS variance.
+- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_twophase`: throws `surveycore_error_unsupported_class` until
+  Phase 0.75 is complete.
 - Throws `surveycore_error_non_numeric_variable` if either variable is
   non-numeric.
 
@@ -1107,6 +1227,9 @@ The following classes are introduced in Phase 1:
 | `surveycore_warning_corr_non_numeric` | Non-numeric variable in `x` silently dropped | Warning |
 | `surveycore_warning_mixed_prefaces` | Variables passed to `get_freqs()` multi-var have different non-NULL question prefaces | Warning |
 | `surveycore_error_all_na` | Focal variable is all `NA` with `na.rm = FALSE` (applies to all numeric `get_*()` functions) | Error |
+| `surveycore_error_invalid_conf_level` | `conf_level` is not a single number strictly between 0 and 1 | Error |
+| `surveycore_warning_cv_undefined` | `variance = "cv"` requested but estimate is 0 or negative (applies to all `get_*()` functions) | Warning |
+| `surveycore_warning_all_na_freqs` | All values of focal variable are `NA` with `na.rm = TRUE` in `get_freqs()`; returns 0 rows | Warning |
 
 ---
 
@@ -1135,18 +1258,25 @@ strict tolerances. These tests live in `test-analysis-*.R` and always call
 | Standard errors | `1e-8` |
 | CI bounds | `1e-6` |
 
-**`get_corr()` two-tier oracle:**
+**`get_corr()` oracle — `survey::svyvar()`:**
 
-1. **Numerical tier** — simple SRS-equivalent synthetic design
-   (`make_survey_data()` with no PSU clustering, equal weights). `r` matches
-   `survey::svycor()` within `1e-10`; SE matches within `1e-8`. This works
-   because `survey::svycor()` is fully applicable to simple designs.
+`survey::svyvar()` is the oracle for all design types (Taylor, replicate,
+SRS). The correlation is derived as
+`r = vcov[1,2] / sqrt(vcov[1,1] * vcov[2,2])` where `vcov` is the
+design-based variance-covariance matrix from `survey::svyvar(~c(x,y), design)`.
+SE is derived from `vcov(svyvar_result)` via the delta method.
 
-2. **Structural tier** — NHANES Taylor design and a replicate design. Checks
-   that: `r` is in (-1, 1); CI is narrower than ±1; `p_value` is consistent
-   with `t = r * sqrt(n-2) / sqrt(1 - r^2)` within numerical precision. No
-   numerical oracle — `survey::svycor()` has limited support for complex
-   designs.
+```r
+sv        <- survey::svyvar(~ c(x, y), d_sv)
+r_oracle  <- sv[1, 2] / sqrt(sv[1, 1] * sv[2, 2])
+se_oracle <- # delta method from vcov(sv)
+
+expect_equal(get_corr(d_sc, c(x, y))$r,  r_oracle,  tolerance = 1e-10)
+expect_equal(get_corr(d_sc, c(x, y))$se, se_oracle, tolerance = 1e-8)
+```
+
+This oracle works for both Taylor and replicate designs, unlike
+`survey::svycor()` which has limited complex-design support.
 
 ### 11.2 Test Categories Per Function
 
@@ -1179,8 +1309,11 @@ test_result_invariants <- function(result, expected_class) {
   ))
   # 4. group_names is always character vector (never NULL)
   expect_type(m$group_names, "character")
-  # 5. value_labels always populated
+  # 5. value_labels always populated and is a non-empty named list
   expect_true("value_labels" %in% names(m))
+  expect_type(m$value_labels, "list")
+  expect_gt(length(m$value_labels), 0L)
+  expect_false(is.null(names(m$value_labels)))
 }
 ```
 
@@ -1206,6 +1339,14 @@ Every function's test file covers:
      domain estimation is not silently implemented as physical subsetting)
    Also verify: `n` counts in-domain non-NA rows only; `surveycore_warning_small_cell`
    fires when the domain produces cells with n < 5.
+
+   **3-way combination test** (domain + groups simultaneously): add one block
+   per function using both `surveytidy::filter()` (domain) AND
+   `surveytidy::group_by()` (groups) on the same design object. Verify:
+   - Result has correct number of rows (`n_groups × n_in_domain_levels`)
+   - `n` counts only in-domain, non-NA-group rows
+   - SE > SE from physical subsetting
+   - `skip_if_not_installed("surveytidy")`
 5. **`variance` argument** — each value (`NULL`, `"se"`, `"ci"`, `"moe"`);
    correct columns present/absent.
 6. **`label_values`** — correct label conversion when labels set on focal
@@ -1251,6 +1392,9 @@ Every function's test file covers:
 - All functions: same variable in both `@groups` and `group=` → silently
   deduplicated by `.resolve_groups()`; result has one column for that variable,
   not two; no warning fired
+- All functions: `NA` values in the grouping variable → those rows excluded
+  from all groups; they do not appear in the output and are not counted in
+  `n`; no warning fired (consistent with `dplyr::group_by()` semantics)
 
 ---
 
