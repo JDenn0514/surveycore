@@ -33,74 +33,35 @@
 <div id="surveycore-package-development" class="section level1">
 
 <p><strong>Part of the <a href="../survey-standards/ECOSYSTEM.html">surveyverse ecosystem</a> — see there for ecosystem vision, architecture, and how surveycore relates to other packages.</strong></p>
+<p>surveycore is the foundation package of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for <code>survey</code> and <code>srvyr</code>. It provides S7-based survey design objects, a metadata/label system, and vendored variance estimation code. License: GPL-3.</p>
 <hr><div class="section level2">
-<h2 id="project-overview">Project Overview<a class="anchor" aria-label="anchor" href="#project-overview"></a></h2>
-<p>surveycore is the foundation package of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for the <code>survey</code> and <code>srvyr</code> packages in R. It provides S7-based survey design objects, a metadata/label system, and vendored variance estimation code.</p>
-</div>
-<div class="section level2">
-<h2 id="package-information">Package Information<a class="anchor" aria-label="anchor" href="#package-information"></a></h2>
-<ul><li>
-<strong>Name:</strong> surveycore</li>
-<li>
-<strong>Purpose:</strong> Core survey infrastructure — S7 objects, metadata, variance estimation</li>
-<li>
-<strong>Target Audience:</strong> Anyone conducting survey research; tidyverse users</li>
-<li>
-<strong>Current Status:</strong> Phase 0 in progress (test helpers done; S7 classes next)</li>
-<li>
-<strong>License:</strong> GPL-3 (required by vendored survey package code)</li>
-</ul></div>
-<div class="section level2">
-<h2 id="vision--goals">Vision &amp; Goals<a class="anchor" aria-label="anchor" href="#vision--goals"></a></h2>
-<div class="section level3">
-<h3 id="project-vision">Project Vision<a class="anchor" aria-label="anchor" href="#project-vision"></a></h3>
-<p>Create a modern, tidyverse-compatible ecosystem for survey analysis in R that prioritizes: 1. <strong>Statistical Rigor</strong> - Maintain exact statistical accuracy with proper survey variance estimation 2. <strong>Tidy Integration</strong> - Seamless integration with dplyr/tidyr workflows 3. <strong>Label Preservation</strong> - Automatic preservation of haven-style metadata throughout analysis 4. <strong>User Experience</strong> - Intuitive API that makes complex survey analysis accessible</p>
-</div>
-<div class="section level3">
-<h3 id="core-principles">Core Principles<a class="anchor" aria-label="anchor" href="#core-principles"></a></h3>
-<ul><li>
-<strong>Accuracy First</strong>: Statistical correctness is non-negotiable; performance and convenience are secondary</li>
-<li>
-<strong>Modular Design</strong>: Separate packages with clear responsibilities, loadable together</li>
-<li>
-<strong>Independence</strong>: No runtime dependency on <code>survey</code> or <code>srvyr</code> packages (vendor variance code with attribution)</li>
-<li>
-<strong>Modern R</strong>: Built on S7 object system, requires R &gt;= 4.3.0</li>
-<li>
-<strong>Full Replacement</strong>: Designed as complete alternative to <code>survey</code> + <code>srvyr</code>, not a wrapper</li>
-</ul></div>
-</div>
-<div class="section level2">
-<h2 id="key-design-decisions-finalized">Key Design Decisions (Finalized)<a class="anchor" aria-label="anchor" href="#key-design-decisions-finalized"></a></h2>
-<ul><li>
-<strong>S7 class system</strong> — not S3 or R6. Use <code><a href="https://rconsortium.github.io/S7/reference/new_class.html" class="external-link">S7::new_class()</a></code> and <code><a href="https://rconsortium.github.io/S7/reference/method.html" class="external-link">S7::method()</a></code> syntax throughout.</li>
-<li>
-<strong>Tidy-select interface</strong> — bare names everywhere, no formula syntax (<code>ids = c(psu, ssu)</code> not <code>ids = ~psu+ssu</code>)</li>
-<li>
-<strong>Metadata in a separate property</strong> — not on data.frame columns</li>
-<li>
-<strong>Vendor variance code</strong> — copy from <code>survey</code> package with GPL attribution; no runtime dependency</li>
-<li>
-<strong>CLI errors</strong> — all errors/warnings use <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code> / <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_warn()</a></code>
-</li>
-<li>
-<strong>Three packages</strong> — surveycore, surveytidy, surveyverse (+ surveyweights)</li>
-</ul></div>
-<div class="section level2">
-<h2 id="s7-method-syntax">S7 Method Syntax<a class="anchor" aria-label="anchor" href="#s7-method-syntax"></a></h2>
-<p><strong>Important:</strong> S7 does NOT use S3 method registration syntax. Use S7’s own method dispatch:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># WRONG - S3 syntax does not work for S7</span></span>
-<span><span class="va">print.survey_taylor</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span> <span class="va">...</span> <span class="op">}</span></span>
-<span></span>
-<span><span class="co"># CORRECT - S7 method registration</span></span>
-<span><span class="fu">S7</span><span class="fu">::</span><span class="fu"><a href="https://rconsortium.github.io/S7/reference/method.html" class="external-link">method</a></span><span class="op">(</span><span class="va">print</span>, <span class="va">survey_taylor</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">n</span> <span class="op">=</span> <span class="fl">10</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span> <span class="va">...</span> <span class="op">}</span></span></code></pre></div>
-</div>
+<h2 id="current-phase-status">Current Phase Status<a class="anchor" aria-label="anchor" href="#current-phase-status"></a></h2>
+<table class="table"><colgroup><col width="31%"><col width="36%"><col width="31%"></colgroup><thead><tr class="header"><th>Phase</th>
+<th>Status</th>
+<th>Notes</th>
+</tr></thead><tbody><tr class="odd"><td>Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
+<td>✅ Complete</td>
+<td>Tagged v0.1.0</td>
+</tr><tr class="even"><td>Phase 0.5 — surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
+<td>✅ Complete</td>
+<td>Separate <code>surveytidy</code> package</td>
+</tr><tr class="odd"><td>Prereq PR 1 — <code>survey_srs</code> class + constructor + variance (<code>feature/survey-srs</code>)</td>
+<td>🟡 Spec written, implementation not yet started</td>
+<td>See <code>plans/survey-srs-formal-specification.md</code>
+</td>
+</tr><tr class="even"><td>Phase 0.75 — Two-phase variance vendoring (<code>feature/variance-twophase</code>)</td>
+<td>❌ Not started</td>
+<td>Required before Phase 1</td>
+</tr><tr class="odd"><td>Phase 1 — Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
+<td>❌ Not started</td>
+<td>Requires Prereq PR 1 + Phase 0.75</td>
+</tr></tbody></table><p><strong>Next action:</strong> Implement <code>feature/survey-srs</code> (spec at <code>plans/survey-srs-formal-specification.md</code>), then Phase 0.75.</p>
+<hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
-<ul><li>S7 classes: <code>survey_base</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>
+<ul><li>S7 classes: <code>survey_base</code>, <code>survey_srs</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_calibrated</code>
 </li>
-<li>GLM fit class: <code>survey_glm_fit</code> (the constructor function is <code>survey_glm()</code>)</li>
+<li>GLM fit class: <code>survey_glm_fit</code> (constructor function is <code>survey_glm()</code>)</li>
 <li>Result classes: <code>survey_mean</code>, <code>survey_total</code>, <code>survey_freq</code>, etc. (S3 built on tibble)</li>
 </ul></div>
 <div class="section level2">
@@ -116,152 +77,48 @@
 <li>Internal helpers: prefix with <code>.</code> (e.g., <code>.extract_haven_labels()</code>)</li>
 </ul></div>
 <div class="section level2">
-<h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
-<div class="section level3">
-<h3 id="file-organization-r">File Organization (R/)<a class="anchor" aria-label="anchor" href="#file-organization-r"></a></h3>
-<pre><code>R/
-├── 00-s7-classes.R          # All S7 class definitions
-├── 01-metadata-system.R     # Metadata functions
-├── 02-validators.R          # Validation helpers (internal)
-├── 03-constructors.R        # as_survey(), as_survey_rep(), as_survey_twophase()
-├── 04-methods-print.R       # Print and summary methods
-├── 05-methods-conversion.R  # as_svydesign(), from_svydesign(), as_tbl_svy(), from_tbl_svy()
-├── 06-variance-estimation.R # Vendored variance code from survey package (internal)
-├── 07-utils.R               # Helper utilities
-├── 08-update-design.R       # update_design()
-└── surveycore-package.R     # Package-level documentation</code></pre>
-</div>
-<div class="section level3">
-<h3 id="test-organization-teststestthat">Test Organization (tests/testthat/)<a class="anchor" aria-label="anchor" href="#test-organization-teststestthat"></a></h3>
-<pre><code>tests/testthat/
-├── helper-test-data.R       # Test data generators
-├── test-s7-classes.R
-├── test-metadata-system.R
-├── test-validators.R
-├── test-constructors.R
-├── test-tidy-select.R
-├── test-methods-print.R
-├── test-conversion.R
-├── test-variance-estimation.R
-└── test-update-design.R</code></pre>
-</div>
+<h2 id="key-implementation-rules">Key Implementation Rules<a class="anchor" aria-label="anchor" href="#key-implementation-rules"></a></h2>
+<p><strong>Design variables are sacred</strong> — never remove or silently rename design variables. Always warn when weight column is modified.</p>
+<p><strong>Metadata lifecycle</strong> — auto-delete metadata on <code>select()</code> removal; auto-rename on <code>rename()</code>; track transformation history in <code>@metadata@transformations</code>.</p>
+<p><strong>Domain estimation vs physical subsetting</strong> — <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> keeps all rows and marks domain membership; <code><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset()</a></code> removes rows and issues a strong warning.</p>
+<p><strong>Internal weight column name</strong> — use <code>"..surveycore_wt.."</code> when converting probs to weights internally (avoids collision with user columns named <code>.weights</code>).</p>
 </div>
 <div class="section level2">
-<h2 id="key-implementation-details">Key Implementation Details<a class="anchor" aria-label="anchor" href="#key-implementation-details"></a></h2>
-<div class="section level3">
-<h3 id="design-variables-are-sacred">Design Variables Are Sacred<a class="anchor" aria-label="anchor" href="#design-variables-are-sacred"></a></h3>
-<ul><li>Never remove design variables during operations</li>
-<li>Never silently allow renaming design variables</li>
-<li>Always warn when weight column is modified</li>
-</ul></div>
-<div class="section level3">
-<h3 id="metadata-lifecycle">Metadata Lifecycle<a class="anchor" aria-label="anchor" href="#metadata-lifecycle"></a></h3>
-<ul><li>Auto-delete metadata when variable is removed via <code>select()</code>
+<h2 id="workflow-requirements">Workflow Requirements<a class="anchor" aria-label="anchor" href="#workflow-requirements"></a></h2>
+<ul><li>Every non-trivial change lives on a feature branch — never commit implementation code to <code>main</code>
 </li>
-<li>Auto-rename metadata when variable is renamed via <code>rename()</code>
+<li>Branch naming: <code>feature/</code>, <code>fix/</code>, <code>test/</code>, <code>docs/</code>, <code>chore/</code>
 </li>
-<li>Track transformation history in <code>@metadata@transformations</code>
+<li>All commits use Conventional Commits format: <code>feat(scope): description</code>
 </li>
-</ul></div>
-<div class="section level3">
-<h3 id="domain-estimation-vs-physical-subsetting">Domain Estimation vs Physical Subsetting<a class="anchor" aria-label="anchor" href="#domain-estimation-vs-physical-subsetting"></a></h3>
-<ul><li>
-<code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> → domain estimation (keeps all rows, marks domain membership)</li>
-<li>
-<code><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset()</a></code> → physical subsetting (removes rows, issues strong warning)</li>
-</ul></div>
-<div class="section level3">
-<h3 id="internal-weight-column-name">Internal Weight Column Name<a class="anchor" aria-label="anchor" href="#internal-weight-column-name"></a></h3>
-<p>When converting probs to weights internally, use <code>"..surveycore_wt.."</code> to avoid colliding with user columns named <code>.weights</code>.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="before-starting-any-implementation">Before Starting Any Implementation<a class="anchor" aria-label="anchor" href="#before-starting-any-implementation"></a></h2>
-<p><strong>Read these files first — in this order — before writing any code:</strong></p>
-<p><strong>Shared standards (all surveyverse packages follow these):</strong> 1. <code>../survey-standards/.claude/rules/code-style.md</code> — indentation, S7 method syntax, error conventions, function design 2. <code>../survey-standards/.claude/rules/testing-standards.md</code> — test structure, coverage requirements, assertion patterns 3. <code>../survey-standards/.claude/rules/r-package-conventions.md</code> — roxygen2, NAMESPACE, exports, R CMD check hygiene 4. <code>../survey-standards/.claude/rules/github-strategy.md</code> — branching model, commit format, PR workflow 5. <code>../survey-standards/.claude/rules/changelog-workflow.md</code> — changelog entries (required before every PR) and decisions log (required after plan mode)</p>
-<p><strong>Package-specific (surveycore only):</strong> - <code>.claude/rules/</code> — any package-specific rules or extensions</p>
-<p><strong>Then read the planning documents:</strong></p>
-<ol start="5" style="list-style-type: decimal"><li>
-<code>plans/surveycore-phase0-formal-specification.md</code> — authoritative for WHAT to build and how it behaves</li>
-<li>
-<code>plans/phase-0-implementation-plan-v2.md</code> — authoritative for HOW to organize code and build order</li>
-<li>
-<code>plans/error-messages.md</code> — canonical table of all error/warning classes and CLI message templates</li>
-</ol><p><strong>Workflow requirements (non-negotiable):</strong></p>
-<ul><li>Every non-trivial change lives on a feature branch — never commit implementation code directly to <code>main</code>
-</li>
-<li>Branch naming: <code>feature/</code>, <code>fix/</code>, <code>test/</code>, <code>docs/</code>, <code>chore/</code> (see github-strategy.md Section 4)</li>
-<li>All commits use Conventional Commits format: <code>feat(scope): description</code> (see github-strategy.md Section 6)</li>
-<li>One PR per test file granularity (see github-strategy.md Section 5 for the full component-to-PR map)</li>
-<li>Run <code>devtools::document()</code> before committing any file that changes roxygen2 content</li>
+<li>Run <code>devtools::document()</code> before committing any file with roxygen2 changes</li>
 <li>Run <code>devtools::check()</code> before opening a PR</li>
-</ul><p><strong>Phase 0 build order</strong> (from implementation plan Component sequence):</p>
-<ol style="list-style-type: decimal"><li>
-<code>feature/test-helpers</code> — <code>tests/testthat/helper-test-data.R</code> ✅ DONE</li>
-<li>
-<code>feature/s7-classes</code> — <code>R/00-s7-classes.R</code> ✅ DONE</li>
-<li>
-<code>feature/metadata-system</code> — <code>R/01-metadata-system.R</code> (extractors + setters) ✅ DONE</li>
-<li>
-<code>feature/validators</code> — <code>R/02-validators.R</code> ✅ DONE</li>
-<li>
-<code>feature/as-survey</code> — <code>R/03-constructors.R</code> (as_survey() only) ✅ DONE</li>
-<li>
-<code>feature/as-survey-rep</code> — <code>R/03-constructors.R</code> (as_survey_rep()) ✅ DONE</li>
-<li>
-<code>feature/as-survey-twophase</code> — <code>R/03-constructors.R</code> (as_survey_twophase()) ✅ DONE</li>
-<li>
-<code>feature/update-design</code> — <code>R/08-update-design.R</code> ✅ DONE</li>
-<li>
-<code>feature/print-methods</code> — <code>R/04-methods-print.R</code>
-</li>
-<li>
-<code>feature/utils</code> — <code>R/07-utils.R</code>
-</li>
-<li>
-<code>feature/conversion-to-survey</code> — <code>R/05-methods-conversion.R</code> (to svydesign/tbl_svy)</li>
-<li>
-<code>feature/conversion-from-survey</code> — <code>R/05-methods-conversion.R</code> (from svydesign/tbl_svy)</li>
-<li>
-<code>feature/variance-taylor</code> — <code>R/06-variance-estimation.R</code> (Taylor series)</li>
-<li>
-<code>feature/variance-replicate</code> — <code>R/06-variance-estimation.R</code> (replicate weights)</li>
-</ol><hr></div>
+</ul></div>
 <div class="section level2">
 <h2 id="r-cmd-check-gotchas">R CMD Check Gotchas<a class="anchor" aria-label="anchor" href="#r-cmd-check-gotchas"></a></h2>
-<div class="section level3">
-<h3 id="examples-must-load-imports-packages-explicitly">Examples must load Imports packages explicitly<a class="anchor" aria-label="anchor" href="#examples-must-load-imports-packages-explicitly"></a></h3>
-<p>R CMD check runs examples in a fresh session with only <code><a href="https://github.com/JDenn0514/surveycore" class="external-link">library(surveycore)</a></code> loaded. surveycore’s own exported functions are available, but functions from packages in <strong>Imports</strong> (cli, rlang, S7, etc.) are <strong>not</strong> on the search path unless explicitly loaded. If an example calls a bare function from an Imports package, add a <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> call at the top of the block:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">#' @examples</span></span>
-<span><span class="co">#' library(S7)           # if example calls S7 functions directly</span></span>
-<span><span class="co">#' d &lt;- as_survey(df, weights = wt)</span></span></code></pre></div>
-<p>In practice, surveycore examples only call its own exported API (<code><a href="reference/as_survey.html">as_survey()</a></code>, <code><a href="reference/survey_data.html">survey_data()</a></code>, etc.), so this rarely bites — but keep it in mind when writing new examples.</p>
+<p><strong>Examples must load Imports packages explicitly.</strong> R CMD check runs examples in a fresh session with only <code><a href="https://github.com/JDenn0514/surveycore" class="external-link">library(surveycore)</a></code> loaded. If an example calls a bare function from an Imports package, add <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library(pkg)</a></code> at the top of the block. In practice surveycore examples only call its own exported API, so this rarely bites — but keep it in mind.</p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="working-with-this-codebase">Working With This Codebase<a class="anchor" aria-label="anchor" href="#working-with-this-codebase"></a></h2>
-<ol style="list-style-type: decimal"><li>
-<strong>Follow established patterns</strong> — consistency across the codebase matters</li>
-<li>
-<strong>Provide complete code blocks</strong> — ready to copy and use</li>
-<li>
-<strong>Include tests</strong> — always provide corresponding tests for new functions</li>
-<li>
-<strong>Update documentation</strong> — include roxygen2 comments with all code</li>
-<li>
-<strong>Explain design decisions</strong> — briefly note the “why” behind choices</li>
-<li>
-<strong>Consider edge cases</strong> — NA handling, empty groups, single PSU strata</li>
-<li>
-<strong>Keep it simple</strong> — prefer clear over clever code</li>
-</ol></div>
 <div class="section level2">
 <h2 id="reference-documents">Reference Documents<a class="anchor" aria-label="anchor" href="#reference-documents"></a></h2>
-<p>All planning documents are in <code>plans/</code>: - <code>surveyverse-roadmap.md</code> — ecosystem-level roadmap and architecture - <code>surveycore-phase0-formal-specification.md</code> — authoritative spec for Phase 0 behavior - <code>phase-0-implementation-plan-v2.md</code> — step-by-step build instructions for Phase 0 - <code>GUIDE-using-phase0-docs.md</code> — how to use the Phase 0 documents together - <code>error-messages.md</code> — canonical error/warning class names and CLI message templates</p>
-<p>All finalized decisions are in <code>.claude/rules/</code>: - <code>code-style.md</code> — R style, S7 patterns, error conventions, function design - <code>testing-standards.md</code> — test structure, coverage, assertion patterns, test data - <code>r-package-conventions.md</code> — roxygen2, NAMESPACE, exports, R CMD check hygiene - <code>github-strategy.md</code> — branching, commits, PRs, CI/CD, release process</p>
-<p><strong>The formal specification is authoritative for behavior.</strong> <strong>The implementation plan is authoritative for file organization.</strong> <strong>The rules files are authoritative for all style and workflow decisions.</strong></p>
-</div>
+<ul><li>
+<code>plans/error-messages.md</code> — canonical error/warning class names and CLI message templates</li>
+<li>
+<code>plans/phase-1-formal-specification.md</code> — authoritative Phase 1 spec (analysis functions)</li>
+<li>
+<code>plans/phase-1-implementation-plan.md</code> — Phase 1 build order and PR sequence</li>
+<li>
+<code>plans/claude-decisions-phase-1.md</code> — pre-implementation review decisions for Phase 1</li>
+<li>
+<code>plans/survey-srs-formal-specification.md</code> — authoritative spec for <code>survey_srs</code> class + <code>as_survey_srs()</code> + SRS variance</li>
+<li>
+<code>plans/phase-0.75-twophase-variance.md</code> — Phase 0.75 implementation plan (two-phase variance)</li>
+<li>
+<code>plans/archive/</code> — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context)</li>
+<li>
+<code>.claude/rules/</code> — code style, testing standards, R package conventions, GitHub strategy</li>
+<li>
+<code>.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md</code> — Phase 0 implementation details (archived)</li>
+</ul></div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
