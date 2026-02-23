@@ -46,7 +46,7 @@
 <td>✅ Complete</td>
 <td>Separate <code>surveytidy</code> package</td>
 </tr><tr class="odd"><td>Prereq PR 1 — <code>survey_srs</code> class + constructor + variance (<code>feature/survey-srs</code>)</td>
-<td>🟡 Spec written, implementation not yet started</td>
+<td>✅ Complete</td>
 <td>See <code>plans/survey-srs-formal-specification.md</code>
 </td>
 </tr><tr class="even"><td>Phase 0.75 — Two-phase variance vendoring (<code>feature/variance-twophase</code>)</td>
@@ -54,8 +54,8 @@
 <td>Required before Phase 1</td>
 </tr><tr class="odd"><td>Phase 1 — Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
 <td>❌ Not started</td>
-<td>Requires Prereq PR 1 + Phase 0.75</td>
-</tr></tbody></table><p><strong>Next action:</strong> Implement <code>feature/survey-srs</code> (spec at <code>plans/survey-srs-formal-specification.md</code>), then Phase 0.75.</p>
+<td>Requires Phase 0.75</td>
+</tr></tbody></table><p><strong>Next action:</strong> Implement Phase 0.75 (<code>feature/variance-twophase</code>, spec at <code>plans/phase-0.75-twophase-variance.md</code>).</p>
 <hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
@@ -109,7 +109,7 @@
 <li>
 <code>plans/claude-decisions-phase-1.md</code> — pre-implementation review decisions for Phase 1</li>
 <li>
-<code>plans/survey-srs-formal-specification.md</code> — authoritative spec for <code>survey_srs</code> class + <code>as_survey_srs()</code> + SRS variance</li>
+<code>plans/survey-srs-formal-specification.md</code> — authoritative spec for <code>survey_srs</code> class + <code><a href="reference/as_survey_srs.html">as_survey_srs()</a></code> + SRS variance</li>
 <li>
 <code>plans/phase-0.75-twophase-variance.md</code> — Phase 0.75 implementation plan (two-phase variance)</li>
 <li>

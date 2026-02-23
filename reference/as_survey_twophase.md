@@ -99,9 +99,11 @@ Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md),
 [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+[`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
+[`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
 
@@ -115,7 +117,7 @@ df <- data.frame(
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
   y         = rnorm(20)
 )
-phase1 <- as_survey(df, weights = wt)
+phase1 <- as_survey(df, ids = id, weights = wt)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 #> Warning: ! No Phase 2 design information provided with `method = "full"`. Phase 2
 #>   selection treated as simple random subsampling within Phase 1 strata.
@@ -129,7 +131,7 @@ df2 <- data.frame(
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
   y           = rnorm(30)
 )
-phase1b <- as_survey(df2, weights = wt)
+phase1b <- as_survey(df2, ids = id, weights = wt)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,

@@ -7,6 +7,8 @@ interface — bare column names, no formula syntax.
 
 - [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
   : Create a Taylor Series Linearization Survey Design
+- [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+  : Create a Simple Random Sample Survey Design
 - [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
   : Create a Replicate Weights Survey Design
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
@@ -84,6 +86,8 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
 
 - [`survey_base()`](https://jdenn0514.github.io/surveycore/reference/survey_base.md)
   : Abstract Base Survey Design Class
+- [`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md)
+  : Simple Random Sample Survey Design
 - [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
   : Taylor Series Linearization Survey Design
 - [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)

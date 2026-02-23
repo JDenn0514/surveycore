@@ -1,12 +1,14 @@
 # Abstract Base Survey Design Class
 
-All survey design objects (`survey_taylor`, `survey_replicate`,
-`survey_twophase`) inherit from `survey_base`. This class is abstract
-and cannot be instantiated directly — use
+All survey design objects (`survey_srs`, `survey_taylor`,
+`survey_replicate`, `survey_twophase`, `survey_calibrated`) inherit from
+`survey_base`. This class is abstract and cannot be instantiated
+directly — use
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+[`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
 or
-[`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
 instead.
 
 ## Usage

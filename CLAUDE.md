@@ -14,16 +14,16 @@ vendored variance estimation code. License: GPL-3.
 
 ## Current Phase Status
 
-| Phase                                                                                                            | Status                                          | Notes                                          |
-|------------------------------------------------------------------------------------------------------------------|-------------------------------------------------|------------------------------------------------|
-| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete                                     | Tagged v0.1.0                                  |
-| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete                                     | Separate `surveytidy` package                  |
-| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | 🟡 Spec written, implementation not yet started | See `plans/survey-srs-formal-specification.md` |
-| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ❌ Not started                                  | Required before Phase 1                        |
-| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ❌ Not started                                  | Requires Prereq PR 1 + Phase 0.75              |
+| Phase                                                                                                            | Status         | Notes                                          |
+|------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------|
+| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete    | Tagged v0.1.0                                  |
+| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete    | Separate `surveytidy` package                  |
+| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | ✅ Complete    | See `plans/survey-srs-formal-specification.md` |
+| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ❌ Not started | Required before Phase 1                        |
+| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ❌ Not started | Requires Phase 0.75                            |
 
-**Next action:** Implement `feature/survey-srs` (spec at
-`plans/survey-srs-formal-specification.md`), then Phase 0.75.
+**Next action:** Implement Phase 0.75 (`feature/variance-twophase`, spec
+at `plans/phase-0.75-twophase-variance.md`).
 
 ------------------------------------------------------------------------
 
@@ -112,7 +112,9 @@ so this rarely bites — but keep it in mind.
 - `plans/claude-decisions-phase-1.md` — pre-implementation review
   decisions for Phase 1
 - `plans/survey-srs-formal-specification.md` — authoritative spec for
-  `survey_srs` class + `as_survey_srs()` + SRS variance
+  `survey_srs` class +
+  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) +
+  SRS variance
 - `plans/phase-0.75-twophase-variance.md` — Phase 0.75 implementation
   plan (two-phase variance)
 - `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl
