@@ -15,7 +15,7 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 | Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | Tagged v0.1.0 |
 | Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
 | Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`) | ✅ Complete | See `plans/survey-srs-formal-specification.md` |
-| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`) | ❌ Not started | Required before Phase 1 |
+| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`) | 🚧 In progress | Required before Phase 1 |
 | Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ❌ Not started | Requires Phase 0.75 |
 
 **Next action:** Implement Phase 0.75 (`feature/variance-twophase`, spec at `plans/phase-0.75-twophase-variance.md`).
