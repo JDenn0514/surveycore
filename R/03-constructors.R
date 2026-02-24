@@ -690,7 +690,7 @@ as_survey_rep <- function(
       JKn                     = (n_rep - 1L) / n_rep,
       # BRR variance formula: (1/R) * sum((theta_r - theta)^2). The survey
       # package hardcodes this same formula internally (scale= is ignored for
-      # BRR). Oracle test in test-variance-estimation.R verifies agreement.
+      # BRR). Oracle test in test-variance-replicate.R verifies agreement.
       BRR                     = 1 / n_rep,
       Fay                     = 1 / n_rep,
       bootstrap               = 1 / n_rep,

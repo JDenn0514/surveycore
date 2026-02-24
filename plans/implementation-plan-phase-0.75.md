@@ -16,9 +16,24 @@ a constructor tightening (precondition for the engine's NA invariant), and the e
 
 ---
 
+## Departure from Spec Q8
+
+The spec Decisions Summary (`phase-0.75-formal-specification.md` Q8) specifies a **single PR**
+for Phase 0.75. This plan uses **three PRs** instead. The departure is intentional:
+
+- Each PR passes `devtools::check()` independently, giving a green CI checkpoint after each step.
+- Smaller diffs reduce reviewer cognitive load and make bisecting regressions easier.
+- The file-structure refactor (PR 1) and constructor tightening (PR 2) are preparatory; bundling
+  them with the engine (PR 3) would produce a giant diff that mixes unrelated concerns.
+
+The three-PR structure is strictly additive — no spec behavior is omitted or deferred. All
+quality gates from spec Section 11 are achieved by the time PR 3 merges.
+
+---
+
 ## PR Map
 
-- [ ] PR 1: `feature/variance-file-split` — Split `R/06-variance-estimation.R` into four
+- [x] PR 1: `feature/variance-file-split` — Split `R/06-variance-estimation.R` into four
   engine-specific files and split the corresponding test file
 - [ ] PR 2: `feature/twophase-constructor-na` — Change Warning 23b to a hard error
   (`surveycore_error_subset_na`) and remove Warning 25 from `as_survey_twophase()`; rename
@@ -89,6 +104,8 @@ errors).
 ### Acceptance criteria
 
 - [ ] `devtools::check()` 0 errors, 0 warnings, ≤2 pre-approved notes
+- [ ] `devtools::document()` run; NAMESPACE and man/ produce no diff
+- [ ] Total package coverage ≥ 98% (should be identical to pre-PR baseline)
 - [ ] `R/06-variance-estimation.R` deleted; `tests/testthat/test-variance-estimation.R` deleted
 - [ ] All test counts from the original file pass in the new files
 - [ ] `grep -r "variance-estimation" R/ tests/` returns no matches
@@ -105,11 +122,22 @@ errors).
 | Action | File | Change |
 |--------|------|--------|
 | Modify | `R/03-constructors.R` | Warning 23b → Error; remove Warning 25 block |
-| Modify | `tests/testthat/test-constructors.R` | Convert warning test blocks to error test blocks |
-| Modify | `tests/testthat/_snaps/constructors.md` | Delete the snapshot entry for Warning 23b |
 | Modify | `tests/testthat/helper-test-data.R` | `phase2_ind` → `subset` in `make_survey_data()` and `make_all_designs()` |
+| Modify | `tests/testthat/test-constructors.R` | `phase2_ind` → `subset` throughout (~29 references); convert warning test block to error test block; regenerate snapshots |
+| Modify | `tests/testthat/test-conversion.R` | `phase2_ind` → `subset` (~5 references) |
+| Modify | `tests/testthat/test-utils.R` | `phase2_ind` → `subset` (~3 references, including the string literal `"phase2_ind"` in `expect_true`) |
+| Modify | `tests/testthat/test-methods-print.R` | `phase2_ind` → `subset` (~1 reference) |
+| Modify | `tests/testthat/test-update-design.R` | `phase2_ind` → `subset` (~1 reference) |
+| Modify | `tests/testthat/_snaps/constructors.md` | Delete Warning 23b snapshot; regenerate new error snapshot; regenerate any snapshots that embed the `phase2_ind` column name (~7 entries) |
+| Modify | `tests/testthat/_snaps/methods-print.md` | Regenerate print snapshots that embed `phase2_ind` column header (~4 entries) |
 | Modify | `tests/testthat/test-variance-dispatch.R` | Update "twophase not yet implemented" test blocks |
 | Modify | `plans/error-messages.md` | Remove rows 23b and 25; add `surveycore_error_subset_na` |
+
+**Rename audit notes:**
+- `test-constructors.R:1069–1078`: after rename, `df$phase2_ind2` is created and `starts_with("phase2_ind")` is used to select both columns. After rename the generated column is `subset`, so update the inline `phase2_ind2` column name and the `starts_with()` pattern accordingly.
+- `test-constructors.R:1085`: `df$phase2_int <- as.integer(df$phase2_ind)` — update the RHS to `df$subset`.
+- `test-utils.R`: `expect_true("phase2_ind" %in% flat)` is a string literal — update to `"subset"`.
+- Snapshots are regenerated automatically by running `devtools::test()` after code changes; review and commit each diff individually via `testthat::snapshot_review()` before opening the PR.
 
 ### `R/03-constructors.R` changes
 
@@ -166,30 +194,55 @@ inside `.twophasevar()` at estimation time (PR 3).
 
 ### `tests/testthat/test-constructors.R` changes
 
-Find every block matching:
+Find the block with the test name **`"as_survey_twophase() warns when subset column has NA values [row 23b]"`**
+(search for the string `surveycore_warning_subset_na` to locate it). The actual code uses
+`withCallingHandlers`, not `expect_warning()`:
+
 ```r
-test_that("as_survey_twophase() warns for NA in subset column", {
-  expect_warning(
-    result <- as_survey_twophase(ph1, subset = has_na_col, method = "approx"),
-    class = "surveycore_warning_subset_na"
+# BEFORE (actual code — uses withCallingHandlers, not expect_warning):
+test_that("as_survey_twophase() warns when subset column has NA values [row 23b]", {
+  df              <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                                      design = "twophase", seed = 30L)
+  df$phase2_na    <- df$phase2_ind
+  df$phase2_na[1] <- NA
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  got_na_warn <- FALSE
+  suppressWarnings(
+    withCallingHandlers(
+      as_survey_twophase(phase1, subset = phase2_na),
+      surveycore_warning_subset_na = function(w) {
+        got_na_warn <<- TRUE
+        invokeRestart("muffleWarning")
+      }
+    )
   )
-  test_invariants(result)
+  expect_true(got_na_warn, label = "surveycore_warning_subset_na was raised")
 })
 ```
 
 Replace with the dual-pattern (per spec Section 9.6 and testing-standards.md):
 ```r
 test_that("as_survey_twophase() errors for NA in subset column", {
+  df           <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                                   design = "twophase", seed = 30L)
+  df$phase2_na    <- df$subset
+  df$phase2_na[1] <- NA
+  phase1 <- as_survey(df, weights = wt, strata = strata)
   expect_error(
-    as_survey_twophase(ph1, subset = has_na_col, method = "approx"),
+    as_survey_twophase(phase1, subset = phase2_na, method = "approx"),
     class = "surveycore_error_subset_na"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_twophase(ph1, subset = has_na_col, method = "approx")
+    as_survey_twophase(phase1, subset = phase2_na, method = "approx")
   )
 })
 ```
+
+**Warning 24 (`surveycore_warning_simple_clustered`) — do not disturb.** This warning lives in
+a separate code path that PR 2 does not touch. Its test at `test-constructors.R:~1013` calls
+`make_survey_data(design = "twophase")` and uses `subset = phase2_ind` — it will be updated as
+part of the rename audit above. Do not remove the Warning 24 block from `R/03-constructors.R`.
 
 Also find and delete every test block that expects `surveycore_warning_full_no_phase2`:
 ```r
@@ -237,6 +290,12 @@ No `suppressWarnings()` needed: Warning 23b no longer fires (it's now an error,
 and the synthetic data has no NAs in `subset`). Warning 25 is removed. The column
 reference changes from `phase2_ind` to `subset`.
 
+**`make_all_designs()` caller audit** — before running `devtools::check()`, search for all
+call sites of `make_all_designs()` (`grep -r "make_all_designs" tests/`) and confirm that
+no caller asserts behavior specific to `method = "full"` or `method = "simple"` on the
+`$twophase` element. The generator now produces `method = "approx"`; tests that rely on
+the old default would break silently without this check.
+
 ### `tests/testthat/test-variance-dispatch.R` changes
 
 Update the two "not yet implemented" test blocks (moved from `test-variance-estimation.R`
@@ -272,6 +331,8 @@ data has no NAs in `subset`, so no error either).
 ### Acceptance criteria
 
 - [ ] `devtools::check()` 0 errors, 0 warnings, ≤2 pre-approved notes
+- [ ] `devtools::document()` run; NAMESPACE and man/ produce no diff
+- [ ] Total package coverage ≥ 98%
 - [ ] `as_survey_twophase()` throws `surveycore_error_subset_na` (not a warning) for NA subset
 - [ ] No remaining reference to `surveycore_warning_subset_na` anywhere in the codebase
 - [ ] No remaining reference to `surveycore_warning_full_no_phase2` anywhere in the codebase
@@ -279,7 +340,10 @@ data has no NAs in `subset`, so no error either).
 - [ ] `make_all_designs()` creates the twophase design without `suppressWarnings()`
 - [ ] Error snapshot committed and matching spec Section 3.3 template
 - [ ] `plans/error-messages.md` updated: rows 23b and 25 removed; `surveycore_error_subset_na` added
+- [ ] `plans/error-messages.md` Coverage Map updated: row 23b removed from `test-constructors.R` row; `surveycore_error_subset_na` row added
 - [ ] The two "not yet implemented" blocks in `test-variance-dispatch.R` use `subset` and still pass
+- [ ] The two "not yet implemented" blocks in `test-variance-dispatch.R` still pass with `expect_error(class = "surveycore_error_unsupported_class")` (this error is not removed until PR 3)
+- [ ] No remaining reference to `phase2_ind` anywhere in `tests/` — verified by `grep -r "phase2_ind" tests/`
 
 ---
 
@@ -299,7 +363,9 @@ data has no NAs in `subset`, so no error either).
 | Modify | `tests/testthat/helper-test-data.R` | Extend `make_survey_data(design = "twophase")` with new parameters + columns |
 | Modify | `VENDORED.md` | Four new function-level attribution entries |
 | Modify | `plans/error-messages.md` | Add `surveycore_error_full_requires_phase2` row |
-| Run | `devtools::document()` | Regenerate NAMESPACE + man/ for updated get_means / get_totals roxygen |
+| Modify | `NAMESPACE` | Regenerated by `devtools::document()` |
+| Modify | `man/get_means.Rd` | Updated roxygen (`@param design`, `@section Variance estimation`) |
+| Modify | `man/get_totals.Rd` | Updated roxygen (`@param design`, `@section Variance estimation`) |
 
 ### `R/06-variance-twophase.R` — new file
 
@@ -590,6 +656,7 @@ and add a `@section` entry.
 - [ ] `get_means()` and `get_totals()` roxygen no longer say two-phase is unsupported
 - [ ] `@section Variance estimation` includes `survey_twophase` entry with all three methods
 - [ ] `plans/error-messages.md` updated: `surveycore_error_full_requires_phase2` row added
+- [ ] `plans/error-messages.md` Coverage Map updated: `test-variance-twophase.R` row added covering the new error classes
 - [ ] `VENDORED.md` updated: four new function-level attribution entries
 - [ ] `make_survey_data(design = "twophase")` produces `subset`, `phase1_prob`, `phase2_prob`
   columns; no NAs in `subset`; `phase1_prob` and `phase2_prob` in range (0, 1]
