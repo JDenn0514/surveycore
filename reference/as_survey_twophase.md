@@ -119,8 +119,6 @@ df <- data.frame(
 )
 phase1 <- as_survey(df, ids = id, weights = wt)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
-#> Warning: ! No Phase 2 design information provided with `method = "full"`. Phase 2
-#>   selection treated as simple random subsampling within Phase 1 strata.
 
 # With Phase 2 stratification and inclusion probabilities
 df2 <- data.frame(

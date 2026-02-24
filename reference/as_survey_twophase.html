@@ -155,8 +155,6 @@ clustered designs.</p></li>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">phase1</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">df</span>, ids <span class="op">=</span> <span class="va">id</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">d2</span> <span class="op">&lt;-</span> <span class="fu">as_survey_twophase</span><span class="op">(</span><span class="va">phase1</span>, subset <span class="op">=</span> <span class="va">in_phase2</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No Phase 2 design information provided with `method = "full"`. Phase 2</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   selection treated as simple random subsampling within Phase 1 strata.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># With Phase 2 stratification and inclusion probabilities</span></span></span>
 <span class="r-in"><span><span class="va">df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
