@@ -427,8 +427,10 @@
 # survey::svymean(~y1, svydesign(ids=~1, weights=~weight, data=df))
 # surveycore .srs_mean result: agrees at tolerance 1e-10 for point, 1e-8 for SE.
 # Non-uniform weights work because SRS weights are proportional to N/n,
-# so the weighted and unweighted sample variances are identical per classical
-# theory. Agreement confirmed before oracle tests were written.
+# so the weighted and unweighted sample variances are approximately equal for
+# near-proportional weights. The oracle test tolerance of 1e-8 for SE
+# accommodates this approximation. Agreement confirmed before oracle tests
+# were written.
 
 # @param design  A survey_srs object.
 # @param var_name Character. Name of the variable column.

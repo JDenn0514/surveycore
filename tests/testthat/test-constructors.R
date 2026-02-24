@@ -234,6 +234,18 @@ test_that("as_survey() warns for SRS (no weights, probs, or ids) [row 7]", {
   )
 })
 
+test_that("as_survey() warns with cluster message when ids given but no weights [row 7]", {
+  df <- data.frame(psu = rep(1:5, 2), y = 1:10)
+  expect_warning(
+    as_survey(df, ids = psu),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  expect_warning(
+    as_survey(df, ids = psu),
+    regexp = "equal-probability sampling within clusters"
+  )
+})
+
 test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]", {
   df <- data.frame(y = 1:10)
   d  <- suppressWarnings(as_survey(df))

@@ -220,7 +220,7 @@ as_survey_srs <- function(
   # ── Extract haven-style metadata ────────────────────────────────────────────
   metadata <- .extract_haven_metadata(data)
 
-  # ── Build @variables list (all 7 keys always present) ──────────────────────
+  # ── Build @variables list (all 8 keys always present) ──────────────────────
   variables <- list(
     weights        = weights_var,
     fpc            = fpc_var,
@@ -228,7 +228,8 @@ as_survey_srs <- function(
     probs_provided = probs_provided,
     ids            = NULL,
     strata         = NULL,
-    nest           = FALSE
+    nest           = FALSE,
+    visible_vars   = NULL
   )
 
   # ── Construct and return survey_srs object ──────────────────────────────────
@@ -427,33 +428,42 @@ as_survey <- function(
     probs_provided <- TRUE
   } else if (is.null(probs_var) && is.null(weights_var)) {
     # Neither probs nor weights — SRS fallback
-    # Warning 7: no weights or probs (SRS fallback)
+    # Warning 7: no weights or probs (SRS fallback); text varies by ids presence
     weights_var         <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- rep(1L, nrow(data))
     probs_provided      <- FALSE
 
-    cli::cli_warn(
-      c(
-        "!" = "No weights or population size provided.",
-        "i" = paste0(
-          "Treating as equal-probability SRS with unknown ",
-          "population size."
+    if (!is.null(ids_vars)) {
+      cli::cli_warn(
+        c(
+          "!" = "No weights provided.",
+          "i" = paste0(
+            "Treating as equal-probability sampling within clusters ",
+            "(unknown population size)."
+          ),
+          "i" = paste0(
+            "Population totals will equal sample totals, not ",
+            "estimated population totals."
+          )
         ),
-        "v" = paste0(
-          "Valid: means, proportions, correlations, ",
-          "and their standard errors."
+        class = "surveycore_warning_srs_no_weights"
+      )
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = "No weights or population size provided.",
+          "i" = paste0(
+            "Treating as equal-probability SRS with unknown ",
+            "population size."
+          ),
+          "i" = paste0(
+            "Population totals will equal sample totals, not ",
+            "estimated population totals."
+          )
         ),
-        "x" = paste0(
-          "Invalid: population totals (will equal sample totals, ",
-          "not population totals)."
-        ),
-        "i" = paste0(
-          "To fix: provide {.arg fpc} = population size, ",
-          "or {.arg weights} = N / n."
-        )
-      ),
-      class = "surveycore_warning_srs_no_weights"
-    )
+        class = "surveycore_warning_srs_no_weights"
+      )
+    }
   }
 
   # ── Business-rule validations ───────────────────────────────────────────────
@@ -678,6 +688,9 @@ as_survey_rep <- function(
       JK1                     = (n_rep - 1L) / n_rep,
       JK2                     = (n_rep - 1L) / n_rep,
       JKn                     = (n_rep - 1L) / n_rep,
+      # 1/n_rep is the correct BRR scale: verified against survey::svrepdesign
+      # with n_rep = 10 (oracle test in test-variance-estimation.R). The
+      # survey package computes BRR variance internally with this same formula.
       BRR                     = 1 / n_rep,
       Fay                     = 1 / n_rep,
       bootstrap               = 1 / n_rep,

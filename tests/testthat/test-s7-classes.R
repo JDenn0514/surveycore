@@ -25,7 +25,8 @@
     strata         = strata,
     fpc            = fpc,
     nest           = nest,
-    probs_provided = probs_provided
+    probs_provided = probs_provided,
+    visible_vars   = NULL
   )
 }
 
@@ -41,19 +42,21 @@
   mse         = TRUE
 ) {
   list(
-    weights    = weights,
-    repweights = repweights,
-    type       = type,
-    scale      = scale,
-    rscales    = rscales,
-    fpc        = fpc,
-    fpctype    = fpctype,
-    mse        = mse
+    weights      = weights,
+    repweights   = repweights,
+    type         = type,
+    scale        = scale,
+    rscales      = rscales,
+    fpc          = fpc,
+    fpctype      = fpctype,
+    mse          = mse,
+    visible_vars = NULL
   )
 }
 
 # A small valid data frame for survey_taylor tests.
-.df10 <- function() {
+.df10 <- function(seed = 42L) {
+  set.seed(seed)
   data.frame(
     psu    = paste0("psu_", rep(1:5, 2)),
     strata = paste0("s", rep(1:2, each = 5)),
@@ -65,7 +68,8 @@
 }
 
 # A small valid data frame for survey_replicate tests.
-.df_rep <- function(R = 4L) {
+.df_rep <- function(R = 4L, seed = 42L) {
+  set.seed(seed)
   df <- data.frame(
     wt = runif(20, 0.5, 2),
     y  = rnorm(20),
@@ -457,10 +461,11 @@ test_that("survey_twophase() creates valid object with minimal spec", {
   d <- survey_twophase(
     data      = df,
     variables = list(
-      phase1 = .taylor_vars(weights = "wt", ids = "psu"),
-      phase2 = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
-      subset = "ph2",
-      method = "full"
+      phase1       = .taylor_vars(weights = "wt", ids = "psu"),
+      phase2       = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
+      subset       = "ph2",
+      method       = "full",
+      visible_vars = NULL
     )
   )
   test_invariants(d)
@@ -480,15 +485,16 @@ test_that("survey_twophase() creates valid object with phase2 strata col", {
   d <- survey_twophase(
     data      = df,
     variables = list(
-      phase1 = .taylor_vars(weights = "wt"),
-      phase2 = list(
+      phase1       = .taylor_vars(weights = "wt"),
+      phase2       = list(
         ids    = NULL,
         strata = "ph2_str",
         probs  = NULL,
         fpc    = NULL
       ),
-      subset = "ph2",
-      method = "approx"
+      subset       = "ph2",
+      method       = "approx",
+      visible_vars = NULL
     )
   )
   test_invariants(d)
@@ -620,7 +626,8 @@ test_that("survey_twophase validator: warning 26 — phase2 col all-NA in ph2", 
     probs_provided = probs_provided,
     ids            = ids,
     strata         = strata,
-    nest           = nest
+    nest           = nest,
+    visible_vars   = NULL
   )
 }
 
@@ -672,15 +679,18 @@ test_that("survey_srs validator: FPC column absent from @data fires error", {
   )
 })
 
-# Row 5 — all 7 @variables keys present after construction
-test_that("survey_srs: all 7 @variables keys present after construction", {
+# Row 5 — all 8 @variables keys present after construction
+test_that("survey_srs: all 8 @variables keys present after construction", {
   df <- data.frame(y = 1:5, wt = rep(1, 5))
   d  <- survey_srs(
     data      = df,
     variables = .srs_vars(weights = "wt")
   )
   test_invariants(d)
-  keys <- c("weights", "fpc", "fpc_type", "probs_provided", "ids", "strata", "nest")
+  keys <- c(
+    "weights", "fpc", "fpc_type", "probs_provided",
+    "ids", "strata", "nest", "visible_vars"
+  )
   expect_true(all(keys %in% names(d@variables)))
 })
 

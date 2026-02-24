@@ -176,10 +176,19 @@ make_survey_data <- function(
 #' @keywords internal
 test_invariants <- function(design) {
 
-  # survey_srs has an additional @variables key (fpc_type) — check it here
+  # survey_srs has additional @variables keys (fpc_type, visible_vars) — check here
   # before the general invariants run.
   if (S7::S7_inherits(design, survey_srs)) {
     testthat::expect_true("fpc_type" %in% names(design@variables))
+  }
+
+  # All design types must have visible_vars in @variables (may be NULL).
+  # This is required for Phase 0.5 select() compatibility.
+  if (!S7::S7_inherits(design, survey_calibrated)) {
+    testthat::expect_true(
+      "visible_vars" %in% names(design@variables),
+      label = "@variables has 'visible_vars' key"
+    )
   }
 
   # survey_calibrated has a different @variables structure — handle separately

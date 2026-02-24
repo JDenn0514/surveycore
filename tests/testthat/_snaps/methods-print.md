@@ -413,3 +413,25 @@
       4     4     2
       5     5     2
 
+# summary.survey_srs output matches snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: simple random sample (SRS)
+      Sample size: 10
+      Weighted N: 20
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 2 – 2
+      * Mean: 2
+      * CV: 0
+      FPC: not specified
+      
+      Metadata: 0 of 2 variable(s) labeled
+
