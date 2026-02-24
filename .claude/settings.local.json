@@ -61,7 +61,12 @@
       "Bash(xargs:*)",
       "Bash(gh run view:*)",
       "WebFetch(domain:notstatschat.rbind.io)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(head:*)",
+      "Bash(find:*)",
+      "Bash(sleep 45 && gh pr checks 8 2>&1)",
+      "Bash(sleep 60 && gh pr checks 8 2>&1)",
+      "Bash(gh pr:*)"
     ]
   }
 }
