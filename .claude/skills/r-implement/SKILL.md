@@ -1,18 +1,101 @@
 ---
 name: r-implement
 description: >
-  Use when it's time to write R implementation code for surveycore or other
-  surveyverse packages. Trigger when the user says "implement", "code this up",
-  "start coding", "write the code", "start the PR", or "let's build this".
+  Use when it's time to write R implementation code for surveycore. Trigger
+  when the user says "implement", "code this up", "start coding", "write the
+  code", "start the PR", or "let's build this". Also use when commit-and-pr
+  produces a CI Failure handoff block and the user needs the failure fixed.
 ---
 
 # R Implementation Skill
 
-You are implementing R package code for the surveyverse ecosystem.
+You are implementing R package code for surveycore.
 
 ---
 
-## Pre-flight (do these FIRST, before writing any code)
+## Entry Mode — Determine This First
+
+**Mode A: Normal** — starting a new implementation section from the plan.
+Signs: user says "implement", "start coding", "let's build this", or similar.
+→ Go to **Pre-flight**.
+
+**Mode B: CI-fix** — fixing a failure surfaced by commit-and-pr after push.
+Signs: user provides a "CI Failure — Handoff to r-implement" block, or says
+"CI is failing", "fix the CI failure", "commit-and-pr handed off to you", etc.
+→ Go to **CI-Fix Mode** below. Skip Pre-flight entirely.
+
+---
+
+## CI-Fix Mode
+
+Use this mode when commit-and-pr has already created a PR and CI has failed.
+
+### Step 1: Read the handoff block
+
+The user will provide (or paste) a block like:
+
+```
+## CI Failure — Handoff to r-implement
+
+Run:    #12345
+PR:     #7 (https://github.com/...)
+Job:    R CMD Check / ubuntu-latest / release
+Step:   Running R CMD check
+
+Error:
+  <log output>
+
+Local repro:
+  Rscript -e "devtools::check()"
+  Rscript -e "devtools::test()"
+```
+
+Read it carefully. Identify: which check failed (check vs test), which job
+(OS + R version), and the exact error message.
+
+### Step 2: Reproduce locally
+
+```bash
+Rscript -e "devtools::check()"
+Rscript -e "devtools::test()"
+```
+
+Match the failure to what CI reported. If the failure doesn't reproduce
+locally, report that and describe what you see instead — do not guess.
+
+### Step 3: Diagnose and fix
+
+Attempt to diagnose and fix. After **3 failed attempts on the same failure**,
+stop and report:
+
+- The exact error output
+- What was tried
+- Why it is still failing
+
+### Step 4: Verify
+
+Run both checks after the fix:
+
+```bash
+Rscript -e "devtools::test()"
+Rscript -e "devtools::check()"
+```
+
+Run `devtools::document()` if any roxygen2 tags changed.
+
+### Step 5: Report
+
+When both pass, report:
+
+> "Fixed. Re-invoke `/commit-and-pr` — it will push the fix and resume
+> monitoring CI."
+
+**Do NOT mark the implementation plan section complete again.** It was already
+marked `[x]` before commit-and-pr was invoked.
+
+---
+
+## Pre-flight (Normal Mode — do these FIRST, before writing any code)
 
 ### Step 1: Check the branch
 
@@ -65,6 +148,8 @@ Add any new error/warning classes you will need **before** writing code that use
 1. Write the R source file
 2. Write the test file (source and tests in the same session)
 3. Run `devtools::document()` if any roxygen2 tags changed
+4. Update `_pkgdown.yml` if any new functions were exported — add them to the
+   correct `reference:` section (match the `@family` tag used in roxygen)
 
 ---
 
@@ -101,7 +186,7 @@ When `devtools::test()` and `devtools::check()` both pass:
 
 ## Conventions (always in context — no need to re-read)
 
-All surveyverse coding conventions are in the rule files loaded at session start.
+All surveycore coding conventions are in the rule files loaded at session start.
 Quick index:
 
 | What you need | Where it is |
@@ -123,6 +208,7 @@ Do not mark the section complete until ALL are true:
 - [ ] `devtools::test()` — no failures
 - [ ] `devtools::check()` — 0 errors, 0 warnings, ≤2 notes
 - [ ] `devtools::document()` run (if roxygen2 content changed)
+- [ ] `_pkgdown.yml` updated (if new exports added — add to correct `reference:` section)
 - [ ] `plans/error-messages.md` updated (if new error classes added)
 - [ ] No `UseMethod()` patterns on S7 objects
 - [ ] No `cli_abort()` or `cli_warn()` calls missing `class=`

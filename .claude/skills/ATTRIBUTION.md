@@ -14,7 +14,6 @@ repository, maintained by Posit, PBC. They are used here under the
 | `testing-r-packages` | `r-lib/testing-r-packages` |
 | `critical-code-reviewer` | `posit-dev/critical-code-reviewer` |
 | `describe-design` | `posit-dev/describe-design` |
-| `pr-create` | `posit-dev/pr-create` |
 | `create-release-checklist` | `open-source/create-release-checklist` |
 | `release-post` | `open-source/release-post` |
 
