@@ -174,7 +174,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     p2_cols <- if (!is.null(p2)) {
       unlist(p2[!vapply(p2, is.null, logical(1L))], use.names = FALSE)
     } else {
-      character(0L) # nocov — p2 is always initialized as a list by as_survey_twophase()
+      character(0L) # nocov — p2 is always a list (as_survey_twophase() and .from_svydesign_twophase() both initialize it)
     }
     unique(c(
       p1$ids, p1$weights, p1$strata, p1$fpc,

@@ -458,6 +458,35 @@ test_that("get_means() and get_totals() work for survey_replicate (return struct
   expect_gte(t$se, 0)
 })
 
+test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
+  # Verifies that scale = 1/n_rep (not 1/4) is the correct BRR formula.
+  # With n_psu = 20, n_rep = 10 (half-samples from 20 PSUs).
+  # If 1/n_rep is correct, surveycore and survey::svrepdesign agree at 1e-8.
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(n = 200, n_psu = 20, n_strata = 4,
+                        design = "replicate", type = "brr", seed = 99)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  n_rep      <- length(repwt_cols)  # should be 10 (n_psu / 2)
+
+  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  # survey hardcodes scale = 1/R for BRR internally; the scale= argument is
+  # ignored. Both packages independently compute (1/n_rep) * sum((theta_r - theta)^2).
+  sv <- survey::svrepdesign(
+    weights    = d$wt,
+    repweights = d[, repwt_cols],
+    type       = "BRR",
+    mse        = TRUE,
+    data       = d
+  )
+
+  sc_mean <- get_means(sc, y1)
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
 
 # ---------------------------------------------------------------------------
 # Block 11: Error paths — non-survey inputs to get_means()/get_totals()

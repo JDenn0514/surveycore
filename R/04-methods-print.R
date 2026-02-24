@@ -301,7 +301,7 @@ S7::method(print, survey_srs) <- function(
   data_shown <- .data_for_print(x)
   print(data_shown, n = n, ...)
 
-  .print_hidden_note(x@variables$weights, data_shown)
+  .print_hidden_note(c(x@variables$weights, x@variables$fpc), data_shown)
 
   invisible(x)
 }
@@ -705,22 +705,51 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
 
 # Summarise a Simple Random Sample Survey Design
 # @param object A survey_srs object.
-# @return A named list with keys: class, n, weighted_n, fpc_specified,
-#   fpc_type, n_var_labels, n_val_labels. Returned visibly.
+# @return object, invisibly.
 # Class defined in R/00-s7-classes.R
 S7::method(summary, survey_srs) <- function(object, ...) {
   x <- object
-  list(
-    class         = "survey_srs",
-    n             = nrow(x@data),
-    weighted_n    = round(
-      sum(x@data[[x@variables$weights]], na.rm = TRUE)
-    ),
-    fpc_specified = !is.null(x@variables$fpc),
-    fpc_type      = x@variables$fpc_type,
-    n_var_labels  = length(x@metadata@variable_labels),
-    n_val_labels  = length(x@metadata@value_labels)
-  )
+
+  cli::cli_h1("Survey Design Summary")
+  cli::cli_text("Type: simple random sample (SRS)")
+  cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+
+  wts_var    <- x@variables$weights
+  wts        <- x@data[[wts_var]]
+  weighted_n <- round(sum(wts, na.rm = TRUE))
+  cli::cli_text("Weighted N: {.val {weighted_n}}")
+
+  cli::cli_text("")
+  cli::cli_h2("Design")
+
+  is_uniform <- identical(wts_var, .SURVEYCORE_WT_COL) &&
+    !isTRUE(x@variables$probs_provided)
+  if (is_uniform) {
+    cli::cli_text("Weights: uniform (auto-assigned)")
+  } else {
+    cli::cli_text("Weights: {.field {wts_var}}")
+  }
+  .print_weight_distribution(wts)
+
+  fpc_var  <- x@variables$fpc
+  fpc_type <- x@variables$fpc_type
+  if (!is.null(fpc_var)) {
+    fpc_label <- if (identical(fpc_type, "population")) {
+      "(population sizes)"
+    } else {
+      "(sampling fractions)"
+    }
+    cli::cli_text("FPC: {.field {fpc_var}} {fpc_label}")
+  } else {
+    cli::cli_text("FPC: not specified")
+  }
+
+  cli::cli_text("")
+  n_labeled <- length(x@metadata@variable_labels)
+  n_total   <- ncol(x@data)
+  cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
+
+  invisible(x)
 }
 
 

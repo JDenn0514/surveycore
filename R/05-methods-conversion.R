@@ -456,12 +456,27 @@ from_svydesign <- function(x) {
     phase1_data[[subset_var]] <- x$subset
   }
 
-  # Derive method from the class: twophase2 → "full", twophase → "approx".
-  method <- if (inherits(x, "twophase2")) "full" else "approx"
+  # Derive method: check x$method first, fall back to class-based inference.
+  # survey::twophase() never stores x$method — the branch below is defensive
+  # for survey-compatible packages that may set it explicitly. # nocov start
+  method <- if (!is.null(x$method) && x$method %in% c("full", "approx", "simple")) {
+    x$method # nocov end
+  } else if (inherits(x, "twophase2")) {
+    "full"
+  } else {
+    cli::cli_warn(
+      c(
+        "!" = "Could not determine two-phase variance method from the survey object.",
+        "i" = 'Defaulting to {.val "approx"}.'
+      ),
+      class = "surveycore_warning_twophase_method_unknown"
+    )
+    "approx"
+  }
 
   variables <- list(
     phase1 = phase1_sc@variables,
-    phase2 = NULL,
+    phase2 = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
     subset = subset_var,
     method = method
   )

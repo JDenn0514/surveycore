@@ -221,8 +221,9 @@ survey_taylor <- S7::new_class(
     }
 
     # ── Validate weight column ────────────────────────────────────────────────
+    # The existence check above guarantees weights_var is in @data if non-NULL.
     weights_var <- self@variables$weights
-    if (!is.null(weights_var) && weights_var %in% names(self@data)) {
+    if (!is.null(weights_var)) {
       wt_col <- self@data[[weights_var]]
 
       # Error 32: weights must be numeric
@@ -377,7 +378,8 @@ survey_replicate <- S7::new_class(
     }
 
     # ── Validate weight column ────────────────────────────────────────────────
-    if (!is.null(weights_var) && weights_var %in% names(self@data)) {
+    # The existence check above guarantees weights_var is in @data if non-NULL.
+    if (!is.null(weights_var)) {
       wt_col <- self@data[[weights_var]]
 
       if (!is.numeric(wt_col)) {
@@ -650,7 +652,8 @@ survey_srs <- S7::new_class(
     }
 
     # ── Weight column must be numeric and positive ────────────────────────────
-    if (!is.null(weights_var) && weights_var %in% names(self@data)) {
+    # The existence check above guarantees weights_var is in @data if non-NULL.
+    if (!is.null(weights_var)) {
       wt_col <- self@data[[weights_var]]
 
       if (!is.numeric(wt_col)) {

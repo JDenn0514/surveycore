@@ -27,8 +27,10 @@
 #  21. print.survey_srs — full = TRUE (snapshot)
 #  22. print.survey_srs — uniform auto-weights label
 #  23. print.survey_srs — invisible return
-#  24. summary.survey_srs — keys and types
-#  25. summary.survey_srs — fpc_specified / fpc_type
+#  24. summary.survey_srs — output and invisible return
+#  25. summary.survey_srs — FPC info in output
+#  26. summary.survey_srs — output (snapshot)
+#  27. print.survey_srs — probs_provided label in design_info
 #
 # Note: cli output (cli_h1/h2/text/bullets) goes to message(), not stdout.
 # Use capture.output(type = "message") to capture cli output in tests.
@@ -60,7 +62,8 @@ make_srs_design <- function(seed = 42L) {
       strata         = NULL,
       fpc            = NULL,
       nest           = FALSE,
-      probs_provided = FALSE
+      probs_provided = FALSE,
+      visible_vars   = NULL
     )
   )
 }
@@ -417,41 +420,68 @@ test_that("print.survey_srs returns object invisibly", {
 })
 
 
-# ── 24. summary.survey_srs — keys and types ──────────────────────────────────
+# ── 24. summary.survey_srs — output and invisible return ─────────────────────
 
-test_that("summary.survey_srs returns a list with correct keys", {
-  d   <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
+test_that("summary.survey_srs shows type, size, weights, FPC, and metadata sections", {
+  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
   test_invariants(d)
-  s   <- summary(d)
-  expected_keys <- c("class", "n", "weighted_n", "fpc_specified",
-                     "fpc_type", "n_var_labels", "n_val_labels")
-  expect_true(all(expected_keys %in% names(s)))
-  expect_identical(s$class,      "survey_srs")
-  expect_identical(s$n,          10L)
-  expect_equal(s$weighted_n,    20)   # 10 rows × weight 2; round() returns double
-  expect_false(s$fpc_specified)
-  expect_null(s$fpc_type)
-  expect_identical(s$n_var_labels, 0L)
-  expect_identical(s$n_val_labels, 0L)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("simple random sample", out, ignore.case = TRUE)))
+  expect_true(any(grepl("Sample size", out)))
+  expect_true(any(grepl("Weighted N", out)))
+  expect_true(any(grepl("FPC", out)))
+  expect_true(any(grepl("Metadata", out)))
+})
+
+test_that("summary.survey_srs returns object invisibly", {
+  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
+  test_invariants(d)
+  result <- suppressMessages(summary(d))
+  expect_identical(result, d)
 })
 
 
-# ── 25. summary.survey_srs — fpc_specified / fpc_type ────────────────────────
+# ── 25. summary.survey_srs — FPC info in output ───────────────────────────────
 
-test_that("summary.survey_srs reflects population FPC correctly", {
+test_that("summary.survey_srs reflects population FPC in output", {
   df <- data.frame(y = 1:5, wt = rep(1, 5), pop = rep(100L, 5))
   d  <- as_survey_srs(df, weights = wt, fpc = pop)
   test_invariants(d)
-  s  <- summary(d)
-  expect_true(s$fpc_specified)
-  expect_identical(s$fpc_type, "population")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("pop", out)))
+  expect_true(any(grepl("population sizes", out)))
 })
 
-test_that("summary.survey_srs reflects fraction FPC correctly", {
+test_that("summary.survey_srs reflects fraction FPC in output", {
   df <- data.frame(y = 1:5, wt = rep(1, 5), frac = rep(0.1, 5))
   d  <- as_survey_srs(df, weights = wt, fpc = frac)
   test_invariants(d)
-  s  <- summary(d)
-  expect_true(s$fpc_specified)
-  expect_identical(s$fpc_type, "fraction")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("frac", out)))
+  expect_true(any(grepl("sampling fractions", out)))
+})
+
+
+# ── 26. summary.survey_srs — output (snapshot) ───────────────────────────────
+
+test_that("summary.survey_srs output matches snapshot", {
+  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(summary(d))
+})
+
+
+# ── 27. print.survey_srs — probs_provided label ──────────────────────────────
+
+test_that("print.survey_srs shows '(from sampling probabilities)' when probs_provided", {
+  df <- data.frame(y = 1:10, p = rep(0.1, 10))
+  d  <- as_survey_srs(df, probs = p)
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(print(d, design_info = TRUE), type = "message")
+  expect_true(any(grepl("from sampling probabilities", out)))
 })
