@@ -32,7 +32,8 @@
 #'
 #' Additional columns by design:
 #'   - design = "replicate": repwt_1 ... repwt_R replicate weight columns
-#'   - design = "twophase":  subset (logical, ~40% TRUE)
+#'   - design = "twophase":  subset (logical, ~40% TRUE), phase1_prob (numeric),
+#'     phase2_prob (numeric)
 #'
 #' @param n         Total number of rows. Default 500L.
 #' @param n_psu     Number of PSUs. Default 50L. For BRR/Fay must be even.
@@ -40,6 +41,8 @@
 #' @param design    Survey design type: "taylor", "replicate", or "twophase".
 #' @param type      Replicate weight method (used when design = "replicate").
 #'   One of "brr", "jk1", "jk2", "jkn", "bootstrap", "fay". Default "brr".
+#' @param phase2_frac  Fraction of Phase 1 units selected into Phase 2
+#'   (used when design = "twophase"). Default 0.4.
 #' @param with_labels  If TRUE, attach haven-style label/labels attributes to
 #'   y1, y2, y3, group, and wt. Default FALSE.
 #' @param seed      Random seed for reproducibility. Default 42L.
@@ -52,6 +55,7 @@ make_survey_data <- function(
   n_strata    = 5L,
   design      = c("taylor", "replicate", "twophase"),
   type        = "brr",
+  phase2_frac = 0.4,
   with_labels = FALSE,
   seed        = 42L
 ) {
@@ -141,9 +145,11 @@ make_survey_data <- function(
     df                  <- cbind(df, repwt_df)
   }
 
-  # --- Two-phase indicator ---
+  # --- Two-phase indicator and inclusion probabilities ---
   if (design == "twophase") {
-    df$subset <- runif(n) < 0.4
+    df$subset      <- runif(n) < phase2_frac
+    df$phase1_prob <- stratum_n[strata] / stratum_pop[strata]
+    df$phase2_prob <- rep(phase2_frac, n)
   }
 
   # --- Haven-style label attributes ---

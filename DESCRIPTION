@@ -26,6 +26,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
     survey (>= 4.0),
+    survival,
     srvyr (>= 1.0),
     haven (>= 2.5.0),
     dplyr (>= 1.1.0),

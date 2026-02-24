@@ -38,7 +38,7 @@ quality gates from spec Section 11 are achieved by the time PR 3 merges.
 - [x] PR 2: `feature/twophase-constructor-na` — Change Warning 23b to a hard error
   (`surveycore_error_subset_na`) and remove Warning 25 from `as_survey_twophase()`; rename
   `phase2_ind` → `subset` in the test data generator
-- [ ] PR 3: `feature/variance-twophase` — Implement the two-phase variance engine, extend
+- [x] PR 3: `feature/variance-twophase` — Implement the two-phase variance engine, extend
   `make_survey_data()`, update dispatch and roxygen, add oracle tests, update VENDORED.md
 
 ---

@@ -10,8 +10,8 @@
 # ===========================================================================
 
 # Shared input validation for all get_*() estimation functions.
-# Checks: design is a survey_base subclass, not twophase, variable exists,
-# variable is numeric. Returns invisible(TRUE) on success.
+# Checks: design is a survey_base subclass, variable exists, variable is
+# numeric. Returns invisible(TRUE) on success.
 #' @noRd
 .validate_estimation_input <- function(design, var_name) {
   if (!S7::S7_inherits(design, survey_base)) {
@@ -21,15 +21,6 @@
         "i" = "Got {.cls {class(design)[[1L]]}}."
       ),
       class = "surveycore_error_not_survey_design"
-    )
-  }
-  if (S7::S7_inherits(design, survey_twophase)) {
-    cli::cli_abort(
-      c(
-        "x" = "Two-phase designs are not yet supported in estimation functions.",
-        "i" = "Support for {.cls survey_twophase} will be added in Phase 1."
-      ),
-      class = "surveycore_error_unsupported_class"
     )
   }
   if (!var_name %in% names(design@data)) {
@@ -61,9 +52,9 @@
 #'
 #' @param design A survey design object. Supported classes: [survey_taylor]
 #'   (created by [as_survey()]), [survey_replicate] (created by
-#'   [as_survey_rep()]), and [survey_calibrated] (created by
-#'   [as_survey_calibrated()]). Two-phase designs ([survey_twophase]) are
-#'   not yet supported.
+#'   [as_survey_rep()]), [survey_srs] (created by [as_survey_srs()] or
+#'   [as_survey()]), [survey_twophase] (created by [as_survey_twophase()]),
+#'   and [survey_calibrated] (created by [as_survey_calibrated()]).
 #' @param var <[`tidy-select`][tidyselect::language]> A single unquoted
 #'   variable name to estimate the mean of.
 #' @param na.rm Logical. If `TRUE` (default), missing values are excluded
@@ -73,6 +64,20 @@
 #' \describe{
 #'   \item{`survey_taylor`}{Taylor series linearization.}
 #'   \item{`survey_replicate`}{Replicate-weight variance estimator.}
+#'   \item{`survey_twophase`}{Two-phase linearization (Saei and Roberts 1999;
+#'     Lumley 2010 §9.2). Three methods are supported, set at construction
+#'     time via [as_survey_twophase()]:
+#'     \itemize{
+#'       \item `"full"` — joint phase 1 + phase 2 linearization. Most
+#'         accurate. Requires `ids2`, `strata2`, or `probs2` to be specified
+#'         in [as_survey_twophase()].
+#'       \item `"approx"` — phase 1 variance with phase 2 correction, using
+#'         within-stratum sampling fractions as phase 2 probabilities. Valid
+#'         for most two-phase designs.
+#'       \item `"simple"` — phase 1 variance only. Conservative; valid when
+#'         phase 2 sampling fraction is high or phase 1 variance dominates.
+#'     }
+#'   }
 #'   \item{`survey_calibrated`}{SRS-based (model-assisted) variance.
 #'     Standard errors assume simple random sampling within the calibrated
 #'     weights. This is consistent with common practice for raked
@@ -101,11 +106,14 @@ get_means <- function(design, var, na.rm = TRUE) {
 
   # survey_replicate → replicate variance
   # survey_srs       → classical SRS variance
+  # survey_twophase  → two-phase linearization variance
   # survey_taylor and survey_calibrated → Taylor series variance
   result <- if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_mean(design, var_name, na.rm = na.rm)
   } else if (S7::S7_inherits(design, survey_srs)) {
     .srs_mean(design, var_name, na.rm = na.rm)
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    .twophase_mean(design, var_name, na.rm = na.rm)
   } else {
     .taylor_mean(design, var_name, na.rm = na.rm)
   }
@@ -120,9 +128,9 @@ get_means <- function(design, var, na.rm = TRUE) {
 #'
 #' @param design A survey design object. Supported classes: [survey_taylor]
 #'   (created by [as_survey()]), [survey_replicate] (created by
-#'   [as_survey_rep()]), and [survey_calibrated] (created by
-#'   [as_survey_calibrated()]). Two-phase designs ([survey_twophase]) are
-#'   not yet supported.
+#'   [as_survey_rep()]), [survey_srs] (created by [as_survey_srs()] or
+#'   [as_survey()]), [survey_twophase] (created by [as_survey_twophase()]),
+#'   and [survey_calibrated] (created by [as_survey_calibrated()]).
 #' @param var <[`tidy-select`][tidyselect::language]> A single unquoted
 #'   variable name to estimate the total of.
 #' @param na.rm Logical. If `TRUE` (default), missing values are excluded
@@ -132,6 +140,20 @@ get_means <- function(design, var, na.rm = TRUE) {
 #' \describe{
 #'   \item{`survey_taylor`}{Taylor series linearization.}
 #'   \item{`survey_replicate`}{Replicate-weight variance estimator.}
+#'   \item{`survey_twophase`}{Two-phase linearization (Saei and Roberts 1999;
+#'     Lumley 2010 §9.2). Three methods are supported, set at construction
+#'     time via [as_survey_twophase()]:
+#'     \itemize{
+#'       \item `"full"` — joint phase 1 + phase 2 linearization. Most
+#'         accurate. Requires `ids2`, `strata2`, or `probs2` to be specified
+#'         in [as_survey_twophase()].
+#'       \item `"approx"` — phase 1 variance with phase 2 correction, using
+#'         within-stratum sampling fractions as phase 2 probabilities. Valid
+#'         for most two-phase designs.
+#'       \item `"simple"` — phase 1 variance only. Conservative; valid when
+#'         phase 2 sampling fraction is high or phase 1 variance dominates.
+#'     }
+#'   }
 #'   \item{`survey_calibrated`}{SRS-based (model-assisted) variance.
 #'     Standard errors assume simple random sampling within the calibrated
 #'     weights. This is consistent with common practice for raked
@@ -161,11 +183,14 @@ get_totals <- function(design, var, na.rm = TRUE) {
 
   # survey_replicate → replicate variance
   # survey_srs       → classical SRS variance
+  # survey_twophase  → two-phase linearization variance
   # survey_taylor and survey_calibrated → Taylor series variance
   result <- if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_total(design, var_name, na.rm = na.rm)
   } else if (S7::S7_inherits(design, survey_srs)) {
     .srs_total(design, var_name, na.rm = na.rm)
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    .twophase_total(design, var_name, na.rm = na.rm)
   } else {
     .taylor_total(design, var_name, na.rm = na.rm)
   }
