@@ -149,7 +149,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # NULL entries are dropped by c(). Unique names are returned.
 # Works for survey_taylor, survey_replicate, and survey_twophase.
 # Used by conversion methods (05-methods-conversion.R), variance
-# estimation (06-variance-estimation.R), and surveytidy verbs.
+# estimation (06-variance-dispatch.R), and surveytidy verbs.
 # Exported (with @export) so surveytidy can call surveycore::.get_design_vars_flat()
 # without needing :::. The . prefix is intentional — this is not part of
 # the public user-facing API.
