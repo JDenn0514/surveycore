@@ -35,7 +35,7 @@ quality gates from spec Section 11 are achieved by the time PR 3 merges.
 
 - [x] PR 1: `feature/variance-file-split` — Split `R/06-variance-estimation.R` into four
   engine-specific files and split the corresponding test file
-- [ ] PR 2: `feature/twophase-constructor-na` — Change Warning 23b to a hard error
+- [x] PR 2: `feature/twophase-constructor-na` — Change Warning 23b to a hard error
   (`surveycore_error_subset_na`) and remove Warning 25 from `as_survey_twophase()`; rename
   `phase2_ind` → `subset` in the test data generator
 - [ ] PR 3: `feature/variance-twophase` — Implement the two-phase variance engine, extend

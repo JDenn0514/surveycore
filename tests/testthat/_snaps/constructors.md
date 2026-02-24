@@ -133,7 +133,7 @@
 # as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 warning
 
     Code
-      as_survey_twophase(phase1, subset = phase2_ind, method = "simple")
+      as_survey_twophase(phase1, subset = subset, method = "simple")
     Condition
       Warning:
       ! `method = "simple"` ignores the Phase 1 cluster design (PSUs: psu). This understates variance. Use `method = "full"` or `method = "approx"`.
@@ -146,54 +146,24 @@
       
     Output
       # A tibble: 200 x 9
-         psu   strata      fpc    wt    y1      y2    y3 group phase2_ind
-         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>     
-       1 psu_1 stratum_1   416 12.2   48.4  0.0895     1 C     TRUE      
-       2 psu_1 stratum_1   416 10.8   42.3  0.231      0 A     FALSE     
-       3 psu_2 stratum_1   416 11.1   49.0 -0.0118     0 A     FALSE     
-       4 psu_2 stratum_1   416 14.7   50.4  0.885      0 A     TRUE      
-       5 psu_2 stratum_1   416 16.9   43.6  0.469      1 A     FALSE     
-       6 psu_2 stratum_1   416 11.7   44.3 -0.978      0 C     TRUE      
-       7 psu_2 stratum_1   416 16.4   40.0  0.631      0 A     FALSE     
-       8 psu_3 stratum_1   416 11.0   63.5 -0.509      0 B     FALSE     
-       9 psu_3 stratum_1   416 12.9   51.3  0.232      0 C     FALSE     
-      10 psu_4 stratum_1   416  9.48  45.8 -1.64       0 C     FALSE     
-      # i 190 more rows
-
-# as_survey_twophase() snapshot: method = 'full' + no Phase 2 info warning
-
-    Code
-      as_survey_twophase(phase1, subset = phase2_ind, method = "full")
-    Condition
-      Warning:
-      ! No Phase 2 design information provided with `method = "full"`. Phase 2 selection treated as simple random subsampling within Phase 1 strata.
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_twophase> (method: full)
-      Phase 1 sample size: 200
-      Phase 2 sample size: 76
-      
-    Output
-      # A tibble: 200 x 9
-         psu   strata      fpc    wt    y1      y2    y3 group phase2_ind
-         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>     
-       1 psu_1 stratum_1   613  14.2  50.8  0.863      1 B     FALSE     
-       2 psu_1 stratum_1   613  12.7  51.5  0.767      0 C     FALSE     
-       3 psu_1 stratum_1   613  16.1  58.5 -0.0415     0 B     TRUE      
-       4 psu_1 stratum_1   613  13.4  52.7 -1.31       0 C     FALSE     
-       5 psu_1 stratum_1   613  15.9  35.5 -1.75       0 C     TRUE      
-       6 psu_2 stratum_1   613  17.1  59.1  0.121      0 B     FALSE     
-       7 psu_2 stratum_1   613  16.3  50.4 -0.520      0 C     TRUE      
-       8 psu_3 stratum_1   613  13.5  63.6  0.471      0 A     TRUE      
-       9 psu_3 stratum_1   613  17.8  46.3 -1.27       0 B     FALSE     
-      10 psu_4 stratum_1   613  27.9  65.2 -0.797      0 A     FALSE     
+         psu   strata      fpc    wt    y1      y2    y3 group subset
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl> 
+       1 psu_1 stratum_1   416 12.2   48.4  0.0895     1 C     TRUE  
+       2 psu_1 stratum_1   416 10.8   42.3  0.231      0 A     FALSE 
+       3 psu_2 stratum_1   416 11.1   49.0 -0.0118     0 A     FALSE 
+       4 psu_2 stratum_1   416 14.7   50.4  0.885      0 A     TRUE  
+       5 psu_2 stratum_1   416 16.9   43.6  0.469      1 A     FALSE 
+       6 psu_2 stratum_1   416 11.7   44.3 -0.978      0 C     TRUE  
+       7 psu_2 stratum_1   416 16.4   40.0  0.631      0 A     FALSE 
+       8 psu_3 stratum_1   416 11.0   63.5 -0.509      0 B     FALSE 
+       9 psu_3 stratum_1   416 12.9   51.3  0.232      0 C     FALSE 
+      10 psu_4 stratum_1   416  9.48  45.8 -1.64       0 C     FALSE 
       # i 190 more rows
 
 # as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]
 
     Code
-      as_survey_twophase(df, subset = phase2_ind)
+      as_survey_twophase(df, subset = subset)
     Condition
       Error in `as_survey_twophase()`:
       x `phase1` must be a <survey_taylor> object, not <data.frame>.
@@ -210,7 +180,7 @@
 # as_survey_twophase() errors when subset selects multiple columns [row 21]
 
     Code
-      as_survey_twophase(phase1, subset = starts_with("phase2_ind"))
+      as_survey_twophase(phase1, subset = starts_with("subset"))
     Condition
       Error in `as_survey_twophase()`:
       x `subset` must select exactly one column, not 2
@@ -230,6 +200,16 @@
     Condition
       Error in `as_survey_twophase()`:
       x `subset` column all_true must contain both TRUE and FALSE values (non-NA). Found 200 TRUE and 0 FALSE (non-NA) value(s).
+
+# as_survey_twophase() errors for NA in subset column [row 23b]
+
+    Code
+      as_survey_twophase(phase1, subset = phase2_na, method = "approx")
+    Condition
+      Error in `as_survey_twophase()`:
+      x `subset` column phase2_na contains 1 NA value(s).
+      i The phase 2 membership indicator must be fully observed for all phase 1 units.
+      v Remove rows with missing `subset` values before calling `as_survey_twophase()`.
 
 # as_survey_calibrated() rejects non-data-frame input
 

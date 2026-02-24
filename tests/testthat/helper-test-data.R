@@ -32,7 +32,7 @@
 #'
 #' Additional columns by design:
 #'   - design = "replicate": repwt_1 ... repwt_R replicate weight columns
-#'   - design = "twophase":  phase2_ind (logical, ~40% TRUE)
+#'   - design = "twophase":  subset (logical, ~40% TRUE)
 #'
 #' @param n         Total number of rows. Default 500L.
 #' @param n_psu     Number of PSUs. Default 50L. For BRR/Fay must be even.
@@ -143,7 +143,7 @@ make_survey_data <- function(
 
   # --- Two-phase indicator ---
   if (design == "twophase") {
-    df$phase2_ind <- runif(n) < 0.4
+    df$subset <- runif(n) < 0.4
   }
 
   # --- Haven-style label attributes ---
@@ -443,7 +443,7 @@ make_all_designs <- function(seed = 42L) {
     df_p,
     ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
   )
-  twophase <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  twophase <- as_survey_twophase(phase1, subset = subset, method = "approx")
 
   # Calibrated design (non-probability, weights only)
   df_c <- make_survey_data(

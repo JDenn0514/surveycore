@@ -55,7 +55,7 @@ make_twophase <- function(seed = 42L) {
     n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = seed
   )
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
-  suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  as_survey_twophase(phase1, subset = subset)
 }
 
 make_twophase_with_p2 <- function(seed = 42L) {
@@ -173,7 +173,7 @@ test_that(".get_design_vars_flat() returns phase1, phase2, and subset vars for s
   expect_true("wt"         %in% flat)
   expect_true("strata"     %in% flat)
   expect_true("fpc"        %in% flat)
-  expect_true("phase2_ind" %in% flat)
+  expect_true("subset" %in% flat)
 })
 
 
@@ -283,7 +283,7 @@ test_that(".get_design_vars() unlist() gives all design var names for survey_two
   flat <- unlist(surveycore:::.get_design_vars(d), use.names = FALSE)
   expect_true("psu"        %in% flat)
   expect_true("wt"         %in% flat)
-  expect_true("phase2_ind" %in% flat)
+  expect_true("subset" %in% flat)
 })
 
 
