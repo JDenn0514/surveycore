@@ -91,6 +91,7 @@ against the messages defined here.
 | 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | WARN | `surveycore_warning_as_survey_srs_fallback` | `c("!" = "No {.arg ids} or {.arg strata} specified.", "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).", "v" = "Use {.fn as_survey_srs} to create SRS designs without this warning.")` |
 | 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
 | 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
+| 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
 
 ---
 
@@ -129,6 +130,7 @@ Which test files cover which error table rows:
 | Test File | Error Rows Covered |
 |-----------|-------------------|
 | `test-constructors.R` | 1–24, 23b, 56–61 |
+| `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |

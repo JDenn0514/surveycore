@@ -41,24 +41,32 @@ test_that("get_totals() returns correct structure", {
 # Block 8: Error paths
 # ---------------------------------------------------------------------------
 
-test_that("get_means() errors on two-phase design (not yet implemented)", {
-  d <- make_survey_data(design = "twophase", seed = 1)
+test_that("get_means() dispatches to two-phase engine for survey_twophase", {
+  d      <- make_survey_data(design = "twophase", seed = 1)
   phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
   two    <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  expect_error(
-    get_means(two, y1),
-    class = "surveycore_error_unsupported_class"
-  )
+  result <- get_means(two, y1)
+
+  expect_type(result, "list")
+  expect_named(result, c("variable", "mean", "se"))
+  expect_identical(result$variable, "y1")
+  expect_true(is.finite(result$mean))
+  expect_true(is.finite(result$se))
+  expect_gte(result$se, 0)
 })
 
-test_that("get_totals() errors on two-phase design (not yet implemented)", {
-  d <- make_survey_data(design = "twophase", seed = 1)
+test_that("get_totals() dispatches to two-phase engine for survey_twophase", {
+  d      <- make_survey_data(design = "twophase", seed = 1)
   phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
   two    <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  expect_error(
-    get_totals(two, y1),
-    class = "surveycore_error_unsupported_class"
-  )
+  result <- get_totals(two, y1)
+
+  expect_type(result, "list")
+  expect_named(result, c("variable", "total", "se"))
+  expect_identical(result$variable, "y1")
+  expect_true(is.finite(result$total))
+  expect_true(is.finite(result$se))
+  expect_gte(result$se, 0)
 })
 
 test_that("get_means() errors when variable not found", {

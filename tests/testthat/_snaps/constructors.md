@@ -145,20 +145,21 @@
       Phase 2 sample size: 75
       
     Output
-      # A tibble: 200 x 9
-         psu   strata      fpc    wt    y1      y2    y3 group subset
-         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl> 
-       1 psu_1 stratum_1   416 12.2   48.4  0.0895     1 C     TRUE  
-       2 psu_1 stratum_1   416 10.8   42.3  0.231      0 A     FALSE 
-       3 psu_2 stratum_1   416 11.1   49.0 -0.0118     0 A     FALSE 
-       4 psu_2 stratum_1   416 14.7   50.4  0.885      0 A     TRUE  
-       5 psu_2 stratum_1   416 16.9   43.6  0.469      1 A     FALSE 
-       6 psu_2 stratum_1   416 11.7   44.3 -0.978      0 C     TRUE  
-       7 psu_2 stratum_1   416 16.4   40.0  0.631      0 A     FALSE 
-       8 psu_3 stratum_1   416 11.0   63.5 -0.509      0 B     FALSE 
-       9 psu_3 stratum_1   416 12.9   51.3  0.232      0 C     FALSE 
-      10 psu_4 stratum_1   416  9.48  45.8 -1.64       0 C     FALSE 
+      # A tibble: 200 x 11
+         psu   strata      fpc    wt    y1      y2    y3 group subset phase1_prob
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>        <dbl>
+       1 psu_1 stratum_1   416 12.2   48.4  0.0895     1 C     TRUE        0.0865
+       2 psu_1 stratum_1   416 10.8   42.3  0.231      0 A     FALSE       0.0865
+       3 psu_2 stratum_1   416 11.1   49.0 -0.0118     0 A     FALSE       0.0865
+       4 psu_2 stratum_1   416 14.7   50.4  0.885      0 A     TRUE        0.0865
+       5 psu_2 stratum_1   416 16.9   43.6  0.469      1 A     FALSE       0.0865
+       6 psu_2 stratum_1   416 11.7   44.3 -0.978      0 C     TRUE        0.0865
+       7 psu_2 stratum_1   416 16.4   40.0  0.631      0 A     FALSE       0.0865
+       8 psu_3 stratum_1   416 11.0   63.5 -0.509      0 B     FALSE       0.0865
+       9 psu_3 stratum_1   416 12.9   51.3  0.232      0 C     FALSE       0.0865
+      10 psu_4 stratum_1   416  9.48  45.8 -1.64       0 C     FALSE       0.0865
       # i 190 more rows
+      # i 1 more variable: phase2_prob <dbl>
 
 # as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]
 

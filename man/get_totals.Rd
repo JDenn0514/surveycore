@@ -9,9 +9,9 @@ get_totals(design, var, na.rm = TRUE)
 \arguments{
 \item{design}{A survey design object. Supported classes: \link{survey_taylor}
 (created by \code{\link[=as_survey]{as_survey()}}), \link{survey_replicate} (created by
-\code{\link[=as_survey_rep]{as_survey_rep()}}), and \link{survey_calibrated} (created by
-\code{\link[=as_survey_calibrated]{as_survey_calibrated()}}). Two-phase designs (\link{survey_twophase}) are
-not yet supported.}
+\code{\link[=as_survey_rep]{as_survey_rep()}}), \link{survey_srs} (created by \code{\link[=as_survey_srs]{as_survey_srs()}} or
+\code{\link[=as_survey]{as_survey()}}), \link{survey_twophase} (created by \code{\link[=as_survey_twophase]{as_survey_twophase()}}),
+and \link{survey_calibrated} (created by \code{\link[=as_survey_calibrated]{as_survey_calibrated()}}).}
 
 \item{var}{<\code{\link[tidyselect:language]{tidy-select}}> A single unquoted
 variable name to estimate the total of.}
@@ -36,6 +36,20 @@ using the appropriate variance estimator for the survey design type.
 \describe{
 \item{\code{survey_taylor}}{Taylor series linearization.}
 \item{\code{survey_replicate}}{Replicate-weight variance estimator.}
+\item{\code{survey_twophase}}{Two-phase linearization (Saei and Roberts 1999;
+Lumley 2010 §9.2). Three methods are supported, set at construction
+time via \code{\link[=as_survey_twophase]{as_survey_twophase()}}:
+\itemize{
+\item \code{"full"} — joint phase 1 + phase 2 linearization. Most
+accurate. Requires \code{ids2}, \code{strata2}, or \code{probs2} to be specified
+in \code{\link[=as_survey_twophase]{as_survey_twophase()}}.
+\item \code{"approx"} — phase 1 variance with phase 2 correction, using
+within-stratum sampling fractions as phase 2 probabilities. Valid
+for most two-phase designs.
+\item \code{"simple"} — phase 1 variance only. Conservative; valid when
+phase 2 sampling fraction is high or phase 1 variance dominates.
+}
+}
 \item{\code{survey_calibrated}}{SRS-based (model-assisted) variance.
 Standard errors assume simple random sampling within the calibrated
 weights. This is consistent with common practice for raked

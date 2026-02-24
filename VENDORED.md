@@ -9,7 +9,9 @@ surveycore is licensed under GPL-3. Variance estimation code is vendored from th
 `survey` package by Thomas Lumley, licensed under GPL-2 | GPL-3. Vendoring
 GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 
-## Attribution Header (required in R/06-variance-estimation.R)
+## Attribution Headers
+
+### R/06-variance-taylor.R (Taylor and replicate variance)
 
 ```r
 # =============================================================================
@@ -32,6 +34,8 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 
 ## Vendored Functions
 
+### Taylor / Replicate (R/06-variance-taylor.R)
+
 | surveycore name | Adapted from | survey version | Modified? | Notes |
 |-----------------|-------------|----------------|-----------|-------|
 | `.svy_onestrat()` | `survey:::onestrat` | 4.4.8 | Yes | cli errors; `getOption("survey.adjust.domain.lonely")` removed |
@@ -39,7 +43,14 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 | `.svy_multistage()` | `survey:::multistage` | 4.4.8 | Yes | RCPP path removed; renamed `fpcs` param to `popmat` for clarity |
 | `.svy_recvar()` | `survey:::svyrecvar` | 4.4.8 | Yes | RCPP dispatch and post-strata handling removed (Phase 0 scope) |
 
-All four functions live in `R/06-variance-estimation.R`. Each carries the file-level attribution header.
+### Two-Phase (R/06-variance-twophase.R)
+
+| surveycore name | Adapted from | survey version | Modified? | Notes |
+|-----------------|-------------|----------------|-----------|-------|
+| `.twophasevar()` | `survey:::twophasevar` | 4.4.8 | Yes | S7 class access; three-method dispatch made explicit; cli errors |
+| `.twophase_phase1_var()` | `survey:::svyrecvar.phase1` | 4.4.8 | Yes | S7 `@variables` access; FPC matrix built inline; cli errors |
+| `.twophase_phase2_var()` | Phase 2 component of `survey:::twophasevar` | 4.4.8 | Yes | S7 access; auto-popsize computation; RCPP path removed |
+| `.compute_phase2_probs()` | Internal prob computation in `survey/R/twophase.R` | 4.4.8 | Yes | S7 `@variables` access; three-priority rule made explicit |
 
 ## Functions to Vendor (Phase 0 Scope)
 
@@ -67,8 +78,7 @@ be vendored with a per-function attribution comment:
 
 ### Two-Phase Designs (survey_twophase)
 
-- Phase 2 variance component (method = "full", "approx", "simple")
-- Phase 1 + Phase 2 variance combination
+*Vendored in Phase 0.75 — see "Two-Phase" table above.*
 
 ### Domain / Subpopulation Estimation
 
