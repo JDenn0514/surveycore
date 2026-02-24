@@ -164,18 +164,18 @@
       
     Output
       # A tibble: 60 x 9
-         psu   strata      fpc    wt    y1         y2    y3 group phase2_ind
-         <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl>     
-       1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE      
-       2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE     
-       3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE     
-       4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE      
-       5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE     
-       6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE      
-       7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE      
-       8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE     
-       9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE      
-      10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE      
+         psu   strata      fpc    wt    y1         y2    y3 group subset
+         <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl> 
+       1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE  
+       2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE 
+       3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE 
+       4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE  
+       5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE 
+       6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE  
+       7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE  
+       8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE 
+       9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE  
+      10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE  
       # i 50 more rows
 
 # print.survey_twophase full=TRUE output matches snapshot
@@ -199,7 +199,7 @@
       
       -- Phase 2 design --
       
-      * Subset: phase2_ind
+      * Subset: subset
       
       
       -- Metadata --
@@ -208,18 +208,18 @@
       
     Output
       # A tibble: 60 x 9
-         psu   strata      fpc    wt    y1         y2    y3 group phase2_ind
-         <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl>     
-       1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE      
-       2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE     
-       3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE     
-       4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE      
-       5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE     
-       6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE      
-       7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE      
-       8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE     
-       9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE      
-      10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE      
+         psu   strata      fpc    wt    y1         y2    y3 group subset
+         <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl> 
+       1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE  
+       2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE 
+       3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE 
+       4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE  
+       5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE 
+       6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE  
+       7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE  
+       8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE 
+       9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE  
+      10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE  
       # i 50 more rows
 
 # summary.survey_taylor output matches snapshot
@@ -291,7 +291,7 @@
       
       -- Phase 2 design --
       
-      Subset: phase2_ind
+      Subset: subset
       
       Metadata: 0 of 9 variable(s) labeled
 

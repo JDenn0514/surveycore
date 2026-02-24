@@ -899,22 +899,25 @@ as_survey_twophase <- function(
 
   subset_vals <- data[[subset_var]]
 
-  # Warning: NAs in subset column mean some rows have unknown Phase 2
-  # membership — flag this so users are not surprised by downstream behavior.
+  # Error: NAs in subset column — phase 2 membership must be fully observed.
   n_na <- sum(is.na(subset_vals))
   if (n_na > 0L) {
-    cli::cli_warn(
+    cli::cli_abort(
       c(
-        "!" = paste0(
+        "x" = paste0(
           "{.arg subset} column {.field {subset_var}} contains {n_na} ",
           "NA value(s)."
         ),
         "i" = paste0(
-          "Rows with NA are excluded from Phase 2. ",
-          "This may affect variance estimation."
+          "The phase 2 membership indicator must be fully observed ",
+          "for all phase 1 units."
+        ),
+        "v" = paste0(
+          "Remove rows with missing {.arg subset} values before calling ",
+          "{.fn as_survey_twophase}."
         )
       ),
-      class = "surveycore_warning_subset_na"
+      class = "surveycore_error_subset_na"
     )
   }
 
@@ -973,24 +976,6 @@ as_survey_twophase <- function(
         )
       ),
       class = "surveycore_warning_simple_clustered"
-    )
-  }
-
-  # ── Warning 25: method = "full" with no Phase 2 design info ─────────────────
-
-  no_phase2_info <- is.null(ids2_vars) && is.null(strata2_var) &&
-                    is.null(probs2_var) && is.null(fpc2_var)
-  if (method == "full" && no_phase2_info) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          'No Phase 2 design information provided with ',
-          '{.code method = "full"}. ',
-          "Phase 2 selection treated as simple random subsampling within ",
-          "Phase 1 strata."
-        )
-      ),
-      class = "surveycore_warning_full_no_phase2"
     )
   }
 

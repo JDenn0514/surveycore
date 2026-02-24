@@ -44,9 +44,7 @@ test_that("get_totals() returns correct structure", {
 test_that("get_means() errors on two-phase design (not yet implemented)", {
   d <- make_survey_data(design = "twophase", seed = 1)
   phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
-  two    <- suppressWarnings(
-    as_survey_twophase(phase1, subset = phase2_ind)
-  )
+  two    <- as_survey_twophase(phase1, subset = subset, method = "approx")
   expect_error(
     get_means(two, y1),
     class = "surveycore_error_unsupported_class"
@@ -56,9 +54,7 @@ test_that("get_means() errors on two-phase design (not yet implemented)", {
 test_that("get_totals() errors on two-phase design (not yet implemented)", {
   d <- make_survey_data(design = "twophase", seed = 1)
   phase1 <- as_survey(d, ids = psu, strata = strata, weights = wt)
-  two    <- suppressWarnings(
-    as_survey_twophase(phase1, subset = phase2_ind)
-  )
+  two    <- as_survey_twophase(phase1, subset = subset, method = "approx")
   expect_error(
     get_totals(two, y1),
     class = "surveycore_error_unsupported_class"

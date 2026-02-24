@@ -97,7 +97,7 @@ make_twophase_design <- function(seed = 42L) {
     fpc     = fpc,
     nest    = TRUE
   )
-  suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  as_survey_twophase(phase1, subset = subset)
 }
 
 

@@ -51,9 +51,8 @@ against the messages defined here.
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
 | 22 | `as_survey_twophase()` | `subset` column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"{.arg subset} column {.field {subset_var}} must be logical, not {.cls {class(data[[subset_var]])}}"` |
 | 23 | `as_survey_twophase()` | `subset` is all TRUE or all FALSE (among non-NA) | ERROR | `surveycore_error_subset_degenerate` | `"{.arg subset} column {.field {subset_var}} must contain both TRUE and FALSE values (non-NA). Found {n_true} TRUE and {n_false} FALSE (non-NA) value(s)."` |
-| 23b | `as_survey_twophase()` | `subset` column contains NA values | WARN | `surveycore_warning_subset_na` | `"{.arg subset} column {.field {subset_var}} contains {n_na} NA value(s). Rows with NA are excluded from Phase 2. This may affect variance estimation."` |
+| 23b | `as_survey_twophase()` | `subset` column contains NA values | ERROR | `surveycore_error_subset_na` | `"x" = "{.arg subset} column {.field {subset_var}} contains {n_na} NA value(s).", "i" = "The phase 2 membership indicator must be fully observed for all phase 1 units.", "v" = "Remove rows with missing {.arg subset} values before calling {.fn as_survey_twophase}."` |
 | 24 | `as_survey_twophase()` | `method = "simple"` + clustered Phase 1 | WARN | `surveycore_warning_simple_clustered` | `'{.code method = "simple"} ignores the Phase 1 cluster design (PSUs: {.field {phase1@variables$ids}}). This understates variance. Use {.code method = "full"} or {.code method = "approx"}.'` |
-| 25 | `as_survey_twophase()` | `method = "full"` + no Phase 2 design info | WARN | `surveycore_warning_full_no_phase2` | `'No Phase 2 design information provided with {.code method = "full"}. Phase 2 selection treated as simple random subsampling within Phase 1 strata.'` |
 | 26 | `as_survey_twophase()` (validator) | Phase 2 design var all-NA within Phase 2 subset | WARN | `surveycore_warning_phase2_all_na` | `"Phase 2 design variable {.field {var}} is all NA within the Phase 2 subset. Check rows where {.field {subset_var}} is TRUE."` |
 | 27 | `set_var_label()` | Variable not found in data | ERROR | `surveycore_error_var_not_found` | `"Variable {.field {var_name}} not found in {.arg x}. Available: {.field {names(x@data)}}"` |
 | 28 | `set_variable_labels()` | One or more variables not found | ERROR | `surveycore_error_vars_not_found` | `"Variable(s) not found in {.arg x}: {.field {missing}}"` |
@@ -129,7 +128,7 @@ Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–26, 56–61 |
+| `test-constructors.R` | 1–24, 23b, 56–61 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |

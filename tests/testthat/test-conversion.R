@@ -83,7 +83,7 @@ make_twophase <- function(seed = 42L) {
     n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = seed
   )
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
-  suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  as_survey_twophase(phase1, subset = subset)
 }
 
 
@@ -306,7 +306,7 @@ test_that("from_svydesign() converts twophase design to survey_twophase without 
   skip_if_not_installed("survey")
   df    <- make_survey_data(n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = 42L)
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
-  d_sc  <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  d_sc  <- as_survey_twophase(phase1, subset = subset)
   sv_tp <- suppressWarnings(as_svydesign(d_sc))
   d     <- suppressWarnings(from_svydesign(sv_tp))
   expect_true(!is.null(d))
@@ -345,7 +345,7 @@ test_that("from_svydesign(twophase) returns a survey_twophase object", {
   skip_if_not_installed("survey")
   df    <- make_survey_data(n = 60L, n_psu = 10L, n_strata = 2L, design = "twophase", seed = 42L)
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
-  d_sc  <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  d_sc  <- as_survey_twophase(phase1, subset = subset)
   sv_tp <- suppressWarnings(as_svydesign(d_sc))
   d     <- suppressWarnings(from_svydesign(sv_tp))
   expect_true(S7::S7_inherits(d, survey_twophase))
@@ -526,7 +526,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 301L)
   # phase1 with no ids (SRS-like) — p1$ids will be NULL
   phase1 <- as_survey(df, weights = wt, strata = strata)
-  d2     <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  d2     <- as_survey_twophase(phase1, subset = subset)
   sv     <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
 })
@@ -536,9 +536,7 @@ test_that("as_svydesign() handles twophase design with phase2 ids", {
   skip_if_not_installed("survey")
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 302L)
   phase1 <- as_survey(df, weights = wt, strata = strata)
-  d2     <- suppressWarnings(
-    as_survey_twophase(phase1, ids2 = psu, subset = phase2_ind)
-  )
+  d2     <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
   sv     <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
 })

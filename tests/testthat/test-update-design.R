@@ -160,7 +160,7 @@ test_that("update_design() validate=TRUE result passes test_invariants()", {
 test_that("update_design() errors for survey_twophase with unsupported class", {
   df     <- make_survey_data(n = 100L, design = "twophase", seed = 40L)
   phase1 <- as_survey(df, weights = wt, strata = strata)
-  d2     <- suppressWarnings(as_survey_twophase(phase1, subset = phase2_ind))
+  d2     <- as_survey_twophase(phase1, subset = subset)
   expect_error(
     update_design(d2, weights = wt),
     class = "surveycore_error_unsupported_class"
