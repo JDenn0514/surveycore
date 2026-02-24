@@ -246,6 +246,18 @@ test_that("as_survey() warns with cluster message when ids given but no weights 
   )
 })
 
+test_that("as_survey() warns with SRS message when strata given but no ids and no weights [row 7]", {
+  df <- data.frame(st = rep(c("A", "B"), 5), y = 1:10, wt = rep(1, 10))
+  expect_warning(
+    as_survey(df, strata = st),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  expect_warning(
+    as_survey(df, strata = st),
+    regexp = "No weights or population size provided"
+  )
+})
+
 test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]", {
   df <- data.frame(y = 1:10)
   d  <- suppressWarnings(as_survey(df))

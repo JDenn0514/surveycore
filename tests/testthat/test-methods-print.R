@@ -30,6 +30,7 @@
 #  24. summary.survey_srs — output and invisible return
 #  25. summary.survey_srs — FPC info in output
 #  26. summary.survey_srs — output (snapshot)
+#  27. print.survey_srs — probs_provided label in design_info
 #
 # Note: cli output (cli_h1/h2/text/bullets) goes to message(), not stdout.
 # Use capture.output(type = "message") to capture cli output in tests.
@@ -471,4 +472,16 @@ test_that("summary.survey_srs output matches snapshot", {
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(summary(d))
+})
+
+
+# ── 27. print.survey_srs — probs_provided label ──────────────────────────────
+
+test_that("print.survey_srs shows '(from sampling probabilities)' when probs_provided", {
+  df <- data.frame(y = 1:10, p = rep(0.1, 10))
+  d  <- as_survey_srs(df, probs = p)
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(print(d, design_info = TRUE), type = "message")
+  expect_true(any(grepl("from sampling probabilities", out)))
 })

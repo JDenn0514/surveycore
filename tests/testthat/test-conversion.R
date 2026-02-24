@@ -47,6 +47,10 @@
 #    26. svymean round-trip for replicate design [numerical]
 #   from_svydesign() — error on non-survey input
 #    27. rejects plain data.frame
+#   as_svydesign() — survey_taylor with no ids uses ids = ~1
+#    37. as_svydesign(survey_taylor) with ids = NULL produces ids = ~1
+#   from_svydesign() — twophase method unknown fallback warning
+#    38. warns when twophase x$method is unrecognised
 #   from_tbl_svy() — happy path
 #    28. tbl_svy → survey_taylor
 #   from_tbl_svy() — error on non-tbl_svy input
@@ -612,4 +616,46 @@ test_that("from_svydesign() replicate result has visible_vars key in @variables"
                               type = "BRR", combined.weights = TRUE)
   d   <- from_svydesign(sv)
   expect_true("visible_vars" %in% names(d@variables))
+})
+
+
+# 37. as_svydesign() for survey_taylor with ids = NULL uses ids = ~1 (line 111)
+test_that("as_svydesign() uses ids = ~1 when survey_taylor has ids = NULL", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 30L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  # Stratified design with no cluster ids — ids = NULL in @variables
+  d  <- as_survey(df, weights = wt, strata = strata)
+  test_invariants(d)
+  expect_null(d@variables$ids)
+  sv <- as_svydesign(d)
+  expect_true(inherits(sv, "survey.design"))
+})
+
+
+# 38. from_svydesign() warns when twophase x$method is unrecognised (lines 465-472)
+test_that("from_svydesign() warns surveycore_warning_twophase_method_unknown for unknown method", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n   <- 30L
+  df  <- data.frame(x = rnorm(n), wt = rep(1, n))
+  sub <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.6, 0.4))
+  # method = "approx" creates a plain "twophase" object (not "twophase2"), so
+  # the class-based fallback does not fire and only x$method controls dispatch.
+  sv  <- survey::twophase(
+    id     = list(~1, ~1),
+    strata = list(NULL, NULL),
+    probs  = list(NULL, NULL),
+    data   = df,
+    subset = sub,
+    method = "approx"
+  )
+  # Replace method with an unrecognised value to trigger the fallback warning.
+  sv$method <- "nonexistent_method"
+
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_method_unknown"
+  )
+  expect_true(S7::S7_inherits(d, survey_twophase))
+  expect_identical(d@variables$method, "approx")
 })

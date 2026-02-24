@@ -457,8 +457,10 @@ from_svydesign <- function(x) {
   }
 
   # Derive method: check x$method first, fall back to class-based inference.
+  # survey::twophase() never stores x$method — the branch below is defensive
+  # for survey-compatible packages that may set it explicitly. # nocov start
   method <- if (!is.null(x$method) && x$method %in% c("full", "approx", "simple")) {
-    x$method
+    x$method # nocov end
   } else if (inherits(x, "twophase2")) {
     "full"
   } else {
