@@ -470,13 +470,12 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
   n_rep      <- length(repwt_cols)  # should be 10 (n_psu / 2)
 
   sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
-  # survey package default scale for BRR is 1/4 when not specified.
-  # Pass scale = 1/n_rep explicitly to match surveycore behaviour.
+  # survey hardcodes scale = 1/R for BRR internally; the scale= argument is
+  # ignored. Both packages independently compute (1/n_rep) * sum((theta_r - theta)^2).
   sv <- survey::svrepdesign(
     weights    = d$wt,
     repweights = d[, repwt_cols],
     type       = "BRR",
-    scale      = 1 / n_rep,
     mse        = TRUE,
     data       = d
   )

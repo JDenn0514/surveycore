@@ -688,9 +688,9 @@ as_survey_rep <- function(
       JK1                     = (n_rep - 1L) / n_rep,
       JK2                     = (n_rep - 1L) / n_rep,
       JKn                     = (n_rep - 1L) / n_rep,
-      # 1/n_rep is the correct BRR scale: verified against survey::svrepdesign
-      # with n_rep = 10 (oracle test in test-variance-estimation.R). The
-      # survey package computes BRR variance internally with this same formula.
+      # BRR variance formula: (1/R) * sum((theta_r - theta)^2). The survey
+      # package hardcodes this same formula internally (scale= is ignored for
+      # BRR). Oracle test in test-variance-estimation.R verifies agreement.
       BRR                     = 1 / n_rep,
       Fay                     = 1 / n_rep,
       bootstrap               = 1 / n_rep,
