@@ -41,9 +41,8 @@ survey_base(
 
 - `groups`:
 
-  Character vector of active grouping variables. Always `character(0)`
-  in Phase 0. Reserved for Phase 0.5 (`group_by()` support in
-  surveytidy).
+  Character vector of active grouping variables. Set by surveytidy's
+  `group_by()`. Always `character(0)` in standalone surveycore use.
 
 - `call`:
 

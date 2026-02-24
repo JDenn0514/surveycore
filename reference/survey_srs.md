@@ -40,7 +40,8 @@ survey_srs(
 
 - groups:
 
-  Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+  Set by surveytidy's `group_by()`. Always `character(0)` in standalone
+  surveycore use.
 
 - call:
 
