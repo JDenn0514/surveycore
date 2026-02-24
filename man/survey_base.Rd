@@ -27,8 +27,8 @@ use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_rep]{as_survey
 \item{\code{variables}}{A named list of design specification (varies by
 subclass).}
 \item{\code{groups}}{Character vector of active grouping variables.
-Always \code{character(0)} in Phase 0. Reserved for Phase 0.5
-(\code{group_by()} support in surveytidy).}
+Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
+standalone surveycore use.}
 \item{\code{call}}{The language object capturing the construction call,
 or \code{NULL}.}
 }

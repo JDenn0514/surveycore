@@ -19,13 +19,13 @@
 # ── Internal helpers ────────────────────────────────────────────────────────
 
 # Return the subset of @data to display, converted to tibble for printing.
-# Phase 0: always all columns.
-# Phase 0.5: respects @variables$visible_vars set by select().
+# Respects @variables$visible_vars when set by surveytidy's select().
+# NULL (the surveycore default) → all columns shown.
 #' @noRd
 .data_for_print <- function(x) {
   visible <- x@variables[["visible_vars"]]
   data <- if (!is.null(visible)) {
-    x@data[, visible, drop = FALSE] # nocov — Phase 0.5 only
+    x@data[, visible, drop = FALSE] # nocov — only set by surveytidy
   } else {
     x@data
   }
@@ -33,12 +33,12 @@
 }
 
 # Print a note about design variables that are not in data_shown.
-# In Phase 0 this never fires (visible_vars is always NULL, so data_shown
-# contains all columns). Included for Phase 0.5 compatibility.
+# Only fires when surveytidy's select() has hidden design variables
+# (i.e., visible_vars is set). Never fires in standalone surveycore use.
 #' @noRd
 .print_hidden_note <- function(design_vars, data_shown) {
   hidden <- setdiff(design_vars, names(data_shown))
-  if (length(hidden) > 0L) { # nocov start — Phase 0.5 only
+  if (length(hidden) > 0L) { # nocov start — only set by surveytidy
     cli::cli_text("")
     cli::cli_bullets(c(
       "i" = "Design variables preserved but hidden: {.field {hidden}}.",
