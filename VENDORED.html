@@ -38,7 +38,9 @@
 <p>surveycore is licensed under GPL-3. Variance estimation code is vendored from the <code>survey</code> package by Thomas Lumley, licensed under GPL-2 | GPL-3. Vendoring GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.</p>
 </div>
 <div class="section level2">
-<h2 id="attribution-header-required-in-r06-variance-estimationr">Attribution Header (required in R/06-variance-estimation.R)<a class="anchor" aria-label="anchor" href="#attribution-header-required-in-r06-variance-estimationr"></a></h2>
+<h2 id="attribution-headers">Attribution Headers<a class="anchor" aria-label="anchor" href="#attribution-headers"></a></h2>
+<div class="section level3">
+<h3 id="r06-variance-taylorr-taylor-and-replicate-variance">R/06-variance-taylor.R (Taylor and replicate variance)<a class="anchor" aria-label="anchor" href="#r06-variance-taylorr-taylor-and-replicate-variance"></a></h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># =============================================================================</span></span>
 <span><span class="co"># Vendored from the survey package by Thomas Lumley</span></span>
@@ -57,8 +59,11 @@
 <span><span class="co">#   Copyright (C) Thomas Lumley and contributors</span></span>
 <span><span class="co"># =============================================================================</span></span></code></pre></div>
 </div>
+</div>
 <div class="section level2">
 <h2 id="vendored-functions">Vendored Functions<a class="anchor" aria-label="anchor" href="#vendored-functions"></a></h2>
+<div class="section level3">
+<h3 id="taylor--replicate-r06-variance-taylorr">Taylor / Replicate (R/06-variance-taylor.R)<a class="anchor" aria-label="anchor" href="#taylor--replicate-r06-variance-taylorr"></a></h3>
 <table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
 <th>Adapted from</th>
 <th>survey version</th>
@@ -85,7 +90,37 @@
 <td>4.4.8</td>
 <td>Yes</td>
 <td>RCPP dispatch and post-strata handling removed (Phase 0 scope)</td>
-</tr></tbody></table><p>All four functions live in <code>R/06-variance-estimation.R</code>. Each carries the file-level attribution header.</p>
+</tr></tbody></table></div>
+<div class="section level3">
+<h3 id="two-phase-r06-variance-twophaser">Two-Phase (R/06-variance-twophase.R)<a class="anchor" aria-label="anchor" href="#two-phase-r06-variance-twophaser"></a></h3>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<th>Adapted from</th>
+<th>survey version</th>
+<th>Modified?</th>
+<th>Notes</th>
+</tr></thead><tbody><tr class="odd"><td><code>.twophasevar()</code></td>
+<td><code>survey:::twophasevar</code></td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>S7 class access; three-method dispatch made explicit; cli errors</td>
+</tr><tr class="even"><td><code>.twophase_phase1_var()</code></td>
+<td><code>survey:::svyrecvar.phase1</code></td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>S7 <code>@variables</code> access; FPC matrix built inline; cli errors</td>
+</tr><tr class="odd"><td><code>.twophase_phase2_var()</code></td>
+<td>Phase 2 component of <code>survey:::twophasevar</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>S7 access; auto-popsize computation; RCPP path removed</td>
+</tr><tr class="even"><td><code>.compute_phase2_probs()</code></td>
+<td>Internal prob computation in <code>survey/R/twophase.R</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>S7 <code>@variables</code> access; three-priority rule made explicit</td>
+</tr></tbody></table></div>
 </div>
 <div class="section level2">
 <h2 id="functions-to-vendor-phase-0-scope">Functions to Vendor (Phase 0 Scope)<a class="anchor" aria-label="anchor" href="#functions-to-vendor-phase-0-scope"></a></h2>
@@ -111,9 +146,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="two-phase-designs-survey_twophase">Two-Phase Designs (survey_twophase)<a class="anchor" aria-label="anchor" href="#two-phase-designs-survey_twophase"></a></h3>
-<ul><li>Phase 2 variance component (method = “full”, “approx”, “simple”)</li>
-<li>Phase 1 + Phase 2 variance combination</li>
-</ul></div>
+<p><em>Vendored in Phase 0.75 — see “Two-Phase” table above.</em></p>
+</div>
 <div class="section level3">
 <h3 id="domain--subpopulation-estimation">Domain / Subpopulation Estimation<a class="anchor" aria-label="anchor" href="#domain--subpopulation-estimation"></a></h3>
 <ul><li>Domain indicator application to linearized totals</li>

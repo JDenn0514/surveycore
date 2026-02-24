@@ -50,9 +50,9 @@ using the appropriate variance estimator for the survey design type.</p>
 <dl><dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
 <dd><p>A survey design object. Supported classes: <a href="survey_taylor.html">survey_taylor</a>
 (created by <code><a href="as_survey.html">as_survey()</a></code>), <a href="survey_replicate.html">survey_replicate</a> (created by
-<code><a href="as_survey_rep.html">as_survey_rep()</a></code>), and <a href="survey_calibrated.html">survey_calibrated</a> (created by
-<code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>). Two-phase designs (<a href="survey_twophase.html">survey_twophase</a>) are
-not yet supported.</p></dd>
+<code><a href="as_survey_rep.html">as_survey_rep()</a></code>), <a href="survey_srs.html">survey_srs</a> (created by <code><a href="as_survey_srs.html">as_survey_srs()</a></code> or
+<code><a href="as_survey.html">as_survey()</a></code>), <a href="survey_twophase.html">survey_twophase</a> (created by <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>),
+and <a href="survey_calibrated.html">survey_calibrated</a> (created by <code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>).</p></dd>
 
 
 <dt id="arg-var">var<a class="anchor" aria-label="anchor" href="#arg-var"></a></dt>
@@ -87,6 +87,19 @@ before computing the mean. Set to <code>FALSE</code> to propagate <code>NA</code
 
 <dt><code>survey_replicate</code></dt>
 <dd><p>Replicate-weight variance estimator.</p></dd>
+
+<dt><code>survey_twophase</code></dt>
+<dd><p>Two-phase linearization (Saei and Roberts 1999;
+Lumley 2010 §9.2). Three methods are supported, set at construction
+time via <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>:</p><ul><li><p><code>"full"</code> — joint phase 1 + phase 2 linearization. Most
+accurate. Requires <code>ids2</code>, <code>strata2</code>, or <code>probs2</code> to be specified
+in <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>.</p></li>
+<li><p><code>"approx"</code> — phase 1 variance with phase 2 correction, using
+within-stratum sampling fractions as phase 2 probabilities. Valid
+for most two-phase designs.</p></li>
+<li><p><code>"simple"</code> — phase 1 variance only. Conservative; valid when
+phase 2 sampling fraction is high or phase 1 variance dominates.</p></li>
+</ul></dd>
 
 <dt><code>survey_calibrated</code></dt>
 <dd><p>SRS-based (model-assisted) variance.

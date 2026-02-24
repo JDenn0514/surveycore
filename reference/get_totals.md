@@ -20,13 +20,18 @@ get_totals(design, var, na.rm = TRUE)
   [survey_replicate](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)
   (created by
   [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)),
+  [survey_srs](https://jdenn0514.github.io/surveycore/reference/survey_srs.md)
+  (created by
+  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+  or
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
+  [survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
+  (created by
+  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)),
   and
   [survey_calibrated](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
   (created by
   [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)).
-  Two-phase designs
-  ([survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md))
-  are not yet supported.
 
 - var:
 
@@ -63,6 +68,23 @@ A named list with elements:
 - `survey_replicate`:
 
   Replicate-weight variance estimator.
+
+- `survey_twophase`:
+
+  Two-phase linearization (Saei and Roberts 1999; Lumley 2010 §9.2).
+  Three methods are supported, set at construction time via
+  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md):
+
+  - `"full"` — joint phase 1 + phase 2 linearization. Most accurate.
+    Requires `ids2`, `strata2`, or `probs2` to be specified in
+    [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md).
+
+  - `"approx"` — phase 1 variance with phase 2 correction, using
+    within-stratum sampling fractions as phase 2 probabilities. Valid
+    for most two-phase designs.
+
+  - `"simple"` — phase 1 variance only. Conservative; valid when phase 2
+    sampling fraction is high or phase 1 variance dominates.
 
 - `survey_calibrated`:
 
