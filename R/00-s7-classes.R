@@ -99,8 +99,8 @@ survey_metadata <- S7::new_class(
 #'   \item{`variables`}{A named list of design specification (varies by
 #'     subclass).}
 #'   \item{`groups`}{Character vector of active grouping variables.
-#'     Always `character(0)` in Phase 0. Reserved for Phase 0.5
-#'     (`group_by()` support in surveytidy).}
+#'     Set by surveytidy's `group_by()`. Always `character(0)` in
+#'     standalone surveycore use.}
 #'   \item{`call`}{The language object capturing the construction call,
 #'     or `NULL`.}
 #' }
@@ -123,8 +123,8 @@ survey_base <- S7::new_class(
       S7::class_list,
       default = quote(list())
     ),
-    # RESERVED: Phase 0.5 — group_by() support in surveytidy.
-    # Always character(0) in Phase 0. Do NOT read or write in Phase 0 code.
+    # Set by surveytidy's group_by(). Always character(0) in standalone
+    # surveycore use. Do NOT read or write in surveycore code.
     groups   = S7::new_property(
       S7::class_character,
       default = quote(character(0))
@@ -147,8 +147,8 @@ survey_base <- S7::new_class(
 #'   [as_survey()].
 #' @param variables A named list of design specification (ids, weights,
 #'   strata, fpc, nest, probs_provided). Set automatically by [as_survey()].
-#' @param groups Reserved for Phase 0.5 (group_by support in surveytidy).
-#'   Always `character(0)` in Phase 0.
+#' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
+#'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
 #'
 #' @section Design variables (`@variables`):
@@ -306,7 +306,8 @@ survey_taylor <- S7::new_class(
 #' @param variables A named list of design specification (weights,
 #'   repweights, type, scale, rscales, fpc, fpctype, mse). Set
 #'   automatically by [as_survey_rep()].
-#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
+#'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
 #'
 #' @section Design variables (`@variables`):
@@ -445,7 +446,8 @@ survey_replicate <- S7::new_class(
 #'   design when using [as_survey_twophase()].
 #' @param variables A named list of design specification (phase1, phase2,
 #'   subset, method). Set automatically by [as_survey_twophase()].
-#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
+#'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
 #'
 #' @section Design variables (`@variables`):
@@ -598,7 +600,8 @@ survey_twophase <- S7::new_class(
 #'   [as_survey()].
 #' @param variables A named list of design specification. Set automatically by
 #'   [as_survey()].
-#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
+#'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
 #'
 #' @section Design variables (`@variables`):
@@ -733,7 +736,8 @@ survey_srs <- S7::new_class(
 #'   or `NULL` if calibration was performed externally. Stores the
 #'   calibration targets, variables, and trimming parameters for
 #'   reproducibility and future bootstrap re-calibration. Default `NULL`.
-#' @param groups Reserved for Phase 0.5. Always `character(0)` in Phase 0.
+#' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
+#'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
 #'
 #' @section Design variables (`@variables`):

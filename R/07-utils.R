@@ -68,7 +68,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # Returns a character vector of selected column names, or NULL when expr is a
 # NULL quosure. Count validation is left to callers — error classes differ by
 # argument (weights, strata, fpc, etc.).
-# Used by constructors and Phase 0.5 dplyr verbs in surveytidy.
+# Used by constructors and by surveytidy dplyr verbs.
 #
 # @param expr  A quosure (from rlang::enquo()). NULL quosure → returns NULL.
 # @param data  A data.frame to evaluate the selection against.
@@ -189,7 +189,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # Return a named list mapping slot names to column name(s).
 # Slots whose value is NULL are omitted from the result.
 # unlist()ing the result gives all design variable names.
-# Used by Phase 0.5 dplyr verbs (rename, select) for slot-level granularity
+# Used by surveytidy dplyr verbs (rename, select) for slot-level granularity
 # and by conversion methods to identify which role each column plays.
 #' @noRd
 .get_design_vars <- function(design) {

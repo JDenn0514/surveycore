@@ -22,8 +22,8 @@ survey_taylor(
 \item{variables}{A named list of design specification (ids, weights,
 strata, fpc, nest, probs_provided). Set automatically by \code{\link[=as_survey]{as_survey()}}.}
 
-\item{groups}{Reserved for Phase 0.5 (group_by support in surveytidy).
-Always \code{character(0)} in Phase 0.}
+\item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
+standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
 }

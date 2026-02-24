@@ -23,7 +23,8 @@ design when using \code{\link[=as_survey_twophase]{as_survey_twophase()}}.}
 \item{variables}{A named list of design specification (phase1, phase2,
 subset, method). Set automatically by \code{\link[=as_survey_twophase]{as_survey_twophase()}}.}
 
-\item{groups}{Reserved for Phase 0.5. Always \code{character(0)} in Phase 0.}
+\item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
+standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
 }

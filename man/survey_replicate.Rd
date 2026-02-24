@@ -23,7 +23,8 @@ survey_replicate(
 repweights, type, scale, rscales, fpc, fpctype, mse). Set
 automatically by \code{\link[=as_survey_rep]{as_survey_rep()}}.}
 
-\item{groups}{Reserved for Phase 0.5. Always \code{character(0)} in Phase 0.}
+\item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
+standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
 }

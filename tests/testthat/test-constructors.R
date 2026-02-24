@@ -20,9 +20,11 @@
 
 test_that("as_survey() dispatches to survey_srs for SRS (no ids or strata)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  expect_warning(
-    d <- as_survey(df),
-    class = "surveycore_warning_as_survey_srs_fallback"
+  suppressWarnings(
+    expect_warning(
+      d <- as_survey(df),
+      class = "surveycore_warning_as_survey_srs_fallback"
+    )
   )
   test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_srs))
@@ -86,14 +88,14 @@ test_that("as_survey() creates survey_taylor for NHANES design (nest = TRUE)", {
 
 test_that("as_survey() stores call in @call", {
   df <- make_survey_data(n = 50, seed = 4L)
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   expect_false(is.null(d@call))
   expect_true(is.call(d@call))
 })
 
 test_that("as_survey() extracts haven metadata when present", {
   df <- make_survey_data(n = 100, with_labels = TRUE, seed = 5L)
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   test_invariants(d)
   expect_identical(d@metadata@variable_labels[["y1"]], "Outcome variable 1 (continuous)")
   expect_identical(d@metadata@value_labels[["y3"]], c("No" = 0L, "Yes" = 1L))
@@ -101,7 +103,7 @@ test_that("as_survey() extracts haven metadata when present", {
 
 test_that("as_survey() returns an empty metadata object when no haven attrs", {
   df <- make_survey_data(n = 50, seed = 6L)
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
@@ -111,7 +113,7 @@ test_that("as_survey() returns an empty metadata object when no haven attrs", {
 
 test_that("as_survey() converts probs to weights (1/probs) stored as ..surveycore_wt..", {
   df      <- data.frame(y = 1:5, prob = rep(0.2, 5))
-  d       <- as_survey(df, probs = prob)
+  d       <- suppressWarnings(as_survey(df, probs = prob))
   test_invariants(d)
   expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_true(d@variables$probs_provided)
@@ -139,7 +141,7 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
 
 test_that("as_survey() stores fpc column name in @variables", {
   df <- make_survey_data(n = 100, seed = 7L)
-  d  <- as_survey(df, weights = wt, fpc = fpc)
+  d  <- suppressWarnings(as_survey(df, weights = wt, fpc = fpc))
   test_invariants(d)
   expect_identical(d@variables$fpc, "fpc")
 })
@@ -194,9 +196,11 @@ test_that("as_survey() errors when data has duplicate column names [row 3]", {
 # Row 4: data has 1 row (warning, not error)
 test_that("as_survey() warns when data has 1 row [row 4]", {
   single_row <- data.frame(x = 42, w = 1)
-  expect_warning(
-    as_survey(single_row, weights = w),
-    class = "surveycore_warning_single_row"
+  suppressWarnings(
+    expect_warning(
+      as_survey(single_row, weights = w),
+      class = "surveycore_warning_single_row"
+    )
   )
 })
 
@@ -228,9 +232,11 @@ test_that("as_survey() errors when probs and weights are inconsistent [row 5]", 
 # Row 7: SRS warning (no weights/probs/ids)
 test_that("as_survey() warns for SRS (no weights, probs, or ids) [row 7]", {
   df <- data.frame(y = 1:10, x = rnorm(10))
-  expect_warning(
-    as_survey(df),
-    class = "surveycore_warning_srs_no_weights"
+  suppressWarnings(
+    expect_warning(
+      as_survey(df),
+      class = "surveycore_warning_srs_no_weights"
+    )
   )
 })
 
@@ -269,7 +275,7 @@ test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]
 test_that("as_survey() errors when weights helper matches no columns [row 8]", {
   df <- data.frame(y = 1:5, wt = 1:5)
   expect_error(
-    as_survey(df, weights = starts_with("zzz")),
+    suppressWarnings(as_survey(df, weights = starts_with("zzz"))),
     class = "surveycore_error_weights_not_found"
   )
   expect_snapshot(
@@ -282,7 +288,7 @@ test_that("as_survey() errors when weights helper matches no columns [row 8]", {
 test_that("as_survey() errors when weights expression selects multiple columns [row 9]", {
   df <- data.frame(y = 1:5, wt1 = 1:5, wt2 = 1:5)
   expect_error(
-    as_survey(df, weights = starts_with("wt")),
+    suppressWarnings(as_survey(df, weights = starts_with("wt"))),
     class = "surveycore_error_weights_multiple"
   )
   expect_snapshot(
@@ -295,7 +301,7 @@ test_that("as_survey() errors when weights expression selects multiple columns [
 test_that("as_survey() errors when all weights are zero [row 10]", {
   df <- data.frame(x = 1:5, wt = c(0, 0, 0, 0, 0))
   expect_error(
-    as_survey(df, weights = wt),
+    suppressWarnings(as_survey(df, weights = wt)),
     class = "surveycore_error_weights_all_zero"
   )
 })
@@ -303,7 +309,7 @@ test_that("as_survey() errors when all weights are zero [row 10]", {
 test_that("as_survey() errors when all weights are NA [row 10]", {
   df <- data.frame(x = 1:5, wt = rep(NA_real_, 5))
   expect_error(
-    as_survey(df, weights = wt),
+    suppressWarnings(as_survey(df, weights = wt)),
     class = "surveycore_error_weights_all_zero"
   )
 })
@@ -339,7 +345,7 @@ test_that("as_survey() errors when fpc expression selects multiple columns [row 
     fpc2 = rep(2000L, 5)
   )
   expect_error(
-    as_survey(df, weights = wt, fpc = starts_with("fpc")),
+    suppressWarnings(as_survey(df, weights = wt, fpc = starts_with("fpc"))),
     class = "surveycore_error_fpc_multiple"
   )
   expect_snapshot(
@@ -356,7 +362,7 @@ test_that("as_survey() errors when fpc column has NA values [row 14]", {
     fpc = c(1000L, NA_integer_, 1000L, 1000L, 1000L)
   )
   expect_error(
-    as_survey(df, weights = wt, fpc = fpc),
+    suppressWarnings(as_survey(df, weights = wt, fpc = fpc)),
     class = "surveycore_error_fpc_na"
   )
   expect_snapshot(error = TRUE, as_survey(df, weights = wt, fpc = fpc))
@@ -380,7 +386,7 @@ test_that("as_survey() errors when nest = TRUE and strata is NULL [row 15]", {
 
 test_that("as_survey() handles weights with NA values mixed in (valid)", {
   df <- data.frame(x = 1:5, wt = c(1.0, NA_real_, 2.0, 1.5, NA_real_))
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   test_invariants(d)
   expect_identical(d@variables$weights, "wt")
 })
@@ -395,14 +401,14 @@ test_that("as_survey() with tibble input (inherits data.frame)", {
 
 test_that("as_survey() populates all expected @variables keys", {
   df  <- make_survey_data(n = 100, seed = 9L)
-  d   <- as_survey(df, weights = wt)
+  d   <- suppressWarnings(as_survey(df, weights = wt))
   expected_keys <- c("ids", "weights", "strata", "fpc", "nest", "probs_provided")
   expect_true(all(expected_keys %in% names(d@variables)))
 })
 
 test_that("as_survey() sets NULL for unspecified design vars", {
   df <- data.frame(x = 1:5, wt = rep(1, 5))
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   expect_null(d@variables$ids)
   expect_null(d@variables$strata)
   expect_null(d@variables$fpc)
@@ -439,7 +445,7 @@ test_that("as_survey() does NOT warn for PSU in multiple strata when nest = TRUE
 
 test_that("as_survey() accepts bare name for weights", {
   df <- data.frame(y = 1:5, weight_col = rep(1, 5))
-  d  <- as_survey(df, weights = weight_col)
+  d  <- suppressWarnings(as_survey(df, weights = weight_col))
   test_invariants(d)
   expect_identical(d@variables$weights, "weight_col")
 })
@@ -471,7 +477,7 @@ test_that("as_survey() accepts single bare name for ids", {
 
 test_that("as_survey() ids = NULL means SRS (no cluster)", {
   df <- data.frame(y = 1:10, wt = rep(1, 10))
-  d  <- as_survey(df, weights = wt)
+  d  <- suppressWarnings(as_survey(df, weights = wt))
   expect_null(d@variables$ids)
 })
 
@@ -1248,7 +1254,7 @@ test_that("as_survey_twophase() accepts bare name for ids2", {
 test_that("as_survey() errors when probs expression matches no columns", {
   df <- data.frame(x = 1:5, wt = 1:5)
   expect_error(
-    as_survey(df, probs = tidyselect::starts_with("nonexistent_xyz")),
+    suppressWarnings(as_survey(df, probs = tidyselect::starts_with("nonexistent_xyz"))),
     class = "surveycore_error_weights_not_found"
   )
 })
@@ -1256,7 +1262,7 @@ test_that("as_survey() errors when probs expression matches no columns", {
 test_that("as_survey() errors when probs expression selects multiple columns", {
   df <- data.frame(x = 1:5, prob1 = rep(0.1, 5), prob2 = rep(0.2, 5))
   expect_error(
-    as_survey(df, probs = starts_with("prob")),
+    suppressWarnings(as_survey(df, probs = starts_with("prob"))),
     class = "surveycore_error_weights_multiple"
   )
 })
@@ -1339,7 +1345,7 @@ test_that("as_survey() errors when strata expression matches no columns", {
 test_that("as_survey() errors when fpc expression matches no columns", {
   df <- data.frame(x = 1:10, wt = rep(1, 10))
   expect_error(
-    as_survey(df, weights = wt, fpc = tidyselect::starts_with("nonexistent_xyz")),
+    suppressWarnings(as_survey(df, weights = wt, fpc = tidyselect::starts_with("nonexistent_xyz"))),
     class = "surveycore_error_fpc_not_found"
   )
 })

@@ -183,7 +183,7 @@ test_invariants <- function(design) {
   }
 
   # All design types must have visible_vars in @variables (may be NULL).
-  # This is required for Phase 0.5 select() compatibility.
+  # Required for surveytidy's select() compatibility.
   if (!S7::S7_inherits(design, survey_calibrated)) {
     testthat::expect_true(
       "visible_vars" %in% names(design@variables),
