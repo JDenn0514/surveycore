@@ -42,7 +42,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: any::rcmdcheck, quarto-dev/quarto-r
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
@@ -50,3 +50,5 @@ jobs:
           args: 'c("--as-cran", "--no-manual")'
           error-on: '"warning"'
           upload-snapshots: true
+        env:
+          R_LIBS: ${{ env.R_LIBS_USER }}
