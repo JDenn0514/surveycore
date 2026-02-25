@@ -401,6 +401,14 @@ test_result_invariants <- function(result, expected_class) {
     label = "value_labels is a named list"
   )
 
+  # n_respondents: always present and a positive integer
+  testthat::expect_true(
+    "n_respondents" %in% names(m),
+    label = "n_respondents key present in meta"
+  )
+  testthat::expect_type(m$n_respondents, "integer")
+  testthat::expect_gt(m$n_respondents, 0L, label = "n_respondents > 0")
+
   invisible(result)
 }
 
