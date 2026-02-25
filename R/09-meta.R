@@ -95,6 +95,7 @@ meta.survey_result <- function(x, ...) attr(x, ".meta")
 #'
 #' @method print survey_result
 #' @export
+#' @keywords internal
 print.survey_result <- function(x, ...) {
   cls  <- class(x)[1L]
   dims <- paste(nrow(x), "\u00d7", ncol(x))

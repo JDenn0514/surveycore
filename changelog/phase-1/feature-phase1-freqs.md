@@ -46,3 +46,5 @@ Implement `get_freqs()` — weighted frequency tables for categorical survey var
 - `_pkgdown.yml` (added `get_freqs` to Estimation section)
 - `man/get_freqs.Rd` (generated)
 - `NAMESPACE` (updated)
+- `R/09-meta.R` (add `@keywords internal` to `print.survey_result` — fixes pkgdown CI)
+- `man/print.survey_result.Rd` (regenerated)
