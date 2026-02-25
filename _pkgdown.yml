@@ -48,6 +48,7 @@ reference:
     desc: >
       Compute weighted estimates with design-correct standard errors.
     contents:
+      - meta
       - get_means
       - get_totals
 

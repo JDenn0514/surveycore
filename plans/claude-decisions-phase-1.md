@@ -394,6 +394,291 @@ Behavior is currently implementation-dependent.**
 
 ---
 
+## 2026-02-25 — Phase 1 Spec Review Resolution (Session 3)
+
+### Context
+
+Resolved all 22 issues from `plans/spec-review-phase-1.md` (second adversarial
+review pass, incorporating AAPOR compliance gaps). Key product decisions below.
+Spec updated to v1.2.
+
+---
+
+### Questions & Decisions
+
+**Q: Should `value_labels` be included in `CORR_META_KEYS` and `RATIOS_META_KEYS`,
+given that `get_corr()` and `get_ratios()` operate on numeric variables where
+value labels are typically absent (`NULL`)?**
+
+- Options considered:
+  - **Include in all functions:** `value_labels = list(var = NULL)` for numeric
+    variables. Consistent invariant; allows downstream consumers to detect
+    variable directionality and coding from metadata.
+  - **Scope to categorical functions only:** Update Section 2.4 to remove the
+    "all functions" claim; update `test_result_invariants()` to be
+    function-specific.
+- **Decision:** Include in all six functions, including `get_corr()` and
+  `get_ratios()`.
+- **Rationale (user-provided):** Variables in a correlation may have reversed
+  coding (e.g., a variable scored 1–5 where higher = more negative sentiment).
+  Value labels expose directionality to downstream consumers who need to
+  interpret the sign of a coefficient. Including `value_labels` for numeric
+  variables (with `NULL` values when labels are absent) is cheap and prevents
+  subtle misinterpretation.
+
+---
+
+**Q: `surveycore_error_all_na` is listed in Section X as applying to "all
+numeric `get_*()` functions," but the review claimed the spec intended it for
+`get_freqs()` only (with numeric functions using a different error class
+`surveycore_error_na_in_variable`).**
+
+- Options considered:
+  - **Scope to `get_freqs()` only:** Numeric functions do not throw this error;
+    NAs propagate naturally to a `NA` result.
+  - **Keep for all numeric functions:** All functions error when the focal
+    variable is all-NA with `na.rm = FALSE`.
+- **Decision:** Scope `surveycore_error_all_na` to `get_freqs()` only. Numeric
+  functions propagate `NA` naturally (standard R/survey behavior with
+  `na.rm = FALSE` — `NA` results are returned, not an error).
+- **Rationale:** `get_freqs()` has a specific all-NA case: there are no levels
+  to tabulate at all, so the function cannot return a meaningful result. Numeric
+  functions (`get_means()`, etc.) can return `NA` for the estimate, which is
+  valid output. The `surveycore_error_na_in_variable` class referenced in the
+  review was aspirational text not in the spec; the correct resolution is NA
+  propagation for numeric functions.
+
+---
+
+**Q: The small-cell threshold for `surveycore_warning_small_cell` — should it
+remain n < 5 (the existing convention) or be raised to match AAPOR guidance?**
+
+- Options considered:
+  - **Keep n < 5:** Permissive threshold; users apply their own standards after
+    the fact.
+  - **Change to n < 30 (AAPOR public-reporting guidance):** Aligns the default
+    with the most widely cited standard. Users at stricter agencies can set
+    `min_cell_n = 50`.
+- **Decision:** Change global threshold to n < 30 and add `min_cell_n = 30L`
+  as a configurable cross-cutting argument on all six functions.
+- **Rationale (user-provided):** AAPOR compliance should be the default, not
+  something users have to opt into. The configurable `min_cell_n` argument
+  handles federal agency standards (n < 50) without hardcoding a second
+  threshold. Updated throughout spec, Section X, and `error-messages.md`.
+
+---
+
+**Q: Should `n_weighted` be added to all six `get_*()` functions or remain
+`get_freqs()`-only? The spec gave no rationale for the asymmetry.**
+
+- Options considered:
+  - **Add to all six:** Consistent API; AAPOR recommends reporting weighted n
+    alongside unweighted n. Effort: medium (spec update only; no new logic).
+  - **Document as intentional `get_freqs()`-only:** Weighted n is most useful
+    for frequency tables; continuous functions can derive it from
+    `meta(result)$n_respondents`.
+- **Decision:** Add `n_weighted = FALSE` to all six functions.
+- **Rationale:** The omission was an oversight, not a product decision. AAPOR
+  recommends reporting weighted n for all published estimates. Denying this for
+  numeric functions would be an API inconsistency with no statistical
+  justification. The per-function semantics are well-defined: sum of weights
+  for non-NA observations contributing to the cell estimate; pairwise weighted
+  n for `get_corr()`.
+
+---
+
+**Q: Should Design Effect (DEFF) be added as a valid `variance` value in Phase 1,
+or deferred to Phase 2 with a one-line note?**
+
+- Options considered:
+  - **Add `"deff"` to Phase 1:** Formula = `(se_complex / se_srs)²`. For
+    `survey_srs`, always 1.0. `survey_twophase` throws unsupported error until
+    Phase 0.75 completes. Medium effort to spec; low effort to implement given
+    SRS variance is already implemented.
+  - **Defer to Phase 2 with documentation:** One-line forward reference in
+    Section 2.6 noting DEFF requires per-design-class SRS reference handling.
+- **Decision:** Add `"deff"` as a valid `variance` value in Phase 1.
+- **Rationale (user-provided):** DEFF is an AAPOR-standard diagnostic that is
+  trivially computed once both complex and SRS SEs are available (and SRS
+  variance is already implemented). Deferring it provides no benefit — the
+  machinery is already there. Updated canonical column order to include `deff`
+  after `moe`; updated all six output column specs; updated
+  `.validate_shared_args()` default.
+
+---
+
+**Q: Where should AAPOR compliance guidance appear in the spec — only in a
+centralized section, or also inline per function?**
+
+- Options considered:
+  - **Section XI.5 only:** One canonical location; no per-function duplication.
+  - **Both:** Centralized summary table in Section XI.5 + per-function
+    "AAPOR-Compliant Call" subsection with a concrete, copy-pasteable example.
+- **Decision:** Both — Section XI.5 with the argument table + a dedicated
+  "AAPOR-Compliant Call" subsection in each of the six function sections
+  (Sections 3.5, 4.3, 5.3, 6.4, 7.3, 8.3).
+- **Rationale (user-requested):** A developer implementing or using a specific
+  function should not have to navigate to Section XI.5 to find the AAPOR call
+  pattern. Per-function notes are the most discoverable location. The
+  centralized section provides the rationale and argument summary; the
+  per-function notes provide the actionable call.
+
+---
+
+### Outcome
+
+`plans/phase-1-formal-specification.md` updated to v1.2. All 22 issues from
+`plans/spec-review-phase-1.md` resolved. Key additions to the spec:
+
+- `value_labels` in all six `META_KEYS` constants (including CORR, RATIOS)
+- `surveycore_error_all_na` scoped to `get_freqs()` only; numeric functions
+  propagate NA naturally
+- `n_weighted = FALSE` cross-cutting argument on all six functions
+- `min_cell_n = 30L` cross-cutting argument (AAPOR default, configurable)
+- `"deff"` as valid `variance` value with formula and per-design notes
+- Per-function AAPOR-Compliant Call subsections + Section XI.5 summary table
+- Fixed column specs for `get_means()`, `get_ratios()`, `get_quantiles()`,
+  `get_corr()`, `get_freqs()` multi-var (ordering, missing columns)
+- `print.survey_result` syntax corrected; `design_type` mapping codified;
+  `required_meta_keys` documented as required with no default
+- Stale `R/06-variance-estimation.R` references updated to split-file names
+
+---
+
+## 2026-02-25 — Plan Review Resolution (Stage 3)
+
+### Context
+
+Resolved all 11 issues from `plans/plan-review-phase-1.md` (adversarial review
+of `plans/phase-1-implementation-plan.md` v1.1). All changes applied directly to
+the implementation plan and, where appropriate, the formal specification.
+
+---
+
+### Questions & Decisions
+
+**Q: Issue 3 — Changelog entries: add only to per-PR quality gate list (Option B,
+recommended), or add both to quality gate list AND file tables for all five PRs
+(Option A)?**
+
+- Options considered:
+  - **Option B (recommended):** One bullet in the quality gate list; file path
+    handled by `commit-and-pr` skill at implementation time.
+  - **Option A:** One bullet in the quality gate list PLUS explicit
+    `changelog/phase-1/feature-{branch-name}.md | Create` rows in each PR's
+    file table.
+- **Decision:** Option A — explicit file table entries for all five PRs.
+- **Rationale (user-provided):** The file table is the definitive checklist an
+  implementor uses to track work. Implicit delegation to another skill is weaker
+  than an explicit entry. This also pre-empted Issues 9 and 10 (VENDORED.md
+  missing from PR 4 and PR 5 file tables) — VENDORED.md entries were added to
+  PR 4 and PR 5 file tables at the same time as the changelog entries.
+
+---
+
+**Q: Issue 7 — CI method for `get_corr()`: Fisher Z back-transformed to
+correlation scale (spec) vs. t-distribution via `.add_variance_cols()` (plan)?**
+
+- Options considered:
+  - **Fisher Z:** `tanh(atanh(r) ± z_crit × se_r)`. CIs bounded to (−1, 1).
+    `get_corr()` assembles CI columns directly, then calls `.add_variance_cols()`
+    for all other requested variance columns.
+  - **t-distribution:** Consistent with other `get_*()` functions; simpler
+    implementation; CIs can exceed (−1, 1) for extreme correlations.
+- **Decision:** Fisher Z — plan updated with the bypass mechanism and exact formula.
+- **Rationale:** The spec is explicit and statistically correct. Fisher Z CIs are
+  the standard recommendation for correlations. The plan needed to state how
+  `get_corr()` overrides `.add_variance_cols()` for the CI portion only.
+
+---
+
+**Q: Issue 11 — Stale `survey_twophase` quality gate: plan body says "dispatch
+on twophase (Phase 0.75 complete)" but spec Section XII says "throw
+unsupported_class for twophase". Which is authoritative?**
+
+- Options considered:
+  - **Update spec (Option A):** Fix Section XII, Section I.5, all six per-function
+    statistical details sections, and the `deff` variance table row. Spec becomes
+    accurate.
+  - **Add override note to plan (Option B):** Note in plan that spec Section XII
+    is superseded. Spec remains inaccurate.
+- **Decision:** Update the spec — all stale `survey_twophase` references removed.
+  Also fixed the spec's `se_oracle` pseudo-code (Section 11.1) to match the full
+  delta method formula added to the plan in Issue 8.
+- **Rationale:** The spec should be authoritative. A stale quality gate that says
+  the opposite of what should be built is dangerous. All eight stale references
+  across the spec were corrected in the same pass.
+
+---
+
+### Outcome
+
+`plans/phase-1-implementation-plan.md` updated with all 11 issue resolutions.
+`plans/phase-1-formal-specification.md` updated: all `survey_twophase`
+unsupported-class references replaced with Phase 0.75 complete references;
+`se_oracle` pseudo-code replaced with full delta method formula.
+`plans/error-messages.md` coverage map updated (rows 45, 45a, 46 added to
+`test-analysis-helpers.R` entry). The plan is approved for implementation.
+
+---
+
+## 2026-02-25 — Second Plan Review Resolution (Stage 3, Pass 2)
+
+### Context
+
+Second adversarial review of `plans/phase-1-implementation-plan.md` (v1.1),
+after the first 11 issues were resolved. Seven new issues surfaced (3 REQUIRED,
+4 SUGGESTIONS). All resolved in one session.
+
+---
+
+### Questions & Decisions
+
+**Q: Issue 4 — `R/13-analysis-quantiles.R` contains both `get_quantiles()` and
+`get_ratios()`. Option B (rename file) was recommended; user chose Option A (split).**
+
+- Options considered:
+  - **Option B (recommended):** Rename file to `R/13-analysis-quantiles-ratios.R`.
+    No PR restructuring needed.
+  - **Option A:** Split into `R/13-analysis-quantiles.R` (quantiles only) and
+    `R/14-analysis-ratios.R` (ratios only). PR 5 splits into PR 5a and PR 5b.
+- **Decision:** Option A — separate files, separate PRs (5a and 5b).
+- **Rationale (user-provided):** One PR per logical unit of work (github-strategy.md).
+  Quantiles use Woodruff's method; ratios use the delta method. No shared
+  internals. Keeping them together was incidental, not motivated.
+
+---
+
+**Q: Issue 7 — Fisher Z formula: keep `se_z = se_r` (matching `cor.test()`) or
+switch to exact delta method `se_z = se_r / (1 - r²)`?**
+
+- Options considered:
+  - **Option A:** Use exact delta method. Statistically more correct for `|r| > 0.9`.
+  - **Option B (recommended):** Keep `se_z = se_r` (standard convention, matches
+    `cor.test()`). Fix misleading comment. Add CI-width oracle test for extreme
+    correlations.
+- **Decision:** Option B — `se_z = se_r` with updated comment and added test.
+- **Rationale:** The standard Fisher Z convention is deliberate and defensible.
+  The test addition ensures CI accuracy is verified even if the convention
+  produces narrow CIs at extremes.
+
+---
+
+### Outcome
+
+`plans/phase-1-implementation-plan.md` updated:
+- `surveycore_error_unsupported_class` added to `error-messages.md` (row 64);
+  PR 1 file table updated; test category 5 and new category 9 added.
+- `.degf()` `else` clause added (throws `surveycore_error_unsupported_class`);
+  test category 8 extended.
+- Function-specific meta-field tests added (mode in PR 2, method in PR 4,
+  probs in PR 5a).
+- PR 5 split into PR 5a (`feature/phase1-quantiles`) and PR 5b (`feature/phase1-ratios`).
+- `tibble (>= 3.0.0)` floor corrected throughout.
+- Fisher Z comment updated; CI-width oracle test at `|r| > 0.9` added to PR 4.
+
+---
+
 ## 2026-02-23 — Phase 0.75 Scope and survey_srs Documentation (Session 2)
 
 ### Context

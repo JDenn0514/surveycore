@@ -77,11 +77,11 @@ against the messages defined here.
 | 46 | all `get_*()` | Unknown value for `name_style` argument | ERROR | `surveycore_error_invalid_name_style` | `'{.arg name_style} must be {.val "surveycore"} or {.val "broom"}, not {.val {name_style}}.'` |
 | 47 | `get_quantiles()` | `probs` outside (0,1) or length 0 | ERROR | `surveycore_error_invalid_probs` | `"{.arg probs} must be a non-empty numeric vector with all values in (0, 1). Invalid value{?s}: {.val {bad_probs}}."` |
 | 48 | `get_ratios()` | All denominator values are zero | ERROR | `surveycore_error_ratio_zero_denominator` | `"All values of the denominator ({.field {denom_var}}) are zero. Cannot compute ratio."` |
-| 49 | all `get_*()` | Any cell has unweighted `n < 5` | WARN | `surveycore_warning_small_cell` | `"{n_small} cell{?s} {?has/have} fewer than 5 unweighted observations. Estimates in these cells are unreliable."` |
+| 49 | all `get_*()` | Any cell has unweighted `n < min_cell_n` (default 30, AAPOR guidance; for `get_corr()` "cell" = variable pair, threshold applies to pairwise n) | WARN | `surveycore_warning_small_cell` | `"{n_small} cell{?s} {?has/have} fewer than {min_cell_n} unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance)."` |
 | 50 | all `get_*()` | A grouping variable has only one observed level | WARN | `surveycore_warning_single_level` | `"Grouping variable {.field {var}} has only one observed level ({.val {level}}). Grouped estimates will have a single row."` |
 | 51 | `get_corr()` | Non-numeric variable in `x` silently dropped | WARN | `surveycore_warning_corr_non_numeric` | `"{.fn get_corr} requires numeric variables. Dropping non-numeric column{?s}: {.field {dropped}}."` |
 | 52 | `get_freqs()` multi-var | Variables have different non-NULL question prefaces | WARN | `surveycore_warning_mixed_prefaces` | `"{length(unique_prefaces)} different question prefaces found across {length(vars)} variables. Variables with different prefaces may not belong in the same {.fn get_freqs} call. Prefaces stored in {.code meta(result)$question_prefaces}."` |
-| 53 | all numeric `get_*()` | Focal variable all NA with `na.rm = FALSE` | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
+| 53 | `get_freqs()` | Focal variable all NA with `na.rm = FALSE` (categorical only — no levels to tabulate; numeric functions propagate NA naturally) | ERROR | `surveycore_error_all_na` | `"All values of {.field {var}} are {.code NA}. Cannot compute estimate with {.arg na.rm = FALSE}. Set {.arg na.rm = TRUE} to exclude {.code NA} values."` |
 | 54 | all `get_*()` | `variance = "cv"` but estimate is 0 or negative | WARN | `surveycore_warning_cv_undefined` | `'{.arg variance = "cv"} is undefined for {n_undef} cell{?s} where the estimate is 0 or negative. {.code cv} set to {.code NA} for those cells.'` |
 | 55 | `get_freqs()` | All values of focal variable are `NA` with `na.rm = TRUE` | WARN | `surveycore_warning_all_na_freqs` | `"All values of {.field {var}} are {.code NA} with {.arg na.rm = TRUE}. Returning 0 rows."` |
 | 56 | `as_survey_srs()` | Both `weights` and `probs` supplied | ERROR | `surveycore_error_weights_probs_both` | `"Supply {.arg weights} or {.arg probs}, not both."` |
@@ -92,6 +92,7 @@ against the messages defined here.
 | 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
 | 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
 | 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
+| 64 | `.check_unsupported_class()`, `.build_meta()` fallback | Object does not inherit from `survey_base` (`.check_unsupported_class()`), or inherits from `survey_base` but is not one of the five supported subclasses (`.build_meta()`) | ERROR | `surveycore_error_unsupported_class` | `.check_unsupported_class()`: `"{.fn {fn_name}} requires a survey design object. Got {.cls {class(design)[[1]]}}."` / `.build_meta()`: `"Unrecognized design class {.cls {class(design)[1]}}."` |
 
 ---
 
@@ -135,10 +136,10 @@ Which test files cover which error table rows:
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
-| `test-analysis-helpers.R` | (shared helpers; no direct error rows — tested via functions) |
-| `test-analysis-freqs.R` | 45, 45a, 46, 49, 50, 52, 55 |
-| `test-analysis-means.R` | 43, 45, 45a, 46, 49, 50, 53, 54 |
-| `test-analysis-totals.R` | 43, 45, 45a, 46, 49, 50, 53, 54 |
-| `test-analysis-corr.R` | 43, 44, 45, 45a, 46, 49, 50, 51, 53, 54 |
-| `test-analysis-quantiles.R` | 45, 45a, 46, 47, 49, 50, 53, 54 |
-| `test-analysis-ratios.R` | 43, 45, 45a, 46, 48, 49, 50, 53, 54 |
+| `test-analysis-helpers.R` | 45, 45a, 46 (direct unit tests on `.validate_shared_args()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
+| `test-analysis-freqs.R` | 45, 45a, 46, 49, 50, 52, 53, 55 |
+| `test-analysis-means.R` | 43, 45, 45a, 46, 49, 50, 54 |
+| `test-analysis-totals.R` | 43, 45, 45a, 46, 49, 50, 54 |
+| `test-analysis-corr.R` | 43, 44, 45, 45a, 46, 49, 50, 51, 54 |
+| `test-analysis-quantiles.R` | 45, 45a, 46, 47, 49, 50, 54 |
+| `test-analysis-ratios.R` | 43, 45, 45a, 46, 48, 49, 50, 54 |
