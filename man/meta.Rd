@@ -65,4 +65,10 @@ meta(result)$n_respondents  # 100L
 meta(result)$conf_level     # 0.95
 
 }
+\seealso{
+Other analysis: 
+\code{\link{get_freqs}()},
+\code{\link{get_means}()},
+\code{\link{get_totals}()}
+}
 \concept{analysis}

@@ -400,7 +400,7 @@ test_result_invariants <- function(result, expected_class) {
 
 ---
 
-### Phase 1 PR 2 — `feature/phase1-freqs`
+### Phase 1 PR 2 — `feature/phase1-freqs` ✅ COMPLETE
 
 #### Files
 
@@ -500,7 +500,7 @@ All 12 categories from the spec, plus:
 
 ---
 
-### Phase 1 PR 3 — `feature/phase1-means-totals`
+### Phase 1 PR 3 — `feature/phase1-means-totals` ✅ COMPLETE
 
 **This PR atomically removes the Phase 0 stubs.** CI must be green before
 merging. Do not remove stubs in one commit and fix tests in a follow-up.

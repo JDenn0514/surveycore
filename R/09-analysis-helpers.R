@@ -6,7 +6,7 @@
 #
 # Contents:
 #   Meta-key constants (seven character vectors)
-#   .degf_taylor()          — Taylor df formula (helper for .degf())
+#   .degf_taylor()          — Taylor df formula (retained; not called by .degf())
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
 #   .build_meta()           — assemble .meta list
@@ -58,7 +58,8 @@ RATIOS_META_KEYS <- c(
 # ── .degf_taylor() ─────────────────────────────────────────────────────────────
 #
 # Compute Taylor series degrees of freedom from a data frame + variables list.
-# Used by .degf() for both survey_taylor and survey_twophase (phase 1 vars).
+# Retained for potential future use (e.g., deff computation, user-accessible
+# degf). Not called by .degf() — all designs now use Inf (normal approx CI).
 #
 # Rules:
 #   Stratified cluster: Σ(n_h - 1) = total PSUs - number of strata
@@ -385,7 +386,7 @@ RATIOS_META_KEYS <- c(
   }
 
   if ("cv" %in% variance) {
-    cv       <- se_vec / estimate_vec * 100
+    cv       <- se_vec / estimate_vec
     is_undef <- !is.na(estimate_vec) & estimate_vec <= 0
     n_undef  <- sum(is_undef)
     if (n_undef > 0L) {
@@ -436,26 +437,23 @@ RATIOS_META_KEYS <- c(
 # critical values in CI computation.
 #
 # Design-specific rules:
-#   survey_taylor:     .degf_taylor() on @data and @variables
-#   survey_replicate:  length(repweights) - 1
-#   survey_twophase:   .degf_taylor() on @data and @variables$phase1
-#   survey_srs:        n - 1
-#   survey_calibrated: n - 1 (conservative approximation)
+#   All designs: Inf — CI uses normal approximation, matching the survey
+#   package's confint.svystat() default (df = Inf). Finite-df correction is
+#   only applied by survey when the user passes df= explicitly.
 #
 # @param design A survey design object.
 # @return Numeric(1): degrees of freedom.
 .degf <- function(design) {
   if (S7::S7_inherits(design, survey_taylor)) {
-    .degf_taylor(design@data, design@variables)
+    Inf
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    length(design@variables$repweights) - 1L
+    Inf
   } else if (S7::S7_inherits(design, survey_twophase)) {
-    # Phase 1 variables are stored as a named list in @variables$phase1
-    .degf_taylor(design@data, design@variables$phase1)
+    Inf
   } else if (S7::S7_inherits(design, survey_srs)) {
-    nrow(design@data) - 1L
+    Inf
   } else if (S7::S7_inherits(design, survey_calibrated)) {
-    nrow(design@data) - 1L
+    Inf
   } else {
     cli::cli_abort(
       c(
