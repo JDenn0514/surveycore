@@ -9,3 +9,7 @@
 data-raw/brfss/LLCP2023.XPT
 data-raw/brfss/LLCP2023XPT.zip
 docs
+
+# Quarto vignette build artifacts — generated from .qmd source by R CMD check
+vignettes/*.html
+vignettes/*_files/
