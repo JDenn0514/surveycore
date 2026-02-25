@@ -49,6 +49,7 @@ reference:
       Compute weighted estimates with design-correct standard errors.
     contents:
       - meta
+      - get_freqs
       - get_means
       - get_totals
 

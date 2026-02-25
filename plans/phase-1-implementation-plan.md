@@ -400,7 +400,7 @@ test_result_invariants <- function(result, expected_class) {
 
 ---
 
-### Phase 1 PR 2 — `feature/phase1-freqs`
+### Phase 1 PR 2 — `feature/phase1-freqs` ✅ COMPLETE
 
 #### Files
 
