@@ -24,8 +24,8 @@ It is written for three audiences:
   you.
 - **Non-probability panel users** — if you run message-testing or
   attitudinal research on Lucid, Dynata, or a similar platform and have
-  vendor-provided raking weights, skip ahead to
-  [Section 7](#sec-calibrated).
+  vendor-provided raking weights, skip ahead to [Section
+  6](#sec-calibrated).
 
 This vignette covers object *creation* only. Estimation functions
 ([`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
@@ -102,13 +102,13 @@ Set `nest = TRUE` when PSU IDs are not globally unique across strata
 length(unique(nhanes_2017$sdmvpsu))  # 2
 ```
 
-    [1] 2
+    ## [1] 2
 
 ``` r
 length(unique(nhanes_2017$sdmvstra)) # 15
 ```
 
-    [1] 15
+    ## [1] 15
 
 If the number of unique PSU values is much smaller than the number of
 strata, the IDs are almost certainly nested and you need `nest = TRUE`.
@@ -166,28 +166,32 @@ svy_nhanes <- as_survey(
 svy_nhanes
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_taylor> (Taylor series linearization)
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Sample size: 8704
+    ## <survey_taylor> (Taylor series linearization)
 
-    # A tibble: 8,704 × 14
-        seqn sdmvpsu sdmvstra wtmec2yr wtint2yr ridstatr riagendr ridageyr ridreth3
-       <dbl>   <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
-     1 93703       2      145    8540.    9246.        2        2        2        6
-     2 93704       1      143   42567.   37339.        2        1        2        3
-     3 93705       2      145    8338.    8615.        2        2       66        4
-     4 93706       2      134    8723.    8549.        2        1       18        6
-     5 93707       1      138    7065.    6769.        2        1       13        7
-     6 93708       2      138   14372.   13329.        2        2       66        6
-     7 93709       1      136   12278.   12043.        2        2       75        4
-     8 93710       1      134   16848.   16418.        2        2        0        3
-     9 93711       2      134   12391.   11178.        2        1       56        6
-    10 93712       2      147   30337.   29040.        2        1       18        1
-    # ℹ 8,694 more rows
-    # ℹ 5 more variables: indfmpir <dbl>, dmdeduc2 <dbl>, bpxsy1 <dbl>,
-    #   bpxdi1 <dbl>, bpxpls <dbl>
+    ## Sample size: 8704
+
+    ## 
+
+    ## # A tibble: 8,704 × 14
+    ##     seqn sdmvpsu sdmvstra wtmec2yr wtint2yr ridstatr riagendr ridageyr ridreth3
+    ##    <dbl>   <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>    <dbl>
+    ##  1 93703       2      145    8540.    9246.        2        2        2        6
+    ##  2 93704       1      143   42567.   37339.        2        1        2        3
+    ##  3 93705       2      145    8338.    8615.        2        2       66        4
+    ##  4 93706       2      134    8723.    8549.        2        1       18        6
+    ##  5 93707       1      138    7065.    6769.        2        1       13        7
+    ##  6 93708       2      138   14372.   13329.        2        2       66        6
+    ##  7 93709       1      136   12278.   12043.        2        2       75        4
+    ##  8 93710       1      134   16848.   16418.        2        2        0        3
+    ##  9 93711       2      134   12391.   11178.        2        1       56        6
+    ## 10 93712       2      147   30337.   29040.        2        1       18        1
+    ## # ℹ 8,694 more rows
+    ## # ℹ 5 more variables: indfmpir <dbl>, dmdeduc2 <dbl>, bpxsy1 <dbl>,
+    ## #   bpxdi1 <dbl>, bpxpls <dbl>
 
 For interview-only variables (income, education), use the full dataset
 with `wtint2yr` — all 9,254 participants have a positive interview
@@ -226,8 +230,8 @@ svy_anes_pre <- as_survey(
 )
 ```
 
-    Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
-      If PSUs are nested within strata, set `nest = TRUE`.
+    ## Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
+    ##   If PSUs are nested within strata, set `nest = TRUE`.
 
 ``` r
 # Post-election analysis (validated vote choice: v242066, v242067)
@@ -239,8 +243,8 @@ svy_anes_post <- as_survey(
 )
 ```
 
-    Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
-      If PSUs are nested within strata, set `nest = TRUE`.
+    ## Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
+    ##   If PSUs are nested within strata, set `nest = TRUE`.
 
 **Missing values:** ANES uses negative integer codes throughout — `−9` =
 Refused, `−8` = Don’t know, `−1` = Inapplicable. Recode these to `NA`
@@ -270,8 +274,8 @@ svy_gss <- as_survey(
 )
 ```
 
-    Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
-      within strata, set `nest = TRUE`.
+    ## Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
+    ##   within strata, set `nest = TRUE`.
 
 ``` r
 # Non-response adjusted weight (preferred when non-response bias is a concern)
@@ -283,8 +287,8 @@ svy_gss_nr <- as_survey(
 )
 ```
 
-    Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
-      within strata, set `nest = TRUE`.
+    ## Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
+    ##   within strata, set `nest = TRUE`.
 
 **Missing values:** GSS uses `−100` = Inapplicable, `−99` = No answer,
 `−98` = Don’t know, `−90` = Refused. These are stored as value labels on
@@ -374,32 +378,36 @@ svy_acs <- as_survey_rep(
 svy_acs
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_replicate> (SUCCESSIVE-DIFFERENCE, 80 replicates)
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Sample size: 5962
+    ## <survey_replicate> (SUCCESSIVE-DIFFERENCE, 80 replicates)
 
-    # A tibble: 5,962 × 96
-        puma    st pwgtp pwgtp1 pwgtp2 pwgtp3 pwgtp4 pwgtp5 pwgtp6 pwgtp7 pwgtp8
-       <int> <int> <int>  <int>  <int>  <int>  <int>  <int>  <int>  <int>  <int>
-     1   500    56    25     24     28     20     24     27     26     27     25
-     2   400    56   128    158    145    133    141    133    128    124    116
-     3   200    56   121    104     93    121     97     94    146    169    147
-     4   300    56    24      0     22     41      0      5     43     24     20
-     5   500    56    26     31     33     28     32     29     26     28     27
-     6   300    56    25     26      0     24      0     25     24      0     22
-     7   300    56    91     85     93     80     80     99    100     97     96
-     8   500    56    20     21     19     36     23     32     16     20     43
-     9   500    56   132    138    143    138    143    151    150    134    144
-    10   100    56    89    113     83    146     71     76    141    117     10
-    # ℹ 5,952 more rows
-    # ℹ 85 more variables: pwgtp9 <int>, pwgtp10 <int>, pwgtp11 <int>,
-    #   pwgtp12 <int>, pwgtp13 <int>, pwgtp14 <int>, pwgtp15 <int>, pwgtp16 <int>,
-    #   pwgtp17 <int>, pwgtp18 <int>, pwgtp19 <int>, pwgtp20 <int>, pwgtp21 <int>,
-    #   pwgtp22 <int>, pwgtp23 <int>, pwgtp24 <int>, pwgtp25 <int>, pwgtp26 <int>,
-    #   pwgtp27 <int>, pwgtp28 <int>, pwgtp29 <int>, pwgtp30 <int>, pwgtp31 <int>,
-    #   pwgtp32 <int>, pwgtp33 <int>, pwgtp34 <int>, pwgtp35 <int>, …
+    ## Sample size: 5962
+
+    ## 
+
+    ## # A tibble: 5,962 × 96
+    ##     puma    st pwgtp pwgtp1 pwgtp2 pwgtp3 pwgtp4 pwgtp5 pwgtp6 pwgtp7 pwgtp8
+    ##    <int> <int> <int>  <int>  <int>  <int>  <int>  <int>  <int>  <int>  <int>
+    ##  1   500    56    25     24     28     20     24     27     26     27     25
+    ##  2   400    56   128    158    145    133    141    133    128    124    116
+    ##  3   200    56   121    104     93    121     97     94    146    169    147
+    ##  4   300    56    24      0     22     41      0      5     43     24     20
+    ##  5   500    56    26     31     33     28     32     29     26     28     27
+    ##  6   300    56    25     26      0     24      0     25     24      0     22
+    ##  7   300    56    91     85     93     80     80     99    100     97     96
+    ##  8   500    56    20     21     19     36     23     32     16     20     43
+    ##  9   500    56   132    138    143    138    143    151    150    134    144
+    ## 10   100    56    89    113     83    146     71     76    141    117     10
+    ## # ℹ 5,952 more rows
+    ## # ℹ 85 more variables: pwgtp9 <int>, pwgtp10 <int>, pwgtp11 <int>,
+    ## #   pwgtp12 <int>, pwgtp13 <int>, pwgtp14 <int>, pwgtp15 <int>, pwgtp16 <int>,
+    ## #   pwgtp17 <int>, pwgtp18 <int>, pwgtp19 <int>, pwgtp20 <int>, pwgtp21 <int>,
+    ## #   pwgtp22 <int>, pwgtp23 <int>, pwgtp24 <int>, pwgtp25 <int>, pwgtp26 <int>,
+    ## #   pwgtp27 <int>, pwgtp28 <int>, pwgtp29 <int>, pwgtp30 <int>, pwgtp31 <int>,
+    ## #   pwgtp32 <int>, pwgtp33 <int>, pwgtp34 <int>, pwgtp35 <int>, …
 
 ### 3.3 Worked example: Pew Jewish Americans 2020
 
@@ -421,32 +429,36 @@ svy_jewish <- as_survey_rep(
 svy_jewish
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_replicate> (JK1, 100 replicates)
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Sample size: 5881
+    ## <survey_replicate> (JK1, 100 replicates)
 
-    # A tibble: 5,881 × 130
-       extweight extweight1 extweight2 extweight3 extweight4 extweight5 extweight6
-           <dbl>      <dbl>      <dbl>      <dbl>      <dbl>      <dbl>      <dbl>
-     1      271.       267.       272.       271.       272.       269.       265.
-     2      186.       183.       236.       186.       189.       185.       182.
-     3      182.       181.       185.       188.       184.       181.       189.
-     4      308.       307.       312.       324.       308.       305.       320.
-     5      165.       165.       167.       170.       166.       163.       164.
-     6      173.       170.       175.       173.       174.       173.       168.
-     7      352.       347.       353.       351.       358.       353.       338.
-     8      314.       312.       318.       316.       314.       314.       309.
-     9      395.       394.       395.       394.       392.       392.       392.
-    10      176.       177.       178.       181.       177.       175.       172.
-    # ℹ 5,871 more rows
-    # ℹ 123 more variables: extweight7 <dbl>, extweight8 <dbl>, extweight9 <dbl>,
-    #   extweight10 <dbl>, extweight11 <dbl>, extweight12 <dbl>, extweight13 <dbl>,
-    #   extweight14 <dbl>, extweight15 <dbl>, extweight16 <dbl>, extweight17 <dbl>,
-    #   extweight18 <dbl>, extweight19 <dbl>, extweight20 <dbl>, extweight21 <dbl>,
-    #   extweight22 <dbl>, extweight23 <dbl>, extweight24 <dbl>, extweight25 <dbl>,
-    #   extweight26 <dbl>, extweight27 <dbl>, extweight28 <dbl>, …
+    ## Sample size: 5881
+
+    ## 
+
+    ## # A tibble: 5,881 × 130
+    ##    extweight extweight1 extweight2 extweight3 extweight4 extweight5 extweight6
+    ##        <dbl>      <dbl>      <dbl>      <dbl>      <dbl>      <dbl>      <dbl>
+    ##  1      271.       267.       272.       271.       272.       269.       265.
+    ##  2      186.       183.       236.       186.       189.       185.       182.
+    ##  3      182.       181.       185.       188.       184.       181.       189.
+    ##  4      308.       307.       312.       324.       308.       305.       320.
+    ##  5      165.       165.       167.       170.       166.       163.       164.
+    ##  6      173.       170.       175.       173.       174.       173.       168.
+    ##  7      352.       347.       353.       351.       358.       353.       338.
+    ##  8      314.       312.       318.       316.       314.       314.       309.
+    ##  9      395.       394.       395.       394.       392.       392.       392.
+    ## 10      176.       177.       178.       181.       177.       175.       172.
+    ## # ℹ 5,871 more rows
+    ## # ℹ 123 more variables: extweight7 <dbl>, extweight8 <dbl>, extweight9 <dbl>,
+    ## #   extweight10 <dbl>, extweight11 <dbl>, extweight12 <dbl>, extweight13 <dbl>,
+    ## #   extweight14 <dbl>, extweight15 <dbl>, extweight16 <dbl>, extweight17 <dbl>,
+    ## #   extweight18 <dbl>, extweight19 <dbl>, extweight20 <dbl>, extweight21 <dbl>,
+    ## #   extweight22 <dbl>, extweight23 <dbl>, extweight24 <dbl>, extweight25 <dbl>,
+    ## #   extweight26 <dbl>, extweight27 <dbl>, extweight28 <dbl>, …
 
 ### 3.4 The `scale` and `rscales` arguments
 
@@ -460,8 +472,8 @@ your codebook’s technical documentation specifies custom values ([Wolter
 ## 4. `as_survey_twophase()` — Two-Phase Designs
 
 > **If you are not sure whether your design is two-phase, it almost
-> certainly is not.** Skip to [Section 6](#sec-srs) or
-> [Section 7](#sec-calibrated).
+> certainly is not.** Skip to [Section 5](#sec-srs) or [Section
+> 6](#sec-calibrated).
 
 ### 4.1 What two-phase sampling is
 
@@ -522,10 +534,10 @@ nwtco$in.subcohort <- as.logical(nwtco$in.subcohort)
 phase1 <- as_survey(nwtco, ids = seqno)
 ```
 
-    Warning: ! No weights provided.
-    ℹ Treating as equal-probability sampling within clusters (unknown population
-      size).
-    ℹ Population totals will equal sample totals, not estimated population totals.
+    ## Warning: ! No weights provided.
+    ## ℹ Treating as equal-probability sampling within clusters (unknown population
+    ##   size).
+    ## ℹ Population totals will equal sample totals, not estimated population totals.
 
 ``` r
 # Phase 2: subcohort, with Phase 2 sampling stratified by relapse status
@@ -538,29 +550,33 @@ svy_twophase <- as_survey_twophase(
 svy_twophase
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_twophase> (method: full)
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Phase 1 sample size: 4028
+    ## <survey_twophase> (method: full)
 
-    Phase 2 sample size: 668
+    ## Phase 1 sample size: 4028
 
-    # A tibble: 4,028 × 10
-       seqno instit histol stage study   rel edrel   age in.subcohort
-       <int>  <int>  <int> <int> <int> <int> <int> <int> <lgl>
-     1     1      2      2     1     3     0  6075    25 FALSE
-     2     2      1      1     2     3     0  4121    50 FALSE
-     3     3      2      2     1     3     0  6069     9 FALSE
-     4     4      2      1     4     3     0  6200    28 TRUE
-     5     5      2      2     2     3     0  1244    55 FALSE
-     6     6      1      1     2     3     0  2932    32 FALSE
-     7     7      1      1     4     3     1   324    45 FALSE
-     8     8      1      1     2     3     0  5408    44 FALSE
-     9     9      1      1     1     3     0  5215   123 FALSE
-    10    10      2      1     2     3     0  1381    31 FALSE
-    # ℹ 4,018 more rows
-    # ℹ 1 more variable: ..surveycore_wt.. <int>
+    ## Phase 2 sample size: 668
+
+    ## 
+
+    ## # A tibble: 4,028 × 10
+    ##    seqno instit histol stage study   rel edrel   age in.subcohort
+    ##    <int>  <int>  <int> <int> <int> <int> <int> <int> <lgl>       
+    ##  1     1      2      2     1     3     0  6075    25 FALSE       
+    ##  2     2      1      1     2     3     0  4121    50 FALSE       
+    ##  3     3      2      2     1     3     0  6069     9 FALSE       
+    ##  4     4      2      1     4     3     0  6200    28 TRUE        
+    ##  5     5      2      2     2     3     0  1244    55 FALSE       
+    ##  6     6      1      1     2     3     0  2932    32 FALSE       
+    ##  7     7      1      1     4     3     1   324    45 FALSE       
+    ##  8     8      1      1     2     3     0  5408    44 FALSE       
+    ##  9     9      1      1     1     3     0  5215   123 FALSE       
+    ## 10    10      2      1     2     3     0  1381    31 FALSE       
+    ## # ℹ 4,018 more rows
+    ## # ℹ 1 more variable: ..surveycore_wt.. <int>
 
 ------------------------------------------------------------------------
 
@@ -624,26 +640,30 @@ svy_srs <- as_survey_srs(
 svy_srs
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_srs> (simple random sample)
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Sample size: 80
+    ## <survey_srs> (simple random sample)
 
-    # A tibble: 80 × 6
-       school_id avg_score pct_frpl enrollment    sw   fpc
-           <int>     <dbl>    <dbl>      <dbl> <dbl> <dbl>
-     1       329      72.3     0.55        610     5   400
-     2       313      75.2     0.36        294     5   400
-     3        95      60.1     0.17        187     5   400
-     4       209      73.4     0.24        729     5   400
-     5       351      81.6     0.18        324     5   400
-     6       317      71.3     0.38        296     5   400
-     7       315      57.4     0.11        188     5   400
-     8       246      68.3     0.16        545     5   400
-     9       355      66.2     0.32        531     5   400
-    10       128      71.5     0.54        656     5   400
-    # ℹ 70 more rows
+    ## Sample size: 80
+
+    ## 
+
+    ## # A tibble: 80 × 6
+    ##    school_id avg_score pct_frpl enrollment    sw   fpc
+    ##        <int>     <dbl>    <dbl>      <dbl> <dbl> <dbl>
+    ##  1       329      72.3     0.55        610     5   400
+    ##  2       313      75.2     0.36        294     5   400
+    ##  3        95      60.1     0.17        187     5   400
+    ##  4       209      73.4     0.24        729     5   400
+    ##  5       351      81.6     0.18        324     5   400
+    ##  6       317      71.3     0.38        296     5   400
+    ##  7       315      57.4     0.11        188     5   400
+    ##  8       246      68.3     0.16        545     5   400
+    ##  9       355      66.2     0.32        531     5   400
+    ## 10       128      71.5     0.54        656     5   400
+    ## # ℹ 70 more rows
 
 Two things worth making explicit so this example is not misread:
 
@@ -682,9 +702,9 @@ svy_a <- as_survey_srs(school_survey, weights = sw, fpc = fpc)
 svy_b <- as_survey(school_survey, weights = sw, fpc = fpc)
 ```
 
-    Warning: ! No `ids` or `strata` specified.
-    ℹ Creating a <survey_srs> design (equal-probability SRS).
-    ✔ Use `as_survey_srs()` to create SRS designs without this warning.
+    ## Warning: ! No `ids` or `strata` specified.
+    ## ℹ Creating a <survey_srs> design (equal-probability SRS).
+    ## ✔ Use `as_survey_srs()` to create SRS designs without this warning.
 
 ------------------------------------------------------------------------
 
@@ -801,27 +821,31 @@ svy_panel <- as_survey_calibrated(panel_data, weights = rake_weight)
 svy_panel
 ```
 
-    ── Survey Design ───────────────────────────────────────────────────────────────
+    ## 
 
-    <survey_calibrated> (calibrated / non-probability) [experimental]
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
 
-    Sample size: 500
+    ## <survey_calibrated> (calibrated / non-probability) [experimental]
 
-    # A tibble: 500 × 8
-       respondent_id age_group gender education    race_eth message_arm support
-               <int> <chr>     <chr>  <chr>        <chr>    <chr>         <int>
-     1             1 55+       Man    Some college White    Framing B         4
-     2             2 18-34     Woman  HS or less   White    Framing B         1
-     3             3 35-54     Man    HS or less   Hispanic Framing A         2
-     4             4 35-54     Woman  Some college White    Framing B         2
-     5             5 35-54     Man    Some college Other    Framing A         4
-     6             6 35-54     Man    HS or less   Black    Framing A         2
-     7             7 35-54     Woman  College+     White    Framing A         3
-     8             8 18-34     Man    Some college White    Framing B         4
-     9             9 55+       Man    Some college Black    Framing A         4
-    10            10 18-34     Man    College+     Hispanic Framing A         5
-    # ℹ 490 more rows
-    # ℹ 1 more variable: rake_weight <dbl>
+    ## Sample size: 500
+
+    ## 
+
+    ## # A tibble: 500 × 8
+    ##    respondent_id age_group gender education    race_eth message_arm support
+    ##            <int> <chr>     <chr>  <chr>        <chr>    <chr>         <int>
+    ##  1             1 55+       Man    Some college White    Framing B         4
+    ##  2             2 18-34     Woman  HS or less   White    Framing B         1
+    ##  3             3 35-54     Man    HS or less   Hispanic Framing A         2
+    ##  4             4 35-54     Woman  Some college White    Framing B         2
+    ##  5             5 35-54     Man    Some college Other    Framing A         4
+    ##  6             6 35-54     Man    HS or less   Black    Framing A         2
+    ##  7             7 35-54     Woman  College+     White    Framing A         3
+    ##  8             8 18-34     Man    Some college White    Framing B         4
+    ##  9             9 55+       Man    Some college Black    Framing A         4
+    ## 10            10 18-34     Man    College+     Hispanic Framing A         5
+    ## # ℹ 490 more rows
+    ## # ℹ 1 more variable: rake_weight <dbl>
 
 This produces a `survey_calibrated` object. Use it with
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),

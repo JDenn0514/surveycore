@@ -12,9 +12,7 @@
 <link href="../deps/Inter-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="creating-survey-objects_files/libs/quarto-html/popper.min.js"></script><script src="creating-survey-objects_files/libs/quarto-html/tippy.umd.min.js"></script><link href="creating-survey-objects_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="creating-survey-objects_files/libs/quarto-html/light-border.css" rel="stylesheet">
-<!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Creating Survey Objects in surveycore">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Creating Survey Objects in surveycore">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -43,46 +41,64 @@
 
 
   </div>
-</nav><div class="container template-quarto">
+</nav><div class="container template-article">
+
+
+
+
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Creating Survey Objects in surveycore</h1>
-
-
-
-
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/creating-survey-objects.qmd" class="external-link"><code>vignettes/creating-survey-objects.qmd</code></a></small>
-      <div class="d-none name"><code></code></div>
+            
+      
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/creating-survey-objects.Rmd" class="external-link"><code>vignettes/creating-survey-objects.Rmd</code></a></small>
+      <div class="d-none name"><code>creating-survey-objects.Rmd</code></div>
     </div>
 
-
-
-
-
-
-    <section class="level2"><h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+    
+    
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Every analysis function in surveycore — <code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, <code>get_freqs()</code> — takes a <strong>survey design object</strong> as its first argument. That object encodes how your data were collected: which units were clustered together, which strata were defined, what weights apply, and how variance should be estimated. Without it, point estimates may be biased and standard errors are almost certainly wrong <span class="citation" data-cites="lumley2010 lohr2022">(<a href="#ref-lumley2010" role="doc-biblioref">Lumley 2010</a>; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022</a>)</span>.</p>
-<p>This vignette answers one question: <em>given my data, which constructor do I call and how do I call it?</em></p>
+<p>Every analysis function in surveycore — <code><a href="../reference/get_means.html">get_means()</a></code>,
+<code><a href="../reference/get_totals.html">get_totals()</a></code>, <code>get_freqs()</code> — takes a
+<strong>survey design object</strong> as its first argument. That object
+encodes how your data were collected: which units were clustered
+together, which strata were defined, what weights apply, and how
+variance should be estimated. Without it, point estimates may be biased
+and standard errors are almost certainly wrong <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>; <a href="#ref-lohr2022">Lohr 2022</a>)</span>.</p>
+<p>This vignette answers one question: <em>given my data, which
+constructor do I call and how do I call it?</em></p>
 <p>It is written for three audiences:</p>
 <ul>
 <li>
-<strong>Academic researchers</strong> working with named public surveys (NHANES, ANES, ACS, GSS). Jump to the relevant worked example in each section.</li>
+<strong>Academic researchers</strong> working with named public
+surveys (NHANES, ANES, ACS, GSS). Jump to the relevant worked example in
+each section.</li>
 <li>
-<strong>Practitioners</strong> running surveys of schools, businesses, or organizations. The conceptual explanations in each section are for you.</li>
+<strong>Practitioners</strong> running surveys of schools,
+businesses, or organizations. The conceptual explanations in each
+section are for you.</li>
 <li>
-<strong>Non-probability panel users</strong> — if you run message-testing or attitudinal research on Lucid, Dynata, or a similar platform and have vendor-provided raking weights, skip ahead to <a href="#sec-calibrated" class="quarto-xref">Section 7</a>.</li>
+<strong>Non-probability panel users</strong> — if you run
+message-testing or attitudinal research on Lucid, Dynata, or a similar
+platform and have vendor-provided raking weights, skip ahead to <a href="#sec-calibrated">Section 6</a>.</li>
 </ul>
-<p>This vignette covers object <em>creation</em> only. Estimation functions (<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, etc.) are covered in <code>vignette("estimation")</code>.</p>
-<hr></section><section class="level2"><h2 id="sec-decision">1. Decision Guide<a class="anchor" aria-label="anchor" href="#sec-decision"></a>
+<p>This vignette covers object <em>creation</em> only. Estimation
+functions (<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, etc.)
+are covered in <code>vignette("estimation")</code>.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="sec-decision">1. Decision Guide<a class="anchor" aria-label="anchor" href="#sec-decision"></a>
 </h2>
 <p>Read the first row that matches your data.</p>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 47%">
-<col style="width: 17%">
-<col style="width: 34%">
+<col width="47%">
+<col width="17%">
+<col width="34%">
 </colgroup>
 <thead><tr class="header">
 <th>My data…</th>
@@ -96,7 +112,8 @@
 <td>Taylor series linearization — the general case</td>
 </tr>
 <tr class="even">
-<td>Comes with pre-built replicate weight columns (repwt_1, repwt_2, …)</td>
+<td>Comes with pre-built replicate weight columns (repwt_1, repwt_2,
+…)</td>
 <td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
 <td>Uses the agency-supplied variance replicates</td>
 </tr>
@@ -106,7 +123,8 @@
 <td>Simpler estimator for equal-probability samples</td>
 </tr>
 <tr class="even">
-<td>Is a non-probability panel or opt-in sample with calibration weights</td>
+<td>Is a non-probability panel or opt-in sample with calibration
+weights</td>
 <td><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></td>
 <td>Calibrated design; SEs are approximate</td>
 </tr>
@@ -117,13 +135,14 @@
 </tr>
 </tbody>
 </table>
-<section class="level3"><h3 id="common-surveys-at-a-glance">Common surveys at a glance<a class="anchor" aria-label="anchor" href="#common-surveys-at-a-glance"></a>
+<div class="section level3">
+<h3 id="common-surveys-at-a-glance">Common surveys at a glance<a class="anchor" aria-label="anchor" href="#common-surveys-at-a-glance"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 27%">
-<col style="width: 26%">
-<col style="width: 47%">
+<col width="27%">
+<col width="26%">
+<col width="47%">
 </colgroup>
 <thead><tr class="header">
 <th>Survey</th>
@@ -178,16 +197,25 @@
 </tr>
 </tbody>
 </table>
-<hr></section></section><section class="level2"><h2 id="sec-taylor">2. <code>as_survey()</code> — Taylor Series Designs<a class="anchor" aria-label="anchor" href="#sec-taylor"></a>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="sec-taylor">2. <code>as_survey()</code> — Taylor Series Designs<a class="anchor" aria-label="anchor" href="#sec-taylor"></a>
 </h2>
-<p><code><a href="../reference/as_survey.html">as_survey()</a></code> is the right constructor for probability surveys with cluster and/or stratum information but no pre-computed replicate weights. It uses <strong>Taylor series linearization</strong> (also called the linearization or delta-method estimator), the standard approach for complex probability surveys <span class="citation" data-cites="lumley2010 lohr2022">(<a href="#ref-lumley2010" role="doc-biblioref">Lumley 2010</a>, ch. 2; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022</a>, ch. 9)</span>.</p>
-<section class="level3"><h3 id="core-arguments">2.1 Core arguments<a class="anchor" aria-label="anchor" href="#core-arguments"></a>
+<p><code><a href="../reference/as_survey.html">as_survey()</a></code> is the right constructor for probability
+surveys with cluster and/or stratum information but no pre-computed
+replicate weights. It uses <strong>Taylor series linearization</strong>
+(also called the linearization or delta-method estimator), the standard
+approach for complex probability surveys <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>, ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 9)</span>.</p>
+<div class="section level3">
+<h3 id="core-arguments">2.1 Core arguments<a class="anchor" aria-label="anchor" href="#core-arguments"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 10%">
-<col style="width: 50%">
-<col style="width: 39%">
+<col width="10%">
+<col width="50%">
+<col width="39%">
 </colgroup>
 <thead><tr class="header">
 <th>Argument</th>
@@ -222,47 +250,72 @@
 </tr>
 </tbody>
 </table>
-<p>All arguments accept bare column names — no <code>~formula</code> syntax required.</p>
-</section><section class="level3"><h3 id="the-nest-argument">2.2 The <code>nest</code> argument<a class="anchor" aria-label="anchor" href="#the-nest-argument"></a>
+<p>All arguments accept bare column names — no <code>~formula</code>
+syntax required.</p>
+</div>
+<div class="section level3">
+<h3 id="the-nest-argument">2.2 The <code>nest</code> argument<a class="anchor" aria-label="anchor" href="#the-nest-argument"></a>
 </h3>
-<p>Many government surveys assign PSU IDs locally within each stratum. NHANES, for example, assigns IDs 1 and 2 within <em>every</em> stratum — PSU 1 in stratum 31 is a completely different unit from PSU 1 in stratum 32. If you do not account for this, surveycore treats PSU 1 from stratum 31 and PSU 1 from stratum 32 as the same cluster, which produces incorrect variance estimates.</p>
-<p>Set <code>nest = TRUE</code> when PSU IDs are not globally unique across strata <span class="citation" data-cites="lumley2010">(<a href="#ref-lumley2010" role="doc-biblioref">Lumley 2010, 28</a>)</span>. A quick diagnostic:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<p>Many government surveys assign PSU IDs locally within each stratum.
+NHANES, for example, assigns IDs 1 and 2 within <em>every</em> stratum —
+PSU 1 in stratum 31 is a completely different unit from PSU 1 in stratum
+32. If you do not account for this, surveycore treats PSU 1 from stratum
+31 and PSU 1 from stratum 32 as the same cluster, which produces
+incorrect variance estimates.</p>
+<p>Set <code>nest = TRUE</code> when PSU IDs are not globally unique
+across strata <span class="citation">(<a href="#ref-lumley2010">Lumley
+2010, 28</a>)</span>. A quick diagnostic:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># NHANES: only two distinct PSU values, but 15 strata</span></span>
 <span><span class="co"># Each stratum has its own PSU 1 and PSU 2 → nest = TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">sdmvpsu</span><span class="op">)</span><span class="op">)</span>  <span class="co"># 2</span></span></code></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## [1] 2</span></span></code></pre>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">sdmvstra</span><span class="op">)</span><span class="op">)</span> <span class="co"># 15</span></span></code></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 15</code></pre>
+<pre><code><span><span class="co">## [1] 15</span></span></code></pre>
+<p>If the number of unique PSU values is much smaller than the number of
+strata, the IDs are almost certainly nested and you need
+<code>nest = TRUE</code>.</p>
 </div>
-</div>
-<p>If the number of unique PSU values is much smaller than the number of strata, the IDs are almost certainly nested and you need <code>nest = TRUE</code>.</p>
-</section><section class="level3"><h3 id="the-fpc-argument">2.3 The <code>fpc</code> argument<a class="anchor" aria-label="anchor" href="#the-fpc-argument"></a>
+<div class="section level3">
+<h3 id="the-fpc-argument">2.3 The <code>fpc</code> argument<a class="anchor" aria-label="anchor" href="#the-fpc-argument"></a>
 </h3>
-<p>The finite population correction (FPC) reduces variance estimates when you have sampled a substantial fraction of the population <span class="citation" data-cites="cochran1977 lohr2022">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977, sec. 2.8</a>; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022, sec. 2.8</a>)</span>. Supply either:</p>
+<p>The finite population correction (FPC) reduces variance estimates
+when you have sampled a substantial fraction of the population <span class="citation">(<a href="#ref-cochran1977">Cochran 1977, sec. 2.8</a>;
+<a href="#ref-lohr2022">Lohr 2022, sec. 2.8</a>)</span>. Supply
+either:</p>
 <ul>
-<li>An <strong>integer column</strong> with the total population size in each stratum</li>
-<li>A <strong>numeric column</strong> (0–1) with the sampling fraction</li>
+<li>An <strong>integer column</strong> with the total population size in
+each stratum</li>
+<li>A <strong>numeric column</strong> (0–1) with the sampling
+fraction</li>
 </ul>
-<p>FPC has a meaningful effect when the sampling rate exceeds roughly 5% <span class="citation" data-cites="cochran1977">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977</a>)</span>. For large national surveys like NHANES and ANES, the sampling fraction is tiny and FPC can be safely omitted (<code>fpc = NULL</code>).</p>
-</section><section class="level3"><h3 id="multi-level-clustering">2.4 Multi-level clustering<a class="anchor" aria-label="anchor" href="#multi-level-clustering"></a>
+<p>FPC has a meaningful effect when the sampling rate exceeds roughly 5%
+<span class="citation">(<a href="#ref-cochran1977">Cochran
+1977</a>)</span>. For large national surveys like NHANES and ANES, the
+sampling fraction is tiny and FPC can be safely omitted
+(<code>fpc = NULL</code>).</p>
+</div>
+<div class="section level3">
+<h3 id="multi-level-clustering">2.4 Multi-level clustering<a class="anchor" aria-label="anchor" href="#multi-level-clustering"></a>
 </h3>
-<p>For two-stage designs — counties then households, schools then students — pass both levels of IDs as a vector:</p>
+<p>For two-stage designs — counties then households, schools then
+students — pass both levels of IDs as a vector:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">data</span>, ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">county_id</span>, <span class="va">household_id</span><span class="op">)</span>, weights <span class="op">=</span> <span class="va">wt</span>, strata <span class="op">=</span> <span class="va">region</span><span class="op">)</span></span></code></pre></div>
-</section><section class="level3"><h3 id="worked-example-nhanes-20172018">2.5 Worked example: NHANES 2017–2018<a class="anchor" aria-label="anchor" href="#worked-example-nhanes-20172018"></a>
+</div>
+<div class="section level3">
+<h3 id="worked-example-nhanes-20172018">2.5 Worked example: NHANES 2017–2018<a class="anchor" aria-label="anchor" href="#worked-example-nhanes-20172018"></a>
 </h3>
-<p>NHANES uses a stratified, multistage probability cluster sample. The design variables are documented in the analytic notes on the NHANES website <span class="citation" data-cites="lumley2010">(<a href="#ref-lumley2010" role="doc-biblioref">Lumley 2010</a>, ch. 4)</span>:</p>
-<table class="table caption-top">
+<p>NHANES uses a stratified, multistage probability cluster sample. The
+design variables are documented in the analytic notes on the NHANES
+website <span class="citation">(<a href="#ref-lumley2010">Lumley
+2010</a>, ch. 4)</span>:</p>
+<table class="table">
 <colgroup>
-<col style="width: 14%">
-<col style="width: 71%">
-<col style="width: 13%">
+<col width="14%">
+<col width="71%">
+<col width="13%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -292,8 +345,7 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Subset to MEC exam participants (ridstatr == 2) before using wtmec2yr.</span></span>
 <span><span class="co"># The 550 interview-only participants have wtmec2yr = 0 and are not part</span></span>
 <span><span class="co"># of the exam sample.</span></span>
@@ -307,43 +359,31 @@
 <span>  nest    <span class="op">=</span> <span class="cn">TRUE</span>       <span class="co"># PSU IDs are locally unique within strata</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_nhanes</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_taylor&gt; (Taylor series linearization)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Sample size: 8704</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 8,704 × 14
-    seqn sdmvpsu sdmvstra wtmec2yr wtint2yr ridstatr riagendr ridageyr ridreth3
-   &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
- 1 93703       2      145    8540.    9246.        2        2        2        6
- 2 93704       1      143   42567.   37339.        2        1        2        3
- 3 93705       2      145    8338.    8615.        2        2       66        4
- 4 93706       2      134    8723.    8549.        2        1       18        6
- 5 93707       1      138    7065.    6769.        2        1       13        7
- 6 93708       2      138   14372.   13329.        2        2       66        6
- 7 93709       1      136   12278.   12043.        2        2       75        4
- 8 93710       1      134   16848.   16418.        2        2        0        3
- 9 93711       2      134   12391.   11178.        2        1       56        6
-10 93712       2      147   30337.   29040.        2        1       18        1
-# ℹ 8,694 more rows
-# ℹ 5 more variables: indfmpir &lt;dbl&gt;, dmdeduc2 &lt;dbl&gt;, bpxsy1 &lt;dbl&gt;,
-#   bpxdi1 &lt;dbl&gt;, bpxpls &lt;dbl&gt;</code></pre>
-</div>
-</div>
-<p>For interview-only variables (income, education), use the full dataset with <code>wtint2yr</code> — all 9,254 participants have a positive interview weight:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_taylor&gt;</span> (Taylor series linearization)</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">8704</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 8,704 × 14</span></span></span>
+<span><span class="co">##     seqn sdmvpsu sdmvstra wtmec2yr wtint2yr ridstatr riagendr ridageyr ridreth3</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> <span style="text-decoration: underline;">93</span>703       2      145    <span style="text-decoration: underline;">8</span>540.    <span style="text-decoration: underline;">9</span>246.        2        2        2        6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> <span style="text-decoration: underline;">93</span>704       1      143   <span style="text-decoration: underline;">42</span>567.   <span style="text-decoration: underline;">37</span>339.        2        1        2        3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> <span style="text-decoration: underline;">93</span>705       2      145    <span style="text-decoration: underline;">8</span>338.    <span style="text-decoration: underline;">8</span>615.        2        2       66        4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> <span style="text-decoration: underline;">93</span>706       2      134    <span style="text-decoration: underline;">8</span>723.    <span style="text-decoration: underline;">8</span>549.        2        1       18        6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> <span style="text-decoration: underline;">93</span>707       1      138    <span style="text-decoration: underline;">7</span>065.    <span style="text-decoration: underline;">6</span>769.        2        1       13        7</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> <span style="text-decoration: underline;">93</span>708       2      138   <span style="text-decoration: underline;">14</span>372.   <span style="text-decoration: underline;">13</span>329.        2        2       66        6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> <span style="text-decoration: underline;">93</span>709       1      136   <span style="text-decoration: underline;">12</span>278.   <span style="text-decoration: underline;">12</span>043.        2        2       75        4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> <span style="text-decoration: underline;">93</span>710       1      134   <span style="text-decoration: underline;">16</span>848.   <span style="text-decoration: underline;">16</span>418.        2        2        0        3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> <span style="text-decoration: underline;">93</span>711       2      134   <span style="text-decoration: underline;">12</span>391.   <span style="text-decoration: underline;">11</span>178.        2        1       56        6</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> <span style="text-decoration: underline;">93</span>712       2      147   <span style="text-decoration: underline;">30</span>337.   <span style="text-decoration: underline;">29</span>040.        2        1       18        1</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 8,694 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 5 more variables: indfmpir &lt;dbl&gt;, dmdeduc2 &lt;dbl&gt;, bpxsy1 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   bpxdi1 &lt;dbl&gt;, bpxpls &lt;dbl&gt;</span></span></span></code></pre>
+<p>For interview-only variables (income, education), use the full
+dataset with <code>wtint2yr</code> — all 9,254 participants have a
+positive interview weight:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_nhanes_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">nhanes_2017</span>,</span>
 <span>  ids     <span class="op">=</span> <span class="va">sdmvpsu</span>,</span>
@@ -352,14 +392,17 @@
 <span>  nest    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
-</section><section class="level3"><h3 id="worked-example-anes-2024">2.6 Worked example: ANES 2024<a class="anchor" aria-label="anchor" href="#worked-example-anes-2024"></a>
+<div class="section level3">
+<h3 id="worked-example-anes-2024">2.6 Worked example: ANES 2024<a class="anchor" aria-label="anchor" href="#worked-example-anes-2024"></a>
 </h3>
-<p>The 2024 American National Election Studies uses a stratified cluster design with separate pre- and post-election weights. Use the correct weight for the variables you are analyzing:</p>
-<table class="table caption-top">
+<p>The 2024 American National Election Studies uses a stratified cluster
+design with separate pre- and post-election weights. Use the correct
+weight for the variables you are analyzing:</p>
+<table class="table">
 <colgroup>
-<col style="width: 13%">
-<col style="width: 73%">
-<col style="width: 12%">
+<col width="13%">
+<col width="73%">
+<col width="12%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -389,8 +432,7 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pre-election analysis (party ID, ideology, candidate preference)</span></span>
 <span><span class="va">svy_anes_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">anes_2024</span>,</span>
@@ -398,11 +440,9 @@
 <span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">v240103a</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
-  If PSUs are nested within strata, set `nest = TRUE`.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb16"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span>, <span style="color: #0000BB;">"10"</span>, <span style="color: #0000BB;">"11"</span>, <span style="color: #0000BB;">"12"</span>, and <span style="color: #0000BB;">"13"</span>.</span></span>
+<span><span class="co">##   If PSUs are nested within strata, set `nest = TRUE`.</span></span></code></pre>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Post-election analysis (validated vote choice: v242066, v242067)</span></span>
 <span><span class="va">svy_anes_post</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">anes_2024</span>,</span>
@@ -410,20 +450,25 @@
 <span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">v240103b</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! Some PSUs appear in more than one stratum: "1", "10", "11", "12", and "13".
-  If PSUs are nested within strata, set `nest = TRUE`.</code></pre>
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span>, <span style="color: #0000BB;">"10"</span>, <span style="color: #0000BB;">"11"</span>, <span style="color: #0000BB;">"12"</span>, and <span style="color: #0000BB;">"13"</span>.</span></span>
+<span><span class="co">##   If PSUs are nested within strata, set `nest = TRUE`.</span></span></code></pre>
+<p><strong>Missing values:</strong> ANES uses negative integer codes
+throughout — <code>−9</code> = Refused, <code>−8</code> = Don’t know,
+<code>−1</code> = Inapplicable. Recode these to <code>NA</code> before
+analysis. Check <code>attr(anes_2024$v241177, "labels")</code> for the
+full set of codes for any variable.</p>
 </div>
-</div>
-<p><strong>Missing values:</strong> ANES uses negative integer codes throughout — <code>−9</code> = Refused, <code>−8</code> = Don’t know, <code>−1</code> = Inapplicable. Recode these to <code>NA</code> before analysis. Check <code>attr(anes_2024$v241177, "labels")</code> for the full set of codes for any variable.</p>
-</section><section class="level3"><h3 id="worked-example-gss-2024">2.7 Worked example: GSS 2024<a class="anchor" aria-label="anchor" href="#worked-example-gss-2024"></a>
+<div class="section level3">
+<h3 id="worked-example-gss-2024">2.7 Worked example: GSS 2024<a class="anchor" aria-label="anchor" href="#worked-example-gss-2024"></a>
 </h3>
-<p>The General Social Survey uses a stratified multi-stage cluster design. Two weights are available depending on whether non-response bias is a concern:</p>
-<table class="table caption-top" style="width:100%;">
+<p>The General Social Survey uses a stratified multi-stage cluster
+design. Two weights are available depending on whether non-response bias
+is a concern:</p>
+<table style="width:100%;" class="table">
 <colgroup>
-<col style="width: 14%">
-<col style="width: 73%">
-<col style="width: 11%">
+<col width="14%">
+<col width="73%">
+<col width="11%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -453,8 +498,7 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Standard analysis weight</span></span>
 <span><span class="va">svy_gss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">gss_2024</span>,</span>
@@ -462,11 +506,9 @@
 <span>  strata  <span class="op">=</span> <span class="va">vstrat</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtssps</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
-  within strata, set `nest = TRUE`.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb20"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>. If PSUs are nested</span></span>
+<span><span class="co">##   within strata, set `nest = TRUE`.</span></span></code></pre>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Non-response adjusted weight (preferred when non-response bias is a concern)</span></span>
 <span><span class="va">svy_gss_nr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">gss_2024</span>,</span>
@@ -474,20 +516,27 @@
 <span>  strata  <span class="op">=</span> <span class="va">vstrat</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtssnrps</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! Some PSUs appear in more than one stratum: "1" and "2". If PSUs are nested
-  within strata, set `nest = TRUE`.</code></pre>
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>. If PSUs are nested</span></span>
+<span><span class="co">##   within strata, set `nest = TRUE`.</span></span></code></pre>
+<p><strong>Missing values:</strong> GSS uses <code>−100</code> =
+Inapplicable, <code>−99</code> = No answer, <code>−98</code> = Don’t
+know, <code>−90</code> = Refused. These are stored as value labels on
+every column — check <code>attr(gss_2024$happy, "labels")</code> and
+recode to <code>NA</code> before analysis.</p>
 </div>
-</div>
-<p><strong>Missing values:</strong> GSS uses <code>−100</code> = Inapplicable, <code>−99</code> = No answer, <code>−98</code> = Don’t know, <code>−90</code> = Refused. These are stored as value labels on every column — check <code>attr(gss_2024$happy, "labels")</code> and recode to <code>NA</code> before analysis.</p>
-</section><section class="level3"><h3 id="worked-example-pew-npors-2025">2.8 Worked example: Pew NPORS 2025<a class="anchor" aria-label="anchor" href="#worked-example-pew-npors-2025"></a>
+<div class="section level3">
+<h3 id="worked-example-pew-npors-2025">2.8 Worked example: Pew NPORS 2025<a class="anchor" aria-label="anchor" href="#worked-example-pew-npors-2025"></a>
 </h3>
-<p>The 2025 National Public Opinion Reference Survey is an <strong>address-based sample (ABS)</strong> — units are drawn directly from the USPS Computerized Delivery Sequence file with no intermediate cluster stage. Each address is its own sampling unit, so there is no PSU variable. Omit <code>ids</code>:</p>
-<table class="table caption-top" style="width:100%;">
+<p>The 2025 National Public Opinion Reference Survey is an
+<strong>address-based sample (ABS)</strong> — units are drawn directly
+from the USPS Computerized Delivery Sequence file with no intermediate
+cluster stage. Each address is its own sampling unit, so there is no PSU
+variable. Omit <code>ids</code>:</p>
+<table style="width:100%;" class="table">
 <colgroup>
-<col style="width: 12%">
-<col style="width: 75%">
-<col style="width: 12%">
+<col width="12%">
+<col width="75%">
+<col width="12%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -507,27 +556,44 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_npors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_npors_2025</span>,</span>
 <span>  strata  <span class="op">=</span> <span class="va">stratum</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">weight</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
-<hr></section></section><section class="level2"><h2 id="sec-rep">3. <code>as_survey_rep()</code> — Replicate Weight Designs<a class="anchor" aria-label="anchor" href="#sec-rep"></a>
+</div>
+<div class="section level2">
+<h2 id="sec-rep">3. <code>as_survey_rep()</code> — Replicate Weight Designs<a class="anchor" aria-label="anchor" href="#sec-rep"></a>
 </h2>
-<p>Use <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code> when your data provider has supplied pre-computed replicate weight columns — columns like <code>repwt_1</code>, <code>repwt_2</code>, …, or <code>pwgtp1</code>–<code>pwgtp80</code>. Replicate-based variance estimation works by repeatedly re-estimating the target statistic under small perturbations of the sample, embedding variance information directly in the weights <span class="citation" data-cites="wolter2007">(<a href="#ref-wolter2007" role="doc-biblioref">Wolter 2007</a>, ch. 1)</span>.</p>
-<p><strong>Use the agency-supplied replicate weights when they are available.</strong> Survey agencies tune these weights for their specific design. Using them correctly replicates published point estimates and standard errors and is generally considered the preferred approach for variance estimation with major public surveys <span class="citation" data-cites="lohr2022">(<a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022, sec. 9.4</a>)</span>.</p>
-<section class="level3"><h3 id="the-type-argument">3.1 The <code>type</code> argument<a class="anchor" aria-label="anchor" href="#the-type-argument"></a>
+<p>Use <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code> when your data provider has supplied
+pre-computed replicate weight columns — columns like
+<code>repwt_1</code>, <code>repwt_2</code>, …, or
+<code>pwgtp1</code>–<code>pwgtp80</code>. Replicate-based variance
+estimation works by repeatedly re-estimating the target statistic under
+small perturbations of the sample, embedding variance information
+directly in the weights <span class="citation">(<a href="#ref-wolter2007">Wolter 2007</a>, ch. 1)</span>.</p>
+<p><strong>Use the agency-supplied replicate weights when they are
+available.</strong> Survey agencies tune these weights for their
+specific design. Using them correctly replicates published point
+estimates and standard errors and is generally considered the preferred
+approach for variance estimation with major public surveys <span class="citation">(<a href="#ref-lohr2022">Lohr 2022, sec.
+9.4</a>)</span>.</p>
+<div class="section level3">
+<h3 id="the-type-argument">3.1 The <code>type</code> argument<a class="anchor" aria-label="anchor" href="#the-type-argument"></a>
 </h3>
-<p>The <code>type</code> argument specifies which replication variance formula applies. Getting this wrong produces systematically incorrect standard errors. Identify the correct type from your codebook’s technical documentation.</p>
-<table class="table caption-top">
+<p>The <code>type</code> argument specifies which replication variance
+formula applies. Getting this wrong produces systematically incorrect
+standard errors. Identify the correct type from your codebook’s
+technical documentation.</p>
+<table class="table">
 <colgroup>
-<col style="width: 16%">
-<col style="width: 20%">
-<col style="width: 34%">
-<col style="width: 28%">
+<col width="16%">
+<col width="20%">
+<col width="34%">
+<col width="28%">
 </colgroup>
 <thead><tr class="header">
 <th>Type</th>
@@ -564,7 +630,8 @@
 <td><code>"Fay"</code></td>
 <td>Fay’s Modified BRR</td>
 <td>“Fay BRR” or “Fay’s method”; BRR with epsilon</td>
-<td>Some Census Bureau surveys <span class="citation" data-cites="fay1989 judkins1990">(<a href="#ref-fay1989" role="doc-biblioref">Fay 1989</a>; <a href="#ref-judkins1990" role="doc-biblioref">Judkins 1990</a>)</span>
+<td>Some Census Bureau surveys <span class="citation">(<a href="#ref-fay1989">Fay 1989</a>; <a href="#ref-judkins1990">Judkins
+1990</a>)</span>
 </td>
 </tr>
 <tr class="even">
@@ -577,7 +644,7 @@
 <td><code>"successive-difference"</code></td>
 <td>Successive Difference</td>
 <td>“SDR” or “successive difference replication”</td>
-<td>ACS 1-year PUMS <span class="citation" data-cites="census2022">(<a href="#ref-census2022" role="doc-biblioref">U.S. Census Bureau 2022</a>)</span>
+<td>ACS 1-year PUMS <span class="citation">(<a href="#ref-census2022">U.S. Census Bureau 2022</a>)</span>
 </td>
 </tr>
 <tr class="even">
@@ -588,15 +655,21 @@
 </tr>
 </tbody>
 </table>
-<p>The Fay epsilon parameter (<code>fay_rho</code>) controls how much each replicate weight differs from the full-sample weight. Its value is specified in the survey’s technical documentation <span class="citation" data-cites="fay1989 judkins1990">(<a href="#ref-fay1989" role="doc-biblioref">Fay 1989</a>; <a href="#ref-judkins1990" role="doc-biblioref">Judkins 1990</a>)</span>.</p>
-</section><section class="level3"><h3 id="worked-example-acs-pums-2022-wyoming">3.2 Worked example: ACS PUMS 2022 — Wyoming<a class="anchor" aria-label="anchor" href="#worked-example-acs-pums-2022-wyoming"></a>
+<p>The Fay epsilon parameter (<code>fay_rho</code>) controls how much
+each replicate weight differs from the full-sample weight. Its value is
+specified in the survey’s technical documentation <span class="citation">(<a href="#ref-fay1989">Fay 1989</a>; <a href="#ref-judkins1990">Judkins 1990</a>)</span>.</p>
+</div>
+<div class="section level3">
+<h3 id="worked-example-acs-pums-2022-wyoming">3.2 Worked example: ACS PUMS 2022 — Wyoming<a class="anchor" aria-label="anchor" href="#worked-example-acs-pums-2022-wyoming"></a>
 </h3>
-<p>The ACS 1-year PUMS provides 80 successive-difference replicate weights for variance estimation, documented in the ACS Design and Methodology report <span class="citation" data-cites="census2022">(<a href="#ref-census2022" role="doc-biblioref">U.S. Census Bureau 2022</a>)</span>:</p>
-<table class="table caption-top">
+<p>The ACS 1-year PUMS provides 80 successive-difference replicate
+weights for variance estimation, documented in the ACS Design and
+Methodology report <span class="citation">(<a href="#ref-census2022">U.S. Census Bureau 2022</a>)</span>:</p>
+<table class="table">
 <colgroup>
-<col style="width: 23%">
-<col style="width: 60%">
-<col style="width: 15%">
+<col width="23%">
+<col width="60%">
+<col width="15%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -618,8 +691,7 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_acs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
 <span>  <span class="va">acs_pums_wy</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span>
@@ -627,52 +699,42 @@
 <span>  type       <span class="op">=</span> <span class="st">"successive-difference"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_acs</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_replicate&gt;</span> (SUCCESSIVE-DIFFERENCE, 80 replicates)</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">5962</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5,962 × 96</span></span></span>
+<span><span class="co">##     puma    st pwgtp pwgtp1 pwgtp2 pwgtp3 pwgtp4 pwgtp5 pwgtp6 pwgtp7 pwgtp8</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>   500    56    25     24     28     20     24     27     26     27     25</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>   400    56   128    158    145    133    141    133    128    124    116</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>   200    56   121    104     93    121     97     94    146    169    147</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>   300    56    24      0     22     41      0      5     43     24     20</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>   500    56    26     31     33     28     32     29     26     28     27</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>   300    56    25     26      0     24      0     25     24      0     22</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>   300    56    91     85     93     80     80     99    100     97     96</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>   500    56    20     21     19     36     23     32     16     20     43</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>   500    56   132    138    143    138    143    151    150    134    144</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>   100    56    89    113     83    146     71     76    141    117     10</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 5,952 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 85 more variables: pwgtp9 &lt;int&gt;, pwgtp10 &lt;int&gt;, pwgtp11 &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   pwgtp12 &lt;int&gt;, pwgtp13 &lt;int&gt;, pwgtp14 &lt;int&gt;, pwgtp15 &lt;int&gt;, pwgtp16 &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   pwgtp17 &lt;int&gt;, pwgtp18 &lt;int&gt;, pwgtp19 &lt;int&gt;, pwgtp20 &lt;int&gt;, pwgtp21 &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   pwgtp22 &lt;int&gt;, pwgtp23 &lt;int&gt;, pwgtp24 &lt;int&gt;, pwgtp25 &lt;int&gt;, pwgtp26 &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   pwgtp27 &lt;int&gt;, pwgtp28 &lt;int&gt;, pwgtp29 &lt;int&gt;, pwgtp30 &lt;int&gt;, pwgtp31 &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   pwgtp32 &lt;int&gt;, pwgtp33 &lt;int&gt;, pwgtp34 &lt;int&gt;, pwgtp35 &lt;int&gt;, …</span></span></span></code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_replicate&gt; (SUCCESSIVE-DIFFERENCE, 80 replicates)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Sample size: 5962</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 5,962 × 96
-    puma    st pwgtp pwgtp1 pwgtp2 pwgtp3 pwgtp4 pwgtp5 pwgtp6 pwgtp7 pwgtp8
-   &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;  &lt;int&gt;
- 1   500    56    25     24     28     20     24     27     26     27     25
- 2   400    56   128    158    145    133    141    133    128    124    116
- 3   200    56   121    104     93    121     97     94    146    169    147
- 4   300    56    24      0     22     41      0      5     43     24     20
- 5   500    56    26     31     33     28     32     29     26     28     27
- 6   300    56    25     26      0     24      0     25     24      0     22
- 7   300    56    91     85     93     80     80     99    100     97     96
- 8   500    56    20     21     19     36     23     32     16     20     43
- 9   500    56   132    138    143    138    143    151    150    134    144
-10   100    56    89    113     83    146     71     76    141    117     10
-# ℹ 5,952 more rows
-# ℹ 85 more variables: pwgtp9 &lt;int&gt;, pwgtp10 &lt;int&gt;, pwgtp11 &lt;int&gt;,
-#   pwgtp12 &lt;int&gt;, pwgtp13 &lt;int&gt;, pwgtp14 &lt;int&gt;, pwgtp15 &lt;int&gt;, pwgtp16 &lt;int&gt;,
-#   pwgtp17 &lt;int&gt;, pwgtp18 &lt;int&gt;, pwgtp19 &lt;int&gt;, pwgtp20 &lt;int&gt;, pwgtp21 &lt;int&gt;,
-#   pwgtp22 &lt;int&gt;, pwgtp23 &lt;int&gt;, pwgtp24 &lt;int&gt;, pwgtp25 &lt;int&gt;, pwgtp26 &lt;int&gt;,
-#   pwgtp27 &lt;int&gt;, pwgtp28 &lt;int&gt;, pwgtp29 &lt;int&gt;, pwgtp30 &lt;int&gt;, pwgtp31 &lt;int&gt;,
-#   pwgtp32 &lt;int&gt;, pwgtp33 &lt;int&gt;, pwgtp34 &lt;int&gt;, pwgtp35 &lt;int&gt;, …</code></pre>
-</div>
-</div>
-</section><section class="level3"><h3 id="worked-example-pew-jewish-americans-2020">3.3 Worked example: Pew Jewish Americans 2020<a class="anchor" aria-label="anchor" href="#worked-example-pew-jewish-americans-2020"></a>
+<div class="section level3">
+<h3 id="worked-example-pew-jewish-americans-2020">3.3 Worked example: Pew Jewish Americans 2020<a class="anchor" aria-label="anchor" href="#worked-example-pew-jewish-americans-2020"></a>
 </h3>
-<p>This Pew study provides 100 jackknife-1 replicate weights alongside the full-sample weight:</p>
-<table class="table caption-top">
+<p>This Pew study provides 100 jackknife-1 replicate weights alongside
+the full-sample weight:</p>
+<table class="table">
 <colgroup>
-<col style="width: 34%">
-<col style="width: 50%">
-<col style="width: 15%">
+<col width="34%">
+<col width="50%">
+<col width="15%">
 </colgroup>
 <thead><tr class="header">
 <th>Variable</th>
@@ -694,8 +756,7 @@
 </tr>
 </tbody>
 </table>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_jewish</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">extweight</span>,</span>
@@ -703,69 +764,80 @@
 <span>  type       <span class="op">=</span> <span class="st">"JK1"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_jewish</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_replicate&gt;</span> (JK1, 100 replicates)</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">5881</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5,881 × 130</span></span></span>
+<span><span class="co">##    extweight extweight1 extweight2 extweight3 extweight4 extweight5 extweight6</span></span>
+<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>      271.       267.       272.       271.       272.       269.       265.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>      186.       183.       236.       186.       189.       185.       182.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>      182.       181.       185.       188.       184.       181.       189.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>      308.       307.       312.       324.       308.       305.       320.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>      165.       165.       167.       170.       166.       163.       164.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>      173.       170.       175.       173.       174.       173.       168.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>      352.       347.       353.       351.       358.       353.       338.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>      314.       312.       318.       316.       314.       314.       309.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>      395.       394.       395.       394.       392.       392.       392.</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>      176.       177.       178.       181.       177.       175.       172.</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 5,871 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 123 more variables: extweight7 &lt;dbl&gt;, extweight8 &lt;dbl&gt;, extweight9 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   extweight10 &lt;dbl&gt;, extweight11 &lt;dbl&gt;, extweight12 &lt;dbl&gt;, extweight13 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   extweight14 &lt;dbl&gt;, extweight15 &lt;dbl&gt;, extweight16 &lt;dbl&gt;, extweight17 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   extweight18 &lt;dbl&gt;, extweight19 &lt;dbl&gt;, extweight20 &lt;dbl&gt;, extweight21 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   extweight22 &lt;dbl&gt;, extweight23 &lt;dbl&gt;, extweight24 &lt;dbl&gt;, extweight25 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   extweight26 &lt;dbl&gt;, extweight27 &lt;dbl&gt;, extweight28 &lt;dbl&gt;, …</span></span></span></code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_replicate&gt; (JK1, 100 replicates)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Sample size: 5881</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 5,881 × 130
-   extweight extweight1 extweight2 extweight3 extweight4 extweight5 extweight6
-       &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;      &lt;dbl&gt;
- 1      271.       267.       272.       271.       272.       269.       265.
- 2      186.       183.       236.       186.       189.       185.       182.
- 3      182.       181.       185.       188.       184.       181.       189.
- 4      308.       307.       312.       324.       308.       305.       320.
- 5      165.       165.       167.       170.       166.       163.       164.
- 6      173.       170.       175.       173.       174.       173.       168.
- 7      352.       347.       353.       351.       358.       353.       338.
- 8      314.       312.       318.       316.       314.       314.       309.
- 9      395.       394.       395.       394.       392.       392.       392.
-10      176.       177.       178.       181.       177.       175.       172.
-# ℹ 5,871 more rows
-# ℹ 123 more variables: extweight7 &lt;dbl&gt;, extweight8 &lt;dbl&gt;, extweight9 &lt;dbl&gt;,
-#   extweight10 &lt;dbl&gt;, extweight11 &lt;dbl&gt;, extweight12 &lt;dbl&gt;, extweight13 &lt;dbl&gt;,
-#   extweight14 &lt;dbl&gt;, extweight15 &lt;dbl&gt;, extweight16 &lt;dbl&gt;, extweight17 &lt;dbl&gt;,
-#   extweight18 &lt;dbl&gt;, extweight19 &lt;dbl&gt;, extweight20 &lt;dbl&gt;, extweight21 &lt;dbl&gt;,
-#   extweight22 &lt;dbl&gt;, extweight23 &lt;dbl&gt;, extweight24 &lt;dbl&gt;, extweight25 &lt;dbl&gt;,
-#   extweight26 &lt;dbl&gt;, extweight27 &lt;dbl&gt;, extweight28 &lt;dbl&gt;, …</code></pre>
-</div>
-</div>
-</section><section class="level3"><h3 id="the-scale-and-rscales-arguments">3.4 The <code>scale</code> and <code>rscales</code> arguments<a class="anchor" aria-label="anchor" href="#the-scale-and-rscales-arguments"></a>
+<div class="section level3">
+<h3 id="the-scale-and-rscales-arguments">3.4 The <code>scale</code> and <code>rscales</code> arguments<a class="anchor" aria-label="anchor" href="#the-scale-and-rscales-arguments"></a>
 </h3>
-<p>Most users can omit <code>scale</code> and <code>rscales</code>. surveycore computes defaults based on <code>type</code> and the number of replicates. Override them only when your codebook’s technical documentation specifies custom values <span class="citation" data-cites="wolter2007">(<a href="#ref-wolter2007" role="doc-biblioref">Wolter 2007</a>, ch. 3)</span>.</p>
-<hr></section></section><section class="level2"><h2 id="sec-twophase">4. <code>as_survey_twophase()</code> — Two-Phase Designs<a class="anchor" aria-label="anchor" href="#sec-twophase"></a>
+<p>Most users can omit <code>scale</code> and <code>rscales</code>.
+surveycore computes defaults based on <code>type</code> and the number
+of replicates. Override them only when your codebook’s technical
+documentation specifies custom values <span class="citation">(<a href="#ref-wolter2007">Wolter 2007</a>, ch. 3)</span>.</p>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="sec-twophase">4. <code>as_survey_twophase()</code> — Two-Phase Designs<a class="anchor" aria-label="anchor" href="#sec-twophase"></a>
 </h2>
 <blockquote>
-<p><strong>If you are not sure whether your design is two-phase, it almost certainly is not.</strong> Skip to <a href="#sec-srs" class="quarto-xref">Section 6</a> or <a href="#sec-calibrated" class="quarto-xref">Section 7</a>.</p>
+<p><strong>If you are not sure whether your design is two-phase, it
+almost certainly is not.</strong> Skip to <a href="#sec-srs">Section
+5</a> or <a href="#sec-calibrated">Section 6</a>.</p>
 </blockquote>
-<section class="level3"><h3 id="what-two-phase-sampling-is">4.1 What two-phase sampling is<a class="anchor" aria-label="anchor" href="#what-two-phase-sampling-is"></a>
+<div class="section level3">
+<h3 id="what-two-phase-sampling-is">4.1 What two-phase sampling is<a class="anchor" aria-label="anchor" href="#what-two-phase-sampling-is"></a>
 </h3>
-<p>Two-phase (or double-sampling) designs collect data in two stages <span class="citation" data-cites="lumley2010">(<a href="#ref-lumley2010" role="doc-biblioref">Lumley 2010</a>, ch. 9)</span>:</p>
-<ol type="1">
+<p>Two-phase (or double-sampling) designs collect data in two stages
+<span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>,
+ch. 9)</span>:</p>
+<ol style="list-style-type: decimal">
 <li>
-<strong>Phase 1:</strong> A large, inexpensive sample that records basic variables (demographics, a screening question, administrative records).</li>
+<strong>Phase 1:</strong> A large, inexpensive sample that records
+basic variables (demographics, a screening question, administrative
+records).</li>
 <li>
-<strong>Phase 2:</strong> A subsample drawn from Phase 1 that collects expensive or difficult measurements — lab tests, in-person interviews, expert coding.</li>
+<strong>Phase 2:</strong> A subsample drawn from Phase 1 that
+collects expensive or difficult measurements — lab tests, in-person
+interviews, expert coding.</li>
 </ol>
-<p>The variance estimator accounts for uncertainty from both sampling stages <span class="citation" data-cites="saegusa2013">(<a href="#ref-saegusa2013" role="doc-biblioref">Saegusa and Wellner 2013</a>)</span>. You must have retained the Phase 1 data and know which Phase 1 units were selected into Phase 2.</p>
-<p>Common contexts: case-cohort studies, medical validation studies, surveys with a screening phase <span class="citation" data-cites="breslow1988">(<a href="#ref-breslow1988" role="doc-biblioref">Breslow and Cain 1988</a>)</span>.</p>
-</section><section class="level3"><h3 id="arguments">4.2 Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a>
+<p>The variance estimator accounts for uncertainty from both sampling
+stages <span class="citation">(<a href="#ref-saegusa2013">Saegusa and
+Wellner 2013</a>)</span>. You must have retained the Phase 1 data and
+know which Phase 1 units were selected into Phase 2.</p>
+<p>Common contexts: case-cohort studies, medical validation studies,
+surveys with a screening phase <span class="citation">(<a href="#ref-breslow1988">Breslow and Cain 1988</a>)</span>.</p>
+</div>
+<div class="section level3">
+<h3 id="arguments">4.2 Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 32%">
-<col style="width: 67%">
+<col width="32%">
+<col width="67%">
 </colgroup>
 <thead><tr class="header">
 <th>Argument</th>
@@ -774,22 +846,26 @@
 <tbody>
 <tr class="odd">
 <td><code>phase1</code></td>
-<td>A <code>survey_taylor</code> object representing the Phase 1 design</td>
+<td>A <code>survey_taylor</code> object representing the Phase 1
+design</td>
 </tr>
 <tr class="even">
 <td><code>subset</code></td>
-<td>Bare name of a logical column: <code>TRUE</code> = selected into Phase 2</td>
+<td>Bare name of a logical column: <code>TRUE</code> = selected into
+Phase 2</td>
 </tr>
 <tr class="odd">
 <td>
-<code>ids2</code>, <code>strata2</code>, <code>probs2</code>, <code>fpc2</code>
+<code>ids2</code>, <code>strata2</code>, <code>probs2</code>,
+<code>fpc2</code>
 </td>
 <td>Phase 2 design variables (all optional)</td>
 </tr>
 <tr class="even">
 <td><code>method</code></td>
 <td>
-<code>"full"</code> (default), <code>"approx"</code>, or <code>"simple"</code>
+<code>"full"</code> (default), <code>"approx"</code>, or
+<code>"simple"</code>
 </td>
 </tr>
 </tbody>
@@ -797,16 +873,26 @@
 <p>The <code>method</code> argument:</p>
 <ul>
 <li>
-<code>"full"</code>: Correct variance accounting for both phases. Requires Phase 1 cluster information.</li>
+<code>"full"</code>: Correct variance accounting for both phases.
+Requires Phase 1 cluster information.</li>
 <li>
-<code>"approx"</code>: Faster approximation; adequate when the Phase 1 sampling fraction is small.</li>
+<code>"approx"</code>: Faster approximation; adequate when the Phase
+1 sampling fraction is small.</li>
 <li>
-<code>"simple"</code>: Ignores the Phase 1 design. Use only if Phase 1 is a census.</li>
-</ul></section><section class="level3"><h3 id="worked-example-national-wilms-tumor-study">4.3 Worked example: National Wilms Tumor Study<a class="anchor" aria-label="anchor" href="#worked-example-national-wilms-tumor-study"></a>
+<code>"simple"</code>: Ignores the Phase 1 design. Use only if Phase
+1 is a census.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="worked-example-national-wilms-tumor-study">4.3 Worked example: National Wilms Tumor Study<a class="anchor" aria-label="anchor" href="#worked-example-national-wilms-tumor-study"></a>
 </h3>
-<p>The <code>nwtco</code> dataset from the <code>survival</code> package records outcomes for 4,028 children enrolled in the National Wilms Tumor Study — a multi-institution clinical trial. This is a case-cohort design: a random subcohort was selected from all enrolled children (Phase 1), and expensive central-laboratory histology was measured only for subcohort members plus all relapse cases <span class="citation" data-cites="breslow1988">(<a href="#ref-breslow1988" role="doc-biblioref">Breslow and Cain 1988</a>)</span>.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="downlit sourceCode r">
+<p>The <code>nwtco</code> dataset from the <code>survival</code> package
+records outcomes for 4,028 children enrolled in the National Wilms Tumor
+Study — a multi-institution clinical trial. This is a case-cohort
+design: a random subcohort was selected from all enrolled children
+(Phase 1), and expensive central-laboratory histology was measured only
+for subcohort members plus all relapse cases <span class="citation">(<a href="#ref-breslow1988">Breslow and Cain 1988</a>)</span>.</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nwtco</span> <span class="op">&lt;-</span> <span class="fu">survival</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/survival/man/nwtco.html" class="external-link">nwtco</a></span></span>
 <span></span>
 <span><span class="co"># in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()</span></span>
@@ -814,13 +900,11 @@
 <span></span>
 <span><span class="co"># Phase 1: all 4,028 enrolled patients (each patient is their own unit)</span></span>
 <span><span class="va">phase1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nwtco</span>, ids <span class="op">=</span> <span class="va">seqno</span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! No weights provided.
-ℹ Treating as equal-probability sampling within clusters (unknown population
-  size).
-ℹ Population totals will equal sample totals, not estimated population totals.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb39"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> No weights provided.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Treating as equal-probability sampling within clusters (unknown population</span></span>
+<span><span class="co">##   size).</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Population totals will equal sample totals, not estimated population totals.</span></span></code></pre>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Phase 2: subcohort, with Phase 2 sampling stratified by relapse status</span></span>
 <span><span class="va">svy_twophase</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_twophase.html">as_survey_twophase</a></span><span class="op">(</span></span>
 <span>  <span class="va">phase1</span>,</span>
@@ -829,56 +913,52 @@
 <span>  method  <span class="op">=</span> <span class="st">"full"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_twophase</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_twophase&gt; (method: full)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Phase 1 sample size: 4028</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Phase 2 sample size: 668</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 4,028 × 10
-   seqno instit histol stage study   rel edrel   age in.subcohort
-   &lt;int&gt;  &lt;int&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;lgl&gt;
- 1     1      2      2     1     3     0  6075    25 FALSE
- 2     2      1      1     2     3     0  4121    50 FALSE
- 3     3      2      2     1     3     0  6069     9 FALSE
- 4     4      2      1     4     3     0  6200    28 TRUE
- 5     5      2      2     2     3     0  1244    55 FALSE
- 6     6      1      1     2     3     0  2932    32 FALSE
- 7     7      1      1     4     3     1   324    45 FALSE
- 8     8      1      1     2     3     0  5408    44 FALSE
- 9     9      1      1     1     3     0  5215   123 FALSE
-10    10      2      1     2     3     0  1381    31 FALSE
-# ℹ 4,018 more rows
-# ℹ 1 more variable: ..surveycore_wt.. &lt;int&gt;</code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_twophase&gt;</span> (method: full)</span></span></code></pre>
+<pre><code><span><span class="co">## Phase 1 sample size: <span style="color: #0000BB;">4028</span></span></span></code></pre>
+<pre><code><span><span class="co">## Phase 2 sample size: <span style="color: #0000BB;">668</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 4,028 × 10</span></span></span>
+<span><span class="co">##    seqno instit histol stage study   rel edrel   age in.subcohort</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>     1      2      2     1     3     0  <span style="text-decoration: underline;">6</span>075    25 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>     2      1      1     2     3     0  <span style="text-decoration: underline;">4</span>121    50 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>     3      2      2     1     3     0  <span style="text-decoration: underline;">6</span>069     9 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>     4      2      1     4     3     0  <span style="text-decoration: underline;">6</span>200    28 TRUE        </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>     5      2      2     2     3     0  <span style="text-decoration: underline;">1</span>244    55 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>     6      1      1     2     3     0  <span style="text-decoration: underline;">2</span>932    32 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>     7      1      1     4     3     1   324    45 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>     8      1      1     2     3     0  <span style="text-decoration: underline;">5</span>408    44 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>     9      1      1     1     3     0  <span style="text-decoration: underline;">5</span>215   123 FALSE       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>    10      2      1     2     3     0  <span style="text-decoration: underline;">1</span>381    31 FALSE       </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 4,018 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: ..surveycore_wt.. &lt;int&gt;</span></span></span></code></pre>
+<hr>
 </div>
 </div>
-<hr></section></section><section class="level2"><h2 id="sec-srs">5. <code>as_survey_srs()</code> — Simple Random Sample<a class="anchor" aria-label="anchor" href="#sec-srs"></a>
+<div class="section level2">
+<h2 id="sec-srs">5. <code>as_survey_srs()</code> — Simple Random Sample<a class="anchor" aria-label="anchor" href="#sec-srs"></a>
 </h2>
-<p>Use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> when every unit in your target population had an equal, known probability of selection — no clustering, no stratification <span class="citation" data-cites="cochran1977 lohr2022">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022</a>, ch. 2)</span>. This design is common in:</p>
+<p>Use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> when every unit in your target
+population had an equal, known probability of selection — no clustering,
+no stratification <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 2)</span>. This design is common
+in:</p>
 <ul>
-<li>Surveys of a complete organizational roster (all employees at a company, all students at a school) where units are drawn directly from a list</li>
-<li>Small-scale research with a well-defined, numbered sampling frame</li>
+<li>Surveys of a complete organizational roster (all employees at a
+company, all students at a school) where units are drawn directly from a
+list</li>
+<li>Small-scale research with a well-defined, numbered sampling
+frame</li>
 <li>Pilot studies and classroom experiments</li>
 </ul>
-<section class="level3"><h3 id="arguments-1">5.1 Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a>
+<div class="section level3">
+<h3 id="arguments-1">5.1 Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 12%">
-<col style="width: 87%">
+<col width="12%">
+<col width="87%">
 </colgroup>
 <thead><tr class="header">
 <th>Argument</th>
@@ -891,21 +971,32 @@
 </tr>
 <tr class="even">
 <td><code>probs</code></td>
-<td>Selection probability column — supply <code>weights</code> <em>or</em> <code>probs</code>, not both</td>
+<td>Selection probability column — supply <code>weights</code>
+<em>or</em> <code>probs</code>, not both</td>
 </tr>
 <tr class="odd">
 <td><code>fpc</code></td>
-<td>Population size (integer column) or sampling fraction (numeric column, 0–1)</td>
+<td>Population size (integer column) or sampling fraction (numeric
+column, 0–1)</td>
 </tr>
 </tbody>
-</table></section><section class="level3"><h3 id="the-fpc-argument-matters-more-here">5.2 The <code>fpc</code> argument matters more here<a class="anchor" aria-label="anchor" href="#the-fpc-argument-matters-more-here"></a>
+</table>
+</div>
+<div class="section level3">
+<h3 id="the-fpc-argument-matters-more-here">5.2 The <code>fpc</code> argument matters more here<a class="anchor" aria-label="anchor" href="#the-fpc-argument-matters-more-here"></a>
 </h3>
-<p>Without clustering or stratification, the FPC has a proportionally larger effect on variance estimates than in complex designs <span class="citation" data-cites="cochran1977">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977, sec. 2.8</a>)</span>. Supply it when you know the population size or sampling fraction. For the example below, the population is N = 400 schools.</p>
-</section><section class="level3"><h3 id="worked-example-school-district-survey">5.3 Worked example: School district survey<a class="anchor" aria-label="anchor" href="#worked-example-school-district-survey"></a>
+<p>Without clustering or stratification, the FPC has a proportionally
+larger effect on variance estimates than in complex designs <span class="citation">(<a href="#ref-cochran1977">Cochran 1977, sec.
+2.8</a>)</span>. Supply it when you know the population size or sampling
+fraction. For the example below, the population is N = 400 schools.</p>
+</div>
+<div class="section level3">
+<h3 id="worked-example-school-district-survey">5.3 Worked example: School district survey<a class="anchor" aria-label="anchor" href="#worked-example-school-district-survey"></a>
 </h3>
-<p>A district administrator draws a simple random sample of 80 schools from a complete roster of 400 schools. Every school has an equal probability of selection (80/400 = 0.20) — the textbook SRS case <span class="citation" data-cites="cochran1977 lohr2022">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022</a>, ch. 2)</span>:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb47"><pre class="downlit sourceCode r">
+<p>A district administrator draws a simple random sample of 80 schools
+from a complete roster of 400 schools. Every school has an equal
+probability of selection (80/400 = 0.20) — the textbook SRS case <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 2)</span>:</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">101</span><span class="op">)</span></span>
 <span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">400</span>   <span class="co"># total schools in district</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span>    <span class="co"># schools sampled</span></span>
@@ -925,94 +1016,138 @@
 <span>  fpc     <span class="op">=</span> <span class="va">fpc</span>   <span class="co"># reduces SEs: we sampled 20% of the population</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_srs</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_srs&gt; (simple random sample)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Sample size: 80</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 80 × 6
-   school_id avg_score pct_frpl enrollment    sw   fpc
-       &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
- 1       329      72.3     0.55        610     5   400
- 2       313      75.2     0.36        294     5   400
- 3        95      60.1     0.17        187     5   400
- 4       209      73.4     0.24        729     5   400
- 5       351      81.6     0.18        324     5   400
- 6       317      71.3     0.38        296     5   400
- 7       315      57.4     0.11        188     5   400
- 8       246      68.3     0.16        545     5   400
- 9       355      66.2     0.32        531     5   400
-10       128      71.5     0.54        656     5   400
-# ℹ 70 more rows</code></pre>
-</div>
-</div>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_srs&gt;</span> (simple random sample)</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">80</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 80 × 6</span></span></span>
+<span><span class="co">##    school_id avg_score pct_frpl enrollment    sw   fpc</span></span>
+<span><span class="co">##        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>       329      72.3     0.55        610     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>       313      75.2     0.36        294     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>        95      60.1     0.17        187     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>       209      73.4     0.24        729     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>       351      81.6     0.18        324     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>       317      71.3     0.38        296     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>       315      57.4     0.11        188     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>       246      68.3     0.16        545     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>       355      66.2     0.32        531     5   400</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>       128      71.5     0.54        656     5   400</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 70 more rows</span></span></span></code></pre>
 <p>Two things worth making explicit so this example is not misread:</p>
-<p><strong>The unit of analysis is the school, not the student.</strong> Variables like <code>avg_score</code>, <code>pct_frpl</code>, and <code>enrollment</code> are school-level aggregates drawn from administrative records for each sampled school. This is a survey <em>of schools</em>. If you wanted individual student-level data from each selected school, you would need a two-stage cluster design — sample schools, then sample students within each school — and use <code><a href="../reference/as_survey.html">as_survey()</a></code> with <code>ids = school_id</code> to account for the clustering.</p>
-<p><strong>The weight is constant because this is SRS.</strong> Each school was selected with probability 80/400 = 0.20, so each receives weight 1/0.20 = 5.0. The weight is the same for every school because no school was oversampled or undersampled relative to any other. Uniform weights are not a simplification — they are the defining signature of simple random sampling.</p>
-</section><section class="level3"><h3 id="relationship-to-as_survey">5.4 Relationship to <code>as_survey()</code>
-<a class="anchor" aria-label="anchor" href="#relationship-to-as_survey"></a>
+<p><strong>The unit of analysis is the school, not the student.</strong>
+Variables like <code>avg_score</code>, <code>pct_frpl</code>, and
+<code>enrollment</code> are school-level aggregates drawn from
+administrative records for each sampled school. This is a survey <em>of
+schools</em>. If you wanted individual student-level data from each
+selected school, you would need a two-stage cluster design — sample
+schools, then sample students within each school — and use
+<code><a href="../reference/as_survey.html">as_survey()</a></code> with <code>ids = school_id</code> to account
+for the clustering.</p>
+<p><strong>The weight is constant because this is SRS.</strong> Each
+school was selected with probability 80/400 = 0.20, so each receives
+weight 1/0.20 = 5.0. The weight is the same for every school because no
+school was oversampled or undersampled relative to any other. Uniform
+weights are not a simplification — they are the defining signature of
+simple random sampling.</p>
+</div>
+<div class="section level3">
+<h3 id="relationship-to-as_survey">5.4 Relationship to <code>as_survey()</code><a class="anchor" aria-label="anchor" href="#relationship-to-as_survey"></a>
 </h3>
-<p>When <code><a href="../reference/as_survey.html">as_survey()</a></code> is called without specifying <code>ids</code> or <code>strata</code>, it automatically creates a <code>survey_srs</code> object and issues a warning. Use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> explicitly when you know your design is SRS — it suppresses the warning and signals your intent clearly to future readers of your code:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb54"><pre class="downlit sourceCode r">
+<p>When <code><a href="../reference/as_survey.html">as_survey()</a></code> is called without specifying
+<code>ids</code> or <code>strata</code>, it automatically creates a
+<code>survey_srs</code> object and issues a warning. Use
+<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> explicitly when you know your design is SRS
+— it suppresses the warning and signals your intent clearly to future
+readers of your code:</p>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># These produce the same object:</span></span>
 <span><span class="co"># as_survey_srs() — explicit, no warning</span></span>
 <span><span class="va">svy_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">school_survey</span>, weights <span class="op">=</span> <span class="va">sw</span>, fpc <span class="op">=</span> <span class="va">fpc</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># as_survey() — warns that it is dispatching to SRS</span></span>
 <span><span class="va">svy_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">school_survey</span>, weights <span class="op">=</span> <span class="va">sw</span>, fpc <span class="op">=</span> <span class="va">fpc</span><span class="op">)</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: ! No `ids` or `strata` specified.
-ℹ Creating a &lt;survey_srs&gt; design (equal-probability SRS).
-✔ Use `as_survey_srs()` to create SRS designs without this warning.</code></pre>
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> No `ids` or `strata` specified.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Creating a <span style="color: #0000BB;">&lt;survey_srs&gt;</span> design (equal-probability SRS).</span></span>
+<span><span class="co">## <span style="color: #00BB00;">✔</span> Use `as_survey_srs()` to create SRS designs without this warning.</span></span></code></pre>
+<hr>
 </div>
 </div>
-<hr></section></section><section class="level2"><h2 id="sec-calibrated">6. <code>as_survey_calibrated()</code> — Non-Probability and Calibrated Samples<a class="anchor" aria-label="anchor" href="#sec-calibrated"></a>
+<div class="section level2">
+<h2 id="sec-calibrated">6. <code>as_survey_calibrated()</code> — Non-Probability and
+Calibrated Samples<a class="anchor" aria-label="anchor" href="#sec-calibrated"></a>
 </h2>
-<p>If you conduct research on opt-in panels — Lucid, Dynata, Qualtrics panels, Prolific, or similar — and your vendor has provided raking or post-stratification weights, this section is for you.</p>
-<p>The short answer: <strong>you are probably doing it roughly right, and <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> is the correct constructor to use.</strong> Here is what you can and cannot claim from your estimates, and how to report them honestly.</p>
-<section class="level3"><h3 id="the-fundamental-distinction">6.1 The fundamental distinction<a class="anchor" aria-label="anchor" href="#the-fundamental-distinction"></a>
+<p>If you conduct research on opt-in panels — Lucid, Dynata, Qualtrics
+panels, Prolific, or similar — and your vendor has provided raking or
+post-stratification weights, this section is for you.</p>
+<p>The short answer: <strong>you are probably doing it roughly right,
+and <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> is the correct constructor to
+use.</strong> Here is what you can and cannot claim from your estimates,
+and how to report them honestly.</p>
+<div class="section level3">
+<h3 id="the-fundamental-distinction">6.1 The fundamental distinction<a class="anchor" aria-label="anchor" href="#the-fundamental-distinction"></a>
 </h3>
-<p>A <strong>probability sample</strong> gives every unit in the target population a known, positive inclusion probability. Design-based variance estimators are valid because the randomness that justifies them comes from the sampling mechanism itself <span class="citation" data-cites="cochran1977 lohr2022">(<a href="#ref-cochran1977" role="doc-biblioref">Cochran 1977</a>, ch. 1; <a href="#ref-lohr2022" role="doc-biblioref">Lohr 2022</a>, ch. 1)</span>.</p>
-<p>A <strong>non-probability sample</strong> — an opt-in online panel — has unknown inclusion probabilities. The decision to join a panel and to complete a particular survey is self-selected. No mechanical property of the data guarantees representativeness <span class="citation" data-cites="baker2013 elliott2017">(<a href="#ref-baker2013" role="doc-biblioref">Baker et al. 2013</a>; <a href="#ref-elliott2017" role="doc-biblioref">Elliott and Valliant 2017</a>)</span>.</p>
-</section><section class="level3"><h3 id="what-your-vendors-weights-actually-are">6.2 What your vendor’s weights actually are<a class="anchor" aria-label="anchor" href="#what-your-vendors-weights-actually-are"></a>
+<p>A <strong>probability sample</strong> gives every unit in the target
+population a known, positive inclusion probability. Design-based
+variance estimators are valid because the randomness that justifies them
+comes from the sampling mechanism itself <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 1; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 1)</span>.</p>
+<p>A <strong>non-probability sample</strong> — an opt-in online panel —
+has unknown inclusion probabilities. The decision to join a panel and to
+complete a particular survey is self-selected. No mechanical property of
+the data guarantees representativeness <span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>; <a href="#ref-elliott2017">Elliott and Valliant 2017</a>)</span>.</p>
+</div>
+<div class="section level3">
+<h3 id="what-your-vendors-weights-actually-are">6.2 What your vendor’s weights actually are<a class="anchor" aria-label="anchor" href="#what-your-vendors-weights-actually-are"></a>
 </h3>
-<p>Regardless of where they come from, <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> is the right constructor whenever weights were derived <em>after</em> data collection to make the sample resemble a target population. Common forms include <span class="citation" data-cites="valliant2018">(<a href="#ref-valliant2018" role="doc-biblioref">Valliant and Dever 2018</a>, ch. 3)</span>:</p>
+<p>Regardless of where they come from,
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> is the right constructor whenever
+weights were derived <em>after</em> data collection to make the sample
+resemble a target population. Common forms include <span class="citation">(<a href="#ref-valliant2018">Valliant and Dever
+2018</a>, ch. 3)</span>:</p>
 <ul>
 <li>
-<strong>Raking</strong> (iterative proportional fitting): adjusts sample marginals to match population marginals on age, gender, education, race/ethnicity, etc. The standard approach used by most panel vendors.</li>
+<strong>Raking</strong> (iterative proportional fitting): adjusts
+sample marginals to match population marginals on age, gender,
+education, race/ethnicity, etc. The standard approach used by most panel
+vendors.</li>
 <li>
-<strong>Post-stratification</strong>: assigns a single weight to all respondents within a demographic cell defined by the cross-product of variables.</li>
+<strong>Post-stratification</strong>: assigns a single weight to all
+respondents within a demographic cell defined by the cross-product of
+variables.</li>
 <li>
-<strong>Propensity score weighting (PSW)</strong>: fits a model predicting the probability of being in the sample, then weights each respondent by the inverse of their predicted probability. Functionally equivalent to calibration — the weights make the sample resemble the population on the modeled covariates.</li>
+<strong>Propensity score weighting (PSW)</strong>: fits a model
+predicting the probability of being in the sample, then weights each
+respondent by the inverse of their predicted probability. Functionally
+equivalent to calibration — the weights make the sample resemble the
+population on the modeled covariates.</li>
 <li>
-<strong>Matching-based weights</strong>: assigns weights based on similarity to a reference population sample (e.g., entropy balancing, MatchIt outputs). Another approach to demographic alignment.</li>
+<strong>Matching-based weights</strong>: assigns weights based on
+similarity to a reference population sample (e.g., entropy balancing,
+MatchIt outputs). Another approach to demographic alignment.</li>
 </ul>
-<p>All four share the same fundamental property: the weights were computed from the data, not fixed by the sampling protocol. Use <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> for all of them.</p>
-<p>What calibration weights accomplish <span class="citation" data-cites="mercer2018 mcphee2023">(<a href="#ref-mercer2018" role="doc-biblioref">Mercer, Lau, and Kennedy 2018</a>; <a href="#ref-mcphee2023" role="doc-biblioref">McPhee et al. 2023</a>)</span>:</p>
+<p>All four share the same fundamental property: the weights were
+computed from the data, not fixed by the sampling protocol. Use
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> for all of them.</p>
+<p>What calibration weights accomplish <span class="citation">(<a href="#ref-mercer2018">Mercer, Lau, and Kennedy 2018</a>; <a href="#ref-mcphee2023">McPhee et al. 2023</a>)</span>:</p>
 <ul>
 <li>They reduce bias from <em>measured</em> demographic confounders</li>
-<li>Point estimates for outcomes correlated with calibration variables improve meaningfully compared to unweighted estimates</li>
-<li>They do <strong>not</strong> correct for selection on unobserved variables</li>
-<li>They do <strong>not</strong> make the design a probability sample</li>
-</ul></section><section class="level3"><h3 id="what-you-can-and-cannot-claim">6.3 What you can and cannot claim<a class="anchor" aria-label="anchor" href="#what-you-can-and-cannot-claim"></a>
+<li>Point estimates for outcomes correlated with calibration variables
+improve meaningfully compared to unweighted estimates</li>
+<li>They do <strong>not</strong> correct for selection on unobserved
+variables</li>
+<li>They do <strong>not</strong> make the design a probability
+sample</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="what-you-can-and-cannot-claim">6.3 What you can and cannot claim<a class="anchor" aria-label="anchor" href="#what-you-can-and-cannot-claim"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 42%">
-<col style="width: 10%">
-<col style="width: 47%">
+<col width="42%">
+<col width="10%">
+<col width="47%">
 </colgroup>
 <thead><tr class="header">
 <th>Claim</th>
@@ -1033,7 +1168,8 @@
 <tr class="odd">
 <td>Standard errors reflect true sampling uncertainty</td>
 <td>⚠️ Approximately</td>
-<td>SEs computed under approximate variance model; likely underestimated</td>
+<td>SEs computed under approximate variance model; likely
+underestimated</td>
 </tr>
 <tr class="even">
 <td>Results equivalent to a probability-sample estimate</td>
@@ -1042,12 +1178,23 @@
 </tr>
 </tbody>
 </table>
-<p>This is the standard practice across the industry — used routinely by academic researchers, major survey organizations, and commercial firms <span class="citation" data-cites="baker2013 mcphee2023">(<a href="#ref-baker2013" role="doc-biblioref">Baker et al. 2013</a>; <a href="#ref-mcphee2023" role="doc-biblioref">McPhee et al. 2023</a>)</span>. The key is transparency: <strong>your methods section should state that you used a non-probability sample with vendor-supplied calibration weights, describe the calibration targets, and acknowledge that standard errors are approximate.</strong></p>
-</section><section class="level3"><h3 id="worked-example-message-testing-panel">6.4 Worked example: Message-testing panel<a class="anchor" aria-label="anchor" href="#worked-example-message-testing-panel"></a>
+<p>This is the standard practice across the industry — used routinely by
+academic researchers, major survey organizations, and commercial firms
+<span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>;
+<a href="#ref-mcphee2023">McPhee et al. 2023</a>)</span>. The key is
+transparency: <strong>your methods section should state that you used a
+non-probability sample with vendor-supplied calibration weights,
+describe the calibration targets, and acknowledge that standard errors
+are approximate.</strong></p>
+</div>
+<div class="section level3">
+<h3 id="worked-example-message-testing-panel">6.4 Worked example: Message-testing panel<a class="anchor" aria-label="anchor" href="#worked-example-message-testing-panel"></a>
 </h3>
-<p>A policy organization recruits 500 opt-in panelists to test two framings of a healthcare message. The panel vendor provides raking weights calibrated to Current Population Survey marginals for age, gender, education, and race/ethnicity:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb56"><pre class="downlit sourceCode r">
+<p>A policy organization recruits 500 opt-in panelists to test two
+framings of a healthcare message. The panel vendor provides raking
+weights calibrated to Current Population Survey marginals for age,
+gender, education, and race/ethnicity:</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2024</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
 <span></span>
@@ -1073,68 +1220,97 @@
 <span></span>
 <span><span class="va">svy_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">panel_data</span>, weights <span class="op">=</span> <span class="va">rake_weight</span><span class="op">)</span></span>
 <span><span class="va">svy_panel</span></span></code></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_calibrated&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">500</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 500 × 8</span></span></span>
+<span><span class="co">##    respondent_id age_group gender education    race_eth message_arm support</span></span>
+<span><span class="co">##            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>             1 55+       Man    Some college White    Framing B         4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>             2 18-34     Woman  HS or less   White    Framing B         1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>             3 35-54     Man    HS or less   Hispanic Framing A         2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>             4 35-54     Woman  Some college White    Framing B         2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>             5 35-54     Man    Some college Other    Framing A         4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>             6 35-54     Man    HS or less   Black    Framing A         2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>             7 35-54     Woman  College+     White    Framing A         3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>             8 18-34     Man    Some college White    Framing B         4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>             9 55+       Man    Some college Black    Framing A         4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span>            10 18-34     Man    College+     Hispanic Framing A         5</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 490 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: rake_weight &lt;dbl&gt;</span></span></span></code></pre>
+<p>This produces a <code>survey_calibrated</code> object. Use it with
+<code><a href="../reference/get_means.html">get_means()</a></code>, <code>get_freqs()</code>, and other estimation
+functions exactly as you would any other survey object. Standard errors
+are computed under an approximate variance model and should be
+interpreted with appropriate caution and disclosed in your methods
+section.</p>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Survey Design ───────────────────────────────────────────────────────────────</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>&lt;survey_calibrated&gt; (calibrated / non-probability) [experimental]</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Sample size: 500</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code></code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 500 × 8
-   respondent_id age_group gender education    race_eth message_arm support
-           &lt;int&gt; &lt;chr&gt;     &lt;chr&gt;  &lt;chr&gt;        &lt;chr&gt;    &lt;chr&gt;         &lt;int&gt;
- 1             1 55+       Man    Some college White    Framing B         4
- 2             2 18-34     Woman  HS or less   White    Framing B         1
- 3             3 35-54     Man    HS or less   Hispanic Framing A         2
- 4             4 35-54     Woman  Some college White    Framing B         2
- 5             5 35-54     Man    Some college Other    Framing A         4
- 6             6 35-54     Man    HS or less   Black    Framing A         2
- 7             7 35-54     Woman  College+     White    Framing A         3
- 8             8 18-34     Man    Some college White    Framing B         4
- 9             9 55+       Man    Some college Black    Framing A         4
-10            10 18-34     Man    College+     Hispanic Framing A         5
-# ℹ 490 more rows
-# ℹ 1 more variable: rake_weight &lt;dbl&gt;</code></pre>
-</div>
-</div>
-<p>This produces a <code>survey_calibrated</code> object. Use it with <code><a href="../reference/get_means.html">get_means()</a></code>, <code>get_freqs()</code>, and other estimation functions exactly as you would any other survey object. Standard errors are computed under an approximate variance model and should be interpreted with appropriate caution and disclosed in your methods section.</p>
-</section><section class="level3"><h3 id="what-not-to-do">6.5 What not to do<a class="anchor" aria-label="anchor" href="#what-not-to-do"></a>
+<div class="section level3">
+<h3 id="what-not-to-do">6.5 What not to do<a class="anchor" aria-label="anchor" href="#what-not-to-do"></a>
 </h3>
-<p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and present standard errors as if the design were a probability sample:</p>
+<p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and
+present standard errors as if the design were a probability sample:</p>
 <div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Creates a survey_taylor object, which misrepresents the design</span></span>
 <span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">panel_data</span>, weights <span class="op">=</span> <span class="va">rake_weight</span><span class="op">)</span></span></code></pre></div>
-<p>Using <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> makes the non-probability nature of the design explicit — both to R and to future readers of your code. This distinction matters for transparency in reporting and for correctly interpreting what your uncertainty estimates actually mean <span class="citation" data-cites="elliott2017 baker2013">(<a href="#ref-elliott2017" role="doc-biblioref">Elliott and Valliant 2017</a>; <a href="#ref-baker2013" role="doc-biblioref">Baker et al. 2013</a>)</span>.</p>
-</section><section class="level3"><h3 id="worked-example-university-voluntary-response-survey">6.6 Worked example: University voluntary response survey<a class="anchor" aria-label="anchor" href="#worked-example-university-voluntary-response-survey"></a>
+<p>Using <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> makes the non-probability
+nature of the design explicit — both to R and to future readers of your
+code. This distinction matters for transparency in reporting and for
+correctly interpreting what your uncertainty estimates actually mean
+<span class="citation">(<a href="#ref-elliott2017">Elliott and Valliant
+2017</a>; <a href="#ref-baker2013">Baker et al. 2013</a>)</span>.</p>
+</div>
+<div class="section level3">
+<h3 id="worked-example-university-voluntary-response-survey">6.6 Worked example: University voluntary response survey<a class="anchor" aria-label="anchor" href="#worked-example-university-voluntary-response-survey"></a>
 </h3>
-<p>A university sends an email to all 8,000 enrolled students inviting them to complete a campus climate survey. 2,400 respond (30%). The response is self-selected — students with strong opinions are more likely to complete the survey than those who are neutral.</p>
-<p><strong>If calibration weights are available:</strong> If the university has computed post-stratification or raking weights using registrar demographics (year, major, housing status), use <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>. This is the appropriate constructor whenever the weights were derived to make the respondents resemble the full student body:</p>
+<p>A university sends an email to all 8,000 enrolled students inviting
+them to complete a campus climate survey. 2,400 respond (30%). The
+response is self-selected — students with strong opinions are more
+likely to complete the survey than those who are neutral.</p>
+<p><strong>If calibration weights are available:</strong> If the
+university has computed post-stratification or raking weights using
+registrar demographics (year, major, housing status), use
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>. This is the appropriate constructor
+whenever the weights were derived to make the respondents resemble the
+full student body:</p>
 <div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">ps_weight</span><span class="op">)</span></span></code></pre></div>
-<p><strong>If no calibration weights are available and you still want to use surveycore functions:</strong> Add a column of 1s and use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
+<p><strong>If no calibration weights are available and you still want to
+use surveycore functions:</strong> Add a column of 1s and use
+<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
 <div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">campus_survey</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
-<p>This treats all respondents as equally weighted. The SEs it produces reflect variability <em>among the 2,400 respondents</em> — they do not measure how representative those respondents are of the full student body. This framing is valid when your target population is “students who chose to respond,” not “all students at the university.”</p>
-<p><strong>Disclosure:</strong> Whether you use calibration weights or equal weights, your methods section should state the response rate, describe the weighting approach, and acknowledge the limitation: voluntary response bias cannot be fully corrected by any weighting strategy <span class="citation" data-cites="baker2013">(<a href="#ref-baker2013" role="doc-biblioref">Baker et al. 2013</a>)</span>.</p>
-<hr></section></section><section class="level2"><h2 id="sec-weight-types">7. Probability, SRS, and calibration weights: understanding the distinction<a class="anchor" aria-label="anchor" href="#sec-weight-types"></a>
+<p>This treats all respondents as equally weighted. The SEs it produces
+reflect variability <em>among the 2,400 respondents</em> — they do not
+measure how representative those respondents are of the full student
+body. This framing is valid when your target population is “students who
+chose to respond,” not “all students at the university.”</p>
+<p><strong>Disclosure:</strong> Whether you use calibration weights or
+equal weights, your methods section should state the response rate,
+describe the weighting approach, and acknowledge the limitation:
+voluntary response bias cannot be fully corrected by any weighting
+strategy <span class="citation">(<a href="#ref-baker2013">Baker et al.
+2013</a>)</span>.</p>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="sec-weight-types">7. Probability, SRS, and calibration weights: understanding the
+distinction<a class="anchor" aria-label="anchor" href="#sec-weight-types"></a>
 </h2>
-<p>The three constructors most users encounter — <code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, and <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> — differ in one fundamental way: <em>where the weights come from</em>.</p>
-<table class="table caption-top">
+<p>The three constructors most users encounter —
+<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, and
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> — differ in one fundamental way:
+<em>where the weights come from</em>.</p>
+<table class="table">
 <colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
 <th></th>
@@ -1171,28 +1347,64 @@
 </tr>
 </tbody>
 </table>
-<p>In <code><a href="../reference/as_survey.html">as_survey()</a></code> and <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, every weight traces back to a specific moment in the sampling protocol — the moment each unit’s selection probability was fixed. A PSU drawn with probability 1-in-10 gets weight 10. A school drawn from a roster of 400 with probability 1-in-5 gets weight 5. The randomness that makes design-based inference valid is mechanical and recorded.</p>
-<p>In <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>, weights were computed <em>after</em> data collection to make the sample resemble a target population. The underlying selection mechanism is either unknown (opt-in panel, voluntary response) or was overridden by the calibration adjustment. Standard errors are approximate because the calibration step itself introduces additional uncertainty that standard variance formulas do not fully capture.</p>
-<p>The practical test: <strong>if you can point to the sampling protocol that fixed each unit’s probability of selection, use <code><a href="../reference/as_survey.html">as_survey()</a></code> or <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>.</strong> If the weights were derived from the data after collection, use <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>.</p>
-<hr></section><section class="level2"><h2 id="sec-no-constructor">8. When no constructor applies: convenience and purposive samples<a class="anchor" aria-label="anchor" href="#sec-no-constructor"></a>
+<p>In <code><a href="../reference/as_survey.html">as_survey()</a></code> and <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, every
+weight traces back to a specific moment in the sampling protocol — the
+moment each unit’s selection probability was fixed. A PSU drawn with
+probability 1-in-10 gets weight 10. A school drawn from a roster of 400
+with probability 1-in-5 gets weight 5. The randomness that makes
+design-based inference valid is mechanical and recorded.</p>
+<p>In <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>, weights were computed
+<em>after</em> data collection to make the sample resemble a target
+population. The underlying selection mechanism is either unknown (opt-in
+panel, voluntary response) or was overridden by the calibration
+adjustment. Standard errors are approximate because the calibration step
+itself introduces additional uncertainty that standard variance formulas
+do not fully capture.</p>
+<p>The practical test: <strong>if you can point to the sampling protocol
+that fixed each unit’s probability of selection, use
+<code><a href="../reference/as_survey.html">as_survey()</a></code> or <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>.</strong> If
+the weights were derived from the data after collection, use
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="sec-no-constructor">8. When no constructor applies: convenience and purposive
+samples<a class="anchor" aria-label="anchor" href="#sec-no-constructor"></a>
 </h2>
 <p>Not every data collection fits the survey design framework.</p>
-<section class="level3"><h3 id="example-program-evaluation-classrooms">8.1 Example: program evaluation classrooms<a class="anchor" aria-label="anchor" href="#example-program-evaluation-classrooms"></a>
+<div class="section level3">
+<h3 id="example-program-evaluation-classrooms">8.1 Example: program evaluation classrooms<a class="anchor" aria-label="anchor" href="#example-program-evaluation-classrooms"></a>
 </h3>
-<p>A researcher surveys students in five classrooms that volunteered to participate in a new educational program and wants to assess whether the program changed their attitudes.</p>
-<p>The classrooms were not randomly selected from any defined population. There is no sampling mechanism to justify a design-based variance estimator, and no calibration weights that would correct for the non-random selection. The inferential question — whether the program <em>caused</em> attitude change — is a <strong>causal inference</strong> problem requiring a control group and appropriate methods (difference-in-differences, matching, regression discontinuity), not a survey design object.</p>
-<p>If the goal is purely <strong>descriptive</strong> — summarizing the attitudes of students in these specific classrooms without generalizing — you can treat the participants as a census. Add a column of 1s and use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
+<p>A researcher surveys students in five classrooms that volunteered to
+participate in a new educational program and wants to assess whether the
+program changed their attitudes.</p>
+<p>The classrooms were not randomly selected from any defined
+population. There is no sampling mechanism to justify a design-based
+variance estimator, and no calibration weights that would correct for
+the non-random selection. The inferential question — whether the program
+<em>caused</em> attitude change — is a <strong>causal inference</strong>
+problem requiring a control group and appropriate methods
+(difference-in-differences, matching, regression discontinuity), not a
+survey design object.</p>
+<p>If the goal is purely <strong>descriptive</strong> — summarizing the
+attitudes of students in these specific classrooms without generalizing
+— you can treat the participants as a census. Add a column of 1s and use
+<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
 <div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classroom_data</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
-<p>Equal weights treat all participants as equally represented. The SEs reflect variation <em>among participants</em>. Do not interpret results as representative of all students at the school.</p>
-</section><section class="level3"><h3 id="general-decision-rule">8.2 General decision rule<a class="anchor" aria-label="anchor" href="#general-decision-rule"></a>
+<p>Equal weights treat all participants as equally represented. The SEs
+reflect variation <em>among participants</em>. Do not interpret results
+as representative of all students at the school.</p>
+</div>
+<div class="section level3">
+<h3 id="general-decision-rule">8.2 General decision rule<a class="anchor" aria-label="anchor" href="#general-decision-rule"></a>
 </h3>
-<table class="table caption-top">
+<table class="table">
 <colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
+<col width="33%">
+<col width="33%">
+<col width="33%">
 </colgroup>
 <thead><tr class="header">
 <th>Design</th>
@@ -1203,7 +1415,8 @@
 <tr class="odd">
 <td>Probability sample with design weights</td>
 <td>
-<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>, <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>
+<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>,
+<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>
 </td>
 <td>Exact variance</td>
 </tr>
@@ -1226,15 +1439,25 @@
 </tr>
 </tbody>
 </table>
-<p>When you use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> with equal weights for a non-probability sample, surveycore produces estimates and SEs without error. The SEs are valid as a measure of variability <em>among the observed participants</em>. They should not be interpreted as uncertainty about a broader population unless the sample can be independently defended as representative.</p>
-<hr></section></section><section class="level2"><h2 id="sec-reference">9. Reference: Common Codebook Variables<a class="anchor" aria-label="anchor" href="#sec-reference"></a>
+<p>When you use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> with equal weights for a
+non-probability sample, surveycore produces estimates and SEs without
+error. The SEs are valid as a measure of variability <em>among the
+observed participants</em>. They should not be interpreted as
+uncertainty about a broader population unless the sample can be
+independently defended as representative.</p>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="sec-reference">9. Reference: Common Codebook Variables<a class="anchor" aria-label="anchor" href="#sec-reference"></a>
 </h2>
-<p>A lookup table for common codebook terms and how they map to constructor arguments:</p>
-<table class="table caption-top">
+<p>A lookup table for common codebook terms and how they map to
+constructor arguments:</p>
+<table class="table">
 <colgroup>
-<col style="width: 44%">
-<col style="width: 25%">
-<col style="width: 29%">
+<col width="44%">
+<col width="25%">
+<col width="29%">
 </colgroup>
 <thead><tr class="header">
 <th>Codebook term</th>
@@ -1290,144 +1513,94 @@
 </tr>
 <tr class="odd">
 <td>“two-phase”, “double sampling”, “case-cohort”</td>
-<td>Phase 1 → <code><a href="../reference/as_survey.html">as_survey()</a></code>, then <code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code>
+<td>Phase 1 → <code><a href="../reference/as_survey.html">as_survey()</a></code>, then
+<code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code>
 </td>
 <td></td>
 </tr>
 </tbody>
 </table>
-<hr></section><section class="level2 unnumbered"><h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+<hr>
+</div>
+<div class="section level2 unnumbered">
+<h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
-<div id="ref-baker2013" class="csl-entry" role="listitem">
-Baker, Reg, J. Michael Brick, Nancy A. Bates, Mike Battaglia, Mick P. Couper, Jill A. Dever, Krista J. Gile, and Roger Tourangeau. 2013. <span>“Summary Report of the <span>AAPOR</span> Task Force on Non-Probability Sampling.”</span> <em>Journal of Survey Statistics and Methodology</em> 1 (2): 90–143. <a href="https://doi.org/10.1093/jssam/smt008" class="external-link">https://doi.org/10.1093/jssam/smt008</a>.
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-baker2013" class="csl-entry">
+Baker, Reg, J. Michael Brick, Nancy A. Bates, Mike Battaglia, Mick P.
+Couper, Jill A. Dever, Krista J. Gile, and Roger Tourangeau. 2013.
+<span>“Summary Report of the <span>AAPOR</span> Task Force on
+Non-Probability Sampling.”</span> <em>Journal of Survey Statistics and
+Methodology</em> 1 (2): 90–143. <a href="https://doi.org/10.1093/jssam/smt008" class="external-link">https://doi.org/10.1093/jssam/smt008</a>.
 </div>
-<div id="ref-breslow1988" class="csl-entry" role="listitem">
-Breslow, Norman E., and Kevin C. Cain. 1988. <span>“Logistic Regression for Two-Stage Case-Control Data.”</span> <em>Biometrika</em> 75 (1): 11–20. <a href="https://doi.org/10.1093/biomet/75.1.11" class="external-link">https://doi.org/10.1093/biomet/75.1.11</a>.
+<div id="ref-breslow1988" class="csl-entry">
+Breslow, Norman E., and Kevin C. Cain. 1988. <span>“Logistic Regression
+for Two-Stage Case-Control Data.”</span> <em>Biometrika</em> 75 (1):
+11–20. <a href="https://doi.org/10.1093/biomet/75.1.11" class="external-link">https://doi.org/10.1093/biomet/75.1.11</a>.
 </div>
-<div id="ref-cochran1977" class="csl-entry" role="listitem">
-Cochran, William G. 1977. <em>Sampling Techniques</em>. 3rd ed. John Wiley &amp; Sons.
+<div id="ref-cochran1977" class="csl-entry">
+Cochran, William G. 1977. <em>Sampling Techniques</em>. 3rd ed. John
+Wiley &amp; Sons.
 </div>
-<div id="ref-elliott2017" class="csl-entry" role="listitem">
-Elliott, Michael R., and Richard Valliant. 2017. <span>“Inference for Nonprobability Samples.”</span> <em>Statistical Science</em> 32 (2): 249–64. <a href="https://doi.org/10.1214/16-STS598" class="external-link">https://doi.org/10.1214/16-STS598</a>.
+<div id="ref-elliott2017" class="csl-entry">
+Elliott, Michael R., and Richard Valliant. 2017. <span>“Inference for
+Nonprobability Samples.”</span> <em>Statistical Science</em> 32 (2):
+249–64. <a href="https://doi.org/10.1214/16-STS598" class="external-link">https://doi.org/10.1214/16-STS598</a>.
 </div>
-<div id="ref-fay1989" class="csl-entry" role="listitem">
-Fay, Robert E. 1989. <span>“Theory and Application of Replicate Weighting for Variance Calculations.”</span> In <em>Proceedings of the Section on Survey Research Methods</em>, 212–17. American Statistical Association.
+<div id="ref-fay1989" class="csl-entry">
+Fay, Robert E. 1989. <span>“Theory and Application of Replicate
+Weighting for Variance Calculations.”</span> In <em>Proceedings of the
+Section on Survey Research Methods</em>, 212–17. American Statistical
+Association.
 </div>
-<div id="ref-judkins1990" class="csl-entry" role="listitem">
-Judkins, David R. 1990. <span>“<span class="nocase">Fay’s</span> Method for Variance Estimation.”</span> <em>Journal of Official Statistics</em> 6 (3): 223–39.
+<div id="ref-judkins1990" class="csl-entry">
+Judkins, David R. 1990. <span>“<span class="nocase">Fay’s</span> Method
+for Variance Estimation.”</span> <em>Journal of Official Statistics</em>
+6 (3): 223–39.
 </div>
-<div id="ref-lohr2022" class="csl-entry" role="listitem">
-Lohr, Sharon L. 2022. <em>Sampling: Design and Analysis</em>. 3rd ed. CRC Press.
+<div id="ref-lohr2022" class="csl-entry">
+Lohr, Sharon L. 2022. <em>Sampling: Design and Analysis</em>. 3rd ed.
+CRC Press.
 </div>
-<div id="ref-lumley2010" class="csl-entry" role="listitem">
-Lumley, Thomas. 2010. <em>Complex Surveys: A Guide to Analysis Using <span>R</span></em>. John Wiley &amp; Sons. <a href="https://doi.org/10.1002/9780470580066" class="external-link">https://doi.org/10.1002/9780470580066</a>.
+<div id="ref-lumley2010" class="csl-entry">
+Lumley, Thomas. 2010. <em>Complex Surveys: A Guide to Analysis Using
+<span>R</span></em>. John Wiley &amp; Sons. <a href="https://doi.org/10.1002/9780470580066" class="external-link">https://doi.org/10.1002/9780470580066</a>.
 </div>
-<div id="ref-mcphee2023" class="csl-entry" role="listitem">
-McPhee, Cameron, Frances Barlas, Nancy Brigham, Jill Darling, David Dutwin, Chris Jackson, Mickey Jackson, et al. 2023. <span>“Data Quality Metrics for Online Samples: Considerations for Study Design &amp; Analysis.”</span> American Association for Public Opinion Research. <a href="https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf" class="external-link">https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf</a>.
+<div id="ref-mcphee2023" class="csl-entry">
+McPhee, Cameron, Frances Barlas, Nancy Brigham, Jill Darling, David
+Dutwin, Chris Jackson, Mickey Jackson, et al. 2023. <span>“Data Quality
+Metrics for Online Samples: Considerations for Study Design &amp;
+Analysis.”</span> American Association for Public Opinion Research. <a href="https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf" class="external-link">https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf</a>.
 </div>
-<div id="ref-mercer2018" class="csl-entry" role="listitem">
-Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. <span>“For Weighting Online Opt-in Samples, What Matters Most?”</span> Pew Research Center. <a href="https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/" class="external-link">https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/</a>.
+<div id="ref-mercer2018" class="csl-entry">
+Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. <span>“For
+Weighting Online Opt-in Samples, What Matters Most?”</span> Pew Research
+Center. <a href="https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/" class="external-link">https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/</a>.
 </div>
-<div id="ref-saegusa2013" class="csl-entry" role="listitem">
-Saegusa, Takumi, and Jon A. Wellner. 2013. <span>“Weighted Likelihood Estimation Under Two-Phase Sampling.”</span> <em>Annals of Statistics</em> 41 (1): 269–95. <a href="https://doi.org/10.1214/12-AOS1073" class="external-link">https://doi.org/10.1214/12-AOS1073</a>.
+<div id="ref-saegusa2013" class="csl-entry">
+Saegusa, Takumi, and Jon A. Wellner. 2013. <span>“Weighted Likelihood
+Estimation Under Two-Phase Sampling.”</span> <em>Annals of
+Statistics</em> 41 (1): 269–95. <a href="https://doi.org/10.1214/12-AOS1073" class="external-link">https://doi.org/10.1214/12-AOS1073</a>.
 </div>
-<div id="ref-census2022" class="csl-entry" role="listitem">
-U.S. Census Bureau. 2022. <span>“American Community Survey Design and Methodology, Chapter 12: Variance Estimation.”</span> U.S. Census Bureau. <a href="https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf" class="external-link">https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf</a>.
+<div id="ref-census2022" class="csl-entry">
+U.S. Census Bureau. 2022. <span>“American Community Survey Design and
+Methodology, Chapter 12: Variance Estimation.”</span> U.S. Census
+Bureau. <a href="https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf" class="external-link">https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf</a>.
 </div>
-<div id="ref-valliant2018" class="csl-entry" role="listitem">
-Valliant, Richard, and Jill A. Dever. 2018. <em>Survey Weights: A Step-by-Step Guide to Calculation</em>. Stata Press.
+<div id="ref-valliant2018" class="csl-entry">
+Valliant, Richard, and Jill A. Dever. 2018. <em>Survey Weights: A
+Step-by-Step Guide to Calculation</em>. Stata Press.
 </div>
-<div id="ref-wolter2007" class="csl-entry" role="listitem">
-Wolter, Kirk M. 2007. <em>Introduction to Variance Estimation</em>. 2nd ed. Springer. <a href="https://doi.org/10.1007/978-0-387-35099-8" class="external-link">https://doi.org/10.1007/978-0-387-35099-8</a>.
+<div id="ref-wolter2007" class="csl-entry">
+Wolter, Kirk M. 2007. <em>Introduction to Variance Estimation</em>. 2nd
+ed. Springer. <a href="https://doi.org/10.1007/978-0-387-35099-8" class="external-link">https://doi.org/10.1007/978-0-387-35099-8</a>.
 </div>
 </div>
-</section><script id="quarto-html-after-body" type="application/javascript">
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
-          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-      }
-      // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-      for (var i=0; i<links.length; i++) {
-        const link = links[i];
-        if (!isInternal(link.href)) {
-          // undo the damage that might have been done by quarto-nav.js in the case of
-          // links that we want to consider external
-          if (link.dataset.originalHref !== undefined) {
-            link.href = link.dataset.originalHref;
-          }
-        }
-      }
-    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-      const config = {
-        allowHTML: true,
-        maxWidth: 500,
-        delay: 100,
-        arrow: false,
-        appendTo: function(el) {
-            return el.parentElement;
-        },
-        interactive: true,
-        interactiveBorder: 10,
-        theme: 'light-border',
-        placement: 'bottom-start',
-      };
-      if (contentFn) {
-        config.content = contentFn;
-      }
-      if (onTriggerFn) {
-        config.onTrigger = onTriggerFn;
-      }
-      if (onUntriggerFn) {
-        config.onUntrigger = onUntriggerFn;
-      }
-      window.tippy(el, config);
-    }
-    const findCites = (el) => {
-      const parentEl = el.parentElement;
-      if (parentEl) {
-        const cites = parentEl.dataset.cites;
-        if (cites) {
-          return {
-            el,
-            cites: cites.split(' ')
-          };
-        } else {
-          return findCites(el.parentElement)
-        }
-      } else {
-        return undefined;
-      }
-    };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-    for (var i=0; i<bibliorefs.length; i++) {
-      const ref = bibliorefs[i];
-      const citeInfo = findCites(ref);
-      if (citeInfo) {
-        tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
-          citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
-            citeDiv.classList.add('hanging-indent');
-            citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
-            if (biblioDiv) {
-              citeDiv.innerHTML = biblioDiv.innerHTML;
-            }
-            popup.appendChild(citeDiv);
-          });
-          return popup.innerHTML;
-        });
-      }
-    }
-  });
-  </script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
+
 
 
     <footer><div class="pkgdown-footer-left">
