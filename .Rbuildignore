@@ -14,6 +14,6 @@
 ^pkgdown$
 ^cran-comments\.md$
 
-# Quarto vignette build artifacts
+# Vignette build artifacts (pre-built HTML from local development)
 ^vignettes/.*_files$
 ^vignettes/.*\.html$

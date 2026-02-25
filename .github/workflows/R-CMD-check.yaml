@@ -22,7 +22,7 @@ jobs:
         config:
           - {os: ubuntu-latest,  r: 'release',  build-args: 'character(0)', extra-check-args: ''}
           - {os: ubuntu-latest,  r: 'devel',    http-user-agent: 'release', build-args: 'character(0)', extra-check-args: ''}
-          - {os: windows-latest, r: 'release',  build-args: '"--no-build-vignettes"', extra-check-args: ', "--no-vignettes"'}
+          - {os: windows-latest, r: 'release',  build-args: 'character(0)', extra-check-args: ''}
           - {os: macos-latest,   r: 'release',  build-args: 'character(0)', extra-check-args: ''}
 
     env:
@@ -40,11 +40,9 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - uses: quarto-dev/quarto-actions/setup@v2
-
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, quarto-dev/quarto-r
+          extra-packages: any::rcmdcheck
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2

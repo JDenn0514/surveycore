@@ -1,18 +1,18 @@
 ---
 title: "Creating Survey Objects in surveycore"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+link-citations: yes
 vignette: >
   %\VignetteIndexEntry{Creating Survey Objects in surveycore}
-  %\VignetteEngine{quarto::html}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-format:
-  html:
-    toc: true
-    toc-depth: 3
-bibliography: references.bib
 ---
 
-```{r setup}
-#| include: false
+```{r setup, include=FALSE}
 library(surveycore)
 ```
 
@@ -36,7 +36,7 @@ It is written for three audiences:
   The conceptual explanations in each section are for you.
 - **Non-probability panel users** — if you run message-testing or attitudinal
   research on Lucid, Dynata, or a similar platform and have vendor-provided
-  raking weights, skip ahead to @sec-calibrated.
+  raking weights, skip ahead to [Section 6](#sec-calibrated).
 
 This vignette covers object *creation* only. Estimation functions (`get_means()`,
 `get_totals()`, etc.) are covered in `vignette("estimation")`.
@@ -357,7 +357,7 @@ codebook's technical documentation specifies custom values [@wolter2007, ch. 3].
 ## 4. `as_survey_twophase()` — Two-Phase Designs {#sec-twophase}
 
 > **If you are not sure whether your design is two-phase, it almost certainly
-> is not.** Skip to @sec-srs or @sec-calibrated.
+> is not.** Skip to [Section 5](#sec-srs) or [Section 6](#sec-calibrated).
 
 ### 4.1 What two-phase sampling is
 
@@ -402,8 +402,7 @@ from all enrolled children (Phase 1), and expensive central-laboratory
 histology was measured only for subcohort members plus all relapse cases
 [@breslow1988].
 
-```{r nwtco}
-#| eval: !expr requireNamespace("survival", quietly = TRUE)
+```{r nwtco, eval=requireNamespace("survival", quietly=TRUE)}
 nwtco <- survival::nwtco
 
 # in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()
