@@ -20,10 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,  r: 'release',  extra-check-args: ''}
-          - {os: ubuntu-latest,  r: 'devel',    http-user-agent: 'release', extra-check-args: ''}
-          - {os: windows-latest, r: 'release',  extra-check-args: ', "--no-build-vignettes"'}
-          - {os: macos-latest,   r: 'release',  extra-check-args: ''}
+          - {os: ubuntu-latest,  r: 'release',  build-args: 'character(0)'}
+          - {os: ubuntu-latest,  r: 'devel',    http-user-agent: 'release', build-args: 'character(0)'}
+          - {os: windows-latest, r: 'release',  build-args: '"--no-build-vignettes"'}
+          - {os: macos-latest,   r: 'release',  build-args: 'character(0)'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -49,6 +49,7 @@ jobs:
 
       - uses: r-lib/actions/check-r-package@v2
         with:
-          args: 'c("--as-cran", "--no-manual"${{ matrix.config.extra-check-args }})'
+          args: 'c("--as-cran", "--no-manual")'
+          build_args: '${{ matrix.config.build-args }}'
           error-on: '"warning"'
           upload-snapshots: true
