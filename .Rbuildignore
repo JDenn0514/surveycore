@@ -13,3 +13,7 @@
 ^docs$
 ^pkgdown$
 ^cran-comments\.md$
+
+# Quarto vignette build artifacts
+^vignettes/.*_files$
+^vignettes/.*\.html$
