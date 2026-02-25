@@ -24,11 +24,13 @@ test_that("get_means() Taylor SE matches survey::svymean() — NHANES", {
     nest    = TRUE
   )
 
-  sc_mean <- get_means(sc, bpxsy1)
+  sc_mean <- get_means(sc, bpxsy1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~bpxsy1, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["bpxsy1"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["bpxsy1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() Taylor SE matches survey::svytotal() — NHANES", {
@@ -45,11 +47,13 @@ test_that("get_totals() Taylor SE matches survey::svytotal() — NHANES", {
     nest    = TRUE
   )
 
-  sc_total <- get_totals(sc, bpxsy1)
+  sc_total <- get_totals(sc, bpxsy1, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~bpxsy1, sv, na.rm = TRUE)
 
-  expect_equal(sc_total$total, coef(sv_total)[["bpxsy1"]], tolerance = 1e-10)
-  expect_equal(sc_total$se,    as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$total,   coef(sv_total)[["bpxsy1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se,      as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low,  confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -69,11 +73,13 @@ test_that("get_means() matches survey::svymean() for stratified design", {
   sc <- as_survey(df, strata = strat, weights = wt)
   sv <- survey::svydesign(ids = ~1, strata = ~strat, weights = ~wt, data = df)
 
-  sc_mean <- get_means(sc, y)
+  sc_mean <- get_means(sc, y, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() matches survey::svytotal() for stratified design", {
@@ -89,11 +95,13 @@ test_that("get_totals() matches survey::svytotal() for stratified design", {
   sc <- as_survey(df, strata = strat, weights = wt)
   sv <- survey::svydesign(ids = ~1, strata = ~strat, weights = ~wt, data = df)
 
-  sc_total <- get_totals(sc, y)
+  sc_total <- get_totals(sc, y, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~y, sv, na.rm = TRUE)
 
-  expect_equal(sc_total$total, coef(sv_total)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_total$se,    as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$total,   coef(sv_total)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_total$se,      as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low,  confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -113,11 +121,13 @@ test_that("get_means() matches survey::svymean() for cluster-only design", {
   sc <- as_survey(df, ids = psu, weights = wt)
   sv <- survey::svydesign(ids = ~psu, weights = ~wt, data = df)
 
-  sc_mean <- get_means(sc, y)
+  sc_mean <- get_means(sc, y, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -146,11 +156,13 @@ test_that("get_means() matches survey::svymean() with population-size FPC", {
     nest    = TRUE
   )
 
-  sc_mean <- get_means(sc, y)
+  sc_mean <- get_means(sc, y, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -177,11 +189,13 @@ test_that("get_means() na.rm = TRUE matches survey::svymean() with NAs", {
     nest    = TRUE
   )
 
-  sc_mean <- get_means(sc, y, na.rm = TRUE)
+  sc_mean <- get_means(sc, y, variance = c("se", "ci"), na.rm = TRUE)
   sv_mean <- survey::svymean(~y, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -202,10 +216,12 @@ test_that("get_means() Taylor: fraction FPC (values <= 1) converts to population
   )
   sc     <- as_survey(df, ids = psu, weights = w, fpc = fpc_frac)
   sv     <- survey::svydesign(ids = ~psu, weights = ~w, fpc = ~fpc_frac, data = df)
-  sc_est <- get_means(sc, y)
+  sc_est <- get_means(sc, y, variance = c("se", "ci"))
   sv_est <- survey::svymean(~y, sv, na.rm = TRUE)
-  expect_equal(sc_est$mean, coef(sv_est)[["y"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$mean,    coef(sv_est)[["y"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 # ---------------------------------------------------------------------------
@@ -303,6 +319,6 @@ test_that("get_means() returns zero SE when FPC indicates complete census (fpc =
     fpc    = rep(5L, 20)        # fpc == nPSU
   )
   sc     <- as_survey(df, ids = psu, weights = w, strata = strata, fpc = fpc, nest = TRUE)
-  result <- get_means(sc, y)
+  result <- get_means(sc, y, variance = "se")
   expect_equal(result$se, 0, tolerance = 1e-10)
 })

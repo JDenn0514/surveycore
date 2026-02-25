@@ -25,11 +25,13 @@ test_that("get_means() replicate SE matches survey::svymean() — BRR design", {
     data       = d
   )
 
-  sc_mean <- get_means(sc, y1)
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() replicate SE matches survey::svytotal() — BRR design", {
@@ -48,11 +50,13 @@ test_that("get_totals() replicate SE matches survey::svytotal() — BRR design",
     data       = d
   )
 
-  sc_total <- get_totals(sc, y1)
+  sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
 
-  expect_equal(sc_total$total, coef(sv_total)[["y1"]], tolerance = 1e-10)
-  expect_equal(sc_total$se,    as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$total,   coef(sv_total)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se,      as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low,  confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
@@ -76,11 +80,13 @@ test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
     data       = d
   ))
 
-  sc_mean <- get_means(sc, y1)
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
@@ -100,11 +106,13 @@ test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
     data       = d
   )
 
-  sc_mean <- get_means(sc, y1)
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() and get_totals() work for survey_replicate (return structure)", {
@@ -112,16 +120,16 @@ test_that("get_means() and get_totals() work for survey_replicate (return struct
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
   sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
 
-  m <- get_means(sc, y1)
-  expect_named(m, c("variable", "mean", "se"))
-  expect_identical(m$variable, "y1")
-  expect_true(is.finite(m$mean))
-  expect_gte(m$se, 0)
+  m <- get_means(sc, y1, variance = "se")
+  test_result_invariants(m, "survey_means")
+  expect_identical(meta(m)$variable, "y1")
+  expect_true(is.finite(m$mean[[1L]]))
+  expect_gte(m$se[[1L]], 0)
 
-  t <- get_totals(sc, y1)
-  expect_named(t, c("variable", "total", "se"))
-  expect_true(is.finite(t$total))
-  expect_gte(t$se, 0)
+  t <- get_totals(sc, y1, variance = "se")
+  test_result_invariants(t, "survey_totals")
+  expect_true(is.finite(t$total[[1L]]))
+  expect_gte(t$se[[1L]], 0)
 })
 
 test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
@@ -146,11 +154,13 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
     data       = d
   )
 
-  sc_mean <- get_means(sc, y1)
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
 
-  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
-  expect_equal(sc_mean$se,   as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$mean,    coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se,      as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low,  confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 
@@ -165,9 +175,9 @@ test_that("get_means() na.rm = FALSE on replicate design covers .replicate_mean 
   sc         <- as_survey_rep(df, weights = wt,
                                repweights = all_of(repwt_cols), type = "BRR")
   # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
-  result <- get_means(sc, y1, na.rm = FALSE)
-  expect_true(is.finite(result$mean))
-  expect_true(is.finite(result$se))
+  result <- get_means(sc, y1, variance = "se", na.rm = FALSE)
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_true(is.finite(result$se[[1L]]))
 })
 
 test_that("get_totals() na.rm = FALSE on replicate design covers .replicate_total FALSE path", {
@@ -177,9 +187,9 @@ test_that("get_totals() na.rm = FALSE on replicate design covers .replicate_tota
   sc         <- as_survey_rep(df, weights = wt,
                                repweights = all_of(repwt_cols), type = "BRR")
   # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
-  result <- get_totals(sc, y1, na.rm = FALSE)
-  expect_true(is.finite(result$total))
-  expect_true(is.finite(result$se))
+  result <- get_totals(sc, y1, variance = "se", na.rm = FALSE)
+  expect_true(is.finite(result$total[[1L]]))
+  expect_true(is.finite(result$se[[1L]]))
 })
 
 

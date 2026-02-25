@@ -430,7 +430,7 @@ test_that(".add_variance_cols() computes var = se^2", {
   expect_equal(result$var, c(4.0, 9.0))
 })
 
-test_that(".add_variance_cols() computes cv = se/estimate * 100", {
+test_that(".add_variance_cols() computes cv = se/estimate (ratio, not percentage)", {
   result <- .add_variance_cols(
     se_vec       = c(1.0, 2.0),
     estimate_vec = c(10.0, 20.0),
@@ -438,7 +438,8 @@ test_that(".add_variance_cols() computes cv = se/estimate * 100", {
     degf         = 100L,
     variance     = "cv"
   )
-  expect_equal(result$cv, c(10.0, 10.0))
+  # cv = se / estimate as a ratio: 1/10 = 0.1, 2/20 = 0.1
+  expect_equal(result$cv, c(0.1, 0.1))
 })
 
 test_that(".add_variance_cols() sets cv = NA and warns for zero estimate", {
@@ -620,22 +621,15 @@ test_that('.apply_name_style() renames p_value to p.value for get_corr() output'
 
 # ── Category 8: .degf() ──────────────────────────────────────────────────────
 
-test_that(".degf() returns correct df for survey_taylor (stratified cluster)", {
+test_that(".degf() returns Inf for survey_taylor (normal approximation CI)", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   test_invariants(d)
 
-  result <- .degf(d)
-  # stratified cluster: total PSUs - number of strata
-  psu_col    <- as.character(df$psu)
-  strata_col <- as.character(df$strata)
-  psu_col    <- paste(strata_col, psu_col, sep = ".")  # nest=TRUE
-  n_psus     <- tapply(psu_col, strata_col, function(x) length(unique(x)))
-  expected   <- sum(n_psus) - length(n_psus)
-  expect_equal(result, expected)
+  expect_equal(.degf(d), Inf)
 })
 
-test_that(".degf() returns correct df for survey_replicate", {
+test_that(".degf() returns Inf for survey_replicate (normal approximation CI)", {
   df <- make_survey_data(
     n = 100L, n_psu = 10L, n_strata = 2L,
     design = "replicate", type = "brr", seed = 11L
@@ -649,12 +643,10 @@ test_that(".degf() returns correct df for survey_replicate", {
   )
   test_invariants(d)
 
-  result   <- .degf(d)
-  expected <- length(repwt_cols) - 1L
-  expect_equal(result, expected)
+  expect_equal(.degf(d), Inf)
 })
 
-test_that(".degf() returns correct df for survey_twophase (from phase 1 vars)", {
+test_that(".degf() returns Inf for survey_twophase (normal approximation CI)", {
   df <- make_survey_data(
     n = 100L, n_psu = 10L, n_strata = 2L,
     design = "twophase", seed = 12L
@@ -665,25 +657,24 @@ test_that(".degf() returns correct df for survey_twophase (from phase 1 vars)", 
   twophase <- as_survey_twophase(phase1, subset = subset, method = "approx")
   test_invariants(twophase)
 
-  df_tp <- .degf(twophase)
-  df_p1 <- .degf(phase1)
-  expect_equal(df_tp, df_p1)
+  expect_equal(.degf(twophase), Inf)
+  expect_equal(.degf(phase1),   Inf)
 })
 
-test_that(".degf() returns n - 1 for survey_srs", {
+test_that(".degf() returns Inf for survey_srs (normal approximation CI)", {
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
   d  <- as_survey_srs(df, weights = wt)
   test_invariants(d)
 
-  expect_equal(.degf(d), nrow(d@data) - 1L)
+  expect_equal(.degf(d), Inf)
 })
 
-test_that(".degf() returns n - 1 for survey_calibrated", {
+test_that(".degf() returns Inf for survey_calibrated (normal approximation CI)", {
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 14L)
   d  <- as_survey_calibrated(df, weights = wt)
   test_invariants(d)
 
-  expect_equal(.degf(d), nrow(d@data) - 1L)
+  expect_equal(.degf(d), Inf)
 })
 
 test_that(".degf() throws surveycore_error_unsupported_class for non-design object", {
