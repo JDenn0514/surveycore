@@ -23,10 +23,14 @@ interface — bare column names, no formula syntax.
 
 Compute weighted estimates with design-correct standard errors.
 
+- [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md) :
+  Extract Metadata from a Survey Result
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  : Weighted Frequency Tables for Categorical Survey Variables
 - [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
-  : Estimate Weighted Mean for a Survey Design
+  : Weighted Mean for a Survey Design
 - [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
-  : Estimate Weighted Total for a Survey Design
+  : Weighted Total for a Survey Design
 
 ## Metadata — setters
 

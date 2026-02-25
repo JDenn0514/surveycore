@@ -1,118 +1,137 @@
-# Estimate Weighted Mean for a Survey Design
+# Weighted Mean for a Survey Design
 
-Computes the weighted mean and its standard error for a single variable
-using the appropriate variance estimator for the survey design type.
+Compute the weighted mean of a single numeric variable in a survey
+design, with optional grouping, uncertainty quantification, and
+metadata-driven labelling.
 
 ## Usage
 
 ``` r
-get_means(design, var, na.rm = TRUE)
+get_means(
+  design,
+  x,
+  group = NULL,
+  variance = "ci",
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  min_cell_n = 30L,
+  na.rm = TRUE,
+  label_values = TRUE,
+  label_vars = TRUE,
+  name_style = "surveycore"
+)
 ```
 
 ## Arguments
 
 - design:
 
-  A survey design object. Supported classes:
-  [survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
-  (created by
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
-  [survey_replicate](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)
-  (created by
-  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)),
-  [survey_srs](https://jdenn0514.github.io/surveycore/reference/survey_srs.md)
-  (created by
-  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
-  or
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
-  [survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
-  (created by
-  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)),
-  and
-  [survey_calibrated](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
-  (created by
-  [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)).
+  A survey design object: `survey_taylor`, `survey_replicate`,
+  `survey_twophase`, `survey_srs`, or `survey_calibrated`.
 
-- var:
+- x:
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
-  A single unquoted variable name to estimate the mean of.
+  A single unquoted numeric variable name. Must resolve to exactly one
+  numeric column.
+
+- group:
+
+  \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
+  Optional grouping variable(s). Combined with any grouping set by
+  `group_by()`. Default `NULL`.
+
+- variance:
+
+  `NULL` or a character vector of one or more of `"se"`, `"ci"`,
+  `"var"`, `"cv"`, `"moe"`, `"deff"`. Controls which uncertainty columns
+  appear in the output. Default `"ci"`.
+
+- conf_level:
+
+  Numeric scalar in (0, 1). Confidence level for intervals. Default
+  `0.95`.
+
+- n_weighted:
+
+  Logical. If `TRUE`, add an `n_weighted` column with the sum of weights
+  for non-NA observations in each group. Default `FALSE`.
+
+- min_cell_n:
+
+  Integer. Minimum unweighted cell count before
+  `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 
 - na.rm:
 
-  Logical. If `TRUE` (default), missing values are excluded before
-  computing the mean. Set to `FALSE` to propagate `NA`.
+  Logical. If `TRUE` (default), `NA` values in `x` are excluded.
+
+- label_values:
+
+  Logical. Accepted for API uniformity; has no visible effect since
+  `get_means()` output contains no categorical value cells. Default
+  `TRUE`.
+
+- label_vars:
+
+  Logical. Accepted for API uniformity; has no visible effect since
+  `get_means()` output contains no variable-name value cells. Default
+  `TRUE`.
+
+- name_style:
+
+  `"surveycore"` (default) or `"broom"`. When `"broom"`, renames `mean`
+  → `estimate`, `se` → `std.error`, etc.
 
 ## Value
 
-A named list with elements:
+A `survey_means` tibble (also inheriting `survey_result`). Columns:
 
-- `variable`:
+- `[group_cols...]` — group variable columns (when active), first.
 
-  Character. Name of the estimated variable.
+- `mean` — weighted mean estimate.
 
-- `mean`:
+- Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
+  `deff`) — only those requested via `variance`.
 
-  Numeric. Weighted mean estimate.
+- `n` — unweighted count of non-NA observations used in the estimate.
 
-- `se`:
+- `n_weighted` — sum of weights (only when requested).
 
-  Numeric. Standard error of the mean.
-
-## Variance estimation by design type
-
-- `survey_taylor`:
-
-  Taylor series linearization.
-
-- `survey_replicate`:
-
-  Replicate-weight variance estimator.
-
-- `survey_twophase`:
-
-  Two-phase linearization (Saei and Roberts 1999; Lumley 2010 §9.2).
-  Three methods are supported, set at construction time via
-  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md):
-
-  - `"full"` — joint phase 1 + phase 2 linearization. Most accurate.
-    Requires `ids2`, `strata2`, or `probs2` to be specified in
-    [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md).
-
-  - `"approx"` — phase 1 variance with phase 2 correction, using
-    within-stratum sampling fractions as phase 2 probabilities. Valid
-    for most two-phase designs.
-
-  - `"simple"` — phase 1 variance only. Conservative; valid when phase 2
-    sampling fraction is high or phase 1 variance dominates.
-
-- `survey_calibrated`:
-
-  SRS-based (model-assisted) variance. Standard errors assume simple
-  random sampling within the calibrated weights. This is consistent with
-  common practice for raked non-probability samples but may understate
-  uncertainty. Full bootstrap re-calibration variance will be available
-  in Phase 2.5.
+The variable name is stored in `meta(result)$variable`, not as a column.
+Use `meta(result)` to access design type, variable labels, and other
+metadata.
 
 ## See also
 
-Other estimation:
-[`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
+Other analysis:
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+[`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+[`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 
 ## Examples
 
 ``` r
-# NHANES 2017-2018: estimated mean age of U.S. civilian population
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
 get_means(d, ridageyr)
-#> $variable
-#> [1] "ridageyr"
-#> 
-#> $mean
-#> [1] 38.42397
-#> 
-#> $se
-#> [1] 0.5244057
-#> 
+#> # A tibble: 1 × 4
+#>    mean ci_low ci_high     n
+#>   <dbl>  <dbl>   <dbl> <int>
+#> 1  38.4   37.4    39.5  9254
+
+# With grouped estimate
+get_means(d, ridageyr, group = riagendr)
+#> # A tibble: 2 × 5
+#>   riagendr  mean ci_low ci_high     n
+#>      <dbl> <dbl>  <dbl>   <dbl> <int>
+#> 1        1  37.4   36.5    38.4  4557
+#> 2        2  39.4   38.2    40.5  4697
+
+# AAPOR-compliant
+get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
+#> # A tibble: 1 × 6
+#>    mean ci_low ci_high   moe     n n_weighted
+#>   <dbl>  <dbl>   <dbl> <dbl> <int>      <dbl>
+#> 1  38.4   37.4    39.5  1.03  9254  320842721
 ```

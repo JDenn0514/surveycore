@@ -5,11 +5,12 @@
 Every analysis function in surveycore —
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
-`get_freqs()` — takes a **survey design object** as its first argument.
-That object encodes how your data were collected: which units were
-clustered together, which strata were defined, what weights apply, and
-how variance should be estimated. Without it, point estimates may be
-biased and standard errors are almost certainly wrong ([Lumley
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+— takes a **survey design object** as its first argument. That object
+encodes how your data were collected: which units were clustered
+together, which strata were defined, what weights apply, and how
+variance should be estimated. Without it, point estimates may be biased
+and standard errors are almost certainly wrong ([Lumley
 2010](#ref-lumley2010); [Lohr 2022](#ref-lohr2022)).
 
 This vignette answers one question: *given my data, which constructor do
@@ -849,10 +850,11 @@ svy_panel
 
 This produces a `survey_calibrated` object. Use it with
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
-`get_freqs()`, and other estimation functions exactly as you would any
-other survey object. Standard errors are computed under an approximate
-variance model and should be interpreted with appropriate caution and
-disclosed in your methods section.
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+and other estimation functions exactly as you would any other survey
+object. Standard errors are computed under an approximate variance model
+and should be interpreted with appropriate caution and disclosed in your
+methods section.
 
 ### 6.5 What not to do
 

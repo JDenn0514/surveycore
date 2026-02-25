@@ -182,8 +182,9 @@ d_rt
 - **Phase 0.5** — [`filter()`](https://rdrr.io/r/stats/filter.html),
   `select()`, `mutate()`, `group_by()` verbs via the `surveytidy`
   package
-- **Phase 1** — `get_freqs()`, `get_quantiles()`, `get_ratios()`,
-  `get_diffs()`, `get_corr()`
+- **Phase 1** —
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+  `get_quantiles()`, `get_ratios()`, `get_diffs()`, `get_corr()`
 - **Phase 2** — `survey_glm()`, `survey_lm()` regression
 - **Phase 2.5** — Calibration / post-stratification via `surveyweights`
 

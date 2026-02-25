@@ -1,119 +1,132 @@
-# Estimate Weighted Total for a Survey Design
+# Weighted Total for a Survey Design
 
-Computes the weighted total and its standard error for a single variable
-using the appropriate variance estimator for the survey design type.
+Compute the estimated population total of a numeric variable in a survey
+design, or the estimated population size when no variable is supplied.
+Supports optional grouping, uncertainty quantification, and
+metadata-driven labelling.
 
 ## Usage
 
 ``` r
-get_totals(design, var, na.rm = TRUE)
+get_totals(
+  design,
+  x = NULL,
+  group = NULL,
+  variance = "ci",
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  min_cell_n = 30L,
+  na.rm = TRUE,
+  label_values = TRUE,
+  label_vars = TRUE,
+  name_style = "surveycore"
+)
 ```
 
 ## Arguments
 
 - design:
 
-  A survey design object. Supported classes:
-  [survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
-  (created by
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
-  [survey_replicate](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)
-  (created by
-  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)),
-  [survey_srs](https://jdenn0514.github.io/surveycore/reference/survey_srs.md)
-  (created by
-  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
-  or
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)),
-  [survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
-  (created by
-  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)),
-  and
-  [survey_calibrated](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
-  (created by
-  [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)).
+  A survey design object: `survey_taylor`, `survey_replicate`,
+  `survey_twophase`, `survey_srs`, or `survey_calibrated`.
 
-- var:
+- x:
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
-  A single unquoted variable name to estimate the total of.
+  Optional single unquoted numeric variable name. When `NULL` (default),
+  estimates the population size (`Σ w_i`). When supplied, estimates the
+  weighted sum (`Σ w_i × x_i`).
+
+- group:
+
+  \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
+  Optional grouping variable(s). Default `NULL`.
+
+- variance:
+
+  `NULL` or a character vector from `"se"`, `"ci"`, `"var"`, `"cv"`,
+  `"moe"`, `"deff"`. Default `"ci"`.
+
+- conf_level:
+
+  Numeric scalar in (0, 1). Default `0.95`.
+
+- n_weighted:
+
+  Logical. For `get_totals(d)` (no variable), equals the `total` column
+  and is included for API uniformity. For variable mode, adds the sum of
+  weights for non-NA observations. Default `FALSE`.
+
+- min_cell_n:
+
+  Integer. Default `30L`.
 
 - na.rm:
 
-  Logical. If `TRUE` (default), missing values are excluded before
-  computing the total. Set to `FALSE` to propagate `NA`.
+  Logical. If `TRUE` (default), `NA` values are excluded.
+
+- label_values:
+
+  Logical. Accepted for API uniformity. Default `TRUE`.
+
+- label_vars:
+
+  Logical. Accepted for API uniformity. Default `TRUE`.
+
+- name_style:
+
+  `"surveycore"` (default) or `"broom"`.
 
 ## Value
 
-A named list with elements:
+A `survey_totals` tibble (also inheriting `survey_result`). Columns:
 
-- `variable`:
+- `[group_cols...]` — group variable columns (when active), first.
 
-  Character. Name of the estimated variable.
+- `total` — the weighted sum estimate.
 
-- `total`:
+- Variance columns — only those requested via `variance`.
 
-  Numeric. Weighted total estimate.
+- `n` — unweighted count (omitted in no-variable mode).
 
-- `se`:
+- `n_weighted` — sum of weights (only when requested).
 
-  Numeric. Standard error of the total.
-
-## Variance estimation by design type
-
-- `survey_taylor`:
-
-  Taylor series linearization.
-
-- `survey_replicate`:
-
-  Replicate-weight variance estimator.
-
-- `survey_twophase`:
-
-  Two-phase linearization (Saei and Roberts 1999; Lumley 2010 §9.2).
-  Three methods are supported, set at construction time via
-  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md):
-
-  - `"full"` — joint phase 1 + phase 2 linearization. Most accurate.
-    Requires `ids2`, `strata2`, or `probs2` to be specified in
-    [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md).
-
-  - `"approx"` — phase 1 variance with phase 2 correction, using
-    within-stratum sampling fractions as phase 2 probabilities. Valid
-    for most two-phase designs.
-
-  - `"simple"` — phase 1 variance only. Conservative; valid when phase 2
-    sampling fraction is high or phase 1 variance dominates.
-
-- `survey_calibrated`:
-
-  SRS-based (model-assisted) variance. Standard errors assume simple
-  random sampling within the calibrated weights. This is consistent with
-  common practice for raked non-probability samples but may understate
-  uncertainty. Full bootstrap re-calibration variance will be available
-  in Phase 2.5.
+The variable name (or `NULL` for no-variable mode) is in
+`meta(result)$variable`. Use `meta(result)` for additional metadata.
 
 ## See also
 
-Other estimation:
-[`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
+Other analysis:
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+[`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 
 ## Examples
 
 ``` r
-# ACS PUMS Wyoming: estimated total population by age
 d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
                    repweights = pwgtp1:pwgtp80,
                    type = "successive-difference")
+
+# Population size
+get_totals(d)
+#> # A tibble: 1 × 3
+#>    total ci_low ci_high
+#>    <dbl>  <dbl>   <dbl>
+#> 1 581381 581381  581381
+
+# Total for a variable
 get_totals(d, agep)
-#> $variable
-#> [1] "agep"
-#> 
-#> $total
-#> [1] 23089173
-#> 
-#> $se
-#> [1] 40314.74
-#> 
+#> # A tibble: 1 × 4
+#>      total    ci_low   ci_high     n
+#>      <dbl>     <dbl>     <dbl> <int>
+#> 1 23089173 23010158. 23168188.  5962
+
+# Grouped
+get_totals(d, agep, group = sex)
+#> # A tibble: 2 × 5
+#>     sex    total    ci_low   ci_high     n
+#>   <int>    <dbl>     <dbl>     <dbl> <int>
+#> 1     1 11652675 11570321. 11735029.  2985
+#> 2     2 11436498 11365701. 11507295.  2977
 ```
