@@ -82,7 +82,8 @@ Standard errors from a `survey_calibrated` object assume simple random
 sampling within the calibrated weights. This is consistent with common
 applied practice for raked non-probability samples, but is technically a
 model-assisted approximation rather than design-based variance. See
-`vignette("creating-survey-objects")` for details and limitations.
+[`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
+for details and limitations.
 
 ## See also
 

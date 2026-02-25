@@ -320,3 +320,9 @@ Real-world survey datasets included for testing and illustration.
 - [`pew_npors_2025`](https://jdenn0514.github.io/surveycore/reference/pew_npors_2025.md)
   : Pew NPORS 2025: National Public Opinion Reference Survey
 
+# Articles
+
+### All vignettes
+
+- [Creating Survey Objects in
+  surveycore](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md):

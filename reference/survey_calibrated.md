@@ -86,8 +86,8 @@ this class does **not** assume a probability sampling design. Standard
 errors produced from a `survey_calibrated` object rest on a
 model-assisted SRS assumption, which is consistent with common practice
 for calibrated non-probability samples (e.g., raked online panels). See
-`vignette("creating-survey-objects")` for guidance on when this is
-appropriate and what the limitations are.
+[`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
+for guidance on when this is appropriate and what the limitations are.
 
 ## Design variables (`@variables`)
 
