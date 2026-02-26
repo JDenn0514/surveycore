@@ -136,6 +136,14 @@ score vector) and `info = X'WX / n` (the weighted information matrix).
 Constructs the `.meta` list for a `survey_glm_tidy` result. Returns a named
 list with all required keys always present (unset values `NULL`, never absent).
 
+Family and link extraction: `model@family$family` gives the family name string
+(e.g., `"gaussian"`, `"binomial"`, `"poisson"`, `"Gamma"`) and
+`model@family$link` gives the link function string (e.g., `"identity"`,
+`"logit"`, `"log"`, `"inverse"`). These `$family` and `$link` fields are
+present on every R family object — this works for all families accepted by
+`stats::glm()`, not just Gaussian. Do not use `class(model@family)` (returns
+`"function"`) or `model@family$family()` (a function call, not a string).
+
 #### `.taylor_var_score_matrix(score_matrix, design)`
 
 Computes the design-based variance of the total score vector for the Taylor
@@ -822,6 +830,10 @@ approximation — see Section I).
 | `survey_twophase` | Phase-1 design degrees of freedom |
 | `survey_calibrated` | Same as `survey_srs` |
 
+`.degf()` always uses the full design (all rows), not the in-domain subset.
+This is consistent with the domain estimation contract in Section 4.5:
+variance estimation uses the full design regardless of domain membership.
+
 GLM residual df for t-tests: `degf(design) − (p − 1)` where `p` is the number
 of coefficients including the intercept.
 
@@ -892,7 +904,11 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
    predictors, `meta(clean(fit))$variable_labels` contains those labels.
 6. **`broom::tidy()` compatibility** — `broom::tidy(fit)` returns same object
    as `clean(fit)` (`skip_if_not_installed("broom")`).
-7. **Error paths** — every row in Section 4.7 and 6.5 error tables.
+7. **Error paths** — every row in Sections 4.7 and 6.5 error tables. User-facing
+   constructor errors (Layer 3) use the dual pattern:
+   `expect_error(class = "surveycore_error_...")` + `expect_snapshot(error = TRUE)`.
+   S7 validator errors (Section 3.3, Layer 1) use `class=` only — no snapshot.
+   Per `testing-surveycore.md §S7 error testing layers`.
 8. **Convergence warning** — force non-convergence; verify
    `surveycore_warning_glm_convergence` fires and fit is still returned.
 9. **`@groups` warning** — group_by() design triggers
@@ -900,6 +916,12 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
 10. **Domain estimation** — `surveytidy::filter()` domain is used in fitting;
     verify coefficient differs from full-sample fit
     (`skip_if_not_installed("surveytidy")`).
+11. **S7 validator errors** — one `test_that()` block per condition in Section
+    3.3 (7 conditions: empty `coefficients`; wrong `vcov` dimensions; empty
+    `fitted_values`; `residuals` length mismatch; `weights` length mismatch;
+    `degf` not positive length-1; `formula` non-formula object). Each uses
+    `expect_error(class = ...)` only — no snapshot, per `testing-surveycore.md`
+    Layer 1 error pattern.
 
 **`test-glm-methods.R`** covers S3 methods:
 

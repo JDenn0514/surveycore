@@ -53,6 +53,8 @@ reference:
       - get_means
       - get_totals
       - get_corr
+      - get_quantiles
+      - get_ratios
 
   - title: "Metadata — setters"
     desc: >
