@@ -129,7 +129,7 @@ get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
 
 }
 \seealso{
-Other analysis: 
+Other analysis:
 \code{\link{get_means}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
