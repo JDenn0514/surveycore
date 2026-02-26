@@ -88,6 +88,7 @@ get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
 }
 \seealso{
 Other analysis: 
+\code{\link{get_corr}()},
 \code{\link{get_freqs}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}

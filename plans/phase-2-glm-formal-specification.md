@@ -2,7 +2,7 @@
 
 **Version:** 0.1 (first draft)
 **Date:** February 2026
-**Status:** Draft — pending adversarial review (Stage 2)
+**Status:** Draft — Stage 3 resolution in progress
 
 ---
 
@@ -54,12 +54,14 @@ All functions in Phase 2 support these design classes:
 | `survey_twophase` | Two-phase linearization of score (requires Phase 0.75 complete) |
 | `survey_calibrated` | Weighted SRS approximation (conservative) |
 
-> ⚠️ **GAP:** The behavior of `survey_glm()` with `survey_calibrated` designs
-> is not fully specified. Does the calibrated variance account for the
-> calibration adjustment in the GLM sandwich? Or does it fall back to the
-> weighted-SRS approximation used elsewhere for `survey_calibrated`? This must
-> be resolved before implementation. See `plans/phase-1-formal-specification.md`
-> Section I for the `survey_calibrated` precedent.
+**`survey_calibrated` contract:** `survey_glm()` uses the same SRS sandwich
+formula for `survey_calibrated` designs as it does for `survey_srs` designs.
+No calibration adjustment is made to the GLM variance — this is the
+conservative approach used consistently in Phase 1 (see
+`plans/phase-1-formal-specification.md` Section I). This matches
+`survey::svyglm()`'s behavior when `calibrate()` output is passed without
+additional variance adjustment. An oracle test using synthetic calibrated data
+is required (Section VIII).
 
 ### Prerequisites
 
@@ -98,8 +100,11 @@ All internal helpers are not exported and prefixed with `.`, per `code-style.md 
 Computes the per-observation score vector for the sandwich estimator. The
 score for observation `i` is `u_i = w_i * x_i * e_i` where `w_i` is the
 survey weight, `x_i` is the row of the model matrix, and `e_i` is the
-working residual. Returns a matrix with `nrow(design@data)` rows and
-`p` columns (one per coefficient).
+working residual extracted as `residuals(fit, type = "working")` — the
+residuals from the final IRLS step. For Gaussian/identity link this equals
+Pearson and response residuals; for other families (binomial, Poisson) it
+does not. Returns a matrix with `nrow(design@data)` rows and `p` columns
+(one per coefficient).
 
 ```r
 .glm_score <- function(fit, design) {
@@ -131,6 +136,33 @@ score vector) and `info = X'WX / n` (the weighted information matrix).
 Constructs the `.meta` list for a `survey_glm_tidy` result. Returns a named
 list with all required keys always present (unset values `NULL`, never absent).
 
+#### `.taylor_var_score_matrix(score_matrix, design)`
+
+Computes the design-based variance of the total score vector for the Taylor
+sandwich estimator. This is the bridge between `.glm_score()` and the Phase 0
+variance machinery.
+
+```r
+.taylor_var_score_matrix <- function(score_matrix, design) {
+  # score_matrix: n × p matrix; column j is u_ij = w_i * x_ij * e_i
+  # (pre-weighted scores; no further centering is applied here)
+  # design: a survey_taylor or survey_twophase object
+  # Returns: p × p meat matrix = Var_design(T) where T = colSums(score_matrix)
+}
+```
+
+Internally calls `.svy_recvar()` (the vendored function in
+`R/06-variance-taylor.R`) directly with the score matrix. The scores are
+already in the form expected by `.svy_recvar()`: per-observation weighted
+deviations. Each column is treated as a separate survey-weighted total.
+The return value is the `p × p` variance matrix of the total score vector
+`T = Σ_i u_i`, which becomes the "meat" in the sandwich
+`Var(β̂) = I⁻¹ · Var_design(T) · I⁻¹`.
+
+This helper is NOT used for replicate designs (those refit the GLM per
+replicate — see Section 7.3) or SRS designs (analytic formula — see
+Section 7.4).
+
 #### `.glm_degrees_of_freedom(design, n_predictors)`
 
 Computes the residual degrees of freedom for t-tests and CIs:
@@ -142,21 +174,9 @@ df_residual = degf(design) - (p - 1)
 where `p` is the total number of coefficients including the intercept and
 `degf(design)` is the design-based degrees of freedom.
 
-> ⚠️ **GAP:** `degf()` is not yet an exported surveycore function. It exists
-> in the `survey` package as `survey::degf()`. Phase 2 either (a) implements
-> `degf()` as a new surveycore function, or (b) computes degrees of freedom
-> inline. **RECOMMENDED:** Add a `degf()` function to `R/07-utils.R` as part
-> of Phase 2. Precedent: Phase 1 did not need it; Phase 2 is the first place
-> it's required. Argument: `degf(design)` → single numeric value. Behavior
-> by class:
->
-> | Class | df |
-> |---|---|
-> | `survey_taylor` | `length(unique(PSU)) - length(unique(strata))` |
-> | `survey_replicate` | Derived from replicate type and scale; see `survey::degf()` |
-> | `survey_srs` | `nrow(design@data) - 1` |
-> | `survey_twophase` | Phase-1 degrees of freedom |
-> | `survey_calibrated` | Same as `survey_srs` (conservative) |
+**`.degf()` already exists in `R/09-analysis-helpers.R`** (implemented in
+Phase 1). It covers all five design classes. Phase 2 calls `.degf()` directly —
+no new `degf()` implementation is needed.
 
 ---
 
@@ -228,6 +248,8 @@ validator = function(self) {
     "weights and fitted_values must have the same length"
   } else if (length(self@degf) != 1L || self@degf <= 0) {
     "degf must be a single positive number"
+  } else if (!is.null(self@formula) && !inherits(self@formula, "formula")) {
+    "formula must be a formula object or NULL"
   } else {
     NULL
   }
@@ -249,13 +271,14 @@ survey_glm <- function(
   start       = NULL,
   etastart    = NULL,
   mustart     = NULL,
-  control     = list(...)
+  control     = list()
 )
 ```
 
 Argument order follows `code-style.md §4`: `design` first (required survey
 object), `formula` second (required), `family` third (required with default),
-then optional scalars, then `...`.
+then optional scalars. No `...` — variadic pass-through to `stats::glm()` is
+not supported. GLM control options are passed via `control`.
 
 ### 4.2 Argument Table
 
@@ -268,7 +291,7 @@ then optional scalars, then `...`.
 | `start` | numeric or NULL | `NULL` | Starting values for the coefficient vector. Passed to `stats::glm()`. |
 | `etastart` | numeric or NULL | `NULL` | Starting values for the linear predictor. Passed to `stats::glm()`. |
 | `mustart` | numeric or NULL | `NULL` | Starting values for the mean. Passed to `stats::glm()`. |
-| `control` | list | `list(...)` | GLM control parameters passed to `stats::glm.control()`. |
+| `control` | list | `list()` | GLM control parameters passed to `stats::glm.control()`. |
 
 ### 4.3 Output Contract
 
@@ -281,15 +304,24 @@ always a complete, valid `survey_glm_fit` — the validator runs on construction
 
 **Step 1: Validate inputs**
 
-Call `S7::S7_inherits(design, survey_base)` — error
-`surveycore_error_not_survey_object` if `FALSE`.
+Call `.check_unsupported_class(design, "survey_glm")` — this throws
+`surveycore_error_unsupported_class` if `design` does not inherit from
+`survey_base`, matching the pattern used by all Phase 1 analysis functions.
 
 Validate `formula` is a formula object — error `surveycore_error_formula_invalid`
 if not.
 
-Resolve all variables in `formula` against `design@data`. Error
-`surveycore_error_response_not_found` if the response is absent; error
-`surveycore_error_predictor_not_found` if any predictor is absent.
+Resolve all variables in `formula` against `design@data`. Extract response
+variable names using `all.vars(formula[[2]])` — this handles in-formula
+transformations such as `log(y) ~ x` or `I(y > 0) ~ x` correctly (R's
+formula parser returns the variable names referenced in the expression, not the
+expression text). Validate each extracted name against `design@data`. Error
+`surveycore_error_response_not_found` if any response variable is absent;
+error `surveycore_error_predictor_not_found` if any predictor is absent.
+`cbind()` on the LHS (multinomial response) is not supported; specifying
+`cbind(y1, y2) ~ x` will error with `surveycore_error_response_not_found` for
+`y2` or similar — document in the function-level roxygen that multinomial
+logistic is deferred to a later phase.
 
 Warn `surveycore_warning_response_is_design_var` if the response variable is
 one of the design variables (`ids`, `weights`, `strata`, `fpc` from
@@ -304,7 +336,14 @@ from `surveytidy::filter()` is stored as `..surveycore_domain..` in
 produce correct design-based standard errors. See Section 4.5 for the domain
 contract.
 
-**Step 3: Apply `na.action`**
+**Step 3: Check weights for NAs, then apply `na.action`**
+
+Before applying `na.action`, check the weight vector
+(`design@data[[design@variables$weights]]`) for `NA` values. If any are
+present, error with `surveycore_error_na_weights`. This check is necessary
+because `na.action` applies only to the model frame (formula variables);
+survey weights are passed separately to `stats::glm()` and are not covered
+by `na.action`.
 
 Apply `na.action` to the model frame derived from `formula` and the (possibly
 domain-restricted) data. Rows removed by `na.action` are excluded from
@@ -333,6 +372,9 @@ coefficients.
 **Step 6: Assemble and return**
 
 Construct and return a `survey_glm_fit` S7 object from all computed quantities.
+Set `dimnames(vcov_matrix) <- list(names(coef(fit)), names(coef(fit)))` where
+`coef(fit)` is the `stats::glm()` result, so that `vcov` row/column names
+match `names(object@coefficients)`.
 Store the raw `stats::glm()` result in `fit_` (used by `predict()`).
 
 ### 4.5 Domain Estimation Contract
@@ -376,7 +418,7 @@ fit.
 
 | # | Function | Condition | Level | Error Class | Message Template |
 |---|---|---|---|---|---|
-| 1 | `survey_glm()` | `design` not a survey object | ERROR | `surveycore_error_not_survey_object` | `{.arg design} must be a survey design object, not {.cls {class(design)[1]}}.` |
+| 1 | `survey_glm()` | `design` not a survey object | ERROR | `surveycore_error_unsupported_class` | Thrown by `.check_unsupported_class(design, "survey_glm")` — reuse Phase 1 definition. |
 | 2 | `survey_glm()` | `formula` missing | ERROR | `surveycore_error_formula_missing` | `{.arg formula} is required.` |
 | 3 | `survey_glm()` | `formula` not a formula | ERROR | `surveycore_error_formula_invalid` | `{.arg formula} must be a formula object, not {.cls {class(formula)[1]}}.` |
 | 4 | `survey_glm()` | Response variable absent from `design@data` | ERROR | `surveycore_error_response_not_found` | `Response variable {.field {resp}} not found in survey data.` |
@@ -386,6 +428,7 @@ fit.
 | 8 | `survey_glm()` | Perfect separation (binomial) | WARN | `surveycore_warning_perfect_separation` | `Fitted probabilities are numerically 0 or 1. Perfect or quasi-complete separation may have occurred.` |
 | 9 | `survey_glm()` | Singular model matrix | ERROR | `surveycore_error_singular_model_matrix` | `Model matrix is singular. Check for perfect collinearity or empty factor levels.` |
 | 10 | `survey_glm()` | `@groups` set on design | WARN | `surveycore_warning_groups_ignored_in_glm` | `{.fn survey_glm} does not support grouped designs. {.i The {.field @groups} property is ignored. Use {.fn surveytidy::group_by} after fitting to group results.}` |
+| 11 | `survey_glm()` | Weight column contains `NA` | ERROR | `surveycore_error_na_weights` | `Weight column {.field {wt_var}} contains {sum(is.na(wt))} NA value(s). {.i Survey weights must be fully observed. Remove rows with missing weights or impute before calling {.fn survey_glm}.}` |
 
 ---
 
@@ -441,12 +484,57 @@ with design information.
 - Design degrees of freedom (labeled as design-based, not model-based)
 - AIC
 
-Returns a `survey_glm_summary` list (S3 class), with a `print` method, for
+Returns a `survey_glm_summary` S3 list, with a `print` method, for
 compatibility with code that captures `summary()` output.
 
-> ⚠️ **GAP:** `survey_glm_summary` is a new S3 class returned by
-> `summary.survey_glm_fit()`. Its structure must be fully specified (fields,
-> print method) before implementation. Deferred to implementation plan.
+#### 5.2.1 `survey_glm_summary` Structure
+
+`survey_glm_summary` is a named list with S3 class `"survey_glm_summary"`:
+
+| Field | Type | Description |
+|---|---|---|
+| `coefficients` | `p × 4` named matrix | Columns: `"Estimate"`, `"Std. Error"`, `"t value"`, `"Pr(>|t|)"`. Row names are coefficient names. |
+| `deviance` | numeric, length 1 | Residual deviance of the fitted model (`model@deviance`). |
+| `null_deviance` | numeric, length 1 | Deviance of the intercept-only model (`model@null_deviance`). |
+| `df_residual` | integer, length 1 | Design-based residual df (`model@df_residual`). |
+| `df_null` | integer, length 1 | Null model df (`model@df_null`). |
+| `dispersion` | numeric, length 1 | Dispersion parameter estimate (`σ̂²` for Gaussian; `1` for binomial/Poisson). |
+| `family` | list | The GLM family object (`model@family`). |
+| `call` | language or NULL | The `survey_glm()` call (`model@call`). |
+| `design_type` | character, length 1 | One of `"taylor"`, `"replicate"`, `"srs"`, `"twophase"`, `"calibrated"`. |
+| `degf` | numeric, length 1 | Design degrees of freedom (`model@degf`). |
+
+#### 5.2.2 `print.survey_glm_summary()` Output Format
+
+```
+Survey-weighted GLM
+
+Call:
+survey_glm(design = d, formula = y ~ x1 + x2)
+
+Deviance Residuals:
+    Min      1Q  Median      3Q     Max
+ -2.345  -0.612   0.021   0.589   2.234
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept)    3.241      0.184   17.61  < 2e-16 ***
+x1             0.612      0.089    6.88  < 2e-16 ***
+x2            -0.023      0.041   -0.56    0.581
+
+(Dispersion parameter for gaussian family taken to be 1.234)
+
+    Null deviance: 456.7 on 199 degrees of freedom (design-based)
+Residual deviance: 321.4 on 181 degrees of freedom (design-based)
+AIC: 892.3
+
+Design df: 18 (taylor series)
+```
+
+Significance stars follow standard R convention (`***` < 0.001, `**` < 0.01,
+`*` < 0.05, `.` < 0.1). Deviance residuals are computed from the working
+residuals stored in `model@residuals` (five-number summary via `fivenum()`).
+Returns `invisible(x)`.
 
 ### 5.3 `coef.survey_glm_fit(object, ...)`
 
@@ -460,14 +548,17 @@ Row and column names match `names(object@coefficients)`.
 
 ### 5.5 `predict.survey_glm_fit(object, newdata = NULL, type = "response", ...)`
 
-When `newdata = NULL`: returns `object@fitted_values` (already on the response
-scale regardless of `type`).
+When `newdata = NULL`: delegates to `stats::predict(object@fit_, type = type)`
+so the `type` argument is respected (link scale vs. response scale). Requires
+`object@fit_` to be non-`NULL`. Errors with `surveycore_error_predict_no_fit`
+if `object@fit_` is `NULL` (e.g., after deserialization that strips internal
+slots). This matches `stats::predict.glm()` behavior: `type = "response"`
+returns fitted probabilities/means; `type = "link"` returns the linear
+predictor; `type = "terms"` returns the contribution of each term.
 
 When `newdata` is a data frame: delegates to
-`stats::predict(object@fit_, newdata = newdata, type = type, ...)`. Requires
-`object@fit_` to be non-`NULL`. Errors with
-`surveycore_error_predict_no_fit` if `object@fit_` is `NULL` (e.g., after
-deserialization that strips internal slots).
+`stats::predict(object@fit_, newdata = newdata, type = type, ...)`. Same
+`object@fit_` requirement and error as above.
 
 The `type` argument is passed through: `"response"` (default), `"link"`, or
 `"terms"`. Standard predictions do not use design-based SEs; they are
@@ -490,14 +581,12 @@ Returns residuals based on `type`:
 |---|---|
 | `"response"` | `y - fitted_values` (on response scale) |
 | `"working"` | Working residuals from IRLS (`object@residuals`) |
-| `"pearson"` | `(y - fitted_values) / sqrt(var(fitted_values))` per family |
+| `"pearson"` | Delegates to `residuals(object@fit_, type = "pearson")` |
+| `"deviance"` | Delegates to `residuals(object@fit_, type = "deviance")` |
 
-For `"pearson"` and `"deviance"`, delegates to the raw `object@fit_` result.
-
-> ⚠️ **GAP:** `"deviance"` residuals require the full family deviance function
-> which lives in `object@fit_$residuals` with `type="deviance"`. This should
-> be implemented but depends on `object@fit_` being non-`NULL`. Specify in
-> implementation plan.
+For `"pearson"` and `"deviance"`, `object@fit_` must be non-`NULL`. If
+`object@fit_` is `NULL`, errors with `surveycore_error_predict_no_fit` (same
+error class used by `predict()` for the same condition).
 
 ---
 
@@ -548,7 +637,7 @@ clean <- function(
 
 | Column | Type | Description |
 |---|---|---|
-| `term` | character | Coefficient name (e.g. `"(Intercept)"`, `"x1"`, `"sexFemale"`). For reference rows: the reference level name (e.g. `"sexMale [ref]"`). |
+| `term` | character | Coefficient name (e.g. `"(Intercept)"`, `"x1"`, `"sexFemale"`). For reference rows: `paste0(var_name, ref_level, " [ref]")` where `ref_level` is derived as `setdiff(levels(model_frame[[var_name]]), colnames(contrasts(model_frame[[var_name]])))` — the factor level that does not appear as a column in the contrasts matrix. Example: factor `employment_status` with levels `c("Full-time", "Part-time")` and reference `"Full-time"` yields term `"employment_statusFull-time [ref]"`. |
 | `estimate` | double | Coefficient estimate. `NA` for reference rows. |
 | `std_error` | double | Design-based standard error. `NA` for reference rows. |
 | `statistic` | double | t-statistic (`estimate / std_error`). `NA` for reference rows. |
@@ -582,9 +671,9 @@ present; unset values `NULL`, never absent.
 | `call` | language | The `clean()` call |
 | `group_names` | character | Always `character(0)` (regression does not have groups) |
 | `group_labels` | NULL | Always `NULL` |
-| `n_observations` | integer | Number of observations used in the model fit (after `na.action`) |
+| `n_observations` | integer | Number of rows in the final model matrix after both domain filtering and `na.action`; equals `nrow(model.matrix(fit))` from the `stats::glm()` result. |
 | `degf` | numeric | Design degrees of freedom (`model@degf`) |
-| `variable_labels` | named list | One entry per predictor variable; value is the variable label from `design@metadata` or `NULL` if unlabelled |
+| `variable_labels` | named list | One entry per predictor variable. Value is the variable label string from `design@metadata` if set; otherwise the variable name itself as a character string (e.g., `list(x1 = "x1", x2 = "Age in years")` when `x2` is labelled and `x1` is not). Never `NULL` for any entry — always a named list of character strings. |
 | `converged` | logical | Whether the GLM converged (`model@converged`) |
 | `include_reference` | logical | The `include_reference` argument value |
 
@@ -659,6 +748,10 @@ This is an architecture decision: the Binder (1983) sandwich estimator
 decomposes cleanly into (a) score computation and (b) design-based variance
 of the score. Step (b) is already implemented in Phase 0.
 
+Dispatch uses an if/else chain with `S7::S7_inherits()`, following the
+pattern in `R/06-variance-dispatch.R`. No S7 method dispatch or switch
+statement.
+
 **Validation:** All variance paths must produce numerical results matching
 `survey::svyglm()` within the tolerance specified in Section VIII.
 
@@ -700,10 +793,10 @@ performance improvements are Phase 3+.
 
 ### 7.4 SRS Variance
 
-Weighted OLS sandwich:
+Weighted OLS formula:
 
 ```
-Var(β̂) = (X'WX)⁻¹ · σ̂² · (X'WX)
+Var(β̂) = σ̂² · (X'WX)⁻¹
 ```
 
 where `σ̂²` is the survey-weighted mean squared residual:
@@ -712,7 +805,10 @@ where `σ̂²` is the survey-weighted mean squared residual:
 σ̂² = Σ_i w_i e_i² / (n - p)
 ```
 
-This is the standard sandwich for equal-probability samples.
+This follows from the general Binder sandwich `I⁻¹ · Var_design(T) · I⁻¹`
+when `Var_design(T) = σ̂² (X'WX)` for iid equal-probability observations (SRS
+case). The `survey_calibrated` path uses the same formula (conservative
+approximation — see Section I).
 
 ### 7.5 Design Degrees of Freedom
 
@@ -728,6 +824,11 @@ This is the standard sandwich for equal-probability samples.
 
 GLM residual df for t-tests: `degf(design) − (p − 1)` where `p` is the number
 of coefficients including the intercept.
+
+If `df_residual` would be ≤ 0 (e.g., design with 2 PSUs and a model with 3+
+coefficients), warn with `surveycore_warning_insufficient_df` and clamp
+`df_residual = 1`. The resulting CI bounds and p-values are conservative but
+well-defined (no `NaN`). This matches `survey::svyglm()`'s fallback behavior.
 
 ---
 
@@ -847,6 +948,14 @@ test_glm_tidy_invariants <- function(result) {
   # 6. degf is positive numeric
   expect_type(m$degf, "double")
   expect_gt(m$degf, 0)
+  # 7. variable_labels is a named list of character strings (never NULL entries)
+  vl <- m$variable_labels
+  expect_type(vl, "list")
+  expect_true(length(vl) > 0 || is.null(names(vl)))  # named or empty
+  if (length(vl) > 0) {
+    expect_true(all(nzchar(names(vl))))
+    expect_true(all(vapply(vl, is.character, logical(1))))
+  }
 }
 ```
 
@@ -868,6 +977,10 @@ test_glm_tidy_invariants <- function(result) {
   has no `[ref]` suffix entries
 - `clean()`: model with no factor predictors — `include_reference` argument
   accepted without error; output unchanged
+- `clean()`: no predictors have variable labels set — `meta(result)$variable_labels`
+  is a named list where every value equals the variable name (e.g., `list(x1 = "x1")`)
+- `clean()`: all predictors have variable labels set — `meta(result)$variable_labels`
+  contains the label strings, not the variable names
 - `predict.survey_glm_fit()`: `newdata` with missing predictor columns —
   should error via standard `stats::predict()` error
 - `predict.survey_glm_fit()`: `fit_` is `NULL` — errors with
@@ -884,7 +997,7 @@ These must be added to `plans/error-messages.md` before implementation begins.
 
 | # | Function | Condition | Level | Class |
 |---|---|---|---|---|
-| P2-1 | `survey_glm()` | `design` not survey object | ERROR | `surveycore_error_not_survey_object` (reuse Phase 0 definition) |
+| P2-1 | `survey_glm()` | `design` not survey object | ERROR | `surveycore_error_unsupported_class` (reuse Phase 1 definition via `.check_unsupported_class()`) |
 | P2-2 | `survey_glm()` | `formula` missing | ERROR | `surveycore_error_formula_missing` |
 | P2-3 | `survey_glm()` | `formula` not a formula | ERROR | `surveycore_error_formula_invalid` |
 | P2-4 | `survey_glm()` | Response variable absent | ERROR | `surveycore_error_response_not_found` |
@@ -894,9 +1007,11 @@ These must be added to `plans/error-messages.md` before implementation begins.
 | P2-8 | `survey_glm()` | Perfect separation (binomial) | WARN | `surveycore_warning_perfect_separation` |
 | P2-9 | `survey_glm()` | Singular model matrix | ERROR | `surveycore_error_singular_model_matrix` |
 | P2-10 | `survey_glm()` | `@groups` on design | WARN | `surveycore_warning_groups_ignored_in_glm` |
-| P2-11 | `clean()` | `model` not `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` |
-| P2-12 | `clean()` | `conf_level` invalid | ERROR | `surveycore_error_invalid_conf_level` (reuse Phase 1 definition) |
-| P2-13 | `predict.survey_glm_fit()` | `fit_` is NULL | ERROR | `surveycore_error_predict_no_fit` |
+| P2-11 | `survey_glm()` | Weight column contains `NA` | ERROR | `surveycore_error_na_weights` |
+| P2-12 | `clean()` | `model` not `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` |
+| P2-13 | `clean()` | `conf_level` invalid | ERROR | `surveycore_error_invalid_conf_level` (reuse Phase 1 definition) |
+| P2-14 | `predict.survey_glm_fit()` | `fit_` is NULL | ERROR | `surveycore_error_predict_no_fit` |
+| P2-15 | `survey_glm()` | `df_residual ≤ 0` | WARN | `surveycore_warning_insufficient_df` |
 
 ---
 
@@ -927,8 +1042,9 @@ Phase 2 is complete when all of the following pass:
       snapshot for constructor errors; typed class only for S7 validator errors)
 - [ ] Test coverage ≥ 98% line coverage for all new Phase 2 files
 - [ ] `plans/error-messages.md` updated with Phase 2 error/warning classes
-- [ ] `degf()` function implemented in `R/07-utils.R` or a new utils file;
-      all five design classes return correct df values
+- [ ] `.degf()` in `R/09-analysis-helpers.R` returns correct df values for
+      all five design classes (oracle comparison vs. `survey::degf()` per
+      Section 8.1 Issue 26 test plan)
 - [ ] `survey_glm_summary` S3 class specified and its `print()` method works
 
 ---

@@ -158,3 +158,156 @@
 
   list(total = T_hat, se = sqrt(var_T), df = n_used - 1L)
 }
+
+
+# ===========================================================================
+# Section 4: Variance-covariance pair estimation for survey_srs and
+#            survey_calibrated (used by get_corr())
+# ===========================================================================
+
+# Compute variance-covariance pair estimates and the 3x3 meta-vcov of
+# (Var(X), Cov(X,Y), Var(Y)) for SRS designs.
+#
+# Uses the same Taylor linearization approach as .vcov_pair_taylor(), with
+# SRS structure: each observation is its own PSU in a single stratum.
+# This matches survey::svydesign(ids=~1, weights=~wt) exactly.
+#
+# @param design  A survey_srs object.
+# @param x_col  Character. Name of the first numeric variable.
+# @param y_col  Character. Name of the second numeric variable.
+# @param domain Numeric 0/1 vector (full length). Domain membership mask.
+# @param na.rm  Logical. If TRUE, exclude rows where x or y is NA.
+# @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
+#' @noRd
+.vcov_pair_srs <- function(design, x_col, y_col, domain, na.rm = TRUE) {
+  data   <- design@data
+  vars   <- design@variables
+  n_full <- nrow(data)
+  w      <- data[[vars$weights]]
+  x_all  <- data[[x_col]]
+  y_all  <- data[[y_col]]
+
+  if (na.rm) {
+    pair_mask <- domain * as.numeric(!is.na(x_all) & !is.na(y_all))
+  } else {
+    pair_mask <- domain
+  }
+
+  n_d <- as.integer(sum(pair_mask))
+  W_d <- sum(w * pair_mask)
+
+  if (n_d < 2L || W_d <= 0) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = NA_real_, b = NA_real_, c = NA_real_,
+      sigma = sigma, n = n_d, n_weighted = W_d
+    ))
+  }
+
+  x_safe <- ifelse(pair_mask > 0, x_all, 0)
+  y_safe <- ifelse(pair_mask > 0, y_all, 0)
+  xbar   <- sum(w * pair_mask * x_safe) / W_d
+  ybar   <- sum(w * pair_mask * y_safe) / W_d
+  cx     <- pair_mask * (x_safe - xbar)
+  cy     <- pair_mask * (y_safe - ybar)
+  a     <- sum(w * cx^2) / W_d
+  b     <- sum(w * cx * cy) / W_d
+  c_val <- sum(w * cy^2) / W_d
+
+  infl_a <- w * pair_mask * (cx^2 - a) / W_d
+  infl_b <- w * pair_mask * (cx * cy - b) / W_d
+  infl_c <- w * pair_mask * (cy^2 - c_val) / W_d
+
+  # SRS structure: each observation is its own PSU, all in one stratum
+  psu_id       <- seq_len(n_full)
+  strata_id    <- rep(1L, n_full)
+  sampsize_mat <- matrix(rep(n_full, n_full), ncol = 1L)
+
+  # FPC
+  fpc_var  <- vars$fpc
+  fpc_type <- vars$fpc_type
+  popsize_mat <- NULL
+  if (!is.null(fpc_var)) {
+    fpc_col <- data[[fpc_var]]
+    pop_n <- if (identical(fpc_type, "population")) {
+      mean(fpc_col, na.rm = TRUE)
+    } else {
+      n_full / mean(fpc_col, na.rm = TRUE)
+    }
+    popsize_mat <- matrix(rep(as.numeric(pop_n), n_full), ncol = 1L)
+  }
+
+  clusters_mat <- matrix(psu_id, ncol = 1L)
+  strata_mat   <- matrix(strata_id, ncol = 1L)
+  fpcs         <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  lonely.psu   <- getOption("survey.lonely.psu", "remove")
+
+  infl_mat <- cbind(infl_a, infl_b, infl_c)
+  colnames(infl_mat) <- c("a", "b", "c")
+  sigma <- .svy_recvar(
+    infl_mat, clusters_mat, strata_mat, fpcs, lonely.psu = lonely.psu
+  )
+
+  list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
+}
+
+
+# Compute variance-covariance pair estimates and the 3x3 meta-vcov of
+# (Var(X), Cov(X,Y), Var(Y)) for calibrated designs.
+#
+# Uses the HT (Horvitz-Thompson) linearization applied to in-domain rows:
+#   infl_j_i = w_i * g_j_i / W_d
+# Meta-vcov: n_d / (n_d - 1) * t(infl_mat) %*% infl_mat
+#
+# @param design  A survey_calibrated object.
+# @param x_col  Character. Name of the first numeric variable.
+# @param y_col  Character. Name of the second numeric variable.
+# @param domain Numeric 0/1 vector (full length). Domain membership mask.
+# @param na.rm  Logical. If TRUE, exclude rows where x or y is NA.
+# @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
+#' @noRd
+.vcov_pair_calibrated <- function(design, x_col, y_col, domain, na.rm = TRUE) {
+  data  <- design@data
+  vars  <- design@variables
+  x_all <- data[[x_col]]
+  y_all <- data[[y_col]]
+
+  if (na.rm) {
+    idx <- domain > 0 & !is.na(x_all) & !is.na(y_all)
+  } else {
+    idx <- domain > 0
+  }
+
+  n_d <- as.integer(sum(idx))
+
+  if (n_d < 2L) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = NA_real_, b = NA_real_, c = NA_real_,
+      sigma = sigma, n = n_d, n_weighted = 0
+    ))
+  }
+
+  w_sub <- data[[vars$weights]][idx]
+  x_sub <- x_all[idx]
+  y_sub <- y_all[idx]
+  W_d   <- sum(w_sub)
+  xbar  <- sum(w_sub * x_sub) / W_d
+  ybar  <- sum(w_sub * y_sub) / W_d
+  cx    <- x_sub - xbar
+  cy    <- y_sub - ybar
+  a     <- sum(w_sub * cx^2) / W_d
+  b     <- sum(w_sub * cx * cy) / W_d
+  c_val <- sum(w_sub * cy^2) / W_d
+
+  # HT influence functions: infl_j_i = w_i * g_j_i / W_d
+  infl_mat <- cbind(
+    w_sub * (cx^2 - a) / W_d,
+    w_sub * (cx * cy - b) / W_d,
+    w_sub * (cy^2 - c_val) / W_d
+  )
+  # Meta-vcov: n / (n-1) * t(infl) %*% infl  (HT formula)
+  sigma <- (n_d / (n_d - 1L)) * crossprod(infl_mat)
+
+  list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
+}

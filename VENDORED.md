@@ -52,6 +52,16 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 | `.twophase_phase2_var()` | Phase 2 component of `survey:::twophasevar` | 4.4.8 | Yes | S7 access; auto-popsize computation; RCPP path removed |
 | `.compute_phase2_probs()` | Internal prob computation in `survey/R/twophase.R` | 4.4.8 | Yes | S7 `@variables` access; three-priority rule made explicit |
 
+### Correlation Variance (R/06-variance-taylor.R, R/06-variance-replicate.R, R/06-variance-srs.R, R/06-variance-twophase.R)
+
+| surveycore name | Adapted from | survey version | Modified? | Notes |
+|-----------------|-------------|----------------|-----------|-------|
+| `.vcov_pair_taylor()` | `survey:::svyvar` linearization in `survey/R/surveysummary.R` | 4.4.8 | Yes | Bivariate domain-estimation; 3-column influence matrix; S7 `@variables` access |
+| `.vcov_pair_replicate()` | Replicate variance of `survey:::svyvar` | 4.4.8 | Yes | Per-replicate (Var(X), Cov(X,Y), Var(Y)) computation; 3×3 meta-vcov via matrix replicate formula |
+| `.vcov_pair_srs()` | Taylor linearization of `survey:::svyvar` applied to `svydesign(ids=~1)` | 4.4.8 | Yes | SRS structure (each obs = own PSU); delegates to `.svy_recvar()` |
+| `.vcov_pair_calibrated()` | HT linearization of `survey:::svyvar` | 4.4.8 | Yes | HT variance formula for calibrated designs; in-domain rows only |
+| `.vcov_pair_twophase()` | Two-phase linearization of `survey:::svyvar` | 4.4.8 | Yes | Polarization identity applied to `.twophasevar()` scalar calls |
+
 ## Functions to Vendor (Phase 0 Scope)
 
 The following `survey` functions are needed for Phase 0 design types. Each must

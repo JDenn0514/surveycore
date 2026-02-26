@@ -52,6 +52,7 @@ reference:
       - get_freqs
       - get_means
       - get_totals
+      - get_corr
 
   - title: "Metadata — setters"
     desc: >

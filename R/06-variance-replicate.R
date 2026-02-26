@@ -116,3 +116,100 @@
   )
   list(total = res$stat, var = res$var, se = res$se)
 }
+
+
+# ===========================================================================
+# Section 4: Variance-covariance pair estimation for survey_replicate
+# (used by get_corr())
+# ===========================================================================
+
+# Compute variance-covariance pair estimates and the 3x3 meta-vcov of
+# (Var(X), Cov(X,Y), Var(Y)) using replicate weights.
+#
+# For each replicate, the full-sample variance-covariance estimators are
+# recomputed using replicate weights, then .svy_rep_var() is generalised to
+# the matrix case: sigma[j,k] = scale * sum_r(rscales_r * dev_r[j] * dev_r[k]).
+#
+# @param design  A survey_replicate object.
+# @param x_col  Character. Name of the first numeric variable.
+# @param y_col  Character. Name of the second numeric variable.
+# @param domain Numeric 0/1 vector (full length). Domain membership mask.
+# @param na.rm  Logical. If TRUE, exclude rows where x or y is NA.
+# @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
+#' @noRd
+.vcov_pair_replicate <- function(design, x_col, y_col, domain, na.rm = TRUE) {
+  data  <- design@data
+  vars  <- design@variables
+  x_all <- data[[x_col]]
+  y_all <- data[[y_col]]
+  w     <- data[[vars$weights]]   # base/full-sample weights
+
+  if (na.rm) {
+    pair_mask <- domain * as.numeric(!is.na(x_all) & !is.na(y_all))
+  } else {
+    pair_mask <- domain
+  }
+
+  n_d <- as.integer(sum(pair_mask))
+  W_d <- sum(w * pair_mask)
+
+  if (n_d < 2L || W_d <= 0) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = NA_real_, b = NA_real_, c = NA_real_,
+      sigma = sigma, n = n_d, n_weighted = W_d
+    ))
+  }
+
+  x_safe <- ifelse(pair_mask > 0, x_all, 0)
+  y_safe <- ifelse(pair_mask > 0, y_all, 0)
+
+  # Full-sample variance-covariance estimates
+  xbar  <- sum(w * pair_mask * x_safe) / W_d
+  ybar  <- sum(w * pair_mask * y_safe) / W_d
+  cx    <- pair_mask * (x_safe - xbar)
+  cy    <- pair_mask * (y_safe - ybar)
+  a     <- sum(w * cx^2) / W_d
+  b     <- sum(w * cx * cy) / W_d
+  c_val <- sum(w * cy^2) / W_d
+
+  # Per-replicate estimates of (Var(X), Cov(X,Y), Var(Y))
+  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  n_rep   <- ncol(rep_mat)
+
+  rep_abc <- matrix(NA_real_, nrow = n_rep, ncol = 3L)
+  for (r in seq_len(n_rep)) {
+    wr   <- rep_mat[, r]
+    W_r  <- sum(wr * pair_mask)
+    if (W_r <= 0) next
+    xbar_r <- sum(wr * pair_mask * x_safe) / W_r
+    ybar_r <- sum(wr * pair_mask * y_safe) / W_r
+    cx_r   <- pair_mask * (x_safe - xbar_r)
+    cy_r   <- pair_mask * (y_safe - ybar_r)
+    rep_abc[r, 1L] <- sum(wr * cx_r^2) / W_r
+    rep_abc[r, 2L] <- sum(wr * cx_r * cy_r) / W_r
+    rep_abc[r, 3L] <- sum(wr * cy_r^2) / W_r
+  }
+
+  rscales <- if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep)
+  scale   <- vars$scale
+  mse     <- isTRUE(vars$mse)
+  coef    <- c(a, b, c_val)
+
+  # 3x3 meta-vcov: sigma[j,k] = scale * sum_r(rscales_r * dev_r[j] * dev_r[k])
+  ok <- apply(rep_abc, 1L, function(row) !any(is.na(row)))
+  if (!any(ok)) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d))
+  }
+  if (any(!ok)) {
+    rscales <- rscales[ok]
+    rep_abc <- rep_abc[ok, , drop = FALSE]
+  }
+
+  center   <- if (mse) coef else colMeans(rep_abc[rscales > 0, , drop = FALSE])
+  diff_mat <- sweep(rep_abc, 2L, center, "-")
+  sigma    <- t(diff_mat * rscales) %*% diff_mat * scale
+
+  list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
+}
