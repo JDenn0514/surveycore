@@ -121,6 +121,46 @@
 <td>Yes</td>
 <td>S7 <code>@variables</code> access; three-priority rule made explicit</td>
 </tr></tbody></table></div>
+<div class="section level3">
+<h3 id="correlation-variance-r06-variance-taylorr-r06-variance-replicater-r06-variance-srsr-r06-variance-twophaser">Correlation Variance (R/06-variance-taylor.R, R/06-variance-replicate.R, R/06-variance-srs.R, R/06-variance-twophase.R)<a class="anchor" aria-label="anchor" href="#correlation-variance-r06-variance-taylorr-r06-variance-replicater-r06-variance-srsr-r06-variance-twophaser"></a></h3>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<th>Adapted from</th>
+<th>survey version</th>
+<th>Modified?</th>
+<th>Notes</th>
+</tr></thead><tbody><tr class="odd"><td><code>.vcov_pair_taylor()</code></td>
+<td>
+<code>survey:::svyvar</code> linearization in <code>survey/R/surveysummary.R</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>Bivariate domain-estimation; 3-column influence matrix; S7 <code>@variables</code> access</td>
+</tr><tr class="even"><td><code>.vcov_pair_replicate()</code></td>
+<td>Replicate variance of <code>survey:::svyvar</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>Per-replicate (Var(X), Cov(X,Y), Var(Y)) computation; 3×3 meta-vcov via matrix replicate formula</td>
+</tr><tr class="odd"><td><code>.vcov_pair_srs()</code></td>
+<td>Taylor linearization of <code>survey:::svyvar</code> applied to <code>svydesign(ids=~1)</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>SRS structure (each obs = own PSU); delegates to <code>.svy_recvar()</code>
+</td>
+</tr><tr class="even"><td><code>.vcov_pair_calibrated()</code></td>
+<td>HT linearization of <code>survey:::svyvar</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>HT variance formula for calibrated designs; in-domain rows only</td>
+</tr><tr class="odd"><td><code>.vcov_pair_twophase()</code></td>
+<td>Two-phase linearization of <code>survey:::svyvar</code>
+</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>Polarization identity applied to <code>.twophasevar()</code> scalar calls</td>
+</tr></tbody></table></div>
 </div>
 <div class="section level2">
 <h2 id="functions-to-vendor-phase-0-scope">Functions to Vendor (Phase 0 Scope)<a class="anchor" aria-label="anchor" href="#functions-to-vendor-phase-0-scope"></a></h2>

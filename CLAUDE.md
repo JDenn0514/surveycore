@@ -43,7 +43,8 @@ vendored variance estimation code. License: GPL-3.
 - Analysis functions:
   [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
   [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
-  `get_diffs()`, `get_corr()`,
+  `get_diffs()`,
+  [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
   [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
   `get_quantiles()`, `get_ratios()`
 - Metadata getters:

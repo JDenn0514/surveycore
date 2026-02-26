@@ -70,6 +70,7 @@ use `attr(result, ".meta")` directly.
 ## See also
 
 Other analysis:
+[`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
