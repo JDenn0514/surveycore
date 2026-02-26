@@ -33,6 +33,8 @@ Compute weighted estimates with design-correct standard errors.
   : Weighted Total for a Survey Design
 - [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
   : Survey-Weighted Pearson Correlation
+- [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
+  : Survey-Weighted Quantiles
 
 ## Metadata — setters
 

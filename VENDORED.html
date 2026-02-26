@@ -161,6 +161,25 @@
 <td>Yes</td>
 <td>Polarization identity applied to <code>.twophasevar()</code> scalar calls</td>
 </tr></tbody></table></div>
+<div class="section level3">
+<h3 id="woodruff-quantile-helpers-r13-analysis-quantilesr">Woodruff Quantile Helpers (R/13-analysis-quantiles.R)<a class="anchor" aria-label="anchor" href="#woodruff-quantile-helpers-r13-analysis-quantilesr"></a></h3>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<th>Adapted from</th>
+<th>survey version</th>
+<th>Modified?</th>
+<th>Notes</th>
+</tr></thead><tbody><tr class="odd"><td><code>.last()</code></td>
+<td><code>survey:::.last</code></td>
+<td>4.4.8</td>
+<td>Minimal</td>
+<td>Renamed; identical logic</td>
+</tr><tr class="even"><td><code>.wtd_qs()</code></td>
+<td>
+<code>survey:::qs</code> with <code>survey:::qrule_math</code> inlined</td>
+<td>4.4.8</td>
+<td>Yes</td>
+<td>Renamed; <code>qrule_math</code> logic inlined as the lower-quantile rule; no lookup-table dispatch</td>
+</tr></tbody></table></div>
 </div>
 <div class="section level2">
 <h2 id="functions-to-vendor-phase-0-scope">Functions to Vendor (Phase 0 Scope)<a class="anchor" aria-label="anchor" href="#functions-to-vendor-phase-0-scope"></a></h2>
