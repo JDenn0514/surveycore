@@ -66,7 +66,13 @@
       "Bash(find:*)",
       "Bash(sleep 45 && gh pr checks 8 2>&1)",
       "Bash(sleep 60 && gh pr checks 8 2>&1)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "WebFetch(domain:r-pkgs.org)",
+      "WebFetch(domain:pkgdown.r-lib.org)",
+      "WebFetch(domain:quarto-dev.github.io)",
+      "Bash(git:*)",
+      "Bash(gh run:*)",
+      "Bash(git fetch origin && git checkout feature/phase1-freqs && git merge origin/main --no-commit 2>&1)"
     ]
   }
 }
