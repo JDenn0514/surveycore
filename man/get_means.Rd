@@ -90,7 +90,7 @@ get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
 Other analysis: 
 \code{\link{get_corr}()},
 \code{\link{get_freqs}()},
-\code{\link{get_ratios}()},
+\code{\link{get_quantiles}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

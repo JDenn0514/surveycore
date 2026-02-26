@@ -24,12 +24,17 @@ navbar:
   bg: "#e5f3f7"  # apparently this plus navbar-bg needs to be set to same color?
   pill-active: "#000000"
   structure:
-    left:  [intro, reference, news]
+    left:  [intro, articles, reference, news]
     right: [github]
   components:
     github:
       icon: fab fa-github
       href: https://github.com/JDenn0514/surveycore
+
+articles:
+  - title: "Get started"
+    contents:
+      - creating-survey-objects
 
 reference:
   - title: "Survey design constructors"
