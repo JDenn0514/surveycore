@@ -133,6 +133,7 @@ Other analysis:
 \code{\link{get_corr}()},
 \code{\link{get_means}()},
 \code{\link{get_quantiles}()},
+\code{\link{get_ratios}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

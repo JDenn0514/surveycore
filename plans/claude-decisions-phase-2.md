@@ -197,6 +197,59 @@ list of character strings (falls back to variable name).
 
 ---
 
+## 2026-02-25 — Stage 3 spec resolution (Issues 25–28)
+
+### Context
+
+Seventh batch. Issues 25–28: two REQUIRED issues (oracle test coverage,
+`.degf()` testing), one REQUIRED issue (untestable error class), and one
+REQUIRED issue (error-messages.md sync).
+
+### Questions & Decisions
+
+**Q: Should oracle test templates be written for replicate/SRS/twophase/calibrated? (Issue 25)**
+- Options considered:
+  - **[A] Write full templates for each** — verbose but unambiguous.
+  - **[B] State that other designs follow the Taylor pattern** — lean, sufficient.
+- **Decision:** Option B, with `survey_calibrated` explicitly added to the oracle
+  datasets table (user noted this design was missing entirely). Quality gate updated
+  to include `survey_calibrated` alongside Taylor, replicate, SRS, and twophase.
+  For `survey_calibrated`, the oracle uses synthetic data from `make_survey_data(seed = 42)`
+  calibrated via `survey::calibrate()` then converted with `from_svydesign()`.
+- **Rationale:** The Taylor template is a sufficient pattern reference; duplicating
+  boilerplate for each design type adds noise. But `survey_calibrated` was entirely
+  absent from the oracle table and quality gates — that gap is now closed.
+
+**Q: Should `.degf()` accuracy be independently tested? (Issue 26)**
+- **Decision:** Yes — add a test block to `test-glm-numerical.R` verifying
+  `.degf(d_sc)` matches `survey::degf(d_sv)` for all five design classes.
+- **Rationale:** Phase 2 adds new usage of `.degf()` for CI/t-test df computation;
+  the replicate formula may need validation. An explicit oracle comparison guards
+  against silent df errors propagating to CIs.
+
+**Q: How should `surveycore_error_formula_missing` be made testable? (Issue 27)**
+- Options considered:
+  - **[A] `formula = NULL` default + explicit NULL check** — testable with dual pattern.
+  - **[B] Remove the error class** — let base R's missing-argument error surface.
+- **Decision:** Option A — `formula = NULL` default + explicit `is.null(formula)` check.
+- **Rationale:** Consistent with Phase 1 pattern. Makes the error class testable
+  with `expect_error(class=)` + `expect_snapshot(error=TRUE)`. Signature updated
+  in Section 4.1; Step 1 updated in Section 4.4.
+
+**Q: Were all Phase 2 error/warning classes added to `plans/error-messages.md`? (Issue 28)**
+- **Decision:** Yes — rows 65–77 added covering all 13 new Phase 2 classes (not
+  reuses). Coverage map updated with `test-glm.R` and `test-glm-methods.R`.
+- **Rationale:** Section IX requires this before implementation begins.
+
+### Outcome
+
+Spec updated with: (1) `survey_calibrated` added to oracle datasets table and
+quality gate; "follow Taylor pattern" note for other designs, (2) `.degf()` oracle
+test described in Section 8.1, (3) `formula = NULL` + explicit NULL check in
+Section 4.1/4.4, (4) `plans/error-messages.md` updated with rows 65–77.
+
+---
+
 ## 2026-02-25 — Stage 3 spec resolution (Issues 21–24)
 
 ### Context

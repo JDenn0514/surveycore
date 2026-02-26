@@ -273,7 +273,7 @@ validator = function(self) {
 ```r
 survey_glm <- function(
   design,
-  formula,
+  formula     = NULL,
   family      = gaussian(),
   na.action   = na.omit,
   start       = NULL,
@@ -282,6 +282,11 @@ survey_glm <- function(
   control     = list()
 )
 ```
+
+`formula` has a `NULL` default so that a missing `formula` argument fires a
+typed surveycore error (`surveycore_error_formula_missing`) rather than a base
+R missing-argument error. The explicit NULL check in Step 1 makes this error
+class testable with the standard dual pattern.
 
 Argument order follows `code-style.md §4`: `design` first (required survey
 object), `formula` second (required), `family` third (required with default),
@@ -293,7 +298,7 @@ not supported. GLM control options are passed via `control`.
 | Argument | Type | Default | Description |
 |---|---|---|---|
 | `design` | `survey_base` | — | A survey design object created by `as_survey()` or family. |
-| `formula` | `formula` | — | Model formula in standard R notation, e.g. `y ~ x1 + x2`. |
+| `formula` | `formula` | `NULL` | Model formula in standard R notation, e.g. `y ~ x1 + x2`. Required — errors with `surveycore_error_formula_missing` if not supplied. |
 | `family` | glm family object | `gaussian()` | A family object specifying the error distribution and link function. Any family accepted by `stats::glm()` is supported. |
 | `na.action` | function | `na.omit` | How to handle `NA` values. `na.omit` (default) removes rows with any `NA` in the model variables. `na.fail` errors on any `NA`. |
 | `start` | numeric or NULL | `NULL` | Starting values for the coefficient vector. Passed to `stats::glm()`. |
@@ -315,6 +320,11 @@ always a complete, valid `survey_glm_fit` — the validator runs on construction
 Call `.check_unsupported_class(design, "survey_glm")` — this throws
 `surveycore_error_unsupported_class` if `design` does not inherit from
 `survey_base`, matching the pattern used by all Phase 1 analysis functions.
+
+Check `if (is.null(formula)) cli_abort(..., class = "surveycore_error_formula_missing")`.
+This check is necessary because `formula` has a `NULL` default (see Section 4.1);
+a missing formula must produce a typed surveycore error, not a base R
+missing-argument error.
 
 Validate `formula` is a formula object — error `surveycore_error_formula_invalid`
 if not.
@@ -869,8 +879,14 @@ Numerical oracle tests live in `test-glm-numerical.R` and always call
 | `survey_replicate` | `acs_pums_wy` |
 | `survey_srs` | Synthetic from `make_survey_data(design = "srs", seed = 42)` |
 | `survey_twophase` | Synthetic from `make_survey_data(design = "twophase", seed = 42)` |
+| `survey_calibrated` | Synthetic from `make_survey_data(seed = 42)`, calibrated via `survey::calibrate()` then converted with `from_svydesign()` |
 
 **Oracle test structure for each design class:**
+
+The Taylor template is shown in full below. The replicate, SRS, twophase, and
+calibrated oracle tests follow the same structure; substitute the appropriate
+design constructor, oracle dataset from the table above, and a relevant model
+formula.
 
 ```r
 test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical]", {
@@ -886,6 +902,13 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
   expect_equal(sqrt(diag(vcov(fit_sc))), SE(fit_sv),         tolerance = 1e-8)
 })
 ```
+
+Additionally, `test-glm-numerical.R` includes a test block verifying that
+`.degf()` matches `survey::degf()` for each of the five supported design
+classes. This validates the degrees-of-freedom computation used for t-tests
+and CIs across all variance paths. The block uses `skip_if_not_installed("survey")`
+and calls `.degf(d_sc)` vs `survey::degf(d_sv)` for Taylor, replicate, SRS,
+twophase, and calibrated designs.
 
 ### 8.2 Per-Function Test Categories
 
@@ -1044,7 +1067,8 @@ Phase 2 is complete when all of the following pass:
 - [ ] `devtools::check()` returns 0 errors, 0 warnings, ≤ 2 notes
 - [ ] Coefficient oracle tests pass for all five design classes within specified
       tolerances (1e-10 point, 1e-8 SE)
-- [ ] SE oracle tests pass for Taylor, replicate, SRS, and twophase designs
+- [ ] SE oracle tests pass for Taylor, replicate, SRS, twophase, and calibrated
+      designs
 - [ ] `vcov()` oracle: `diag(vcov(fit_sc))^0.5` matches `SE(fit_sv)` within 1e-8
 - [ ] `clean()` produces correct columns, correct S3 class, valid `.meta` for
       all design types
