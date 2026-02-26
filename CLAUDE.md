@@ -14,17 +14,17 @@ vendored variance estimation code. License: GPL-3.
 
 ## Current Phase Status
 
-| Phase                                                                                                            | Status         | Notes                                          |
-|------------------------------------------------------------------------------------------------------------------|----------------|------------------------------------------------|
-| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete    | Tagged v0.1.0                                  |
-| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete    | Separate `surveytidy` package                  |
-| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | ✅ Complete    | See `plans/survey-srs-formal-specification.md` |
-| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ✅ Complete    | Required before Phase 1                        |
-| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | 🚧 In progress | Branch: `feature/phase1-freqs`                 |
+| Phase                                                                                                            | Status      | Notes                                           |
+|------------------------------------------------------------------------------------------------------------------|-------------|-------------------------------------------------|
+| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete | Tagged v0.1.0                                   |
+| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete | Separate `surveytidy` package                   |
+| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | ✅ Complete | See `plans/survey-srs-formal-specification.md`  |
+| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ✅ Complete | Required before Phase 1                         |
+| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | All merged to main                              |
+| Phase 2 — Regression (`survey_glm_fit`, `survey_glm()`)                                                          | 🔜 Next     | See `plans/phase-2-glm-formal-specification.md` |
 
-**Next action:** Continue Phase 1 implementation
-(`feature/phase1-freqs`, plan at
-`plans/phase-1-implementation-plan.md`).
+**Next action:** Begin Phase 2 — Regression. Spec at
+`plans/phase-2-glm-formal-specification.md`.
 
 ------------------------------------------------------------------------
 
@@ -109,18 +109,16 @@ so this rarely bites — but keep it in mind.
 
 - `plans/error-messages.md` — canonical error/warning class names and
   CLI message templates
-- `plans/phase-1-formal-specification.md` — authoritative Phase 1 spec
-  (analysis functions)
-- `plans/phase-1-implementation-plan.md` — Phase 1 build order and PR
-  sequence
-- `plans/claude-decisions-phase-1.md` — pre-implementation review
-  decisions for Phase 1
+- `plans/phase-2-glm-formal-specification.md` — authoritative Phase 2
+  spec (regression)
+- `plans/claude-decisions-phase-2.md` — pre-implementation review
+  decisions for Phase 2
+- `plans/archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions,
+  reviews — all complete)
 - `plans/survey-srs-formal-specification.md` — authoritative spec for
   `survey_srs` class +
   [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) +
   SRS variance
-- `plans/phase-0.75-twophase-variance.md` — Phase 0.75 implementation
-  plan (two-phase variance)
 - `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl
   plan, Phase 0.5 context)
 - `.claude/rules/` — code style, testing standards, R package
