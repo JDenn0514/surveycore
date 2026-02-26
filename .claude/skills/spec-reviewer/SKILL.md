@@ -152,48 +152,9 @@ Options:
 
 ## Output Structure
 
-Organize all issues by spec section. If a section has no issues, say
-"No issues found."
+Organize all issues by spec section. If a section has no issues, say "No issues found."
 
-```markdown
-## Spec Review: [Document name or Phase]
-
-### Section: [First major section name]
-
-**Issue 1: [title]**
-Severity: BLOCKING
-...
-
-**Issue 2: [title]**
-Severity: REQUIRED
-...
-
-### Section: [Next section name]
-
-No issues found.
-
-### Section: [Another section]
-
-**Issue 3: [title]**
-Severity: SUGGESTION
-...
-
----
-
-## Summary
-
-| Severity | Count |
-|---|---|
-| BLOCKING | N |
-| REQUIRED | N |
-| SUGGESTION | N |
-
-**Total issues:** N
-
-**Overall assessment:** [One sentence — e.g., "The spec is nearly
-implementable but has two blocking ambiguities in the error contract
-that must be resolved before coding begins."]
-```
+See `refs/review-output-template.md` for the full output template and severity tier definitions.
 
 ---
 
