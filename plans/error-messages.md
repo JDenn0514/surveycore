@@ -4,7 +4,8 @@
 **Created:** February 2025
 **Status:** Authoritative — spec prose and plan templates must match this table exactly.
 
-**Phase 1 rows:** 43–53 (analysis functions)
+**Phase 1 rows:** 43–64 (analysis functions)
+**Phase 2 rows:** 65–77 (survey GLM)
 
 ---
 
@@ -93,6 +94,19 @@ against the messages defined here.
 | 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
 | 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
 | 64 | `.check_unsupported_class()`, `.build_meta()` fallback | Object does not inherit from `survey_base` (`.check_unsupported_class()`), or inherits from `survey_base` but is not one of the five supported subclasses (`.build_meta()`) | ERROR | `surveycore_error_unsupported_class` | `.check_unsupported_class()`: `"{.fn {fn_name}} requires a survey design object. Got {.cls {class(design)[[1]]}}."` / `.build_meta()`: `"Unrecognized design class {.cls {class(design)[1]}}."` |
+| 65 | `survey_glm()` | `formula` is `NULL` (not supplied by caller) | ERROR | `surveycore_error_formula_missing` | `"{.arg formula} is required."` |
+| 66 | `survey_glm()` | `formula` not a formula object | ERROR | `surveycore_error_formula_invalid` | `"{.arg formula} must be a formula object, not {.cls {class(formula)[1]}}."` |
+| 67 | `survey_glm()` | Response variable absent from `design@data` | ERROR | `surveycore_error_response_not_found` | `"Response variable {.field {resp}} not found in survey data."` |
+| 68 | `survey_glm()` | Predictor absent from `design@data` | ERROR | `surveycore_error_predictor_not_found` | `"Predictor {.field {pred}} not found in survey data. Available columns: {.field {names(design@data)}}."` |
+| 69 | `survey_glm()` | GLM did not converge | WARN | `surveycore_warning_glm_convergence` | `"{.fn survey_glm} did not converge. {.i Increase {.arg control$maxit} or simplify the model.}"` |
+| 70 | `survey_glm()` | Response is a design variable | WARN | `surveycore_warning_response_is_design_var` | `"Response variable {.field {resp}} is a design variable ({.field {role}}). Results may be misleading."` |
+| 71 | `survey_glm()` | Perfect separation (binomial family) | WARN | `surveycore_warning_perfect_separation` | `"Fitted probabilities are numerically 0 or 1. Perfect or quasi-complete separation may have occurred."` |
+| 72 | `survey_glm()` | Singular or aliased model matrix | ERROR | `surveycore_error_singular_model_matrix` | `"Model matrix is singular. Check for perfect collinearity or empty factor levels."` |
+| 73 | `survey_glm()` | `@groups` set on design | WARN | `surveycore_warning_groups_ignored_in_glm` | `"{.fn survey_glm} does not support grouped designs. The {.field @groups} property is ignored. Use {.fn surveytidy::group_by} after fitting to group results."` |
+| 74 | `survey_glm()` | Weight column contains `NA` | ERROR | `surveycore_error_na_weights` | `"Weight column {.field {wt_var}} contains {sum(is.na(wt))} NA value(s). Survey weights must be fully observed. Remove rows with missing weights or impute before calling {.fn survey_glm}."` |
+| 75 | `clean()` | `model` not a `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` | `"{.arg model} must be a {.cls survey_glm_fit} object, not {.cls {class(model)[1]}}."` |
+| 76 | `predict.survey_glm_fit()`, `residuals.survey_glm_fit()` | `fit_` slot is `NULL` | ERROR | `surveycore_error_predict_no_fit` | `"The internal {.field fit_} slot is NULL. This can happen after serialization. Refit the model to restore prediction support."` |
+| 77 | `survey_glm()` | `df_residual` would be ≤ 0 | WARN | `surveycore_warning_insufficient_df` | `"Design degrees of freedom ({degf}) minus model parameters ({p - 1}) is ≤ 0. Clamping {.code df_residual = 1}. CI bounds and p-values are conservative."` |
 
 ---
 
@@ -143,3 +157,5 @@ Which test files cover which error table rows:
 | `test-analysis-corr.R` | 43, 44, 45, 45a, 46, 49, 50, 51, 54 |
 | `test-analysis-quantiles.R` | 45, 45a, 46, 47, 49, 50, 54 |
 | `test-analysis-ratios.R` | 43, 45, 45a, 46, 48, 49, 50, 54 |
+| `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74 (Layer 3 dual pattern), 77; S7 validator errors in Section 3.3 (class= only, not in this table) |
+| `test-glm-methods.R` | 76 |

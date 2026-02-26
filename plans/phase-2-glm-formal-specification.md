@@ -136,6 +136,14 @@ score vector) and `info = X'WX / n` (the weighted information matrix).
 Constructs the `.meta` list for a `survey_glm_tidy` result. Returns a named
 list with all required keys always present (unset values `NULL`, never absent).
 
+Family and link extraction: `model@family$family` gives the family name string
+(e.g., `"gaussian"`, `"binomial"`, `"poisson"`, `"Gamma"`) and
+`model@family$link` gives the link function string (e.g., `"identity"`,
+`"logit"`, `"log"`, `"inverse"`). These `$family` and `$link` fields are
+present on every R family object — this works for all families accepted by
+`stats::glm()`, not just Gaussian. Do not use `class(model@family)` (returns
+`"function"`) or `model@family$family()` (a function call, not a string).
+
 #### `.taylor_var_score_matrix(score_matrix, design)`
 
 Computes the design-based variance of the total score vector for the Taylor
@@ -265,7 +273,7 @@ validator = function(self) {
 ```r
 survey_glm <- function(
   design,
-  formula,
+  formula     = NULL,
   family      = gaussian(),
   na.action   = na.omit,
   start       = NULL,
@@ -274,6 +282,11 @@ survey_glm <- function(
   control     = list()
 )
 ```
+
+`formula` has a `NULL` default so that a missing `formula` argument fires a
+typed surveycore error (`surveycore_error_formula_missing`) rather than a base
+R missing-argument error. The explicit NULL check in Step 1 makes this error
+class testable with the standard dual pattern.
 
 Argument order follows `code-style.md §4`: `design` first (required survey
 object), `formula` second (required), `family` third (required with default),
@@ -285,7 +298,7 @@ not supported. GLM control options are passed via `control`.
 | Argument | Type | Default | Description |
 |---|---|---|---|
 | `design` | `survey_base` | — | A survey design object created by `as_survey()` or family. |
-| `formula` | `formula` | — | Model formula in standard R notation, e.g. `y ~ x1 + x2`. |
+| `formula` | `formula` | `NULL` | Model formula in standard R notation, e.g. `y ~ x1 + x2`. Required — errors with `surveycore_error_formula_missing` if not supplied. |
 | `family` | glm family object | `gaussian()` | A family object specifying the error distribution and link function. Any family accepted by `stats::glm()` is supported. |
 | `na.action` | function | `na.omit` | How to handle `NA` values. `na.omit` (default) removes rows with any `NA` in the model variables. `na.fail` errors on any `NA`. |
 | `start` | numeric or NULL | `NULL` | Starting values for the coefficient vector. Passed to `stats::glm()`. |
@@ -307,6 +320,11 @@ always a complete, valid `survey_glm_fit` — the validator runs on construction
 Call `.check_unsupported_class(design, "survey_glm")` — this throws
 `surveycore_error_unsupported_class` if `design` does not inherit from
 `survey_base`, matching the pattern used by all Phase 1 analysis functions.
+
+Check `if (is.null(formula)) cli_abort(..., class = "surveycore_error_formula_missing")`.
+This check is necessary because `formula` has a `NULL` default (see Section 4.1);
+a missing formula must produce a typed surveycore error, not a base R
+missing-argument error.
 
 Validate `formula` is a formula object — error `surveycore_error_formula_invalid`
 if not.
@@ -822,6 +840,10 @@ approximation — see Section I).
 | `survey_twophase` | Phase-1 design degrees of freedom |
 | `survey_calibrated` | Same as `survey_srs` |
 
+`.degf()` always uses the full design (all rows), not the in-domain subset.
+This is consistent with the domain estimation contract in Section 4.5:
+variance estimation uses the full design regardless of domain membership.
+
 GLM residual df for t-tests: `degf(design) − (p − 1)` where `p` is the number
 of coefficients including the intercept.
 
@@ -857,8 +879,14 @@ Numerical oracle tests live in `test-glm-numerical.R` and always call
 | `survey_replicate` | `acs_pums_wy` |
 | `survey_srs` | Synthetic from `make_survey_data(design = "srs", seed = 42)` |
 | `survey_twophase` | Synthetic from `make_survey_data(design = "twophase", seed = 42)` |
+| `survey_calibrated` | Synthetic from `make_survey_data(seed = 42)`, calibrated via `survey::calibrate()` then converted with `from_svydesign()` |
 
 **Oracle test structure for each design class:**
+
+The Taylor template is shown in full below. The replicate, SRS, twophase, and
+calibrated oracle tests follow the same structure; substitute the appropriate
+design constructor, oracle dataset from the table above, and a relevant model
+formula.
 
 ```r
 test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical]", {
@@ -874,6 +902,13 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
   expect_equal(sqrt(diag(vcov(fit_sc))), SE(fit_sv),         tolerance = 1e-8)
 })
 ```
+
+Additionally, `test-glm-numerical.R` includes a test block verifying that
+`.degf()` matches `survey::degf()` for each of the five supported design
+classes. This validates the degrees-of-freedom computation used for t-tests
+and CIs across all variance paths. The block uses `skip_if_not_installed("survey")`
+and calls `.degf(d_sc)` vs `survey::degf(d_sv)` for Taylor, replicate, SRS,
+twophase, and calibrated designs.
 
 ### 8.2 Per-Function Test Categories
 
@@ -892,7 +927,11 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
    predictors, `meta(clean(fit))$variable_labels` contains those labels.
 6. **`broom::tidy()` compatibility** — `broom::tidy(fit)` returns same object
    as `clean(fit)` (`skip_if_not_installed("broom")`).
-7. **Error paths** — every row in Section 4.7 and 6.5 error tables.
+7. **Error paths** — every row in Sections 4.7 and 6.5 error tables. User-facing
+   constructor errors (Layer 3) use the dual pattern:
+   `expect_error(class = "surveycore_error_...")` + `expect_snapshot(error = TRUE)`.
+   S7 validator errors (Section 3.3, Layer 1) use `class=` only — no snapshot.
+   Per `testing-surveycore.md §S7 error testing layers`.
 8. **Convergence warning** — force non-convergence; verify
    `surveycore_warning_glm_convergence` fires and fit is still returned.
 9. **`@groups` warning** — group_by() design triggers
@@ -900,6 +939,12 @@ test_that("survey_glm() coefficients match svyglm() for Taylor design [numerical
 10. **Domain estimation** — `surveytidy::filter()` domain is used in fitting;
     verify coefficient differs from full-sample fit
     (`skip_if_not_installed("surveytidy")`).
+11. **S7 validator errors** — one `test_that()` block per condition in Section
+    3.3 (7 conditions: empty `coefficients`; wrong `vcov` dimensions; empty
+    `fitted_values`; `residuals` length mismatch; `weights` length mismatch;
+    `degf` not positive length-1; `formula` non-formula object). Each uses
+    `expect_error(class = ...)` only — no snapshot, per `testing-surveycore.md`
+    Layer 1 error pattern.
 
 **`test-glm-methods.R`** covers S3 methods:
 
@@ -1022,7 +1067,8 @@ Phase 2 is complete when all of the following pass:
 - [ ] `devtools::check()` returns 0 errors, 0 warnings, ≤ 2 notes
 - [ ] Coefficient oracle tests pass for all five design classes within specified
       tolerances (1e-10 point, 1e-8 SE)
-- [ ] SE oracle tests pass for Taylor, replicate, SRS, and twophase designs
+- [ ] SE oracle tests pass for Taylor, replicate, SRS, twophase, and calibrated
+      designs
 - [ ] `vcov()` oracle: `diag(vcov(fit_sc))^0.5` matches `SE(fit_sv)` within 1e-8
 - [ ] `clean()` produces correct columns, correct S3 class, valid `.meta` for
       all design types

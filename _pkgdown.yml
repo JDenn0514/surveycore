@@ -34,6 +34,7 @@ navbar:
 articles:
   - title: "Get started"
     contents:
+      - getting-started
       - creating-survey-objects
 
 reference:
@@ -59,6 +60,7 @@ reference:
       - get_totals
       - get_corr
       - get_quantiles
+      - get_ratios
 
   - title: "Metadata — setters"
     desc: >

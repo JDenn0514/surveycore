@@ -121,3 +121,165 @@ Spec updated with: (1) `formula` type check in S7 validator, (2) explicit
 new `surveycore_error_na_weights` class. Error table renumbered to 14 entries.
 
 ---
+
+## 2026-02-25 — Stage 3 spec resolution (Issues 13–16)
+
+### Context
+
+Fourth batch. Issues 13–16: two REQUIRED issues (df floor, complex LHS) and
+two REQUIRED issues (predict type, deviance residuals).
+
+### Questions & Decisions
+
+**Q: How should negative `df_residual` be handled? (Issue 13)**
+- Options considered:
+  - **[A] Warn + clamp to 1:** Conservative CIs; no `NaN`. Matches `survey::svyglm()`.
+  - **[B] Error:** Force user to reduce predictors.
+- **Decision:** Option A — warn with `surveycore_warning_insufficient_df`, clamp `df_residual = 1`. Added as P2-15.
+- **Rationale:** Silent `NaN` is worse than conservative estimates; warning preserves usability.
+
+**Q: How should response variable extraction handle in-formula transforms? (Issue 14)**
+- **Decision:** Use `all.vars(formula[[2]])` to extract all variable names referenced in the LHS. Document `cbind()` LHS as unsupported (multinomial deferred).
+- **Rationale:** `as.character(formula[[2]])` fails for `log(y) ~ x`; `all.vars()` is the standard R idiom for extracting variable names from expressions.
+
+**Q: Should `predict(newdata = NULL, type = "link")` respect `type`? (Issue 15)**
+- **Decision:** Yes — delegate to `stats::predict(object@fit_, type = type)` for both `newdata = NULL` and `newdata` cases. `object@fitted_values` shortcut removed.
+- **Rationale:** Matches base R behavior; `type = "link"` must return link-scale values.
+
+**Q: Should `residuals(type = "deviance")` be supported? (Issue 16)**
+- **Decision:** Yes — add `"deviance"` to the residuals table, delegating to `residuals(object@fit_, type = "deviance")`. GAP note removed.
+- **Rationale:** Trivially available from `object@fit_`; standard residual type users expect.
+
+### Outcome
+
+Spec updated with: (1) `df_residual` floor rule + P2-15, (2) `all.vars()`
+response extraction with `cbind()` documented as unsupported, (3) `predict()`
+always delegates to `stats::predict()` respecting `type`, (4) deviance
+residuals added to Section 5.7.
+
+---
+
+## 2026-02-25 — Stage 3 spec resolution (Issues 17–20)
+
+### Context
+
+Fifth batch. Issues 17–20: one BLOCKING (survey_glm_summary undefined),
+two REQUIRED (term format, n_observations), one REQUIRED with user correction
+(variable_labels fallback).
+
+### Questions & Decisions
+
+**Q: Specify `survey_glm_summary` class structure? (Issue 17)**
+- **Decision:** Option A — added Section 5.2.1 with a 10-field table and `print.survey_glm_summary()` output format. Fields: `coefficients`, `deviance`, `null_deviance`, `df_residual`, `df_null`, `dispersion`, `family`, `call`, `design_type`, `degf`.
+- **Rationale:** Last blocking gap; implementer cannot write `summary()` or its tests without this.
+
+**Q: Exact algorithm for reference row `term` column? (Issue 18)**
+- **Decision:** `paste0(var_name, ref_level, " [ref]")` where `ref_level = setdiff(levels(col), colnames(contrasts(col)))`. Worked example with `employment_status` factor added.
+- **Rationale:** Follows R's factor dummy coding convention exactly; algorithm is deterministic and testable.
+
+**Q: What does `n_observations` count after domain + na.action? (Issue 19)**
+- **Decision:** `nrow(model.matrix(fit))` — after both domain filtering and `na.action`.
+- **Rationale:** This is the actual GLM input size, unambiguous and directly readable from the fitted model.
+
+**Q: What is `variable_labels` when no labels are set? (Issue 20)**
+- Options considered:
+  - **[A] Named list with `NULL` values:** `list(x1 = NULL, x2 = NULL)`
+  - **[User direction] Named list with variable name as value:** `list(x1 = "x1", x2 = "x2")`
+- **Decision:** User-specified: values fall back to the variable name string itself. Never `NULL` for any entry.
+- **Rationale:** Provides a usable display label even when no metadata is set; avoids NULL-checking downstream.
+
+### Outcome
+
+Spec updated with: (1) full `survey_glm_summary` structure + print format,
+(2) explicit reference-term algorithm with worked example, (3) `n_observations`
+defined as `nrow(model.matrix(fit))`, (4) `variable_labels` always a named
+list of character strings (falls back to variable name).
+
+---
+
+## 2026-02-25 — Stage 3 spec resolution (Issues 25–28)
+
+### Context
+
+Seventh batch. Issues 25–28: two REQUIRED issues (oracle test coverage,
+`.degf()` testing), one REQUIRED issue (untestable error class), and one
+REQUIRED issue (error-messages.md sync).
+
+### Questions & Decisions
+
+**Q: Should oracle test templates be written for replicate/SRS/twophase/calibrated? (Issue 25)**
+- Options considered:
+  - **[A] Write full templates for each** — verbose but unambiguous.
+  - **[B] State that other designs follow the Taylor pattern** — lean, sufficient.
+- **Decision:** Option B, with `survey_calibrated` explicitly added to the oracle
+  datasets table (user noted this design was missing entirely). Quality gate updated
+  to include `survey_calibrated` alongside Taylor, replicate, SRS, and twophase.
+  For `survey_calibrated`, the oracle uses synthetic data from `make_survey_data(seed = 42)`
+  calibrated via `survey::calibrate()` then converted with `from_svydesign()`.
+- **Rationale:** The Taylor template is a sufficient pattern reference; duplicating
+  boilerplate for each design type adds noise. But `survey_calibrated` was entirely
+  absent from the oracle table and quality gates — that gap is now closed.
+
+**Q: Should `.degf()` accuracy be independently tested? (Issue 26)**
+- **Decision:** Yes — add a test block to `test-glm-numerical.R` verifying
+  `.degf(d_sc)` matches `survey::degf(d_sv)` for all five design classes.
+- **Rationale:** Phase 2 adds new usage of `.degf()` for CI/t-test df computation;
+  the replicate formula may need validation. An explicit oracle comparison guards
+  against silent df errors propagating to CIs.
+
+**Q: How should `surveycore_error_formula_missing` be made testable? (Issue 27)**
+- Options considered:
+  - **[A] `formula = NULL` default + explicit NULL check** — testable with dual pattern.
+  - **[B] Remove the error class** — let base R's missing-argument error surface.
+- **Decision:** Option A — `formula = NULL` default + explicit `is.null(formula)` check.
+- **Rationale:** Consistent with Phase 1 pattern. Makes the error class testable
+  with `expect_error(class=)` + `expect_snapshot(error=TRUE)`. Signature updated
+  in Section 4.1; Step 1 updated in Section 4.4.
+
+**Q: Were all Phase 2 error/warning classes added to `plans/error-messages.md`? (Issue 28)**
+- **Decision:** Yes — rows 65–77 added covering all 13 new Phase 2 classes (not
+  reuses). Coverage map updated with `test-glm.R` and `test-glm-methods.R`.
+- **Rationale:** Section IX requires this before implementation begins.
+
+### Outcome
+
+Spec updated with: (1) `survey_calibrated` added to oracle datasets table and
+quality gate; "follow Taylor pattern" note for other designs, (2) `.degf()` oracle
+test described in Section 8.1, (3) `formula = NULL` + explicit NULL check in
+Section 4.1/4.4, (4) `plans/error-messages.md` updated with rows 65–77.
+
+---
+
+## 2026-02-25 — Stage 3 spec resolution (Issues 21–24)
+
+### Context
+
+Sixth batch. Issues 21–24: one SUGGESTION (family extraction) and three
+REQUIRED issues (degf domain behavior, validator tests, dual test pattern).
+
+### Questions & Decisions
+
+**Q: How is family name extracted for `.build_glm_meta()`? (Issue 21)**
+- **Decision:** `model@family$family` for family name, `model@family$link` for link name. These fields exist on every R family object — confirmed for gaussian, binomial, Poisson, Gamma, and all other families accepted by `stats::glm()`.
+- **Rationale:** Explicit extraction path avoids implementer guessing `class(model@family)` (returns `"function"`) or similar wrong approaches.
+
+**Q: Does `degf()` use full design or in-domain rows when domain is active? (Issue 22)**
+- **Decision:** Full design always — consistent with the domain estimation contract in Section 4.5.
+- **Rationale:** Design-based inference uses full-design variance; domain membership affects fitting only, not the variance frame.
+
+**Q: Add S7 validator error tests to test plan? (Issue 23)**
+- **Decision:** Yes — item 11 added to `test-glm.R` covering all 7 validator conditions with `class=` only (no snapshot), per Layer 1 pattern.
+- **Rationale:** 98%+ coverage requirement; validator branches are non-trivial and must be explicitly tested.
+
+**Q: Clarify dual error-test pattern in test plan? (Issue 24)**
+- **Decision:** Item 7 updated to spell out: Layer 3 (constructor) errors use dual pattern; Layer 1 (S7 validator) errors use `class=` only. `testing-surveycore.md` cited.
+- **Rationale:** Removes ambiguity; prevents implementer from writing only one assertion for constructor errors.
+
+### Outcome
+
+Spec updated with: (1) explicit `$family`/`$link` extraction note covering all
+families, (2) degf full-design-always rule at top of Section 7.5, (3) test
+plan item 11 for validator errors, (4) item 7 updated with dual pattern + layer
+distinction.
+
+---

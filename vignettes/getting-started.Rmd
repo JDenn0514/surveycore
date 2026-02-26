@@ -1,0 +1,381 @@
+---
+title: "Getting Started with surveycore"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+bibliography: references.bib
+link-citations: yes
+vignette: >
+  %\VignetteIndexEntry{Getting Started with surveycore}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+library(surveycore)
+knitr::opts_chunk$set(
+  comment = "#>"
+)
+```
+
+surveycore gives you a complete workflow for survey data analysis: design
+objects that encode how your data were collected, analysis functions that
+apply those designs when computing estimates, and a tidyverse-compatible
+interface that plugs into familiar tools.
+
+This vignette is a practical walkthrough — data to estimates in as few steps
+as possible. We will use `nhanes_2017`, a stratified probability cluster
+sample, as our running example throughout.
+
+For a deep dive on *creating* survey design objects — choosing the right
+constructor, handling replicate weights, two-phase designs, and non-probability
+panels — see `vignette("creating-survey-objects")`.
+
+---
+
+## 1. Create a survey design
+
+Every analysis function takes a **survey design object** as its first argument.
+The design object captures how the data were collected so that point estimates
+and standard errors are computed correctly.
+
+```{r design}
+# NHANES: stratified cluster design using Taylor series linearization.
+# Subset to MEC exam participants before using the exam weight (wtmec2yr).
+nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
+
+svy <- as_survey(
+  nhanes_exam,
+  ids     = sdmvpsu,   # cluster ID
+  strata  = sdmvstra,  # stratum
+  weights = wtmec2yr,  # examination weight
+  nest    = TRUE       # PSU IDs are locally unique within strata
+)
+svy
+```
+
+`as_survey()` is the right constructor for probability surveys with cluster
+and stratum information. `nest = TRUE` is needed here because NHANES assigns
+PSU IDs (1 and 2) locally within each stratum, not globally across the
+dataset. Use `vignette("creating-survey-objects")` to find the right
+constructor for your survey.
+
+---
+
+## 2. Frequency tables — `get_freqs()`
+
+`get_freqs()` estimates the weighted distribution of one or more categorical
+variables. Pass a bare column name as the second argument.
+
+```{r freqs-basic}
+# Distribution of sex (1 = Male, 2 = Female)
+get_freqs(svy, riagendr)
+```
+
+The result is a `survey_freqs` tibble. `pct` is the survey-weighted percentage;
+`n` is the unweighted cell count.
+
+### Confidence intervals and margins of error
+
+Add uncertainty columns with the `variance` argument. Any combination of
+`"se"`, `"ci"`, `"moe"`, `"var"`, `"cv"`, or `"deff"` is supported.
+
+```{r freqs-variance}
+get_freqs(svy, riagendr, variance = c("ci", "moe"))
+```
+
+`ci_low` / `ci_high` are 95% Wilson-score confidence interval bounds.
+`moe` is the margin of error at the specified confidence level
+($\pm \mathrm{MOE}$ gives the half-width of the CI).
+
+### Multiple variables at once
+
+Pass a `c()` of variable names to get a stacked long-format frequency table.
+
+```{r freqs-multi}
+# Race/ethnicity (ridreth3) and sex (riagendr) in one call
+get_freqs(svy, c(riagendr, ridreth3))
+```
+
+The `name` column identifies which variable each row belongs to; `value`
+holds the response code.
+
+### Including `NA` as a level
+
+By default `na.rm = TRUE` drops missing values before computing
+percentages. Set `na.rm = FALSE` to include `NA` as a level:
+
+```{r freqs-na}
+get_freqs(svy, dmdeduc2, na.rm = FALSE)
+```
+
+---
+
+## 3. Weighted means — `get_means()`
+
+`get_means()` estimates the survey-weighted mean of a continuous variable.
+
+```{r means-basic}
+# Mean systolic blood pressure
+get_means(svy, bpxsy1)
+```
+
+The default output includes the mean and 95% confidence interval. Supply
+`variance = "se"` to replace the CI with a standard error, or combine
+options:
+
+```{r means-variance}
+get_means(svy, bpxsy1, variance = c("se", "ci", "deff"))
+```
+
+`deff` is the design effect — the ratio of the complex-design variance to the
+variance under simple random sampling. Values above 1 indicate that clustering
+and/or stratification inflates sampling uncertainty compared to SRS.
+
+---
+
+## 4. Population totals — `get_totals()`
+
+`get_totals()` estimates the weighted sum: the total count or aggregate for
+the target population.
+
+### Population size
+
+Called without a variable argument, `get_totals()` estimates the total
+number of persons (or units) the sample represents — the sum of the survey
+weights.
+
+```{r totals-pop}
+# Estimated U.S. civilian non-institutionalized population, 2017-2018 (exam)
+get_totals(svy)
+```
+
+### Variable total
+
+Pass a numeric column to estimate its population total.
+
+```{r totals-var}
+# Estimated total pulse (bpxpls) across the population
+get_totals(svy, bpxpls)
+```
+
+---
+
+## 5. Subgroup analysis — the `group` argument
+
+Every analysis function accepts a `group` argument for computing estimates
+separately within levels of a categorical variable. Pass a bare column name
+or a `c()` of names.
+
+```{r group-means}
+# Mean systolic blood pressure by sex
+get_means(svy, bpxsy1, group = riagendr)
+```
+
+```{r group-totals}
+# Population size by race/ethnicity
+get_totals(svy, group = ridreth3)
+```
+
+```{r group-freqs}
+# Education distribution by sex
+get_freqs(svy, dmdeduc2, group = riagendr)
+```
+
+Rows where the grouping variable is `NA` are excluded from all groups and do
+not appear in the output. Responses within each group sum to 100% for
+`get_freqs()`.
+
+---
+
+## 6. Ratio estimation — `get_ratios()`
+
+`get_ratios()` estimates the ratio of two weighted totals:
+
+$$\hat{R} = \frac{\sum_i w_i \, y_i}{\sum_i w_i \, x_i}$$
+
+Variance is estimated via the delta method (linearization), equivalent to
+`survey::svyratio()` [@lumley2010].
+
+```{r ratios}
+# Ratio of systolic to diastolic blood pressure
+get_ratios(svy, numerator = bpxsy1, denominator = bpxdi1)
+```
+
+Ratios are useful when you want an estimate that is invariant to the scale of
+the weights — for example, wages per hour, spending per household member, or
+disease prevalence ratios.
+
+```{r ratios-grouped}
+# Systolic/diastolic ratio by sex
+get_ratios(svy, bpxsy1, bpxdi1, group = riagendr)
+```
+
+---
+
+## 7. Weighted correlations — `get_corr()`
+
+`get_corr()` estimates survey-weighted Pearson correlations between two or
+more continuous variables. Confidence intervals use the Fisher Z
+transformation, guaranteeing bounds in (−1, 1).
+
+```{r corr-basic}
+# Correlation between systolic BP and diastolic BP
+get_corr(svy, c(bpxsy1, bpxdi1))
+```
+
+Pass three or more variables for a pairwise correlation matrix in long format:
+
+```{r corr-multi}
+get_corr(svy, c(bpxsy1, bpxdi1, bpxpls))
+```
+
+Each row is a unique variable pair. `r` is the weighted correlation, `p_value`
+is from a two-tailed t-test, and `df = n - 2` are the degrees of freedom.
+
+Switch to wide format for a more familiar correlation-matrix layout:
+
+```{r corr-wide}
+get_corr(svy, c(bpxsy1, bpxdi1, bpxpls), format = "wide")
+```
+
+---
+
+## 8. Controlling uncertainty output
+
+All analysis functions share a common `variance` argument. You can request
+any combination of:
+
+| Code   | What it returns                                     |
+|--------|-----------------------------------------------------|
+| `"se"` | Standard error                                      |
+| `"ci"` | Confidence interval: `ci_low`, `ci_high`            |
+| `"var"`| Variance (square of the SE)                         |
+| `"cv"` | Coefficient of variation (SE / estimate)            |
+| `"moe"`| Margin of error at `conf_level`                     |
+| `"deff"` | Design effect (complex design variance / SRS variance) |
+
+The `conf_level` argument controls the confidence level for `"ci"` and
+`"moe"`. The default is `0.95`; for a 90% CI:
+
+```{r variance-options}
+get_means(svy, bpxsy1, variance = c("se", "ci", "moe"), conf_level = 0.90)
+```
+
+Set `variance = NULL` to suppress all uncertainty columns and return point
+estimates and sample counts only.
+
+### Estimated population counts
+
+Add `n_weighted = TRUE` to any function to include the estimated population
+count — the sum of weights — alongside the unweighted sample count `n`.
+
+```{r n-weighted}
+get_means(svy, bpxsy1, n_weighted = TRUE)
+```
+
+### Tidyverse-compatible output names
+
+By default surveycore uses its own column names (`mean`, `se`, `ci_low`,
+`ci_high`, etc.). Set `name_style = "broom"` to use names compatible with
+**broom** and **modelsummary** (`estimate`, `std.error`, `conf.low`,
+`conf.high`):
+
+```{r broom-style}
+get_means(svy, bpxsy1, name_style = "broom")
+```
+
+---
+
+## 9. surveytidy integration
+
+The **surveytidy** package provides dplyr verbs — `filter()`, `select()`,
+`mutate()`, and `group_by()` — that work directly on survey design objects.
+Install it with:
+
+```r
+pak::pak("jacobdennen/surveytidy")
+```
+
+```{r surveytidy-check, include=FALSE}
+has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
+```
+
+### Domain estimation with `filter()`
+
+A common pattern in survey analysis is computing an estimate for a
+*subpopulation* — adults aged 60 and over, a particular racial group, one
+treatment arm of a study. **Do not physically subset the data frame before
+building the design object.** Removing rows changes the cluster and stratum
+structure and produces incorrect standard errors [@lumley2010, ch. 4].
+
+Use `filter()` instead. It marks rows as outside the domain while keeping
+them in the design object so that the cluster structure remains intact:
+
+```{r surveytidy-filter, eval=has_surveytidy}
+library(surveytidy)
+
+# Mean systolic BP for adults aged 60 and older
+# The full cluster/strata structure is preserved for correct SEs
+svy |>
+  filter(ridageyr >= 60) |>
+  get_means(bpxsy1)
+```
+
+### Derived variables with `mutate()`
+
+`mutate()` creates new columns that are available to subsequent analysis
+functions while preserving the survey design:
+
+```{r surveytidy-mutate, eval=has_surveytidy}
+# Create a hypertension indicator and estimate its prevalence
+svy |>
+  mutate(hypertension = bpxsy1 >= 130 | bpxdi1 >= 80) |>
+  get_freqs(hypertension)
+```
+
+### Grouped analysis with `group_by()`
+
+`group_by()` sets persistent grouping that is applied by all downstream
+analysis functions — useful when you want multiple estimates from the same
+grouped design:
+
+```{r surveytidy-groupby, eval=has_surveytidy}
+# Compute both means and frequencies for each sex group
+svy_by_sex <- svy |> group_by(riagendr)
+
+get_means(svy_by_sex, bpxsy1)
+get_freqs(svy_by_sex, ridreth3)
+```
+
+You can also use the `group` argument directly in each function call, which
+is equivalent and does not require surveytidy:
+
+```{r group-equivalent}
+# These two calls produce identical output:
+get_means(svy, bpxsy1, group = riagendr)
+```
+
+---
+
+## Summary
+
+| Function | Use for |
+|---|---|
+| `get_freqs()` | Categorical variables — weighted distributions, percentages |
+| `get_means()` | Continuous variables — weighted means |
+| `get_totals()` | Population counts or aggregates — weighted sums |
+| `get_ratios()` | Ratios of two weighted totals |
+| `get_corr()` | Pairwise Pearson correlations |
+
+All functions:
+- Return a tibble subclass ready for further analysis or display
+- Accept a `group` argument for subgroup estimates
+- Accept a `variance` argument to control which uncertainty columns appear
+- Handle all five survey design classes: `survey_taylor`, `survey_replicate`,
+  `survey_srs`, `survey_twophase`, and `survey_calibrated`
+
+---
+
+## References
