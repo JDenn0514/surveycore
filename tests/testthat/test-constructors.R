@@ -1452,20 +1452,23 @@ test_that("as_survey_calibrated() warns for single-row data", {
 test_that("get_means() returns SRS-based estimate for survey_calibrated", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
   d  <- as_survey_calibrated(df, weights = w)
-  result <- get_means(d, y)
-  expect_equal(result$variable, "y")
-  expect_true(is.numeric(result$mean))
-  expect_true(is.numeric(result$se))
-  expect_true(result$se >= 0)
+  result <- get_means(d, y, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_identical(meta(result)$variable, "y")
+  expect_true(is.numeric(result$mean[[1L]]))
+  expect_true(is.numeric(result$se[[1L]]))
+  expect_gte(result$se[[1L]], 0)
 })
 
 test_that("get_totals() returns SRS-based estimate for survey_calibrated", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
   d  <- as_survey_calibrated(df, weights = w)
-  result <- get_totals(d, y)
-  expect_equal(result$variable, "y")
-  expect_true(is.numeric(result$total))
-  expect_true(is.numeric(result$se))
+  result <- get_totals(d, y, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_identical(meta(result)$variable, "y")
+  expect_true(is.numeric(result$total[[1L]]))
+  expect_true(is.numeric(result$se[[1L]]))
+  expect_gte(result$se[[1L]], 0)
 })
 
 # ── Print ──────────────────────────────────────────────────────────────────────
@@ -1600,9 +1603,9 @@ test_that("get_means() returns analytically correct weighted mean and SRS SE for
   z             <- df$w * (df$y - expected_mean) / sum(df$w)
   expected_se   <- sqrt((n / (n - 1L)) * sum(z^2))
 
-  result <- get_means(d, y)
-  expect_equal(result$mean, expected_mean, tolerance = 1e-10)
-  expect_equal(result$se,   expected_se,   tolerance = 1e-8)
+  result <- get_means(d, y, variance = "se")
+  expect_equal(result$mean[[1L]], expected_mean, tolerance = 1e-10)
+  expect_equal(result$se[[1L]],   expected_se,   tolerance = 1e-8)
 })
 
 test_that("get_totals() returns analytically correct weighted total and SRS SE for survey_calibrated", {
@@ -1619,9 +1622,9 @@ test_that("get_totals() returns analytically correct weighted total and SRS SE f
   z              <- df$y * df$w
   expected_se    <- sqrt((n / (n - 1L)) * sum((z - mean(z))^2))
 
-  result <- get_totals(d, y)
-  expect_equal(result$total, expected_total, tolerance = 1e-10)
-  expect_equal(result$se,    expected_se,    tolerance = 1e-8)
+  result <- get_totals(d, y, variance = "se")
+  expect_equal(result$total[[1L]], expected_total, tolerance = 1e-10)
+  expect_equal(result$se[[1L]],    expected_se,    tolerance = 1e-8)
 })
 
 test_that("get_means() matches survey::svymean() for survey_calibrated [numerical]", {
@@ -1633,11 +1636,11 @@ test_that("get_means() matches survey::svymean() for survey_calibrated [numerica
   d_sc  <- as_survey_calibrated(df, weights = w)
   d_sv  <- survey::svydesign(ids = ~1, weights = ~w, data = df)
 
-  sc_est <- get_means(d_sc, y)
+  sc_est <- get_means(d_sc, y, variance = c("se", "ci"))
   sv_est <- survey::svymean(~y, d_sv)
 
-  expect_equal(sc_est$mean, coef(sv_est)[["y"]],                tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),      tolerance = 1e-8)
+  expect_equal(sc_est$mean[[1L]], coef(sv_est)[["y"]],           tolerance = 1e-10)
+  expect_equal(sc_est$se[[1L]],   as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
 })
 
 test_that("get_totals() matches survey::svytotal() for survey_calibrated [numerical]", {
@@ -1649,11 +1652,11 @@ test_that("get_totals() matches survey::svytotal() for survey_calibrated [numeri
   d_sc  <- as_survey_calibrated(df, weights = w)
   d_sv  <- survey::svydesign(ids = ~1, weights = ~w, data = df)
 
-  sc_est <- get_totals(d_sc, y)
+  sc_est <- get_totals(d_sc, y, variance = c("se", "ci"))
   sv_est <- survey::svytotal(~y, d_sv)
 
-  expect_equal(sc_est$total, coef(sv_est)[["y"]],               tolerance = 1e-10)
-  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),     tolerance = 1e-8)
+  expect_equal(sc_est$total[[1L]], coef(sv_est)[["y"]],          tolerance = 1e-10)
+  expect_equal(sc_est$se[[1L]],    as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
 })
 
 # ── Edge cases ─────────────────────────────────────────────────────────────────
@@ -1673,9 +1676,9 @@ test_that("as_survey_calibrated() rejects non-numeric weight column", {
 test_that("get_means() with na.rm = FALSE propagates NA for survey_calibrated", {
   df <- data.frame(y = c(1, NA, 3, 4, 5), w = c(2, 1, 2, 1, 2))
   d  <- as_survey_calibrated(df, weights = w)
-  result <- get_means(d, y, na.rm = FALSE)
-  expect_true(is.na(result$mean))
-  expect_true(is.na(result$se))
+  result <- get_means(d, y, variance = "se", na.rm = FALSE)
+  expect_true(is.na(result$mean[[1L]]))
+  expect_true(is.na(result$se[[1L]]))
 })
 
 test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_calibrated", {
@@ -1685,16 +1688,16 @@ test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_c
   d_full    <- as_survey_calibrated(df_full,    weights = w)
   d_missing <- as_survey_calibrated(df_missing, weights = w)
 
-  result_full    <- get_means(d_full,    y, na.rm = TRUE)
-  result_missing <- get_means(d_missing, y, na.rm = TRUE)
+  result_full    <- get_means(d_full,    y, variance = NULL, na.rm = TRUE)
+  result_missing <- get_means(d_missing, y, variance = NULL, na.rm = TRUE)
 
   # na.rm = TRUE should drop row 2 and compute mean over rows 1, 3, 4, 5
   df_complete    <- df_missing[!is.na(df_missing$y), ]
   expected_mean  <- sum(df_complete$y * df_complete$w) / sum(df_complete$w)
 
-  expect_equal(result_missing$mean, expected_mean, tolerance = 1e-10)
+  expect_equal(result_missing$mean[[1L]], expected_mean, tolerance = 1e-10)
   # Result with NA row excluded must differ from the full-data result
-  expect_false(isTRUE(all.equal(result_missing$mean, result_full$mean)))
+  expect_false(isTRUE(all.equal(result_missing$mean[[1L]], result_full$mean[[1L]])))
 })
 
 test_that("get_means() handles partial-NA weight column for survey_calibrated", {

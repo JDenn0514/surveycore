@@ -178,11 +178,13 @@ test_that("get_means() full method matches survey::svymean on pbc [oracle]", {
     method = "approx"
   )
 
-  sc_est <- get_means(d_sc, chol)
+  sc_est <- get_means(d_sc, chol, variance = c("se", "ci"))
   sv_est <- survey::svymean(~chol, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$mean, coef(sv_est)[["chol"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$mean,    coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() approx method matches survey::svymean on pbc [oracle]", {
@@ -205,11 +207,13 @@ test_that("get_means() approx method matches survey::svymean on pbc [oracle]", {
     method = "approx"
   )
 
-  sc_est <- get_means(d_sc, chol)
+  sc_est <- get_means(d_sc, chol, variance = c("se", "ci"))
   sv_est <- survey::svymean(~chol, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$mean, coef(sv_est)[["chol"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$mean,    coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() full method matches survey::svytotal on pbc [oracle]", {
@@ -234,11 +238,13 @@ test_that("get_totals() full method matches survey::svytotal on pbc [oracle]", {
     method = "approx"
   )
 
-  sc_est <- get_totals(d_sc, chol)
+  sc_est <- get_totals(d_sc, chol, variance = c("se", "ci"))
   sv_est <- survey::svytotal(~chol, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$total, coef(sv_est)[["chol"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$total,   coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() approx method matches survey::svytotal on pbc [oracle]", {
@@ -261,11 +267,13 @@ test_that("get_totals() approx method matches survey::svytotal on pbc [oracle]",
     method = "approx"
   )
 
-  sc_est <- get_totals(d_sc, chol)
+  sc_est <- get_totals(d_sc, chol, variance = c("se", "ci"))
   sv_est <- survey::svytotal(~chol, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$total, coef(sv_est)[["chol"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$total,   coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 # ── Section 4: Oracle — survival::nwtco ───────────────────────────────────────
@@ -290,11 +298,13 @@ test_that("get_means() full method matches survey::svymean on nwtco [oracle]", {
     method = "approx"
   )
 
-  sc_est <- get_means(d_sc, edrel)
+  sc_est <- get_means(d_sc, edrel, variance = c("se", "ci"))
   sv_est <- survey::svymean(~edrel, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$mean, coef(sv_est)[["edrel"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$mean,    coef(sv_est)[["edrel"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() approx method matches survey::svymean on nwtco [oracle]", {
@@ -317,11 +327,13 @@ test_that("get_means() approx method matches survey::svymean on nwtco [oracle]",
     method = "approx"
   )
 
-  sc_est <- get_means(d_sc, edrel)
+  sc_est <- get_means(d_sc, edrel, variance = c("se", "ci"))
   sv_est <- survey::svymean(~edrel, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$mean, coef(sv_est)[["edrel"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,   as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$mean,    coef(sv_est)[["edrel"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),   tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() full method matches survey::svytotal on nwtco [oracle]", {
@@ -344,11 +356,13 @@ test_that("get_totals() full method matches survey::svytotal on nwtco [oracle]",
     method = "approx"
   )
 
-  sc_est <- get_totals(d_sc, edrel)
+  sc_est <- get_totals(d_sc, edrel, variance = c("se", "ci"))
   sv_est <- survey::svytotal(~edrel, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$total, coef(sv_est)[["edrel"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$total,   coef(sv_est)[["edrel"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 test_that("get_totals() approx method matches survey::svytotal on nwtco [oracle]", {
@@ -371,11 +385,13 @@ test_that("get_totals() approx method matches survey::svytotal on nwtco [oracle]
     method = "approx"
   )
 
-  sc_est <- get_totals(d_sc, edrel)
+  sc_est <- get_totals(d_sc, edrel, variance = c("se", "ci"))
   sv_est <- survey::svytotal(~edrel, d_sv, na.rm = TRUE)
 
-  expect_equal(sc_est$total, coef(sv_est)[["edrel"]], tolerance = 1e-10)
-  expect_equal(sc_est$se,    as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$total,   coef(sv_est)[["edrel"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)),    tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
 # ── Section 5: Edge cases ──────────────────────────────────────────────────────
