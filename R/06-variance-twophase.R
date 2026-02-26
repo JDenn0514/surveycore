@@ -447,3 +447,112 @@
                             function(p) length(unique(p)))
   as.integer(sum(psu_per_stratum) - length(psu_per_stratum))
 }
+
+
+# ===========================================================================
+# Section 6: Variance-covariance pair estimation for survey_twophase
+# (used by get_corr())
+# ===========================================================================
+
+# Compute variance-covariance pair estimates and the 3x3 meta-vcov of
+# (Var(X), Cov(X,Y), Var(Y)) for two-phase designs.
+#
+# Constructs full-length influence vectors for each of the three estimands
+# (Var(X), Cov(X,Y), Var(Y)) using calibrated Phase 2 weights, then
+# computes the 3x3 meta-vcov using the polarization identity:
+#   Cov(T_a, T_b) = (Var(T_a + T_b) - Var(T_a) - Var(T_b)) / 2
+# This allows reuse of the scalar .twophasevar() for all variance methods
+# (simple, approx, full) without modification.
+#
+# @param design  A survey_twophase object.
+# @param x_col  Character. Name of the first numeric variable.
+# @param y_col  Character. Name of the second numeric variable.
+# @param domain Numeric 0/1 vector (full length). Domain membership mask.
+# @param na.rm  Logical. If TRUE, exclude rows where x or y is NA.
+# @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
+#' @noRd
+.vcov_pair_twophase <- function(design, x_col, y_col, domain, na.rm = TRUE) {
+  data     <- design@data
+  ph1_vars <- design@variables$phase1
+  subset   <- data[[design@variables$subset]]   # logical, full length
+  n_total  <- nrow(data)
+
+  # Calibrated weights (Phase 1 weight / conditional Phase 2 inclusion prob)
+  w_full   <- data[[ph1_vars$weights]]
+  pi2_full <- .compute_phase2_probs(design, subset)
+  cal_wt   <- w_full / pi2_full
+
+  x_all_full <- data[[x_col]]
+  y_all_full <- data[[y_col]]
+
+  # Restrict domain to Phase 2 rows
+  dom_ph2 <- domain[subset]
+  cal_ph2 <- cal_wt[subset]
+  x_ph2   <- x_all_full[subset]
+  y_ph2   <- y_all_full[subset]
+
+  # Pair mask over Phase 2 rows
+  if (na.rm) {
+    pair_ph2 <- dom_ph2 * as.numeric(!is.na(x_ph2) & !is.na(y_ph2))
+  } else {
+    pair_ph2 <- dom_ph2
+  }
+
+  n_d <- as.integer(sum(pair_ph2))
+  W_d <- sum(cal_ph2 * pair_ph2)
+
+  if (n_d < 2L || W_d <= 0) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = NA_real_, b = NA_real_, c = NA_real_,
+      sigma = sigma, n = n_d, n_weighted = W_d
+    ))
+  }
+
+  x_safe <- ifelse(pair_ph2 > 0, x_ph2, 0)
+  y_safe <- ifelse(pair_ph2 > 0, y_ph2, 0)
+  xbar   <- sum(cal_ph2 * pair_ph2 * x_safe) / W_d
+  ybar   <- sum(cal_ph2 * pair_ph2 * y_safe) / W_d
+
+  cx <- pair_ph2 * (x_safe - xbar)
+  cy <- pair_ph2 * (y_safe - ybar)
+
+  a     <- sum(cal_ph2 * cx^2) / W_d
+  b     <- sum(cal_ph2 * cx * cy) / W_d
+  c_val <- sum(cal_ph2 * cy^2) / W_d
+
+  # Full-length influence vectors (0 for Phase 1-only rows)
+  ph2_idx <- which(subset)
+  infl_a  <- numeric(n_total)
+  infl_b  <- numeric(n_total)
+  infl_c  <- numeric(n_total)
+  infl_a[ph2_idx] <- cal_ph2 * pair_ph2 * (cx^2 - a) / W_d
+  infl_b[ph2_idx] <- cal_ph2 * pair_ph2 * (cx * cy - b) / W_d
+  infl_c[ph2_idx] <- cal_ph2 * pair_ph2 * (cy^2 - c_val) / W_d
+
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
+
+  # Diagonal variances
+  var_a <- .twophasevar(infl_a, design, lonely.psu)
+  var_b <- .twophasevar(infl_b, design, lonely.psu)
+  var_c <- .twophasevar(infl_c, design, lonely.psu)
+
+  # Off-diagonal covariances via polarization identity:
+  # Cov(T_a, T_b) = (Var(T_a + T_b) - Var(T_a) - Var(T_b)) / 2
+  var_ab <- .twophasevar(infl_a + infl_b, design, lonely.psu)
+  var_ac <- .twophasevar(infl_a + infl_c, design, lonely.psu)
+  var_bc <- .twophasevar(infl_b + infl_c, design, lonely.psu)
+
+  cov_ab <- (var_ab - var_a - var_b) / 2
+  cov_ac <- (var_ac - var_a - var_c) / 2
+  cov_bc <- (var_bc - var_b - var_c) / 2
+
+  sigma <- matrix(
+    c(var_a, cov_ab, cov_ac,
+      cov_ab, var_b, cov_bc,
+      cov_ac, cov_bc, var_c),
+    nrow = 3L, ncol = 3L
+  )
+
+  list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
+}
