@@ -185,7 +185,8 @@ d_rt
 - **Phase 1** —
   [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
   [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
-  `get_ratios()`, `get_diffs()`,
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+  `get_diffs()`,
   [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
 - **Phase 2** — `survey_glm()`, `survey_lm()` regression
 - **Phase 2.5** — Calibration / post-stratification via `surveyweights`
@@ -233,6 +234,8 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Pearson Correlation
 - [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
   : Survey-Weighted Quantiles
+- [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  : Survey-Weighted Ratio Estimation
 
 ## Metadata — setters
 
@@ -335,5 +338,7 @@ Real-world survey datasets included for testing and illustration.
 
 ### Get started
 
+- [Getting Started with
+  surveycore](https://jdenn0514.github.io/surveycore/articles/getting-started.md):
 - [Creating Survey Objects in
   surveycore](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md):

@@ -47,7 +47,7 @@ vendored variance estimation code. License: GPL-3.
   [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
   [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
   [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
-  `get_ratios()`
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
 - Metadata getters:
   [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
   [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),

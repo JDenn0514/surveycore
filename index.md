@@ -185,7 +185,8 @@ d_rt
 - **Phase 1** —
   [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
   [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
-  `get_ratios()`, `get_diffs()`,
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+  `get_diffs()`,
   [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
 - **Phase 2** — `survey_glm()`, `survey_lm()` regression
 - **Phase 2.5** — Calibration / post-stratification via `surveyweights`

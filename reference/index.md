@@ -35,6 +35,8 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Pearson Correlation
 - [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
   : Survey-Weighted Quantiles
+- [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  : Survey-Weighted Ratio Estimation
 
 ## Metadata — setters
 
