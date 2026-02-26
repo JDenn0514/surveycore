@@ -1,0 +1,454 @@
+# R/analysis-totals-helpers.R
+#
+# Internal helpers for get_totals().
+#
+# Functions:
+#   .taylor_total_cell()     — Taylor domain-estimation total
+#   .replicate_total_cell()  — replicate-weight domain total
+#   .srs_total_cell()        — SRS domain total
+#   .twophase_total_cell()   — two-phase domain total
+#   .calibrated_total_cell() — calibrated domain total
+#   .total_cell()            — dispatcher
+#
+# Note: .total_cell() is also used by get_ratios() (delta method)
+# and .quantile_woodruff_cell() (mean cell reuse).
+
+# ── .taylor_total_cell() ──────────────────────────────────────────────────────
+#
+# Domain estimation of a weighted total using Taylor linearization.
+#
+# @param design  A survey_taylor or survey_calibrated object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.taylor_total_cell <- function(design, y_col, domain) {
+  data   <- design@data
+  vars   <- design@variables
+  n_full <- nrow(data)
+  w      <- data[[vars$weights]]
+
+  if (is.null(y_col)) {
+    # Population size mode: y_i = 1 for all in-domain rows
+    y_safe <- domain
+    y_all  <- rep(1, n_full)
+  } else {
+    y_all  <- data[[y_col]]
+    y_safe <- ifelse(domain > 0, y_all, 0)
+  }
+
+  N_d <- sum(w * domain)
+  n_d <- as.integer(sum(domain))
+
+  if (n_d == 0L || N_d <= 0) {
+    return(list(
+      total = NA_real_, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 0L,
+      n_weighted = 0
+    ))
+  }
+
+  T_hat <- sum(w * domain * y_safe)
+
+  # Influence: u_i = domain_i * y_i  (total linearization)
+  u <- domain * y_safe
+
+  # Build cluster / strata IDs
+  strata_id <- if (!is.null(vars$strata)) {
+    data[[vars$strata]]
+  } else {
+    rep(1L, n_full)
+  }
+
+  psu_id <- if (!is.null(vars$ids)) {
+    raw_ids <- data[[vars$ids[[1L]]]]
+    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
+      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
+    } else {
+      raw_ids
+    }
+  } else {
+    seq_len(n_full)
+  }
+
+  clusters_mat <- matrix(psu_id, ncol = 1L)
+  strata_mat   <- matrix(strata_id, ncol = 1L)
+
+  psu_per_stratum <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
+  sampsize_vec    <- as.integer(psu_per_stratum[as.character(strata_id)])
+  sampsize_mat    <- matrix(sampsize_vec, ncol = 1L)
+
+  fpc_col_full <- if (!is.null(vars$fpc)) data[[vars$fpc]] else NULL
+  popsize_mat <- if (!is.null(fpc_col_full)) {
+    fpc_vals <- fpc_col_full
+    if (any(fpc_vals > 1, na.rm = TRUE)) {
+      matrix(as.numeric(fpc_vals), ncol = 1L)
+    } else {
+      matrix(as.numeric(sampsize_vec / fpc_vals), ncol = 1L)
+    }
+  } else {
+    NULL
+  }
+
+  fpcs       <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
+
+  lbl      <- if (is.null(y_col)) "pop_total" else y_col
+  infl_mat <- matrix(w * u, ncol = 1L, dimnames = list(NULL, lbl))
+  v        <- .svy_recvar(
+    infl_mat, clusters_mat, strata_mat, fpcs, lonely.psu = lonely.psu
+  )
+
+  se <- sqrt(max(0, v[1L, 1L]))
+
+  # SRS-equivalent SE
+  y_domain <- y_safe[domain > 0]
+  se_srs <- if (n_d >= 2L) {
+    N_hat <- N_d
+    ybar  <- T_hat / N_hat
+    s2    <- sum((y_domain - ybar)^2) / (n_d - 1L)
+    N_hat * sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    total      = T_hat,
+    se         = se,
+    se_srs     = se_srs,
+    n          = if (is.null(y_col)) NULL else n_d,
+    n_weighted = N_d
+  )
+}
+
+
+
+# ── .replicate_total_cell() ───────────────────────────────────────────────────
+#
+# Domain estimation of a weighted total using replicate weights.
+#
+# @param design  A survey_replicate object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.replicate_total_cell <- function(design, y_col, domain) {
+  data <- design@data
+  vars <- design@variables
+  w    <- data[[vars$weights]]
+
+  if (is.null(y_col)) {
+    y_safe <- domain
+    y_all  <- rep(1, nrow(data))
+  } else {
+    y_all  <- data[[y_col]]
+    y_safe <- ifelse(domain > 0, y_all, 0)
+  }
+
+  N_d <- sum(w * domain)
+  n_d <- as.integer(sum(domain))
+
+  if (n_d == 0L || N_d <= 0) {
+    return(list(
+      total = NA_real_, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 0L,
+      n_weighted = 0
+    ))
+  }
+
+  T_hat <- sum(w * domain * y_safe)
+
+  # Per-replicate domain totals
+  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  rep_Y   <- as.numeric((y_safe * domain) %*% rep_mat)
+
+  n_rep <- ncol(rep_mat)
+  v <- .svy_rep_var(
+    rep_Y,
+    scale   = vars$scale,
+    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
+    mse     = isTRUE(vars$mse),
+    coef    = T_hat
+  )
+
+  se <- sqrt(max(0, v))
+
+  # SRS-equivalent SE for deff
+  y_domain <- y_safe[domain > 0]
+  se_srs <- if (n_d >= 2L) {
+    N_hat <- N_d
+    ybar  <- T_hat / N_hat
+    s2    <- sum((y_domain - ybar)^2) / (n_d - 1L)
+    N_hat * sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    total      = T_hat,
+    se         = se,
+    se_srs     = se_srs,
+    n          = if (is.null(y_col)) NULL else n_d,
+    n_weighted = N_d
+  )
+}
+
+
+
+# ── .srs_total_cell() ─────────────────────────────────────────────────────────
+#
+# Domain estimation of a weighted total for SRS designs.
+#
+# @param design  A survey_srs object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.srs_total_cell <- function(design, y_col, domain) {
+  data <- design@data
+  vars <- design@variables
+
+  idx <- domain > 0
+  n_d <- as.integer(sum(idx))
+
+  if (n_d == 0L) {
+    return(list(
+      total = NA_real_, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 0L,
+      n_weighted = 0
+    ))
+  }
+
+  w_sub <- data[[vars$weights]][idx]
+
+  if (is.null(y_col)) {
+    # Population size mode
+    T_hat <- sum(w_sub)
+    y_sub <- rep(1, n_d)
+  } else {
+    y_sub <- data[[y_col]][idx]
+    T_hat <- sum(w_sub * y_sub)
+  }
+
+  N_d <- sum(w_sub)
+
+  if (n_d == 1L) {
+    return(list(
+      total = T_hat, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 1L,
+      n_weighted = N_d
+    ))
+  }
+
+  # FPC
+  fpc_var  <- vars$fpc
+  fpc_type <- vars$fpc_type
+  f        <- 0
+  N_hat    <- N_d
+
+  if (!is.null(fpc_var)) {
+    fpc_col <- data[[fpc_var]][idx]
+    if (identical(fpc_type, "population")) {
+      N_hat <- mean(fpc_col, na.rm = TRUE)
+      f     <- n_d / N_hat
+    } else {
+      f <- mean(fpc_col, na.rm = TRUE)
+    }
+  }
+
+  ybar <- T_hat / N_d
+  s2   <- sum((y_sub - ybar)^2) / (n_d - 1L)
+
+  var_T <- if (identical(fpc_type, "population")) {
+    N_hat^2 * (1 - f) * s2 / n_d
+  } else if (identical(fpc_type, "fraction")) {
+    N_d^2 * (1 - f) * s2 / n_d
+  } else {
+    N_d^2 * s2 / n_d
+  }
+
+  se <- sqrt(max(0, var_T))
+
+  list(
+    total      = T_hat,
+    se         = se,
+    se_srs     = se,    # SRS: se_srs = se
+    n          = if (is.null(y_col)) NULL else n_d,
+    n_weighted = N_d
+  )
+}
+
+
+
+# ── .twophase_total_cell() ────────────────────────────────────────────────────
+#
+# Domain estimation of a weighted total for two-phase designs.
+#
+# @param design  A survey_twophase object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.twophase_total_cell <- function(design, y_col, domain) {
+  data     <- design@data
+  ph1_vars <- design@variables$phase1
+  subset   <- data[[design@variables$subset]]
+
+  w_full   <- data[[ph1_vars$weights]]
+  pi2_full <- .compute_phase2_probs(design, subset)
+  cal_wt   <- w_full / pi2_full
+
+  dom_ph2 <- domain[subset]
+  cal_ph2 <- cal_wt[subset]
+
+  if (is.null(y_col)) {
+    y_ph2 <- rep(1, sum(subset))
+  } else {
+    y_ph2 <- data[[y_col]][subset]
+  }
+
+  n_d <- as.integer(sum(dom_ph2))
+  N_d <- sum(cal_ph2 * dom_ph2)
+
+  if (n_d == 0L || N_d <= 0) {
+    return(list(
+      total = NA_real_, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 0L,
+      n_weighted = 0
+    ))
+  }
+
+  y_safe_ph2 <- ifelse(dom_ph2 > 0, y_ph2, 0)
+  T_hat      <- sum(cal_ph2 * dom_ph2 * y_safe_ph2)
+
+  # Full-length influence vector
+  n_total   <- nrow(data)
+  influence <- numeric(n_total)
+  ph2_idx   <- which(subset)
+  influence[ph2_idx] <- cal_ph2 * dom_ph2 * y_safe_ph2
+
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
+  v_raw      <- .twophasevar(influence, design, lonely.psu)
+  v_scalar   <- if (is.matrix(v_raw)) drop(v_raw)[1L] else as.numeric(v_raw)
+
+  se <- sqrt(max(0, v_scalar))
+
+  y_domain <- y_safe_ph2[dom_ph2 > 0]
+  se_srs <- if (n_d >= 2L) {
+    ybar <- T_hat / N_d
+    s2   <- sum((y_domain - ybar)^2) / (n_d - 1L)
+    N_d * sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    total      = T_hat,
+    se         = se,
+    se_srs     = se_srs,
+    n          = if (is.null(y_col)) NULL else n_d,
+    n_weighted = N_d
+  )
+}
+
+
+
+# ── .calibrated_total_cell() ──────────────────────────────────────────────────
+#
+# Domain estimation of a weighted total for calibrated designs.
+# Uses the HT variance of the total (matching survey::svydesign(ids=~1)):
+#   z_i = w_i * y_i   (contribution to the total)
+#   Var(T_hat) = n/(n-1) * sum((z_i - T_hat/n)^2)
+#
+#
+# @param design  A survey_calibrated object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.calibrated_total_cell <- function(design, y_col, domain) {
+  data <- design@data
+  vars <- design@variables
+
+  idx <- domain > 0
+  n_d <- as.integer(sum(idx))
+
+  if (n_d == 0L) {
+    return(list(
+      total = NA_real_, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 0L,
+      n_weighted = 0
+    ))
+  }
+
+  w_sub <- data[[vars$weights]][idx]
+
+  if (is.null(y_col)) {
+    y_sub <- rep(1, n_d)
+    T_hat <- sum(w_sub)
+  } else {
+    y_sub <- data[[y_col]][idx]
+    T_hat <- sum(w_sub * y_sub)
+  }
+
+  N_d <- sum(w_sub)
+
+  if (n_d == 1L) {
+    return(list(
+      total = T_hat, se = NA_real_, se_srs = NA_real_,
+      n = if (is.null(y_col)) NULL else 1L,
+      n_weighted = N_d
+    ))
+  }
+
+  # HT variance of total: n/(n-1) * sum((z_i - T_hat/n)^2), z_i = w_i * y_i
+  z_sub  <- w_sub * y_sub
+  T_mean <- T_hat / n_d
+  var_T  <- (n_d / (n_d - 1L)) * sum((z_sub - T_mean)^2)
+  se     <- sqrt(max(0, var_T))
+
+  # SRS-equivalent SE for deff (uses unweighted sample mean)
+  se_srs <- if (n_d >= 2L) {
+    s2 <- sum((y_sub - mean(y_sub))^2) / (n_d - 1L)
+    N_d * sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    total      = T_hat,
+    se         = se,
+    se_srs     = se_srs,
+    n          = if (is.null(y_col)) NULL else n_d,
+    n_weighted = N_d
+  )
+}
+
+
+
+# ── .total_cell() ─────────────────────────────────────────────────────────────
+#
+# Dispatch to the correct per-cell total estimator by design class.
+#
+# @param design  Any survey design object.
+# @param y_col   Character: variable name, OR NULL for population size.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: total, se, se_srs, n, n_weighted.
+.total_cell <- function(design, y_col, domain) {
+  if (S7::S7_inherits(design, survey_taylor)) {
+    .taylor_total_cell(design, y_col, domain)
+  } else if (S7::S7_inherits(design, survey_replicate)) {
+    .replicate_total_cell(design, y_col, domain)
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    .twophase_total_cell(design, y_col, domain)
+  } else if (S7::S7_inherits(design, survey_srs)) {
+    .srs_total_cell(design, y_col, domain)
+  } else if (S7::S7_inherits(design, survey_calibrated)) {
+    .calibrated_total_cell(design, y_col, domain)
+  } else {
+    cli::cli_abort(
+      c(
+        "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_totals}.",
+        "i" = "Use {.fn as_survey}, {.fn as_survey_rep}, or {.fn as_survey_twophase}."
+      ),
+      class = "surveycore_error_unsupported_class"
+    )
+  }
+}
+
+
