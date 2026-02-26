@@ -34,6 +34,7 @@ navbar:
 articles:
   - title: "Get started"
     contents:
+      - getting-started
       - creating-survey-objects
 
 reference:
