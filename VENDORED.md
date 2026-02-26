@@ -62,6 +62,13 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 | `.vcov_pair_calibrated()` | HT linearization of `survey:::svyvar` | 4.4.8 | Yes | HT variance formula for calibrated designs; in-domain rows only |
 | `.vcov_pair_twophase()` | Two-phase linearization of `survey:::svyvar` | 4.4.8 | Yes | Polarization identity applied to `.twophasevar()` scalar calls |
 
+### Woodruff Quantile Helpers (R/13-analysis-quantiles.R)
+
+| surveycore name | Adapted from | survey version | Modified? | Notes |
+|-----------------|-------------|----------------|-----------|-------|
+| `.last()` | `survey:::.last` | 4.4.8 | Minimal | Renamed; identical logic |
+| `.wtd_qs()` | `survey:::qs` with `survey:::qrule_math` inlined | 4.4.8 | Yes | Renamed; `qrule_math` logic inlined as the lower-quantile rule; no lookup-table dispatch |
+
 ## Functions to Vendor (Phase 0 Scope)
 
 The following `survey` functions are needed for Phase 0 design types. Each must
