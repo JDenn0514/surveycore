@@ -29,7 +29,7 @@ test_that("get_freqs() returns a survey_freqs object for a Taylor design", {
   test_result_invariants(r, "survey_freqs")
   expect_identical(names(r), c("group", "pct", "n"))
   expect_identical(r$group, c("A", "B", "C"))
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
   expect_true(all(r$n > 0L))
 })
 
@@ -77,7 +77,7 @@ test_that("get_freqs() works for binary (0/1 integer) variable", {
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 2L)
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 
@@ -93,11 +93,11 @@ test_that("get_freqs() stacks rows in multi-variable mode", {
   expect_identical(names(r), c("item", "response", "pct", "n"))
   # group: 3 levels; y3: 2 levels; total = 5
   expect_equal(nrow(r), 5L)
-  # Percents within each variable sum to 100
+  # Proportions within each variable sum to 1
   pct_group <- r$pct[r$item == "group"]
   pct_y3    <- r$pct[r$item == "y3"]
-  expect_equal(sum(pct_group), 100, tolerance = 1e-8)
-  expect_equal(sum(pct_y3),    100, tolerance = 1e-8)
+  expect_equal(sum(pct_group), 1, tolerance = 1e-8)
+  expect_equal(sum(pct_y3),    1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() multi-var meta has required keys", {
@@ -148,8 +148,8 @@ test_that("get_freqs() pct sums to 100 within each group combo", {
   r  <- suppressWarnings(get_freqs(d, group, group = strata))
 
   for (s in unique(r$strata)) {
-    expect_equal(sum(r$pct[r$strata == s]), 100, tolerance = 1e-8,
-                 label = paste0("pct sums to 100 in strata = ", s))
+    expect_equal(sum(r$pct[r$strata == s]), 1, tolerance = 1e-8,
+                 label = paste0("pct sums to 1 in strata = ", s))
   }
 })
 
@@ -349,8 +349,8 @@ test_that("get_freqs() na.rm=TRUE excludes NA from levels and denominator", {
   expect_false(any(is.na(r$group)))
   # n sums to non-NA rows only
   expect_equal(sum(r$n), sum(!is.na(df$group)))
-  # pct sums to 100
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  # pct sums to 1
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() na.rm=FALSE adds NA as last level", {
@@ -366,8 +366,8 @@ test_that("get_freqs() na.rm=FALSE adds NA as last level", {
   expect_true(any(is.na(r$group)))
   # NA row is last
   expect_true(is.na(r$group[[nrow(r)]]))
-  # pct including NA sums to 100
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  # pct including NA sums to 1
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 
@@ -524,7 +524,7 @@ test_that("get_freqs() single-level variable returns 1 row with pct=100", {
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 1L)
-  expect_equal(r$pct[[1L]], 100, tolerance = 1e-8)
+  expect_equal(r$pct[[1L]], 1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() min_cell_n=0 suppresses small-cell warnings", {
@@ -571,7 +571,7 @@ test_that("get_freqs() replicate design produces correct row count", {
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() two-phase design returns valid result", {
@@ -584,7 +584,7 @@ test_that("get_freqs() two-phase design returns valid result", {
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() na.rm=FALSE NA row is last", {
@@ -618,7 +618,7 @@ test_that("get_freqs() survey_calibrated design returns valid result", {
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
-  expect_equal(sum(r$pct), 100, tolerance = 1e-8)
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
 })
 
 
@@ -645,17 +645,17 @@ test_that("get_freqs() Taylor pct matches survey::svymean on indicator [numerica
   sv_C <- survey::svymean(~ind_C, d_sv)
 
   expect_equal(r_sc$pct[r_sc$group == "A"],
-               as.numeric(coef(sv_A)) * 100, tolerance = 1e-10)
+               as.numeric(coef(sv_A)), tolerance = 1e-10)
   expect_equal(r_sc$pct[r_sc$group == "B"],
-               as.numeric(coef(sv_B)) * 100, tolerance = 1e-10)
+               as.numeric(coef(sv_B)), tolerance = 1e-10)
   expect_equal(r_sc$pct[r_sc$group == "C"],
-               as.numeric(coef(sv_C)) * 100, tolerance = 1e-10)
+               as.numeric(coef(sv_C)), tolerance = 1e-10)
   expect_equal(r_sc$se[r_sc$group == "A"],
-               as.numeric(survey::SE(sv_A)) * 100, tolerance = 1e-8)
+               as.numeric(survey::SE(sv_A)), tolerance = 1e-8)
   expect_equal(r_sc$se[r_sc$group == "B"],
-               as.numeric(survey::SE(sv_B)) * 100, tolerance = 1e-8)
+               as.numeric(survey::SE(sv_B)), tolerance = 1e-8)
   expect_equal(r_sc$se[r_sc$group == "C"],
-               as.numeric(survey::SE(sv_C)) * 100, tolerance = 1e-8)
+               as.numeric(survey::SE(sv_C)), tolerance = 1e-8)
 })
 
 test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]", {
@@ -684,23 +684,23 @@ test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]",
   sv_B <- survey::svymean(~ind_B, d_sv)
 
   expect_equal(r_sc$pct[r_sc$group == "A"],
-               as.numeric(coef(sv_A)) * 100, tolerance = 1e-10)
+               as.numeric(coef(sv_A)), tolerance = 1e-10)
   expect_equal(r_sc$pct[r_sc$group == "B"],
-               as.numeric(coef(sv_B)) * 100, tolerance = 1e-10)
+               as.numeric(coef(sv_B)), tolerance = 1e-10)
   expect_equal(r_sc$se[r_sc$group == "A"],
-               as.numeric(survey::SE(sv_A)) * 100, tolerance = 1e-8)
+               as.numeric(survey::SE(sv_A)), tolerance = 1e-8)
   expect_equal(r_sc$se[r_sc$group == "B"],
-               as.numeric(survey::SE(sv_B)) * 100, tolerance = 1e-8)
+               as.numeric(survey::SE(sv_B)), tolerance = 1e-8)
 })
 
-test_that("get_freqs() pct sums to 100 for all design types [oracle sanity]", {
+test_that("get_freqs() pct sums to 1 for all design types [oracle sanity]", {
   skip_if_not_installed("survey")
 
   designs <- make_all_designs(seed = 123L)
   for (nm in names(designs)) {
     r <- suppressWarnings(get_freqs(designs[[nm]], group))
-    expect_equal(sum(r$pct), 100, tolerance = 1e-8,
-                 label = paste0("pct sums to 100 for design = ", nm))
+    expect_equal(sum(r$pct), 1, tolerance = 1e-8,
+                 label = paste0("pct sums to 1 for design = ", nm))
   }
 })
 
@@ -809,4 +809,70 @@ test_that("get_freqs() meta$group always present (empty list when no groups)", {
   r  <- get_freqs(d, x)
   expect_type(meta(r)$group, "list")
   expect_length(meta(r)$group, 0L)
+})
+
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_freqs() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 201L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_freqs(d, group, variance = "ci", decimals = 2L)
+
+  # All double columns should have at most 2 decimal places
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+  # integer n column must not be rounded
+  expect_identical(class(r$n)[[1L]], "integer")
+})
+
+test_that("get_freqs() decimals=NULL applies no rounding", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 202L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r_none    <- get_freqs(d, group, variance = "se", decimals = NULL)
+  r_rounded <- get_freqs(d, group, variance = "se", decimals = 4L)
+
+  # At least one pct value should differ (more precision without rounding)
+  expect_false(identical(r_none$pct, r_rounded$pct))
+})
+
+test_that("get_freqs() decimals preserves .meta and S3 class", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 203L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_freqs(d, group, decimals = 2L)
+
+  expect_true("survey_freqs" %in% class(r))
+  expect_false(is.null(attr(r, ".meta")))
+})
+
+test_that("get_freqs() rejects negative decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 204L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_freqs(d, group, decimals = -1L),
+    class = "surveycore_error_invalid_decimals"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_freqs(d, group, decimals = -1L)
+  )
+})
+
+test_that("get_freqs() rejects non-integer decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 205L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_freqs(d, group, decimals = 1.5),
+    class = "surveycore_error_invalid_decimals"
+  )
 })

@@ -701,3 +701,29 @@ test_that("get_corr() meta$x has nested structure for each variable", {
   expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
                     names(m$x$y1)))
 })
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_corr() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 501L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_corr(d, x = c(y1, y2), variance = "ci", decimals = 2L)
+
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+})
+
+test_that("get_corr() rejects invalid decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 502L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_corr(d, x = c(y1, y2), decimals = -2L),
+    class = "surveycore_error_invalid_decimals"
+  )
+})

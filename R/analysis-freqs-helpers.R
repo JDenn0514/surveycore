@@ -137,9 +137,9 @@
   }
 
   list(
-    pct        = p * 100,
-    se         = se * 100,
-    se_srs     = se_srs * 100,
+    pct        = p,
+    se         = se,
+    se_srs     = se_srs,
     n          = n_cell,
     n_weighted = Y
   )
@@ -196,9 +196,9 @@
   }
 
   list(
-    pct        = p * 100,
-    se         = se * 100,
-    se_srs     = se_srs * 100,
+    pct        = p,
+    se         = se,
+    se_srs     = se_srs,
     n          = n_cell,
     n_weighted = Y
   )
@@ -236,7 +236,7 @@
 
   if (is.na(p) || n_g < 2L) {
     return(list(
-      pct        = if (is.na(p)) NA_real_ else p * 100,
+      pct        = if (is.na(p)) NA_real_ else p,
       se         = NA_real_,
       se_srs     = NA_real_,
       n          = n_cell,
@@ -265,9 +265,9 @@
   se    <- sqrt(max(0, var_p))
 
   list(
-    pct        = p * 100,
-    se         = se * 100,
-    se_srs     = se * 100,    # se_srs = se for SRS (design effect = 1)
+    pct        = p,
+    se         = se,
+    se_srs     = se,    # se_srs = se for SRS (design effect = 1)
     n          = n_cell,
     n_weighted = Y
   )
@@ -330,9 +330,9 @@
   }
 
   list(
-    pct        = p * 100,
-    se         = se * 100,
-    se_srs     = se_srs * 100,
+    pct        = p,
+    se         = se,
+    se_srs     = se_srs,
     n          = n_cell,
     n_weighted = Y
   )

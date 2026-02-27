@@ -43,3 +43,12 @@
       x All values of group_all_na are `NA`.
       i Cannot compute estimate with `na.rm = FALSE`. Set `na.rm = TRUE` to exclude `NA` values.
 
+# get_freqs() rejects negative decimals
+
+    Code
+      get_freqs(d, group, decimals = -1L)
+    Condition
+      Error in `get_freqs()`:
+      x `decimals` must be a non-negative whole number or `NULL`.
+      i Got -1.
+

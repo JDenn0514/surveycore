@@ -293,21 +293,23 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 # ── .validate_shared_args() ───────────────────────────────────────────────────
 #
 # Validate the cross-cutting arguments that appear on all get_*() functions:
-# variance, conf_level, and name_style.
+# variance, conf_level, name_style, and decimals.
 #
 # Call this as the FIRST action in every get_*() function, before any tidy-
 # select resolution or estimation logic. This is the single canonical source
-# for these three validation errors — never duplicate the checks inside
-# individual get_*() functions.
+# for these validation errors — never duplicate the checks inside individual
+# get_*() functions.
 #
 # Errors (from plans/error-messages.md):
 #   surveycore_error_invalid_variance_arg  (row 45)
 #   surveycore_error_invalid_conf_level    (row 45a)
 #   surveycore_error_invalid_name_style    (row 46)
+#   surveycore_error_invalid_decimals      (row 45b)
 #
 # @param variance       NULL or character vector of variance types.
 # @param conf_level     Numeric scalar in (0, 1).
 # @param name_style     "surveycore" or "broom".
+# @param decimals       NULL or a non-negative whole number.
 # @param valid_variance Character vector of accepted variance values.
 # @param call           Caller environment for error attribution.
 # @return invisible(TRUE) on success.
@@ -315,6 +317,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
   variance,
   conf_level,
   name_style,
+  decimals       = NULL,
   valid_variance = c("se", "ci", "var", "cv", "moe", "deff"),
   call = rlang::caller_env()
 ) {
@@ -352,7 +355,52 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
       call  = call
     )
   }
+  if (!is.null(decimals)) {
+    if (
+      !is.numeric(decimals) ||
+      length(decimals) != 1L ||
+      decimals < 0 ||
+      decimals != round(decimals)
+    ) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg decimals} must be a non-negative whole number or ",
+            "{.code NULL}."
+          ),
+          "i" = "Got {.val {decimals}}."
+        ),
+        class = "surveycore_error_invalid_decimals",
+        call  = call
+      )
+    }
+  }
   invisible(TRUE)
+}
+
+
+# ── .apply_decimals() ─────────────────────────────────────────────────────────
+#
+# Round all double-typed columns in a survey_result tibble to the specified
+# number of decimal places. Integer columns (e.g., n) and non-numeric columns
+# (group vars, character columns) are left unchanged. The .meta attribute and
+# S3 class are preserved across rounding using the same pattern as
+# .apply_name_style().
+#
+# @param result   A survey_result tibble.
+# @param decimals A non-negative whole number.
+# @return The result tibble with double columns rounded.
+.apply_decimals <- function(result, decimals) {
+  saved_meta  <- attr(result, ".meta")
+  saved_class <- class(result)
+  for (i in seq_along(result)) {
+    if (is.double(result[[i]])) {
+      result[[i]] <- round(result[[i]], decimals)
+    }
+  }
+  attr(result, ".meta") <- saved_meta
+  class(result) <- saved_class
+  result
 }
 
 
