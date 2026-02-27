@@ -1,3 +1,11 @@
+# surveycore (development version)
+
+## New features
+
+* `get_corr()` gains a `group = NULL` parameter for per-group survey-weighted
+  correlations. Group columns are prepended in both long and wide output, and
+  `@groups` set via `group_by()` is now respected.
+
 # surveycore 0.1.0
 
 ## New features

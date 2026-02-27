@@ -141,6 +141,15 @@ as_plain <- function(df) {
       attr(raw, "label") <- lbl
     }
     if (!is.null(lbvl)) {
+      if (!is.null(names(lbvl))) {
+        clean <- sub("^[0-9]+ = ", "", names(lbvl))
+        names(lbvl) <- gsub(
+          "(^|[[:space:]])([[:alpha:]])",
+          "\\1\\U\\2",
+          tolower(clean),
+          perl = TRUE
+        )
+      }
       attr(raw, "labels") <- lbvl
     }
     raw
@@ -165,7 +174,24 @@ pew_jewish_2020 <- as_plain(pew_sub)
 
 pew_jewish_2020 <- clean_names(pew_jewish_2020)
 
-## ---- 5. Save ----
+## ---- 5. Attach battery question_preface attributes ----
+##
+## The .dta label field is truncated; set the full question stem as
+## question_preface so surveycore battery helpers can surface it.
+##
+## Battery 3 (discrim_a–f):
+##   "Please tell us how much discrimination there is against each of
+##    these groups in our society today."
+
+discrim_preface <- paste0(
+  "Please tell us how much discrimination there is against each of ",
+  "these groups in our society today."
+)
+for (col in grep("^discrim_", names(pew_jewish_2020), value = TRUE)) {
+  attr(pew_jewish_2020[[col]], "question_preface") <- discrim_preface
+}
+
+## ---- 6. Save ----
 
 message("Saving pew_jewish_2020 to data/...")
 usethis::use_data(pew_jewish_2020, overwrite = TRUE)

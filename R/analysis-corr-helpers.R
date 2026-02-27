@@ -3,9 +3,9 @@
 # Internal helpers for get_corr().
 #
 # Functions:
-#   .corr_vcov_pair()   — dispatcher: vcov pair by design class
-#   .corr_pair_result() — compute r, SE, CI, t, p from vcov output
-#   .corr_wide()        — build wide-format correlation matrix
+#   .corr_vcov_pair()              — dispatcher: vcov pair by design class
+#   .corr_pair_result()            — compute r, SE, CI, t, p from vcov output
+#   .corr_build_matrix_col_vecs()  — build r-matrix column vectors (wide helper)
 
 # ── .corr_vcov_pair() ─────────────────────────────────────────────────────────
 #
@@ -92,58 +92,41 @@
 }
 
 
-# ── .corr_wide() ──────────────────────────────────────────────────────────────
+# ── .corr_build_matrix_col_vecs() ────────────────────────────────────────────
 #
-# Build wide-format correlation matrix from computed pair results.
-# Wide format always shows the full symmetric correlation matrix.
+# Build the r-matrix column vectors for one group combo (or the ungrouped case).
+# Returns a named list: variable col + one named col per focal variable (r values).
+# Does NOT call .make_result_tibble() — caller assembles across all combos
+# and calls .make_result_tibble() once.
+#
 # Diagonal: NA when diagonal = FALSE, else 1.
-# Upper triangle (row_idx > col_idx in input order) mirrors lower triangle.
+# Upper triangle mirrors lower triangle (symmetric).
 #
-# @return A survey_corr tibble with columns: variable + one per focal variable.
-.corr_wide <- function(
-  x_names, display_names, pairs_i, pairs_j, pair_results,
-  diagonal, design, x_meta_list, group_meta, conf_level
+# @param x_names       Character vector of focal variable names.
+# @param display_names Named character vector mapping x_names → display labels.
+# @param pairs_i       Integer vector of first-variable indices (lower triangle).
+# @param pairs_j       Integer vector of second-variable indices (lower triangle).
+# @param pair_results  List of per-pair result lists from .corr_pair_result().
+# @param diagonal      Logical: include diagonal (r = 1) in matrix.
+# @return Named list: list(variable = ..., "ColName1" = ..., ...).
+.corr_build_matrix_col_vecs <- function(
+  x_names, display_names, pairs_i, pairs_j, pair_results, diagonal
 ) {
-  p <- length(x_names)
+  p       <- length(x_names)
   n_pairs <- length(pairs_i)
 
-  # Build p x p r matrix (NA fill)
   r_mat <- matrix(NA_real_, p, p)
-
   for (k in seq_len(n_pairs)) {
     i <- pairs_i[[k]]; j <- pairs_j[[k]]
     r_mat[i, j] <- pair_results[[k]]$r
-    r_mat[j, i] <- pair_results[[k]]$r   # symmetric
+    r_mat[j, i] <- pair_results[[k]]$r
   }
+  if (isTRUE(diagonal)) diag(r_mat) <- 1
 
-  if (isTRUE(diagonal)) {
-    diag(r_mat) <- 1
-  }
-  # else: diagonal remains NA
-
-  # Build column vectors
-  var_col <- display_names[x_names]
+  var_col  <- display_names[x_names]
   col_vecs <- list(variable = var_col)
   for (k in seq_len(p)) {
     col_vecs[[display_names[[k]]]] <- r_mat[, k]
   }
-
-  meta_args <- list(
-    conf_level = conf_level,
-    call       = sys.call(-1L),
-    method     = "pearson",
-    group      = group_meta,
-    x          = x_meta_list
-  )
-
-  result <- .make_result_tibble(
-    col_vecs,
-    data.frame(),
-    "survey_corr",
-    design,
-    meta_args,
-    CORR_META_KEYS
-  )
-
-  result
+  col_vecs
 }

@@ -5,6 +5,307 @@ Each entry corresponds to one planning session.
 
 ---
 
+## 2026-02-27 — Stage 3 spec resolution (Issues 43–46)
+
+### Context
+
+Second batch of the third review pass. Issues 43–46: one REQUIRED (zero-weight
+rows), one REQUIRED (wrong quality gate key name), and two SUGGESTIONS (both
+accepted as do-nothing).
+
+### Questions & Decisions
+
+**Q: How should `survey_glm()` handle zero or negative weights? (Issue 43)**
+- Options considered:
+  - **[A] Warn with `surveycore_warning_nonpositive_weights`** and proceed —
+    matches base R `glm()` behavior; preserves zero-weight-as-exclusion pattern.
+  - **[B] Error** — breaks intentional zero-weight exclusion workflows.
+  - **[C] Document as pre-condition violation** — silent behavior.
+- **Decision:** Option A — warn and proceed.
+- **Rationale:** Zero-weight rows as soft exclusion is a valid workflow pattern.
+  Warning is more informative than silence and less disruptive than an error.
+  P2-19 added to Section X; check added to Section 4.4 Step 3.
+
+**Q: Fix quality gate `$variable_labels` → `$variables`? (Issue 44)**
+- **Decision:** Yes — quality gate updated to "`meta(clean(fit))$variables`
+  populated with one named entry per predictor; each entry has `var_label`,
+  `var_class`, `var_type`, and optionally populated `value_labels`."
+- **Rationale:** `$variable_labels` does not exist in `survey_glm_tidy` `.meta`
+  per Section 6.3. Confirmed by reviewing the full `meta()` output.
+
+**Q: Specify `confint()` behavior for invalid `parm`? (Issue 45)**
+- **Decision:** Do nothing — standard R delegation behavior applies.
+- **Rationale:** Over-specifying a SUGGESTION-level gap.
+
+**Q: Specify ordered factor `^N` suffix stripping? (Issue 46)**
+- **Decision:** Do nothing — rare edge case; acceptable for a SUGGESTION.
+
+### Outcome
+
+Spec updated to v0.8: `surveycore_warning_nonpositive_weights` (P2-19) added
+to Section 4.4 Step 3 and Section X; quality gate corrected to `$variables`.
+Issues 45 and 46 closed as do-nothing. All 46 review issues are now resolved.
+
+---
+
+## 2026-02-27 — Stage 3 spec resolution (Issues 39–42)
+
+### Context
+
+Working through a third review pass (Issues 39–46). First batch covered
+Issues 39–42: one BLOCKING (missing test plan for 12 expanded S3 methods),
+one REQUIRED subsumed by that fix, and two REQUIRED issues (print format,
+label-stripping algorithm).
+
+### Questions & Decisions
+
+**Q: Should test plan items be added individually per method, or as a
+catch-all? (Issue 39)**
+- Options considered:
+  - **[A] Individual items (17–36):** One happy-path block per method plus
+    per-call-site NULL-`fit_` error blocks. Verbose but each item is
+    independently verifiable against a quality gate.
+  - **[B] Single catch-all item:** Faster to spec, ambiguous to implement.
+- **Decision:** Option A — items 17–36 added to the `test-glm-methods.R`
+  plan, covering `clean()`, `confint()`, `formula()`, `terms()`,
+  `model.matrix()`, `model.frame()`, `deviance()`, `df.residual()`, `nobs()`,
+  `hatvalues()`, `logLik()`, `AIC()/BIC()`, and `update()`.
+- **Rationale:** Per engineering-preferences.md §2, individual items make
+  coverage explicit and the quality gate verifiable.
+
+**Q: How should `surveycore_error_predict_no_fit` be tested for the 6 additional
+call sites? (Issue 40)**
+- **Decision:** Subsumed by Issue 39[A] — items 22, 24, 26, 31, 33, 35 in
+  the new test plan each cover a NULL-`fit_` block with the dual pattern. No
+  separate action needed.
+
+**Q: Should `print(clean(fit))` output be specified in Section 6.6 or inline in 6.3? (Issue 41)**
+- Options considered:
+  - **[A] New Section 6.6** documenting inheritance from `print.survey_result()`
+    plus a verbatim console example.
+  - **[B] Inline verbatim block** added to Section 6.3.
+- **Decision:** Option A — Section 6.6 added. Explicitly states no
+  `print.survey_glm_tidy()` is defined; uses Phase 1's `print.survey_result()`.
+- **Rationale:** Keeps Section 6.3 focused on column contracts; print format
+  belongs in its own subsection.
+
+**Q: How should the `label` column recover factor level names from coefficient names? (Issue 42)**
+- Options considered:
+  - **[A] Model-frame lookup:** find `l` such that `paste0(var_name, l) == coef_name`
+    from `levels(model_frame[[var_name]])`. Unambiguous; consistent with
+    reference-level detection.
+  - **[B] String prefix removal** (`sub()`): fragile when variable name is a
+    prefix of the level name.
+- **Decision:** Option A — model-frame lookup specified in Section 6.3.
+- **Rationale:** The model frame is already required for reference-level
+  detection; using it for non-reference levels is consistent and avoids the
+  silent wrong-output edge case of string removal.
+
+### Outcome
+
+Spec updated to v0.7: Section 6.3 `label` column updated with model-frame
+lookup algorithm; Section 6.6 added (print format + verbatim example);
+test plan items 17–36 added to `test-glm-methods.R` plan (Section 9.2).
+Issue 40 closed as subsumed.
+
+---
+
+---
+
+## 2026-02-27 — marginaleffects extension interface added to Phase 2
+
+### Context
+
+Discussion about `get_diffs()` scope: whether to implement `avg_slopes()` and
+`avg_predictions()` functionality natively inside surveycore (porting marginaleffects
+code), or to use marginaleffects' extension interface. Two questions were resolved:
+where the extension interface belongs in the phase plan, and where `get_diffs()`
+belongs.
+
+### Questions & Decisions
+
+**Q: Should Phase 2 implement the marginaleffects extension interface, or defer it?**
+
+- Options considered:
+  - **[A] Add to Phase 2** — these are S3 methods *on the model class*, analogous
+    to `tidy()` and `print()`. They complete the class API.
+  - **[B] Defer to Phase 3** — group them with `get_diffs()` as an "analysis layer."
+  - **[C] Reimplement `avg_slopes()`/`avg_predictions()` natively** — port
+    marginaleffects logic without importing the package.
+
+- **Decision:** Option A — add to Phase 2.
+
+- **Rationale:** The extension interface (`get_coef`, `set_coef`, `get_vcov`,
+  `get_predict`) is a set of S3 methods *on the `survey_glm_fit` class*. Like
+  `tidy()` and `print()`, they define how the class integrates with the ecosystem;
+  they belong with the class, not with downstream analysis functions. Shipping Phase
+  2 without them would mean the class doesn't work with marginaleffects — a missing
+  integration that would need patching immediately.
+
+  Option C was evaluated and rejected: implementing full marginaleffects
+  functionality natively (covering interaction terms, non-linear transformations,
+  arbitrary link functions, multi-level factors, delta method SEs for all cases)
+  is equivalent to reimplementing a ~15,000-line package. The extension interface
+  achieves the same outcome in ~100 lines by delegating to a well-tested
+  implementation. The only non-trivial piece is `set_coef` (patching both `@coefficients`
+  and the internal `fit_$coefficients` so `stats::predict.glm()` uses the perturbed
+  coefficients during delta method gradient computation).
+
+**Q: Should `get_diffs()` go in Phase 2 or Phase 3?**
+
+- **Decision:** Phase 3 — separate phase.
+
+- **Rationale:** `get_diffs()` is a user-facing analysis function, analogous to
+  `get_means()` and `get_freqs()`. It uses GLM machinery but is conceptually an
+  analysis layer, not class infrastructure. This mirrors the existing Phase 0/1
+  pattern: the class was built in Phase 0, then analysis functions were built on
+  top in Phase 1. Same split applies here.
+
+**Q: Should `marginaleffects` be `Imports` or `Suggests`?**
+
+- **Decision:** `Suggests`.
+
+- **Rationale:** The extension methods are registered only when marginaleffects is
+  installed. All core `survey_glm_fit` functionality is usable without it. Making it
+  `Suggests` avoids a hard dependency while still providing first-class marginaleffects
+  integration for users who have it. Follows the same pattern as `broom` in Phase 2
+  and `survey` in all phases.
+
+### Outcome
+
+Spec updated to v0.5: new Section VII added (marginaleffects extension interface,
+7 subsections); old Sections VII–XI renumbered to VIII–XII; scope table updated;
+file organization updated (`R/14-glm-marginaleffects.R`,
+`tests/testthat/test-glm-marginaleffects.R`); quality gates and integration
+contract updated; `get_diffs()` cross-reference updated to "Phase 3 spec."
+
+---
+
+## 2026-02-27 — Round 2 spec review resolution (Issues 31–38)
+
+### Context
+
+Working through the Round 2 adversarial review (`plans/spec-review-phase-2.md`)
+of the v0.3 spec. Seven new issues found; all resolved in this session except
+Issue 36 (binomial oracle GLM family list — pending clarification on one family
+name before the edit is finalized).
+
+### Questions & Decisions
+
+**Q: Issue 31 — Add 13 expanded S3 methods to spec or defer to Phase 2.5?**
+- Options considered:
+  - **[A]** Add all 13 to Section V now, with full contracts.
+  - **[B]** Defer to Phase 2.5, narrow Phase 2 back to original 7 methods.
+- **Decision:** Option A — add all 13 to the spec.
+- **Rationale:** The decisions were already made and recorded in the 2026-02-26 log entry. The spec just hadn't caught up. The delegation methods are trivial to spec; `confint()` and `update()` warranted real subsections.
+
+**Q: Issue 35 — How should `survey_glm()` handle an empty domain?**
+- Options considered:
+  - **[A]** Error with `surveycore_error_empty_domain` before calling `stats::glm()`.
+  - **[B]** Let `stats::glm()` fail naturally with a cryptic base R error.
+- **Decision:** Option A — explicit typed error.
+- **Rationale:** Consistent with Phase 1's defensive handling of degenerate inputs. A typed error lets users catch it programmatically.
+
+**Q: Issue 36 — Binomial oracle test template: which additional families to include?**
+- User specified all 8 standard GLM families: `gaussian(link = "identity")`,
+  `binomial(link = "logit")`, `Gamma(link = "inverse")`,
+  `inverse.gaussian(link = "1/mu^2")`, `poisson(link = "log")`,
+  `quasi(link = "identity", variance = "constant")`,
+  `quasibinomial(link = "logit")`, `quasipoisson(link = "log")`.
+- All are supported by `survey::svyglm()`.
+- **Decision:** All 8 families get oracle tests in `test-glm-numerical.R`.
+  Binomial and Poisson get full templates in Section 8.1; Gamma, inverse.gaussian,
+  quasi, and quasibinomial reference the binomial template pattern.
+- **Key note captured in spec:** For binomial oracle tests, `survey::svyglm()`
+  is called with `quasibinomial()` to suppress the non-integer weights warning.
+  The Binder sandwich is invariant to the dispersion parameter so SEs match.
+
+### Outcome
+
+Spec updated to v0.3.1: Section I scope table updated to 20 S3 methods;
+Sections 5.8–5.19 added; `"partial"` residual type added to Section 5.7;
+test items 11–16 added to `test-glm-methods.R` plan; `surveycore_error_empty_domain`
+added to Section 4.5, 4.7, and IX; stale GAP note in Section 6.3 replaced with
+forward reference to Section 8.3; stale footer replaced with approved status note.
+
+---
+
+## 2026-02-26 — snake_case arguments on all S3 methods; expanded method set
+
+### Context
+
+Discussion of method parity with `survey::svyglm()`. Two decisions made:
+
+**1. Explicit snake_case arguments on `predict()`**
+
+`predict.survey_glm_fit` uses snake_case argument names throughout:
+- `newdata` → `new_data`
+- `se.fit` → `se_fit` (explicitly named, not available via `...` passthrough)
+- `na.action` → `na_action`
+
+`se_fit = TRUE` returns a named list with components `$fit`, `$se_fit`,
+`$residual_scale` — renaming base R's `$se.fit` and `$residual.scale` to match
+surveycore conventions. The implementation delegates to `stats::predict()` and
+renames the list components before returning.
+
+This applies to all S3 methods on `survey_glm_fit`: all argument names use
+snake_case. Where base R uses dot-separated names (e.g., `na.action`), the
+surveycore method uses underscores.
+
+**2. Expanded method set to match `svyglm` (where appropriate)**
+
+Methods to add in Phase 2 (beyond what the original spec listed):
+- `confint()` — design-based CIs using `@vcov` and `@df_residual`
+- `residuals("partial")` — delegate to `residuals(object@fit_, type = "partial")`
+- `formula()` — return `object@formula`
+- `terms()` — delegate to `terms(object@fit_)`
+- `model.matrix()` — delegate to `model.matrix(object@fit_)`
+- `model.frame()` — delegate to `model.frame(object@fit_)`
+- `deviance()` — return `object@deviance`
+- `df.residual()` — return `object@df_residual`
+- `nobs()` — return `length(object@fitted_values)`
+- `hatvalues()` — delegate to `hatvalues(object@fit_)` (model-based)
+- `logLik()` — delegate to `logLik(object@fit_)` (model-based; note in docs)
+- `AIC()` / `BIC()` — delegate to `AIC(object@fit_)` / `BIC(object@fit_)` (model-based)
+- `update()` — requires `getCall.survey_glm_fit` returning `object@call`
+
+**Deferred (not Phase 2):**
+- `anova()` — requires Wald F-test machinery (non-trivial); Phase 3+
+
+**Explicitly excluded:**
+- `influence()`, `cooks.distance()`, `rstandard()`, `rstudent()` — silently
+  wrong for survey designs (assume iid); `svyglm` only has them by inheritance
+  accident. Not adding them.
+
+---
+
+## 2026-02-26 — print vs. summary output split
+
+### Context
+
+Discussion of `print.survey_glm_fit` vs `summary.survey_glm_fit` output revealed
+a design tension: the original spec had `print()` showing the full inference
+table (Estimate, Std. Error, t value, Pr(>|t|)), leaving `summary()` to add
+only the deviance block. This gave users little reason to call `summary()` and
+deviated from base R conventions.
+
+### Decision
+
+**`print.survey_glm_fit`** follows `print.glm` — shows only the design header
+(family, formula, design type) and the coefficient estimates as a named vector.
+No SEs, no t-values, no p-values.
+
+**`summary.survey_glm_fit`** is where the full inference table lives:
+coefficient estimates + Std. Error + t value + Pr(>|t|) + significance stars,
+plus the deviance residuals block, dispersion parameter, null/residual deviance,
+AIC, and design df.
+
+**Rationale:** Clean split. Users get quick estimates from `print()` and reach
+for `summary()` when they want inference — exactly the R convention for `lm`
+and `glm`. Spec updated in Section 5.1 and 5.2.
+
+---
+
 ## 2026-02-25 — Stage 3 spec resolution (Issues 1–4)
 
 ### Context
@@ -194,6 +495,36 @@ Spec updated with: (1) full `survey_glm_summary` structure + print format,
 (2) explicit reference-term algorithm with worked example, (3) `n_observations`
 defined as `nrow(model.matrix(fit))`, (4) `variable_labels` always a named
 list of character strings (falls back to variable name).
+
+---
+
+## 2026-02-26 — Stage 3 spec resolution (Issue 30)
+
+### Context
+
+Final issue. Issue 30 was the last BLOCKING gap: how out-of-domain score
+contributions are handled in the GLM sandwich estimator when the design has
+an active domain from `surveytidy::filter()`.
+
+### Questions & Decisions
+
+**Q: How should out-of-domain observations contribute to the GLM score for variance estimation? (Issue 30)**
+- Options considered:
+  - **[A] Set out-of-domain scores to zero:** `u_i = w_i x_i e_i · I(i ∈ domain)`.
+    Full-design variance of `Σ u_i` is then computed. Follows Phase 1 `.apply_domain()` precedent.
+  - **[B] Do nothing** — implementer guesses; oracle test catches failures.
+- **Decision:** Option A.
+- **Rationale:** The math is standard for domain total estimation via Taylor linearization.
+  The Phase 1 precedent (`.apply_domain()` multiplying by a domain indicator) applies directly.
+  For replicate variance, the same indicator restricts refitting to in-domain rows.
+  An oracle comparison against `survey::svyglm(..., subset=)` validates the implementation.
+
+### Outcome
+
+Section 4.5 GAP resolved: out-of-domain score formula specified as
+`u_i = w_i x_i e_i · I(i ∈ domain)`. Zero-score mechanism described for
+both Taylor and replicate paths. Section 8.2 item 10 upgraded to a full
+oracle test (coefficients + SEs vs `survey::svyglm` subset).
 
 ---
 
