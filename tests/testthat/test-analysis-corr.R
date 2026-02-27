@@ -27,8 +27,8 @@ test_that("get_corr() returns survey_corr tibble for survey_taylor", {
   expect_true("n"         %in% names(result))
   expect_false("se"       %in% names(result))   # not in default variance = "ci"
   expect_equal(nrow(result), 1L)                # one pair: (y1, y2)
-  expect_equal(result$var1[[1L]], "y1")
-  expect_equal(result$var2[[1L]], "y2")
+  expect_equal(as.character(result$var1[[1L]]), "y1")
+  expect_equal(as.character(result$var2[[1L]]), "y2")
   expect_true(is.finite(result$r[[1L]]))
   expect_true(is.finite(result$ci_low[[1L]]))
   expect_true(is.finite(result$ci_high[[1L]]))
@@ -92,18 +92,17 @@ test_that("get_corr() meta() stores variables, method, and design type", {
   result <- get_corr(d, x = c(y1, y2))
   m      <- meta(result)
 
-  expect_identical(m$variables, c("y1", "y2"))
+  expect_identical(names(m$x), c("y1", "y2"))
   expect_identical(m$method, "pearson")
   expect_equal(m$conf_level, 0.95)
   expect_identical(m$design_type, "taylor")
   expect_type(m$n_respondents, "integer")
   expect_gt(m$n_respondents, 0L)
-  expect_identical(m$group_names, character(0))
-  expect_true("value_labels" %in% names(m))
-  expect_type(m$value_labels, "list")
+  expect_type(m$group, "list")
+  expect_length(m$group, 0L)
   # Numeric vars → value_labels entries are NULL
-  expect_null(m$value_labels[["y1"]])
-  expect_null(m$value_labels[["y2"]])
+  expect_null(m$x[["y1"]]$value_labels)
+  expect_null(m$x[["y2"]]$value_labels)
 })
 
 # ---------------------------------------------------------------------------
@@ -417,10 +416,10 @@ test_that("get_corr() label_vars = TRUE shows variable labels in var1/var2", {
   result_lbl  <- get_corr(d, x = c(y1, y2), label_vars = TRUE)
   result_raw  <- get_corr(d, x = c(y1, y2), label_vars = FALSE)
 
-  expect_equal(result_lbl$var1[[1L]], "Outcome Y1")
-  expect_equal(result_lbl$var2[[1L]], "Outcome Y2")
-  expect_equal(result_raw$var1[[1L]], "y1")
-  expect_equal(result_raw$var2[[1L]], "y2")
+  expect_equal(as.character(result_lbl$var1[[1L]]), "Outcome Y1")
+  expect_equal(as.character(result_lbl$var2[[1L]]), "Outcome Y2")
+  expect_equal(as.character(result_raw$var1[[1L]]), "y1")
+  expect_equal(as.character(result_raw$var2[[1L]]), "y2")
 })
 
 # ---------------------------------------------------------------------------
@@ -661,6 +660,44 @@ test_that("get_corr() 3-variable call gives n*(n-1)/2 = 3 rows", {
 
   result <- get_corr(d, x = c(y1, y2, y3))
   expect_equal(nrow(result), 3L)
-  expect_identical(result$var1, c("y1", "y1", "y2"))
-  expect_identical(result$var2, c("y2", "y3", "y3"))
+  expect_identical(as.character(result$var1), c("y1", "y1", "y2"))
+  expect_identical(as.character(result$var2), c("y2", "y3", "y3"))
+})
+
+# ---------------------------------------------------------------------------
+# Category 16: New meta structure — nested x, group, factor var1/var2
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() var1/var2 columns are <fct> with levels in supply order", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 60L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2, y3))
+  expect_true(is.factor(result$var1))
+  expect_true(is.factor(result$var2))
+  expect_identical(levels(result$var1), c("y1", "y2", "y3"))
+})
+
+test_that("get_corr() meta$group is always a list (empty when no @groups set)", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 61L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2))
+  expect_type(meta(result)$group, "list")
+  expect_length(meta(result)$group, 0L)
+})
+
+test_that("get_corr() meta$x has nested structure for each variable", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 62L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, y1, "Variable One")
+
+  result <- get_corr(d, x = c(y1, y2))
+  m      <- meta(result)
+
+  expect_identical(names(m$x), c("y1", "y2"))
+  expect_identical(m$x$y1$variable_label, "Variable One")
+  expect_null(m$x$y2$variable_label)
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$x$y1)))
 })

@@ -122,7 +122,7 @@ test_that("get_means() and get_totals() work for survey_replicate (return struct
 
   m <- get_means(sc, y1, variance = "se")
   test_result_invariants(m, "survey_means")
-  expect_identical(meta(m)$variable, "y1")
+  expect_identical(names(meta(m)$x), "y1")
   expect_true(is.finite(m$mean[[1L]]))
   expect_gte(m$se[[1L]], 0)
 

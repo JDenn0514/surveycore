@@ -78,11 +78,11 @@ test_that("get_means() meta() stores variable name and design type", {
   result <- get_means(d, y1)
   m      <- meta(result)
 
-  expect_identical(m$variable, "y1")
+  expect_identical(names(m$x), "y1")
   expect_true(is.character(m$design_type))
   expect_equal(m$conf_level, 0.95)
-  expect_type(m$group_names, "character")
-  expect_length(m$group_names, 0L)
+  expect_type(m$group, "list")
+  expect_length(m$group, 0L)
 })
 
 # ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ test_that("get_means() group= produces one row per group level", {
   expect_equal(nrow(result), n_strata)
   expect_true("strata" %in% names(result))
   expect_true(all(is.finite(result$mean)))
-  expect_identical(meta(result)$group_names, "strata")
+  expect_identical(names(meta(result)$group), "strata")
 })
 
 test_that("get_means() group= with multiple group vars produces correct row count", {
@@ -421,4 +421,95 @@ test_that("get_means() returns a finite estimate for all 5 design types", {
       label = paste0("get_means() finite mean for design type: ", nm)
     )
   }
+})
+
+# ---------------------------------------------------------------------------
+# Category 14: New meta structure & group label conversion
+# ---------------------------------------------------------------------------
+
+test_that("get_means() group column is <fct> when group var has haven labels", {
+  df <- data.frame(
+    y      = rnorm(100),
+    gender = structure(c(1L, 2L, 1L, 2L)[rep(1:4, 25)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  result <- get_means(d, y, group = gender, variance = NULL)
+  expect_true(is.factor(result$gender))
+  expect_identical(levels(result$gender), c("Male", "Female"))
+  expect_identical(as.character(result$gender), c("Male", "Female"))
+})
+
+test_that("get_means() group column is <fct> when group var is a plain R factor", {
+  df <- data.frame(
+    y   = rnorm(100),
+    grp = factor(rep(c("B", "A"), 50), levels = c("B", "A")),
+    w   = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  result <- get_means(d, y, group = grp, variance = NULL)
+  expect_true(is.factor(result$grp))
+  expect_identical(levels(result$grp), c("B", "A"))
+})
+
+test_that("get_means() group column retains raw codes when label_values = FALSE", {
+  df <- data.frame(
+    y      = rnorm(100),
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  result <- get_means(d, y, group = gender, variance = NULL, label_values = FALSE)
+  expect_false(is.factor(result$gender))
+  expect_true(is.integer(result$gender))
+})
+
+test_that("get_means() meta$group stores value_labels regardless of label_values", {
+  df <- data.frame(
+    y      = rnorm(100),
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r_true  <- get_means(d, y, group = gender, variance = NULL, label_values = TRUE)
+  r_false <- get_means(d, y, group = gender, variance = NULL, label_values = FALSE)
+
+  # .meta always stores labels regardless of label_values argument
+  expect_equal(meta(r_true)$group$gender$value_labels,
+               c(Male = 1L, Female = 2L))
+  expect_equal(meta(r_false)$group$gender$value_labels,
+               c(Male = 1L, Female = 2L))
+})
+
+test_that("get_means() group column name is always raw variable name (not label)", {
+  df <- data.frame(y = rnorm(50), grp = rep(1:2, 25), w = rep(1, 50))
+  d  <- as_survey_srs(df, weights = w)
+  d  <- set_var_label(d, grp, "Group variable")
+
+  result <- get_means(d, y, group = grp, variance = NULL, label_vars = TRUE)
+  # Column is named "grp", not "Group variable"
+  expect_true("grp" %in% names(result))
+  expect_false("Group variable" %in% names(result))
+})
+
+test_that("get_means() meta$x has correct nested structure", {
+  df <- data.frame(y = rnorm(50), w = rep(1, 50))
+  d  <- as_survey_srs(df, weights = w)
+  d  <- set_var_label(d, y, "Outcome variable")
+
+  result <- get_means(d, y, variance = NULL)
+  m      <- meta(result)
+
+  expect_identical(names(m$x), "y")
+  expect_identical(m$x$y$variable_label, "Outcome variable")
+  expect_type(m$x$y, "list")
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$x$y)))
 })

@@ -23,18 +23,26 @@
 #'     `"replicate"`, `"twophase"`, `"srs"`, or `"calibrated"`.}
 #'   \item{`conf_level`}{Numeric(1). Confidence level used (e.g. `0.95`).}
 #'   \item{`call`}{Language. Matched call to the `get_*()` function.}
-#'   \item{`group_names`}{Character vector. Grouping variable names;
-#'     `character(0)` if none.}
-#'   \item{`group_labels`}{Named list. Group variable → label; `NULL` values
-#'     for unlabeled group variables.}
 #'   \item{`n_respondents`}{Integer(1). Total rows in the design, regardless
 #'     of groups, domain status, or weights.}
-#'   \item{`value_labels`}{Named list. One key per focal variable; value is a
-#'     named vector of label → raw value mappings, or `NULL` for
-#'     numeric/unlabelled variables.}
+#'   \item{`group`}{Named list. One entry per grouping variable; empty list
+#'     (`list()`) when no groups are active. Each entry is a named list with:
+#'     `variable_label` (character or `NULL`), `question_preface` (character
+#'     or `NULL`), `value_labels` (named vector or `NULL`).}
+#'   \item{`x`}{Named list. One entry per focal variable. Length 1 for
+#'     single-x functions (`get_means`, `get_totals`, `get_quantiles`);
+#'     length N for multi-x functions (`get_freqs`, `get_corr`). Each entry
+#'     has the same sub-structure as `group` entries. `NULL` for
+#'     `get_totals()` when called without an `x` argument.}
 #' }
-#' Additional function-specific fields are described in the Phase 1
-#' specification.
+#' Function-specific additional fields:
+#' \describe{
+#'   \item{`probs`}{(`get_quantiles` only) Numeric vector of quantile
+#'     probabilities.}
+#'   \item{`method`}{(`get_corr` only) Character(1) correlation method.}
+#'   \item{`numerator`, `denominator`}{(`get_ratios` only) Flat named lists
+#'     with keys `name`, `variable_label`, `question_preface`, `value_labels`.}
+#' }
 #'
 #' @examples
 #' # Construct a minimal survey_result to illustrate meta():
@@ -44,13 +52,12 @@
 #'     design_type   = "taylor",
 #'     conf_level    = 0.95,
 #'     call          = quote(get_means(d, x)),
-#'     group_names   = character(0),
-#'     group_labels  = list(),
 #'     n_respondents = 100L,
-#'     variable      = "x",
-#'     variable_label   = NULL,
-#'     question_preface = NULL,
-#'     value_labels     = list(x = NULL)
+#'     group         = list(),
+#'     x             = list(
+#'       x = list(variable_label = NULL, question_preface = NULL,
+#'                value_labels = NULL)
+#'     )
 #'   ),
 #'   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 #' )
@@ -84,10 +91,10 @@ meta.survey_result <- function(x, ...) attr(x, ".meta")
 #'   tibble::tibble(mean = 42.0, se = 1.5, n = 100L),
 #'   .meta = list(
 #'     design_type = "taylor", conf_level = 0.95,
-#'     call = quote(get_means(d, x)), group_names = character(0),
-#'     group_labels = list(), n_respondents = 100L,
-#'     variable = "x", variable_label = NULL,
-#'     question_preface = NULL, value_labels = list(x = NULL)
+#'     call = quote(get_means(d, x)), n_respondents = 100L,
+#'     group = list(),
+#'     x = list(x = list(variable_label = NULL, question_preface = NULL,
+#'                        value_labels = NULL))
 #'   ),
 #'   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 #' )

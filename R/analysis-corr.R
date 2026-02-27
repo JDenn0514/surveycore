@@ -149,27 +149,13 @@ get_corr <- function(
   domain      <- as.numeric(domain_mask)
 
   # ── Step 4: Collect variable metadata ───────────────────────────────────────
-  var_labels_list <- lapply(x_names, function(nm) {
-    design@metadata@variable_labels[[nm]] %||%
-      attr(design@data[[nm]], "label", exact = TRUE)
-  })
-  names(var_labels_list) <- x_names
-
-  q_prefaces_list <- lapply(x_names, function(nm) {
-    design@metadata@question_prefaces[[nm]]
-  })
-  names(q_prefaces_list) <- x_names
-
-  val_labels_list <- lapply(x_names, function(nm) {
-    design@metadata@value_labels[[nm]] %||%
-      attr(design@data[[nm]], "labels", exact = TRUE)
-  })
-  names(val_labels_list) <- x_names
+  x_meta_list <- lapply(x_names, function(nm) .extract_var_meta(design, nm))
+  names(x_meta_list) <- x_names
 
   # ── Step 5: Determine display names (labels or raw names) ───────────────────
   display_names <- if (isTRUE(label_vars)) {
     vapply(x_names, function(nm) {
-      lbl <- var_labels_list[[nm]]
+      lbl <- x_meta_list[[nm]]$variable_label
       if (!is.null(lbl) && nchar(as.character(lbl)) > 0L) {
         as.character(lbl)
       } else {
@@ -231,11 +217,12 @@ get_corr <- function(
   }
 
   # ── Step 9: Wide format ───────────────────────────────────────────────────────
+  group_meta <- .build_group_meta(design, design@groups)
+
   if (format == "wide") {
     return(.corr_wide(
       x_names, display_names, pairs_i, pairs_j, pair_results,
-      diagonal, design, var_labels_list, q_prefaces_list, val_labels_list,
-      conf_level
+      diagonal, design, x_meta_list, group_meta, conf_level
     ))
   }
 
@@ -394,15 +381,11 @@ get_corr <- function(
 
   # ── Step 13: Build meta_args ──────────────────────────────────────────────────
   meta_args <- list(
-    variables        = x_names,
-    variable_labels  = var_labels_list,
-    question_prefaces = q_prefaces_list,
-    value_labels     = val_labels_list,
-    method           = "pearson",
-    conf_level       = conf_level,
-    call             = match.call(),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = conf_level,
+    call       = match.call(),
+    method     = "pearson",
+    group      = group_meta,
+    x          = x_meta_list
   )
 
   # ── Step 14: Assemble result ─────────────────────────────────────────────────
@@ -415,7 +398,13 @@ get_corr <- function(
     CORR_META_KEYS
   )
 
-  # ── Step 15: Apply name style ─────────────────────────────────────────────────
+  # ── Step 15: Convert var1/var2 to factors (levels in variable supply order) ──
+  # Display strings determine the factor level values; supply order is preserved.
+  uniq_display <- unique(display_names)
+  result$var1  <- factor(result$var1, levels = uniq_display)
+  result$var2  <- factor(result$var2, levels = uniq_display)
+
+  # ── Step 16: Apply name style ─────────────────────────────────────────────────
   .apply_name_style(result, name_style)
 }
 

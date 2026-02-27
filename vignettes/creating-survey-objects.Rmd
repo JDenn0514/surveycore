@@ -5,7 +5,7 @@ output:
     toc: true
     toc_depth: 3
 bibliography: references.bib
-link-citations: yes
+link-citations: true
 vignette: >
   %\VignetteIndexEntry{Creating Survey Objects in surveycore}
   %\VignetteEngine{knitr::rmarkdown}
@@ -105,7 +105,7 @@ Set `nest = TRUE` when PSU IDs are not globally unique across strata
 ```{r nest-diagnostic}
 # NHANES: only two distinct PSU values, but 15 strata
 # Each stratum has its own PSU 1 and PSU 2 → nest = TRUE
-length(unique(nhanes_2017$sdmvpsu))  # 2
+length(unique(nhanes_2017$sdmvpsu)) # 2
 length(unique(nhanes_2017$sdmvstra)) # 15
 ```
 
@@ -155,10 +155,10 @@ nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
 svy_nhanes <- as_survey(
   nhanes_exam,
-  ids     = sdmvpsu,
-  strata  = sdmvstra,
+  ids = sdmvpsu,
+  strata = sdmvstra,
   weights = wtmec2yr,
-  nest    = TRUE       # PSU IDs are locally unique within strata
+  nest = TRUE # PSU IDs are locally unique within strata
 )
 svy_nhanes
 ```
@@ -169,10 +169,10 @@ For interview-only variables (income, education), use the full dataset with
 ```{r nhanes-interview}
 svy_nhanes_int <- as_survey(
   nhanes_2017,
-  ids     = sdmvpsu,
-  strata  = sdmvstra,
+  ids = sdmvpsu,
+  strata = sdmvstra,
   weights = wtint2yr,
-  nest    = TRUE
+  nest = TRUE
 )
 ```
 
@@ -193,16 +193,16 @@ variables you are analyzing:
 # Pre-election analysis (party ID, ideology, candidate preference)
 svy_anes_pre <- as_survey(
   anes_2024,
-  ids     = v240103c,
-  strata  = v240103d,
+  ids = v240103c,
+  strata = v240103d,
   weights = v240103a
 )
 
 # Post-election analysis (validated vote choice: v242066, v242067)
 svy_anes_post <- as_survey(
   anes_2024,
-  ids     = v240103c,
-  strata  = v240103d,
+  ids = v240103c,
+  strata = v240103d,
   weights = v240103b
 )
 ```
@@ -228,16 +228,16 @@ weights are available depending on whether non-response bias is a concern:
 # Standard analysis weight
 svy_gss <- as_survey(
   gss_2024,
-  ids     = vpsu,
-  strata  = vstrat,
+  ids = vpsu,
+  strata = vstrat,
   weights = wtssps
 )
 
 # Non-response adjusted weight (preferred when non-response bias is a concern)
 svy_gss_nr <- as_survey(
   gss_2024,
-  ids     = vpsu,
-  strata  = vstrat,
+  ids = vpsu,
+  strata = vstrat,
   weights = wtssnrps
 )
 ```
@@ -262,7 +262,7 @@ sampling unit, so there is no PSU variable. Omit `ids`:
 ```{r npors}
 svy_npors <- as_survey(
   pew_npors_2025,
-  strata  = stratum,
+  strata = stratum,
   weights = weight
 )
 ```
@@ -319,9 +319,9 @@ variance estimation, documented in the ACS Design and Methodology report
 ```{r acs}
 svy_acs <- as_survey_rep(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
-  type       = "successive-difference"
+  type = "successive-difference"
 )
 svy_acs
 ```
@@ -339,9 +339,9 @@ full-sample weight:
 ```{r pew-jewish}
 svy_jewish <- as_survey_rep(
   pew_jewish_2020,
-  weights    = extweight,
+  weights = extweight,
   repweights = extweight1:extweight100,
-  type       = "JK1"
+  type = "JK1"
 )
 svy_jewish
 ```
@@ -414,9 +414,9 @@ phase1 <- as_survey(nwtco, ids = seqno)
 # Phase 2: subcohort, with Phase 2 sampling stratified by relapse status
 svy_twophase <- as_survey_twophase(
   phase1,
-  strata2 = rel,           # Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)
-  subset  = in.subcohort,  # Logical column: TRUE = selected into Phase 2
-  method  = "full"
+  strata2 = rel, # Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)
+  subset = in.subcohort, # Logical column: TRUE = selected into Phase 2
+  method = "full"
 )
 svy_twophase
 ```
@@ -458,22 +458,22 @@ selection (80/400 = 0.20) — the textbook SRS case [@cochran1977, ch. 2;
 
 ```{r apisrs}
 set.seed(101)
-N <- 400   # total schools in district
-n <- 80    # schools sampled
+N <- 400 # total schools in district
+n <- 80 # schools sampled
 
 school_survey <- data.frame(
-  school_id  = sample(seq_len(N), n),
-  avg_score  = round(rnorm(n, mean = 72, sd = 11), 1),
-  pct_frpl   = round(runif(n, 0.10, 0.85), 2),  # % free/reduced price lunch
+  school_id = sample(seq_len(N), n),
+  avg_score = round(rnorm(n, mean = 72, sd = 11), 1),
+  pct_frpl = round(runif(n, 0.10, 0.85), 2), # % free/reduced price lunch
   enrollment = round(runif(n, 180, 850)),
-  sw         = N / n,   # equal sampling weight = 400/80 = 5.0
-  fpc        = N        # population size for FPC
+  sw = N / n, # equal sampling weight = 400/80 = 5.0
+  fpc = N # population size for FPC
 )
 
 svy_srs <- as_survey_srs(
   school_survey,
-  weights = sw,   # each sampled school represents 5 schools in the population
-  fpc     = fpc   # reduces SEs: we sampled 20% of the population
+  weights = sw, # each sampled school represents 5 schools in the population
+  fpc = fpc # reduces SEs: we sampled 20% of the population
 )
 svy_srs
 ```
@@ -596,22 +596,28 @@ n <- 500
 
 panel_data <- data.frame(
   respondent_id = seq_len(n),
-  age_group     = sample(
-    c("18-34", "35-54", "55+"), n,
-    replace = TRUE, prob = c(0.38, 0.37, 0.25)
+  age_group = sample(
+    c("18-34", "35-54", "55+"),
+    n,
+    replace = TRUE,
+    prob = c(0.38, 0.37, 0.25)
   ),
-  gender        = sample(c("Man", "Woman"), n, replace = TRUE),
-  education     = sample(
-    c("HS or less", "Some college", "College+"), n,
-    replace = TRUE, prob = c(0.38, 0.30, 0.32)
+  gender = sample(c("Man", "Woman"), n, replace = TRUE),
+  education = sample(
+    c("HS or less", "Some college", "College+"),
+    n,
+    replace = TRUE,
+    prob = c(0.38, 0.30, 0.32)
   ),
-  race_eth      = sample(
-    c("White", "Black", "Hispanic", "Other"), n,
-    replace = TRUE, prob = c(0.60, 0.12, 0.18, 0.10)
+  race_eth = sample(
+    c("White", "Black", "Hispanic", "Other"),
+    n,
+    replace = TRUE,
+    prob = c(0.60, 0.12, 0.18, 0.10)
   ),
-  message_arm   = sample(c("Framing A", "Framing B"), n, replace = TRUE),
-  support       = sample(1:5, n, replace = TRUE),
-  rake_weight   = runif(n, 0.4, 3.2)  # vendor-provided raking weights
+  message_arm = sample(c("Framing A", "Framing B"), n, replace = TRUE),
+  support = sample(1:5, n, replace = TRUE),
+  rake_weight = runif(n, 0.4, 3.2) # vendor-provided raking weights
 )
 
 svy_panel <- as_survey_calibrated(panel_data, weights = rake_weight)

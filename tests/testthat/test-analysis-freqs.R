@@ -41,7 +41,10 @@ test_that("get_freqs() respects factor level order", {
   r <- get_freqs(d, group_f)
 
   test_result_invariants(r, "survey_freqs")
-  expect_identical(r$group_f, c("C", "B", "A"))
+  # group_f column is now a factor with levels in declaration order
+  expect_true(is.factor(r$group_f))
+  expect_identical(as.character(r$group_f), c("C", "B", "A"))
+  expect_identical(levels(r$group_f), c("C", "B", "A"))
 })
 
 test_that("get_freqs() sorts non-factor levels ascending", {
@@ -54,17 +57,16 @@ test_that("get_freqs() sorts non-factor levels ascending", {
   expect_identical(r$group, sort(unique(df$group)))
 })
 
-test_that("get_freqs() single-var meta has required single-mode keys", {
+test_that("get_freqs() single-var meta has required keys", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 14L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
                   nest = TRUE)
   r  <- get_freqs(d, group)
   m  <- meta(r)
 
-  expect_identical(m$mode, "single")
-  expect_identical(m$variable, "group")
-  expect_type(m$group_names, "character")
-  expect_identical(m$group_names, character(0))
+  expect_identical(names(m$x), "group")
+  expect_type(m$group, "list")
+  expect_length(m$group, 0L)
 })
 
 test_that("get_freqs() works for binary (0/1 integer) variable", {
@@ -98,19 +100,19 @@ test_that("get_freqs() stacks rows in multi-variable mode", {
   expect_equal(sum(pct_y3),    100, tolerance = 1e-8)
 })
 
-test_that("get_freqs() multi-var meta has required multi-mode keys", {
+test_that("get_freqs() multi-var meta has required keys", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 22L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
                   nest = TRUE)
   r  <- get_freqs(d, c(group, y3), names_to = "item", values_to = "resp")
   m  <- meta(r)
 
-  expect_identical(m$mode, "multi")
-  expect_identical(m$variables, c("group", "y3"))
-  expect_true("variable_labels"   %in% names(m))
-  expect_true("question_prefaces" %in% names(m))
-  expect_type(m$value_labels, "list")
-  expect_gt(length(m$value_labels), 0L)
+  expect_identical(names(m$x), c("group", "y3"))
+  expect_type(m$x, "list")
+  expect_length(m$x, 2L)
+  # Each x entry has variable_label, question_preface, value_labels
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$x$group)))
 })
 
 test_that("get_freqs() custom names_to and values_to are used", {
@@ -135,8 +137,8 @@ test_that("get_freqs() places group columns first", {
   test_result_invariants(r, "survey_freqs")
   expect_identical(names(r)[[1L]], "strata")
   expect_identical(names(r)[[2L]], "group")
-  # meta group_names
-  expect_identical(meta(r)$group_names, "strata")
+  # meta group
+  expect_identical(names(meta(r)$group), "strata")
 })
 
 test_that("get_freqs() pct sums to 100 within each group combo", {
@@ -151,15 +153,15 @@ test_that("get_freqs() pct sums to 100 within each group combo", {
   }
 })
 
-test_that("get_freqs() grouped meta has group_names set correctly", {
+test_that("get_freqs() grouped meta has group set correctly", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 33L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
                   nest = TRUE)
   r  <- suppressWarnings(get_freqs(d, group, group = strata))
   m  <- meta(r)
 
-  expect_identical(m$group_names, "strata")
-  expect_type(m$group_labels, "list")
+  expect_identical(names(m$group), "strata")
+  expect_type(m$group, "list")
 })
 
 
@@ -605,7 +607,7 @@ test_that("get_freqs() na.rm=FALSE factor variable: NA row after factor levels",
   r <- suppressWarnings(get_freqs(d, group_f, na.rm = FALSE))
 
   # Factor order: C, B, A, then NA last
-  expect_identical(r$group_f[!is.na(r$group_f)], c("C", "B", "A"))
+  expect_identical(as.character(r$group_f[!is.na(r$group_f)]), c("C", "B", "A"))
   expect_true(is.na(r$group_f[[nrow(r)]]))
 })
 
@@ -726,4 +728,85 @@ test_that("get_freqs() column types are consistent across design types", {
     expect_type(r$pct, "double")
     expect_type(r$n, "integer")
   }
+})
+
+# ---------------------------------------------------------------------------
+# New meta structure & label/factor column tests
+# ---------------------------------------------------------------------------
+
+test_that("get_freqs() group column is <fct> when group var has haven labels", {
+  df <- data.frame(
+    x      = sample(1:3, 100, replace = TRUE),
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r <- get_freqs(d, x, group = gender)
+  expect_true(is.factor(r$gender))
+  expect_identical(levels(r$gender), c("Male", "Female"))
+})
+
+test_that("get_freqs() group column retains raw codes when label_values = FALSE", {
+  df <- data.frame(
+    x      = sample(1:3, 100, replace = TRUE),
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r <- get_freqs(d, x, group = gender, label_values = FALSE)
+  expect_false(is.factor(r$gender))
+})
+
+test_that("get_freqs() value column is <fct> when label_values = TRUE and labels exist", {
+  df <- data.frame(
+    x = structure(c(1L, 2L)[rep(1:2, 50)],
+                  labels = c(Yes = 1L, No = 2L)),
+    w = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r <- get_freqs(d, x, label_values = TRUE)
+  expect_true(is.factor(r$x))
+  expect_identical(levels(r$x), c("Yes", "No"))
+})
+
+test_that("get_freqs() name column is <fct> with levels in supply order (multi-var)", {
+  df <- data.frame(
+    a = sample(1:2, 100, replace = TRUE),
+    b = sample(1:2, 100, replace = TRUE),
+    c = sample(1:2, 100, replace = TRUE),
+    w = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r <- get_freqs(d, c(c, a, b), names_to = "var", label_vars = FALSE)
+  expect_true(is.factor(r$var))
+  expect_identical(levels(r$var), c("c", "a", "b"))
+})
+
+test_that("get_freqs() meta$x stores value_labels regardless of label_values", {
+  df <- data.frame(
+    x = structure(c(1L, 2L)[rep(1:2, 50)],
+                  labels = c(Yes = 1L, No = 2L)),
+    w = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r_true  <- get_freqs(d, x, label_values = TRUE)
+  r_false <- get_freqs(d, x, label_values = FALSE)
+
+  expect_equal(meta(r_true)$x$x$value_labels,  c(Yes = 1L, No = 2L))
+  expect_equal(meta(r_false)$x$x$value_labels, c(Yes = 1L, No = 2L))
+})
+
+test_that("get_freqs() meta$group always present (empty list when no groups)", {
+  df <- data.frame(x = 1:3, w = rep(1, 3))
+  d  <- as_survey_srs(df, weights = w)
+  r  <- get_freqs(d, x)
+  expect_type(meta(r)$group, "list")
+  expect_length(meta(r)$group, 0L)
 })

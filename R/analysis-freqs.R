@@ -158,11 +158,10 @@ get_freqs <- function(
 
   # ── Step 4: Mixed prefaces warning (multi-var only) ─────────────────────────
   if (is_multi) {
-    prefaces_list <- lapply(
-      var_names,
-      function(vn) design@metadata@question_prefaces[[vn]]
+    non_null_prefaces <- Filter(
+      Negate(is.null),
+      lapply(var_names, function(vn) design@metadata@question_prefaces[[vn]])
     )
-    non_null_prefaces <- Filter(Negate(is.null), prefaces_list)
     unique_prefaces   <- unique(unlist(non_null_prefaces))
     if (length(unique_prefaces) > 1L) {
       cli::cli_warn(
@@ -210,30 +209,8 @@ get_freqs <- function(
   }
 
   # ── Step 6: Pre-collect variable metadata ───────────────────────────────────
-  var_labels_list    <- vector("list", n_vars)
-  q_prefaces_list    <- vector("list", n_vars)
-  val_labels_list    <- vector("list", n_vars)
-  names(var_labels_list) <- var_names
-  names(q_prefaces_list) <- var_names
-  names(val_labels_list) <- var_names
-
-  for (vn in var_names) {
-    col_data <- design@data[[vn]]
-    # Variable label: metadata first, then haven attribute fallback
-    # Use single-bracket assignment to preserve NULL entries in the list
-    # (double-bracket assignment with NULL removes the element entirely).
-    var_labels_list[vn] <- list(
-      design@metadata@variable_labels[[vn]] %||%
-        attr(col_data, "label", exact = TRUE)
-    )
-    # Question preface: metadata only (no haven equivalent)
-    q_prefaces_list[vn] <- list(design@metadata@question_prefaces[[vn]])
-    # Value labels: metadata first, then haven attribute fallback
-    val_labels_list[vn] <- list(
-      design@metadata@value_labels[[vn]] %||%
-        attr(col_data, "labels", exact = TRUE)
-    )
-  }
+  x_meta_list <- lapply(var_names, function(vn) .extract_var_meta(design, vn))
+  names(x_meta_list) <- var_names
 
   # ── Step 7: Main accumulation loop ──────────────────────────────────────────
   # Parallel vectors for all result rows
@@ -250,7 +227,7 @@ get_freqs <- function(
 
   for (vn in var_names) {
     x_col     <- design@data[[vn]]
-    vl        <- val_labels_list[[vn]]   # named vector or NULL
+    vl        <- x_meta_list[[vn]]$value_labels   # named vector or NULL
     vl_map    <- if (!is.null(vl)) structure(names(vl), names = as.character(vl)) else NULL
 
     # domain-only x values for level detection
@@ -291,9 +268,9 @@ get_freqs <- function(
     # ── Display name for multi-var names_to column ────────────────────────────
     if (is_multi) {
       vn_display <- if (
-        label_vars && !is.null(var_labels_list[[vn]])
+        label_vars && !is.null(x_meta_list[[vn]]$variable_label)
       ) {
-        var_labels_list[[vn]]
+        x_meta_list[[vn]]$variable_label
       } else {
         vn
       }
@@ -340,10 +317,11 @@ get_freqs <- function(
 
         # ── Level display value ────────────────────────────────────────────
         if (label_values && !is.null(vl_map) && !is.na(lvl)) {
-          lvl_display <- vl_map[[as.character(lvl)]]
-          if (is.null(lvl_display) || is.na(lvl_display)) {
-            lvl_display <- as.character(lvl)
-          }
+          key <- as.character(lvl)
+          # vl_map keys are numeric codes (as character strings) for
+          # haven-labelled columns. For factor columns, lvl is already the
+          # label string and may not be a key in vl_map — fall back to lvl.
+          lvl_display <- if (key %in% names(vl_map)) vl_map[[key]] else key
         } else {
           lvl_display <- if (is.na(lvl)) NA_character_ else as.character(lvl)
         }
@@ -399,13 +377,31 @@ get_freqs <- function(
   col_vecs <- list()
 
   if (is_multi) {
-    col_vecs[[names_to]]  <- acc_focal
+    # names_to column: factor with levels in variable supply order
+    # (display string order: label if label_vars=TRUE, else raw name)
+    names_to_levels <- vapply(var_names, function(vn) {
+      if (label_vars && !is.null(x_meta_list[[vn]]$variable_label)) {
+        x_meta_list[[vn]]$variable_label
+      } else {
+        vn
+      }
+    }, character(1L))
+    col_vecs[[names_to]]  <- factor(acc_focal,  levels = unique(names_to_levels))
+
+    # values_to column: stay as character (mixed variables may have different
+    # value label sets; no single factor level set applies across all)
     col_vecs[[values_to]] <- acc_values
   } else {
     # Single-var: convert NA display back to NA (not "NA" string)
     focal_out <- acc_focal
     is_na_str <- !is.na(acc_focal) & acc_focal == "NA"
     if (any(is_na_str)) focal_out[is_na_str] <- NA_character_
+
+    # Convert to factor when label_values=TRUE and value labels exist
+    vl_single <- x_meta_list[[var_names[[1L]]]]$value_labels
+    if (label_values && !is.null(vl_single)) {
+      focal_out <- factor(focal_out, levels = names(vl_single))
+    }
     col_vecs[[var_names[[1L]]]] <- focal_out
   }
 
@@ -421,47 +417,21 @@ get_freqs <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
   } else {
     groups_df <- data.frame()
   }
 
   # ── Step 11: Build meta_args ──────────────────────────────────────────────────
-  group_labels_list <- lapply(
-    group_vars,
-    function(gv) design@metadata@variable_labels[[gv]] %||%
-      attr(design@data[[gv]], "label", exact = TRUE)
-  )
-  if (length(group_vars) > 0L) {
-    names(group_labels_list) <- group_vars
-  }
+  group_meta    <- .build_group_meta(design, group_vars)
+  required_keys <- FREQS_META_KEYS
 
-  if (!is_multi) {
-    meta_args <- list(
-      mode             = "single",
-      variable         = var_names[[1L]],
-      variable_label   = var_labels_list[[var_names[[1L]]]],
-      question_preface = q_prefaces_list[[var_names[[1L]]]],
-      value_labels     = val_labels_list,   # always a named list
-      conf_level       = conf_level,
-      call             = match.call(),
-      group_names      = group_vars,
-      group_labels     = group_labels_list
-    )
-    required_keys <- FREQS_SINGLE_META_KEYS
-  } else {
-    meta_args <- list(
-      mode              = "multi",
-      variables         = var_names,
-      variable_labels   = var_labels_list,
-      question_prefaces = q_prefaces_list,
-      value_labels      = val_labels_list,   # named list: var -> labels
-      conf_level        = conf_level,
-      call              = match.call(),
-      group_names       = group_vars,
-      group_labels      = group_labels_list
-    )
-    required_keys <- FREQS_MULTI_META_KEYS
-  }
+  meta_args <- list(
+    conf_level = conf_level,
+    call       = match.call(),
+    group      = group_meta,
+    x          = x_meta_list
+  )
 
   # ── Step 12: Assemble result ──────────────────────────────────────────────────
   result <- .make_result_tibble(

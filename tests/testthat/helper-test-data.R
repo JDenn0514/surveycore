@@ -375,33 +375,16 @@ test_result_invariants <- function(result, expected_class) {
   testthat::expect_type(m, "list")
 
   # 3. Required meta keys always present (never absent)
-  required_common_keys <- c(
-    "design_type", "conf_level", "call", "group_names", "group_labels"
-  )
+  required_common_keys <- c("design_type", "conf_level", "call", "group")
   testthat::expect_true(
     all(required_common_keys %in% names(m)),
     label = "all required meta keys present"
   )
 
-  # 4. group_names is always a character vector (never NULL)
-  testthat::expect_type(m$group_names, "character")
+  # 4. group is always a list (empty list when no groups active)
+  testthat::expect_type(m$group, "list")
 
-  # 5. value_labels is always a non-empty named list
-  testthat::expect_true(
-    "value_labels" %in% names(m),
-    label = "value_labels key present in meta"
-  )
-  testthat::expect_type(m$value_labels, "list")
-  testthat::expect_gt(
-    length(m$value_labels), 0L,
-    label = "value_labels is non-empty"
-  )
-  testthat::expect_false(
-    is.null(names(m$value_labels)),
-    label = "value_labels is a named list"
-  )
-
-  # n_respondents: always present and a positive integer
+  # 5. n_respondents: always present and a positive integer
   testthat::expect_true(
     "n_respondents" %in% names(m),
     label = "n_respondents key present in meta"
