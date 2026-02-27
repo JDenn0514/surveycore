@@ -108,6 +108,9 @@ against the messages defined here.
 | 75 | `clean()` | `model` not a `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` | `"{.arg model} must be a {.cls survey_glm_fit} object, not {.cls {class(model)[1]}}."` |
 | 76 | `predict.survey_glm_fit()`, `residuals.survey_glm_fit()` | `fit_` slot is `NULL` | ERROR | `surveycore_error_predict_no_fit` | `"The internal {.field fit_} slot is NULL. This can happen after serialization. Refit the model to restore prediction support."` |
 | 77 | `survey_glm()` | `df_residual` would be ≤ 0 | WARN | `surveycore_warning_insufficient_df` | `"Design degrees of freedom ({degf}) minus model parameters ({p - 1}) is ≤ 0. Clamping {.code df_residual = 1}. CI bounds and p-values are conservative."` |
+| 78 | `infer_question_prefaces()` | `x` is not a survey object or data frame | ERROR | `surveycore_error_not_survey_or_df` | `"{.arg x} must be a survey design object or a data frame, not {.cls {class(x)[[1L]]}}."` |
+| 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
+| 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
 
 ---
 
@@ -160,3 +163,4 @@ Which test files cover which error table rows:
 | `test-analysis-ratios.R` | 43, 45, 45a, 45b, 46, 48, 49, 50, 54 |
 | `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74 (Layer 3 dual pattern), 77; S7 validator errors in Section 3.3 (class= only, not in this table) |
 | `test-glm-methods.R` | 76 |
+| `test-metadata-infer.R` | 78, 79, 80 |
