@@ -702,5 +702,5 @@ test_that("get_quantiles() probs in meta match argument value", {
 
   result <- get_quantiles(d, y1, probs = probs)
   expect_identical(meta(result)$probs, probs)
-  expect_equal(meta(result)$variable, "y1")
+  expect_equal(names(meta(result)$x), "y1")
 })

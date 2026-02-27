@@ -404,8 +404,8 @@ test_that("get_ratios() stores numerator and denominator names in meta()", {
   result <- get_ratios(d, y1, y2)
   m      <- meta(result)
 
-  expect_identical(m$numerator,   "y1")
-  expect_identical(m$denominator, "y2")
+  expect_identical(m$numerator$name,   "y1")
+  expect_identical(m$denominator$name, "y2")
 })
 
 test_that("get_ratios() meta() stores design_type", {
@@ -423,8 +423,8 @@ test_that("get_ratios() meta() stores variable labels when present", {
   d  <- set_var_label(d, y2, "Denominator variable")
 
   result <- get_ratios(d, y1, y2)
-  expect_identical(meta(result)$numerator_label,   "Numerator variable")
-  expect_identical(meta(result)$denominator_label, "Denominator variable")
+  expect_identical(meta(result)$numerator$variable_label,   "Numerator variable")
+  expect_identical(meta(result)$denominator$variable_label, "Denominator variable")
 })
 
 test_that("get_ratios() meta() n_respondents equals nrow(design@data)", {
@@ -440,7 +440,7 @@ test_that("get_ratios() meta() group_names populated when group used", {
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- get_ratios(d, y1, y2, group = group)
-  expect_identical(meta(result)$group_names, "group")
+  expect_identical(names(meta(result)$group), "group")
 })
 
 # ---------------------------------------------------------------------------
@@ -623,4 +623,68 @@ test_that("get_ratios() returns finite ratio for all 5 design types", {
       label = paste0("get_ratios() finite ratio for design type: ", nm)
     )
   }
+})
+
+# ---------------------------------------------------------------------------
+# Category 14: New meta structure — nested numerator/denominator/group
+# ---------------------------------------------------------------------------
+
+test_that("get_ratios() meta$numerator has nested list structure", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 80L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, y1, "Income")
+
+  result <- get_ratios(d, y1, y2)
+  m      <- meta(result)
+
+  expect_identical(m$numerator$name, "y1")
+  expect_identical(m$numerator$variable_label, "Income")
+  expect_true(all(c("name", "variable_label", "question_preface", "value_labels") %in%
+                    names(m$numerator)))
+})
+
+test_that("get_ratios() meta$denominator has nested list structure", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 81L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_ratios(d, y1, y2)
+  m      <- meta(result)
+
+  expect_identical(m$denominator$name, "y2")
+  expect_true(all(c("name", "variable_label", "question_preface", "value_labels") %in%
+                    names(m$denominator)))
+})
+
+test_that("get_ratios() group column is <fct> when group var has haven labels", {
+  df <- data.frame(
+    y1     = rnorm(100),
+    y2     = abs(rnorm(100)) + 0.5,
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  result <- get_ratios(d, y1, y2, group = gender)
+  expect_true(is.factor(result$gender))
+  expect_identical(levels(result$gender), c("Male", "Female"))
+})
+
+test_that("get_ratios() meta$group stores labels regardless of label_values", {
+  df <- data.frame(
+    y1     = rnorm(100),
+    y2     = abs(rnorm(100)) + 0.5,
+    gender = structure(c(1L, 2L)[rep(1:2, 50)],
+                       labels = c(Male = 1L, Female = 2L)),
+    w      = rep(1, 100)
+  )
+  d <- as_survey_srs(df, weights = w)
+
+  r_true  <- get_ratios(d, y1, y2, group = gender, label_values = TRUE)
+  r_false <- get_ratios(d, y1, y2, group = gender, label_values = FALSE)
+
+  expect_equal(meta(r_true)$group$gender$value_labels,
+               c(Male = 1L, Female = 2L))
+  expect_equal(meta(r_false)$group$gender$value_labels,
+               c(Male = 1L, Female = 2L))
 })

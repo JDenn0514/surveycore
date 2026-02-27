@@ -22,7 +22,7 @@ test_that("get_totals() with variable returns survey_totals tibble with n column
   expect_false("se"     %in% names(result))   # not in default variance = "ci"
   expect_true(is.finite(result$total[[1L]]))
   expect_lt(result$ci_low[[1L]], result$ci_high[[1L]])
-  expect_identical(meta(result)$variable, "y1")
+  expect_identical(names(meta(result)$x), "y1")
 })
 
 test_that("get_totals() with no variable estimates population size (no n column)", {
@@ -35,7 +35,7 @@ test_that("get_totals() with no variable estimates population size (no n column)
   expect_true("total"  %in% names(result))
   expect_false("n"     %in% names(result))   # omitted in no-variable mode
   expect_true(is.finite(result$total[[1L]]))
-  expect_null(meta(result)$variable)
+  expect_null(meta(result)$x)
 
   # Population size ≈ sum of weights
   expected_N <- sum(df$wt)
@@ -107,17 +107,17 @@ test_that("get_totals() meta() stores variable and design type", {
   result <- get_totals(d, y1)
   m      <- meta(result)
 
-  expect_identical(m$variable, "y1")
+  expect_identical(names(m$x), "y1")
   expect_true(is.character(m$design_type))
   expect_equal(m$conf_level, 0.95)
 })
 
-test_that("get_totals() meta()$variable is NULL in no-variable mode", {
+test_that("get_totals() meta()$x is NULL in no-variable mode", {
   df <- make_survey_data(n = 50L, design = "taylor", seed = 9L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- get_totals(d)
-  expect_null(meta(result)$variable)
+  expect_null(meta(result)$x)
 })
 
 # ---------------------------------------------------------------------------

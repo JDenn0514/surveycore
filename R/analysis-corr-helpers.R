@@ -102,8 +102,7 @@
 # @return A survey_corr tibble with columns: variable + one per focal variable.
 .corr_wide <- function(
   x_names, display_names, pairs_i, pairs_j, pair_results,
-  diagonal, design, var_labels_list, q_prefaces_list, val_labels_list,
-  conf_level
+  diagonal, design, x_meta_list, group_meta, conf_level
 ) {
   p <- length(x_names)
   n_pairs <- length(pairs_i)
@@ -130,15 +129,11 @@
   }
 
   meta_args <- list(
-    variables         = x_names,
-    variable_labels   = var_labels_list,
-    question_prefaces = q_prefaces_list,
-    value_labels      = val_labels_list,
-    method            = "pearson",
-    conf_level        = conf_level,
-    call              = sys.call(-1L),
-    group_names       = character(0),
-    group_labels      = list()
+    conf_level = conf_level,
+    call       = sys.call(-1L),
+    method     = "pearson",
+    group      = group_meta,
+    x          = x_meta_list
   )
 
   result <- .make_result_tibble(

@@ -203,20 +203,8 @@ get_ratios <- function(
   }
 
   # ── Step 5: Collect variable metadata ─────────────────────────────────────
-  num_label   <- design@metadata@variable_labels[[num_name]] %||%
-    attr(design@data[[num_name]], "label", exact = TRUE)
-  denom_label <- design@metadata@variable_labels[[denom_name]] %||%
-    attr(design@data[[denom_name]], "label", exact = TRUE)
-
-  q_prefaces <- list(
-    design@metadata@question_prefaces[[num_name]],
-    design@metadata@question_prefaces[[denom_name]]
-  )
-  names(q_prefaces) <- c(num_name, denom_name)
-
-  # For numeric variables, value_labels entries are NULL
-  val_labels <- list(NULL, NULL)
-  names(val_labels) <- c(num_name, denom_name)
+  num_meta   <- .extract_var_meta(design, num_name)
+  denom_meta <- .extract_var_meta(design, denom_name)
 
   # ── Step 6: Main accumulation loop ────────────────────────────────────────
   acc_ratio  <- numeric(0)
@@ -357,31 +345,20 @@ get_ratios <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
   } else {
     groups_df <- data.frame()
   }
 
   # ── Step 11: Build meta_args ──────────────────────────────────────────────
-  group_labels_list <- lapply(
-    group_vars,
-    function(gv) design@metadata@variable_labels[[gv]] %||%
-      attr(design@data[[gv]], "label", exact = TRUE)
-  )
-  if (length(group_vars) > 0L) {
-    names(group_labels_list) <- group_vars
-  }
+  group_meta <- .build_group_meta(design, group_vars)
 
   meta_args <- list(
-    numerator         = num_name,
-    numerator_label   = num_label,
-    denominator       = denom_name,
-    denominator_label = denom_label,
-    question_prefaces = q_prefaces,
-    value_labels      = val_labels,
-    conf_level        = conf_level,
-    call              = match.call(),
-    group_names       = group_vars,
-    group_labels      = group_labels_list
+    conf_level  = conf_level,
+    call        = match.call(),
+    group       = group_meta,
+    numerator   = c(list(name = num_name),   num_meta),
+    denominator = c(list(name = denom_name), denom_meta)
   )
 
   # ── Step 12: Assemble result ───────────────────────────────────────────────

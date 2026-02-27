@@ -288,7 +288,47 @@ get_means(svy, bpxsy1, name_style = "broom")
 
 ---
 
-## 9. surveytidy integration
+## 9. Weighted quantiles — `get_quantiles()`
+
+`get_quantiles()` estimates survey-weighted quantiles using the Woodruff (1952)
+confidence interval method. Confidence intervals are derived by inverting the
+weighted CDF rather than assuming normality, so they are generally **asymmetric**
+around the estimate and always respect the range of the data.
+
+```{r quantiles-basic}
+# Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))
+get_quantiles(svy, ridageyr)
+```
+
+The `quantile` column uses probability labels: `p25`, `p50`, `p75`, etc.
+
+### Choosing quantiles
+
+Pass any numeric vector to `probs`. For the median alone:
+
+```{r quantiles-median}
+get_quantiles(svy, ridageyr, probs = 0.5)
+```
+
+For deciles of systolic blood pressure:
+
+```{r quantiles-deciles}
+get_quantiles(svy, bpxsy1, probs = seq(0.1, 0.9, 0.1))
+```
+
+### Grouped quantiles
+
+```{r quantiles-grouped}
+# Median and IQR of systolic BP by sex
+get_quantiles(svy, bpxsy1, group = riagendr)
+```
+
+> **Note:** `"deff"` is always `NA` for quantiles — there is no closed-form SRS
+> standard error for quantile estimates, so the design effect cannot be computed.
+
+---
+
+## 10. surveytidy integration
 
 The **surveytidy** package provides dplyr verbs — `filter()`, `select()`,
 `mutate()`, and `group_by()` — that work directly on survey design objects.
@@ -368,6 +408,7 @@ get_means(svy, bpxsy1, group = riagendr)
 | `get_totals()` | Population counts or aggregates — weighted sums |
 | `get_ratios()` | Ratios of two weighted totals |
 | `get_corr()` | Pairwise Pearson correlations |
+| `get_quantiles()` | Weighted quantiles and median — Woodruff CIs |
 
 All functions:
 - Return a tibble subclass ready for further analysis or display

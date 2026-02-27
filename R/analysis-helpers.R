@@ -5,7 +5,7 @@
 # functions live at the top of their respective source files.
 #
 # Contents:
-#   Meta-key constants (seven character vectors)
+#   Meta-key constants (six character vectors)
 #   .degf_taylor()          — Taylor df formula (retained; not called by .degf())
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
@@ -21,44 +21,18 @@
 # ── Meta-key constants ────────────────────────────────────────────────────────
 #
 # Required meta_args keys for each get_*() function. Pass the appropriate
-# constant to .make_result_tibble() as required_meta_keys.
+# constant to .make_result_tibble() as required_meta_keys. The new nested
+# structure uses "group" and "x" (or "numerator"/"denominator" for ratios)
+# as top-level keys, replacing the old flat key sets.
 # These are the single source of truth for each function's meta_args contract.
 # Adding a new meta field requires updating only the constant here.
 
-FREQS_SINGLE_META_KEYS <- c(
-  "mode", "variable", "variable_label", "question_preface", "value_labels"
-)
-
-FREQS_MULTI_META_KEYS <- c(
-  "mode", "variables", "variable_labels", "question_prefaces", "value_labels"
-)
-
-MEANS_META_KEYS <- c(
-  "variable", "variable_label", "question_preface", "value_labels"
-)
-
-TOTALS_META_KEYS <- c(
-  "variable", "variable_label", "question_preface", "value_labels"
-)
-
-CORR_META_KEYS <- c(
-  "variables", "variable_labels", "question_prefaces", "value_labels", "method"
-)
-
-QUANTILES_META_KEYS <- c(
-  "variable", "variable_label", "question_preface", "value_labels", "probs"
-)
-
-RATIOS_META_KEYS <- c(
-  "numerator", "numerator_label", "denominator", "denominator_label",
-  "question_prefaces", "value_labels"
-)
-
-# New nested meta-key constants (added in analysis-label-meta-helpers).
-# These replace the flat constants above as each function is updated in
-# subsequent PRs. FREQS_SINGLE_META_KEYS and FREQS_MULTI_META_KEYS are kept
-# until PR 3 updates analysis-freqs.R.
-FREQS_META_KEYS <- c("group", "x")
+FREQS_META_KEYS     <- c("group", "x")
+MEANS_META_KEYS     <- c("group", "x")
+TOTALS_META_KEYS    <- c("group", "x")
+CORR_META_KEYS      <- c("group", "x", "method")
+QUANTILES_META_KEYS <- c("group", "x", "probs")
+RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 
 
 # ── .extract_var_meta() ───────────────────────────────────────────────────────

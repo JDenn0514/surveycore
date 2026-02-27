@@ -160,13 +160,9 @@ list(
 ## PR Checklist
 
 - [x] PR 1: `feature/analysis-label-meta-helpers` — shared helpers + meta doc update
-- [ ] PR 2: `feature/analysis-label-meta-means-totals` — apply to get_means() + get_totals()
-- [ ] PR 3: `feature/analysis-label-meta-freqs` — apply to get_freqs()
-- [ ] PR 4: `feature/analysis-label-meta-quantiles` — apply to get_quantiles()
-- [ ] PR 5: `feature/analysis-label-meta-corr` — apply to get_corr()
-- [ ] PR 6: `feature/analysis-label-meta-ratios` — apply to get_ratios()
+- [x] PR 2: `feature/analysis-label-meta-apply-all` — apply to all five functions (get_means, get_totals, get_freqs, get_quantiles, get_corr, get_ratios)
 
-PRs 2–6 each depend on PR 1.
+PR 2 depends on PR 1.
 
 ---
 
@@ -338,16 +334,28 @@ Write tests for each of the three new helpers:
 
 ---
 
-## PR 2: `feature/analysis-label-meta-means-totals`
+## PR 2: `feature/analysis-label-meta-apply-all`
 
-**Files changed:** `R/analysis-means.R`, `R/analysis-totals.R`,
-`tests/testthat/test-analysis-means.R`, `tests/testthat/test-analysis-totals.R`,
-`tests/testthat/_snaps/analysis-means.md` (regenerated),
-`tests/testthat/_snaps/analysis-totals.md` (regenerated)
+Apply the new meta structure and group label conversion to all five analysis
+functions in a single branch. Each sub-section below covers one function's
+changes. All steps follow the same four-step pattern established in the plan.
+
+**Files changed:**
+- `R/analysis-means.R`, `tests/testthat/test-analysis-means.R`, `tests/testthat/_snaps/analysis-means.md`
+- `R/analysis-totals.R`, `tests/testthat/test-analysis-totals.R`, `tests/testthat/_snaps/analysis-totals.md`
+- `R/analysis-freqs.R`, `tests/testthat/test-analysis-freqs.R`, `tests/testthat/_snaps/analysis-freqs.md`
+- `R/analysis-quantiles.R`, `tests/testthat/test-analysis-quantiles.R`, `tests/testthat/_snaps/analysis-quantiles.md`
+- `R/analysis-corr.R`, `tests/testthat/test-analysis-corr.R`, `tests/testthat/_snaps/analysis-corr.md`
+- `R/analysis-ratios.R`, `tests/testthat/test-analysis-ratios.R`, `tests/testthat/_snaps/analysis-ratios.md`
+- `R/analysis-helpers.R` (delete `FREQS_SINGLE_META_KEYS` / `FREQS_MULTI_META_KEYS` — previously kept for PR 3, now safe to remove here)
 
 **Prerequisite:** PR 1 merged.
 
-### get_means() changes (`R/analysis-means.R`)
+---
+
+### 2a. get_means() + get_totals()
+
+#### get_means() changes (`R/analysis-means.R`)
 
 **Step 1 — Replace group_labels extraction (lines 249–256) with `.build_group_meta()`:**
 
@@ -415,7 +423,7 @@ meta_args   <- list(
 )
 ```
 
-### get_totals() changes (`R/analysis-totals.R`)
+#### get_totals() changes (`R/analysis-totals.R`)
 
 Same four steps as get_means() above, with one difference in Step 4:
 
@@ -447,15 +455,11 @@ For both test files:
 
 ---
 
-## PR 3: `feature/analysis-label-meta-freqs`
+---
 
-**Files changed:** `R/analysis-freqs.R`,
-`tests/testthat/test-analysis-freqs.R`,
-`tests/testthat/_snaps/analysis-freqs.md` (regenerated)
+### 2b. get_freqs()
 
-**Prerequisite:** PR 1 merged.
-
-### get_freqs() changes (`R/analysis-freqs.R`)
+#### get_freqs() changes (`R/analysis-freqs.R`)
 
 **Step 1 — Replace the per-variable metadata extraction loop (lines 213–236):**
 
@@ -535,15 +539,11 @@ because PR 3 updates all references in the same commit.
 
 ---
 
-## PR 4: `feature/analysis-label-meta-quantiles`
+---
 
-**Files changed:** `R/analysis-quantiles.R`,
-`tests/testthat/test-analysis-quantiles.R`,
-`tests/testthat/_snaps/analysis-quantiles.md` (regenerated)
+### 2c. get_quantiles()
 
-**Prerequisite:** PR 1 merged.
-
-### get_quantiles() changes (`R/analysis-quantiles.R`)
+#### get_quantiles() changes (`R/analysis-quantiles.R`)
 
 Same four steps as get_means() in PR 2, including the `label_values` argument
 on the `.apply_group_labels()` call in Step 3. One addition in Step 4 — include
@@ -568,15 +568,11 @@ meta_args <- list(
 
 ---
 
-## PR 5: `feature/analysis-label-meta-corr`
+---
 
-**Files changed:** `R/analysis-corr.R`,
-`tests/testthat/test-analysis-corr.R`,
-`tests/testthat/_snaps/analysis-corr.md` (regenerated)
+### 2d. get_corr()
 
-**Prerequisite:** PR 1 merged.
-
-### get_corr() changes (`R/analysis-corr.R`)
+#### get_corr() changes (`R/analysis-corr.R`)
 
 `get_corr()` has no `group=` argument but derives group vars from `@groups`.
 It also has no `group_combos` block (correlation doesn't iterate over groups
@@ -657,15 +653,11 @@ result$var2 <- factor(x_display[result$var2], levels = unique(x_display))
 
 ---
 
-## PR 6: `feature/analysis-label-meta-ratios`
+---
 
-**Files changed:** `R/analysis-ratios.R`,
-`tests/testthat/test-analysis-ratios.R`,
-`tests/testthat/_snaps/analysis-ratios.md` (regenerated)
+### 2e. get_ratios()
 
-**Prerequisite:** PR 1 merged.
-
-### get_ratios() changes (`R/analysis-ratios.R`)
+#### get_ratios() changes (`R/analysis-ratios.R`)
 
 `get_ratios()` uses named roles (`numerator`, `denominator`) instead of `x`.
 

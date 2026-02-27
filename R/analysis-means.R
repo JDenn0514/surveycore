@@ -152,13 +152,7 @@ get_means <- function(
   }
 
   # ── Step 5: Collect variable metadata ───────────────────────────────────────
-  var_label    <- design@metadata@variable_labels[[x_name]] %||%
-    attr(design@data[[x_name]], "label", exact = TRUE)
-  q_preface    <- design@metadata@question_prefaces[[x_name]]
-  val_labels   <- design@metadata@value_labels[[x_name]] %||%
-    attr(design@data[[x_name]], "labels", exact = TRUE)
-  val_labels_l <- list(val_labels)
-  names(val_labels_l) <- x_name
+  x_meta <- .extract_var_meta(design, x_name)
 
   # ── Step 6: Main accumulation loop ──────────────────────────────────────────
   acc_mean  <- numeric(0)
@@ -241,29 +235,20 @@ get_means <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
   } else {
     groups_df <- data.frame()
   }
 
   # ── Step 10: Build meta_args ──────────────────────────────────────────────────
-  group_labels_list <- lapply(
-    group_vars,
-    function(gv) design@metadata@variable_labels[[gv]] %||%
-      attr(design@data[[gv]], "label", exact = TRUE)
-  )
-  if (length(group_vars) > 0L) {
-    names(group_labels_list) <- group_vars
-  }
+  group_meta <- .build_group_meta(design, group_vars)
+  x_list     <- stats::setNames(list(x_meta), x_name)
 
   meta_args <- list(
-    variable         = x_name,
-    variable_label   = var_label,
-    question_preface = q_preface,
-    value_labels     = val_labels_l,
-    conf_level       = conf_level,
-    call             = match.call(),
-    group_names      = group_vars,
-    group_labels     = group_labels_list
+    conf_level = conf_level,
+    call       = match.call(),
+    group      = group_meta,
+    x          = x_list
   )
 
   # ── Step 11: Assemble result ─────────────────────────────────────────────────

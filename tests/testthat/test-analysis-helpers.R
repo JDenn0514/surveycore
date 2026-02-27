@@ -211,14 +211,14 @@ test_that(".make_result_tibble() produces the correct S3 class hierarchy", {
   col_vecs   <- list(mean = c(10.0, 20.0), n = c(25L, 25L))
   groups_df  <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
   meta_args  <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = "group",
-    group_labels     = list(group = NULL)
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(group = list(variable_label = NULL,
+                                   question_preface = NULL,
+                                   value_labels = NULL)),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
@@ -243,14 +243,12 @@ test_that(".make_result_tibble() attaches .meta attribute", {
   col_vecs   <- list(mean = 42.0, n = 50L)
   groups_df  <- data.frame()
   meta_args  <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
@@ -276,15 +274,11 @@ test_that(".make_result_tibble() stopifnot fires when required keys missing", {
 
   col_vecs  <- list(mean = 42.0)
   groups_df <- data.frame()
-  # meta_args is missing "variable_label" which is in MEANS_META_KEYS
+  # meta_args is missing "group" and "x" which are in MEANS_META_KEYS
   incomplete_meta <- list(
-    variable         = "y1",
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1))
+    # deliberately missing "group" and "x"
   )
 
   expect_error(
@@ -306,14 +300,14 @@ test_that(".make_result_tibble() includes group columns before result columns", 
   col_vecs  <- list(mean = c(10.0, 20.0))
   groups_df <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
   meta_args <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = "group",
-    group_labels     = list(group = NULL)
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(group = list(variable_label = NULL,
+                                   question_preface = NULL,
+                                   value_labels = NULL)),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
