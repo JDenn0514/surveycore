@@ -35,6 +35,7 @@ Other metadata:
 \code{\link{extract_question_preface}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_note}()},
+\code{\link{infer_question_prefaces}()},
 \code{\link{set_question_preface}()},
 \code{\link{set_question_prefaces}()},
 \code{\link{set_val_labels}()},
