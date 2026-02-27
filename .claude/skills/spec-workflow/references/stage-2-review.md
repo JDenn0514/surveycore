@@ -48,6 +48,8 @@ For every exported function, verify a test plan exists for each category:
 10. **Error paths** — every row in the error table covered by a test
 11. **Edge cases** — all-NA column, zero-weight rows, single-level groups
 12. **Multi-variable** — behavior with multiple variables at once
+13. **Print snapshot** — `print()` output matches expected format (snapshot
+    test); required for every result class that has a `print()` method
 
 Also check mechanic rules:
 
@@ -64,6 +66,10 @@ For every function:
 - Argument order correct?
   `x`/`data` → required NSE → required scalar → optional NSE → optional scalar → `...`
 - All output column names, types, and S3 class hierarchy stated?
+- For every result class with a `print()` or `format()` method: is the exact
+  console output shown as a verbatim example block, including any header line?
+  Vague descriptions like "prints as a tibble" are flagged as REQUIRED unless
+  they are an explicit intentional decision with a shown example.
 - Error table complete with class names in correct format (`surveycore_error_*`,
   `surveycore_warning_*`)?
 - All new error classes flagged as additions to `plans/error-messages.md`?
@@ -134,27 +140,54 @@ Options:
 
 ---
 
+## If a Review File Already Exists
+
+Before writing any output, check for `plans/spec-review-{id}.md`.
+
+**If it exists:**
+1. Read the full existing file
+2. Complete your fresh review of the current spec
+3. In the new pass section, list every previously flagged issue with a status:
+   - ✅ Resolved — the spec was updated to address it
+   - ⚠️ Still open — the spec was not changed
+4. **Append** the new pass section to the bottom of the existing file — never
+   overwrite or delete prior content
+
+**If it does not exist:** create the file with Pass 1.
+
+---
+
 ## Output Structure
 
 Organize all issues by spec section. If a section has no issues, say
 "No issues found."
 
 ```markdown
-## Spec Review: [Document name or Phase]
+## Spec Review: [id] — Pass [N] ([YYYY-MM-DD])
 
-### Section: [First major section name]
+### Prior Issues (Pass [N-1])
+_Omit this section on Pass 1._
 
-**Issue 1: [title]**
+| # | Title | Status |
+|---|---|---|
+| 1 | [title] | ✅ Resolved |
+| 2 | [title] | ⚠️ Still open |
+
+### New Issues
+
+#### Section: [First major section name]
+
+**Issue [N]: [title]**
 Severity: BLOCKING
 ...
 
-### Section: [Next section name]
+#### Section: [Next section name]
 
-No issues found.
+No new issues found.
 
 ---
 
-## Summary
+## Summary (Pass [N])
 
 | Severity | Count |
 |---|---|
@@ -188,11 +221,10 @@ honest, not performatively negative.
 
 ## After Completing the Review
 
-1. Ask for the phase number if not obvious from the spec filename.
-2. Save the full review output to `plans/spec-review-phase-{X}.md`.
+1. Determine `{id}` from the spec filename if not already known.
+2. Append the new pass section to `plans/spec-review-{id}.md` (create on Pass 1).
 3. End the session with:
 
-   > "{N} issues found ({X} blocking, {Y} required, {Z} suggestions).
-   > Start a new session with `/spec-workflow stage 3` to resolve these
-   > interactively. The issue list has been saved to
-   > `plans/spec-review-phase-{X}.md`."
+   > "Pass [N] complete: {N} new issues ({X} blocking, {Y} required, {Z}
+   > suggestions). Start a new session with `/spec-workflow stage 3` to resolve
+   > these interactively. Review appended to `plans/spec-review-{id}.md`."

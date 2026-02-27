@@ -137,10 +137,14 @@ Add any new error/warning classes you will need **before** writing code that use
 
 ## Implementation
 
-1. Write the R source file
-2. Write the test file (source and tests in the same session)
-3. Run `devtools::document()` if any roxygen2 tags changed
-4. Update `_pkgdown.yml` if any new functions were exported — add them to the
+Follow TDD order — tests before source, always.
+
+1. Write the test file (from the spec's test categories for this section)
+2. Run `devtools::test()` — **confirm all new tests fail (red phase)**
+   - If a new test unexpectedly passes, stop and investigate before proceeding
+3. Write the R source file to make the tests pass
+4. Run `devtools::document()` if any roxygen2 tags changed
+5. Update `_pkgdown.yml` if any new functions were exported — add them to the
    correct `reference:` section (match the `@family` tag used in roxygen)
 
 ---

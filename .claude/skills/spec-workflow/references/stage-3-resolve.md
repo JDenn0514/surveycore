@@ -2,7 +2,7 @@
 
 ## Before Starting
 
-Check for a spec-review file at `plans/spec-review-phase-{X}.md`.
+Check for a spec-review file at `plans/spec-review-{id}.md`.
 
 **If the file exists:** Work through those issues in order. Do not do a fresh
 review pass — the adversarial review is already done. Skip to the review mode
@@ -10,7 +10,7 @@ question below.
 
 **If no file exists:** Tell the user:
 
-> "No spec-review file found at `plans/spec-review-phase-{X}.md`.
+> "No spec-review file found at `plans/spec-review-{id}.md`.
 > Run Stage 2 first to get a saved issue list, then come back here to
 > resolve them. Alternatively, confirm you want an informal review pass
 > without a saved issue list."
@@ -96,13 +96,15 @@ are true:
 **If every decision is already fully captured in the updated spec, skip the
 log entry.**
 
-The log lives at `plans/claude-decisions-phase-{X}.md`. Create the file with
-this header if it doesn't exist:
+The log lives at `plans/decisions-{id}.md`. This file is **append-only** —
+never overwrite or delete existing entries. If the file exists, add the new
+entry below all previous entries. Create the file with this header only if
+it doesn't exist yet:
 
 ```markdown
-# Claude Decisions Log — surveycore Phase [X]
+# Decisions Log — [package] [id]
 
-This file records planning decisions made during implementation of Phase [X].
+This file records planning decisions made during [id].
 Each entry corresponds to one planning session.
 
 ---
