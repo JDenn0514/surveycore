@@ -54,6 +54,115 @@ RATIOS_META_KEYS <- c(
   "question_prefaces", "value_labels"
 )
 
+# New nested meta-key constants (added in analysis-label-meta-helpers).
+# These replace the flat constants above as each function is updated in
+# subsequent PRs. FREQS_SINGLE_META_KEYS and FREQS_MULTI_META_KEYS are kept
+# until PR 3 updates analysis-freqs.R.
+FREQS_META_KEYS <- c("group", "x")
+
+
+# ── .extract_var_meta() ───────────────────────────────────────────────────────
+#
+# Returns a list(variable_label, question_preface, value_labels) for one
+# variable. Checks @metadata first; falls back to haven attributes on the
+# column when @metadata has no entry. For factor columns with no haven labels,
+# surfaces levels() as value_labels in haven format: a named integer vector
+# where names are level strings and values are sequential integers starting
+# at 1L.
+#
+# @param design   A survey design object.
+# @param var_name Character(1): column name in design@data.
+# @return Named list with keys: variable_label, question_preface, value_labels.
+.extract_var_meta <- function(design, var_name) {
+  col <- design@data[[var_name]]
+
+  variable_label <- design@metadata@variable_labels[[var_name]] %||%
+    attr(col, "label", exact = TRUE)
+
+  question_preface <- design@metadata@question_prefaces[[var_name]]
+
+  value_labels <- design@metadata@value_labels[[var_name]] %||%
+    attr(col, "labels", exact = TRUE)
+
+  if (is.null(value_labels) && is.factor(col)) {
+    lvls        <- levels(col)
+    value_labels <- stats::setNames(seq_along(lvls), lvls)
+    storage.mode(value_labels) <- "integer"
+  }
+
+  list(
+    variable_label   = variable_label,
+    question_preface = question_preface,
+    value_labels     = value_labels
+  )
+}
+
+
+# ── .build_group_meta() ───────────────────────────────────────────────────────
+#
+# Returns a named list, one entry per group variable, each being the output
+# of .extract_var_meta(). Returns list() when group_vars is empty or has
+# length 0.
+#
+# @param design     A survey design object.
+# @param group_vars Character vector of group variable names.
+# @return Named list of per-variable metadata lists.
+.build_group_meta <- function(design, group_vars) {
+  if (length(group_vars) == 0L) return(list())
+  meta <- lapply(group_vars, function(gv) .extract_var_meta(design, gv))
+  stats::setNames(meta, group_vars)
+}
+
+
+# ── .apply_group_labels() ─────────────────────────────────────────────────────
+#
+# Converts coded group columns in a group_combos data frame to labelled
+# factors in-place. When label_values = FALSE, returns group_combos unchanged.
+#
+# Haven-labelled columns: the value_labels vector has names = label strings
+# and values = numeric/integer codes. Produces a factor whose levels are
+# the label strings ordered by code value (ascending numeric order).
+#
+# Plain R factor columns: re-factors using the original levels() order exactly.
+#
+# Other columns (unlabelled integer, character, etc.): returned unchanged.
+#
+# IMPORTANT: Must be called AFTER group_combos is sorted on raw codes.
+# Sorting after label conversion would use factor level order, not raw numeric.
+#
+# @param group_combos A data.frame of group variable columns.
+# @param group_vars   Character vector of group variable names (must be
+#                     column names in group_combos and design@data).
+# @param design       A survey design object.
+# @param label_values Logical(1). When FALSE, returns group_combos unmodified.
+# @return The (possibly modified) group_combos data frame.
+.apply_group_labels <- function(group_combos, group_vars, design,
+                                label_values = TRUE) {
+  if (!label_values) return(group_combos)
+  for (gv in group_vars) {
+    col     <- group_combos[[gv]]
+    src_col <- design@data[[gv]]
+
+    labels <- design@metadata@value_labels[[gv]] %||%
+      attr(src_col, "labels", exact = TRUE)
+
+    if (!is.null(labels)) {
+      # labels: c("Male" = 1, "Female" = 2) — names=label strings, values=codes
+      # Build a map from code (as character) to label string
+      label_map <- stats::setNames(names(labels), as.character(unname(labels)))
+      group_combos[[gv]] <- factor(
+        label_map[as.character(col)],
+        levels = names(labels)
+      )
+    } else if (is.factor(src_col)) {
+      # Re-factor preserving original level order
+      group_combos[[gv]] <- factor(as.character(col), levels = levels(src_col))
+    }
+    # else: leave unchanged (stays integer/numeric/character as-is)
+  }
+  group_combos
+}
+
 
 # ── .degf_taylor() ─────────────────────────────────────────────────────────────
 #
