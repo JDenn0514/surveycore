@@ -7,6 +7,7 @@
 get_corr(
   design,
   x,
+  group = NULL,
   format = c("long", "wide"),
   redundant = FALSE,
   diagonal = FALSE,
@@ -28,9 +29,14 @@ get_corr(
 numeric variable names. Non-numeric variables are dropped with a warning.
 At least two numeric variables must remain.}
 
+\item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
+variable(s). Combined with any grouping set by \code{group_by()}. Default
+\code{NULL}.}
+
 \item{format}{\code{"long"} (default) or \code{"wide"}. Long format returns one row
 per variable pair with inference statistics. Wide format returns the
-correlation matrix (\code{r} values only — no variance or inference columns).}
+correlation matrix (\code{r} values only — no variance or inference columns).
+When \code{group} is active, group columns are prepended in both formats.}
 
 \item{redundant}{Logical. If \code{FALSE} (default), each pair appears once
 (lower triangle: pairs where var1 precedes var2 in input order). If
@@ -58,8 +64,9 @@ pairwise sum of weights (both variables non-NA). Default \code{FALSE}.}
 \item{na.rm}{Logical. If \code{TRUE} (default), pairs use complete cases for
 each variable pair separately (pairwise deletion).}
 
-\item{label_values}{Logical. Accepted for API uniformity; has no visible
-effect. Default \code{TRUE}.}
+\item{label_values}{Logical. If \code{TRUE} (default) and the grouping variable
+has value labels, the group column is converted to a labelled factor.
+Has no visible effect when no groups are active.}
 
 \item{label_vars}{Logical. If \code{TRUE} (default) and variable labels are
 set in metadata, \code{var1}/\code{var2} columns (long) and \code{variable} column
@@ -73,8 +80,12 @@ format.}
 \value{
 A \code{survey_corr} tibble (also inheriting \code{survey_result}).
 
+When \code{group} is active, group variable columns are prepended before all
+other columns in both long and wide formats.
+
 \strong{Long format} columns:
 \itemize{
+\item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{var1}, \code{var2} — variable names (or labels when \code{label_vars = TRUE}).
 \item \code{r} — Pearson correlation coefficient.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
@@ -88,6 +99,7 @@ A \code{survey_corr} tibble (also inheriting \code{survey_result}).
 
 \strong{Wide format} columns:
 \itemize{
+\item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{variable} — row variable names (or labels).
 \item One column per focal variable, containing \code{r} values.
 }

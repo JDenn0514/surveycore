@@ -5,7 +5,7 @@ output:
     toc: true
     toc_depth: 3
 bibliography: references.bib
-link-citations: yes
+link-citations: true
 vignette: >
   %\VignetteIndexEntry{Getting Started with surveycore}
   %\VignetteEngine{knitr::rmarkdown}
@@ -19,22 +19,19 @@ knitr::opts_chunk$set(
 )
 ```
 
-surveycore gives you a complete workflow for survey data analysis: design
-objects that encode how your data were collected, analysis functions that
-apply those designs when computing estimates, and a tidyverse-compatible
-interface that plugs into familiar tools.
+`surveycore` gives you a (mostly) complete workflow for survey data analysis. This vignette is designed to give you a quick overview of the main functionality present in this package. It is comprised of three main sections:
 
-This vignette is a practical walkthrough — data to estimates in as few steps
-as possible. We will use `nhanes_2017`, a stratified probability cluster
-sample, as our running example throughout.
+1. Creating survey objects 
 
-For a deep dive on *creating* survey design objects — choosing the right
-constructor, handling replicate weights, two-phase designs, and non-probability
-panels — see `vignette("creating-survey-objects")`.
+2. Conducting simple analysis
+
+3. Managing the metadata
 
 ---
 
 ## 1. Create a survey design
+
+When conducting survey research, it is important 
 
 Every analysis function takes a **survey design object** as its first argument.
 The design object captures how the data were collected so that point estimates

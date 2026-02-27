@@ -106,23 +106,172 @@ test_that("get_corr() meta() stores variables, method, and design type", {
 })
 
 # ---------------------------------------------------------------------------
-# Category 3: Grouped analysis — @groups ignored (no group= argument)
+# Category 3: Grouped analysis — group= argument and @groups
 # ---------------------------------------------------------------------------
 
-test_that("get_corr() ignores @groups (group= argument not supported)", {
-  skip_if_not_installed("surveytidy")
-  df <- make_survey_data(n = 200L, design = "taylor", seed = 7L)
+test_that("get_corr() group= produces one row per group × pair in long format", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 7L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
-  d_grouped <- surveytidy::group_by(d, group)
-  result_g  <- get_corr(d_grouped, x = c(y1, y2))
-  result_u  <- get_corr(d,          x = c(y1, y2))
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  n_groups <- length(unique(df$group[!is.na(df$group)]))  # 3
+  expect_equal(nrow(result), n_groups * 1L)   # 3 groups × 1 pair
+  expect_true("group" %in% names(result))
+  # Each group appears exactly once
+  expect_identical(
+    sort(as.character(result$group)),
+    sort(unique(df$group[!is.na(df$group)]))
+  )
+})
 
-  # With @groups, get_corr() still produces one row (no group columns)
-  expect_equal(nrow(result_g), 1L)
-  expect_false("group" %in% names(result_g))
-  # Results should be identical (groups ignored)
-  expect_equal(result_g$r[[1L]], result_u$r[[1L]], tolerance = 1e-10)
+test_that("get_corr() @groups from group_by() is now respected", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 71L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  d_grouped  <- surveytidy::group_by(d, group)
+  result_at  <- get_corr(d_grouped, x = c(y1, y2))
+  result_arg <- get_corr(d, x = c(y1, y2), group = group)
+
+  # Both paths return the same number of rows (one per group × pair)
+  expect_equal(nrow(result_at), nrow(result_arg))
+  # group column present in both
+  expect_true("group" %in% names(result_at))
+  # r values match when aligned by group level
+  r_at  <- result_at$r[order(as.character(result_at$group))]
+  r_arg <- result_arg$r[order(as.character(result_arg$group))]
+  expect_equal(r_at, r_arg, tolerance = 1e-10)
+})
+
+test_that("get_corr() wide + groups gives n_groups * p rows, group col precedes variable", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 72L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2, y3), group = group,
+                     format = "wide", label_values = FALSE)
+  n_groups <- length(unique(df$group[!is.na(df$group)]))  # 3
+  p        <- 3L
+  expect_equal(nrow(result), n_groups * p)   # 9 rows
+  expect_true("group"    %in% names(result))
+  expect_true("variable" %in% names(result))
+  # group col comes before variable col
+  expect_lt(which(names(result) == "group"),
+            which(names(result) == "variable"))
+  # No inference columns in wide format
+  expect_false("p_value" %in% names(result))
+})
+
+test_that("get_corr() group column is a factor with label levels when label_values = TRUE", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", with_labels = TRUE, seed = 73L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = TRUE)
+  expect_true(is.factor(result$group))
+  expect_true(all(levels(result$group) %in% c("Group A", "Group B", "Group C")))
+})
+
+test_that("get_corr() meta(result)$group is a non-empty named list when group is active", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 74L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group)
+  m <- meta(result)
+  expect_type(m$group, "list")
+  expect_length(m$group, 1L)         # one group var: "group"
+  expect_true("group" %in% names(m$group))
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$group[["group"]])))
+})
+
+test_that("get_corr() grouped r matches filtered-domain result per group [numerical]", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L,
+                         design = "taylor", seed = 75L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result_g <- get_corr(d, x = c(y1, y2), group = group,
+                       variance = "se", label_values = FALSE)
+
+  # Verify group "A": grouped result matches filter-domain result
+  d_a      <- surveytidy::filter(d, group == "A")
+  result_a <- get_corr(d_a, x = c(y1, y2), variance = "se")
+
+  row_a <- result_g[as.character(result_g$group) == "A", ]
+  expect_equal(row_a$r[[1L]],  result_a$r[[1L]],  tolerance = 1e-10)
+  expect_equal(row_a$se[[1L]], result_a$se[[1L]], tolerance = 1e-8)
+})
+
+test_that("get_corr() fires surveycore_warning_single_level for one-level group in domain", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 2L,
+                         design = "taylor", seed = 76L)
+  d     <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d_one <- surveytidy::filter(d, group == "A")
+
+  expect_warning(
+    get_corr(d_one, x = c(y1, y2), group = group),
+    class = "surveycore_warning_single_level"
+  )
+})
+
+test_that("get_corr() returns r = NA, n = 0L when group has all-NA focal values", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 77L)
+  # Group "C" rows have no complete cases for y1/y2
+  df$y1[df$group == "C"] <- NA_real_
+  df$y2[df$group == "C"] <- NA_real_
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  row_c  <- result[as.character(result$group) == "C", ]
+  expect_equal(nrow(row_c), 1L)
+  expect_true(is.na(row_c$r[[1L]]))
+  expect_equal(row_c$n[[1L]], 0L)
+})
+
+test_that("get_corr() excludes NA group values from group combinations", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 78L)
+  df$group[1:20] <- NA_character_
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  expect_false(anyNA(result$group))
+  n_unique_nonna <- length(unique(df$group[!is.na(df$group)]))  # 3
+  expect_equal(nrow(result), n_unique_nonna * 1L)
+})
+
+test_that("get_corr() redundant = TRUE with groups gives n_combos * 2 * n_pairs rows", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 79L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d2 <- surveytidy::filter(d, group %in% c("A", "B"))
+
+  result   <- get_corr(d2, x = c(y1, y2, y3), group = group,
+                       redundant = TRUE, diagonal = FALSE)
+  n_combos <- 2L   # A and B
+  n_pairs  <- 3L   # (y1,y2), (y1,y3), (y2,y3)
+  expect_equal(nrow(result), n_combos * 2L * n_pairs)
+})
+
+test_that("get_corr() diagonal = TRUE with groups gives n_combos * (n_pairs + p) rows", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 80L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d2 <- surveytidy::filter(d, group %in% c("A", "B"))
+
+  result   <- get_corr(d2, x = c(y1, y2, y3), group = group,
+                       redundant = FALSE, diagonal = TRUE)
+  n_combos <- 2L
+  n_pairs  <- 3L
+  p        <- 3L
+  expect_equal(nrow(result), n_combos * (n_pairs + p))
 })
 
 # ---------------------------------------------------------------------------

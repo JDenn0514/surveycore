@@ -588,3 +588,454 @@ Options:
 **Blocking issues:** SRS variance formula is mathematically incorrect (Issue 5); `survey_glm_summary` structure undefined (Issue 17); Taylor variance pass-through architecture unspecified (Issue 3); `control = list(...)` signature broken (Issue 6); `survey_calibrated` behavior unspecified (Issue 1); domain estimation out-of-domain score treatment unresolved (Issue 30); `survey_glm_summary` quality gate depends on unspecified class (Issue 29, subsumed by 17).
 
 **Overall assessment:** The spec has serious blocking gaps — a mathematical error in the SRS variance formula, an undefined class required by the quality gates, an underspecified architectural interface for variance computation, and a broken function signature — that must be fixed before implementation begins. The REQUIRED issues are largely edge cases and testing specifics that are well within scope to resolve. Most blocking issues have low-effort resolutions; this spec is 2-3 focused edits away from being implementable.
+
+---
+
+## Round 2 Review: v0.3 (Post-Stage 3 Resolution)
+
+**Reviewer:** Claude (adversarial batch pass — second pass)
+**Date:** 2026-02-27
+**Spec version:** 0.3 — marked "Approved — ready for implementation plan"
+
+**Status of Issues 1–30:** All resolved. Decisions recorded in
+`plans/claude-decisions-phase-2.md`. The spec has been updated accordingly.
+The issues below are NEW gaps found in the updated v0.3 spec.
+
+---
+
+### Section I: Scope
+
+**Issue 31: Expanded S3 method set (13 methods) is in the decisions log but absent from the spec**
+Severity: BLOCKING
+Violates contract completeness (Lens 3) and DRY/engineering-preferences.md §2.
+
+The 2026-02-26 decisions log entry "snake_case arguments on all S3 methods; expanded method set" explicitly adds 13 S3 methods to Phase 2 scope:
+
+> `confint()`, `residuals("partial")`, `formula()`, `terms()`, `model.matrix()`,
+> `model.frame()`, `deviance()`, `df.residual()`, `nobs()`, `hatvalues()`,
+> `logLik()`, `AIC()` / `BIC()`, `update()`
+
+None of these appear in Section V of the spec. No signatures. No behavior contracts. No error conditions. No test coverage.
+
+The Section I scope table still reads: "S3 methods on `survey_glm_fit`: `print`, `summary`, `coef`, `vcov`, `predict`, `fitted`, `residuals`" — seven methods, not twenty. Section X quality gate says "All S3 methods work correctly" but never lists which methods that includes.
+
+An implementer reading the spec alone (not the decisions log) will implement seven methods and miss thirteen. The decisions log is not the spec.
+
+Options:
+- **[A]** Add one subsection per expanded method to Section V, following the style of existing subsections: signature, one-sentence behavior, return value, error conditions. For the delegation methods (`formula()`, `terms()`, etc.) these are trivial. For `confint()` the contract is non-trivial: design-based CIs using `qt((1 + conf_level)/2, df = df_residual)` (same formula as `clean()`). For `update()`, document the `getCall.survey_glm_fit` requirement. Update the Section I scope table and quality gates accordingly. Effort: medium, Risk: low, Impact: unblocks implementation of the expanded method set.
+- **[B]** Explicitly narrow Phase 2 scope back to the original seven methods. Move the 13 additional methods to a Phase 2.5 spec. Update the decisions log accordingly. Effort: trivial scope decision, Risk: defers method parity, Impact: cleaner Phase 2.
+- **[C] Do nothing** — implementer must reconcile spec with decisions log; one of them is wrong about Phase 2 scope.
+
+**Recommendation: [A]** — The decisions were made and recorded; the spec just hasn't caught up. The delegation methods are trivial to spec. `confint()` is non-trivial and warrants a real subsection.
+
+---
+
+**Issue 32: Section I scope table lists seven S3 methods; decision expanded it to twenty**
+Severity: REQUIRED
+Factual inaccuracy; linked to Issue 31.
+
+The scope table in Section I has not been updated to reflect the 2026-02-26 expanded method set. Any reader using the scope table as the authoritative list of deliverables will undercount by thirteen methods.
+
+This is a secondary consequence of Issue 31 but warrants its own entry because the scope table is typically the first thing an implementer reads to bound their work.
+
+Options:
+- **[A]** Update the scope table row "S3 methods on `survey_glm_fit`" to list all twenty methods. Effort: trivial.
+- **[B]** Resolve as part of Issue 31 (no separate action needed). Effort: none.
+
+**Recommendation: [B]** — Subsumed by Issue 31 but must not be forgotten when updating Section V.
+
+---
+
+### Section V: S3 Methods
+
+**Issue 33: Section 6.5 referenced in test plan but does not exist**
+Severity: REQUIRED
+Dangling cross-reference; violates contract completeness.
+
+Section 8.2 item 7 reads: "every row in Sections 4.7 and 6.5 error tables." There is no Section 6.5. Section 6 ends at 6.4. The `clean()` error conditions are listed in Section IX (P2-12, P2-13) but never collected into a dedicated error table under Section VI. The cross-reference is broken.
+
+Options:
+- **[A]** Add a Section 6.5 error table for `clean()` containing P2-12 (`surveycore_error_not_glm_fit`) and P2-13 (`surveycore_error_invalid_conf_level`), mirroring the format of Section 4.7. Update item 7 in Section 8.2 to reference the correct section. Effort: low.
+- **[B]** Change Section 8.2 item 7 to reference "Section 4.7 and Section IX (P2-12, P2-13)" instead of "Section 6.5." Effort: trivial.
+
+**Recommendation: [A]** — Giving `clean()` its own error table (6.5) makes it parallel to `survey_glm()` (4.7) and easier to find during implementation.
+
+---
+
+**Issue 34: `test-glm-methods.R` test plan omits residuals types `"pearson"`, `"deviance"`, and `"partial"`, plus the NULL `fit_` case for all three**
+Severity: REQUIRED
+Violates testing-standards.md §2 (all behavioral branches must be covered).
+
+Section 5.7 specifies four residual types: `"response"`, `"working"`, `"pearson"`, `"deviance"`. The 2026-02-26 decisions log also adds `"partial"` (delegating to `residuals(object@fit_, type = "partial")`). All three of `"pearson"`, `"deviance"`, and `"partial"` require `object@fit_` to be non-`NULL`, and the spec specifies `surveycore_error_predict_no_fit` for the NULL case.
+
+Section 8.2 `test-glm-methods.R` test plan:
+- Item 9: `residuals(type = "response")` ✓
+- Item 10: `residuals(type = "working")` ✓
+- Missing: `residuals(type = "pearson")`
+- Missing: `residuals(type = "deviance")`
+- Missing: `residuals(type = "partial")` (from 2026-02-26 decisions)
+- Missing: all three with `fit_` = NULL → `surveycore_error_predict_no_fit`
+
+The quality gate says "All S3 methods (`coef`, `vcov`, `print`, `summary`, `predict`, `fitted`, `residuals`) work correctly" — but "residuals works correctly" is untestable without tests for all four (five) types.
+
+Options:
+- **[A]** Add items 11–16 to the `test-glm-methods.R` test plan: one block per residual type (`"pearson"`, `"deviance"`, `"partial"`) and one block per type for the NULL-`fit_` error path. Effort: low.
+- **[B]** Extend item 10 to say "all residual types specified in Section 5.7 are tested." Effort: trivial but underspecified.
+
+**Recommendation: [A]** — Individual test blocks per type make it clear what must pass.
+
+---
+
+### Section IV: `survey_glm()` Function
+
+**Issue 35: Empty-domain edge case not specified**
+Severity: REQUIRED
+Violates Lens 4 (edge cases: empty inputs).
+
+Section 4.5 describes domain estimation via `surveytidy::filter()` upstream of `survey_glm()`. If the filter removes all rows (active domain indicator is all `FALSE`), `survey_glm()` receives an effective dataset of 0 rows when fitting. `stats::glm()` called with 0 rows either fails with a cryptic error or returns a degenerate fit. The spec is silent on this case.
+
+The analogous situation in Phase 1 analysis functions (e.g., `get_means()` on an empty domain) presumably has defined behavior — whether an error or a warning with NA results. `survey_glm()` should follow the same pattern.
+
+Options:
+- **[A]** Add to Section 4.5 (or 4.4 Step 2): "If the active domain contains zero in-domain rows after domain restriction, error with `surveycore_error_empty_domain` before calling `stats::glm()`. Add to Section 4.7 and Section IX." Effort: low, consistent with defensive design.
+- **[B]** Let `stats::glm()` fail naturally on 0 rows; document that the error is propagated as-is. Effort: trivial, but error class is non-surveycore and the message is cryptic.
+- **[C] Do nothing** — behavior is undefined; user gets a base R error.
+
+**Recommendation: [A]** — Consistent with Phase 1's defensive approach to degenerate inputs.
+
+---
+
+### Section VIII: Testing Strategy
+
+**Issue 36: Binomial oracle test is required by the quality gates but has no template or placement in `test-glm-numerical.R`**
+Severity: REQUIRED
+Violates Lens 2 (numerical oracle per design type and family).
+
+Section 8.4 edge cases mention: "Gaussian family, binomial family, Poisson family — all produce valid fits (oracle comparison for at least Gaussian and binomial)." The quality gate says: "`predict(fit, newdata = df)` produces expected values for Gaussian and logistic families." But:
+
+1. Section 8.1 only provides an oracle template for Gaussian family on a Taylor design.
+2. There is no guidance on where the binomial oracle test lives, which dataset to use, or what formula to test.
+3. Binomial oracles are more important than Gaussian for validating the `residuals(type = "working")` path, since for Gaussian/identity, working = response = Pearson residuals (the bug from Issue 7 is invisible in Gaussian tests).
+
+An oracle for binomial family is the only way to validate that the GLM working-residual sandwich is correct for non-Gaussian families. Without it, the variance computation for logistic regression is untested numerically.
+
+Options:
+- **[A]** Add a second oracle test template to Section 8.1 for binomial family using `nhanes_2017` with a binary outcome (e.g., `ridexprg` — pregnancy status — as a 0/1 outcome, `y ~ ridageyr + riagendr`, `family = binomial()`). State that the tolerance rules (1e-10 point, 1e-8 SE) apply equally. Effort: low.
+- **[B]** State in Section 8.1 that "at least one binomial oracle test using the Taylor design is required" without providing a full template; leave specific formula/variable choice to the implementer. Effort: trivial.
+
+**Recommendation: [A]** — Binomial is the critical validation path for non-Gaussian sandwich variance; it deserves an explicit template, not just a mention in edge cases.
+
+---
+
+### Section VI: `clean()` and broom
+
+**Issue 37: GAP note in Section 6.3 not removed after Section 8.3 resolves it**
+Severity: SUGGESTION
+Stale documentation.
+
+Section 6.3 contains a `⚠️ GAP` note:
+
+> "The absence of `value_labels` in `survey_glm_tidy` meta means `test_result_invariants()` from Phase 1 will fail if called directly on a `survey_glm_tidy` object (invariant 5 checks `value_labels`). Either: (a) extend `test_result_invariants()` to accept an optional `skip_keys` argument, or (b) define a separate `test_glm_tidy_invariants()` for this class. This must be resolved before implementation."
+
+Section 8.3 defines `test_glm_tidy_invariants()` — option (b) — which resolves the gap. The GAP note should be replaced with a forward reference to Section 8.3: "See `test_glm_tidy_invariants()` in Section 8.3 for the invariant checker that replaces `test_result_invariants()` for this class."
+
+Options:
+- **[A]** Remove the GAP note. Add a sentence: "Use `test_glm_tidy_invariants()` (Section 8.3) instead of `test_result_invariants()` for `survey_glm_tidy` objects." Effort: trivial.
+- **[B] Do nothing** — stale note causes confusion but doesn't block implementation.
+
+**Recommendation: [A]** — A resolved GAP note that still says "must be resolved before implementation" undermines confidence in the spec's current state.
+
+---
+
+**Issue 38: Stale "first draft" footer at end of spec**
+Severity: SUGGESTION
+Cosmetic; inconsistent with "Approved" status.
+
+Line 1136 (the final line of the spec) reads:
+
+> *This is a first draft. Expect gaps — run Stage 2 in a new session to get an adversarial review before resolving anything.*
+
+The spec header says "Status: Approved — ready for implementation plan." The footer is inconsistent and creates doubt about whether the document is final.
+
+Options:
+- **[A]** Remove or replace with: "*Reviewed and approved via Stage 2/3 spec workflow. All issues resolved — see `plans/claude-decisions-phase-2.md`.*" Effort: trivial.
+- **[B] Do nothing** — cosmetic only; implementer will follow the header status.
+
+**Recommendation: [A]**
+
+---
+
+## Updated Summary
+
+### Round 1 Issues (Issues 1–30) — All Resolved
+
+All 30 issues from the original 2026-02-25 review are resolved. Decisions recorded in `plans/claude-decisions-phase-2.md`. The spec was updated to v0.3.
+
+### Round 2 Issues (Issues 31–38)
+
+| # | Section | Title | Severity |
+|---|---|---|---|
+| 31 | I / V | 13 expanded S3 methods in decisions log, absent from spec | BLOCKING |
+| 32 | I | Scope table lists 7 methods; decisions expanded to 20 | REQUIRED (subsumed by 31) |
+| 33 | VIII | Section 6.5 referenced in test plan but does not exist | REQUIRED |
+| 34 | VIII | `test-glm-methods.R` misses pearson/deviance/partial residual types + NULL fit_ | REQUIRED |
+| 35 | IV | Empty-domain edge case not specified | REQUIRED |
+| 36 | VIII | Binomial oracle test required but has no template | REQUIRED |
+| 37 | VI | Stale GAP note in Section 6.3 after Section 8.3 resolves it | SUGGESTION |
+| 38 | — | Stale "first draft" footer | SUGGESTION |
+
+| Severity | Round 1 | Round 2 |
+|---|---|---|
+| BLOCKING | 7 (all resolved) | 1 |
+| REQUIRED | 19 (all resolved) | 4 (+1 subsumed) |
+| SUGGESTION | 3 (all resolved) | 2 |
+
+**Total new issues:** 7 (one BLOCKING, four REQUIRED, two SUGGESTION)
+
+**Overall assessment:** The v0.3 spec is nearly implementation-ready. The one blocking gap — thirteen S3 methods decided in the decisions log but absent from the spec — must be added to Section V before implementation begins. The REQUIRED issues are localized test plan gaps and one missing edge case. This spec is one focused editing pass away from being complete.
+
+---
+
+## Round 3 Review: v0.6 (Post-Round-2 Resolution)
+
+**Reviewer:** Claude (adversarial batch pass — third pass)
+**Date:** 2026-02-27
+**Spec version:** 0.6 — status "Revised — `clean()` API updated; pending re-approval before implementation plan"
+
+### Prior Issues (Round 2)
+
+| # | Title | Status |
+|---|---|---|
+| 31 | 13 expanded S3 methods in decisions log, absent from spec | ✅ Resolved — Sections 5.8–5.19 added; scope table updated to 20 methods |
+| 32 | Scope table lists 7 methods; decisions expanded to 20 | ✅ Resolved (subsumed by 31) |
+| 33 | Section 6.5 referenced in test plan but does not exist | ✅ Resolved — Section 6.5 error table for `clean()` added |
+| 34 | `test-glm-methods.R` misses pearson/deviance/partial residual types + NULL `fit_` | ✅ Resolved — items 11–16 added to test plan |
+| 35 | Empty-domain edge case not specified | ✅ Resolved — `surveycore_error_empty_domain` added to Section 4.5, 4.7, and IX |
+| 36 | Binomial oracle test required but has no template | ✅ Resolved — all 8 families now in Section 9.1 with Binomial and Poisson templates |
+| 37 | Stale GAP note in Section 6.3 after Section 8.3 resolves it | ✅ Resolved — GAP note replaced with forward reference |
+| 38 | Stale "first draft" footer | ✅ Resolved — footer replaced with approved-status note |
+
+---
+
+### New Issues (Pass 3)
+
+#### Section VIII / IX: Testing Strategy
+
+**Issue 39: Test plan for 12 expanded S3 methods (Sections 5.8–5.19) is entirely absent**
+Severity: BLOCKING
+Violates Lens 2 (test completeness) and engineering-preferences.md §2 (more tests is better).
+
+Issue 31 added Sections 5.8–5.19 to the spec (12 new methods). The `test-glm-methods.R` test plan in Section 9.2 was updated only to add items 11–16 for residuals types. The following methods from Sections 5.8–5.19 have **no test plan items at all**:
+
+- `confint()` (5.8) — design-based CIs; non-trivial formula using `@vcov` and `@df_residual`
+- `formula()` (5.9) — returns `x@formula`
+- `terms()` (5.10) — delegates to `terms(x@fit_)`; errors with `surveycore_error_predict_no_fit` when `fit_` is NULL
+- `model.matrix()` (5.11) — delegates to `model.matrix(object@fit_)`; same NULL error
+- `model.frame()` (5.12) — delegates to `model.frame(formula@fit_)`; same NULL error
+- `deviance()` (5.13) — returns `object@deviance`
+- `df.residual()` (5.14) — returns `object@df_residual`
+- `nobs()` (5.15) — returns `length(object@fitted_values)`
+- `hatvalues()` (5.16) — delegates to `hatvalues(model@fit_)`; same NULL error
+- `logLik()` (5.17) — delegates to `logLik(object@fit_)`; same NULL error
+- `AIC()/BIC()` (5.18) — delegates to base; same NULL error
+- `update()` (5.19) — via `getCall.survey_glm_fit`; requires `object@call` non-NULL
+
+The quality gate says "All 20 S3 methods work correctly" but the test plan has no specification of what "correctly" means for these 12 methods. An implementer cannot write compliant tests without this.
+
+Options:
+- **[A]** Add test plan items 17–28 to the `test-glm-methods.R` plan: one happy-path block per method (verifying the return value matches the property or delegation result), plus one NULL-`fit_` error block for each of `terms()`, `model.matrix()`, `model.frame()`, `hatvalues()`, `logLik()`, `AIC()/BIC()`. `confint()` warrants two blocks: happy path (returns correct bounds vs. manual `qt()` computation) and invalid `level` error. `update()` warrants one block verifying the result matches re-running `survey_glm()` with a different `family`. Effort: medium, Risk: low, Impact: unblocks quality gate.
+- **[B]** Add a single catch-all item: "All methods in Sections 5.8–5.19 are tested for correct return values and NULL `fit_` error conditions where applicable." Effort: trivial, but leaves coverage ambiguous.
+- **[C] Do nothing** — quality gate "all 20 methods work correctly" is untestable for 12 of them.
+
+**Recommendation: [A]** — Each method warrants at minimum one test block; the quality gate cannot be verified without it.
+
+---
+
+**Issue 40: `surveycore_error_predict_no_fit` is untested for 6 additional call sites**
+Severity: REQUIRED
+Violates testing-standards.md §2 (every error class gets a test) and Lens 2 (error paths).
+
+The error class `surveycore_error_predict_no_fit` (P2-14) is specified for these call sites:
+
+| Method | NULL-`fit_` test in spec? |
+|---|---|
+| `predict.survey_glm_fit()` | ✅ item 7 |
+| `residuals(type = "pearson")` | ✅ item 14 |
+| `residuals(type = "deviance")` | ✅ item 15 |
+| `residuals(type = "partial")` | ✅ item 16 |
+| `terms()` (5.10) | ❌ absent |
+| `model.matrix()` (5.11) | ❌ absent |
+| `model.frame()` (5.12) | ❌ absent |
+| `hatvalues()` (5.16) | ❌ absent |
+| `logLik()` (5.17) | ❌ absent |
+| `AIC()/BIC()` (5.18) | ❌ absent |
+| `get_predict()` (7.6) | ✅ item 10 in marginaleffects plan |
+
+Six call sites throw `surveycore_error_predict_no_fit` with no test plan entry. The error class is tested at the `predict()` call site; but the class is described in Section X as covering only `predict.survey_glm_fit` (P2-14). Implementations that add the NULL check to the other methods need test coverage to pass quality gates.
+
+Options:
+- **[A]** Add one NULL-`fit_` test block per call site in the `test-glm-methods.R` test plan (these can be grouped under the expanded method test items added by Issue 39's resolution). Dual pattern (`class=` + `expect_snapshot(error=TRUE)`) per `testing-surveycore.md`. Effort: low.
+- **[B]** Add a single combined test block: "For all methods that require `fit_` to be non-NULL, `surveycore_error_predict_no_fit` is thrown when `fit_` is `NULL`." Simpler but doesn't specify which methods.
+- **[C] Do nothing** — six error paths are uncovered; coverage below 98%.
+
+**Recommendation: [A]** — Individual test blocks per method make intent clear and coverage explicit.
+
+---
+
+#### Section VI: `clean()` and broom
+
+**Issue 41: `print(clean(fit))` output format not shown and not specified**
+Severity: REQUIRED
+Violates Lens 3 (for every result class with a `print()` method, exact console output must be shown).
+
+Section 6.3 defines `survey_glm_tidy` with class hierarchy `c("survey_glm_tidy", "survey_result", "tbl_df", "tbl", "data.frame")`. Phase 1 defines `survey_result` and presumably defines `print.survey_result()` (since all Phase 1 analysis functions return `survey_result` subclasses with headers). The spec says nothing about:
+
+1. Whether a `print.survey_glm_tidy()` method is defined in Phase 2.
+2. Whether `print(clean(fit))` inherits `survey_result`'s print or tibble's default print.
+3. What the output looks like on the console.
+
+Per the review lens: "For every result class with a `print()` or `format()` method: is the exact console output shown as a verbatim example block, including any header line? Vague descriptions like 'prints as a tibble' are flagged as REQUIRED."
+
+The test plan (item 1 in `test-glm-methods.R`) has a snapshot for `print()` on the *model* object (`survey_glm_fit`). No snapshot or print contract exists for the *result* object (`survey_glm_tidy`).
+
+Options:
+- **[A]** Add a Section 6.6: "print method for `survey_glm_tidy`." If using `survey_result` inheritance unchanged, state: "No custom `print.survey_glm_tidy()` is defined. `print(clean(fit))` uses `print.survey_result()` defined in Phase 1; its output format is specified in the Phase 1 spec." Add a snapshot test in `test-glm.R` for `print(clean(fit))` output. Effort: low.
+- **[B]** Show a verbatim example of `print(clean(fit))` in Section 6.3 (similar to how Sections 5.1 and 5.2.2 show print output for the model objects). Effort: low.
+- **[C] Do nothing** — implementer must discover the print format by running Phase 1 code; snapshot test will catch regressions but only after implementation is complete.
+
+**Recommendation: [A] or [B]** — [A] if inheriting Phase 1's print unchanged; [B] if any customization is needed. Either satisfies the lens requirement.
+
+---
+
+**Issue 42: `label` column stripping algorithm for factor dummy names is unspecified**
+Severity: REQUIRED
+Violates Lens 3 (contract completeness — observable behavior left implicit).
+
+Section 6.3 defines the `label` column: "For factor levels (including reference rows): value label from `design@metadata` if set, otherwise the stripped level name (e.g., 'Male' from 'sexMale')."
+
+The algorithm for "stripping" the variable name prefix from the coefficient name is not stated. R generates factor dummy coefficient names via `paste0(var_name, level)` — so `sex` + `Male` = `sexMale`. Recovering `Male` from `sexMale` requires either:
+
+1. **String removal:** `sub(paste0("^", var_name), "", coef_name)` — fragile if the variable name is a prefix of the level name (e.g., variable `"s"`, level `"exMale"` → coefficient `"sexMale"` → incorrectly strips to `"exMale"`).
+2. **Model frame lookup:** Enumerate all levels of the factor from the model frame, then match `coef_name` against `paste0(var_name, levels)`. This is unambiguous but requires access to the model frame.
+3. **Contrasts matrix:** Inspect `colnames(contrasts(model_frame[[var]]))` to get non-reference level names.
+
+An implementer who uses approach 1 will produce wrong labels whenever a variable name is a prefix of a level name. The spec must specify which approach is used.
+
+The reference row algorithm (Section 6.3) already specifies `setdiff(levels(model_frame[[var]]), colnames(contrasts(model_frame[[var]])))` using the model frame — approach 3 for reference level detection. Approach 2 (model frame levels lookup) is the consistent choice for non-reference levels.
+
+Options:
+- **[A]** Add to Section 6.3 `label` column description: "For factor levels, the level name is recovered from the model frame: for each coefficient belonging to variable `var_name`, the level is `setdiff(levels(model_frame[[var_name]]), colnames(contrasts(model_frame[[var_name]])))[i]` for ordered matching against `coef_name`. Or equivalently: enumerate `levels(model_frame[[var]])` and find the level `l` such that `paste0(var_name, l) == coef_name`." Effort: low, Risk: none.
+- **[B]** Specify: "Level names are recovered by stripping the variable name prefix: `sub(paste0('^', var_name), '', coef_name)`. Document that variable names that are prefixes of level names produce incorrect output." Effort: trivial, Risk: high (silent wrong output for edge cases).
+- **[C] Do nothing** — implementers will use string prefix removal; breaks for variable-name-is-prefix-of-level edge case.
+
+**Recommendation: [A]** — The model frame is already required for reference level detection; using it for all label recovery is consistent and unambiguous.
+
+---
+
+**Issue 44: Quality gate uses wrong meta key name `variable_labels` instead of `variables`**
+Severity: REQUIRED
+Factual error; quality gate cannot be satisfied as written.
+
+Section XI (quality gates) includes:
+
+> `[ ] meta(clean(fit))$variable_labels populated from design metadata`
+
+But Section 6.3 explicitly states:
+
+> "`$variables` replaces the flat `variable_labels` key from Phase 1 `survey_result` objects. The `variable_labels` key is **not** present in `survey_glm_tidy` `.meta`."
+
+A developer checking off quality gates will write a test that looks for `meta(result)$variable_labels` — a key the spec says does not exist. The test will always fail. The correct key is `meta(result)$variables`.
+
+Options:
+- **[A]** Replace the quality gate line: "`meta(clean(fit))$variables` is populated with one named entry per predictor; each entry has `var_label`, `var_class`, `var_type`, and optionally populated `value_labels`." Effort: trivial.
+- **[B] Do nothing** — quality gate refers to a non-existent key; developers write failing tests.
+
+**Recommendation: [A]** — One-line fix that prevents a confusing quality gate failure.
+
+---
+
+#### Section IV: `survey_glm()` Function
+
+**Issue 43: Zero-weight rows in design data: behavior undefined**
+Severity: REQUIRED
+Violates Lens 4 (edge case: zero-weight rows in `@data` not addressed).
+
+Section 4.4 Step 3 checks for `NA` weights and errors with `surveycore_error_na_weights` (P2-11). But zero or negative weights are not addressed. `stats::glm()` accepts zero-weight rows and treats them as excluded observations (same as `na.omit` on that row). Negative weights are unlikely to be valid but `stats::glm()` may not error on them.
+
+The Phase 0 constructors validate that weights are positive (`surveycore_error_weights_nonpositive`). But after construction, `surveytidy::mutate()` can modify weight columns, potentially introducing zero-weight rows. `survey_glm()` is documented to accept any `survey_base` design — it cannot assume constructor-level guarantees hold.
+
+If `survey_glm()` silently passes zero-weight rows to `stats::glm()`, those rows are excluded from fitting and from variance computation. Users may not realize this is happening. The spec should state explicitly what happens.
+
+Options:
+- **[A]** Add to Section 4.4 Step 3 (after the NA weights check): "Also check for zero or negative weights. If any weights are ≤ 0, warn with `surveycore_warning_nonpositive_weights` and proceed (matching base R `glm()` behavior of treating zero-weight rows as excluded). Add to Section 4.7 and Section X." Effort: low.
+- **[B]** Add to Step 3: "Validate that no survey weights are ≤ 0; error with `surveycore_error_weights_nonpositive` (reuse Phase 0 definition) if any are found." Effort: low, Risk: medium (breaks code that relies on zero-weight-as-exclusion pattern).
+- **[C]** Explicitly state: "`survey_glm()` relies on the design constructor's weight validation. Non-positive weights are considered a pre-condition violation; behavior is undefined." Effort: trivial — just document the assumption.
+- **[D] Do nothing** — users get silent exclusion of zero-weight rows; no diagnostic.
+
+**Recommendation: [A]** — A warning is less surprising than an error (users may intentionally use zero-weight rows as a soft exclusion), and more informative than silent behavior.
+
+---
+
+#### Cross-Cutting
+
+**Issue 45: `confint()` error for invalid `parm` argument not specified**
+Severity: SUGGESTION
+Minor contract gap.
+
+Section 5.8 specifies `parm` as "coefficient names (character) or integer indices. If omitted, all coefficients are returned. Same semantics as `stats::confint()`." But it doesn't say what happens when `parm` contains names not in `names(object@coefficients)` or indices out of range.
+
+The delegation is to `sqrt(diag(object@vcov)[parm])`. If `parm` is an invalid name, this produces `NA` silently. If `parm` is an out-of-range index, `diag(object@vcov)[parm]` may return `NA` or throw a subscript error depending on R version.
+
+Options:
+- **[A]** Add: "If `parm` contains names absent from `names(object@coefficients)`, the invalid names are ignored and only matching names are returned — matching base R `confint.default()` behavior." Effort: trivial.
+- **[B] Do nothing** — base R's confint behavior applies; acceptable for a delegation method.
+
+**Recommendation: [B]** — Standard R delegation behavior is acceptable; over-specifying may over-constrain the implementation.
+
+---
+
+**Issue 46: Ordered factor `.L`/`.Q`/`.C` suffix stripping algorithm ambiguous**
+Severity: SUGGESTION
+Minor gap for an uncommon case.
+
+Section 6.3 `variable` column description: "For ordered factor polynomial contrasts: the variable name without the `.L`/`.Q`/`.C` suffix." R uses `contr.poly` for ordered factors, generating names like `age.L`, `age.Q`, `age.C` for a 3-level ordered factor. But for more than 4 levels, R may generate additional contrast names (`age^4`, `age^5`, etc.) that don't follow the `.L`/`.Q`/`.C` pattern. The spec's stripping rule doesn't handle these.
+
+Options:
+- **[A]** Specify: "Strip trailing `.L`, `.Q`, `.C`, or `^N` (where N is an integer) from the coefficient name to recover the variable name for polynomial contrasts." Effort: low.
+- **[B] Do nothing** — ordered factors with >4 levels are rare; the edge case is SUGGESTION-level.
+
+**Recommendation: [B]** — Acceptable for a SUGGESTION; implementation can handle the common cases and fail gracefully for exotic polynomial contrasts.
+
+---
+
+### Updated Summary
+
+#### Round 1 Issues (1–30) — All Resolved
+All 30 issues from 2026-02-25 are resolved. Decisions recorded in `plans/claude-decisions-phase-2.md`.
+
+#### Round 2 Issues (31–38) — All Resolved
+All 8 issues from 2026-02-27 (Round 2, v0.3 spec) are resolved. Decisions recorded in `plans/claude-decisions-phase-2.md`.
+
+#### Round 3 Issues (39–46)
+
+| # | Section | Title | Severity |
+|---|---|---|---|
+| 39 | VIII/IX | Test plan missing for all 12 expanded S3 methods (Sections 5.8–5.19) | BLOCKING |
+| 40 | VIII | `surveycore_error_predict_no_fit` untested for 6 additional call sites | REQUIRED |
+| 41 | VI | `print(clean(fit))` output format not shown or specified | REQUIRED |
+| 42 | VI | `label` column stripping algorithm for factor dummy names unspecified | REQUIRED |
+| 43 | IV | Zero-weight rows in design data: behavior undefined | REQUIRED |
+| 44 | XI | Quality gate uses wrong meta key `variable_labels` instead of `variables` | REQUIRED |
+| 45 | V | `confint()` error for invalid `parm` argument unspecified | SUGGESTION |
+| 46 | VI | Ordered factor `.L`/`.Q`/`.C` stripping algorithm ambiguous | SUGGESTION |
+
+| Severity | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|
+| BLOCKING | 7 (resolved) | 1 (resolved) | 1 |
+| REQUIRED | 19 (resolved) | 4 (resolved) | 4 |
+| SUGGESTION | 3 (resolved) | 2 (resolved) | 2 |
+
+**Total new issues (Pass 3):** 7 (one BLOCKING, four REQUIRED, two SUGGESTION)
+
+**Overall assessment:** The v0.6 spec is close but not yet implementation-ready. The one blocking gap — no test plan for the 12 expanded S3 methods added in Round 2 — is a direct consequence of those methods being added to the spec without updating the test plan section. The four REQUIRED issues are tight, localized, and low-effort to resolve (wrong meta key in quality gate; missing `label` algorithm; unspecified print format; undefined zero-weight behavior). Two rounds of improvements have substantially strengthened this spec; one more targeted editing pass will close the remaining gaps.
+
