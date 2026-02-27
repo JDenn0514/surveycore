@@ -32,6 +32,9 @@
 #'   intervals. Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   sum of weights for non-NA observations in each group. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `estimate`, `se`, `ci_low`, `ci_high`) to this many
+#'   decimal places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), `NA` values in `x` are excluded.
@@ -87,6 +90,7 @@ get_quantiles <- function(
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -95,7 +99,7 @@ get_quantiles <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_quantiles")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
 
   if (
     !is.numeric(probs) ||
@@ -364,6 +368,7 @@ get_quantiles <- function(
     QUANTILES_META_KEYS
   )
 
-  # ── Step 13: Apply name style ─────────────────────────────────────────────────
+  # ── Step 13: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

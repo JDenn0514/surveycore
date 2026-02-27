@@ -11,6 +11,7 @@ get_totals(
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -37,6 +38,10 @@ variable(s). Default \code{NULL}.}
 \item{n_weighted}{Logical. For \code{get_totals(d)} (no variable), equals the
 \code{total} column and is included for API uniformity. For variable mode,
 adds the sum of weights for non-NA observations. Default \code{FALSE}.}
+
+\item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
+columns (e.g., \code{total}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
+places. Default \code{NULL} (no rounding).}
 
 \item{min_cell_n}{Integer. Default \code{30L}.}
 

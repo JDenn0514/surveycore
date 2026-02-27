@@ -27,6 +27,9 @@
 #' @param n_weighted Logical. For `get_totals(d)` (no variable), equals the
 #'   `total` column and is included for API uniformity. For variable mode,
 #'   adds the sum of weights for non-NA observations. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `total`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Default `30L`.
 #' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded.
 #' @param label_values Logical. Accepted for API uniformity. Default `TRUE`.
@@ -67,6 +70,7 @@ get_totals <- function(
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -75,7 +79,7 @@ get_totals <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_totals")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
 
   # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
   x_quo     <- rlang::enquo(x)
@@ -278,6 +282,7 @@ get_totals <- function(
     TOTALS_META_KEYS
   )
 
-  # ── Step 12: Apply name style ─────────────────────────────────────────────────
+  # ── Step 12: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

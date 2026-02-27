@@ -11,6 +11,7 @@ get_means(
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -38,6 +39,10 @@ Default \code{0.95}.}
 
 \item{n_weighted}{Logical. If \code{TRUE}, add an \code{n_weighted} column with the
 sum of weights for non-NA observations in each group. Default \code{FALSE}.}
+
+\item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
+columns (e.g., \code{mean}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
+places. Default \code{NULL} (no rounding).}
 
 \item{min_cell_n}{Integer. Minimum unweighted cell count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}

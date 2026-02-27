@@ -75,6 +75,7 @@ against the messages defined here.
 | 44 | `get_corr()` | Fewer than 2 variables supplied | ERROR | `surveycore_error_insufficient_variables` | `"{.fn get_corr} requires at least 2 variables, but {.arg x} resolved to {length(vars)} variable{?s}."` |
 | 45 | all `get_*()` | Unknown value for `variance` argument | ERROR | `surveycore_error_invalid_variance_arg` | `'{.arg variance} values must be from {.val {valid_variance}}. Unknown value{?s}: {.val {bad_vals}}.'` |
 | 45a | all `get_*()` | `conf_level` not a single number strictly between 0 and 1 | ERROR | `surveycore_error_invalid_conf_level` | `"{.arg conf_level} must be a single number strictly between 0 and 1. Got {.val {conf_level}}."` |
+| 45b | all `get_*()` | `decimals` is not a non-negative whole number or `NULL` | ERROR | `surveycore_error_invalid_decimals` | `"{.arg decimals} must be a non-negative whole number or {.code NULL}. Got {.val {decimals}}."` |
 | 46 | all `get_*()` | Unknown value for `name_style` argument | ERROR | `surveycore_error_invalid_name_style` | `'{.arg name_style} must be {.val "surveycore"} or {.val "broom"}, not {.val {name_style}}.'` |
 | 47 | `get_quantiles()` | `probs` outside (0,1) or length 0 | ERROR | `surveycore_error_invalid_probs` | `"{.arg probs} must be a non-empty numeric vector with all values in (0, 1). Invalid value{?s}: {.val {bad_probs}}."` |
 | 48 | `get_ratios()` | All denominator values are zero | ERROR | `surveycore_error_ratio_zero_denominator` | `"All values of the denominator ({.field {denom_var}}) are zero. Cannot compute ratio."` |
@@ -150,12 +151,12 @@ Which test files cover which error table rows:
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
-| `test-analysis-helpers.R` | 45, 45a, 46 (direct unit tests on `.validate_shared_args()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
-| `test-analysis-freqs.R` | 45, 45a, 46, 49, 50, 52, 53, 55 |
-| `test-analysis-means.R` | 43, 45, 45a, 46, 49, 50, 54 |
-| `test-analysis-totals.R` | 43, 45, 45a, 46, 49, 50, 54 |
-| `test-analysis-corr.R` | 43, 44, 45, 45a, 46, 49, 50, 51, 54 |
-| `test-analysis-quantiles.R` | 45, 45a, 46, 47, 49, 50, 54 |
-| `test-analysis-ratios.R` | 43, 45, 45a, 46, 48, 49, 50, 54 |
+| `test-analysis-helpers.R` | 45, 45a, 45b, 46 (direct unit tests on `.validate_shared_args()` and `.apply_decimals()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
+| `test-analysis-freqs.R` | 45, 45a, 45b, 46, 49, 50, 52, 53, 55 |
+| `test-analysis-means.R` | 43, 45, 45a, 45b, 46, 49, 50, 54 |
+| `test-analysis-totals.R` | 43, 45, 45a, 45b, 46, 49, 50, 54 |
+| `test-analysis-corr.R` | 43, 44, 45, 45a, 45b, 46, 49, 50, 51, 54 |
+| `test-analysis-quantiles.R` | 45, 45a, 45b, 46, 47, 49, 50, 54 |
+| `test-analysis-ratios.R` | 43, 45, 45a, 45b, 46, 48, 49, 50, 54 |
 | `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74 (Layer 3 dual pattern), 77; S7 validator errors in Section 3.3 (class= only, not in this table) |
 | `test-glm-methods.R` | 76 |

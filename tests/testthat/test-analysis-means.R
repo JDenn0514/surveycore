@@ -513,3 +513,41 @@ test_that("get_means() meta$x has correct nested structure", {
   expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
                     names(m$x$y)))
 })
+
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_means() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 301L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_means(d, y1, variance = "ci", decimals = 2L)
+
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+})
+
+test_that("get_means() decimals=NULL applies no rounding", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 302L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r_none    <- get_means(d, y1, variance = "se", decimals = NULL)
+  r_rounded <- get_means(d, y1, variance = "se", decimals = 0L)
+
+  # Rounding to 0 places changes at least one value
+  expect_false(identical(r_none$mean, r_rounded$mean))
+})
+
+test_that("get_means() rejects invalid decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 303L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_means(d, y1, decimals = -1L),
+    class = "surveycore_error_invalid_decimals"
+  )
+})

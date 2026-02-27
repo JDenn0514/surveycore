@@ -688,3 +688,29 @@ test_that("get_ratios() meta$group stores labels regardless of label_values", {
   expect_equal(meta(r_false)$group$gender$value_labels,
                c(Male = 1L, Female = 2L))
 })
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_ratios() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 701L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_ratios(d, y1, y2, variance = "ci", decimals = 2L)
+
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+})
+
+test_that("get_ratios() rejects invalid decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 702L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_ratios(d, y1, y2, decimals = -1),
+    class = "surveycore_error_invalid_decimals"
+  )
+})

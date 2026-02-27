@@ -42,3 +42,12 @@
       x `get_means()` requires a survey design object.
       i Got <data.frame>.
 
+# .validate_shared_args() rejects negative decimals
+
+    Code
+      .validate_shared_args(NULL, 0.95, "surveycore", decimals = -1L)
+    Condition
+      Error:
+      x `decimals` must be a non-negative whole number or `NULL`.
+      i Got -1.
+
