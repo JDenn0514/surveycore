@@ -704,3 +704,30 @@ test_that("get_quantiles() probs in meta match argument value", {
   expect_identical(meta(result)$probs, probs)
   expect_equal(names(meta(result)$x), "y1")
 })
+
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_quantiles() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 601L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_quantiles(d, y1, variance = "ci", decimals = 2L)
+
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+})
+
+test_that("get_quantiles() rejects invalid decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 602L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_quantiles(d, y1, decimals = "two"),
+    class = "surveycore_error_invalid_decimals"
+  )
+})

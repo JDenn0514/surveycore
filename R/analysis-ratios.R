@@ -39,6 +39,9 @@
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   sum of weights for rows where both numerator and denominator are non-NA
 #'   in each group. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `ratio`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), rows where either the numerator
@@ -89,6 +92,7 @@ get_ratios <- function(
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -97,7 +101,7 @@ get_ratios <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_ratios")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
 
   # ── Step 2: Resolve variables, groups, domain ─────────────────────────────
   num_quo   <- rlang::enquo(numerator)
@@ -371,6 +375,7 @@ get_ratios <- function(
     RATIOS_META_KEYS
   )
 
-  # ── Step 13: Apply name style ─────────────────────────────────────────────
+  # ── Step 13: Apply decimals and name style ────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

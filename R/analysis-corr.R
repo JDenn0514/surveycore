@@ -40,6 +40,9 @@
 #' @param conf_level Numeric scalar in (0, 1). Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   pairwise sum of weights (both variables non-NA). Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum pairwise unweighted count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), pairs use complete cases for
@@ -108,6 +111,7 @@ get_corr <- function(
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -116,7 +120,7 @@ get_corr <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_corr")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
   format <- match.arg(format)
 
   # ── Step 2: Resolve variables ────────────────────────────────────────────────
@@ -536,7 +540,8 @@ get_corr <- function(
   result$var1  <- factor(result$var1, levels = uniq_display)
   result$var2  <- factor(result$var2, levels = uniq_display)
 
-  # ── Step 23: Apply name style ─────────────────────────────────────────────────
+  # ── Step 23: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }
 

@@ -38,6 +38,9 @@
 #'   Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   sum of weights (estimated population count) per cell. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `pct`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded from
@@ -69,13 +72,13 @@
 #'
 #' **`na.rm = FALSE`:** `NA` is appended as the last level. All proportions
 #' (including non-`NA` levels) have their denominator inflated to include
-#' `NA` rows, so the `pct` column sums to 100.
+#' `NA` rows, so the `pct` column sums to 1.
 #'
 #' @return A `survey_freqs` tibble (also inheriting `survey_result`). Columns:
 #' \itemize{
 #'   \item `[group_cols...]` — group variable columns (when active), first.
 #'   \item `[variable_name]` (single) or `[names_to]` + `[values_to]` (multi).
-#'   \item `pct` — weighted proportion as a percentage (0–100).
+#'   \item `pct` — weighted proportion (0–1).
 #'   \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'     `deff`) — only those requested via `variance`.
 #'   \item `n` — unweighted cell count (sample basis of each estimate).
@@ -114,6 +117,7 @@ get_freqs <- function(
   variance     = NULL,
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -122,7 +126,7 @@ get_freqs <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_freqs")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
 
   # ── Step 2: Resolve variables, groups, domain ───────────────────────────────
   x_quo     <- rlang::enquo(x)
@@ -443,6 +447,7 @@ get_freqs <- function(
     required_keys
   )
 
-  # ── Step 13: Apply name style ─────────────────────────────────────────────────
+  # ── Step 13: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

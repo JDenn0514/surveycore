@@ -14,6 +14,7 @@ get_freqs(
   variance = NULL,
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -53,6 +54,10 @@ Default \code{0.95}.}
 \item{n_weighted}{Logical. If \code{TRUE}, add an \code{n_weighted} column with the
 sum of weights (estimated population count) per cell. Default \code{FALSE}.}
 
+\item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
+columns (e.g., \code{pct}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
+places. Default \code{NULL} (no rounding).}
+
 \item{min_cell_n}{Integer. Minimum unweighted cell count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
@@ -76,7 +81,7 @@ A \code{survey_freqs} tibble (also inheriting \code{survey_result}). Columns:
 \itemize{
 \item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \verb{[variable_name]} (single) or \verb{[names_to]} + \verb{[values_to]} (multi).
-\item \code{pct} — weighted proportion as a percentage (0–100).
+\item \code{pct} — weighted proportion (0–1).
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}.
 \item \code{n} — unweighted cell count (sample basis of each estimate).
@@ -107,7 +112,7 @@ not physically removed for domain/group subsets.
 
 \strong{\code{na.rm = FALSE}:} \code{NA} is appended as the last level. All proportions
 (including non-\code{NA} levels) have their denominator inflated to include
-\code{NA} rows, so the \code{pct} column sums to 100.
+\code{NA} rows, so the \code{pct} column sums to 1.
 }
 \examples{
 # NHANES exam weights are 0 for non-examined participants; filter first

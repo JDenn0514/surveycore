@@ -14,6 +14,7 @@ get_corr(
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -57,6 +58,10 @@ applies to long format.}
 
 \item{n_weighted}{Logical. If \code{TRUE}, add an \code{n_weighted} column with the
 pairwise sum of weights (both variables non-NA). Default \code{FALSE}.}
+
+\item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
+columns (e.g., \code{r}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
+places. Default \code{NULL} (no rounding).}
 
 \item{min_cell_n}{Integer. Minimum pairwise unweighted count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}

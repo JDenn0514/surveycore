@@ -960,3 +960,95 @@ test_that(".apply_group_labels() only converts labelled columns in multi-group c
   expect_false(is.factor(result$region))
   expect_identical(result$region, c(1L, 1L, 2L, 2L, 3L, 3L))
 })
+
+
+# ── .apply_decimals() ─────────────────────────────────────────────────────────
+
+test_that(".apply_decimals() rounds double columns to specified places", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 51L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1, variance = "se")
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_equal(r_rounded$mean, round(r$mean, 2L))
+  expect_equal(r_rounded$se,   round(r$se,   2L))
+})
+
+test_that(".apply_decimals() leaves integer columns unchanged", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 52L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+
+  r_rounded <- .apply_decimals(r, 0L)
+
+  expect_identical(r_rounded$n, r$n)
+  expect_identical(class(r_rounded$n)[[1L]], "integer")
+})
+
+test_that(".apply_decimals() preserves .meta attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 53L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+  m_before <- attr(r, ".meta")
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_identical(attr(r_rounded, ".meta"), m_before)
+})
+
+test_that(".apply_decimals() preserves S3 class", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 54L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+  cls_before <- class(r)
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_identical(class(r_rounded), cls_before)
+})
+
+# ── .validate_shared_args() — decimals validation ─────────────────────────────
+
+test_that(".validate_shared_args() accepts decimals = NULL", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = NULL)
+  )
+})
+
+test_that(".validate_shared_args() accepts decimals = 0", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 0L)
+  )
+})
+
+test_that(".validate_shared_args() accepts decimals = 4", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 4L)
+  )
+})
+
+test_that(".validate_shared_args() rejects negative decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = -1L),
+    class = "surveycore_error_invalid_decimals"
+  )
+  expect_snapshot(
+    error = TRUE,
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = -1L)
+  )
+})
+
+test_that(".validate_shared_args() rejects non-integer decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 1.5),
+    class = "surveycore_error_invalid_decimals"
+  )
+})
+
+test_that(".validate_shared_args() rejects non-numeric decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = "2"),
+    class = "surveycore_error_invalid_decimals"
+  )
+})
