@@ -141,6 +141,15 @@ as_plain <- function(df) {
       attr(raw, "label") <- lbl
     }
     if (!is.null(lbvl)) {
+      if (!is.null(names(lbvl))) {
+        clean <- sub("^[0-9]+ = ", "", names(lbvl))
+        names(lbvl) <- gsub(
+          "(^|[[:space:]])([[:alpha:]])",
+          "\\1\\U\\2",
+          tolower(clean),
+          perl = TRUE
+        )
+      }
       attr(raw, "labels") <- lbvl
     }
     raw
