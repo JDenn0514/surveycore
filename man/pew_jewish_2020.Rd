@@ -111,33 +111,35 @@ A data frame with 5,881 rows and 130 variables. Variables
 \item{extweight99}{Jackknife replicate weight 99 of 100.}
 \item{extweight100}{Jackknife replicate weight 100 of 100.}
 \item{qkey}{Unique respondent identifier.}
-\item{jewishcat}{Jewish identity category: \code{1} = Jews by religion,
-\code{2} = Jews of no religion, \code{3} = Jewish background,
-\code{4} = Jewish affinity, \code{5} = Not Jewish.}
-\item{finalmode}{Collection mode: \code{1} = CAWI (online),
-\code{2} = Teleform (mail),
-\code{3} = Screener CAWI + Extended Teleform.}
+\item{jewishcat}{Jewish identity category: \code{1} = Jews By Religion,
+\code{2} = Jews Of No Religion, \code{3} = Jewish Background,
+\code{4} = Jewish Affinity, \code{5} = Respondent Not Jewish In Any Way.}
+\item{finalmode}{Collection mode: \code{1} = Screener And Extended Survey
+Via Cawi, \code{2} = Screener And Extended Survey Via Teleform,
+\code{3} = Screener Via Cawi, Extended Survey Via Teleform.}
 \item{region}{Census region: \code{1} = Northeast, \code{2} = Midwest,
 \code{3} = South, \code{4} = West.}
-\item{sexask}{Sex: \code{1} = male, \code{2} = female, \code{99} = not answered.}
+\item{sexask}{Sex: \code{1} = Male, \code{2} = Female, \code{99} = Not Answered.}
 \item{age4cat}{Age: \code{1} = 18-29, \code{2} = 30-49, \code{3} = 50-64, \code{4} = 65+;
-\code{999} = no answer.}
-\item{educ4cat}{Education: \code{1} = HS or less, \code{2} = some college,
-\code{3} = college graduate, \code{4} = postgraduate; \code{99} = no answer.}
+\code{999} = No Answer.}
+\item{educ4cat}{Education: \code{1} = High School Or Less,
+\code{2} = Some College, \code{3} = College Graduate, \code{4} = Postgrad Degree;
+\code{99} = No Answer.}
 \item{religmod}{Current religion (24 categories including Jewish
 subgroups and combinations).}
-\item{hisp}{Hispanic origin: \code{1} = yes, \code{2} = no.}
+\item{hisp}{Hispanic origin: \code{1} = Yes, \code{2} = No, \code{99} = Not Answered.}
 \item{racecmb}{Race (5 categories).}
 \item{racethn}{Race-ethnicity (4 categories).}
-\item{presapp}{Presidential approval (Trump): \code{1} = Strongly approve,
-\code{2} = Somewhat approve, \code{3} = Somewhat disapprove,
-\code{4} = Strongly disapprove.}
-\item{track}{Right track/wrong track: \code{1} = Right direction,
-\code{2} = Wrong track.}
+\item{presapp}{Presidential approval (Trump): \code{1} = Strongly Approve,
+\code{2} = Somewhat Approve, \code{3} = Somewhat Disapprove,
+\code{4} = Strongly Disapprove, \code{99} = Not Answered.}
+\item{track}{Right track/wrong track:
+\code{1} = Generally Headed In The Right Direction,
+\code{2} = Off On The Wrong Track, \code{99} = Not Answered.}
 \item{satisfpersmod}{Personal life satisfaction: \code{1} = Excellent,
-\code{2} = Good, \code{3} = Only fair, \code{4} = Poor.}
+\code{2} = Good, \code{3} = Only Fair, \code{4} = Poor, \code{99} = Not Answered.}
 \item{localrating}{Community as a place to live: \code{1} = Excellent,
-\code{2} = Good, \code{3} = Only fair, \code{4} = Poor.}
+\code{2} = Good, \code{3} = Only Fair, \code{4} = Poor, \code{99} = Not Answered.}
 \item{relconsider_a}{Jewish. Battery 1: religious identity
 (select-all-that-apply). See Details for question text.}
 \item{relconsider_b}{Catholic. Battery 1: religious identity.}
@@ -194,11 +196,15 @@ classification from the raw religion variables.
 
 \strong{Battery question stems:}
 \itemize{
-\item \strong{Battery 1} (\code{relconsider_a}–\code{relconsider_d}): \code{"Aside from religion, do you consider yourself to be any of the following in any way (for example, ethnically, culturally, or because of your family's background)?"} Values: \code{1} = Selected, \code{2} = Not selected, \code{99} = Refused.
-\item \strong{Battery 2} (\code{relraised_a}–\code{relraised_d}): \code{"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."} Values: \code{1} = Selected,
-\code{2} = Not selected, \code{99} = Refused.
-\item \strong{Battery 3} (\code{discrim_a}–\code{discrim_f}): \code{"Please tell us how much discrimination there is against each of these groups in our society today."} Values: \code{1} = A lot, \code{2} = Some, \code{3} = Not much,
-\code{4} = None at all, \code{99} = Not answered.
+\item \strong{Battery 1} (\code{relconsider_a}–\code{relconsider_d}): \code{"ASIDE from religion, do you consider yourself to be any of the following in any way (for example ethnically, culturally or because of your family's background)?"}
+Values: \code{1} = Yes, Consider Myself This, \code{2} = No, Do Not Consider
+Myself This, \code{99} = Refused.
+\item \strong{Battery 2} (\code{relraised_a}–\code{relraised_d}): \code{"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."} Values: \code{1} = Yes, Was Raised In
+This Tradition Or Had A Parent From This Background, \code{2} = No, Was Not
+Raised In This Tradition And Did Not Have A Parent From This Background,
+\code{99} = Refused.
+\item \strong{Battery 3} (\code{discrim_a}–\code{discrim_f}): \code{"Please tell us how much discrimination there is against each of these groups in our society today."} Values: \code{1} = A Lot, \code{2} = Some, \code{3} = Not Much,
+\code{4} = None At All, \code{99} = Not Answered.
 }
 
 \strong{Metadata:}
@@ -215,7 +221,7 @@ returns \code{"Jewish"}.
 \item \strong{Value labels} (\code{"labels"} attribute): A named numeric vector mapping
 each code to its meaning. Example:
 \code{attr(pew_jewish_2020$relconsider_a, "labels")} returns
-\code{c(Selected = 1, "Not selected" = 2, Refused = 99)}.
+\code{c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2, Refused = 99)}.
 \item \strong{Question preface} (\code{"question_preface"} attribute): The shared question
 stem for each battery group. Example:
 \code{attr(pew_jewish_2020$discrim_a, "question_preface")} returns

@@ -770,33 +770,35 @@
 #'   \item{extweight99}{Jackknife replicate weight 99 of 100.}
 #'   \item{extweight100}{Jackknife replicate weight 100 of 100.}
 #'   \item{qkey}{Unique respondent identifier.}
-#'   \item{jewishcat}{Jewish identity category: `1` = Jews by religion,
-#'     `2` = Jews of no religion, `3` = Jewish background,
-#'     `4` = Jewish affinity, `5` = Not Jewish.}
-#'   \item{finalmode}{Collection mode: `1` = CAWI (online),
-#'     `2` = Teleform (mail),
-#'     `3` = Screener CAWI + Extended Teleform.}
+#'   \item{jewishcat}{Jewish identity category: `1` = Jews By Religion,
+#'     `2` = Jews Of No Religion, `3` = Jewish Background,
+#'     `4` = Jewish Affinity, `5` = Respondent Not Jewish In Any Way.}
+#'   \item{finalmode}{Collection mode: `1` = Screener And Extended Survey
+#'     Via Cawi, `2` = Screener And Extended Survey Via Teleform,
+#'     `3` = Screener Via Cawi, Extended Survey Via Teleform.}
 #'   \item{region}{Census region: `1` = Northeast, `2` = Midwest,
 #'     `3` = South, `4` = West.}
-#'   \item{sexask}{Sex: `1` = male, `2` = female, `99` = not answered.}
+#'   \item{sexask}{Sex: `1` = Male, `2` = Female, `99` = Not Answered.}
 #'   \item{age4cat}{Age: `1` = 18-29, `2` = 30-49, `3` = 50-64, `4` = 65+;
-#'     `999` = no answer.}
-#'   \item{educ4cat}{Education: `1` = HS or less, `2` = some college,
-#'     `3` = college graduate, `4` = postgraduate; `99` = no answer.}
+#'     `999` = No Answer.}
+#'   \item{educ4cat}{Education: `1` = High School Or Less,
+#'     `2` = Some College, `3` = College Graduate, `4` = Postgrad Degree;
+#'     `99` = No Answer.}
 #'   \item{religmod}{Current religion (24 categories including Jewish
 #'     subgroups and combinations).}
-#'   \item{hisp}{Hispanic origin: `1` = yes, `2` = no.}
+#'   \item{hisp}{Hispanic origin: `1` = Yes, `2` = No, `99` = Not Answered.}
 #'   \item{racecmb}{Race (5 categories).}
 #'   \item{racethn}{Race-ethnicity (4 categories).}
-#'   \item{presapp}{Presidential approval (Trump): `1` = Strongly approve,
-#'     `2` = Somewhat approve, `3` = Somewhat disapprove,
-#'     `4` = Strongly disapprove.}
-#'   \item{track}{Right track/wrong track: `1` = Right direction,
-#'     `2` = Wrong track.}
+#'   \item{presapp}{Presidential approval (Trump): `1` = Strongly Approve,
+#'     `2` = Somewhat Approve, `3` = Somewhat Disapprove,
+#'     `4` = Strongly Disapprove, `99` = Not Answered.}
+#'   \item{track}{Right track/wrong track:
+#'     `1` = Generally Headed In The Right Direction,
+#'     `2` = Off On The Wrong Track, `99` = Not Answered.}
 #'   \item{satisfpersmod}{Personal life satisfaction: `1` = Excellent,
-#'     `2` = Good, `3` = Only fair, `4` = Poor.}
+#'     `2` = Good, `3` = Only Fair, `4` = Poor, `99` = Not Answered.}
 #'   \item{localrating}{Community as a place to live: `1` = Excellent,
-#'     `2` = Good, `3` = Only fair, `4` = Poor.}
+#'     `2` = Good, `3` = Only Fair, `4` = Poor, `99` = Not Answered.}
 #'   \item{relconsider_a}{Jewish. Battery 1: religious identity
 #'     (select-all-that-apply). See Details for question text.}
 #'   \item{relconsider_b}{Catholic. Battery 1: religious identity.}
@@ -837,18 +839,21 @@
 #'
 #' **Battery question stems:**
 #'
-#' - **Battery 1** (`relconsider_a`–`relconsider_d`): `"Aside from religion,
+#' - **Battery 1** (`relconsider_a`–`relconsider_d`): `"ASIDE from religion,
 #'   do you consider yourself to be any of the following in any way (for
-#'   example, ethnically, culturally, or because of your family's
-#'   background)?"` Values: `1` = Selected, `2` = Not selected, `99` = Refused.
+#'   example ethnically, culturally or because of your family's background)?"`
+#'   Values: `1` = Yes, Consider Myself This, `2` = No, Do Not Consider
+#'   Myself This, `99` = Refused.
 #' - **Battery 2** (`relraised_a`–`relraised_d`): `"Please indicate whether
 #'   you were raised in any of the following traditions or had a parent from
-#'   any of the following backgrounds."` Values: `1` = Selected,
-#'   `2` = Not selected, `99` = Refused.
+#'   any of the following backgrounds."` Values: `1` = Yes, Was Raised In
+#'   This Tradition Or Had A Parent From This Background, `2` = No, Was Not
+#'   Raised In This Tradition And Did Not Have A Parent From This Background,
+#'   `99` = Refused.
 #' - **Battery 3** (`discrim_a`–`discrim_f`): `"Please tell us how much
 #'   discrimination there is against each of these groups in our society
-#'   today."` Values: `1` = A lot, `2` = Some, `3` = Not much,
-#'   `4` = None at all, `99` = Not answered.
+#'   today."` Values: `1` = A Lot, `2` = Some, `3` = Not Much,
+#'   `4` = None At All, `99` = Not Answered.
 #'
 #' **Metadata:**
 #' All columns carry variable labels and value labels as R attributes from the
@@ -864,7 +869,7 @@
 #' - **Value labels** (`"labels"` attribute): A named numeric vector mapping
 #'   each code to its meaning. Example:
 #'   `attr(pew_jewish_2020$relconsider_a, "labels")` returns
-#'   `c(Selected = 1, "Not selected" = 2, Refused = 99)`.
+#'   `c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2, Refused = 99)`.
 #' - **Question preface** (`"question_preface"` attribute): The shared question
 #'   stem for each battery group. Example:
 #'   `attr(pew_jewish_2020$discrim_a, "question_preface")` returns
