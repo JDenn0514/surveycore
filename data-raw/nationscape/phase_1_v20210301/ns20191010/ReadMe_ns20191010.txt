@@ -1,0 +1,10 @@
+This is wave 13 of the Nationscape data (ns20191010).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191010.txt
+bannerbook_ns20191010.pdf which includes cross tabs of each variable
+codebook_ns20191010.pdf describing question wording, variable names, and values
+ns20191010.dta the main data file
+
+Notes:

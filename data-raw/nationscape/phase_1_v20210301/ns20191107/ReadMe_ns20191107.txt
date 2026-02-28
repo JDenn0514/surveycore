@@ -1,0 +1,13 @@
+This is wave 17 of the Nationscape data (ns20191107).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191107.txt
+bannerbook_ns20191107.pdf which includes cross tabs of each variable
+codebook_ns20191107.pdf describing question wording, variable names, and values
+ns20191107.dta the main data file
+
+Notes:
+- Senate primary question wording has changed from “the President” to “President Trump”
+- Klobuchar has been added to the Democratic Primary questions
+- Add 2012 vote question immediately after the 2016 vote question.

@@ -19,7 +19,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-`surveycore` gives you a (mostly) complete workflow for survey data analysis. This vignette is designed to give you a quick overview of the main functionality present in this package. It is comprised of three main sections:
+`surveycore` gives you a (mostly) complete workflow for survey data analysis.
+This vignette is designed to give you a quick overview of the main functionality 
+present in this package. It is comprised of three main sections:
 
 1. Creating survey objects 
 
@@ -27,15 +29,57 @@ knitr::opts_chunk$set(
 
 3. Managing the metadata
 
+**Quick PSA before jumping in:**
+
+`surveycore` was built as an alternative to `survey` and `srvyr`. However, the
+code powering the variance estimation and analysis is vendored from the `survey` 
+package. Everything aspect of this package that calculates anything has been 
+tested to ensure it provides the same numerical results. Without Thomas Lumley's 
+work on that package, surveycore would not be possible,
+
 ---
 
-## 1. Create a survey design
+## Create the survey object
 
-When conducting survey research, it is important 
+The first step when conducting survey analysis is creating a right survey object 
+where we specify the sampling design, weights, and whatever other information is
+need. Without this information, point estimates may be biased and standard errors 
+are almost certainly wrong [@lumley2010; @lohr2022].
 
-Every analysis function takes a **survey design object** as its first argument.
-The design object captures how the data were collected so that point estimates
-and standard errors are computed correctly.
+Fortunately, we don't have to calculate that uncertainty ourselves! That's what
+the survey objects are for. They tell the analysis functions how to conduct 
+its analysis so they can properly take into account the variance and bias from
+the survey design. 
+
+`surveycore` has five different survey object constructors: 
+
+1. `as_survey()`
+
+2. `as_survey_rep()`
+
+3. `as_survey_srs()`
+
+4. `as_survey_calibrated()`
+
+5. `as_survey_twophase()`
+
+Rather going into detail on each constructor, I'm just going to provide a quick
+overview of each. For more information visit `vignette("creating-survey-objects")`
+
+### `as_survey()` 
+
+You want to use this if you used a probability sample and the data you have has 
+cluster IDs, strata, and/or design weights. There are several
+
+
+### `as_survey_rep()`
+Use this when the data you have comes with pre-built replicate weight columns 
+like `repwt_1`, `repwt_2`. 
+
+3. `as_survey_srs()` - Use this when your data is a pure SRS meaning each respondent has equal probability of selection and there are no clustering nor strata.
+
+4. `
+
 
 ```{r design}
 # NHANES: stratified cluster design using Taylor series linearization.
@@ -44,10 +88,10 @@ nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
 svy <- as_survey(
   nhanes_exam,
-  ids     = sdmvpsu,   # cluster ID
-  strata  = sdmvstra,  # stratum
-  weights = wtmec2yr,  # examination weight
-  nest    = TRUE       # PSU IDs are locally unique within strata
+  ids = sdmvpsu, # cluster ID
+  strata = sdmvstra, # stratum
+  weights = wtmec2yr, # examination weight
+  nest = TRUE # PSU IDs are locally unique within strata
 )
 svy
 ```

@@ -1,0 +1,10 @@
+This is wave 9 of the Nationscape data (ns20190912).
+
+In this folder we have 4 files:
+
+ReadMe_ns20190912.txt
+bannerbook_ns20190912.pdf which includes cross tabs of each variable
+codebook_ns20190912.pdf describing question wording, variable names, and values
+ns20190912.dta the main data file
+
+Notes:

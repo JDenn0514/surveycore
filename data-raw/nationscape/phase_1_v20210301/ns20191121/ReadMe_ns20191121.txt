@@ -1,0 +1,11 @@
+This is wave 19 of the Nationscape data (ns20191121).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191121.txt
+bannerbook_ns20191121.pdf which includes cross tabs of each variable
+codebook_ns20191121.pdf describing question wording, variable names, and values
+ns20191121.dta the main data file
+
+Notes:
+- Removed Mark Sanford from Rep Primary question

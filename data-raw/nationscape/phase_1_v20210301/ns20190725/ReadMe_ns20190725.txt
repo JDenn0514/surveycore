@@ -1,0 +1,11 @@
+This is wave 2 of the Nationscape data (ns20190725).
+
+In this folder we have 4 files:
+
+ReadMe_ns20190725.txt
+bannerbook_ns20190725.pdf which includes cross tabs of each variable
+codebook_ns20190725.pdf describing question wording, variable names, and values
+ns20190725.dta the main data file
+
+Notes:
+- RealAnswer and ReCAPTCHA was disabled for the last ~700 completes in the dataset

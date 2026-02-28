@@ -1,0 +1,11 @@
+This is wave 7 of the Nationscape data (ns20190829).
+
+In this folder we have 4 files:
+
+ReadMe_ns20190829.txt
+bannerbook_ns20190829.pdf which includes cross tabs of each variable
+codebook_ns20190829.pdf describing question wording, variable names, and values
+ns20190829.dta the main data file
+
+Notes:
+- Extra question added in seen by only Republican Party primary voters asking if they plan to vote for Trump, Joe Walsh, other, or don’t know.
