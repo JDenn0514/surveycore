@@ -1,0 +1,15 @@
+This is wave 12 of the Nationscape data (ns20191003).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191003.txt
+bannerbook_ns20191003.pdf which includes cross tabs of each variable
+codebook_ns20191003.pdf describing question wording, variable names, and values
+ns20191003.dta the main data file
+
+Notes:
+1) added two policies to the randomized policy battery “policy9” and “policy10”
+2) added 5 additional policy items to the rotation, which are placed in the policy10 slot only.
+3) Added Pence Matchups back to survey
+4) Added extra_ questions favorability for Republican and Democratic Parties
+5) Made slight tweak to wording of gun ownership question. Categories are now: (1) Yes, I personally own a gun; (2) I don’t, but a member of my household owns a gun; (3) No one in my house owns a gun; and (4) Not sure.

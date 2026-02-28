@@ -900,3 +900,363 @@
 #' # Jewish identity distribution (use jewishcat, not raw religion vars)
 #' table(pew_jewish_2020$jewishcat)
 "pew_jewish_2020"
+
+#' Nationscape Wave 1: July 18, 2019
+#'
+#' The first weekly wave of the Democracy Fund + UCLA Nationscape survey,
+#' fielded July 18–24, 2019. Approximately 6,250 completed online interviews
+#' drawn from the Lucid respondent exchange platform using a non-probability
+#' quota design, with raking weights calibrated to ACS demographic targets
+#' and 2016 presidential vote choice.
+#'
+#' @details
+#' This dataset is the first of 77 weekly waves collected from July 2019
+#' through January 2021. The full survey ran in three phases:
+#'
+#' | Phase | Weeks | Dates | Approx. N |
+#' |-------|-------|-------|-----------|
+#' | Phase 1 | 1–24 | Jul 18, 2019 – Dec 26, 2019 | 150,000 |
+#' | Phase 2 | 25–50 | Jan 2, 2020 – Jun 25, 2020 | 162,500 |
+#' | Phase 3 | 51–77 | Jul 2, 2020 – Jan 12, 2021 | 168,750 |
+#'
+#' Only Wave 1 is bundled in the package because 77 waves × ~6,250 rows
+#' would be prohibitively large. To obtain the full dataset by phase, use the
+#' prepare scripts in `data-raw/` (see the Source section).
+#'
+#' **Survey design:**
+#' The Nationscape is a calibrated non-probability sample (quota design with
+#' raking weights). Use [as_survey_calibrated()] — it is designed specifically
+#' for this use case and will gain bootstrap re-calibration variance in Phase
+#' 2.5:
+#'
+#' ```r
+#' svy <- as_survey_calibrated(ns_wave1, weights = weight)
+#' ```
+#'
+#' **Metadata:**
+#' All substantive columns carry variable labels (`"label"` attribute) set
+#' during data preparation. Battery items additionally carry a
+#' `"question_preface"` attribute with the shared question stem. Value
+#' labels (`"labels"` attribute) are present for all coded response items.
+#'
+#' **Battery structure:**
+#' Most multi-item question groups follow a `{battery}_{item}` naming
+#' convention. All items within a battery share an identical
+#' `"question_preface"` attribute:
+#'
+#' | Battery prefix | Preface summary | N items |
+#' |---------------|-----------------|---------|
+#' | `news_sources_*` | News sources used in past week | 13 |
+#' | `group_favorability_*` | Favorability toward named groups | 13 |
+#' | `cand_favorability_*` | Favorability toward named candidates | 9 |
+#' | `trump_*` | Trump head-to-head matchups | 10 |
+#' | `pence_*` | Pence head-to-head matchups | 5 |
+#' | `cand_truth_*` | Whether each candidate tells the truth | 6 |
+#' | `cand_facts_*` | Whether each candidate relies on facts | 6 |
+#' | `racial_attitudes_*` | Agree/disagree racial attitude items | 4 |
+#' | `gender_attitudes_*` | Agree/disagree gender attitude items | 4 |
+#' | `discrimination_*` | Perceived discrimination by group | 6 |
+#'
+#' Three policy batteries share the same Agree/Disagree/Neither scale:
+#' `wall`, `cap_carbon`, `environment`, `guns_bg`, `mctaxes`, `estate_tax`,
+#' `raise_upper_tax`, `college`, `abortion_waiting`, `abortion_never`,
+#' `abortion_conditions`, `late_term_abortion`, `abortion_insurance`,
+#' `guaranteed_jobs`, `green_new_deal`, `gun_registry`,
+#' `immigration_separation`, `immigration_system`, `immigration_wire`,
+#' `impeach_trump`, `israel`, `marijuana`, `maternityleave`,
+#' `medicare_for_all`, `military_size`, `minwage`, `muslimban`,
+#' `oil_and_gas`, `reparations`, `right_to_work`, `ten_commandments`,
+#' `trade`, `trans_military`, `uctaxes2`, `vouchers`, `gov_insurance`,
+#' `public_option`, `health_subsidies`, `path_to_citizenship`, `dreamers`,
+#' `deportation`, `ban_guns`, `ban_assault_rifles`, `limit_magazines`.
+#'
+#' @format A data frame with approximately 6,250 rows and 171 variables
+#' (170 survey variables plus `wave_id` added by the prepare script).
+#' \describe{
+#'   \item{response_id}{Unique respondent ID (integer).}
+#'   \item{start_date}{Interview date (character, `"YYYY-MM-DD"` format).}
+#'   \item{wave_id}{Wave identifier: `"ns20190718"` for all rows in this dataset.}
+#'   \item{weight}{Raking weight calibrated to ACS demographic targets and
+#'     2016 presidential vote choice. Use for all population-level estimates.}
+#'   \item{right_track}{Country direction: `1` = Right direction,
+#'     `2` = Wrong track, `3` = Not sure.}
+#'   \item{economy_better}{Economy outlook: `1` = Better, `2` = Worse,
+#'     `3` = Same, `4` = Not sure.}
+#'   \item{interest}{Political interest (4-pt): `1` = Very interested,
+#'     `4` = Not at all interested.}
+#'   \item{registration}{Voter registration: `1` = Registered,
+#'     `2` = Not registered, `3` = Not eligible.}
+#'   \item{pres_approval}{Trump presidential approval: `1` = Strongly approve,
+#'     `2` = Somewhat approve, `3` = Somewhat disapprove,
+#'     `4` = Strongly disapprove.}
+#'   \item{vote_intention}{2020 vote intention: `1` = Trump,
+#'     `2` = Democratic candidate, `3` = Other, `4` = Don't plan to vote,
+#'     `5` = Not sure.}
+#'   \item{vote_2016}{2016 presidential vote. See labels.}
+#'   \item{vote_2016_other_text}{Write-in for `vote_2016` "other" choice.}
+#'   \item{consider_trump}{Would consider voting for Trump: `1` = Yes,
+#'     `2` = No.}
+#'   \item{not_trump}{Reason for not considering Trump (open text).}
+#'   \item{primary_party}{Primary vote party: `1` = Democratic,
+#'     `2` = Republican, `3` = Other.}
+#'   \item{dem_vote_intent}{Democratic primary vote intention. See labels.}
+#'   \item{dem_vote_intent_TEXT}{Write-in for `dem_vote_intent` "other".}
+#'   \item{rank_dems_1}{Top-ranked Democratic presidential candidate. See labels.}
+#'   \item{rank_dems_2}{Second-ranked Democratic candidate. See labels.}
+#'   \item{rank_dems_3}{Third-ranked Democratic candidate. See labels.}
+#'   \item{replace_trump}{Wants non-Trump Republican nominee: `1` = Yes,
+#'     `2` = No, `3` = Not sure.}
+#'   \item{house_intent}{U.S. House vote intention: `1` = Democrat,
+#'     `2` = Republican, `3` = Other, `4` = Won't vote, `5` = Not sure.}
+#'   \item{senate_intent}{U.S. Senate vote intention. Same codes as
+#'     `house_intent`.}
+#'   \item{governor_intent}{Governor vote intention. Same codes as
+#'     `house_intent`.}
+#'   \item{news_sources_facebook}{Used social media for political news in past
+#'     week: `1` = Selected, `2` = Not selected. See `"question_preface"`
+#'     attribute for shared question stem. Same coding for all `news_sources_*`
+#'     variables.}
+#'   \item{news_sources_cnn}{Used CNN for political news.}
+#'   \item{news_sources_msnbc}{Used MSNBC for political news.}
+#'   \item{news_sources_fox}{Used Fox News for political news.}
+#'   \item{news_sources_network}{Used network news (ABC/CBS/NBC/PBS).}
+#'   \item{news_sources_localtv}{Used local TV news.}
+#'   \item{news_sources_telemundo}{Used Telemundo or Univision.}
+#'   \item{news_sources_npr}{Used NPR.}
+#'   \item{news_sources_amtalk}{Used AM talk radio.}
+#'   \item{news_sources_new_york_times}{Used a national newspaper.}
+#'   \item{news_sources_local_newspaper}{Used a local newspaper.}
+#'   \item{news_sources_other}{Used another news source: `1` = Selected,
+#'     `2` = Not selected.}
+#'   \item{news_sources_other_TEXT}{Write-in for `news_sources_other`.}
+#'   \item{group_favorability_whites}{Favorability toward Whites: `1` = Very
+#'     favorable, `2` = Somewhat favorable, `3` = Somewhat unfavorable,
+#'     `4` = Very unfavorable, `5` = Not sure. Same coding for all
+#'     `group_favorability_*` variables.}
+#'   \item{group_favorability_blacks}{Favorability toward Blacks.}
+#'   \item{group_favorability_latinos}{Favorability toward Latinos.}
+#'   \item{group_favorability_asians}{Favorability toward Asians.}
+#'   \item{group_favorability_christians}{Favorability toward Christians.}
+#'   \item{group_favorability_socialists}{Favorability toward Socialists.}
+#'   \item{group_favorability_muslims}{Favorability toward Muslims.}
+#'   \item{group_favorability_labor_unions}{Favorability toward labor unions.}
+#'   \item{group_favorability_the_police}{Favorability toward the police.}
+#'   \item{group_favorability_undocumented}{Favorability toward undocumented
+#'     immigrants.}
+#'   \item{group_favorability_lgbt}{Favorability toward gays and lesbians.}
+#'   \item{group_favorability_republicans}{Favorability toward Republicans.}
+#'   \item{group_favorability_democrats}{Favorability toward Democrats.}
+#'   \item{cand_favorability_trump}{Favorability toward Donald Trump. Same
+#'     5-point scale as `group_favorability_*` variables.}
+#'   \item{cand_favorability_obama}{Favorability toward Barack Obama.}
+#'   \item{cand_favorability_cortez}{Favorability toward Alexandria
+#'     Ocasio-Cortez.}
+#'   \item{cand_favorability_biden}{Favorability toward Joe Biden.}
+#'   \item{cand_favorability_harris}{Favorability toward Kamala Harris.}
+#'   \item{cand_favorability_buttigieg}{Favorability toward Pete Buttigieg.}
+#'   \item{cand_favorability_warren}{Favorability toward Elizabeth Warren.}
+#'   \item{cand_favorability_sanders}{Favorability toward Bernie Sanders.}
+#'   \item{cand_favorability_pence}{Favorability toward Mike Pence.}
+#'   \item{trump_biden}{Trump vs. Biden head-to-head: `1` = Trump, `2` = Biden,
+#'     `3` = Not sure. Same coding for all `trump_*` matchup variables.}
+#'   \item{trump_sanders}{Trump vs. Sanders.}
+#'   \item{trump_harris}{Trump vs. Harris.}
+#'   \item{trump_warren}{Trump vs. Warren.}
+#'   \item{trump_buttigieg}{Trump vs. Buttigieg.}
+#'   \item{trump_booker}{Trump vs. Cory Booker.}
+#'   \item{trump_castro}{Trump vs. Julian Castro.}
+#'   \item{trump_gabbard}{Trump vs. Tulsi Gabbard.}
+#'   \item{trump_gillibrand}{Trump vs. Kirsten Gillibrand.}
+#'   \item{trump_orourke}{Trump vs. Beto O'Rourke.}
+#'   \item{pence_biden}{Pence vs. Biden head-to-head: `1` = Pence, `2` = Biden,
+#'     `3` = Not sure. Same coding for all `pence_*` matchup variables.}
+#'   \item{pence_buttigieg}{Pence vs. Buttigieg.}
+#'   \item{pence_harris}{Pence vs. Harris.}
+#'   \item{pence_sanders}{Pence vs. Sanders.}
+#'   \item{pence_warren}{Pence vs. Warren.}
+#'   \item{cand_truth_donald_trump}{Whether Donald Trump cares about telling
+#'     the truth: `1` = Yes, `2` = No, `3` = Not sure. Same coding for all
+#'     `cand_truth_*` variables.}
+#'   \item{cand_truth_elizabeth_warren}{Whether Elizabeth Warren cares about
+#'     the truth.}
+#'   \item{cand_truth_joe_biden}{Whether Joe Biden cares about the truth.}
+#'   \item{cand_truth_bernie_sanders}{Whether Bernie Sanders cares about
+#'     the truth.}
+#'   \item{cand_truth_pete_buttigieg}{Whether Pete Buttigieg cares about
+#'     the truth.}
+#'   \item{cand_truth_kamala_harris}{Whether Kamala Harris cares about
+#'     the truth.}
+#'   \item{cand_facts_donald_trump}{Whether Donald Trump relies on facts vs.
+#'     hunches: `1` = Facts and evidence, `2` = Hunches, `3` = Not sure. Same
+#'     coding for all `cand_facts_*` variables.}
+#'   \item{cand_facts_elizabeth_warren}{Whether Elizabeth Warren relies on
+#'     facts.}
+#'   \item{cand_facts_joe_biden}{Whether Joe Biden relies on facts.}
+#'   \item{cand_facts_bernie_sanders}{Whether Bernie Sanders relies on facts.}
+#'   \item{cand_facts_pete_buttigieg}{Whether Pete Buttigieg relies on facts.}
+#'   \item{cand_facts_kamala_harris}{Whether Kamala Harris relies on facts.}
+#'   \item{racial_attitudes_tryhard}{Agree/disagree: minorities should work
+#'     their way up without special favors. `1` = Strongly agree, `2` = Agree,
+#'     `3` = Neither, `4` = Disagree, `5` = Strongly disagree. Same scale for
+#'     all `racial_attitudes_*` and `gender_attitudes_*` variables.}
+#'   \item{racial_attitudes_generations}{Agree/disagree: generations of slavery
+#'     make it difficult for Blacks to work out of the lower class.}
+#'   \item{racial_attitudes_marry}{Agree/disagree: I prefer close relatives
+#'     marry someone from the same race.}
+#'   \item{racial_attitudes_date}{Agree/disagree: it's alright for Blacks and
+#'     Whites to date.}
+#'   \item{gender_attitudes_maleboss}{Agree/disagree: more comfortable with a
+#'     male boss than female boss.}
+#'   \item{gender_attitudes_logical}{Agree/disagree: women are just as capable
+#'     of thinking logically as men.}
+#'   \item{gender_attitudes_opportunity}{Agree/disagree: increased opportunities
+#'     for women have improved quality of life.}
+#'   \item{gender_attitudes_complain}{Agree/disagree: women who complain about
+#'     harassment cause more problems than they solve.}
+#'   \item{discrimination_blacks}{Perceived discrimination against Blacks:
+#'     `1` = A great deal, `2` = A lot, `3` = A little, `4` = None at all,
+#'     `5` = Not sure. Same scale for all `discrimination_*` variables.}
+#'   \item{discrimination_whites}{Perceived discrimination against Whites.}
+#'   \item{discrimination_muslims}{Perceived discrimination against Muslims.}
+#'   \item{discrimination_christians}{Perceived discrimination against
+#'     Christians.}
+#'   \item{discrimination_women}{Perceived discrimination against Women.}
+#'   \item{discrimination_men}{Perceived discrimination against Men.}
+#'   \item{sen_knowledge}{U.S. Senate knowledge question. See labels.}
+#'   \item{sc_knowledge}{U.S. Supreme Court knowledge question. See labels.}
+#'   \item{pid3}{3-category party ID: `1` = Democrat, `2` = Republican,
+#'     `3` = Independent, `4` = Something else.}
+#'   \item{pid7_legacy}{7-point party ID (legacy coding). See labels.}
+#'   \item{strength_democrat}{Strength of Democratic ID (conditional on
+#'     `pid3 == 1`). See labels.}
+#'   \item{strength_republican}{Strength of Republican ID (conditional on
+#'     `pid3 == 2`). See labels.}
+#'   \item{lean_independent}{Partisan lean of Independents (conditional on
+#'     `pid3 == 3`). See labels.}
+#'   \item{ideo5}{5-point ideological self-placement: `1` = Very liberal,
+#'     `5` = Very conservative.}
+#'   \item{employment}{Employment status (selected choice). See labels.}
+#'   \item{employment_other_text}{Write-in for `employment` "other".}
+#'   \item{foreign_born}{Born outside the U.S.: `1` = Yes, `2` = No.}
+#'   \item{language}{Primary language at home. See labels.}
+#'   \item{religion}{Religious affiliation (selected choice). See labels.}
+#'   \item{religion_other_text}{Write-in for `religion` "other".}
+#'   \item{is_evangelical}{Born-again or evangelical Christian: `1` = Yes,
+#'     `2` = No.}
+#'   \item{orientation_group}{Sexual orientation. See labels.}
+#'   \item{in_union}{Labor union membership: `1` = Yes, `2` = No,
+#'     `3` = Non-union household, `4` = Not sure.}
+#'   \item{household_gun_owner}{Household gun ownership: `1` = Yes, `2` = No,
+#'     `3` = Not sure.}
+#'   \item{wall}{Support building a wall on the southern U.S. border:
+#'     `1` = Strongly support, `2` = Somewhat support, `3` = Somewhat oppose,
+#'     `4` = Strongly oppose, `5` = Not sure. Same scale for all policy items
+#'     through `limit_magazines`. See `"question_preface"` attribute on each
+#'     variable for the exact shared question stem.}
+#'   \item{cap_carbon}{Support capping carbon emissions.}
+#'   \item{environment}{Support large-scale government investment in
+#'     environmental technology.}
+#'   \item{guns_bg}{Support requiring background checks for all gun purchases.}
+#'   \item{mctaxes}{Support cutting taxes for families making < $100K/year.}
+#'   \item{estate_tax}{Support eliminating the estate tax.}
+#'   \item{raise_upper_tax}{Support raising taxes on families making > $600K.}
+#'   \item{college}{Support ensuring all students can graduate from state
+#'     colleges debt-free.}
+#'   \item{abortion_waiting}{Support requiring a waiting period and ultrasound
+#'     before an abortion.}
+#'   \item{abortion_never}{Support never permitting abortion.}
+#'   \item{abortion_conditions}{Support permitting abortion in cases other than
+#'     rape/incest/life at risk.}
+#'   \item{late_term_abortion}{Support permitting late-term abortion.}
+#'   \item{abortion_insurance}{Support allowing employers to decline abortion
+#'     coverage.}
+#'   \item{guaranteed_jobs}{Support guaranteeing jobs for all Americans.}
+#'   \item{green_new_deal}{Support enacting a Green New Deal.}
+#'   \item{gun_registry}{Support creating a public registry of gun ownership.}
+#'   \item{immigration_separation}{Support separating children from parents
+#'     prosecuted for illegal border crossing.}
+#'   \item{immigration_system}{Support shifting to a merit-based immigration
+#'     system.}
+#'   \item{immigration_wire}{Support requiring proof of citizenship to wire
+#'     money internationally.}
+#'   \item{impeach_trump}{Support impeaching President Trump.}
+#'   \item{israel}{Support withdrawing military support for Israel.}
+#'   \item{marijuana}{Support legalizing marijuana.}
+#'   \item{maternityleave}{Support requiring 12 weeks of paid maternity leave.}
+#'   \item{medicare_for_all}{Support Medicare-for-All.}
+#'   \item{military_size}{Support reducing the size of the U.S. military.}
+#'   \item{minwage}{Support raising the minimum wage to $15/hour.}
+#'   \item{muslimban}{Support banning people from predominantly Muslim countries.}
+#'   \item{oil_and_gas}{Support removing barriers to domestic oil and gas
+#'     drilling.}
+#'   \item{reparations}{Support granting reparations to descendants of slaves.}
+#'   \item{right_to_work}{Support allowing people to work in unionized
+#'     workplaces without paying union dues.}
+#'   \item{ten_commandments}{Support displaying the Ten Commandments in public
+#'     schools and courthouses.}
+#'   \item{trade}{Support limiting trade with other countries.}
+#'   \item{trans_military}{Support allowing transgender people to serve in the
+#'     military.}
+#'   \item{uctaxes2}{Support raising taxes on families making > $250K.}
+#'   \item{vouchers}{Support providing tax-funded vouchers for private or
+#'     religious schools.}
+#'   \item{gov_insurance}{Support providing government-run health insurance to
+#'     all Americans.}
+#'   \item{public_option}{Support providing the option to purchase
+#'     government-run insurance.}
+#'   \item{health_subsidies}{Support subsidizing health insurance for lower
+#'     income people not on Medicaid.}
+#'   \item{path_to_citizenship}{Support creating a path to citizenship for
+#'     all undocumented immigrants.}
+#'   \item{dreamers}{Support a path to citizenship for DREAMers.}
+#'   \item{deportation}{Support deporting all undocumented immigrants.}
+#'   \item{ban_guns}{Support banning all guns.}
+#'   \item{ban_assault_rifles}{Support banning assault rifles.}
+#'   \item{limit_magazines}{Support limiting gun magazines to 10 bullets.}
+#'   \item{age}{Respondent age in years.}
+#'   \item{gender}{Gender: `1` = Male, `2` = Female, `3` = Other.}
+#'   \item{census_region}{Census region: `1` = Northeast, `2` = Midwest,
+#'     `3` = South, `4` = West.}
+#'   \item{hispanic}{Hispanic or Latino origin: `1` = Yes, `2` = No.}
+#'   \item{race_ethnicity}{Race/ethnicity (6 categories). See labels.}
+#'   \item{household_income}{Household income (7 brackets). See labels.}
+#'   \item{education}{Educational attainment (6 categories). See labels.}
+#'   \item{state}{U.S. state of residence (2-letter abbreviation).}
+#'   \item{congress_district}{Congressional district.}
+#' }
+#'
+#' @source
+#' Democracy Fund Voter Study Group / UCLA. Nationscape Data Set, version
+#' December 2021. \url{https://www.voterstudygroup.org/data/nationscape}
+#' (free download; academic research use). Prepared by
+#' `data-raw/prepare-nationscape-phase1.R`.
+#'
+#' For full methodology, see the Nationscape User Guide and the
+#' Representative Assessment report in
+#' `data-raw/nationscape/Nationscape-User-Guide-2021Dec.pdf`.
+#'
+#' @references
+#' Tausanovitch, Chris and Lynn Vavreck. 2021. Democracy Fund + UCLA
+#' Nationscape, October 10–17, 2019 (version 20210301). Retrieved from
+#' voterstudygroup.org/data/nationscape.
+#'
+#' Rivers, Douglas and Delia Bailey. 2009. "Inference from matched samples in
+#' the 2008 U.S. national elections." Proceedings of the Joint Statistical
+#' Meetings, Social Statistics Section.
+#'
+#' @examples
+#' # Design variables
+#' head(ns_wave1[, c("response_id", "weight", "age", "gender")])
+#'
+#' # Inspect a battery item's metadata
+#' attr(ns_wave1$group_favorability_blacks, "label")
+#' attr(ns_wave1$group_favorability_blacks, "question_preface")
+#' attr(ns_wave1$news_sources_cnn, "labels")
+#'
+#' # Create a calibrated survey design (correct approach for raked non-prob samples)
+#' svy <- as_survey_calibrated(ns_wave1, weights = weight)
+#' get_freqs(svy, pres_approval)
+#'
+#' # Party identification distribution
+#' table(ns_wave1$pid3)
+"ns_wave1"

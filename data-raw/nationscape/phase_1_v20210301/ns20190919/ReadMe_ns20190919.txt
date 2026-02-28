@@ -1,0 +1,17 @@
+This is wave 10 of the Nationscape data (ns20190919).
+
+In this folder we have 4 files:
+
+ReadMe_ns20190919.txt
+bannerbook_ns20190919.pdf which includes cross tabs of each variable
+codebook_ns20190919.pdf describing question wording, variable names, and values
+ns20190919.dta the main data file
+
+Notes:
+1) Changed the favorability question on Christians to Evangelical Christians
+2) Added a new favorability question for white men
+3) Cut AOC and Mike Pence from the favorability questions
+4) Cut the Mike Pence matchup question
+5) Set new display logic to show the Dem primary ranking question to show just to those who indicated that they were voting in the Democratic Primary or were not sure
+6) Added 2 questions to the extra_ block for the forced choice pairs
+7) Added a grid of questions to the extra_ block that lists a variety of statements and asks whether respondents agree or disagree. Everyone sees the first question and then is supposed to just see 2 options randomly selected from the remaining set.

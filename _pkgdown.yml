@@ -75,6 +75,7 @@ reference:
       - set_question_prefaces
       - set_var_note
       - set_variable_notes
+      - infer_question_prefaces
 
   - title: "Metadata — extractors"
     desc: >
@@ -123,3 +124,4 @@ reference:
       - gss_2024
       - pew_jewish_2020
       - pew_npors_2025
+      - ns_wave1

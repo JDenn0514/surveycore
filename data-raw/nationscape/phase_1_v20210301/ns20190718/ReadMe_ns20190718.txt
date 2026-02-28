@@ -1,0 +1,10 @@
+This is wave 1 of the Nationscape data (ns20190718).
+
+In this folder we have 4 files:
+
+ReadMe_ns20190718.txt
+bannerbook_ns20190718.pdf which includes cross tabs of each variable
+codebook_ns20190718.pdf describing question wording, variable names, and values
+ns20190718.dta the main data file
+
+Notes:
