@@ -75,6 +75,7 @@ reference:
       - set_question_prefaces
       - set_var_note
       - set_variable_notes
+      - infer_question_prefaces
 
   - title: "Metadata — extractors"
     desc: >
