@@ -1,4 +1,4 @@
-# R/08-update-design.R
+# R/update-design.R
 #
 # update_design(): update design variables on an existing survey object.
 # Covers error-messages.md row 36 (cli_inform on update).

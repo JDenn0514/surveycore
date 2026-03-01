@@ -1,4 +1,4 @@
-# R/01-metadata-system.R
+# R/core-metadata.R
 #
 # Metadata extraction and setting functions for survey design objects.
 #

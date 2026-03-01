@@ -1,4 +1,4 @@
-# R/07-utils.R
+# R/utils.R
 #
 # Utility functions used across two or more source files.
 # Single-use helpers live at the top of their respective source files.

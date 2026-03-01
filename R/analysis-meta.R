@@ -1,4 +1,4 @@
-# R/09-meta.R
+# R/analysis-meta.R
 #
 # The meta() generic for accessing structured metadata from survey result
 # objects, and the print method for survey_result.

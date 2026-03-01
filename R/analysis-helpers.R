@@ -1,4 +1,4 @@
-# R/09-analysis-helpers.R
+# R/analysis-helpers.R
 #
 # Shared internal helpers for Phase 1 analysis functions.
 # All functions are unexported. Single-use helpers for individual analysis
@@ -694,17 +694,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 # @param design A survey design object.
 # @return Numeric(1): degrees of freedom.
 .degf <- function(design) {
-  if (S7::S7_inherits(design, survey_taylor)) {
-    Inf
-  } else if (S7::S7_inherits(design, survey_replicate)) {
-    Inf
-  } else if (S7::S7_inherits(design, survey_twophase)) {
-    Inf
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    Inf
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
-    Inf
-  } else {
+  if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
         "x" = "Cannot compute degrees of freedom for {.cls {class(design)[1L]}}."
@@ -712,4 +702,5 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
       class = "surveycore_error_unsupported_class"
     )
   }
+  Inf
 }

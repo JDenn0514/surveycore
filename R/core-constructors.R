@@ -1,4 +1,4 @@
-# R/03-constructors.R
+# R/core-constructors.R
 #
 # Constructor functions for survey design objects.
 #
