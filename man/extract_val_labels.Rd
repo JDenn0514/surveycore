@@ -42,6 +42,7 @@ Other metadata:
 \code{\link{set_var_note}()},
 \code{\link{set_variable_labels}()},
 \code{\link{set_variable_notes}()},
-\code{\link{survey_metadata}()}
+\code{\link{survey_metadata}()},
+\code{\link{survey_weighting_history}()}
 }
 \concept{metadata}
