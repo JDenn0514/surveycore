@@ -14,24 +14,26 @@
 #   5. .get_design_vars_flat() — survey_twophase (no p2 info)
 #   6. .get_design_vars_flat() — NULL design variables dropped
 #   7. .get_design_vars_flat() — survey_twophase with p2 design info
-#   8. .get_design_vars_flat() — survey_calibrated returns character(0)
-#   9. .get_design_vars() — survey_taylor named list
-#  10. .get_design_vars() — survey_replicate named list
-#  11. .get_design_vars() — survey_twophase named list (no p2 info)
-#  12. .get_design_vars() — survey_twophase with p2 design info
-#  13. .get_design_vars() — survey_calibrated returns empty list
-#  14. .resolve_tidy_select() — NULL quosure → NULL
-#  15. .resolve_tidy_select() — bare name → character vector
-#  16. .resolve_tidy_select() — c() → multiple column names
-#  17. .resolve_tidy_select() — starts_with() helper
-#  18. .resolve_single_col() — NULL quosure, required = FALSE → NULL
-#  19. .resolve_single_col() — NULL quosure, required = TRUE → error
-#  20. .resolve_single_col() — single column match → char(1)
-#  21. .resolve_single_col() — 0 columns → error with class_none
-#  22. .resolve_single_col() — >1 columns → error with class_multi
-#  23. .resolve_single_col() — custom error classes forwarded
-#  24. SURVEYCORE_DOMAIN_COL — correct constant value
-#  25. .SURVEYCORE_WT_COL — correct constant value
+#   8. .get_design_vars_flat() — survey_calibrated returns weights column
+#   9. .get_design_vars_flat() — survey_srs returns weights (and fpc when set)
+#  10. .get_design_vars() — survey_taylor named list
+#  11. .get_design_vars() — survey_replicate named list
+#  12. .get_design_vars() — survey_twophase named list (no p2 info)
+#  13. .get_design_vars() — survey_twophase with p2 design info
+#  14. .get_design_vars() — survey_calibrated returns weights entry
+#  15. .get_design_vars() — survey_srs returns weights (and fpc when set)
+#  16. .resolve_tidy_select() — NULL quosure → NULL
+#  17. .resolve_tidy_select() — bare name → character vector
+#  18. .resolve_tidy_select() — c() → multiple column names
+#  19. .resolve_tidy_select() — starts_with() helper
+#  20. .resolve_single_col() — NULL quosure, required = FALSE → NULL
+#  21. .resolve_single_col() — NULL quosure, required = TRUE → error
+#  22. .resolve_single_col() — single column match → char(1)
+#  23. .resolve_single_col() — 0 columns → error with class_none
+#  24. .resolve_single_col() — >1 columns → error with class_multi
+#  25. .resolve_single_col() — custom error classes forwarded
+#  26. SURVEYCORE_DOMAIN_COL — correct constant value
+#  27. .SURVEYCORE_WT_COL — correct constant value
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -81,6 +83,22 @@ make_twophase_with_p2 <- function(seed = 42L) {
 make_calibrated <- function() {
   df <- data.frame(y = 1:10, w = rep(1, 10))
   as_survey_calibrated(df, weights = w)
+}
+
+make_srs <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(y = rnorm(20L), w = runif(20L, 0.5, 2.0))
+  suppressWarnings(as_survey_srs(df, weights = w))
+}
+
+make_srs_with_fpc <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    y   = rnorm(20L),
+    w   = runif(20L, 0.5, 2.0),
+    fpc = rep(200L, 20L)
+  )
+  suppressWarnings(as_survey_srs(df, weights = w, fpc = fpc))
 }
 
 
@@ -210,17 +228,39 @@ test_that(".get_design_vars_flat() returns unique names for twophase with p2 inf
 })
 
 
-# ── 8. .get_design_vars_flat() — survey_calibrated returns character(0) ──────
+# ── 8. .get_design_vars_flat() — survey_calibrated returns weights column ─────
 
-test_that(".get_design_vars_flat() returns character(0) for survey_calibrated", {
+test_that(".get_design_vars_flat() returns weights column name for survey_calibrated", {
   d    <- make_calibrated()
   flat <- surveycore:::.get_design_vars_flat(d)
-  expect_true(is.character(flat))
-  expect_length(flat, 0L)
+  expect_identical(flat, d@variables$weights)
 })
 
 
-# ── 9. .get_design_vars() — survey_taylor named list ────────────────────────
+# ── 9. .get_design_vars_flat() — survey_srs returns weights (and fpc) ────────
+
+test_that(".get_design_vars_flat() returns weights column name for survey_srs", {
+  d    <- make_srs()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  expect_true(d@variables$weights %in% flat)
+})
+
+test_that(".get_design_vars_flat() includes fpc column for survey_srs with fpc", {
+  d    <- make_srs_with_fpc()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  expect_true(d@variables$weights %in% flat)
+  expect_true(d@variables$fpc     %in% flat)
+})
+
+test_that(".get_design_vars_flat() excludes fpc for survey_srs without fpc", {
+  d    <- make_srs()
+  flat <- surveycore:::.get_design_vars_flat(d)
+  expect_null(d@variables$fpc)
+  expect_false("fpc" %in% flat)
+})
+
+
+# ── 10. .get_design_vars() — survey_taylor named list ────────────────────────
 
 test_that(".get_design_vars() returns a named list for survey_taylor", {
   d    <- make_taylor()
@@ -308,17 +348,37 @@ test_that(".get_design_vars() strata2/probs2 slots hold correct column names", {
 })
 
 
-# ── 13. .get_design_vars() — survey_calibrated returns empty list ─────────────
+# ── 14. .get_design_vars() — survey_calibrated returns weights entry ──────────
 
-test_that(".get_design_vars() returns an empty list for survey_calibrated", {
+test_that(".get_design_vars() returns a list with weights entry for survey_calibrated", {
   d    <- make_calibrated()
   vars <- surveycore:::.get_design_vars(d)
   expect_true(is.list(vars))
-  expect_length(vars, 0L)
+  expect_true("weights" %in% names(vars))
+  expect_identical(vars$weights, d@variables$weights)
 })
 
 
-# ── 14. .resolve_tidy_select() — NULL quosure → NULL ────────────────────────
+# ── 15. .get_design_vars() — survey_srs returns weights (and fpc when set) ───
+
+test_that(".get_design_vars() returns weights entry for survey_srs", {
+  d    <- make_srs()
+  vars <- surveycore:::.get_design_vars(d)
+  expect_true(is.list(vars))
+  expect_true("weights" %in% names(vars))
+  expect_false("fpc" %in% names(vars))
+})
+
+test_that(".get_design_vars() includes fpc entry for survey_srs with fpc", {
+  d    <- make_srs_with_fpc()
+  vars <- surveycore:::.get_design_vars(d)
+  expect_true("weights" %in% names(vars))
+  expect_true("fpc"     %in% names(vars))
+  expect_identical(vars$fpc, d@variables$fpc)
+})
+
+
+# ── 16. .resolve_tidy_select() — NULL quosure → NULL ────────────────────────
 
 test_that(".resolve_tidy_select() returns NULL for a NULL quosure", {
   df     <- data.frame(x = 1:3, y = 4:6)
