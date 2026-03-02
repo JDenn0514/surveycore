@@ -1983,3 +1983,47 @@ test_that("as_survey_srs() no-weights warning snapshot matches expected message"
     as_survey_srs(df)
   )
 })
+
+
+# ── weighting_history promotion ───────────────────────────────────────────────
+
+test_that("as_survey() promotes weighting_history attribute from data", {
+  df <- make_survey_data(n = 100L, seed = 101L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  test_invariants(d)
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_rep() promotes weighting_history attribute from data", {
+  df <- make_survey_data(
+    n = 100L, n_psu = 10L, design = "replicate", seed = 102L
+  )
+  history <- list(list(step = 1L, operation = "calibration"))
+  attr(df, "weighting_history") <- history
+  d <- as_survey_rep(
+    df,
+    weights    = wt,
+    repweights = starts_with("repwt_"),
+    type       = "JK1"
+  )
+  test_invariants(d)
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_srs() promotes weighting_history attribute from data", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  history <- list(list(step = 1L, operation = "nonresponse_weighting_class"))
+  attr(df, "weighting_history") <- history
+  d <- as_survey_srs(df, weights = wt)
+  test_invariants(d)
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey() leaves weighting_history as list() for plain data.frame", {
+  df <- make_survey_data(n = 100L, seed = 103L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  test_invariants(d)
+  expect_identical(d@metadata@weighting_history, list())
+})
