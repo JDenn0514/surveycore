@@ -122,12 +122,52 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 
     if (!is.null(labels)) {
       # labels: c("Male" = 1, "Female" = 2) — names=label strings, values=codes
-      # Build a map from code (as character) to label string
+      # Build a map from regular code (as character) to label string.
       label_map <- stats::setNames(names(labels), as.character(unname(labels)))
-      group_combos[[gv]] <- factor(
-        label_map[as.character(col)],
-        levels = names(labels)
-      )
+
+      # Build a map from haven tagged-NA tag character to label string.
+      # Requires haven at runtime; falls back gracefully when not installed:
+      # tagged NAs without a resolvable tag remain NA in the factor output.
+      haven_ok      <- requireNamespace("haven", quietly = TRUE)
+      # Tagged NAs are always doubles (special NaN bit patterns). Build a map
+      # from tag character to label string by checking double NA entries in
+      # labels. Non-double NA entries (integer NA, etc.) are plain NAs.
+      tagged_na_map <- list()
+      if (haven_ok) {
+        for (i in seq_along(labels)) {
+          lv <- labels[[i]]
+          if (is.na(lv) && is.double(lv)) {
+            tag <- haven::na_tag(lv)
+            if (!is.na(tag)) tagged_na_map[[tag]] <- names(labels)[[i]]
+          }
+        }
+      }
+
+      labeled_col <- vapply(col, function(val) {
+        if (!is.na(val)) {
+          lbl <- label_map[as.character(val)]
+          if (is.na(lbl)) NA_character_ else lbl
+        } else if (haven_ok && is.double(val)) {
+          # Double NA: may be a haven tagged NA — try to resolve to label
+          tag <- haven::na_tag(val)
+          if (!is.na(tag) && !is.null(tagged_na_map[[tag]])) {
+            tagged_na_map[[tag]]
+          } else {
+            NA_character_
+          }
+        } else {
+          NA_character_
+        }
+      }, character(1L))
+
+      # Build factor levels from label names, excluding plain-NA label entries.
+      # Tagged-NA label entries (double NAs with a haven tag) ARE included.
+      is_plain_na_label <- vapply(labels, function(x) {
+        if (!is.na(x)) return(FALSE)
+        if (!haven_ok || !is.double(x)) return(TRUE)
+        is.na(haven::na_tag(x))
+      }, logical(1L))
+      group_combos[[gv]] <- factor(labeled_col, levels = names(labels)[!is_plain_na_label])
     } else if (is.factor(src_col)) {
       # Re-factor preserving original level order
       group_combos[[gv]] <- factor(as.character(col), levels = levels(src_col))
@@ -135,6 +175,73 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
     # else: leave unchanged (stays integer/numeric/character as-is)
   }
   group_combos
+}
+
+
+# ── .build_group_combos() ─────────────────────────────────────────────────────
+#
+# Build the data frame of unique group value combinations from domain_data
+# (a data frame already filtered to the active domain rows, containing only
+# group variable columns). When na.rm = TRUE, rows with any NA are excluded
+# before unique(). When na.rm = FALSE, all rows including NA-containing are
+# used. Output is sorted: non-NA-containing combos first (ascending), then
+# NA-containing combos.
+#
+# @param domain_data  data.frame; rows = active domain; cols = group vars only
+# @param na.rm        logical; if TRUE, NA rows excluded before unique()
+# @return             data.frame of unique group combinations, sorted
+
+# Sync note: spec §II is authoritative — keep this block in sync with the spec
+# if either changes. Do not edit one without updating the other.
+.build_group_combos <- function(domain_data, na.rm) {
+  if (na.rm) {
+    domain_data <- domain_data[stats::complete.cases(domain_data), , drop = FALSE]
+  }
+  combos <- unique(domain_data)
+  if (nrow(combos) == 0L) return(combos)
+  # Sort: non-NA combos first, NA combos last.
+  # Leftmost group variable is the primary sort key.
+  # unname() prevents column names from colliding with order()'s named
+  # formals (decreasing, method, na.last) if a group var shares a name.
+  # rownames reset AFTER subsetting — before would leave non-sequential names.
+  sort_vecs        <- unname(lapply(names(combos), function(v) combos[[v]]))
+  ord              <- do.call(order, c(sort_vecs, list(na.last = TRUE)))
+  combos           <- combos[ord, , drop = FALSE]
+  rownames(combos) <- NULL
+  combos
+}
+
+
+# ── .match_group_combo() ──────────────────────────────────────────────────────
+#
+# Returns a logical vector indicating which rows in data_cols match the single
+# group combination combo_row. Handles NA correctly: when combo_row[[gv]] is
+# NA, matches rows where data_cols[[gv]] is also NA. This replaces the inline
+# !is.na(gv_col) & (gv_col == cv) loop in all 6 analysis functions.
+#
+# data_cols must be full-design-length (not domain-filtered). Build as
+# as.list(design@data[group_vars]) and apply domain_mask after:
+# active_mask <- domain_mask & .match_group_combo(data_cols, combo_row).
+#
+# @param data_cols  named list; one element per group var; each a vector of
+#                   length nrow(design@data) — full design, NOT domain-filtered
+# @param combo_row  single-row data.frame; colnames match names(data_cols)
+# @return           logical vector; TRUE where the row matches the combo
+
+# Sync note: spec §II is authoritative — keep this block in sync with the spec
+# if either changes. Do not edit one without updating the other.
+.match_group_combo <- function(data_cols, combo_row) {
+  match_vec <- rep(TRUE, length(data_cols[[1L]]))
+  for (gv in names(combo_row)) {
+    gv_col <- data_cols[[gv]]
+    cv     <- combo_row[[gv]]
+    if (is.na(cv)) {
+      match_vec <- match_vec & is.na(gv_col)
+    } else {
+      match_vec <- match_vec & !is.na(gv_col) & (gv_col == cv)
+    }
+  }
+  match_vec
 }
 
 
@@ -318,9 +425,21 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
   conf_level,
   name_style,
   decimals       = NULL,
+  na.rm          = TRUE,
   valid_variance = c("se", "ci", "var", "cv", "moe", "deff"),
   call = rlang::caller_env()
 ) {
+  # Sync note: spec §V is authoritative — keep in sync if validation logic changes.
+  if (!isTRUE(na.rm) && !isFALSE(na.rm)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.",
+        "i" = "Got {.obj_type_friendly {na.rm}}."
+      ),
+      class = "surveycore_error_na_rm_not_logical",
+      call  = call
+    )
+  }
   if (!is.null(variance)) {
     bad_vals <- setdiff(variance, valid_variance)
     if (length(bad_vals) > 0L) {

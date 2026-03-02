@@ -111,6 +111,7 @@ against the messages defined here.
 | 78 | `infer_question_prefaces()` | `x` is not a survey object or data frame | ERROR | `surveycore_error_not_survey_or_df` | `"{.arg x} must be a survey design object or a data frame, not {.cls {class(x)[[1L]]}}."` |
 | 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
 | 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
+| 81 | all `get_*()` (via `.validate_shared_args()`) | `na.rm` is not `TRUE` or `FALSE` (e.g., `NA`, `1`, `"yes"`) | ERROR | `surveycore_error_na_rm_not_logical` | `"x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {na.rm}}."` |
 
 ---
 
