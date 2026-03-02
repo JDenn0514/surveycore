@@ -62,8 +62,12 @@ places. Default \code{NULL} (no rounding).}
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
 \item{na.rm}{Logical. If \code{TRUE} (default), \code{NA} values are excluded from
-all proportions; \code{NA} does not appear as a level. If \code{FALSE}, \code{NA}
-appears as its own last row and the denominator includes \code{NA} rows.}
+analysis: observations where the focal variable is \code{NA} are dropped from
+frequency counts, and observations where any group variable is \code{NA} are
+excluded from the output. If \code{FALSE}, \code{NA} values in the focal variable
+appear as a dedicated frequency row in the output (not merely counted),
+and observations where a group variable is \code{NA} are collected into their
+own group row (appearing after all non-\code{NA} group rows).}
 
 \item{label_values}{Logical. If \code{TRUE} (default), convert raw variable
 values to labels using metadata or \code{haven} attributes. Falls back to

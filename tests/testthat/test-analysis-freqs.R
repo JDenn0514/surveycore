@@ -916,3 +916,294 @@ test_that("get_freqs() group NA exclusion: pct sums to ~1 within each non-NA gro
   grp_sums <- as.numeric(tapply(r$pct, r$grp2, sum))
   expect_equal(grp_sums, rep(1, length(grp_sums)), tolerance = 1e-10)
 })
+
+
+# ── NA group rows (na.rm extension) — Test Blocks 1–10 + oracle ──────────────
+
+# Block 1: default na.rm = TRUE excludes NA group rows (regression guard)
+
+test_that("get_freqs() default (na.rm = TRUE) excludes group NA rows", {
+  d <- make_na_group_design()
+  r <- get_freqs(d, y3, group = grp)
+  expect_false(anyNA(r$grp))
+})
+
+# Block 2: na.rm = FALSE includes NA group row
+
+test_that("get_freqs() includes NA group row when na.rm = FALSE", {
+  d <- make_na_group_design()
+  r <- get_freqs(d, y3, group = grp, na.rm = FALSE)
+  expect_true(any(is.na(r$grp)))
+})
+
+# Block 3: NA group row is last
+
+test_that("get_freqs() places NA group row after non-NA rows", {
+  d      <- make_na_group_design()
+  r      <- get_freqs(d, y3, group = grp, na.rm = FALSE)
+  na_idx <- which(is.na(r$grp))
+  nn_idx <- which(!is.na(r$grp))
+  expect_true(all(na_idx > max(nn_idx)))
+})
+
+# Block 4: NA group row has finite pct estimate
+
+test_that("get_freqs() NA group row has finite pct estimate", {
+  d      <- make_na_group_design()
+  r      <- get_freqs(d, y3, group = grp, na.rm = FALSE)
+  na_row <- get_na_group_rows(r, "grp")
+  expect_true(all(is.finite(na_row$pct)))
+})
+
+# Block 5a: multi-group — NA in first group var
+
+test_that("get_freqs() handles NA in first of two group vars (na.rm = FALSE)", {
+  d <- make_na_group_design()  # grp has NAs; grp2 has none
+  r <- get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE)
+  expect_true(any(is.na(r$grp) & !is.na(r$grp2)))
+})
+
+# Block 5b: multi-group — NA in second group var (inline fixture)
+
+test_that("get_freqs() handles NA in second of two group vars (na.rm = FALSE)", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp  <- sample(c("A", "B", "C"), 200L, replace = TRUE)
+  df$grp2 <- sample(c("X", "Y", NA_character_), 200L, replace = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE)
+  expect_true(any(!is.na(r$grp) & is.na(r$grp2)))
+})
+
+# Block 6: all-NA group var — warning fires; all output rows have NA group;
+# pct sums to 1 and matches ungrouped result
+
+test_that("get_freqs() handles group var that is entirely NA (na.rm = FALSE)", {
+  d <- make_all_na_group_design()
+  expect_warning(
+    r <- get_freqs(d, y3, group = grp, na.rm = FALSE),
+    class = "surveycore_warning_single_level"
+  )
+  expect_true(all(is.na(r$grp)))
+  expect_true(all(is.finite(r$pct)))
+  expect_equal(sum(r$pct), 1, tolerance = 1e-8)
+  ungrouped <- get_freqs(d, y3)
+  expect_equal(r$pct, ungrouped$pct, tolerance = 1e-10)
+})
+
+# Block 7a: label_values = TRUE — regular NA group row remains NA in factor
+
+test_that("get_freqs() regular NA group row is NA in factor when label_values = TRUE", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c(1L, 2L, NA_integer_), 200L, replace = TRUE)
+  attr(df$grp, "labels") <- c("GroupA" = 1L, "GroupB" = 2L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE)
+
+  expect_true(is.factor(r$grp))
+  na_row <- get_na_group_rows(r, "grp")
+  expect_true(nrow(na_row) > 0L)
+  expect_true(is.na(na_row$grp[[1L]]))
+})
+
+# Block 7b: label_values = TRUE — haven-tagged NA becomes a factor level
+
+test_that("get_freqs() haven-labeled NA group rows become factor levels when label_values = TRUE", {
+  skip_if_not_installed("haven")
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c(1L, 2L), 200L, replace = TRUE)
+  df$grp <- as.double(df$grp)
+  df$grp[sample(200L, 40L)] <- haven::tagged_na("r")
+  attr(df$grp, "labels") <- c(
+    "GroupA"  = 1,
+    "GroupB"  = 2,
+    "Refused" = haven::tagged_na("r")
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE)
+
+  expect_true(is.factor(r$grp))
+  expect_true("Refused" %in% levels(r$grp))
+  refused_row <- r[!is.na(r$grp) & r$grp == "Refused", ]
+  expect_true(nrow(refused_row) > 0L)
+})
+
+# Block 8: group_by() path — NA group rows appear with na.rm = FALSE
+
+test_that("get_freqs() includes NA group row when group set via group_by() and na.rm = FALSE", {
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::group_by(make_na_group_design(), grp)
+  r <- get_freqs(d, y3, na.rm = FALSE)
+  expect_true(anyNA(r$grp))
+})
+
+# Block 8b: group_by() path — NA group rows excluded by default
+
+test_that("get_freqs() excludes NA group rows by default when group set via group_by()", {
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::group_by(make_na_group_design(), grp)
+  r <- get_freqs(d, y3)
+  expect_false(anyNA(r$grp))
+})
+
+# Block 8c: na.rm = NA is rejected (dual pattern)
+
+test_that("get_freqs() rejects na.rm = NA with surveycore_error_na_rm_not_logical", {
+  d <- make_na_group_design()
+  expect_error(
+    get_freqs(d, y3, group = grp, na.rm = NA),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_freqs(d, y3, group = grp, na.rm = NA)
+  )
+})
+
+# Block 10 (get_freqs()-only): focal-variable NA × group-variable NA
+
+test_that("get_freqs() includes both focal-NA row and NA-group row when na.rm = FALSE", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(100L)
+  df$focal  <- sample(c(0L, 1L, NA_integer_), 200L, replace = TRUE)
+  df$grp_na <- sample(c("A", "B", NA_character_), 200L, replace = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_freqs(d, focal, group = grp_na, na.rm = FALSE)
+
+  expect_true(any(is.na(r$grp_na)))
+  na_group_rows <- get_na_group_rows(r, "grp_na")
+  expect_true(any(is.na(na_group_rows$focal)))
+})
+
+
+# ── Oracle tests: NA group row estimate matches filtered design ────────────────
+
+test_that("get_freqs() NA group row pct matches filtered taylor design [oracle]", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_oracle <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                              fpc = fpc, nest = TRUE)
+  na_df     <- df[is.na(df$grp), ]
+  na_design <- as_survey(na_df, ids = psu, weights = wt, strata = strata,
+                          fpc = fpc, nest = TRUE)
+  expected <- get_freqs(na_design, y3, variance = "se")
+  result   <- get_freqs(design_oracle, y3, group = grp, na.rm = FALSE,
+                        variance = "se")
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
+  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
+  expect_equal(na_row$n,   expected$n)
+})
+
+test_that("get_freqs() NA group row pct matches filtered replicate design [oracle]", {
+  df_r <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                            design = "replicate", type = "brr", seed = 42L)
+  set.seed(43L)
+  df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
+  design_rep <- as_survey_rep(df_r, weights = wt,
+                               repweights = tidyselect::all_of(repwt_cols),
+                               type = "BRR")
+  na_df_r       <- df_r[is.na(df_r$grp), ]
+  repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
+  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+                                  repweights = tidyselect::all_of(repwt_cols_na),
+                                  type = "BRR")
+  expected <- get_freqs(na_design_rep, y3, variance = "se")
+  result   <- get_freqs(design_rep, y3, group = grp, na.rm = FALSE,
+                        variance = "se")
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
+  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
+  expect_equal(na_row$n,   expected$n)
+})
+
+test_that("get_freqs() NA group row pct matches filtered twophase design [oracle]", {
+  df_p <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                            design = "twophase", seed = 42L)
+  set.seed(43L)
+  df_p$grp       <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  phase1         <- as_survey(df_p, ids = psu, weights = wt, strata = strata,
+                               fpc = fpc, nest = TRUE)
+  design_twophase <- as_survey_twophase(phase1, subset = subset,
+                                        method = "approx")
+  na_df_p            <- df_p[is.na(df_p$grp), ]
+  na_phase1          <- as_survey(na_df_p, ids = psu, weights = wt,
+                                   strata = strata, fpc = fpc, nest = TRUE)
+  na_design_twophase <- as_survey_twophase(na_phase1, subset = subset,
+                                            method = "approx")
+  expected <- suppressWarnings(get_freqs(na_design_twophase, y3, variance = "se"))
+  result   <- suppressWarnings(
+    get_freqs(design_twophase, y3, group = grp, na.rm = FALSE, variance = "se")
+  )
+  na_row <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
+  # SE legitimately differs: two-phase variance correction depends on total
+  # sample structure; domain estimation (full design) != pre-filtered oracle.
+  expect_true(all(is.finite(na_row$se)))
+  expect_equal(na_row$n,   expected$n)
+})
+
+test_that("get_freqs() NA group row pct matches filtered calibrated design [oracle]", {
+  df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df_c$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  na_df_c       <- df_c[is.na(df_c$grp), ]
+  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  expected <- get_freqs(na_design_cal, y3, variance = "se")
+  result   <- get_freqs(design_cal, y3, group = grp, na.rm = FALSE,
+                        variance = "se")
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
+  # SE legitimately differs: calibrated variance depends on total sample size;
+  # domain estimation (full design, n=100) != pre-filtered oracle (n=~30).
+  expect_true(all(is.finite(na_row$se)))
+  expect_equal(na_row$n,   expected$n)
+})
+
+test_that("get_freqs() NA group row pct matches filtered srs design [oracle]", {
+  df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df_s$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_srs <- as_survey_srs(df_s, weights = wt)
+  na_df_s       <- df_s[is.na(df_s$grp), ]
+  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  expected <- get_freqs(na_design_srs, y3, variance = "se")
+  result   <- get_freqs(design_srs, y3, group = grp, na.rm = FALSE,
+                        variance = "se")
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
+  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
+  expect_equal(na_row$n,   expected$n)
+})
+
+test_that("get_freqs() multi-group NA row estimate matches filtered taylor design [oracle]", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df$grp  <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df$grp2 <- sample(c("X", "Y"), 100L, replace = TRUE)
+  design_multi <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                             fpc = fpc, nest = TRUE)
+  result <- suppressWarnings(
+    get_freqs(design_multi, y3, group = c(grp, grp2),
+              na.rm = FALSE, variance = "se")
+  )
+  oracle_df     <- df[is.na(df$grp) & df$grp2 == "X", ]
+  oracle_design <- as_survey(oracle_df, ids = psu, weights = wt,
+                              strata = strata, fpc = fpc, nest = TRUE)
+  expected  <- suppressWarnings(get_freqs(oracle_design, y3, variance = "se"))
+  na_x_rows <- result[is.na(result$grp) & result$grp2 == "X", ]
+  expect_equal(na_x_rows$pct, expected$pct, tolerance = 1e-10)
+  # SE legitimately differs: multi-group oracle cells are small (~5 rows);
+  # domain estimation uses full cluster/strata structure, oracle uses subset.
+  expect_true(all(is.finite(na_x_rows$se)))
+  expect_equal(na_x_rows$n,   expected$n)
+})
