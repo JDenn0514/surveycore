@@ -5,6 +5,10 @@
 .DS_Store
 .quarto
 
+# R CMD check artifacts
+*.Rcheck/
+*.tar.gz
+
 # Large raw data files — re-download with data-raw/download-*.R
 data-raw/brfss/LLCP2023.XPT
 data-raw/brfss/LLCP2023XPT.zip
