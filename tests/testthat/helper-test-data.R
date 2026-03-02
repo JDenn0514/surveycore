@@ -464,3 +464,68 @@ make_all_designs <- function(seed = 42L) {
     calibrated = calibrated
   )
 }
+
+# ------------------------------------------------------------------------------
+# make_na_group_design()
+# ------------------------------------------------------------------------------
+
+#' Create a survey design with NA values in the group variable
+#'
+#' Returns a survey_taylor object with a `grp` column (~20% NA) and a `grp2`
+#' column (no NAs). Used for NA group row tests in all six analysis functions.
+#'
+#' set.seed(seed + 1L) isolates the grp/grp2 RNG from make_survey_data()'s
+#' internal RNG consumption, so fixture values are stable even if
+#' make_survey_data() changes internally.
+#'
+#' @param n        Total rows. Default 200.
+#' @param na_frac  Fraction of grp values to set NA. Default 0.2.
+#' @param seed     Random seed. Default 42.
+#' @return A survey_taylor object.
+#' @keywords internal
+make_na_group_design <- function(n = 200, na_frac = 0.2, seed = 42) {
+  df     <- make_survey_data(n = n, seed = seed)
+  set.seed(seed + 1L)
+  na_idx <- sample(seq_len(n), size = floor(n * na_frac))
+  df$grp <- sample(c("A", "B", "C"), n, replace = TRUE)
+  df$grp[na_idx] <- NA_character_
+  df$grp2 <- sample(c("X", "Y"), n, replace = TRUE)
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+# ------------------------------------------------------------------------------
+# make_all_na_group_design()
+# ------------------------------------------------------------------------------
+
+#' Create a survey design with an all-NA group variable
+#'
+#' Returns a survey_taylor object where `grp` is entirely NA. Used for
+#' Test Block 6 (all-NA group var edge case) in NA group row tests.
+#'
+#' @param n    Total rows. Default 100.
+#' @param seed Random seed. Default 1.
+#' @return A survey_taylor object.
+#' @keywords internal
+make_all_na_group_design <- function(n = 100, seed = 1) {
+  df     <- make_survey_data(n = n, seed = seed)
+  df$grp <- NA_character_
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+# ------------------------------------------------------------------------------
+# get_na_group_rows()
+# ------------------------------------------------------------------------------
+
+#' Extract rows where the named group column is NA
+#'
+#' DRY helper used in Test Blocks 3, 4, 6, 9, 10, and all oracle tests.
+#' Prevents repeating `result[is.na(result[[group_col]]), ]` across 48+
+#' test blocks.
+#'
+#' @param result    A survey result tibble from any get_*() function.
+#' @param group_col Character(1): the group column name to check for NA.
+#' @return A tibble with only the rows where group_col is NA.
+#' @keywords internal
+get_na_group_rows <- function(result, group_col) {
+  result[is.na(result[[group_col]]), ]
+}
