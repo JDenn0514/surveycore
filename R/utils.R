@@ -147,7 +147,8 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # Return a flat character vector of all design-variable column names.
 # NULL entries are dropped by c(). Unique names are returned.
-# Works for survey_taylor, survey_replicate, and survey_twophase.
+# Works for all five survey types: survey_taylor, survey_replicate,
+# survey_twophase, survey_calibrated, and survey_srs.
 # Used by conversion methods (05-methods-conversion.R), variance
 # estimation (06-variance-dispatch.R), and surveytidy verbs.
 # Exported (with @export) so surveytidy can call surveycore::.get_design_vars_flat()
@@ -181,6 +182,10 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       p2_cols,
       design@variables$subset
     ))
+  } else if (S7::S7_inherits(design, survey_calibrated)) {
+    unique(c(design@variables$weights))
+  } else if (S7::S7_inherits(design, survey_srs)) {
+    unique(c(design@variables$weights, design@variables$fpc))
   } else {
     character(0L) # nocov — defensive: all known types handled above
   }
@@ -226,6 +231,19 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       subset  = design@variables$subset
     )
     Filter(Negate(is.null), raw)
+  } else if (S7::S7_inherits(design, survey_calibrated)) {
+    Filter(
+      Negate(is.null),
+      list(weights = design@variables$weights)
+    )
+  } else if (S7::S7_inherits(design, survey_srs)) {
+    Filter(
+      Negate(is.null),
+      list(
+        weights = design@variables$weights,
+        fpc     = design@variables$fpc
+      )
+    )
   } else {
     list() # nocov — defensive: all known types handled above
   }
