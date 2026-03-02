@@ -198,7 +198,8 @@ get_freqs <- function(
   # (representing the single "all in-domain rows" group).
   if (length(group_vars) > 0L) {
     domain_data   <- design@data[domain_mask, group_vars, drop = FALSE]
-    group_combos  <- unique(domain_data)
+    complete_idx  <- stats::complete.cases(domain_data)
+    group_combos  <- unique(domain_data[complete_idx, , drop = FALSE])
     # Sort ascending by each group variable (leftmost first)
     ord <- do.call(
       order,
@@ -288,7 +289,9 @@ get_freqs <- function(
         combo_row   <- group_combos[ci, , drop = FALSE]
         group_match <- rep(TRUE, nrow(design@data))
         for (gv in group_vars) {
-          group_match <- group_match & (design@data[[gv]] == combo_row[[gv]])
+          gv_col <- design@data[[gv]]
+          cv     <- combo_row[[gv]]
+          group_match <- group_match & !is.na(gv_col) & (gv_col == cv)
         }
         active_mask <- domain_mask & group_match
       } else {

@@ -876,3 +876,43 @@ test_that("get_freqs() rejects non-integer decimals", {
     class = "surveycore_error_invalid_decimals"
   )
 })
+
+
+# ── NA in group variable ────────────────────────────────────────────────────
+
+test_that("get_freqs() silently excludes rows where group variable is NA", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 301L)
+  # Add a second categorical column with some NA values to use as the group
+  set.seed(301L)
+  df$grp2 <- sample(c("X", "Y"), nrow(df), replace = TRUE)
+  df$grp2[1:60] <- NA
+
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                 nest = TRUE)
+
+  # Must not error — this was the reported crash
+  r <- get_freqs(d, group, group = grp2)
+
+  # Only non-NA group levels appear as rows
+  expect_false(anyNA(r$grp2))
+
+  # Still a valid survey_freqs tibble
+  expect_true("survey_freqs" %in% class(r))
+  expect_true(is.numeric(r$pct))
+})
+
+test_that("get_freqs() group NA exclusion: pct sums to ~1 within each non-NA group", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 302L)
+  set.seed(302L)
+  df$grp2 <- sample(c("X", "Y"), nrow(df), replace = TRUE)
+  df$grp2[1:50] <- NA
+
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                 nest = TRUE)
+
+  r <- get_freqs(d, group, group = grp2)
+
+  # Within each group level, pct sums to 1
+  grp_sums <- as.numeric(tapply(r$pct, r$grp2, sum))
+  expect_equal(grp_sums, rep(1, length(grp_sums)), tolerance = 1e-10)
+})
