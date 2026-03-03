@@ -26,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"JDenn0514/surveycore"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-phase-0-provides">What Phase 0 provides<a class="anchor" aria-label="anchor" href="#what-phase-0-provides"></a>
+<h2 id="what-surveycore-provides">What surveycore provides<a class="anchor" aria-label="anchor" href="#what-surveycore-provides"></a>
 </h2>
 <ul>
 <li>
@@ -86,7 +86,8 @@
 <li>
 <strong>Metadata system</strong>: <code><a href="reference/set_var_label.html">set_var_label()</a></code>, <code><a href="reference/set_val_labels.html">set_val_labels()</a></code>, <code><a href="reference/extract_var_label.html">extract_var_label()</a></code>, <code><a href="reference/extract_val_labels.html">extract_val_labels()</a></code> — with automatic haven attribute import</li>
 <li>
-<strong>Variance estimation</strong>: <code><a href="reference/get_means.html">get_means()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code> — Taylor linearization and replicate weights</li>
+<strong>Analysis functions</strong>: <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_means.html">get_means()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code>, <code><a href="reference/get_corr.html">get_corr()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>
+</li>
 <li>
 <strong>Design utilities</strong>: <code><a href="reference/update_design.html">update_design()</a></code>, <code><a href="reference/as_svydesign.html">as_svydesign()</a></code>, <code><a href="reference/from_svydesign.html">from_svydesign()</a></code>, <code><a href="reference/as_tbl_svy.html">as_tbl_svy()</a></code>, <code><a href="reference/from_tbl_svy.html">from_tbl_svy()</a></code>
 </li>
@@ -132,23 +133,15 @@
 <span></span>
 <span><span class="co"># ── Weighted mean and total ────────────────────────────────────────────────────</span></span>
 <span><span class="fu"><a href="reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">income</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $variable</span></span>
-<span><span class="co">#&gt; [1] "income"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $mean</span></span>
-<span><span class="co">#&gt; [1] 50205.73</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $se</span></span>
-<span><span class="co">#&gt; [1] 1165.6</span></span>
+<span><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span><span class="co">#&gt;     mean ci_low ci_high     n</span></span>
+<span><span class="co">#&gt;    &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;</span></span>
+<span><span class="co">#&gt; 1 50206. 47921.  52490.   100</span></span>
 <span><span class="fu"><a href="reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">income</span><span class="op">)</span></span>
-<span><span class="co">#&gt; $variable</span></span>
-<span><span class="co">#&gt; [1] "income"</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $total</span></span>
-<span><span class="co">#&gt; [1] 6460063</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; $se</span></span>
-<span><span class="co">#&gt; [1] 282508.9</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span><span class="co">#&gt;      total   ci_low  ci_high     n</span></span>
+<span><span class="co">#&gt;      &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;</span></span>
+<span><span class="co">#&gt; 1 6460063. 5906356. 7013770.   100</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="complex-survey-designs">Complex survey designs<a class="anchor" aria-label="anchor" href="#complex-survey-designs"></a>
@@ -218,19 +211,14 @@
 <span><span class="va">d_rt</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="whats-coming">What’s coming<a class="anchor" aria-label="anchor" href="#whats-coming"></a>
+<h2 id="the-surveyverse-ecosystem">The surveyverse ecosystem<a class="anchor" aria-label="anchor" href="#the-surveyverse-ecosystem"></a>
 </h2>
+<p>surveycore is the foundation of the surveyverse — a family of packages built around it:</p>
 <ul>
 <li>
-<strong>Phase 0.5</strong> — <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>, <code>select()</code>, <code>mutate()</code>, <code>group_by()</code> verbs via the <code>surveytidy</code> package</li>
+<strong><a href="https://jdenn0514.github.io/surveytidy/" class="external-link">surveytidy</a></strong> — dplyr verbs (<code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>, <code>select()</code>, <code>mutate()</code>, <code>group_by()</code>) that respect survey design structure, so grouped summaries and subsetting always propagate weights and strata correctly.</li>
 <li>
-<strong>Phase 1</strong> — <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>, <code>get_diffs()</code>, <code><a href="reference/get_corr.html">get_corr()</a></code>
-</li>
-<li>
-<strong>Phase 2</strong> — <code>survey_glm()</code>, <code>survey_lm()</code> regression</li>
-<li>
-<strong>Phase 2.5</strong> — Calibration / post-stratification via <code>surveyweights</code>
-</li>
+<strong>surveyweights</strong> — calibration and post-stratification for survey weights. Coming soon.</li>
 </ul>
 </div>
 <div class="section level2">

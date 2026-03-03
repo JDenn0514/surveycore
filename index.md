@@ -25,7 +25,7 @@ install.packages("surveycore")
 pak::pak("JDenn0514/surveycore")
 ```
 
-## What Phase 0 provides
+## What surveycore provides
 
 - **S7 survey objects**: `survey_taylor`, `survey_replicate`,
   `survey_twophase`
@@ -39,10 +39,13 @@ pak::pak("JDenn0514/surveycore")
   [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
   [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md)
   — with automatic haven attribute import
-- **Variance estimation**:
+- **Analysis functions**:
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
   [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
-  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
-  — Taylor linearization and replicate weights
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+  [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+  [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
 - **Design utilities**:
   [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md),
   [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md),
@@ -89,23 +92,15 @@ d
 
 # ── Weighted mean and total ────────────────────────────────────────────────────
 get_means(d, income)
-#> $variable
-#> [1] "income"
-#> 
-#> $mean
-#> [1] 50205.73
-#> 
-#> $se
-#> [1] 1165.6
+#> # A tibble: 1 × 4
+#>     mean ci_low ci_high     n
+#>    <dbl>  <dbl>   <dbl> <int>
+#> 1 50206. 47921.  52490.   100
 get_totals(d, income)
-#> $variable
-#> [1] "income"
-#> 
-#> $total
-#> [1] 6460063
-#> 
-#> $se
-#> [1] 282508.9
+#> # A tibble: 1 × 4
+#>      total   ci_low  ci_high     n
+#>      <dbl>    <dbl>    <dbl> <int>
+#> 1 6460063. 5906356. 7013770.   100
 ```
 
 ## Complex survey designs
@@ -177,19 +172,18 @@ d_rt <- from_svydesign(svy)
 d_rt
 ```
 
-## What’s coming
+## The surveyverse ecosystem
 
-- **Phase 0.5** — [`filter()`](https://rdrr.io/r/stats/filter.html),
-  `select()`, `mutate()`, `group_by()` verbs via the `surveytidy`
-  package
-- **Phase 1** —
-  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
-  [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
-  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
-  `get_diffs()`,
-  [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
-- **Phase 2** — `survey_glm()`, `survey_lm()` regression
-- **Phase 2.5** — Calibration / post-stratification via `surveyweights`
+surveycore is the foundation of the surveyverse — a family of packages
+built around it:
+
+- **[surveytidy](https://jdenn0514.github.io/surveytidy/)** — dplyr
+  verbs ([`filter()`](https://rdrr.io/r/stats/filter.html), `select()`,
+  `mutate()`, `group_by()`) that respect survey design structure, so
+  grouped summaries and subsetting always propagate weights and strata
+  correctly.
+- **surveyweights** — calibration and post-stratification for survey
+  weights. Coming soon.
 
 ## License
 
