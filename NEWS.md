@@ -1,10 +1,64 @@
-# surveycore (development version)
+# surveycore 0.3.0
 
 ## New features
 
-* `get_corr()` gains a `group = NULL` parameter for per-group survey-weighted
-  correlations. Group columns are prepended in both long and wide output, and
-  `@groups` set via `group_by()` is now respected.
+* `names()` now works on survey design objects, returning the column names of
+  the underlying data frame. This enables IDE column-name autocomplete in
+  RStudio and Positron when piping into analysis functions (e.g.,
+  `design |> get_means(`).
+
+# surveycore 0.2.0
+
+## New features
+
+* `get_freqs()` computes weighted frequency tables for categorical survey
+  variables across all five design types, with domain estimation, value-label
+  support, and AAPOR small-cell warnings.
+
+* `get_means()` returns survey-weighted means with design-correct standard
+  errors for all five design types, including grouped and domain estimation.
+
+* `get_totals()` returns survey-weighted population totals (and population
+  size when called without `x`) for all five design types.
+
+* `get_corr()` computes survey-weighted Pearson correlation using the
+  delta-method variance approach, with optional `group` parameter for
+  per-group correlations and Fisher Z confidence intervals.
+
+* `get_quantiles()` estimates survey-weighted quantiles using the Woodruff
+  (1952) linearization method; supports multiple `probs` in a single call and
+  five CI interval methods.
+
+* `get_ratios()` estimates survey-weighted ratios (numerator total /
+  denominator total) with design-correct SEs via the delta method (Taylor,
+  SRS, calibrated, two-phase) or direct per-replicate computation (replicate
+  designs).
+
+* All six analysis functions gain a `decimals` argument to round numeric
+  output columns to a fixed number of decimal places.
+
+* `na.rm = FALSE` now includes rows where a grouping variable is `NA` as a
+  separate group row in all six analysis functions' output.
+
+* `infer_question_prefaces()` auto-detects shared battery prefaces from
+  variable labels using separator-based and longest-common-prefix detection.
+
+* `survey_weighting_history()` returns the weighting history stored in a
+  survey design object's metadata; `as_survey()`, `as_survey_rep()`, and
+  `as_survey_srs()` now promote `"weighting_history"` attributes from the
+  input data frame automatically.
+
+* Two-phase variance estimation (`as_survey_twophase()`) is now fully
+  supported in `get_means()` and `get_totals()`, using the `"full"`,
+  `"approx"`, and `"simple"` methods vendored from the `survey` package.
+
+## Bug fixes
+
+* `get_freqs()` no longer crashes when the `group` variable contains `NA`
+  values.
+
+* `get_freqs()` now outputs `pct` as a proportion (0–1) rather than a
+  percentage (0–100); `se` and `se_srs` are on the same scale.
 
 # surveycore 0.1.0
 

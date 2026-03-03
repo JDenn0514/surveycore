@@ -1052,3 +1052,203 @@ test_that(".validate_shared_args() rejects non-numeric decimals", {
     class = "surveycore_error_invalid_decimals"
   )
 })
+
+
+# ── Category 10: .validate_shared_args() na.rm validation ────────────────────
+
+test_that(".validate_shared_args() accepts na.rm = TRUE", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = TRUE)
+  )
+})
+
+test_that(".validate_shared_args() accepts na.rm = FALSE", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = FALSE)
+  )
+})
+
+test_that(".validate_shared_args() rejects na.rm = NA with typed error", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = NA),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+  expect_snapshot(
+    error = TRUE,
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = NA)
+  )
+})
+
+test_that(".validate_shared_args() rejects na.rm = 1 (numeric, not logical)", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = 1),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+})
+
+test_that('.validate_shared_args() rejects na.rm = "yes" (character)', {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = "yes"),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+})
+
+
+# ── Category 11: .build_group_combos() ───────────────────────────────────────
+
+test_that(".build_group_combos() excludes NA rows when na.rm = TRUE", {
+  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_false(anyNA(result$grp))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that(".build_group_combos() includes NA rows when na.rm = FALSE", {
+  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = FALSE)
+  expect_true(anyNA(result$grp))
+  expect_equal(nrow(result), 3L)
+})
+
+test_that(".build_group_combos() sorts NA combos after non-NA combos", {
+  df <- data.frame(grp = c(NA_character_, "B", "A", NA_character_), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = FALSE)
+  # Non-NA rows come first; NA row is last
+  non_na_rows <- which(!is.na(result$grp))
+  na_rows     <- which(is.na(result$grp))
+  expect_true(all(na_rows > max(non_na_rows)))
+})
+
+test_that(".build_group_combos() sorts NA combos last with multi-column input", {
+  df <- data.frame(
+    grp  = c("A", NA_character_, "B", "A"),
+    grp2 = c("X", "Y",           "X", "Y"),
+    stringsAsFactors = FALSE
+  )
+  result <- .build_group_combos(df, na.rm = FALSE)
+  na_rows    <- which(is.na(result$grp))
+  non_na_rows <- which(!is.na(result$grp))
+  expect_true(length(na_rows) > 0L)
+  expect_true(all(na_rows > max(non_na_rows)))
+})
+
+test_that(".build_group_combos() returns empty data.frame when input has 0 rows", {
+  df <- data.frame(grp = character(0L), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_equal(nrow(result), 0L)
+  result2 <- .build_group_combos(df, na.rm = FALSE)
+  expect_equal(nrow(result2), 0L)
+})
+
+test_that(".build_group_combos() returns empty data.frame when na.rm=TRUE removes all rows", {
+  df <- data.frame(grp = c(NA_character_, NA_character_), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_equal(nrow(result), 0L)
+})
+
+
+# ── Category 12: .match_group_combo() ────────────────────────────────────────
+
+test_that(".match_group_combo() matches NA values via is.na()", {
+  data_cols <- list(grp = c("A", NA_character_, "B", NA_character_))
+  combo_row <- data.frame(grp = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, TRUE, FALSE, TRUE))
+})
+
+test_that(".match_group_combo() does not match non-NA values when combo value is NA", {
+  data_cols <- list(grp = c("A", "B", "C"))
+  combo_row <- data.frame(grp = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, FALSE, FALSE))
+})
+
+test_that(".match_group_combo() matches non-NA values correctly", {
+  data_cols <- list(grp = c("A", "B", "A", NA_character_))
+  combo_row <- data.frame(grp = "A", stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(TRUE, FALSE, TRUE, FALSE))
+})
+
+test_that(".match_group_combo() handles multi-column combos with NA in first var", {
+  data_cols <- list(
+    grp  = c("A", NA_character_, "B", NA_character_),
+    grp2 = c("X", "X",          "X", "Y")
+  )
+  combo_row <- data.frame(grp = NA_character_, grp2 = "X", stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, TRUE, FALSE, FALSE))
+})
+
+test_that(".match_group_combo() handles multi-column combos with NA in second var", {
+  data_cols <- list(
+    grp  = c("A", "A", "B"),
+    grp2 = c(NA_character_, "X", NA_character_)
+  )
+  combo_row <- data.frame(grp = "A", grp2 = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(TRUE, FALSE, FALSE))
+})
+
+
+# ── Category 13: .apply_group_labels() tagged-NA path ────────────────────────
+
+# Helper: build a minimal valid design with a custom column for label tests.
+.make_label_test_design <- function(extra_col, extra_labels, col_name, seed = 42L) {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = seed)
+  # Recycle extra_col to fill 100 rows
+  df[[col_name]] <- rep_len(extra_col, 100L)
+  attr(df[[col_name]], "labels") <- extra_labels
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+test_that(".apply_group_labels() leaves plain NAs as NA in factor output when no label", {
+  labels_vec <- c("GroupA" = 1L, "GroupB" = 2L)
+  design <- .make_label_test_design(
+    extra_col    = c(1L, 2L, NA_integer_),
+    extra_labels = labels_vec,
+    col_name     = "grp_plain"
+  )
+  gc <- data.frame(grp_plain = c(1L, 2L, NA_integer_))
+  result <- .apply_group_labels(gc, "grp_plain", design, label_values = TRUE)
+  expect_true(is.factor(result$grp_plain))
+  # Plain NA (no matching label) stays NA in the factor
+  expect_true(is.na(result$grp_plain[[3L]]))
+  # "GroupA" and "GroupB" are present; "NA" is NOT a factor level
+  expect_false("NA" %in% levels(result$grp_plain))
+})
+
+test_that(".apply_group_labels() converts tagged NAs to factor levels when label exists", {
+  skip_if_not_installed("haven")
+  tagged_r    <- haven::tagged_na("r")
+  labels_vec  <- c("GroupA" = 1L, "GroupB" = 2L, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col    = c(1L, 2L, tagged_r),
+    extra_labels = labels_vec,
+    col_name     = "grp_tagged"
+  )
+  # group_combos has 3 rows: one per unique combo (GroupA, GroupB, Refused/NA)
+  gc <- data.frame(grp_tagged = c(1L, 2L, tagged_r))
+  result <- .apply_group_labels(gc, "grp_tagged", design, label_values = TRUE)
+  expect_true(is.factor(result$grp_tagged))
+  # "Refused" should be a factor level (converted from tagged NA)
+  expect_true("Refused" %in% levels(result$grp_tagged))
+  # The tagged NA row maps to "Refused" (not NA)
+  expect_identical(as.character(result$grp_tagged[[3L]]), "Refused")
+})
+
+
+# ── Category 14: get_na_group_rows() ─────────────────────────────────────────
+
+test_that("get_na_group_rows() returns rows where group_col is NA", {
+  tbl <- tibble::tibble(grp = c("A", NA_character_, "B", NA_character_), val = 1:4)
+  result <- get_na_group_rows(tbl, "grp")
+  expect_equal(nrow(result), 2L)
+  expect_true(all(is.na(result$grp)))
+})
+
+test_that("get_na_group_rows() returns empty tibble when no NA group rows exist", {
+  tbl <- tibble::tibble(grp = c("A", "B", "C"), val = 1:3)
+  result <- get_na_group_rows(tbl, "grp")
+  expect_equal(nrow(result), 0L)
+})

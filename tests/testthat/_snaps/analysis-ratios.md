@@ -34,3 +34,12 @@
       x `variance` values must be from "se", "ci", "var", "cv", "moe", or "deff".
       i Unknown value: "bogus".
 
+# get_ratios() rejects na.rm = NA with surveycore_error_na_rm_not_logical
+
+    Code
+      get_ratios(d, y1, y2, group = grp, na.rm = NA)
+    Condition
+      Error in `get_ratios()`:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

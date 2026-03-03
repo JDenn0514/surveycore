@@ -69,10 +69,10 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/phase-2-glm-formal-specification.md` — authoritative Phase 2 spec (regression)
-- `plans/claude-decisions-phase-2.md` — pre-implementation review decisions for Phase 2
+- `plans/spec-phase-2.md` — authoritative Phase 2 spec (regression)
+- `plans/decisions-phase-2.md` — pre-implementation review decisions for Phase 2
 - `plans/archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)
-- `plans/survey-srs-formal-specification.md` — authoritative spec for `survey_srs` class + `as_survey_srs()` + SRS variance
+- `plans/archive/survey-srs/survey-srs-formal-specification.md` — authoritative spec for `survey_srs` class + `as_survey_srs()` + SRS variance
 - `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
 - `.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md` — Phase 0 implementation details (archived)

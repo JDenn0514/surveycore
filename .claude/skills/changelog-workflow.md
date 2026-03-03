@@ -10,7 +10,7 @@ changelog format enforced by `commit-and-pr`.
 ```
 Location:  changelog/phase-{X}/{branch-name}.md
 Timing:    Created LAST on the branch, BEFORE opening the PR
-Populated: From git log main..HEAD --oneline
+Populated: From git log develop..HEAD --oneline
 ```
 
 Where `{X}` is the current phase number (e.g., `1` for Phase 1). If unsure,
@@ -43,7 +43,7 @@ check the branch name or ask the user.
 
 ## Deriving Content from Commits
 
-Run `git log main..HEAD --oneline` to get the commit list. Use those messages
+Run `git log develop..HEAD --oneline` to get the commit list. Use those messages
 to populate the `## Changes` section. Group related commits into single bullets
 where appropriate (e.g., a sequence of "fix: " commits that address the same
 issue can be one bullet).

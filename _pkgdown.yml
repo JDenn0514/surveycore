@@ -85,6 +85,7 @@ reference:
       - extract_val_labels
       - extract_question_preface
       - extract_var_note
+      - survey_weighting_history
 
   - title: "Conversion"
     desc: >

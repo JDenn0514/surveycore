@@ -1,4 +1,4 @@
-# R/02-validators.R
+# R/core-validators.R
 #
 # Layer 2 validator helpers for the surveycore package.
 #

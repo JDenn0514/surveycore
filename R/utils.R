@@ -1,4 +1,4 @@
-# R/07-utils.R
+# R/utils.R
 #
 # Utility functions used across two or more source files.
 # Single-use helpers live at the top of their respective source files.
@@ -36,6 +36,36 @@ survey_data <- function(x) {
     )
   }
   x@data
+}
+
+
+#' Extract the Weighting History from a Survey Object
+#'
+#' Returns the list of weighting operations recorded on a survey design object.
+#' Each entry is appended by surveyweights after a calibration or nonresponse
+#' adjustment step. Returns an empty list when no history has been recorded.
+#'
+#' @param x A survey design object (any class inheriting from `survey_base`).
+#' @return A `list` of history entries, or `list()` if no history is present.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' survey_weighting_history(d)   # list() — no weighting history
+#'
+#' @family metadata
+#' @export
+survey_weighting_history <- function(x) {
+  if (!S7::S7_inherits(x, survey_base)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg x} must be a survey design object.",
+        "i" = "Got {.cls {class(x)[[1L]]}}."
+      ),
+      class = "surveycore_error_not_survey_object"
+    )
+  }
+  x@metadata@weighting_history
 }
 
 
@@ -247,4 +277,25 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   } else {
     list() # nocov — defensive: all known types handled above
   }
+}
+
+
+# ── Internal: weighting history promotion ────────────────────────────────────
+
+# Promote a weighting_history attribute from a data frame to a metadata object.
+# Called by constructors that accept a raw data frame (as_survey_srs,
+# as_survey, as_survey_rep). Returns the metadata object unchanged when the
+# attribute is absent or is not a non-empty list.
+#
+# @param data     A data.frame (may or may not have "weighting_history" attr).
+# @param metadata A survey_metadata object (already populated by
+#                 .extract_haven_metadata()).
+# @return The survey_metadata object, with @weighting_history set if present.
+#' @noRd
+.promote_weighting_history <- function(data, metadata) {
+  history <- attr(data, "weighting_history", exact = TRUE)
+  if (is.list(history) && length(history) > 0L) {
+    metadata@weighting_history <- history
+  }
+  metadata
 }

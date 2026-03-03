@@ -46,7 +46,11 @@
 #' @param min_cell_n Integer. Minimum pairwise unweighted count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), pairs use complete cases for
-#'   each variable pair separately (pairwise deletion).
+#'   each variable pair separately (pairwise deletion), and observations where
+#'   any group variable is `NA` are excluded from the output. If `FALSE`,
+#'   pairwise complete cases are still used for each variable pair, and
+#'   observations where a group variable is `NA` are collected into their own
+#'   group row in the output (appearing after all non-`NA` group rows).
 #' @param label_values Logical. If `TRUE` (default) and the grouping variable
 #'   has value labels, the group column is converted to a labelled factor.
 #'   Has no visible effect when no groups are active.
@@ -120,7 +124,8 @@ get_corr <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_corr")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
+                        na.rm = na.rm)
   format <- match.arg(format)
 
   # ── Step 2: Resolve variables ────────────────────────────────────────────────
@@ -202,12 +207,12 @@ get_corr <- function(
     for (gv in group_vars) {
       gv_vals   <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
-      if (length(uniq_lvls) == 1L) {
+      if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              "({.val {as.character(uniq_lvls[[1L]])}}).",
+              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
               " Grouped estimates will have a single row."
             )
           ),
@@ -220,17 +225,8 @@ get_corr <- function(
   # ── Step 9: Build group combinations ──────────────────────────────────────────
   if (length(group_vars) > 0L) {
     domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
-    # Exclude rows with NA in any group variable before building combos
-    has_na       <- Reduce(`|`, lapply(group_vars,
-                                       function(gv) is.na(domain_data[[gv]])))
-    group_combos <- unique(domain_data[!has_na, , drop = FALSE])
-    ord <- do.call(
-      order,
-      lapply(group_vars, function(gv) group_combos[[gv]])
-    )
-    group_combos <- group_combos[ord, , drop = FALSE]
-    rownames(group_combos) <- NULL
-    n_combos <- nrow(group_combos)
+    group_combos <- .build_group_combos(domain_data, na.rm)
+    n_combos     <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
     n_combos     <- 1L
@@ -246,12 +242,8 @@ get_corr <- function(
     # Build active mask for this combo
     if (length(group_vars) > 0L) {
       combo_row   <- group_combos[ci, , drop = FALSE]
-      group_match <- rep(TRUE, nrow(design@data))
-      for (gv in group_vars) {
-        gv_col      <- design@data[[gv]]
-        cv          <- combo_row[[gv]]
-        group_match <- group_match & !is.na(gv_col) & (gv_col == cv)
-      }
+      data_cols   <- as.list(design@data[group_vars])
+      group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
       all_grp_rows[[ci]] <- combo_row
     } else {

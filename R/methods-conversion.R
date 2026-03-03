@@ -1,4 +1,4 @@
-# R/05-methods-conversion.R
+# R/methods-conversion.R
 #
 # Conversion functions between surveycore S7 objects and the survey/srvyr
 # package design objects.

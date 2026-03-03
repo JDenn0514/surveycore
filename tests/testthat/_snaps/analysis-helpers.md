@@ -51,3 +51,12 @@
       x `decimals` must be a non-negative whole number or `NULL`.
       i Got -1.
 
+# .validate_shared_args() rejects na.rm = NA with typed error
+
+    Code
+      .validate_shared_args(NULL, 0.95, "surveycore", na.rm = NA)
+    Condition
+      Error:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

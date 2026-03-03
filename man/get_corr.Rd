@@ -67,7 +67,11 @@ places. Default \code{NULL} (no rounding).}
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
 \item{na.rm}{Logical. If \code{TRUE} (default), pairs use complete cases for
-each variable pair separately (pairwise deletion).}
+each variable pair separately (pairwise deletion), and observations where
+any group variable is \code{NA} are excluded from the output. If \code{FALSE},
+pairwise complete cases are still used for each variable pair, and
+observations where a group variable is \code{NA} are collected into their own
+group row in the output (appearing after all non-\code{NA} group rows).}
 
 \item{label_values}{Logical. If \code{TRUE} (default) and the grouping variable
 has value labels, the group column is converted to a labelled factor.

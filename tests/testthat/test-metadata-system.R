@@ -544,3 +544,19 @@ test_that(".validate_val_labels() errors in strict mode with unlabeled values [d
     class = "surveycore_error_missing_labels"
   )
 })
+
+
+# ── survey_weighting_history() ────────────────────────────────────────────────
+
+test_that("survey_weighting_history() returns list() when no history set", {
+  d <- make_design()
+  expect_identical(survey_weighting_history(d), list())
+})
+
+test_that("survey_weighting_history() returns the history list when set", {
+  df <- make_survey_data(n = 100L, seed = 201L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_identical(survey_weighting_history(d), history)
+})
