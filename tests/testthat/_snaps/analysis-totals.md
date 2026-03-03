@@ -16,3 +16,12 @@
       x `variance` values must be from "se", "ci", "var", "cv", "moe", or "deff".
       i Unknown value: "bad_val".
 
+# get_totals() rejects na.rm = NA with surveycore_error_na_rm_not_logical
+
+    Code
+      get_totals(d, y1, group = grp, na.rm = NA)
+    Condition
+      Error in `get_totals()`:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

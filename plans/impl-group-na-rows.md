@@ -30,7 +30,7 @@ The shared helpers (`.build_group_combos()`, `.match_group_combo()`,
 
 - [x] PR 1: `fix/group-na-rows-helpers` — Add shared helpers and NA-group test fixtures
 - [x] PR 2: `fix/group-na-rows-freqs` — Extend `get_freqs()` to include NA group rows
-- [ ] PR 3: `fix/group-na-rows-means-totals` — Extend `get_means()` and `get_totals()`
+- [x] PR 3: `fix/group-na-rows-means-totals` — Extend `get_means()` and `get_totals()`
 - [ ] PR 4: `fix/group-na-rows-corr-quantiles` — Extend `get_corr()` and `get_quantiles()`
 - [ ] PR 5: `fix/group-na-rows-ratios` — Extend `get_ratios()`
 
