@@ -313,7 +313,7 @@ cleaning using the `surveytidy` package (I'll go more in-depth later showing
 what this package can do).
 
 
-```{r corr-basic}
+```{r corr-basic, eval=has_surveytidy}
 
 library(surveytidy)
 
@@ -563,7 +563,7 @@ Now let's look at the grouped frequencies. So far, we've used the `group`
 argument, but we can also `group_by()` from surveytidy. Looking below,
 we can see that they return identical results.
 
-```{r surveytidy-group_by}
+```{r surveytidy-group_by, eval=has_surveytidy}
 ns_wave1_svy |>
   group_by(age_f4) |>
   get_freqs(fav_trump_f3)
