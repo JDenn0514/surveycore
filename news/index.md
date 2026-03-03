@@ -1,5 +1,15 @@
 # Changelog
 
+## surveycore 0.3.0
+
+### New features
+
+- [`names()`](https://rdrr.io/r/base/names.html) now works on survey
+  design objects, returning the column names of the underlying data
+  frame. This enables IDE column-name autocomplete in RStudio and
+  Positron when piping into analysis functions (e.g.,
+  `design |> get_means(`).
+
 ## surveycore 0.2.0
 
 ### New features
