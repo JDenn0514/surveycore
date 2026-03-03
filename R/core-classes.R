@@ -1,4 +1,4 @@
-# R/00-s7-classes.R
+# R/core-classes.R
 #
 # S7 class definitions for the surveycore package.
 #

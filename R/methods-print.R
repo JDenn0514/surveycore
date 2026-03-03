@@ -1,4 +1,4 @@
-# R/04-methods-print.R
+# R/methods-print.R
 #
 # Print and summary S7 methods for survey design objects.
 #
