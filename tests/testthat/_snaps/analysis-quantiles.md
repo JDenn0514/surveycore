@@ -34,3 +34,12 @@
       x `get_quantiles()` requires exactly one variable.
       i `x` resolved to 2 variables.
 
+# get_quantiles() rejects na.rm = NA with surveycore_error_na_rm_not_logical
+
+    Code
+      get_quantiles(d, y1, probs = 0.5, group = grp, na.rm = NA)
+    Condition
+      Error in `get_quantiles()`:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

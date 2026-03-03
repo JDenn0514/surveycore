@@ -15,3 +15,12 @@
       Error in `get_corr()`:
       x `get_corr()` requires at least 2 variables, but `x` resolved to 1 variable.
 
+# get_corr() rejects na.rm = NA with surveycore_error_na_rm_not_logical
+
+    Code
+      get_corr(d, x = c(y1, y2), group = grp, na.rm = NA)
+    Condition
+      Error in `get_corr()`:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

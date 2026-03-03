@@ -37,9 +37,13 @@
 #'   decimal places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
-#' @param na.rm Logical. If `TRUE` (default), `NA` values in `x` are excluded.
-#'   If `FALSE` and `NA` values are present in the active domain, the estimate
-#'   is `NA`.
+#' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded from
+#'   analysis: observations where the analysis variable is `NA` are dropped
+#'   from calculations, and observations where any group variable is `NA` are
+#'   excluded from the output. If `FALSE`, `NA` observations in the analysis
+#'   variable are included in calculations, and observations where a group
+#'   variable is `NA` are collected into their own group row in the output
+#'   (appearing after all non-`NA` group rows).
 #' @param label_values Logical. Accepted for API uniformity; has no visible
 #'   effect on `get_quantiles()` output. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity; has no visible
@@ -99,7 +103,8 @@ get_quantiles <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_quantiles")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
+                        na.rm = na.rm)
 
   if (
     !is.numeric(probs) ||
@@ -158,12 +163,12 @@ get_quantiles <- function(
     for (gv in group_vars) {
       gv_vals   <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
-      if (length(uniq_lvls) == 1L) {
+      if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              "({.val {as.character(uniq_lvls[[1L]])}}).",
+              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
               " Grouped estimates will have a single row per quantile."
             )
           ),
@@ -175,16 +180,9 @@ get_quantiles <- function(
 
   # ── Step 4: Build group combinations ─────────────────────────────────────────
   if (length(group_vars) > 0L) {
-    domain_data   <- design@data[domain_mask, group_vars, drop = FALSE]
-    complete_idx  <- stats::complete.cases(domain_data)
-    group_combos  <- unique(domain_data[complete_idx, , drop = FALSE])
-    ord <- do.call(
-      order,
-      lapply(group_vars, function(gv) group_combos[[gv]])
-    )
-    group_combos <- group_combos[ord, , drop = FALSE]
-    rownames(group_combos) <- NULL
-    n_combos <- nrow(group_combos)
+    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    group_combos <- .build_group_combos(domain_data, na.rm)
+    n_combos     <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
     n_combos     <- 1L
@@ -211,12 +209,8 @@ get_quantiles <- function(
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
       combo_row   <- group_combos[ci, , drop = FALSE]
-      group_match <- rep(TRUE, nrow(design@data))
-      for (gv in group_vars) {
-        gv_col <- design@data[[gv]]
-        cv     <- combo_row[[gv]]
-        group_match <- group_match & !is.na(gv_col) & (gv_col == cv)
-      }
+      data_cols   <- as.list(design@data[group_vars])
+      group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
     } else {
       active_mask <- domain_mask

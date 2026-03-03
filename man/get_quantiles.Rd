@@ -53,9 +53,13 @@ decimal places. Default \code{NULL} (no rounding).}
 \item{min_cell_n}{Integer. Minimum unweighted cell count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
-\item{na.rm}{Logical. If \code{TRUE} (default), \code{NA} values in \code{x} are excluded.
-If \code{FALSE} and \code{NA} values are present in the active domain, the estimate
-is \code{NA}.}
+\item{na.rm}{Logical. If \code{TRUE} (default), \code{NA} values are excluded from
+analysis: observations where the analysis variable is \code{NA} are dropped
+from calculations, and observations where any group variable is \code{NA} are
+excluded from the output. If \code{FALSE}, \code{NA} observations in the analysis
+variable are included in calculations, and observations where a group
+variable is \code{NA} are collected into their own group row in the output
+(appearing after all non-\code{NA} group rows).}
 
 \item{label_values}{Logical. Accepted for API uniformity; has no visible
 effect on \code{get_quantiles()} output. Default \code{TRUE}.}
