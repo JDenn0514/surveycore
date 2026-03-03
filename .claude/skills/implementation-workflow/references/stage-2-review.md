@@ -116,33 +116,54 @@ Options:
 
 ---
 
+## If a Review File Already Exists
+
+Before writing any output, check for `plans/plan-review-{id}.md`.
+
+**If it exists:**
+1. Read the full existing file
+2. Complete your fresh review of the current plan
+3. In the new pass section, list every previously flagged issue with a status:
+   - ✅ Resolved — the plan was updated to address it
+   - ⚠️ Still open — the plan was not changed
+4. **Append** the new pass section to the bottom of the existing file — never
+   overwrite or delete prior content
+
+**If it does not exist:** create the file with Pass 1.
+
+---
+
 ## Output Structure
 
 Organize issues by plan section. If a section has no issues, say
 "No issues found."
 
 ```markdown
-## Plan Review: Phase [X]
+## Plan Review: [id] — Pass [N] ([YYYY-MM-DD])
 
-### Section: PR Map
+### Prior Issues (Pass [N-1])
+_Omit this section on Pass 1._
 
-**Issue 1: [title]**
+| # | Title | Status |
+|---|---|---|
+| 1 | [title] | ✅ Resolved |
+| 2 | [title] | ⚠️ Still open |
+
+### New Issues
+
+#### Section: PR Map
+
+**Issue [N]: [title]**
 Severity: BLOCKING
 ...
 
-### Section: PR [N] — [title]
+#### Section: PR [N] — [title]
 
-**Issue 2: [title]**
-Severity: REQUIRED
-...
-
-### Section: PR [N] — [title]
-
-No issues found.
+No new issues found.
 
 ---
 
-## Summary
+## Summary (Pass [N])
 
 | Severity | Count |
 |---|---|
@@ -174,11 +195,11 @@ If a plan is genuinely solid, say so.
 
 ## After Completing the Review
 
-1. Confirm the phase number.
-2. Save the full review to `plans/plan-review-phase-{X}.md`.
+1. Determine `{id}` from the plan filename if not already known.
+2. Append the new pass section to `plans/plan-review-{id}.md` (create on Pass 1).
 3. End the session with:
 
-   > "{N} issues found ({X} blocking, {Y} required, {Z} suggestions).
-   > Start a new session with `/implementation-workflow stage 3` to resolve
-   > these interactively. The issue list has been saved to
-   > `plans/plan-review-phase-{X}.md`."
+   > "Pass [N] complete: {N} new issues ({X} blocking, {Y} required, {Z}
+   > suggestions). Start a new session with `/implementation-workflow stage 3`
+   > to resolve these interactively. Review appended to
+   > `plans/plan-review-{id}.md`."

@@ -75,6 +75,7 @@ against the messages defined here.
 | 44 | `get_corr()` | Fewer than 2 variables supplied | ERROR | `surveycore_error_insufficient_variables` | `"{.fn get_corr} requires at least 2 variables, but {.arg x} resolved to {length(vars)} variable{?s}."` |
 | 45 | all `get_*()` | Unknown value for `variance` argument | ERROR | `surveycore_error_invalid_variance_arg` | `'{.arg variance} values must be from {.val {valid_variance}}. Unknown value{?s}: {.val {bad_vals}}.'` |
 | 45a | all `get_*()` | `conf_level` not a single number strictly between 0 and 1 | ERROR | `surveycore_error_invalid_conf_level` | `"{.arg conf_level} must be a single number strictly between 0 and 1. Got {.val {conf_level}}."` |
+| 45b | all `get_*()` | `decimals` is not a non-negative whole number or `NULL` | ERROR | `surveycore_error_invalid_decimals` | `"{.arg decimals} must be a non-negative whole number or {.code NULL}. Got {.val {decimals}}."` |
 | 46 | all `get_*()` | Unknown value for `name_style` argument | ERROR | `surveycore_error_invalid_name_style` | `'{.arg name_style} must be {.val "surveycore"} or {.val "broom"}, not {.val {name_style}}.'` |
 | 47 | `get_quantiles()` | `probs` outside (0,1) or length 0 | ERROR | `surveycore_error_invalid_probs` | `"{.arg probs} must be a non-empty numeric vector with all values in (0, 1). Invalid value{?s}: {.val {bad_probs}}."` |
 | 48 | `get_ratios()` | All denominator values are zero | ERROR | `surveycore_error_ratio_zero_denominator` | `"All values of the denominator ({.field {denom_var}}) are zero. Cannot compute ratio."` |
@@ -107,6 +108,10 @@ against the messages defined here.
 | 75 | `clean()` | `model` not a `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` | `"{.arg model} must be a {.cls survey_glm_fit} object, not {.cls {class(model)[1]}}."` |
 | 76 | `predict.survey_glm_fit()`, `residuals.survey_glm_fit()` | `fit_` slot is `NULL` | ERROR | `surveycore_error_predict_no_fit` | `"The internal {.field fit_} slot is NULL. This can happen after serialization. Refit the model to restore prediction support."` |
 | 77 | `survey_glm()` | `df_residual` would be ≤ 0 | WARN | `surveycore_warning_insufficient_df` | `"Design degrees of freedom ({degf}) minus model parameters ({p - 1}) is ≤ 0. Clamping {.code df_residual = 1}. CI bounds and p-values are conservative."` |
+| 78 | `infer_question_prefaces()` | `x` is not a survey object or data frame | ERROR | `surveycore_error_not_survey_or_df` | `"{.arg x} must be a survey design object or a data frame, not {.cls {class(x)[[1L]]}}."` |
+| 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
+| 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
+| 81 | all `get_*()` (via `.validate_shared_args()`) | `na.rm` is not `TRUE` or `FALSE` (e.g., `NA`, `1`, `"yes"`) | ERROR | `surveycore_error_na_rm_not_logical` | `"x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {na.rm}}."` |
 
 ---
 
@@ -150,12 +155,13 @@ Which test files cover which error table rows:
 | `test-metadata-system.R` | 27–30 |
 | `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
-| `test-analysis-helpers.R` | 45, 45a, 46 (direct unit tests on `.validate_shared_args()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
-| `test-analysis-freqs.R` | 45, 45a, 46, 49, 50, 52, 53, 55 |
-| `test-analysis-means.R` | 43, 45, 45a, 46, 49, 50, 54 |
-| `test-analysis-totals.R` | 43, 45, 45a, 46, 49, 50, 54 |
-| `test-analysis-corr.R` | 43, 44, 45, 45a, 46, 49, 50, 51, 54 |
-| `test-analysis-quantiles.R` | 45, 45a, 46, 47, 49, 50, 54 |
-| `test-analysis-ratios.R` | 43, 45, 45a, 46, 48, 49, 50, 54 |
+| `test-analysis-helpers.R` | 45, 45a, 45b, 46 (direct unit tests on `.validate_shared_args()` and `.apply_decimals()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
+| `test-analysis-freqs.R` | 45, 45a, 45b, 46, 49, 50, 52, 53, 55 |
+| `test-analysis-means.R` | 43, 45, 45a, 45b, 46, 49, 50, 54 |
+| `test-analysis-totals.R` | 43, 45, 45a, 45b, 46, 49, 50, 54 |
+| `test-analysis-corr.R` | 43, 44, 45, 45a, 45b, 46, 49, 50, 51, 54 |
+| `test-analysis-quantiles.R` | 45, 45a, 45b, 46, 47, 49, 50, 54 |
+| `test-analysis-ratios.R` | 43, 45, 45a, 45b, 46, 48, 49, 50, 54 |
 | `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74 (Layer 3 dual pattern), 77; S7 validator errors in Section 3.3 (class= only, not in this table) |
 | `test-glm-methods.R` | 76 |
+| `test-metadata-infer.R` | 78, 79, 80 |

@@ -68,8 +68,10 @@ Every stage works alongside — never instead of — these rule files:
 
 ## File Locations
 
+The `{id}` matches the feature branch identifier (e.g., `phase-2`, `survey-srs`).
+
 ```
-Implementation plans:  plans/implementation-plan-phase-{X}.md
-Plan review output:    plans/plan-review-phase-{X}.md
-Decisions log:         plans/claude-decisions-phase-{X}.md
+Implementation plan:  plans/impl-{id}.md
+Plan review:          plans/plan-review-{id}.md
+Decisions log:        plans/decisions-{id}.md
 ```

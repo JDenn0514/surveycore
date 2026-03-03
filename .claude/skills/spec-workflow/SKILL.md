@@ -71,8 +71,10 @@ authoritative — the spec doesn't need to repeat it.
 
 ## File Locations
 
+The `{id}` matches the feature branch identifier (e.g., `phase-2`, `survey-srs`).
+
 ```
-Spec sheets:         plans/spec-phase-{X}.md
-Spec review output:  plans/spec-review-phase-{X}.md
-Decisions log:       plans/claude-decisions-phase-{X}.md
+Spec:              plans/spec-{id}.md
+Spec review:       plans/spec-review-{id}.md
+Decisions log:     plans/decisions-{id}.md
 ```

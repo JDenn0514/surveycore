@@ -131,16 +131,30 @@ rownames(pew_sub) <- NULL
 
 as_plain <- function(df) {
   df[] <- lapply(df, function(x) {
+    # Title-case the label attribute for ALL columns
+    lbl <- attr(x, "label", exact = TRUE)
+    if (!is.null(lbl)) {
+      attr(x, "label") <- stringr::str_to_title(lbl)
+    }
+
     if (!inherits(x, "haven_labelled")) {
       return(x)
     }
+
     raw <- as.vector(x)
-    lbl <- attr(x, "label", exact = TRUE)
+    attr(raw, "label") <- attr(x, "label", exact = TRUE) # carry over already-fixed label
+
     lbvl <- attr(x, "labels", exact = TRUE)
-    if (!is.null(lbl)) {
-      attr(raw, "label") <- lbl
-    }
     if (!is.null(lbvl)) {
+      if (!is.null(names(lbvl))) {
+        clean <- sub("^[0-9]+ = ", "", names(lbvl))
+        names(lbvl) <- gsub(
+          "(^|[[:space:]])([[:alpha:]])",
+          "\\1\\U\\2",
+          tolower(clean),
+          perl = TRUE
+        )
+      }
       attr(raw, "labels") <- lbvl
     }
     raw
@@ -165,7 +179,59 @@ pew_jewish_2020 <- as_plain(pew_sub)
 
 pew_jewish_2020 <- clean_names(pew_jewish_2020)
 
-## ---- 5. Save ----
+## ---- 5. Attach battery question_preface attributes ----
+##
+## The .dta label field is truncated; set the full question stem as
+## question_preface so surveycore battery helpers can surface it.
+##
+## Battery 3 (discrim_a–f):
+##   "Please tell us how much discrimination there is against each of
+##    these groups in our society today."
+
+discrim_preface <- paste0(
+  "Please tell us how much discrimination there is against each of these groups in our society today."
+)
+for (col in grep("^discrim_", names(pew_jewish_2020), value = TRUE)) {
+  attr(pew_jewish_2020[[col]], "question_preface") <- discrim_preface
+}
+
+relconsider_preface <- paste0(
+  "ASIDE from religion, do you consider yourself to be any of the following in any way (for example ethnically, culturally or because of your family's background)?"
+)
+for (col in grep("^relc", names(pew_jewish_2020), value = TRUE)) {
+  attr(pew_jewish_2020[[col]], "question_preface") <- relconsider_preface
+}
+
+relraised_preface <- paste0(
+  "Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."
+)
+for (col in grep("^relr", names(pew_jewish_2020), value = TRUE)) {
+  attr(pew_jewish_2020[[col]], "question_preface") <- relraised_preface
+}
+
+## ---- 6. Update Variable Labels ----
+labels <- c(
+  relconsider_a = "Jewish",
+  relconsider_b = "Catholic",
+  relconsider_c = "Mormon",
+  relconsider_d = "Muslim",
+  relraised_a = "Jewish",
+  relraised_b = "Catholic",
+  relraised_c = "Mormon",
+  relraised_d = "Muslim",
+  discrim_a = "Evangelical Christians",
+  discrim_b = "Muslims",
+  discrim_c = "Jews",
+  discrim_d = "Blacks",
+  discrim_e = "Hispanics",
+  discrim_f = "Gays and lesbians"
+)
+
+pew_jewish_2020[names(labels)] <- purrr::imap(labels, \(lbl, nm) {
+  `attr<-`(pew_jewish_2020[[nm]], "label", lbl)
+})
+
+## ---- 6. Save ----
 
 message("Saving pew_jewish_2020 to data/...")
 usethis::use_data(pew_jewish_2020, overwrite = TRUE)

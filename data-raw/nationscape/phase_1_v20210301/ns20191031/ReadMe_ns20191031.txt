@@ -1,0 +1,11 @@
+This is wave 16 of the Nationscape data (ns20191031).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191031.txt
+bannerbook_ns20191031.pdf which includes cross tabs of each variable
+codebook_ns20191031.pdf describing question wording, variable names, and values
+ns20191031.dta the main data file
+
+Notes:
+- After announcing his withdrawal, Beto O’Rourke was dropped as an option for Democratic vote intent and top 3 Democratic candidates at 3:50 PM PST on November 1.

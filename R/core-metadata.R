@@ -1,4 +1,4 @@
-# R/01-metadata-system.R
+# R/core-metadata.R
 #
 # Metadata extraction and setting functions for survey design objects.
 #
@@ -528,9 +528,10 @@ set_variable_notes <- function(x, ...) {
 
 #' Extract haven-Style Metadata from a Data Frame
 #'
-#' Scans each column of `data` for `"label"` and `"labels"` attributes set by
-#' haven (or any tool following the same convention). Does NOT import haven —
-#' uses only base R `attr()`.
+#' Scans each column of `data` for `"label"`, `"labels"`, and
+#' `"question_preface"` attributes set by haven or by
+#' `infer_question_prefaces()` (or any tool following the same convention).
+#' Does NOT import haven — uses only base R `attr()`.
 #'
 #' Edge cases handled:
 #' 1. Zero-length or empty-string variable labels — not stored.
@@ -546,6 +547,7 @@ set_variable_notes <- function(x, ...) {
 .extract_haven_metadata <- function(data) {
   var_labels <- list()
   val_labels <- list()
+  q_prefaces <- list()
 
   for (col_name in names(data)) {
     col <- data[[col_name]]
@@ -573,10 +575,21 @@ set_variable_notes <- function(x, ...) {
       # NA keys (SPSS user-defined missing values) are preserved as-is
       val_labels[[col_name]] <- val_lbl
     }
+
+    # ── Question preface (set by infer_question_prefaces() on data frames) ────
+    q_preface <- attr(col, "question_preface", exact = TRUE)
+    if (
+      !is.null(q_preface) &&
+      is.character(q_preface) &&
+      nzchar(q_preface[[1L]])
+    ) {
+      q_prefaces[[col_name]] <- q_preface[[1L]]
+    }
   }
 
   survey_metadata(
-    variable_labels = var_labels,
-    value_labels    = val_labels
+    variable_labels   = var_labels,
+    value_labels      = val_labels,
+    question_prefaces = q_prefaces
   )
 }

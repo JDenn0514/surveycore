@@ -7,16 +7,16 @@ anything:
 
 ```
 questions:
-  - question: "Which package and phase is this spec for?"
-    header: "Package / Phase"
+  - question: "Which package is this spec for?"
+    header: "Package"
     multiSelect: false
     options:
-      - label: "surveycore — next phase"
-        description: "surveycore internals, class changes, or new constructors."
-      - label: "surveytidy — Phase 1"
-        description: "Estimation functions (means, totals, proportions, etc.)"
-      - label: "surveytidy — later phase"
-        description: "Modelling, regression, or other surveytidy functionality."
+      - label: "surveycore"
+        description: "Core infrastructure: S7 classes, constructors, analysis functions, regression (GLM), or variance estimation. Next up: Phase 2 — survey_glm()."
+      - label: "surveytidy"
+        description: "dplyr/tidyr verbs for survey design objects (filter, select, mutate, group_by). Phase 0.5 is complete; future phases TBD."
+      - label: "Other surveyverse package"
+        description: "surveyweights, the surveyverse meta-package, or a new package in the ecosystem."
 
   - question: "Is there an existing roadmap or upstream spec to reference?"
     header: "Context docs"
@@ -67,6 +67,11 @@ Model every spec on the Phase 1 structure. Required sections:
   optional scalar → `...`.
 - Every function gets an explicit output contract: column names, types, and the
   S3 class hierarchy.
+- Every result class or S3 class with a `print()` or `format()` method must
+  include a verbatim console example showing exactly what the user sees —
+  including any header line (e.g., `# A <survey_means> [5 × 4]`). "Prints as
+  an ordinary tibble" or similar vague description is not sufficient; if that
+  is the intentional design, state it explicitly and show the exact output.
 - Every error condition is listed in a table with: error class, trigger
   condition, and the message template. Class names follow:
   `"surveycore_error_{snake_case}"` or `"surveycore_warning_{snake_case}"`.

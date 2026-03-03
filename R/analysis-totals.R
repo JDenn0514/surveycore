@@ -27,8 +27,17 @@
 #' @param n_weighted Logical. For `get_totals(d)` (no variable), equals the
 #'   `total` column and is included for API uniformity. For variable mode,
 #'   adds the sum of weights for non-NA observations. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `total`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Default `30L`.
-#' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded.
+#' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded from
+#'   analysis: observations where the analysis variable is `NA` are dropped
+#'   from calculations, and observations where any group variable is `NA` are
+#'   excluded from the output. If `FALSE`, `NA` observations in the analysis
+#'   variable are included in calculations, and observations where a group
+#'   variable is `NA` are collected into their own group row in the output
+#'   (appearing after all non-`NA` group rows).
 #' @param label_values Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`.
@@ -67,6 +76,7 @@ get_totals <- function(
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -75,7 +85,8 @@ get_totals <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_totals")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
+                        na.rm = na.rm)
 
   # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
   x_quo     <- rlang::enquo(x)
@@ -122,12 +133,12 @@ get_totals <- function(
     for (gv in group_vars) {
       gv_vals   <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
-      if (length(uniq_lvls) == 1L) {
+      if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              "({.val {as.character(uniq_lvls[[1L]])}}).",
+              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
               " Grouped estimates will have a single row."
             )
           ),
@@ -140,34 +151,15 @@ get_totals <- function(
   # ── Step 4: Build group combinations ─────────────────────────────────────────
   if (length(group_vars) > 0L) {
     domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
-    group_combos <- unique(domain_data)
-    ord <- do.call(
-      order,
-      lapply(group_vars, function(gv) group_combos[[gv]])
-    )
-    group_combos <- group_combos[ord, , drop = FALSE]
-    rownames(group_combos) <- NULL
-    n_combos <- nrow(group_combos)
+    group_combos <- .build_group_combos(domain_data, na.rm)
+    n_combos     <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
     n_combos     <- 1L
   }
 
   # ── Step 5: Collect variable metadata ───────────────────────────────────────
-  if (!no_variable) {
-    var_label  <- design@metadata@variable_labels[[x_name]] %||%
-      attr(design@data[[x_name]], "label", exact = TRUE)
-    q_preface  <- design@metadata@question_prefaces[[x_name]]
-    val_labels <- design@metadata@value_labels[[x_name]] %||%
-      attr(design@data[[x_name]], "labels", exact = TRUE)
-    val_labels_l <- list(val_labels)
-    names(val_labels_l) <- x_name
-  } else {
-    var_label    <- NULL
-    q_preface    <- NULL
-    val_labels_l <- list(NULL)
-    names(val_labels_l) <- "population"
-  }
+  x_meta <- if (!no_variable) .extract_var_meta(design, x_name) else NULL
 
   # ── Step 6: Main accumulation loop ──────────────────────────────────────────
   acc_total <- numeric(0)
@@ -182,12 +174,8 @@ get_totals <- function(
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
       combo_row   <- group_combos[ci, , drop = FALSE]
-      group_match <- rep(TRUE, nrow(design@data))
-      for (gv in group_vars) {
-        gv_col <- design@data[[gv]]
-        cv     <- combo_row[[gv]]
-        group_match <- group_match & !is.na(gv_col) & (gv_col == cv)
-      }
+      data_cols   <- as.list(design@data[group_vars])
+      group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
     } else {
       active_mask <- domain_mask
@@ -261,29 +249,24 @@ get_totals <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
   } else {
     groups_df <- data.frame()
   }
 
   # ── Step 10: Build meta_args ──────────────────────────────────────────────────
-  group_labels_list <- lapply(
-    group_vars,
-    function(gv) design@metadata@variable_labels[[gv]] %||%
-      attr(design@data[[gv]], "label", exact = TRUE)
-  )
-  if (length(group_vars) > 0L) {
-    names(group_labels_list) <- group_vars
+  group_meta <- .build_group_meta(design, group_vars)
+  x_list <- if (is.null(x_meta)) {
+    NULL
+  } else {
+    stats::setNames(list(x_meta), x_name)
   }
 
   meta_args <- list(
-    variable         = x_name,
-    variable_label   = var_label,
-    question_preface = q_preface,
-    value_labels     = val_labels_l,
-    conf_level       = conf_level,
-    call             = match.call(),
-    group_names      = group_vars,
-    group_labels     = group_labels_list
+    conf_level = conf_level,
+    call       = match.call(),
+    group      = group_meta,
+    x          = x_list
   )
 
   # ── Step 11: Assemble result ─────────────────────────────────────────────────
@@ -296,6 +279,7 @@ get_totals <- function(
     TOTALS_META_KEYS
   )
 
-  # ── Step 12: Apply name style ─────────────────────────────────────────────────
+  # ── Step 12: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

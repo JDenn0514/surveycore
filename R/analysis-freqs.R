@@ -38,11 +38,18 @@
 #'   Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   sum of weights (estimated population count) per cell. Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `pct`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded from
-#'   all proportions; `NA` does not appear as a level. If `FALSE`, `NA`
-#'   appears as its own last row and the denominator includes `NA` rows.
+#'   analysis: observations where the focal variable is `NA` are dropped from
+#'   frequency counts, and observations where any group variable is `NA` are
+#'   excluded from the output. If `FALSE`, `NA` values in the focal variable
+#'   appear as a dedicated frequency row in the output (not merely counted),
+#'   and observations where a group variable is `NA` are collected into their
+#'   own group row (appearing after all non-`NA` group rows).
 #' @param label_values Logical. If `TRUE` (default), convert raw variable
 #'   values to labels using metadata or `haven` attributes. Falls back to
 #'   raw values when no labels exist.
@@ -69,13 +76,13 @@
 #'
 #' **`na.rm = FALSE`:** `NA` is appended as the last level. All proportions
 #' (including non-`NA` levels) have their denominator inflated to include
-#' `NA` rows, so the `pct` column sums to 100.
+#' `NA` rows, so the `pct` column sums to 1.
 #'
 #' @return A `survey_freqs` tibble (also inheriting `survey_result`). Columns:
 #' \itemize{
 #'   \item `[group_cols...]` — group variable columns (when active), first.
 #'   \item `[variable_name]` (single) or `[names_to]` + `[values_to]` (multi).
-#'   \item `pct` — weighted proportion as a percentage (0–100).
+#'   \item `pct` — weighted proportion (0–1).
 #'   \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'     `deff`) — only those requested via `variance`.
 #'   \item `n` — unweighted cell count (sample basis of each estimate).
@@ -114,6 +121,7 @@ get_freqs <- function(
   variance     = NULL,
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -122,7 +130,8 @@ get_freqs <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_freqs")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
+                        na.rm = na.rm)
 
   # ── Step 2: Resolve variables, groups, domain ───────────────────────────────
   x_quo     <- rlang::enquo(x)
@@ -141,28 +150,39 @@ get_freqs <- function(
     for (gv in group_vars) {
       gv_vals  <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
-      if (length(uniq_lvls) == 1L) {
-        lvl_str <- as.character(uniq_lvls[[1L]])
-        cli::cli_warn(
-          c(
-            "!" = paste0(
-              "Grouping variable {.field {gv}} has only one observed level ",
-              "({.val {lvl_str}}). Grouped estimates will have a single row."
-            )
-          ),
-          class = "surveycore_warning_single_level"
-        )
+      if (length(uniq_lvls) < 2L) {
+        if (length(uniq_lvls) == 0L) {
+          cli::cli_warn(
+            c(
+              "!" = paste0(
+                "Grouping variable {.field {gv}} has no non-{.code NA} ",
+                "observed levels. Grouped estimates will have a single row."
+              )
+            ),
+            class = "surveycore_warning_single_level"
+          )
+        } else {
+          lvl_str <- as.character(uniq_lvls[[1L]])
+          cli::cli_warn(
+            c(
+              "!" = paste0(
+                "Grouping variable {.field {gv}} has only one observed level ",
+                "({.val {lvl_str}}). Grouped estimates will have a single row."
+              )
+            ),
+            class = "surveycore_warning_single_level"
+          )
+        }
       }
     }
   }
 
   # ── Step 4: Mixed prefaces warning (multi-var only) ─────────────────────────
   if (is_multi) {
-    prefaces_list <- lapply(
-      var_names,
-      function(vn) design@metadata@question_prefaces[[vn]]
+    non_null_prefaces <- Filter(
+      Negate(is.null),
+      lapply(var_names, function(vn) design@metadata@question_prefaces[[vn]])
     )
-    non_null_prefaces <- Filter(Negate(is.null), prefaces_list)
     unique_prefaces   <- unique(unlist(non_null_prefaces))
     if (length(unique_prefaces) > 1L) {
       cli::cli_warn(
@@ -194,46 +214,17 @@ get_freqs <- function(
   # If no groups, group_combos is a data.frame with 0 columns and 1 row
   # (representing the single "all in-domain rows" group).
   if (length(group_vars) > 0L) {
-    domain_data   <- design@data[domain_mask, group_vars, drop = FALSE]
-    group_combos  <- unique(domain_data)
-    # Sort ascending by each group variable (leftmost first)
-    ord <- do.call(
-      order,
-      lapply(group_vars, function(gv) group_combos[[gv]])
-    )
-    group_combos <- group_combos[ord, , drop = FALSE]
-    rownames(group_combos) <- NULL
-    n_combos <- nrow(group_combos)
+    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    group_combos <- .build_group_combos(domain_data, na.rm)
+    n_combos     <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
     n_combos     <- 1L
   }
 
   # ── Step 6: Pre-collect variable metadata ───────────────────────────────────
-  var_labels_list    <- vector("list", n_vars)
-  q_prefaces_list    <- vector("list", n_vars)
-  val_labels_list    <- vector("list", n_vars)
-  names(var_labels_list) <- var_names
-  names(q_prefaces_list) <- var_names
-  names(val_labels_list) <- var_names
-
-  for (vn in var_names) {
-    col_data <- design@data[[vn]]
-    # Variable label: metadata first, then haven attribute fallback
-    # Use single-bracket assignment to preserve NULL entries in the list
-    # (double-bracket assignment with NULL removes the element entirely).
-    var_labels_list[vn] <- list(
-      design@metadata@variable_labels[[vn]] %||%
-        attr(col_data, "label", exact = TRUE)
-    )
-    # Question preface: metadata only (no haven equivalent)
-    q_prefaces_list[vn] <- list(design@metadata@question_prefaces[[vn]])
-    # Value labels: metadata first, then haven attribute fallback
-    val_labels_list[vn] <- list(
-      design@metadata@value_labels[[vn]] %||%
-        attr(col_data, "labels", exact = TRUE)
-    )
-  }
+  x_meta_list <- lapply(var_names, function(vn) .extract_var_meta(design, vn))
+  names(x_meta_list) <- var_names
 
   # ── Step 7: Main accumulation loop ──────────────────────────────────────────
   # Parallel vectors for all result rows
@@ -250,7 +241,7 @@ get_freqs <- function(
 
   for (vn in var_names) {
     x_col     <- design@data[[vn]]
-    vl        <- val_labels_list[[vn]]   # named vector or NULL
+    vl        <- x_meta_list[[vn]]$value_labels   # named vector or NULL
     vl_map    <- if (!is.null(vl)) structure(names(vl), names = as.character(vl)) else NULL
 
     # domain-only x values for level detection
@@ -291,9 +282,9 @@ get_freqs <- function(
     # ── Display name for multi-var names_to column ────────────────────────────
     if (is_multi) {
       vn_display <- if (
-        label_vars && !is.null(var_labels_list[[vn]])
+        label_vars && !is.null(x_meta_list[[vn]]$variable_label)
       ) {
-        var_labels_list[[vn]]
+        x_meta_list[[vn]]$variable_label
       } else {
         vn
       }
@@ -305,10 +296,8 @@ get_freqs <- function(
       if (length(group_vars) > 0L) {
         # Build mask: domain AND all group variable values match this combo
         combo_row   <- group_combos[ci, , drop = FALSE]
-        group_match <- rep(TRUE, nrow(design@data))
-        for (gv in group_vars) {
-          group_match <- group_match & (design@data[[gv]] == combo_row[[gv]])
-        }
+        data_cols   <- as.list(design@data[group_vars])
+        group_match <- .match_group_combo(data_cols, combo_row)
         active_mask <- domain_mask & group_match
       } else {
         active_mask <- domain_mask
@@ -340,10 +329,11 @@ get_freqs <- function(
 
         # ── Level display value ────────────────────────────────────────────
         if (label_values && !is.null(vl_map) && !is.na(lvl)) {
-          lvl_display <- vl_map[[as.character(lvl)]]
-          if (is.null(lvl_display) || is.na(lvl_display)) {
-            lvl_display <- as.character(lvl)
-          }
+          key <- as.character(lvl)
+          # vl_map keys are numeric codes (as character strings) for
+          # haven-labelled columns. For factor columns, lvl is already the
+          # label string and may not be a key in vl_map — fall back to lvl.
+          lvl_display <- if (key %in% names(vl_map)) vl_map[[key]] else key
         } else {
           lvl_display <- if (is.na(lvl)) NA_character_ else as.character(lvl)
         }
@@ -399,13 +389,31 @@ get_freqs <- function(
   col_vecs <- list()
 
   if (is_multi) {
-    col_vecs[[names_to]]  <- acc_focal
+    # names_to column: factor with levels in variable supply order
+    # (display string order: label if label_vars=TRUE, else raw name)
+    names_to_levels <- vapply(var_names, function(vn) {
+      if (label_vars && !is.null(x_meta_list[[vn]]$variable_label)) {
+        x_meta_list[[vn]]$variable_label
+      } else {
+        vn
+      }
+    }, character(1L))
+    col_vecs[[names_to]]  <- factor(acc_focal,  levels = unique(names_to_levels))
+
+    # values_to column: stay as character (mixed variables may have different
+    # value label sets; no single factor level set applies across all)
     col_vecs[[values_to]] <- acc_values
   } else {
     # Single-var: convert NA display back to NA (not "NA" string)
     focal_out <- acc_focal
     is_na_str <- !is.na(acc_focal) & acc_focal == "NA"
     if (any(is_na_str)) focal_out[is_na_str] <- NA_character_
+
+    # Convert to factor when label_values=TRUE and value labels exist
+    vl_single <- x_meta_list[[var_names[[1L]]]]$value_labels
+    if (label_values && !is.null(vl_single)) {
+      focal_out <- factor(focal_out, levels = names(vl_single))
+    }
     col_vecs[[var_names[[1L]]]] <- focal_out
   }
 
@@ -421,47 +429,21 @@ get_freqs <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
   } else {
     groups_df <- data.frame()
   }
 
   # ── Step 11: Build meta_args ──────────────────────────────────────────────────
-  group_labels_list <- lapply(
-    group_vars,
-    function(gv) design@metadata@variable_labels[[gv]] %||%
-      attr(design@data[[gv]], "label", exact = TRUE)
-  )
-  if (length(group_vars) > 0L) {
-    names(group_labels_list) <- group_vars
-  }
+  group_meta    <- .build_group_meta(design, group_vars)
+  required_keys <- FREQS_META_KEYS
 
-  if (!is_multi) {
-    meta_args <- list(
-      mode             = "single",
-      variable         = var_names[[1L]],
-      variable_label   = var_labels_list[[var_names[[1L]]]],
-      question_preface = q_prefaces_list[[var_names[[1L]]]],
-      value_labels     = val_labels_list,   # always a named list
-      conf_level       = conf_level,
-      call             = match.call(),
-      group_names      = group_vars,
-      group_labels     = group_labels_list
-    )
-    required_keys <- FREQS_SINGLE_META_KEYS
-  } else {
-    meta_args <- list(
-      mode              = "multi",
-      variables         = var_names,
-      variable_labels   = var_labels_list,
-      question_prefaces = q_prefaces_list,
-      value_labels      = val_labels_list,   # named list: var -> labels
-      conf_level        = conf_level,
-      call              = match.call(),
-      group_names       = group_vars,
-      group_labels      = group_labels_list
-    )
-    required_keys <- FREQS_MULTI_META_KEYS
-  }
+  meta_args <- list(
+    conf_level = conf_level,
+    call       = match.call(),
+    group      = group_meta,
+    x          = x_meta_list
+  )
 
   # ── Step 12: Assemble result ──────────────────────────────────────────────────
   result <- .make_result_tibble(
@@ -473,6 +455,7 @@ get_freqs <- function(
     required_keys
   )
 
-  # ── Step 13: Apply name style ─────────────────────────────────────────────────
+  # ── Step 13: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }

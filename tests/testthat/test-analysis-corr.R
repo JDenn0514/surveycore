@@ -27,8 +27,8 @@ test_that("get_corr() returns survey_corr tibble for survey_taylor", {
   expect_true("n"         %in% names(result))
   expect_false("se"       %in% names(result))   # not in default variance = "ci"
   expect_equal(nrow(result), 1L)                # one pair: (y1, y2)
-  expect_equal(result$var1[[1L]], "y1")
-  expect_equal(result$var2[[1L]], "y2")
+  expect_equal(as.character(result$var1[[1L]]), "y1")
+  expect_equal(as.character(result$var2[[1L]]), "y2")
   expect_true(is.finite(result$r[[1L]]))
   expect_true(is.finite(result$ci_low[[1L]]))
   expect_true(is.finite(result$ci_high[[1L]]))
@@ -92,38 +92,186 @@ test_that("get_corr() meta() stores variables, method, and design type", {
   result <- get_corr(d, x = c(y1, y2))
   m      <- meta(result)
 
-  expect_identical(m$variables, c("y1", "y2"))
+  expect_identical(names(m$x), c("y1", "y2"))
   expect_identical(m$method, "pearson")
   expect_equal(m$conf_level, 0.95)
   expect_identical(m$design_type, "taylor")
   expect_type(m$n_respondents, "integer")
   expect_gt(m$n_respondents, 0L)
-  expect_identical(m$group_names, character(0))
-  expect_true("value_labels" %in% names(m))
-  expect_type(m$value_labels, "list")
+  expect_type(m$group, "list")
+  expect_length(m$group, 0L)
   # Numeric vars → value_labels entries are NULL
-  expect_null(m$value_labels[["y1"]])
-  expect_null(m$value_labels[["y2"]])
+  expect_null(m$x[["y1"]]$value_labels)
+  expect_null(m$x[["y2"]]$value_labels)
 })
 
 # ---------------------------------------------------------------------------
-# Category 3: Grouped analysis — @groups ignored (no group= argument)
+# Category 3: Grouped analysis — group= argument and @groups
 # ---------------------------------------------------------------------------
 
-test_that("get_corr() ignores @groups (group= argument not supported)", {
-  skip_if_not_installed("surveytidy")
-  df <- make_survey_data(n = 200L, design = "taylor", seed = 7L)
+test_that("get_corr() group= produces one row per group × pair in long format", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 7L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
-  d_grouped <- surveytidy::group_by(d, group)
-  result_g  <- get_corr(d_grouped, x = c(y1, y2))
-  result_u  <- get_corr(d,          x = c(y1, y2))
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  n_groups <- length(unique(df$group[!is.na(df$group)]))  # 3
+  expect_equal(nrow(result), n_groups * 1L)   # 3 groups × 1 pair
+  expect_true("group" %in% names(result))
+  # Each group appears exactly once
+  expect_identical(
+    sort(as.character(result$group)),
+    sort(unique(df$group[!is.na(df$group)]))
+  )
+})
 
-  # With @groups, get_corr() still produces one row (no group columns)
-  expect_equal(nrow(result_g), 1L)
-  expect_false("group" %in% names(result_g))
-  # Results should be identical (groups ignored)
-  expect_equal(result_g$r[[1L]], result_u$r[[1L]], tolerance = 1e-10)
+test_that("get_corr() @groups from group_by() is now respected", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 71L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  d_grouped  <- surveytidy::group_by(d, group)
+  result_at  <- get_corr(d_grouped, x = c(y1, y2))
+  result_arg <- get_corr(d, x = c(y1, y2), group = group)
+
+  # Both paths return the same number of rows (one per group × pair)
+  expect_equal(nrow(result_at), nrow(result_arg))
+  # group column present in both
+  expect_true("group" %in% names(result_at))
+  # r values match when aligned by group level
+  r_at  <- result_at$r[order(as.character(result_at$group))]
+  r_arg <- result_arg$r[order(as.character(result_arg$group))]
+  expect_equal(r_at, r_arg, tolerance = 1e-10)
+})
+
+test_that("get_corr() wide + groups gives n_groups * p rows, group col precedes variable", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 72L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2, y3), group = group,
+                     format = "wide", label_values = FALSE)
+  n_groups <- length(unique(df$group[!is.na(df$group)]))  # 3
+  p        <- 3L
+  expect_equal(nrow(result), n_groups * p)   # 9 rows
+  expect_true("group"    %in% names(result))
+  expect_true("variable" %in% names(result))
+  # group col comes before variable col
+  expect_lt(which(names(result) == "group"),
+            which(names(result) == "variable"))
+  # No inference columns in wide format
+  expect_false("p_value" %in% names(result))
+})
+
+test_that("get_corr() group column is a factor with label levels when label_values = TRUE", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", with_labels = TRUE, seed = 73L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = TRUE)
+  expect_true(is.factor(result$group))
+  expect_true(all(levels(result$group) %in% c("Group A", "Group B", "Group C")))
+})
+
+test_that("get_corr() meta(result)$group is a non-empty named list when group is active", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 74L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group)
+  m <- meta(result)
+  expect_type(m$group, "list")
+  expect_length(m$group, 1L)         # one group var: "group"
+  expect_true("group" %in% names(m$group))
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$group[["group"]])))
+})
+
+test_that("get_corr() grouped r matches filtered-domain result per group [numerical]", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L,
+                         design = "taylor", seed = 75L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result_g <- get_corr(d, x = c(y1, y2), group = group,
+                       variance = "se", label_values = FALSE)
+
+  # Verify group "A": grouped result matches filter-domain result
+  d_a      <- surveytidy::filter(d, group == "A")
+  result_a <- get_corr(d_a, x = c(y1, y2), variance = "se")
+
+  row_a <- result_g[as.character(result_g$group) == "A", ]
+  expect_equal(row_a$r[[1L]],  result_a$r[[1L]],  tolerance = 1e-10)
+  expect_equal(row_a$se[[1L]], result_a$se[[1L]], tolerance = 1e-8)
+})
+
+test_that("get_corr() fires surveycore_warning_single_level for one-level group in domain", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 2L,
+                         design = "taylor", seed = 76L)
+  d     <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d_one <- surveytidy::filter(d, group == "A")
+
+  expect_warning(
+    get_corr(d_one, x = c(y1, y2), group = group),
+    class = "surveycore_warning_single_level"
+  )
+})
+
+test_that("get_corr() returns r = NA, n = 0L when group has all-NA focal values", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 77L)
+  # Group "C" rows have no complete cases for y1/y2
+  df$y1[df$group == "C"] <- NA_real_
+  df$y2[df$group == "C"] <- NA_real_
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  row_c  <- result[as.character(result$group) == "C", ]
+  expect_equal(nrow(row_c), 1L)
+  expect_true(is.na(row_c$r[[1L]]))
+  expect_equal(row_c$n[[1L]], 0L)
+})
+
+test_that("get_corr() excludes NA group values from group combinations", {
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 78L)
+  df$group[1:20] <- NA_character_
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2), group = group, label_values = FALSE)
+  expect_false(anyNA(result$group))
+  n_unique_nonna <- length(unique(df$group[!is.na(df$group)]))  # 3
+  expect_equal(nrow(result), n_unique_nonna * 1L)
+})
+
+test_that("get_corr() redundant = TRUE with groups gives n_combos * 2 * n_pairs rows", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 79L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d2 <- surveytidy::filter(d, group %in% c("A", "B"))
+
+  result   <- get_corr(d2, x = c(y1, y2, y3), group = group,
+                       redundant = TRUE, diagonal = FALSE)
+  n_combos <- 2L   # A and B
+  n_pairs  <- 3L   # (y1,y2), (y1,y3), (y2,y3)
+  expect_equal(nrow(result), n_combos * 2L * n_pairs)
+})
+
+test_that("get_corr() diagonal = TRUE with groups gives n_combos * (n_pairs + p) rows", {
+  skip_if_not_installed("surveytidy")
+  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
+                         design = "taylor", seed = 80L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d2 <- surveytidy::filter(d, group %in% c("A", "B"))
+
+  result   <- get_corr(d2, x = c(y1, y2, y3), group = group,
+                       redundant = FALSE, diagonal = TRUE)
+  n_combos <- 2L
+  n_pairs  <- 3L
+  p        <- 3L
+  expect_equal(nrow(result), n_combos * (n_pairs + p))
 })
 
 # ---------------------------------------------------------------------------
@@ -417,10 +565,10 @@ test_that("get_corr() label_vars = TRUE shows variable labels in var1/var2", {
   result_lbl  <- get_corr(d, x = c(y1, y2), label_vars = TRUE)
   result_raw  <- get_corr(d, x = c(y1, y2), label_vars = FALSE)
 
-  expect_equal(result_lbl$var1[[1L]], "Outcome Y1")
-  expect_equal(result_lbl$var2[[1L]], "Outcome Y2")
-  expect_equal(result_raw$var1[[1L]], "y1")
-  expect_equal(result_raw$var2[[1L]], "y2")
+  expect_equal(as.character(result_lbl$var1[[1L]]), "Outcome Y1")
+  expect_equal(as.character(result_lbl$var2[[1L]]), "Outcome Y2")
+  expect_equal(as.character(result_raw$var1[[1L]]), "y1")
+  expect_equal(as.character(result_raw$var2[[1L]]), "y2")
 })
 
 # ---------------------------------------------------------------------------
@@ -661,6 +809,348 @@ test_that("get_corr() 3-variable call gives n*(n-1)/2 = 3 rows", {
 
   result <- get_corr(d, x = c(y1, y2, y3))
   expect_equal(nrow(result), 3L)
-  expect_identical(result$var1, c("y1", "y1", "y2"))
-  expect_identical(result$var2, c("y2", "y3", "y3"))
+  expect_identical(as.character(result$var1), c("y1", "y1", "y2"))
+  expect_identical(as.character(result$var2), c("y2", "y3", "y3"))
+})
+
+# ---------------------------------------------------------------------------
+# Category 16: New meta structure — nested x, group, factor var1/var2
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() var1/var2 columns are <fct> with levels in supply order", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 60L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2, y3))
+  expect_true(is.factor(result$var1))
+  expect_true(is.factor(result$var2))
+  expect_identical(levels(result$var1), c("y1", "y2", "y3"))
+})
+
+test_that("get_corr() meta$group is always a list (empty when no @groups set)", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 61L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_corr(d, x = c(y1, y2))
+  expect_type(meta(result)$group, "list")
+  expect_length(meta(result)$group, 0L)
+})
+
+test_that("get_corr() meta$x has nested structure for each variable", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 62L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, y1, "Variable One")
+
+  result <- get_corr(d, x = c(y1, y2))
+  m      <- meta(result)
+
+  expect_identical(names(m$x), c("y1", "y2"))
+  expect_identical(m$x$y1$variable_label, "Variable One")
+  expect_null(m$x$y2$variable_label)
+  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
+                    names(m$x$y1)))
+})
+
+# ── decimals argument ──────────────────────────────────────────────────────────
+
+test_that("get_corr() decimals=2 rounds all double columns", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 501L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+  r  <- get_corr(d, x = c(y1, y2), variance = "ci", decimals = 2L)
+
+  dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
+  for (col in dbl_cols) {
+    expect_equal(r[[col]], round(r[[col]], 2L),
+                 label = paste0(col, " rounded to 2 decimals"))
+  }
+})
+
+test_that("get_corr() rejects invalid decimals", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 502L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
+                  nest = TRUE)
+
+  expect_error(
+    get_corr(d, x = c(y1, y2), decimals = -2L),
+    class = "surveycore_error_invalid_decimals"
+  )
+})
+
+# ── NA group rows (na.rm extension) — Test Blocks 1–8c + oracle ───────────────
+
+# Block 1: default na.rm = TRUE excludes NA group rows (regression guard)
+
+test_that("get_corr() default (na.rm = TRUE) excludes group NA rows", {
+  d <- make_na_group_design()
+  r <- get_corr(d, x = c(y1, y2), group = grp, label_values = FALSE)
+  expect_false(anyNA(r$grp))
+})
+
+# Block 2: na.rm = FALSE includes NA group row
+
+test_that("get_corr() includes NA group row when na.rm = FALSE", {
+  d <- make_na_group_design()
+  r <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                label_values = FALSE)
+  expect_true(any(is.na(r$grp)))
+})
+
+# Block 3: NA group row is last
+
+test_that("get_corr() places NA group row after non-NA rows", {
+  d      <- make_na_group_design()
+  r      <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                     label_values = FALSE)
+  na_idx <- which(is.na(r$grp))
+  nn_idx <- which(!is.na(r$grp))
+  expect_true(all(na_idx > max(nn_idx)))
+})
+
+# Block 4: NA group row has finite r estimate
+
+test_that("get_corr() NA group row has finite r estimate", {
+  d      <- make_na_group_design()
+  r      <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                     label_values = FALSE)
+  na_row <- get_na_group_rows(r, "grp")
+  expect_true(all(is.finite(na_row$r)))
+})
+
+# Block 5a: multi-group — NA in first group var
+
+test_that("get_corr() handles NA in first of two group vars (na.rm = FALSE)", {
+  d <- make_na_group_design()  # grp has NAs; grp2 has none
+  r <- get_corr(d, x = c(y1, y2), group = c(grp, grp2), na.rm = FALSE,
+                label_values = FALSE)
+  expect_true(any(is.na(r$grp) & !is.na(r$grp2)))
+})
+
+# Block 5b: multi-group — NA in second group var (inline fixture)
+
+test_that("get_corr() handles NA in second of two group vars (na.rm = FALSE)", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp  <- sample(c("A", "B", "C"), 200L, replace = TRUE)
+  df$grp2 <- sample(c("X", "Y", NA_character_), 200L, replace = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_corr(d, x = c(y1, y2), group = c(grp, grp2), na.rm = FALSE,
+                label_values = FALSE)
+  expect_true(any(!is.na(r$grp) & is.na(r$grp2)))
+})
+
+# Block 6: all-NA group var — warning fires; output has NA group row
+
+test_that("get_corr() handles group var that is entirely NA (na.rm = FALSE)", {
+  d <- make_all_na_group_design()
+  expect_warning(
+    r <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                  label_values = FALSE),
+    class = "surveycore_warning_single_level"
+  )
+  expect_equal(nrow(r), 1L)
+  expect_true(is.na(r$grp[[1L]]))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+# Block 7a: label_values = TRUE — regular NA group row remains NA in factor
+
+test_that("get_corr() regular NA group row is NA in factor when label_values = TRUE", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c(1L, 2L, NA_integer_), 200L, replace = TRUE)
+  attr(df$grp, "labels") <- c("GroupA" = 1L, "GroupB" = 2L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                label_values = TRUE)
+  expect_true(is.factor(r$grp))
+  na_row <- get_na_group_rows(r, "grp")
+  expect_true(nrow(na_row) > 0L)
+  expect_true(is.na(na_row$grp[[1L]]))
+})
+
+# Block 7b: label_values = TRUE — haven-tagged NA becomes a factor level
+
+test_that("get_corr() haven-labeled NA group rows become factor levels when label_values = TRUE", {
+  skip_if_not_installed("haven")
+  df <- make_survey_data(n = 200L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c(1L, 2L), 200L, replace = TRUE)
+  df$grp <- as.double(df$grp)
+  df$grp[sample(200L, 40L)] <- haven::tagged_na("r")
+  attr(df$grp, "labels") <- c(
+    "GroupA"  = 1,
+    "GroupB"  = 2,
+    "Refused" = haven::tagged_na("r")
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                 fpc = fpc, nest = TRUE)
+  r <- get_corr(d, x = c(y1, y2), group = grp, na.rm = FALSE,
+                label_values = TRUE)
+  expect_true(is.factor(r$grp))
+  expect_true("Refused" %in% levels(r$grp))
+  refused_row <- r[!is.na(r$grp) & r$grp == "Refused", ]
+  expect_true(nrow(refused_row) > 0L)
+})
+
+# Block 8: group_by() path — NA group rows appear with na.rm = FALSE
+
+test_that("get_corr() includes NA group row when group set via group_by() and na.rm = FALSE", {
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::group_by(make_na_group_design(), grp)
+  r <- get_corr(d, x = c(y1, y2), na.rm = FALSE)
+  expect_true(anyNA(r$grp))
+})
+
+# Block 8b: group_by() path — NA group rows excluded by default
+
+test_that("get_corr() excludes NA group rows by default when group set via group_by()", {
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::group_by(make_na_group_design(), grp)
+  r <- get_corr(d, x = c(y1, y2))
+  expect_false(anyNA(r$grp))
+})
+
+# Block 8c: na.rm = NA is rejected (dual pattern)
+
+test_that("get_corr() rejects na.rm = NA with surveycore_error_na_rm_not_logical", {
+  d <- make_na_group_design()
+  expect_error(
+    get_corr(d, x = c(y1, y2), group = grp, na.rm = NA),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(y1, y2), group = grp, na.rm = NA)
+  )
+})
+
+
+# ── Oracle tests: NA group row estimate matches filtered design ────────────────
+
+test_that("get_corr() NA group row r matches filtered taylor design [oracle]", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_oracle <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                              fpc = fpc, nest = TRUE)
+  na_df     <- df[is.na(df$grp), ]
+  na_design <- as_survey(na_df, ids = psu, weights = wt, strata = strata,
+                          fpc = fpc, nest = TRUE)
+  expected <- get_corr(na_design, x = c(y1, y2), variance = "se")
+  result   <- get_corr(design_oracle, x = c(y1, y2), group = grp, na.rm = FALSE,
+                       variance = "se", label_values = FALSE)
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$r,  expected$r,  tolerance = 1e-10)
+  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  expect_equal(na_row$n,  expected$n)
+})
+
+test_that("get_corr() NA group row r matches filtered replicate design [oracle]", {
+  df_r <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                            design = "replicate", type = "brr", seed = 42L)
+  set.seed(43L)
+  df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
+  design_rep <- as_survey_rep(df_r, weights = wt,
+                               repweights = tidyselect::all_of(repwt_cols),
+                               type = "BRR")
+  na_df_r       <- df_r[is.na(df_r$grp), ]
+  repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
+  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+                                  repweights = tidyselect::all_of(repwt_cols_na),
+                                  type = "BRR")
+  expected <- get_corr(na_design_rep, x = c(y1, y2), variance = "se")
+  result   <- get_corr(design_rep, x = c(y1, y2), group = grp, na.rm = FALSE,
+                       variance = "se", label_values = FALSE)
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$r,  expected$r,  tolerance = 1e-10)
+  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  expect_equal(na_row$n,  expected$n)
+})
+
+test_that("get_corr() NA group row r matches filtered twophase design [oracle]", {
+  df_p <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                            design = "twophase", seed = 42L)
+  set.seed(43L)
+  df_p$grp        <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  phase1          <- as_survey(df_p, ids = psu, weights = wt, strata = strata,
+                                fpc = fpc, nest = TRUE)
+  design_twophase <- as_survey_twophase(phase1, subset = subset,
+                                        method = "approx")
+  na_df_p            <- df_p[is.na(df_p$grp), ]
+  na_phase1          <- as_survey(na_df_p, ids = psu, weights = wt,
+                                   strata = strata, fpc = fpc, nest = TRUE)
+  na_design_twophase <- as_survey_twophase(na_phase1, subset = subset,
+                                            method = "approx")
+  expected <- suppressWarnings(
+    get_corr(na_design_twophase, x = c(y1, y2), variance = "se")
+  )
+  result   <- suppressWarnings(
+    get_corr(design_twophase, x = c(y1, y2), group = grp, na.rm = FALSE,
+             variance = "se", label_values = FALSE)
+  )
+  na_row <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$r, expected$r, tolerance = 1e-10)
+  expect_true(all(is.finite(na_row$se)))
+  expect_equal(na_row$n, expected$n)
+})
+
+test_that("get_corr() NA group row r matches filtered calibrated design [oracle]", {
+  df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df_c$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  na_df_c       <- df_c[is.na(df_c$grp), ]
+  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  expected <- get_corr(na_design_cal, x = c(y1, y2), variance = "se")
+  result   <- get_corr(design_cal, x = c(y1, y2), group = grp, na.rm = FALSE,
+                       variance = "se", label_values = FALSE)
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$r, expected$r, tolerance = 1e-10)
+  expect_true(all(is.finite(na_row$se)))
+  expect_equal(na_row$n, expected$n)
+})
+
+test_that("get_corr() NA group row r matches filtered srs design [oracle]", {
+  df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df_s$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  design_srs <- as_survey_srs(df_s, weights = wt)
+  na_df_s       <- df_s[is.na(df_s$grp), ]
+  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  expected <- get_corr(na_design_srs, x = c(y1, y2), variance = "se")
+  result   <- get_corr(design_srs, x = c(y1, y2), group = grp, na.rm = FALSE,
+                       variance = "se", label_values = FALSE)
+  na_row   <- get_na_group_rows(result, "grp")
+  expect_equal(na_row$r, expected$r, tolerance = 1e-10)
+  # SE legitimately differs: SRS variance uses nrow(design@data) for n_full;
+  # domain estimation (full design) != pre-filtered oracle.
+  expect_true(all(is.finite(na_row$se)))
+  expect_equal(na_row$n, expected$n)
+})
+
+test_that("get_corr() multi-group NA row r matches filtered taylor design [oracle]", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  set.seed(43L)
+  df$grp  <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df$grp2 <- sample(c("X", "Y"), 100L, replace = TRUE)
+  design_multi <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                             fpc = fpc, nest = TRUE)
+  result <- suppressWarnings(
+    get_corr(design_multi, x = c(y1, y2), group = c(grp, grp2),
+             na.rm = FALSE, variance = "se", label_values = FALSE)
+  )
+  oracle_df     <- df[is.na(df$grp) & df$grp2 == "X", ]
+  oracle_design <- as_survey(oracle_df, ids = psu, weights = wt,
+                              strata = strata, fpc = fpc, nest = TRUE)
+  expected  <- suppressWarnings(
+    get_corr(oracle_design, x = c(y1, y2), variance = "se")
+  )
+  na_x_rows <- result[is.na(result$grp) & result$grp2 == "X", ]
+  expect_equal(na_x_rows$r, expected$r, tolerance = 1e-10)
+  expect_true(all(is.finite(na_x_rows$se)))
+  expect_equal(na_x_rows$n, expected$n)
 })

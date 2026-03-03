@@ -43,3 +43,21 @@
       x All values of group_all_na are `NA`.
       i Cannot compute estimate with `na.rm = FALSE`. Set `na.rm = TRUE` to exclude `NA` values.
 
+# get_freqs() rejects negative decimals
+
+    Code
+      get_freqs(d, group, decimals = -1L)
+    Condition
+      Error in `get_freqs()`:
+      x `decimals` must be a non-negative whole number or `NULL`.
+      i Got -1.
+
+# get_freqs() rejects na.rm = NA with surveycore_error_na_rm_not_logical
+
+    Code
+      get_freqs(d, y3, group = grp, na.rm = NA)
+    Condition
+      Error in `get_freqs()`:
+      x `na.rm` must be `TRUE` or `FALSE`.
+      i Got `NA`.
+

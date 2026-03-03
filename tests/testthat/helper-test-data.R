@@ -375,33 +375,16 @@ test_result_invariants <- function(result, expected_class) {
   testthat::expect_type(m, "list")
 
   # 3. Required meta keys always present (never absent)
-  required_common_keys <- c(
-    "design_type", "conf_level", "call", "group_names", "group_labels"
-  )
+  required_common_keys <- c("design_type", "conf_level", "call", "group")
   testthat::expect_true(
     all(required_common_keys %in% names(m)),
     label = "all required meta keys present"
   )
 
-  # 4. group_names is always a character vector (never NULL)
-  testthat::expect_type(m$group_names, "character")
+  # 4. group is always a list (empty list when no groups active)
+  testthat::expect_type(m$group, "list")
 
-  # 5. value_labels is always a non-empty named list
-  testthat::expect_true(
-    "value_labels" %in% names(m),
-    label = "value_labels key present in meta"
-  )
-  testthat::expect_type(m$value_labels, "list")
-  testthat::expect_gt(
-    length(m$value_labels), 0L,
-    label = "value_labels is non-empty"
-  )
-  testthat::expect_false(
-    is.null(names(m$value_labels)),
-    label = "value_labels is a named list"
-  )
-
-  # n_respondents: always present and a positive integer
+  # 5. n_respondents: always present and a positive integer
   testthat::expect_true(
     "n_respondents" %in% names(m),
     label = "n_respondents key present in meta"
@@ -480,4 +463,69 @@ make_all_designs <- function(seed = 42L) {
     twophase   = twophase,
     calibrated = calibrated
   )
+}
+
+# ------------------------------------------------------------------------------
+# make_na_group_design()
+# ------------------------------------------------------------------------------
+
+#' Create a survey design with NA values in the group variable
+#'
+#' Returns a survey_taylor object with a `grp` column (~20% NA) and a `grp2`
+#' column (no NAs). Used for NA group row tests in all six analysis functions.
+#'
+#' set.seed(seed + 1L) isolates the grp/grp2 RNG from make_survey_data()'s
+#' internal RNG consumption, so fixture values are stable even if
+#' make_survey_data() changes internally.
+#'
+#' @param n        Total rows. Default 200.
+#' @param na_frac  Fraction of grp values to set NA. Default 0.2.
+#' @param seed     Random seed. Default 42.
+#' @return A survey_taylor object.
+#' @keywords internal
+make_na_group_design <- function(n = 200, na_frac = 0.2, seed = 42) {
+  df     <- make_survey_data(n = n, seed = seed)
+  set.seed(seed + 1L)
+  na_idx <- sample(seq_len(n), size = floor(n * na_frac))
+  df$grp <- sample(c("A", "B", "C"), n, replace = TRUE)
+  df$grp[na_idx] <- NA_character_
+  df$grp2 <- sample(c("X", "Y"), n, replace = TRUE)
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+# ------------------------------------------------------------------------------
+# make_all_na_group_design()
+# ------------------------------------------------------------------------------
+
+#' Create a survey design with an all-NA group variable
+#'
+#' Returns a survey_taylor object where `grp` is entirely NA. Used for
+#' Test Block 6 (all-NA group var edge case) in NA group row tests.
+#'
+#' @param n    Total rows. Default 100.
+#' @param seed Random seed. Default 1.
+#' @return A survey_taylor object.
+#' @keywords internal
+make_all_na_group_design <- function(n = 100, seed = 1) {
+  df     <- make_survey_data(n = n, seed = seed)
+  df$grp <- NA_character_
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+# ------------------------------------------------------------------------------
+# get_na_group_rows()
+# ------------------------------------------------------------------------------
+
+#' Extract rows where the named group column is NA
+#'
+#' DRY helper used in Test Blocks 3, 4, 6, 9, 10, and all oracle tests.
+#' Prevents repeating `result[is.na(result[[group_col]]), ]` across 48+
+#' test blocks.
+#'
+#' @param result    A survey result tibble from any get_*() function.
+#' @param group_col Character(1): the group column name to check for NA.
+#' @return A tibble with only the rows where group_col is NA.
+#' @keywords internal
+get_na_group_rows <- function(result, group_col) {
+  result[is.na(result[[group_col]]), ]
 }

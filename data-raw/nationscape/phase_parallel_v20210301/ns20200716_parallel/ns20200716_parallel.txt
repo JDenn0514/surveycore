@@ -1,0 +1,10 @@
+This is parallel wave 2 of the Nationscape data (ns20200716_parallel).
+
+In this folder we have 4 files:
+
+ReadMe_ns20200716_parallel.txt
+bannerbook_ns20200716_parallel.pdf which includes cross tabs of each variable
+codebook_ns20200716_parallel.pdf describing question wording, variable names, and values
+ns20200716_parallel.dta the main data file
+
+Notes:

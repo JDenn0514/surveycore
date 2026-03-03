@@ -1,0 +1,12 @@
+This is wave 22 of the Nationscape data (ns20191212).
+
+In this folder we have 4 files:
+
+ReadMe_ns20191212.txt
+bannerbook_ns20191212.pdf which includes cross tabs of each variable
+codebook_ns20191212.pdf 
+ns20191212.dta the main data file
+
+Notes:
+- Added Jews to group favorability and discrimination batteries
+- Added Michael Bloomberg to dem vote choice and dem vote ranking

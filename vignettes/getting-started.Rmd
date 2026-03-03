@@ -5,7 +5,7 @@ output:
     toc: true
     toc_depth: 3
 bibliography: references.bib
-link-citations: yes
+link-citations: true
 vignette: >
   %\VignetteIndexEntry{Getting Started with surveycore}
   %\VignetteEngine{knitr::rmarkdown}
@@ -19,26 +19,67 @@ knitr::opts_chunk$set(
 )
 ```
 
-surveycore gives you a complete workflow for survey data analysis: design
-objects that encode how your data were collected, analysis functions that
-apply those designs when computing estimates, and a tidyverse-compatible
-interface that plugs into familiar tools.
+`surveycore` gives you a (mostly) complete workflow for survey data analysis.
+This vignette is designed to give you a quick overview of the main functionality 
+present in this package. It is comprised of three main sections:
 
-This vignette is a practical walkthrough — data to estimates in as few steps
-as possible. We will use `nhanes_2017`, a stratified probability cluster
-sample, as our running example throughout.
+1. Creating survey objects 
 
-For a deep dive on *creating* survey design objects — choosing the right
-constructor, handling replicate weights, two-phase designs, and non-probability
-panels — see `vignette("creating-survey-objects")`.
+2. Conducting simple analysis
+
+3. Managing the metadata
+
+**Quick PSA before jumping in:**
+
+`surveycore` was built as an alternative to `survey` and `srvyr`. However, the
+code powering the variance estimation and analysis is vendored from the `survey` 
+package. Everything aspect of this package that calculates anything has been 
+tested to ensure it provides the same numerical results. Without Thomas Lumley's 
+work on that package, surveycore would not be possible,
 
 ---
 
-## 1. Create a survey design
+## Create the survey object
 
-Every analysis function takes a **survey design object** as its first argument.
-The design object captures how the data were collected so that point estimates
-and standard errors are computed correctly.
+The first step when conducting survey analysis is creating a right survey object 
+where we specify the sampling design, weights, and whatever other information is
+need. Without this information, point estimates may be biased and standard errors 
+are almost certainly wrong [@lumley2010; @lohr2022].
+
+Fortunately, we don't have to calculate that uncertainty ourselves! That's what
+the survey objects are for. They tell the analysis functions how to conduct 
+its analysis so they can properly take into account the variance and bias from
+the survey design. 
+
+`surveycore` has five different survey object constructors: 
+
+1. `as_survey()`
+
+2. `as_survey_rep()`
+
+3. `as_survey_srs()`
+
+4. `as_survey_calibrated()`
+
+5. `as_survey_twophase()`
+
+Rather going into detail on each constructor, I'm just going to provide a quick
+overview of each. For more information visit `vignette("creating-survey-objects")`
+
+### `as_survey()` 
+
+You want to use this if you used a probability sample and the data you have has 
+cluster IDs, strata, and/or design weights. There are several
+
+
+### `as_survey_rep()`
+Use this when the data you have comes with pre-built replicate weight columns 
+like `repwt_1`, `repwt_2`. 
+
+3. `as_survey_srs()` - Use this when your data is a pure SRS meaning each respondent has equal probability of selection and there are no clustering nor strata.
+
+4. `
+
 
 ```{r design}
 # NHANES: stratified cluster design using Taylor series linearization.
@@ -47,10 +88,10 @@ nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
 svy <- as_survey(
   nhanes_exam,
-  ids     = sdmvpsu,   # cluster ID
-  strata  = sdmvstra,  # stratum
-  weights = wtmec2yr,  # examination weight
-  nest    = TRUE       # PSU IDs are locally unique within strata
+  ids = sdmvpsu, # cluster ID
+  strata = sdmvstra, # stratum
+  weights = wtmec2yr, # examination weight
+  nest = TRUE # PSU IDs are locally unique within strata
 )
 svy
 ```
@@ -288,7 +329,47 @@ get_means(svy, bpxsy1, name_style = "broom")
 
 ---
 
-## 9. surveytidy integration
+## 9. Weighted quantiles — `get_quantiles()`
+
+`get_quantiles()` estimates survey-weighted quantiles using the Woodruff (1952)
+confidence interval method. Confidence intervals are derived by inverting the
+weighted CDF rather than assuming normality, so they are generally **asymmetric**
+around the estimate and always respect the range of the data.
+
+```{r quantiles-basic}
+# Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))
+get_quantiles(svy, ridageyr)
+```
+
+The `quantile` column uses probability labels: `p25`, `p50`, `p75`, etc.
+
+### Choosing quantiles
+
+Pass any numeric vector to `probs`. For the median alone:
+
+```{r quantiles-median}
+get_quantiles(svy, ridageyr, probs = 0.5)
+```
+
+For deciles of systolic blood pressure:
+
+```{r quantiles-deciles}
+get_quantiles(svy, bpxsy1, probs = seq(0.1, 0.9, 0.1))
+```
+
+### Grouped quantiles
+
+```{r quantiles-grouped}
+# Median and IQR of systolic BP by sex
+get_quantiles(svy, bpxsy1, group = riagendr)
+```
+
+> **Note:** `"deff"` is always `NA` for quantiles — there is no closed-form SRS
+> standard error for quantile estimates, so the design effect cannot be computed.
+
+---
+
+## 10. surveytidy integration
 
 The **surveytidy** package provides dplyr verbs — `filter()`, `select()`,
 `mutate()`, and `group_by()` — that work directly on survey design objects.
@@ -368,6 +449,7 @@ get_means(svy, bpxsy1, group = riagendr)
 | `get_totals()` | Population counts or aggregates — weighted sums |
 | `get_ratios()` | Ratios of two weighted totals |
 | `get_corr()` | Pairwise Pearson correlations |
+| `get_quantiles()` | Weighted quantiles and median — Woodruff CIs |
 
 All functions:
 - Return a tibble subclass ready for further analysis or display

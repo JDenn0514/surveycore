@@ -1,4 +1,4 @@
-# R/03-constructors.R
+# R/core-constructors.R
 #
 # Constructor functions for survey design objects.
 #
@@ -219,6 +219,7 @@ as_survey_srs <- function(
 
   # ── Extract haven-style metadata ────────────────────────────────────────────
   metadata <- .extract_haven_metadata(data)
+  metadata <- .promote_weighting_history(data, metadata)
 
   # ── Build @variables list (all 8 keys always present) ──────────────────────
   variables <- list(
@@ -516,6 +517,7 @@ as_survey <- function(
   # ── Extract haven-style metadata ────────────────────────────────────────────
 
   metadata <- .extract_haven_metadata(data)
+  metadata <- .promote_weighting_history(data, metadata)
 
   # ── Construct and return survey_taylor object ───────────────────────────────
 
@@ -717,6 +719,7 @@ as_survey_rep <- function(
   # ── Extract haven-style metadata ────────────────────────────────────────────
 
   metadata <- .extract_haven_metadata(data)
+  metadata <- .promote_weighting_history(data, metadata)
 
   # ── Construct and return survey_replicate object ────────────────────────────
 

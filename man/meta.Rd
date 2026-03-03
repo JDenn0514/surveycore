@@ -21,18 +21,26 @@ A named list. Common fields present on every result:
 \code{"replicate"}, \code{"twophase"}, \code{"srs"}, or \code{"calibrated"}.}
 \item{\code{conf_level}}{Numeric(1). Confidence level used (e.g. \code{0.95}).}
 \item{\code{call}}{Language. Matched call to the \verb{get_*()} function.}
-\item{\code{group_names}}{Character vector. Grouping variable names;
-\code{character(0)} if none.}
-\item{\code{group_labels}}{Named list. Group variable → label; \code{NULL} values
-for unlabeled group variables.}
 \item{\code{n_respondents}}{Integer(1). Total rows in the design, regardless
 of groups, domain status, or weights.}
-\item{\code{value_labels}}{Named list. One key per focal variable; value is a
-named vector of label → raw value mappings, or \code{NULL} for
-numeric/unlabelled variables.}
+\item{\code{group}}{Named list. One entry per grouping variable; empty list
+(\code{list()}) when no groups are active. Each entry is a named list with:
+\code{variable_label} (character or \code{NULL}), \code{question_preface} (character
+or \code{NULL}), \code{value_labels} (named vector or \code{NULL}).}
+\item{\code{x}}{Named list. One entry per focal variable. Length 1 for
+single-x functions (\code{get_means}, \code{get_totals}, \code{get_quantiles});
+length N for multi-x functions (\code{get_freqs}, \code{get_corr}). Each entry
+has the same sub-structure as \code{group} entries. \code{NULL} for
+\code{get_totals()} when called without an \code{x} argument.}
 }
-Additional function-specific fields are described in the Phase 1
-specification.
+Function-specific additional fields:
+\describe{
+\item{\code{probs}}{(\code{get_quantiles} only) Numeric vector of quantile
+probabilities.}
+\item{\code{method}}{(\code{get_corr} only) Character(1) correlation method.}
+\item{\code{numerator}, \code{denominator}}{(\code{get_ratios} only) Flat named lists
+with keys \code{name}, \code{variable_label}, \code{question_preface}, \code{value_labels}.}
+}
 }
 \description{
 Retrieves the structured metadata list attached to a survey result object
@@ -50,13 +58,12 @@ result <- structure(
     design_type   = "taylor",
     conf_level    = 0.95,
     call          = quote(get_means(d, x)),
-    group_names   = character(0),
-    group_labels  = list(),
     n_respondents = 100L,
-    variable      = "x",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(x = NULL)
+    group         = list(),
+    x             = list(
+      x = list(variable_label = NULL, question_preface = NULL,
+               value_labels = NULL)
+    )
   ),
   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 )

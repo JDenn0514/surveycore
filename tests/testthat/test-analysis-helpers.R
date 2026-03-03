@@ -211,14 +211,14 @@ test_that(".make_result_tibble() produces the correct S3 class hierarchy", {
   col_vecs   <- list(mean = c(10.0, 20.0), n = c(25L, 25L))
   groups_df  <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
   meta_args  <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = "group",
-    group_labels     = list(group = NULL)
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(group = list(variable_label = NULL,
+                                   question_preface = NULL,
+                                   value_labels = NULL)),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
@@ -243,14 +243,12 @@ test_that(".make_result_tibble() attaches .meta attribute", {
   col_vecs   <- list(mean = 42.0, n = 50L)
   groups_df  <- data.frame()
   meta_args  <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
@@ -276,15 +274,11 @@ test_that(".make_result_tibble() stopifnot fires when required keys missing", {
 
   col_vecs  <- list(mean = 42.0)
   groups_df <- data.frame()
-  # meta_args is missing "variable_label" which is in MEANS_META_KEYS
+  # meta_args is missing "group" and "x" which are in MEANS_META_KEYS
   incomplete_meta <- list(
-    variable         = "y1",
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1))
+    # deliberately missing "group" and "x"
   )
 
   expect_error(
@@ -306,14 +300,14 @@ test_that(".make_result_tibble() includes group columns before result columns", 
   col_vecs  <- list(mean = c(10.0, 20.0))
   groups_df <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
   meta_args <- list(
-    variable         = "y1",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(y1 = NULL),
-    conf_level       = 0.95,
-    call             = quote(get_means(d, y1)),
-    group_names      = "group",
-    group_labels     = list(group = NULL)
+    conf_level = 0.95,
+    call       = quote(get_means(d, y1)),
+    group      = list(group = list(variable_label = NULL,
+                                   question_preface = NULL,
+                                   value_labels = NULL)),
+    x          = list(y1 = list(variable_label = NULL,
+                                question_preface = NULL,
+                                value_labels = NULL))
   )
 
   result <- .make_result_tibble(
@@ -719,4 +713,542 @@ test_that(".check_unsupported_class() returns NULL invisibly on success", {
   designs <- make_all_designs(seed = 42L)
   result  <- .check_unsupported_class(designs$taylor, "get_means")
   expect_null(result)
+})
+
+
+# ── Category 10: .extract_var_meta() ─────────────────────────────────────────
+
+test_that(".extract_var_meta() returns all-NULL list for plain numeric column", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 20L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # y1 has no metadata and no haven attrs in this data
+  result <- .extract_var_meta(d, "y1")
+
+  expect_type(result, "list")
+  expect_identical(names(result), c("variable_label", "question_preface", "value_labels"))
+  expect_null(result$variable_label)
+  expect_null(result$question_preface)
+  expect_null(result$value_labels)
+})
+
+test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 21L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, y1, "Annual household income")
+
+  result <- .extract_var_meta(d, "y1")
+  expect_identical(result$variable_label, "Annual household income")
+})
+
+test_that(".extract_var_meta() falls back to attr(col, 'label') when @metadata has no entry", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 22L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # Manually attach a haven label attribute to a column (bypassing @metadata)
+  attr(d@data[["y2"]], "label") <- "Manually attached label"
+
+  result <- .extract_var_meta(d, "y2")
+  expect_identical(result$variable_label, "Manually attached label")
+})
+
+test_that(".extract_var_meta() returns question_preface from @metadata@question_prefaces", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 23L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_question_preface(d, y1, "How would you rate...")
+
+  result <- .extract_var_meta(d, "y1")
+  expect_identical(result$question_preface, "How would you rate...")
+})
+
+test_that(".extract_var_meta() returns value_labels from @metadata@value_labels", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 24L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  lbs <- c("No" = 0L, "Yes" = 1L)
+  d  <- set_val_labels(d, y3, lbs)
+
+  result <- .extract_var_meta(d, "y3")
+  expect_identical(result$value_labels, lbs)
+})
+
+test_that(".extract_var_meta() falls back to attr(col, 'labels') for haven-labelled column", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 25L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # Manually attach haven-style labels to a column that has no @metadata entry
+  haven_lbs <- c("Male" = 1L, "Female" = 2L)
+  attr(d@data[["y3"]], "labels") <- haven_lbs
+
+  result <- .extract_var_meta(d, "y3")
+  expect_identical(result$value_labels, haven_lbs)
+})
+
+test_that(".extract_var_meta() returns value_labels as named integer for factor column", {
+  df    <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 26L)
+  df$gender <- factor(
+    sample(c("Male", "Female"), nrow(df), replace = TRUE),
+    levels = c("Male", "Female")
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- .extract_var_meta(d, "gender")
+  expect_false(is.null(result$value_labels))
+  expect_identical(names(result$value_labels), c("Male", "Female"))
+  expect_identical(unname(result$value_labels), c(1L, 2L))
+  expect_type(result$value_labels, "integer")
+})
+
+test_that(".extract_var_meta() @metadata takes precedence over haven column attrs", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 27L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # Set label in @metadata
+  d  <- set_var_label(d, y1, "Metadata label")
+  # Also attach haven attr directly to the column
+  attr(d@data[["y1"]], "label") <- "Haven attr label"
+
+  result <- .extract_var_meta(d, "y1")
+  expect_identical(result$variable_label, "Metadata label")
+})
+
+test_that(".extract_var_meta() @metadata value_labels take precedence over haven labels attr", {
+  df  <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 28L)
+  d   <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  meta_lbs <- c("No" = 0L, "Yes" = 1L)
+  d   <- set_val_labels(d, y3, meta_lbs)
+  # Also attach different haven attrs directly to the column
+  attr(d@data[["y3"]], "labels") <- c("Nein" = 0L, "Ja" = 1L)
+
+  result <- .extract_var_meta(d, "y3")
+  expect_identical(result$value_labels, meta_lbs)
+})
+
+
+# ── Category 11: .build_group_meta() ─────────────────────────────────────────
+
+test_that(".build_group_meta() returns list() for empty group_vars", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 30L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- .build_group_meta(d, character(0))
+  expect_identical(result, list())
+})
+
+test_that(".build_group_meta() returns named list of length 1 for one group var", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 31L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- .build_group_meta(d, "group")
+  expect_type(result, "list")
+  expect_length(result, 1L)
+  expect_identical(names(result), "group")
+})
+
+test_that(".build_group_meta() returns named list of length N for N group vars", {
+  df      <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 32L)
+  df$sex  <- factor(sample(c("Male", "Female"), nrow(df), replace = TRUE))
+  d       <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- .build_group_meta(d, c("group", "sex"))
+  expect_length(result, 2L)
+  expect_identical(names(result), c("group", "sex"))
+})
+
+test_that(".build_group_meta() each entry has the three required sub-keys", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 33L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, group, "Survey group")
+
+  result <- .build_group_meta(d, "group")
+  entry  <- result[["group"]]
+
+  expect_true("variable_label"   %in% names(entry))
+  expect_true("question_preface" %in% names(entry))
+  expect_true("value_labels"     %in% names(entry))
+})
+
+test_that(".build_group_meta() captures variable_label for labelled group var", {
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 34L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d  <- set_var_label(d, group, "Demographic group")
+
+  result <- .build_group_meta(d, "group")
+  expect_identical(result$group$variable_label, "Demographic group")
+})
+
+
+# ── Category 12: .apply_group_labels() ───────────────────────────────────────
+
+test_that(".apply_group_labels() leaves unlabelled integer columns unchanged", {
+  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 40L)
+  df$gender_code <- sample(1L:2L, nrow(df), replace = TRUE)
+  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  combos    <- data.frame(gender_code = c(1L, 2L))
+
+  result <- .apply_group_labels(combos, "gender_code", d, label_values = TRUE)
+  expect_identical(result$gender_code, c(1L, 2L))
+  expect_false(is.factor(result$gender_code))
+})
+
+test_that(".apply_group_labels() converts haven-labelled integer codes to factor", {
+  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 41L)
+  df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
+  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+
+  combos <- data.frame(gender = c(1L, 2L))
+  result <- .apply_group_labels(combos, "gender", d, label_values = TRUE)
+
+  expect_true(is.factor(result$gender))
+  expect_identical(as.character(result$gender), c("Male", "Female"))
+  expect_identical(levels(result$gender), c("Male", "Female"))
+})
+
+test_that(".apply_group_labels() factor levels ordered by code value for haven labels", {
+  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  df$cat    <- sample(c(3L, 1L, 2L), nrow(df), replace = TRUE)
+  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # labels declared in non-numeric order
+  d         <- set_val_labels(d, cat, c("Low" = 1L, "Mid" = 2L, "High" = 3L))
+
+  combos <- data.frame(cat = c(1L, 2L, 3L))
+  result <- .apply_group_labels(combos, "cat", d, label_values = TRUE)
+
+  expect_identical(levels(result$cat), c("Low", "Mid", "High"))
+})
+
+test_that(".apply_group_labels() converts plain R factor to factor preserving level order", {
+  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 43L)
+  df$status <- factor(
+    sample(c("Active", "Inactive"), nrow(df), replace = TRUE),
+    levels = c("Inactive", "Active")   # non-alphabetical order
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  combos <- data.frame(
+    status = c("Active", "Inactive"),
+    stringsAsFactors = FALSE
+  )
+  result <- .apply_group_labels(combos, "status", d, label_values = TRUE)
+
+  expect_true(is.factor(result$status))
+  expect_identical(levels(result$status), c("Inactive", "Active"))
+})
+
+test_that(".apply_group_labels() with label_values = FALSE returns group_combos unchanged", {
+  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 44L)
+  df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
+  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+
+  combos   <- data.frame(gender = c(1L, 2L))
+  result   <- .apply_group_labels(combos, "gender", d, label_values = FALSE)
+
+  expect_identical(result$gender, c(1L, 2L))
+  expect_false(is.factor(result$gender))
+})
+
+test_that(".apply_group_labels() only converts labelled columns in multi-group combos", {
+  df        <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 45L)
+  df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
+  df$region <- sample(1L:3L, nrow(df), replace = TRUE)  # no labels
+  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+
+  combos <- data.frame(gender = c(1L, 2L, 1L, 2L, 1L, 2L),
+                       region = c(1L, 1L, 2L, 2L, 3L, 3L))
+  result <- .apply_group_labels(combos, c("gender", "region"), d, label_values = TRUE)
+
+  expect_true(is.factor(result$gender))
+  expect_identical(as.character(result$gender[1L:2L]), c("Male", "Female"))
+  expect_false(is.factor(result$region))
+  expect_identical(result$region, c(1L, 1L, 2L, 2L, 3L, 3L))
+})
+
+
+# ── .apply_decimals() ─────────────────────────────────────────────────────────
+
+test_that(".apply_decimals() rounds double columns to specified places", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 51L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1, variance = "se")
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_equal(r_rounded$mean, round(r$mean, 2L))
+  expect_equal(r_rounded$se,   round(r$se,   2L))
+})
+
+test_that(".apply_decimals() leaves integer columns unchanged", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 52L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+
+  r_rounded <- .apply_decimals(r, 0L)
+
+  expect_identical(r_rounded$n, r$n)
+  expect_identical(class(r_rounded$n)[[1L]], "integer")
+})
+
+test_that(".apply_decimals() preserves .meta attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 53L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+  m_before <- attr(r, ".meta")
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_identical(attr(r_rounded, ".meta"), m_before)
+})
+
+test_that(".apply_decimals() preserves S3 class", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 54L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r  <- get_means(d, y1)
+  cls_before <- class(r)
+
+  r_rounded <- .apply_decimals(r, 2L)
+
+  expect_identical(class(r_rounded), cls_before)
+})
+
+# ── .validate_shared_args() — decimals validation ─────────────────────────────
+
+test_that(".validate_shared_args() accepts decimals = NULL", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = NULL)
+  )
+})
+
+test_that(".validate_shared_args() accepts decimals = 0", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 0L)
+  )
+})
+
+test_that(".validate_shared_args() accepts decimals = 4", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 4L)
+  )
+})
+
+test_that(".validate_shared_args() rejects negative decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = -1L),
+    class = "surveycore_error_invalid_decimals"
+  )
+  expect_snapshot(
+    error = TRUE,
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = -1L)
+  )
+})
+
+test_that(".validate_shared_args() rejects non-integer decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = 1.5),
+    class = "surveycore_error_invalid_decimals"
+  )
+})
+
+test_that(".validate_shared_args() rejects non-numeric decimals", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", decimals = "2"),
+    class = "surveycore_error_invalid_decimals"
+  )
+})
+
+
+# ── Category 10: .validate_shared_args() na.rm validation ────────────────────
+
+test_that(".validate_shared_args() accepts na.rm = TRUE", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = TRUE)
+  )
+})
+
+test_that(".validate_shared_args() accepts na.rm = FALSE", {
+  expect_no_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = FALSE)
+  )
+})
+
+test_that(".validate_shared_args() rejects na.rm = NA with typed error", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = NA),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+  expect_snapshot(
+    error = TRUE,
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = NA)
+  )
+})
+
+test_that(".validate_shared_args() rejects na.rm = 1 (numeric, not logical)", {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = 1),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+})
+
+test_that('.validate_shared_args() rejects na.rm = "yes" (character)', {
+  expect_error(
+    .validate_shared_args(NULL, 0.95, "surveycore", na.rm = "yes"),
+    class = "surveycore_error_na_rm_not_logical"
+  )
+})
+
+
+# ── Category 11: .build_group_combos() ───────────────────────────────────────
+
+test_that(".build_group_combos() excludes NA rows when na.rm = TRUE", {
+  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_false(anyNA(result$grp))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that(".build_group_combos() includes NA rows when na.rm = FALSE", {
+  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = FALSE)
+  expect_true(anyNA(result$grp))
+  expect_equal(nrow(result), 3L)
+})
+
+test_that(".build_group_combos() sorts NA combos after non-NA combos", {
+  df <- data.frame(grp = c(NA_character_, "B", "A", NA_character_), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = FALSE)
+  # Non-NA rows come first; NA row is last
+  non_na_rows <- which(!is.na(result$grp))
+  na_rows     <- which(is.na(result$grp))
+  expect_true(all(na_rows > max(non_na_rows)))
+})
+
+test_that(".build_group_combos() sorts NA combos last with multi-column input", {
+  df <- data.frame(
+    grp  = c("A", NA_character_, "B", "A"),
+    grp2 = c("X", "Y",           "X", "Y"),
+    stringsAsFactors = FALSE
+  )
+  result <- .build_group_combos(df, na.rm = FALSE)
+  na_rows    <- which(is.na(result$grp))
+  non_na_rows <- which(!is.na(result$grp))
+  expect_true(length(na_rows) > 0L)
+  expect_true(all(na_rows > max(non_na_rows)))
+})
+
+test_that(".build_group_combos() returns empty data.frame when input has 0 rows", {
+  df <- data.frame(grp = character(0L), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_equal(nrow(result), 0L)
+  result2 <- .build_group_combos(df, na.rm = FALSE)
+  expect_equal(nrow(result2), 0L)
+})
+
+test_that(".build_group_combos() returns empty data.frame when na.rm=TRUE removes all rows", {
+  df <- data.frame(grp = c(NA_character_, NA_character_), stringsAsFactors = FALSE)
+  result <- .build_group_combos(df, na.rm = TRUE)
+  expect_equal(nrow(result), 0L)
+})
+
+
+# ── Category 12: .match_group_combo() ────────────────────────────────────────
+
+test_that(".match_group_combo() matches NA values via is.na()", {
+  data_cols <- list(grp = c("A", NA_character_, "B", NA_character_))
+  combo_row <- data.frame(grp = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, TRUE, FALSE, TRUE))
+})
+
+test_that(".match_group_combo() does not match non-NA values when combo value is NA", {
+  data_cols <- list(grp = c("A", "B", "C"))
+  combo_row <- data.frame(grp = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, FALSE, FALSE))
+})
+
+test_that(".match_group_combo() matches non-NA values correctly", {
+  data_cols <- list(grp = c("A", "B", "A", NA_character_))
+  combo_row <- data.frame(grp = "A", stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(TRUE, FALSE, TRUE, FALSE))
+})
+
+test_that(".match_group_combo() handles multi-column combos with NA in first var", {
+  data_cols <- list(
+    grp  = c("A", NA_character_, "B", NA_character_),
+    grp2 = c("X", "X",          "X", "Y")
+  )
+  combo_row <- data.frame(grp = NA_character_, grp2 = "X", stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(FALSE, TRUE, FALSE, FALSE))
+})
+
+test_that(".match_group_combo() handles multi-column combos with NA in second var", {
+  data_cols <- list(
+    grp  = c("A", "A", "B"),
+    grp2 = c(NA_character_, "X", NA_character_)
+  )
+  combo_row <- data.frame(grp = "A", grp2 = NA_character_, stringsAsFactors = FALSE)
+  result <- .match_group_combo(data_cols, combo_row)
+  expect_equal(result, c(TRUE, FALSE, FALSE))
+})
+
+
+# ── Category 13: .apply_group_labels() tagged-NA path ────────────────────────
+
+# Helper: build a minimal valid design with a custom column for label tests.
+.make_label_test_design <- function(extra_col, extra_labels, col_name, seed = 42L) {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = seed)
+  # Recycle extra_col to fill 100 rows
+  df[[col_name]] <- rep_len(extra_col, 100L)
+  attr(df[[col_name]], "labels") <- extra_labels
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+}
+
+test_that(".apply_group_labels() leaves plain NAs as NA in factor output when no label", {
+  labels_vec <- c("GroupA" = 1L, "GroupB" = 2L)
+  design <- .make_label_test_design(
+    extra_col    = c(1L, 2L, NA_integer_),
+    extra_labels = labels_vec,
+    col_name     = "grp_plain"
+  )
+  gc <- data.frame(grp_plain = c(1L, 2L, NA_integer_))
+  result <- .apply_group_labels(gc, "grp_plain", design, label_values = TRUE)
+  expect_true(is.factor(result$grp_plain))
+  # Plain NA (no matching label) stays NA in the factor
+  expect_true(is.na(result$grp_plain[[3L]]))
+  # "GroupA" and "GroupB" are present; "NA" is NOT a factor level
+  expect_false("NA" %in% levels(result$grp_plain))
+})
+
+test_that(".apply_group_labels() converts tagged NAs to factor levels when label exists", {
+  skip_if_not_installed("haven")
+  tagged_r    <- haven::tagged_na("r")
+  labels_vec  <- c("GroupA" = 1L, "GroupB" = 2L, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col    = c(1L, 2L, tagged_r),
+    extra_labels = labels_vec,
+    col_name     = "grp_tagged"
+  )
+  # group_combos has 3 rows: one per unique combo (GroupA, GroupB, Refused/NA)
+  gc <- data.frame(grp_tagged = c(1L, 2L, tagged_r))
+  result <- .apply_group_labels(gc, "grp_tagged", design, label_values = TRUE)
+  expect_true(is.factor(result$grp_tagged))
+  # "Refused" should be a factor level (converted from tagged NA)
+  expect_true("Refused" %in% levels(result$grp_tagged))
+  # The tagged NA row maps to "Refused" (not NA)
+  expect_identical(as.character(result$grp_tagged[[3L]]), "Refused")
+})
+
+
+# ── Category 14: get_na_group_rows() ─────────────────────────────────────────
+
+test_that("get_na_group_rows() returns rows where group_col is NA", {
+  tbl <- tibble::tibble(grp = c("A", NA_character_, "B", NA_character_), val = 1:4)
+  result <- get_na_group_rows(tbl, "grp")
+  expect_equal(nrow(result), 2L)
+  expect_true(all(is.na(result$grp)))
+})
+
+test_that("get_na_group_rows() returns empty tibble when no NA group rows exist", {
+  tbl <- tibble::tibble(grp = c("A", "B", "C"), val = 1:3)
+  result <- get_na_group_rows(tbl, "grp")
+  expect_equal(nrow(result), 0L)
 })

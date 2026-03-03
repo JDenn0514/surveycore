@@ -7,12 +7,14 @@
 get_corr(
   design,
   x,
+  group = NULL,
   format = c("long", "wide"),
   redundant = FALSE,
   diagonal = FALSE,
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -28,9 +30,14 @@ get_corr(
 numeric variable names. Non-numeric variables are dropped with a warning.
 At least two numeric variables must remain.}
 
+\item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
+variable(s). Combined with any grouping set by \code{group_by()}. Default
+\code{NULL}.}
+
 \item{format}{\code{"long"} (default) or \code{"wide"}. Long format returns one row
 per variable pair with inference statistics. Wide format returns the
-correlation matrix (\code{r} values only — no variance or inference columns).}
+correlation matrix (\code{r} values only — no variance or inference columns).
+When \code{group} is active, group columns are prepended in both formats.}
 
 \item{redundant}{Logical. If \code{FALSE} (default), each pair appears once
 (lower triangle: pairs where var1 precedes var2 in input order). If
@@ -52,14 +59,23 @@ applies to long format.}
 \item{n_weighted}{Logical. If \code{TRUE}, add an \code{n_weighted} column with the
 pairwise sum of weights (both variables non-NA). Default \code{FALSE}.}
 
+\item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
+columns (e.g., \code{r}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
+places. Default \code{NULL} (no rounding).}
+
 \item{min_cell_n}{Integer. Minimum pairwise unweighted count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
 \item{na.rm}{Logical. If \code{TRUE} (default), pairs use complete cases for
-each variable pair separately (pairwise deletion).}
+each variable pair separately (pairwise deletion), and observations where
+any group variable is \code{NA} are excluded from the output. If \code{FALSE},
+pairwise complete cases are still used for each variable pair, and
+observations where a group variable is \code{NA} are collected into their own
+group row in the output (appearing after all non-\code{NA} group rows).}
 
-\item{label_values}{Logical. Accepted for API uniformity; has no visible
-effect. Default \code{TRUE}.}
+\item{label_values}{Logical. If \code{TRUE} (default) and the grouping variable
+has value labels, the group column is converted to a labelled factor.
+Has no visible effect when no groups are active.}
 
 \item{label_vars}{Logical. If \code{TRUE} (default) and variable labels are
 set in metadata, \code{var1}/\code{var2} columns (long) and \code{variable} column
@@ -73,8 +89,12 @@ format.}
 \value{
 A \code{survey_corr} tibble (also inheriting \code{survey_result}).
 
+When \code{group} is active, group variable columns are prepended before all
+other columns in both long and wide formats.
+
 \strong{Long format} columns:
 \itemize{
+\item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{var1}, \code{var2} — variable names (or labels when \code{label_vars = TRUE}).
 \item \code{r} — Pearson correlation coefficient.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
@@ -88,6 +108,7 @@ A \code{survey_corr} tibble (also inheriting \code{survey_result}).
 
 \strong{Wide format} columns:
 \itemize{
+\item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{variable} — row variable names (or labels).
 \item One column per focal variable, containing \code{r} values.
 }

@@ -74,12 +74,13 @@ Rules for the PR map:
 **Branch:** `feature/[name]`
 **Depends on:** PR [n] (or "none")
 
-**Files:**
-- `R/[file].R` — [one-sentence description]
+**Files (in TDD order — tests first):**
 - `tests/testthat/test-[file].R` — [one-sentence description]
+- `R/[file].R` — [one-sentence description]
 - `changelog/phase-{X}/feature-[name].md` — created last, before opening PR
 
 **Acceptance criteria:**
+- [ ] All new tests confirmed failing (red) before implementation began
 - [ ] `devtools::check()` 0 errors, 0 warnings, ≤2 pre-approved notes
 - [ ] `devtools::document()` run; NAMESPACE and man/ in sync
 - [ ] [specific test categories that must pass for this PR]

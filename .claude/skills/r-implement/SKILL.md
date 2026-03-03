@@ -32,26 +32,9 @@ Use this mode when commit-and-pr has already created a PR and CI has failed.
 
 ### Step 1: Read the handoff block
 
-The user will provide (or paste) a block like:
-
-```
-## CI Failure — Handoff to r-implement
-
-Run:    #12345
-PR:     #7 (https://github.com/...)
-Job:    R CMD Check / ubuntu-latest / release
-Step:   Running R CMD check
-
-Error:
-  <log output>
-
-Local repro:
-  Rscript -e "devtools::check()"
-  Rscript -e "devtools::test()"
-```
-
-Read it carefully. Identify: which check failed (check vs test), which job
-(OS + R version), and the exact error message.
+The user will provide a CI failure handoff block (fields: Run, PR, Job, Step, Error,
+Local repro). Read it carefully. Identify: which check failed (check vs test), which
+job (OS + R version), and the exact error message.
 
 ### Step 2: Reproduce locally
 
@@ -105,10 +88,19 @@ git branch --show-current
 
 **If on `main`:**
 
+Stop. Feature branches must be cut from `develop`, not `main`. Tell the user:
+
+> "Feature branches should start from `develop`. Please run `git checkout develop`
+> and re-invoke `/r-implement`."
+
+Do not proceed until the user is on `develop` or a feature branch.
+
+**If on `develop`:**
+
 1. Ask the user for the implementation plan path if not already provided
 2. Read the plan and find the first unchecked `- [ ]` section
 3. Determine the branch name from that section's entry
-4. Show: "I'll create branch `feature/X` from `main` — is that right?"
+4. Show: "I'll create branch `feature/X` from `develop` — is that right?"
 5. On confirmation: `git checkout -b feature/X`
 6. Continue to Step 2
 
@@ -145,10 +137,14 @@ Add any new error/warning classes you will need **before** writing code that use
 
 ## Implementation
 
-1. Write the R source file
-2. Write the test file (source and tests in the same session)
-3. Run `devtools::document()` if any roxygen2 tags changed
-4. Update `_pkgdown.yml` if any new functions were exported — add them to the
+Follow TDD order — tests before source, always.
+
+1. Write the test file (from the spec's test categories for this section)
+2. Run `devtools::test()` — **confirm all new tests fail (red phase)**
+   - If a new test unexpectedly passes, stop and investigate before proceeding
+3. Write the R source file to make the tests pass
+4. Run `devtools::document()` if any roxygen2 tags changed
+5. Update `_pkgdown.yml` if any new functions were exported — add them to the
    correct `reference:` section (match the `@family` tag used in roxygen)
 
 ---
@@ -186,18 +182,10 @@ When `devtools::test()` and `devtools::check()` both pass:
 
 ## Conventions (always in context — no need to re-read)
 
-All surveycore coding conventions are in the rule files loaded at session start.
-Quick index:
-
-| What you need | Where it is |
-|---|---|
-| S7 patterns, dispatch, `@variables` keys | `code-style.md §2` |
-| `cli_abort()` / `cli_warn()` structure and `class=` | `code-style.md §3` |
-| Argument order, return visibility, helper placement | `code-style.md §4` |
-| `::` everywhere, no `@importFrom`, roxygen2 | `r-package-conventions.md §2` |
-| Naming patterns, `@family`, `@seealso` | `surveycore-conventions.md` |
-| Test structure, error patterns, invariants, tolerances | `testing-standards.md` + `testing-surveycore.md` |
-| Error class names | `plans/error-messages.md` — update this file BEFORE using any new class |
+All coding conventions are in the rule files loaded at session start.
+Key rules: `code-style.md` (S7 patterns, cli errors, arg order), `r-package-conventions.md`
+(imports, roxygen2), `testing-standards.md` + `testing-surveycore.md` (test patterns).
+Error class names: `plans/error-messages.md` — update BEFORE using any new class.
 
 ---
 
@@ -207,12 +195,8 @@ Do not mark the section complete until ALL are true:
 
 - [ ] `devtools::test()` — no failures
 - [ ] `devtools::check()` — 0 errors, 0 warnings, ≤2 notes
-- [ ] `devtools::document()` run (if roxygen2 content changed)
-- [ ] `_pkgdown.yml` updated (if new exports added — add to correct `reference:` section)
+- [ ] `devtools::document()` run (if roxygen2 changed); `_pkgdown.yml` updated (if new exports)
 - [ ] `plans/error-messages.md` updated (if new error classes added)
-- [ ] No `UseMethod()` patterns on S7 objects
-- [ ] No `cli_abort()` or `cli_warn()` calls missing `class=`
-- [ ] No `@importFrom` in any file
-- [ ] `test_invariants(design)` called first in every constructor test block
-- [ ] Dual pattern (`class=` + snapshot) on all Layer 3 error tests
+- [ ] No `UseMethod()` on S7 objects; no missing `class=`; no `@importFrom`
+- [ ] `test_invariants(design)` first in every constructor test; dual pattern on Layer 3 errors
 - [ ] Implementation plan section marked `[x]`

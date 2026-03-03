@@ -18,9 +18,13 @@
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
 #'   numeric variable names. Non-numeric variables are dropped with a warning.
 #'   At least two numeric variables must remain.
+#' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
+#'   variable(s). Combined with any grouping set by `group_by()`. Default
+#'   `NULL`.
 #' @param format `"long"` (default) or `"wide"`. Long format returns one row
 #'   per variable pair with inference statistics. Wide format returns the
 #'   correlation matrix (`r` values only — no variance or inference columns).
+#'   When `group` is active, group columns are prepended in both formats.
 #' @param redundant Logical. If `FALSE` (default), each pair appears once
 #'   (lower triangle: pairs where var1 precedes var2 in input order). If
 #'   `TRUE`, both `(A, B)` and `(B, A)` are included (full directed pairs).
@@ -36,12 +40,20 @@
 #' @param conf_level Numeric scalar in (0, 1). Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
 #'   pairwise sum of weights (both variables non-NA). Default `FALSE`.
+#' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
+#'   columns (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal
+#'   places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum pairwise unweighted count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
 #' @param na.rm Logical. If `TRUE` (default), pairs use complete cases for
-#'   each variable pair separately (pairwise deletion).
-#' @param label_values Logical. Accepted for API uniformity; has no visible
-#'   effect. Default `TRUE`.
+#'   each variable pair separately (pairwise deletion), and observations where
+#'   any group variable is `NA` are excluded from the output. If `FALSE`,
+#'   pairwise complete cases are still used for each variable pair, and
+#'   observations where a group variable is `NA` are collected into their own
+#'   group row in the output (appearing after all non-`NA` group rows).
+#' @param label_values Logical. If `TRUE` (default) and the grouping variable
+#'   has value labels, the group column is converted to a labelled factor.
+#'   Has no visible effect when no groups are active.
 #' @param label_vars Logical. If `TRUE` (default) and variable labels are
 #'   set in metadata, `var1`/`var2` columns (long) and `variable` column
 #'   (wide) show labels instead of raw names. Falls back to raw names if
@@ -52,8 +64,12 @@
 #'
 #' @return A `survey_corr` tibble (also inheriting `survey_result`).
 #'
+#'   When `group` is active, group variable columns are prepended before all
+#'   other columns in both long and wide formats.
+#'
 #'   **Long format** columns:
 #'   \itemize{
+#'     \item `[group_cols...]` — group variable columns (when active), first.
 #'     \item `var1`, `var2` — variable names (or labels when `label_vars = TRUE`).
 #'     \item `r` — Pearson correlation coefficient.
 #'     \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
@@ -67,6 +83,7 @@
 #'
 #'   **Wide format** columns:
 #'   \itemize{
+#'     \item `[group_cols...]` — group variable columns (when active), first.
 #'     \item `variable` — row variable names (or labels).
 #'     \item One column per focal variable, containing `r` values.
 #'   }
@@ -91,12 +108,14 @@
 get_corr <- function(
   design,
   x,
+  group        = NULL,
   format       = c("long", "wide"),
   redundant    = FALSE,
   diagonal     = FALSE,
   variance     = "ci",
   conf_level   = 0.95,
   n_weighted   = FALSE,
+  decimals     = NULL,
   min_cell_n   = 30L,
   na.rm        = TRUE,
   label_values = TRUE,
@@ -105,11 +124,14 @@ get_corr <- function(
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_corr")
-  .validate_shared_args(variance, conf_level, name_style)
+  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
+                        na.rm = na.rm)
   format <- match.arg(format)
 
   # ── Step 2: Resolve variables ────────────────────────────────────────────────
-  x_quo  <- rlang::enquo(x)
+  x_quo     <- rlang::enquo(x)
+  group_quo <- rlang::enquo(group)
+
   x_names_all <- .resolve_tidy_select(x_quo, design@data)
 
   # Drop non-numeric variables with warning (per dropped variable)
@@ -146,30 +168,15 @@ get_corr <- function(
 
   # ── Step 3: Domain mask ───────────────────────────────────────────────────────
   domain_mask <- .apply_domain(design)
-  domain      <- as.numeric(domain_mask)
 
   # ── Step 4: Collect variable metadata ───────────────────────────────────────
-  var_labels_list <- lapply(x_names, function(nm) {
-    design@metadata@variable_labels[[nm]] %||%
-      attr(design@data[[nm]], "label", exact = TRUE)
-  })
-  names(var_labels_list) <- x_names
-
-  q_prefaces_list <- lapply(x_names, function(nm) {
-    design@metadata@question_prefaces[[nm]]
-  })
-  names(q_prefaces_list) <- x_names
-
-  val_labels_list <- lapply(x_names, function(nm) {
-    design@metadata@value_labels[[nm]] %||%
-      attr(design@data[[nm]], "labels", exact = TRUE)
-  })
-  names(val_labels_list) <- x_names
+  x_meta_list <- lapply(x_names, function(nm) .extract_var_meta(design, nm))
+  names(x_meta_list) <- x_names
 
   # ── Step 5: Determine display names (labels or raw names) ───────────────────
   display_names <- if (isTRUE(label_vars)) {
     vapply(x_names, function(nm) {
-      lbl <- var_labels_list[[nm]]
+      lbl <- x_meta_list[[nm]]$variable_label
       if (!is.null(lbl) && nchar(as.character(lbl)) > 0L) {
         as.character(lbl)
       } else {
@@ -183,7 +190,6 @@ get_corr <- function(
 
   # ── Step 6: Build pair list ───────────────────────────────────────────────────
   p <- length(x_names)
-  # All unique pairs (lower triangle: i < j)
   pairs_i <- integer(0); pairs_j <- integer(0)
   for (i in seq_len(p - 1L)) {
     for (j in seq(i + 1L, p)) {
@@ -193,29 +199,75 @@ get_corr <- function(
   }
   n_pairs <- length(pairs_i)
 
-  # ── Step 7: Compute vcov for each unique pair ────────────────────────────────
-  vcov_results <- vector("list", n_pairs)
-  pair_results <- vector("list", n_pairs)
+  # ── Step 7: Resolve group vars ────────────────────────────────────────────────
+  group_vars <- .resolve_groups(design, group_quo)
 
-  small_cell_ns <- integer(0)
-
-  for (k in seq_len(n_pairs)) {
-    i   <- pairs_i[[k]]
-    j   <- pairs_j[[k]]
-    xnm <- x_names[[i]]
-    ynm <- x_names[[j]]
-
-    vco <- .corr_vcov_pair(design, xnm, ynm, domain, na.rm)
-    res <- .corr_pair_result(vco)
-
-    pair_results[[k]] <- res
-
-    if (!is.na(res$n) && res$n > 0L && res$n < min_cell_n) {
-      small_cell_ns <- c(small_cell_ns, res$n)
+  # ── Step 8: Single-level warning per group var ────────────────────────────────
+  if (length(group_vars) > 0L) {
+    for (gv in group_vars) {
+      gv_vals   <- design@data[[gv]][domain_mask]
+      uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
+      if (length(uniq_lvls) < 2L) {
+        cli::cli_warn(
+          c(
+            "!" = paste0(
+              "Grouping variable {.field {gv}} has only one observed level ",
+              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
+              " Grouped estimates will have a single row."
+            )
+          ),
+          class = "surveycore_warning_single_level"
+        )
+      }
     }
   }
 
-  # ── Step 8: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 9: Build group combinations ──────────────────────────────────────────
+  if (length(group_vars) > 0L) {
+    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    group_combos <- .build_group_combos(domain_data, na.rm)
+    n_combos     <- nrow(group_combos)
+  } else {
+    group_combos <- data.frame()
+    n_combos     <- 1L
+  }
+
+  # ── Step 10: Outer group / inner pair loops ───────────────────────────────────
+  all_pair_results  <- vector("list", n_combos)
+  all_grp_rows      <- vector("list", n_combos)
+  all_active_masks  <- vector("list", n_combos)
+  small_cell_ns     <- integer(0)
+
+  for (ci in seq_len(n_combos)) {
+    # Build active mask for this combo
+    if (length(group_vars) > 0L) {
+      combo_row   <- group_combos[ci, , drop = FALSE]
+      data_cols   <- as.list(design@data[group_vars])
+      group_match <- .match_group_combo(data_cols, combo_row)
+      active_mask <- domain_mask & group_match
+      all_grp_rows[[ci]] <- combo_row
+    } else {
+      active_mask <- domain_mask
+    }
+    all_active_masks[[ci]] <- active_mask
+    active_domain <- as.numeric(active_mask)
+
+    # Inner loop: pairs
+    pair_results_this <- vector("list", n_pairs)
+    for (k in seq_len(n_pairs)) {
+      xnm <- x_names[[pairs_i[[k]]]]
+      ynm <- x_names[[pairs_j[[k]]]]
+      vco <- .corr_vcov_pair(design, xnm, ynm, active_domain, na.rm)
+      res <- .corr_pair_result(vco)
+      pair_results_this[[k]] <- res
+      if (!is.na(res$n) && res$n > 0L && res$n < min_cell_n) {
+        small_cell_ns <- c(small_cell_ns, res$n)
+      }
+    }
+    all_pair_results[[ci]] <- pair_results_this
+  }
+
+  # ── Step 11: Small-cell warning (fires once, after all groups) ───────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -230,19 +282,59 @@ get_corr <- function(
     )
   }
 
-  # ── Step 9: Wide format ───────────────────────────────────────────────────────
+  # ── Step 12: Group metadata ───────────────────────────────────────────────────
+  group_meta <- .build_group_meta(design, group_vars)
+
+  # ── Step 13: Wide format path (grouped) ──────────────────────────────────────
   if (format == "wide") {
-    return(.corr_wide(
-      x_names, display_names, pairs_i, pairs_j, pair_results,
-      diagonal, design, var_labels_list, q_prefaces_list, val_labels_list,
-      conf_level
+    wide_col_vecs_list <- vector("list", n_combos)
+    wide_grp_rows      <- vector("list", n_combos)
+
+    for (ci in seq_len(n_combos)) {
+      wide_col_vecs_list[[ci]] <- .corr_build_matrix_col_vecs(
+        x_names, display_names, pairs_i, pairs_j,
+        all_pair_results[[ci]], diagonal
+      )
+      if (length(group_vars) > 0L) {
+        wide_grp_rows[[ci]] <- all_grp_rows[[ci]][rep(1L, p), , drop = FALSE]
+      }
+    }
+
+    # Stack col_vecs across combos
+    all_col_names <- names(wide_col_vecs_list[[1L]])
+    stacked_wide <- lapply(all_col_names, function(nm) {
+      unlist(lapply(wide_col_vecs_list, `[[`, nm), use.names = FALSE)
+    })
+    names(stacked_wide) <- all_col_names
+
+    # Build groups_df for wide result
+    if (length(group_vars) > 0L) {
+      wide_groups_df <- do.call(rbind, wide_grp_rows)
+      rownames(wide_groups_df) <- NULL
+      wide_groups_df <- .apply_group_labels(
+        wide_groups_df, group_vars, design, label_values
+      )
+    } else {
+      wide_groups_df <- data.frame()
+    }
+
+    meta_args_wide <- list(
+      conf_level = conf_level,
+      call       = match.call(),
+      method     = "pearson",
+      group      = group_meta,
+      x          = x_meta_list
+    )
+
+    return(.make_result_tibble(
+      stacked_wide, wide_groups_df, "survey_corr",
+      design, meta_args_wide, CORR_META_KEYS
     ))
   }
 
-  # ── Step 10: Build long format rows ──────────────────────────────────────────
-  # Expand pairs based on redundant/diagonal flags
-  row_i <- row_j <- integer(0)
-
+  # ── Step 14: Long format — pre-loop constants ─────────────────────────────────
+  # Expand pairs according to redundant/diagonal flags (same for every group)
+  row_i <- integer(0); row_j <- integer(0)
   for (k in seq_len(n_pairs)) {
     row_i <- c(row_i, pairs_i[[k]])
     row_j <- c(row_j, pairs_j[[k]])
@@ -255,87 +347,110 @@ get_corr <- function(
     row_i <- c(row_i, seq_len(p))
     row_j <- c(row_j, seq_len(p))
   }
+  n_rows_per_combo <- length(row_i)
 
-  n_rows <- length(row_i)
-
-  # Build the result data for each row
-  acc_var1      <- character(n_rows)
-  acc_var2      <- character(n_rows)
-  acc_r         <- numeric(n_rows)
-  acc_se        <- numeric(n_rows)
-  acc_se_srs    <- numeric(n_rows)
-  acc_pval      <- numeric(n_rows)
-  acc_stat      <- numeric(n_rows)
-  acc_df        <- integer(n_rows)
-  acc_n         <- integer(n_rows)
-  acc_nw        <- numeric(n_rows)
-
-  # Build a lookup from (i, j) pair index to pair_results index
+  # Lookup from (i, j) pair index to pair_results index
   pair_idx_map <- matrix(NA_integer_, p, p)
   for (k in seq_len(n_pairs)) {
     pair_idx_map[pairs_i[[k]], pairs_j[[k]]] <- k
     pair_idx_map[pairs_j[[k]], pairs_i[[k]]] <- k
   }
 
-  for (ri in seq_len(n_rows)) {
-    i <- row_i[[ri]]
-    j <- row_j[[ri]]
+  # ── Step 15: Pre-allocate accumulator vectors ─────────────────────────────────
+  total_rows   <- n_combos * n_rows_per_combo
+  acc_var1     <- character(total_rows)
+  acc_var2     <- character(total_rows)
+  acc_r        <- numeric(total_rows)
+  acc_se       <- numeric(total_rows)
+  acc_se_srs   <- numeric(total_rows)
+  acc_pval     <- numeric(total_rows)
+  acc_stat     <- numeric(total_rows)
+  acc_df       <- integer(total_rows)
+  acc_n        <- integer(total_rows)
+  acc_nw       <- numeric(total_rows)
+  acc_grp_rows <- vector("list", n_combos)
 
-    acc_var1[[ri]] <- display_names[[x_names[[i]]]]
-    acc_var2[[ri]] <- display_names[[x_names[[j]]]]
+  # ── Step 16: Combo fill loop ──────────────────────────────────────────────────
+  for (ci in seq_len(n_combos)) {
+    offset       <- (ci - 1L) * n_rows_per_combo
+    idx          <- offset + seq_len(n_rows_per_combo)
+    active_mask  <- all_active_masks[[ci]]
+    pair_results <- all_pair_results[[ci]]
 
-    if (i == j) {
-      # Self-correlation (diagonal = TRUE case)
-      acc_r[[ri]]    <- 1
-      acc_se[[ri]]   <- 0
-      acc_se_srs[[ri]] <- 0
-      acc_pval[[ri]] <- 0
-      acc_stat[[ri]] <- Inf
-      acc_df[[ri]]   <- 0L
-      acc_n[[ri]]    <- as.integer(sum(domain > 0 & !is.na(design@data[[x_names[[i]]]])))
-      acc_nw[[ri]]   <- 0
-    } else {
-      k   <- pair_idx_map[i, j]
-      res <- pair_results[[k]]
-      r   <- res$r
-      se  <- res$se_r
-      nn  <- res$n
+    for (ri in seq_len(n_rows_per_combo)) {
+      i   <- row_i[[ri]]
+      j   <- row_j[[ri]]
+      out <- offset + ri
 
-      acc_r[[ri]]    <- r
-      acc_se[[ri]]   <- se
-      acc_se_srs[[ri]] <- res$se_srs
-      acc_n[[ri]]    <- as.integer(nn)
-      acc_nw[[ri]]   <- res$n_weighted
+      acc_var1[[out]] <- display_names[[x_names[[i]]]]
+      acc_var2[[out]] <- display_names[[x_names[[j]]]]
 
-      # t-statistic and p-value: t = r * sqrt(n-2) / sqrt(1-r^2), df = n-2
-      if (!is.na(r) && !is.na(nn) && nn >= 3L) {
-        df_t <- nn - 2L
-        if (abs(r) < 1) {
-          t_stat <- r * sqrt(df_t) / sqrt(1 - r^2)
-        } else {
-          t_stat <- if (r > 0) Inf else -Inf
-        }
-        acc_stat[[ri]] <- t_stat
-        acc_df[[ri]]   <- df_t
-        acc_pval[[ri]] <- 2 * stats::pt(-abs(t_stat), df = df_t)
+      if (i == j) {
+        # Self-correlation (diagonal = TRUE case)
+        acc_r[[out]]      <- 1
+        acc_se[[out]]     <- 0
+        acc_se_srs[[out]] <- 0
+        acc_pval[[out]]   <- 0
+        acc_stat[[out]]   <- Inf
+        acc_df[[out]]     <- 0L
+        acc_n[[out]]      <- as.integer(
+          sum(active_mask & !is.na(design@data[[x_names[[i]]]]))
+        )
+        acc_nw[[out]]     <- 0
       } else {
-        acc_stat[[ri]] <- NA_real_
-        acc_df[[ri]]   <- NA_integer_
-        acc_pval[[ri]] <- NA_real_
+        k   <- pair_idx_map[i, j]
+        res <- pair_results[[k]]
+        r   <- res$r
+        se  <- res$se_r
+        nn  <- res$n
+
+        acc_r[[out]]      <- r
+        acc_se[[out]]     <- se
+        acc_se_srs[[out]] <- res$se_srs
+        acc_n[[out]]      <- as.integer(nn)
+        acc_nw[[out]]     <- res$n_weighted
+
+        if (!is.na(r) && !is.na(nn) && nn >= 3L) {
+          df_t <- nn - 2L
+          if (abs(r) < 1) {
+            t_stat <- r * sqrt(df_t) / sqrt(1 - r^2)
+          } else {
+            t_stat <- if (r > 0) Inf else -Inf
+          }
+          acc_stat[[out]] <- t_stat
+          acc_df[[out]]   <- df_t
+          acc_pval[[out]] <- 2 * stats::pt(-abs(t_stat), df = df_t)
+        } else {
+          acc_stat[[out]] <- NA_real_
+          acc_df[[out]]   <- NA_integer_
+          acc_pval[[out]] <- NA_real_
+        }
       }
+    }
+
+    if (length(group_vars) > 0L) {
+      grp_block        <- all_grp_rows[[ci]][rep(1L, n_rows_per_combo), , drop = FALSE]
+      acc_grp_rows[[ci]] <- grp_block
     }
   }
 
-  # ── Step 11: Build variance columns ──────────────────────────────────────────
-  r_vec    <- acc_r
-  se_vec   <- acc_se
+  # ── Step 17: Build groups_df ──────────────────────────────────────────────────
+  if (length(group_vars) > 0L) {
+    groups_df <- do.call(rbind, acc_grp_rows)
+    rownames(groups_df) <- NULL
+    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
+  } else {
+    groups_df <- data.frame()
+  }
+
+  # ── Step 18: Build variance columns ──────────────────────────────────────────
+  r_vec     <- acc_r
+  se_vec    <- acc_se
   sesrs_vec <- acc_se_srs
 
   var_col_list <- list()
 
   if (!is.null(variance)) {
-    ordered_var <- c("se", "var", "cv", "ci_low", "ci_high", "moe", "deff")
-
     if ("se" %in% variance) {
       var_col_list$se <- se_vec
     }
@@ -375,13 +490,12 @@ get_corr <- function(
     }
     if ("deff" %in% variance) {
       deff <- (se_vec / sesrs_vec)^2
-      # NA when se_srs is 0 or NA
       deff[is.na(sesrs_vec) | sesrs_vec <= 0] <- NA_real_
       var_col_list$deff <- deff
     }
   }
 
-  # ── Step 12: Assemble col_vecs in canonical order ────────────────────────────
+  # ── Step 19: Assemble col_vecs in canonical order ─────────────────────────────
   col_vecs <- list(var1 = acc_var1, var2 = acc_var2, r = r_vec)
   col_vecs <- c(col_vecs, var_col_list)
   col_vecs$p_value   <- acc_pval
@@ -392,30 +506,34 @@ get_corr <- function(
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 13: Build meta_args ──────────────────────────────────────────────────
+  # ── Step 20: Build meta_args ──────────────────────────────────────────────────
   meta_args <- list(
-    variables        = x_names,
-    variable_labels  = var_labels_list,
-    question_prefaces = q_prefaces_list,
-    value_labels     = val_labels_list,
-    method           = "pearson",
-    conf_level       = conf_level,
-    call             = match.call(),
-    group_names      = character(0),
-    group_labels     = list()
+    conf_level = conf_level,
+    call       = match.call(),
+    method     = "pearson",
+    group      = group_meta,
+    x          = x_meta_list
   )
 
-  # ── Step 14: Assemble result ─────────────────────────────────────────────────
+  # ── Step 21: Assemble result ──────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
-    data.frame(),
+    groups_df,
     "survey_corr",
     design,
     meta_args,
     CORR_META_KEYS
   )
 
-  # ── Step 15: Apply name style ─────────────────────────────────────────────────
+  # ── Step 22: Convert var1/var2 to factors (levels in variable supply order) ───
+  # Display strings determine the factor level values; supply order is preserved.
+  # Same uniq_display levels across all groups.
+  uniq_display <- unique(display_names)
+  result$var1  <- factor(result$var1, levels = uniq_display)
+  result$var2  <- factor(result$var2, levels = uniq_display)
+
+  # ── Step 23: Apply decimals and name style ────────────────────────────────────
+  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
   .apply_name_style(result, name_style)
 }
 

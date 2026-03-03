@@ -1,6 +1,6 @@
 # data-raw/
 
-Raw source data and prepare scripts for the six real-world datasets bundled
+Raw source data and prepare scripts for the seven real-world datasets bundled
 with surveycore. Each dataset is stored as a compressed `.rda` file in `data/`
 and is available immediately when the package is loaded (via `LazyData: true`).
 
@@ -34,6 +34,7 @@ data is faster, fully controlled, and has no file I/O overhead.
 | `gss_2024` | 3,309 | 27 | Stratified multi-stage cluster (Taylor) | `wtssps`, `wtssnrps` | NORC / Free account |
 | `pew_npors_2025` | 5,022 | 65 | Stratified with raking (Taylor) | `weight` | Pew / Free account |
 | `pew_jewish_2020` | 5,881 | 130 | Jackknife replication (100 rep. wts.) | `extweight` + `extweight1`–`extweight100` | Pew / Free account |
+| `ns_wave1` | ~6,250 | 171 | Calibrated non-probability | `weight` | Nationscape / Free download |
 
 ---
 
@@ -702,6 +703,159 @@ use cases.
 
 ---
 
+### `ns_wave1` — Nationscape Wave 1, July 18, 2019
+
+**File:** `data/ns_wave1.rda` (~1.5 MB on disk, ~3 MB in RAM)
+**Prepare script:** `data-raw/prepare-nationscape-phase1.R` (raw file requires free download)
+**Source:** Democracy Fund Voter Study Group / UCLA — free download at voterstudygroup.org/data/nationscape
+
+#### What it is
+
+The first weekly wave of the Democracy Fund + UCLA Nationscape, a landmark
+political tracking survey conducted from July 2019 through January 2021
+(77 weekly waves, ~480,000 interviews total). Each wave fielded approximately
+6,250 completed online interviews through the Lucid respondent exchange
+platform using a non-probability quota design, with raking weights calibrated
+to ACS demographic targets and 2016 presidential vote choice.
+
+Only Wave 1 (`ns20190718`, July 18–24, 2019) is bundled in the package. The
+full dataset spans three phases (see below) and at ~480,000 rows total is too
+large for package distribution. Use the three phase prepare scripts to build
+the full dataset locally.
+
+#### Survey design
+
+**Type:** Calibrated non-probability sample — use [as_survey_calibrated()].
+
+```r
+svy <- as_survey_calibrated(ns_wave1, weights = weight)
+get_freqs(svy, pres_approval)
+```
+
+`as_survey_calibrated()` is designed for exactly this use case: a non-probability
+quota sample with pre-computed raking weights and no PSU/strata structure.
+Current variance estimation uses a conservative SRS approximation (consistent
+with Rivers & Bailey 2009); bootstrap re-calibration variance (Deville &
+Särndal 1992) will be added in Phase 2.5.
+
+#### Three-phase structure
+
+The full Nationscape ran in three phases with partially overlapping variable
+sets. Variables not asked in a given wave are absent from that wave's data
+frame:
+
+| Phase | Waves | Dates | Script | Waves loaded |
+|-------|-------|-------|--------|:---:|
+| Phase 1 | 1–24 | Jul 18, 2019 – Dec 26, 2019 | `prepare-nationscape-phase1.R` | 24 |
+| Phase 2 | 25–50 | Jan 2, 2020 – Jun 25, 2020 | `prepare-nationscape-phase2.R` | 26 |
+| Phase 3 | 51–77 | Jul 2, 2020 – Jan 12, 2021 | `prepare-nationscape-phase3.R` | 27 |
+
+Content changes by phase:
+- **Phase 2 additions:** Bloomberg matchup/favorability, Klobuchar and Abrams
+  favorability, Senate primary questions (`primary_sen_*` — 47 Republican
+  senators), COVID-19 behavior and policy items (from Wave 37), `statements_*`
+  battery, `group_favorability_jews`, `discrimination_jews` and
+  `discrimination_asians`, forced-choice items (`fc_smallgov`, `fc_trad_val`).
+- **Phase 3 additions:** BLM favorability (`group_favorability_blm`), 2020
+  general election vote intent (`vote_2020`, `vote_2020_lean`), issue-specific
+  Trump approval (`extra_trump_*`), expanded COVID-19 items, post-election
+  vote choice (November 2020+ waves).
+
+#### Loading all phases for cross-wave analysis
+
+```r
+source("data-raw/prepare-nationscape-phase1.R")  # produces ns_phase1 (list)
+source("data-raw/prepare-nationscape-phase2.R")  # produces ns_phase2 (list)
+source("data-raw/prepare-nationscape-phase3.R")  # produces ns_phase3 (list)
+
+# Single-wave analysis
+d1 <- as_survey_calibrated(ns_phase1[["ns20190718"]], weights = weight)
+
+# Cross-wave analysis within a phase
+phase1_combined <- dplyr::bind_rows(ns_phase1)
+d_all <- as_survey_calibrated(phase1_combined, weights = weight)
+
+# NOTE: When combining phases, variables not in both phases are NA.
+# Use data-raw/nationscape/Nationscape-Variables-2021Dec.csv to identify
+# which variables are present in each wave.
+
+# Save for reuse (avoids reprocessing)
+saveRDS(ns_phase1, "data-raw/nationscape/ns_phase1.rds")
+```
+
+Each phase script produces a named list of data frames: one entry per wave,
+named by wave ID (`"ns20190718"`, `"ns20190725"`, ...). Each data frame has
+had haven classes stripped, sentence-case applied to variable and value labels,
+battery prefaces attached, and a `wave_id` column added.
+
+#### Variable categories (Wave 1)
+
+Wave 1 contains 170 columns. Variables appear in every wave unless otherwise
+noted:
+
+**Identifiers and weight:**
+
+| Variable | Description |
+|----------|-------------|
+| `response_id` | Unique respondent ID |
+| `start_date` | Interview date |
+| `wave_id` | Wave identifier (e.g., `"ns20190718"`) — added by prepare script |
+| `weight` | Raking weight (use for all estimates) |
+
+**Political context:**
+
+| Variable | Description |
+|----------|-------------|
+| `right_track` | Country direction |
+| `economy_better` | Economic outlook |
+| `interest` | Political interest |
+| `registration` | Voter registration status |
+| `pres_approval` | Trump presidential approval |
+| `vote_intention` | 2020 presidential vote intention |
+| `vote_2016` | 2016 presidential vote |
+| `consider_trump` / `not_trump` | Trump consideration and reason |
+| `replace_trump` | Wants non-Trump Republican nominee |
+| `house_intent`, `senate_intent`, `governor_intent` | Congressional/gubernatorial vote intention |
+
+**Batteries (all share a `"question_preface"` attribute):**
+
+| Battery | Items | Scale |
+|---------|------:|-------|
+| `news_sources_*` | 13 | Selected / Not selected |
+| `group_favorability_*` | 13 | Very favorable–Very unfavorable (5-pt) |
+| `cand_favorability_*` | 9 | Very favorable–Very unfavorable (5-pt) |
+| `trump_*` | 10 | Trump / Democrat / Not sure |
+| `pence_*` | 5 | Pence / Democrat / Not sure |
+| `cand_truth_*` | 6 | Yes / No / Not sure |
+| `cand_facts_*` | 6 | Facts / Hunches / Not sure |
+| `racial_attitudes_*` | 4 | Strongly agree–Strongly disagree (5-pt) |
+| `gender_attitudes_*` | 4 | Strongly agree–Strongly disagree (5-pt) |
+| `discrimination_*` | 6 | A great deal–None at all (4-pt) |
+| Policy items (`wall`, ..., `limit_magazines`) | 44 | Strongly support–Strongly oppose (5-pt) |
+
+**Party identification and ideology:**
+`pid3`, `pid7_legacy`, `strength_democrat`, `strength_republican`,
+`lean_independent`, `ideo5`, `sen_knowledge`, `sc_knowledge`,
+`dem_vote_intent`, `rank_dems_1`–`rank_dems_3`, `primary_party`.
+
+**Demographics:**
+`age`, `gender`, `census_region`, `hispanic`, `race_ethnicity`,
+`household_income`, `education`, `state`, `congress_district`,
+`employment`, `foreign_born`, `language`, `religion`, `is_evangelical`,
+`orientation_group`, `in_union`, `household_gun_owner`.
+
+#### Role in surveycore
+
+The primary example dataset for **non-probability weighted survey analysis**.
+The rich battery structure (10 batteries × 4–44 items each) makes it the
+best vehicle for demonstrating `question_preface` metadata extraction and
+battery-level analysis with `get_freqs()`. The political content (presidential
+approval, policy views, party identification, vote intention) is intuitive for
+most social science users. Phase 2 and 3 waves add COVID-19 items, creating
+a natural example for time-series comparisons within the surveyverse ecosystem.
+
+---
+
 ## Preparing datasets from raw source files
 
 ### Public domain (auto-downloadable)
@@ -724,10 +878,11 @@ are in each script's header comment.
 | `prepare-gss-2024.R` | `data-raw/gss/gss-2024/GSS2024.sav` | gss.norc.org |
 | `prepare-pew-npors-2025.R` | `data-raw/pew/NPORS 2025/NPORS_2025_for_public_release_FINAL.sav` | pewresearch.org/datasets |
 | `prepare-pew-jewish-2020.R` | `data-raw/pew/Jewish_Americans_2020_Datasets_v2/Jewish Americans in 2020 Extended Dataset.dta` | pewresearch.org/datasets |
+| `prepare-nationscape-phase{1,2,3}.R` | `data-raw/nationscape/phase_{1,2,3}_v20210301/` | voterstudygroup.org/data/nationscape |
 
-Raw data directories (`data-raw/anes/`, `data-raw/gss/`, `data-raw/pew/`) are
-in `.gitignore` and are never committed — only the processed `.rda` files in
-`data/` are version-controlled.
+Raw data directories (`data-raw/anes/`, `data-raw/gss/`, `data-raw/pew/`,
+`data-raw/nationscape/`) are in `.gitignore` and are never committed — only
+the processed `.rda` files in `data/` are version-controlled.
 
 ---
 
@@ -736,5 +891,6 @@ in `.gitignore` and are never committed — only the processed `.rda` files in
 | Design type | Dataset(s) | surveycore constructor |
 |-------------|-----------|----------------------|
 | Stratified multi-stage cluster (Taylor) | `nhanes_2017`, `anes_2024`, `gss_2024`, `pew_npors_2025` | `as_survey()` |
+| Calibrated non-probability | `ns_wave1` | `as_survey_calibrated(..., weights = weight)` |
 | Successive difference replication | `acs_pums_wy` | `as_survey_rep(..., type = "successive-difference")` |
 | Jackknife replication | `pew_jewish_2020` | `as_survey_rep(..., type = "JK1")` |

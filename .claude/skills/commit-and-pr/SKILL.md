@@ -51,7 +51,7 @@ Run these first, before anything else:
 
 ```bash
 git branch --show-current
-git log main..HEAD --oneline
+git log develop..HEAD --oneline
 git status
 ```
 
@@ -131,7 +131,7 @@ Stage SPECIFIC files by name — never `git add -A` or `git add .`.
 
 Always include the changelog file in the staged set.
 
-Commit format, valid types, and valid scopes: see `github-strategy.md §5`.
+Commit format, valid types, and valid scopes: see github-strategy.md (Commit Format section).
 
 Pass the commit message via HEREDOC:
 ```bash
@@ -166,7 +166,7 @@ skip to Step 8 (Monitor CI).
 
 ## Step 6: Draft and Approve PR
 
-PR template: see `github-strategy.md §6`.
+PR template: see `refs/feature-pr-template.md`.
 
 Draft a PR title (Conventional Commit format) and body following that template.
 **Show the draft to the user before creating.** Ask for approval. Revise if
@@ -180,6 +180,7 @@ requested. Do NOT create the PR until the user approves.
 git push -u origin <branch-name>
 
 gh pr create \
+  --base develop \
   --title "<approved-title>" \
   --body "$(cat <<'EOF'
 <approved-body>
@@ -262,29 +263,7 @@ TaskUpdate (CI task):
   metadata: { status: "failed", failureReason: "<brief reason>" }
 ```
 
-Produce this structured handoff block and show it to the user:
-
-```
-## CI Failure — Handoff to r-implement
-
-Run:    #<run-id>
-PR:     #<pr-number> (<pr-url>)
-Job:    <job-name> (e.g., R CMD Check / ubuntu-latest / release)
-Step:   <step-name>
-
-Error:
-<last 40 lines of --log-failed output>
-
-Local repro:
-  Rscript -e "devtools::check()"
-  Rscript -e "devtools::test()"
-```
-
-Then tell the user:
-
-> "Invoke `/r-implement` and share the block above. After r-implement reports
-> the fix is done, re-invoke `/commit-and-pr` — it will detect the existing PR
-> and resume from CI monitoring."
+Produce the handoff block per `refs/ci-handoff-template.md` and show it to the user.
 
 **DO NOT write code to fix the failure.** This violates the hard constraint.
 
@@ -313,23 +292,3 @@ TaskUpdate (PR task):
 
 **Do NOT merge the PR.** Merging is the user's decision.
 
----
-
-## Quick Reference: What This Skill CAN and CANNOT Do
-
-| Action | Allowed? |
-|---|---|
-| Read `.R` files to understand what was implemented | Yes |
-| Create `changelog/phase-{X}/{branch-name}.md` | Yes |
-| Run `devtools::check()` and `devtools::test()` | Yes |
-| Stage and commit files | Yes |
-| Push the branch | Yes |
-| Create the PR | Yes |
-| Monitor CI | Yes |
-| Produce CI failure handoff block for r-implement | Yes |
-| Write or edit `.R` source files | **NO** |
-| Write or edit `.R` test files | **NO** |
-| Fix failing tests | **NO** |
-| Fix R CMD check errors | **NO** |
-| Amend commits | **NO** |
-| Merge the PR | **NO** |

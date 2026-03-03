@@ -141,11 +141,11 @@ make_survey_data <- function(
 
 Data properties: PSU sizes vary (Poisson), weights vary (lognormal), strata
 sizes imbalanced. Returns a plain `data.frame` with columns `psu`, `strata`,
-`fpc`, `weight`, `y1`, `y2`, `y3`; replicate designs add `repwt_1`...`repwt_R`.
+`fpc`, `wt`, `y1`, `y2`, `y3`; replicate designs add `repwt_1`...`repwt_R`.
 
 ```r
 df <- make_survey_data(n = 200, n_psu = 20, n_strata = 4, seed = 123)
-d  <- as_survey(df, ids = psu, weights = weight, strata = strata, fpc = fpc)
+d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
 test_invariants(d)
 ```
 
