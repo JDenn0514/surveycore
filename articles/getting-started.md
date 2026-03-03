@@ -1,26 +1,72 @@
 # Getting Started with surveycore
 
-surveycore gives you a complete workflow for survey data analysis:
-design objects that encode how your data were collected, analysis
-functions that apply those designs when computing estimates, and a
-tidyverse-compatible interface that plugs into familiar tools.
+`surveycore` gives you a (mostly) complete workflow for survey data
+analysis. This vignette is designed to give you a quick overview of the
+main functionality present in this package. It is comprised of three
+main sections:
 
-This vignette is a practical walkthrough — data to estimates in as few
-steps as possible. We will use `nhanes_2017`, a stratified probability
-cluster sample, as our running example throughout.
+1.  Creating survey objects
 
-For a deep dive on *creating* survey design objects — choosing the right
-constructor, handling replicate weights, two-phase designs, and
-non-probability panels — see
-[`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md).
+2.  Conducting simple analysis
+
+3.  Managing the metadata
+
+**Quick PSA before jumping in:**
+
+`surveycore` was built as an alternative to `survey` and `srvyr`.
+However, the code powering the variance estimation and analysis is
+vendored from the `survey` package. Everything aspect of this package
+that calculates anything has been tested to ensure it provides the same
+numerical results. Without Thomas Lumley’s work on that package,
+surveycore would not be possible,
 
 ------------------------------------------------------------------------
 
-## 1. Create a survey design
+## Create the survey object
 
-Every analysis function takes a **survey design object** as its first
-argument. The design object captures how the data were collected so that
-point estimates and standard errors are computed correctly.
+The first step when conducting survey analysis is creating a right
+survey object where we specify the sampling design, weights, and
+whatever other information is need. Without this information, point
+estimates may be biased and standard errors are almost certainly wrong
+([Lumley 2010](#ref-lumley2010); [Lohr 2022](#ref-lohr2022)).
+
+Fortunately, we don’t have to calculate that uncertainty ourselves!
+That’s what the survey objects are for. They tell the analysis functions
+how to conduct its analysis so they can properly take into account the
+variance and bias from the survey design.
+
+`surveycore` has five different survey object constructors:
+
+1.  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+
+2.  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+
+3.  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+
+4.  [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+
+5.  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+
+Rather going into detail on each constructor, I’m just going to provide
+a quick overview of each. For more information visit
+[`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
+
+### `as_survey()`
+
+You want to use this if you used a probability sample and the data you
+have has cluster IDs, strata, and/or design weights. There are several
+
+### `as_survey_rep()`
+
+Use this when the data you have comes with pre-built replicate weight
+columns like `repwt_1`, `repwt_2`.
+
+3.  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) -
+    Use this when your data is a pure SRS meaning each respondent has
+    equal probability of selection and there are no clustering nor
+    strata.
+
+4.  \`
 
 ``` r
 # NHANES: stratified cluster design using Taylor series linearization.
@@ -29,10 +75,10 @@ nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
 svy <- as_survey(
   nhanes_exam,
-  ids     = sdmvpsu,   # cluster ID
-  strata  = sdmvstra,  # stratum
-  weights = wtmec2yr,  # examination weight
-  nest    = TRUE       # PSU IDs are locally unique within strata
+  ids = sdmvpsu, # cluster ID
+  strata = sdmvstra, # stratum
+  weights = wtmec2yr, # examination weight
+  nest = TRUE # PSU IDs are locally unique within strata
 )
 svy
 ```
@@ -88,8 +134,8 @@ get_freqs(svy, riagendr)
     #> # A tibble: 2 × 3
     #>   riagendr   pct     n
     #>   <chr>    <dbl> <int>
-    #> 1 1         48.9  4273
-    #> 2 2         51.1  4431
+    #> 1 1        0.489  4273
+    #> 2 2        0.511  4431
 
 The result is a `survey_freqs` tibble. `pct` is the survey-weighted
 percentage; `n` is the unweighted cell count.
@@ -104,10 +150,10 @@ get_freqs(svy, riagendr, variance = c("ci", "moe"))
 ```
 
     #> # A tibble: 2 × 6
-    #>   riagendr   pct ci_low ci_high   moe     n
-    #>   <chr>    <dbl>  <dbl>   <dbl> <dbl> <int>
-    #> 1 1         48.9   47.4    50.4  1.51  4273
-    #> 2 2         51.1   49.6    52.6  1.51  4431
+    #>   riagendr   pct ci_low ci_high    moe     n
+    #>   <chr>    <dbl>  <dbl>   <dbl>  <dbl> <int>
+    #> 1 1        0.489  0.474   0.504 0.0151  4273
+    #> 2 2        0.511  0.496   0.526 0.0151  4431
 
 `ci_low` / `ci_high` are 95% Wilson-score confidence interval bounds.
 `moe` is the margin of error at the specified confidence level
@@ -124,16 +170,16 @@ get_freqs(svy, c(riagendr, ridreth3))
 ```
 
     #> # A tibble: 8 × 4
-    #>   name     value   pct     n
-    #>   <chr>    <chr> <dbl> <int>
-    #> 1 riagendr 1     48.9   4273
-    #> 2 riagendr 2     51.1   4431
-    #> 3 ridreth3 1     10.8   1298
-    #> 4 ridreth3 2      7.27   773
-    #> 5 ridreth3 3     59.1   2931
-    #> 6 ridreth3 4     11.8   2010
-    #> 7 ridreth3 6      5.59  1086
-    #> 8 ridreth3 7      5.32   606
+    #>   name     value    pct     n
+    #>   <fct>    <chr>  <dbl> <int>
+    #> 1 riagendr 1     0.489   4273
+    #> 2 riagendr 2     0.511   4431
+    #> 3 ridreth3 1     0.108   1298
+    #> 4 ridreth3 2     0.0727   773
+    #> 5 ridreth3 3     0.591   2931
+    #> 6 ridreth3 4     0.118   2010
+    #> 7 ridreth3 6     0.0559  1086
+    #> 8 ridreth3 7     0.0532   606
 
 The `name` column identifies which variable each row belongs to; `value`
 holds the response code.
@@ -151,16 +197,16 @@ get_freqs(svy, dmdeduc2, na.rm = FALSE)
     #>   may be unreliable for public reporting (AAPOR guidance).
 
     #> # A tibble: 8 × 3
-    #>   dmdeduc2      pct     n
-    #>   <chr>       <dbl> <int>
-    #> 1 1         2.85      454
-    #> 2 2         5.57      598
-    #> 3 3        20.2      1251
-    #> 4 4        22.8      1689
-    #> 5 5        22.9      1261
-    #> 6 7         0.00917     2
-    #> 7 9         0.0773     10
-    #> 8 NA       25.6      3439
+    #>   dmdeduc2       pct     n
+    #>   <chr>        <dbl> <int>
+    #> 1 1        0.0285      454
+    #> 2 2        0.0557      598
+    #> 3 3        0.202      1251
+    #> 4 4        0.228      1689
+    #> 5 5        0.229      1261
+    #> 6 7        0.0000917     2
+    #> 7 9        0.000773     10
+    #> 8 NA       0.256      3439
 
 ------------------------------------------------------------------------
 
@@ -279,22 +325,22 @@ get_freqs(svy, dmdeduc2, group = riagendr)
     #>   may be unreliable for public reporting (AAPOR guidance).
 
     #> # A tibble: 14 × 4
-    #>    riagendr dmdeduc2     pct     n
-    #>       <dbl> <chr>      <dbl> <int>
-    #>  1        1 1         3.95     223
-    #>  2        1 2         7.97     322
-    #>  3        1 3        28.4      633
-    #>  4        1 4        29.5      757
-    #>  5        1 5        30.1      601
-    #>  6        1 7         0          0
-    #>  7        1 9         0.0867     5
-    #>  8        2 1         3.72     231
-    #>  9        2 2         7.04     276
-    #> 10        2 3        25.9      618
-    #> 11        2 4        31.7      932
-    #> 12        2 5        31.5      660
-    #> 13        2 7         0.0238     2
-    #> 14        2 9         0.120      5
+    #>    riagendr dmdeduc2      pct     n
+    #>       <dbl> <chr>       <dbl> <int>
+    #>  1        1 1        0.0395     223
+    #>  2        1 2        0.0797     322
+    #>  3        1 3        0.284      633
+    #>  4        1 4        0.295      757
+    #>  5        1 5        0.301      601
+    #>  6        1 7        0            0
+    #>  7        1 9        0.000867     5
+    #>  8        2 1        0.0372     231
+    #>  9        2 2        0.0704     276
+    #> 10        2 3        0.259      618
+    #> 11        2 4        0.317      932
+    #> 12        2 5        0.315      660
+    #> 13        2 7        0.000238     2
+    #> 14        2 9        0.00120      5
 
 Rows where the grouping variable is `NA` are excluded from all groups
 and do not appear in the output. Responses within each group sum to 100%
@@ -355,7 +401,7 @@ get_corr(svy, c(bpxsy1, bpxdi1))
 
     #> # A tibble: 1 × 9
     #>   var1   var2       r ci_low ci_high   p_value statistic    df     n
-    #>   <chr>  <chr>  <dbl>  <dbl>   <dbl>     <dbl>     <dbl> <int> <int>
+    #>   <fct>  <fct>  <dbl>  <dbl>   <dbl>     <dbl>     <dbl> <int> <int>
     #> 1 bpxsy1 bpxdi1 0.441  0.415   0.467 1.46e-298      39.0  6300  6302
 
 Pass three or more variables for a pairwise correlation matrix in long
@@ -367,7 +413,7 @@ get_corr(svy, c(bpxsy1, bpxdi1, bpxpls))
 
     #> # A tibble: 3 × 9
     #>   var1   var2         r  ci_low   ci_high   p_value statistic    df     n
-    #>   <chr>  <chr>    <dbl>   <dbl>     <dbl>     <dbl>     <dbl> <int> <int>
+    #>   <fct>  <fct>    <dbl>   <dbl>     <dbl>     <dbl>     <dbl> <int> <int>
     #> 1 bpxsy1 bpxdi1  0.441   0.415   0.467    1.46e-298     39.0   6300  6302
     #> 2 bpxsy1 bpxpls -0.122  -0.156  -0.0868   3.46e- 22     -9.72  6300  6302
     #> 3 bpxdi1 bpxpls -0.0277 -0.0555  0.000135 2.77e-  2     -2.20  6300  6302
@@ -453,7 +499,85 @@ get_means(svy, bpxsy1, name_style = "broom")
 
 ------------------------------------------------------------------------
 
-## 9. surveytidy integration
+## 9. Weighted quantiles — `get_quantiles()`
+
+[`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
+estimates survey-weighted quantiles using the Woodruff (1952) confidence
+interval method. Confidence intervals are derived by inverting the
+weighted CDF rather than assuming normality, so they are generally
+**asymmetric** around the estimate and always respect the range of the
+data.
+
+``` r
+# Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))
+get_quantiles(svy, ridageyr)
+```
+
+    #> # A tibble: 3 × 5
+    #>   quantile estimate ci_low ci_high     n
+    #>   <chr>       <dbl>  <dbl>   <dbl> <int>
+    #> 1 p25            19     18      21  8704
+    #> 2 p50            38     37      40  8704
+    #> 3 p75            57     56      60  8704
+
+The `quantile` column uses probability labels: `p25`, `p50`, `p75`, etc.
+
+### Choosing quantiles
+
+Pass any numeric vector to `probs`. For the median alone:
+
+``` r
+get_quantiles(svy, ridageyr, probs = 0.5)
+```
+
+    #> # A tibble: 1 × 5
+    #>   quantile estimate ci_low ci_high     n
+    #>   <chr>       <dbl>  <dbl>   <dbl> <int>
+    #> 1 p50            38     37      40  8704
+
+For deciles of systolic blood pressure:
+
+``` r
+get_quantiles(svy, bpxsy1, probs = seq(0.1, 0.9, 0.1))
+```
+
+    #> # A tibble: 9 × 5
+    #>   quantile estimate ci_low ci_high     n
+    #>   <chr>       <dbl>  <dbl>   <dbl> <int>
+    #> 1 p10           100    100     102  6302
+    #> 2 p20           106    106     108  6302
+    #> 3 p30           110    110     112  6302
+    #> 4 p40           114    114     116  6302
+    #> 5 p50           118    118     120  6302
+    #> 6 p60           122    122     124  6302
+    #> 7 p70           126    126     128  6302
+    #> 8 p80           134    134     136  6302
+    #> 9 p90           144    144     148  6302
+
+### Grouped quantiles
+
+``` r
+# Median and IQR of systolic BP by sex
+get_quantiles(svy, bpxsy1, group = riagendr)
+```
+
+    #> # A tibble: 6 × 6
+    #>   riagendr quantile estimate ci_low ci_high     n
+    #>      <dbl> <chr>       <dbl>  <dbl>   <dbl> <int>
+    #> 1        1 p25           110    110     112  3115
+    #> 2        1 p50           120    120     122  3115
+    #> 3        1 p75           130    130     134  3115
+    #> 4        2 p25           106    106     108  3187
+    #> 5        2 p50           116    116     118  3187
+    #> 6        2 p75           128    128     132  3187
+
+> **Note:** `"deff"` is always `NA` for quantiles — there is no
+> closed-form SRS standard error for quantile estimates, so the design
+> effect cannot be computed.
+
+------------------------------------------------------------------------
+
+## 10. surveytidy integration
 
 The **surveytidy** package provides dplyr verbs —
 [`filter()`](https://rdrr.io/r/stats/filter.html), `select()`,
@@ -531,13 +655,14 @@ get_means(svy, bpxsy1, group = riagendr)
 
 ## Summary
 
-| Function                                                                         | Use for                                                     |
-|----------------------------------------------------------------------------------|-------------------------------------------------------------|
-| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)   | Categorical variables — weighted distributions, percentages |
-| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)   | Continuous variables — weighted means                       |
-| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md) | Population counts or aggregates — weighted sums             |
-| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md) | Ratios of two weighted totals                               |
-| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)     | Pairwise Pearson correlations                               |
+| Function                                                                               | Use for                                                     |
+|----------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)         | Categorical variables — weighted distributions, percentages |
+| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)         | Continuous variables — weighted means                       |
+| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)       | Population counts or aggregates — weighted sums             |
+| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)       | Ratios of two weighted totals                               |
+| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)           | Pairwise Pearson correlations                               |
+| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Weighted quantiles and median — Woodruff CIs                |
 
 All functions: - Return a tibble subclass ready for further analysis or
 display - Accept a `group` argument for subgroup estimates - Accept a
@@ -548,6 +673,9 @@ all five survey design classes: `survey_taylor`, `survey_replicate`,
 ------------------------------------------------------------------------
 
 ## References
+
+Lohr, Sharon L. 2022. *Sampling: Design and Analysis*. 3rd ed. CRC
+Press.
 
 Lumley, Thomas. 2010. *Complex Surveys: A Guide to Analysis Using R*.
 John Wiley & Sons. <https://doi.org/10.1002/9780470580066>.

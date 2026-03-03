@@ -11,7 +11,7 @@ quantification, and metadata-driven labelling."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,6 +54,7 @@ quantification, and metadata-driven labelling.</p>
 <span>  variance <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  n_weighted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  decimals <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_cell_n <span class="op">=</span> <span class="fl">30L</span>,</span>
 <span>  na.rm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -115,6 +116,12 @@ Default <code>0.95</code>.</p></dd>
 sum of weights (estimated population count) per cell. Default <code>FALSE</code>.</p></dd>
 
 
+<dt id="arg-decimals">decimals<a class="anchor" aria-label="anchor" href="#arg-decimals"></a></dt>
+<dd><p>Integer or <code>NULL</code>. If an integer, rounds all numeric output
+columns (e.g., <code>pct</code>, <code>se</code>, <code>ci_low</code>, <code>ci_high</code>) to this many decimal
+places. Default <code>NULL</code> (no rounding).</p></dd>
+
+
 <dt id="arg-min-cell-n">min_cell_n<a class="anchor" aria-label="anchor" href="#arg-min-cell-n"></a></dt>
 <dd><p>Integer. Minimum unweighted cell count before
 <code>surveycore_warning_small_cell</code> fires. Default <code>30L</code> (AAPOR guidance).</p></dd>
@@ -122,8 +129,12 @@ sum of weights (estimated population count) per cell. Default <code>FALSE</code>
 
 <dt id="arg-na-rm">na.rm<a class="anchor" aria-label="anchor" href="#arg-na-rm"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> (default), <code>NA</code> values are excluded from
-all proportions; <code>NA</code> does not appear as a level. If <code>FALSE</code>, <code>NA</code>
-appears as its own last row and the denominator includes <code>NA</code> rows.</p></dd>
+analysis: observations where the focal variable is <code>NA</code> are dropped from
+frequency counts, and observations where any group variable is <code>NA</code> are
+excluded from the output. If <code>FALSE</code>, <code>NA</code> values in the focal variable
+appear as a dedicated frequency row in the output (not merely counted),
+and observations where a group variable is <code>NA</code> are collected into their
+own group row (appearing after all non-<code>NA</code> group rows).</p></dd>
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
@@ -147,7 +158,7 @@ renames <code>pct</code> → <code>estimate</code>, <code>se</code> → <code>st
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>survey_freqs</code> tibble (also inheriting <code>survey_result</code>). Columns:</p><ul><li><p><code>[group_cols...]</code> — group variable columns (when active), first.</p></li>
 <li><p><code>[variable_name]</code> (single) or <code>[names_to]</code> + <code>[values_to]</code> (multi).</p></li>
-<li><p><code>pct</code> — weighted proportion as a percentage (0–100).</p></li>
+<li><p><code>pct</code> — weighted proportion (0–1).</p></li>
 <li><p>Variance columns (<code>se</code>, <code>var</code>, <code>cv</code>, <code>ci_low</code>, <code>ci_high</code>, <code>moe</code>,
 <code>deff</code>) — only those requested via <code>variance</code>.</p></li>
 <li><p><code>n</code> — unweighted cell count (sample basis of each estimate).</p></li>
@@ -170,7 +181,7 @@ domain. The full design structure is used for variance estimation — rows are
 not physically removed for domain/group subsets.</p>
 <p><strong><code>na.rm = FALSE</code>:</strong> <code>NA</code> is appended as the last level. All proportions
 (including non-<code>NA</code> levels) have their denominator inflated to include
-<code>NA</code> rows, so the <code>pct</code> column sums to 100.</p>
+<code>NA</code> rows, so the <code>pct</code> column sums to 1.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -195,47 +206,47 @@ not physically removed for domain/group subsets.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   riagendr   pct     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 1         48.9  <span style="text-decoration: underline;">4</span>273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2         51.1  <span style="text-decoration: underline;">4</span>431</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 1        0.489  <span style="text-decoration: underline;">4</span>273</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2        0.511  <span style="text-decoration: underline;">4</span>431</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># With confidence intervals</span></span></span>
 <span class="r-in"><span><span class="fu">get_freqs</span><span class="op">(</span><span class="va">d</span>, <span class="va">riagendr</span>, variance <span class="op">=</span> <span class="st">"ci"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   riagendr   pct ci_low ci_high     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 1         48.9   47.4    50.4  <span style="text-decoration: underline;">4</span>273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2         51.1   49.6    52.6  <span style="text-decoration: underline;">4</span>431</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 1        0.489  0.474   0.504  <span style="text-decoration: underline;">4</span>273</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2        0.511  0.496   0.526  <span style="text-decoration: underline;">4</span>431</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped</span></span></span>
 <span class="r-in"><span><span class="fu">get_freqs</span><span class="op">(</span><span class="va">d</span>, <span class="va">riagendr</span>, group <span class="op">=</span> <span class="va">sdmvstra</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 30 × 4</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    sdmvstra riagendr   pct     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      134 1         45.0   217</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>      134 2         55.0   253</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>      135 1         47.6   277</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>      135 2         52.4   324</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      136 1         47.7   321</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      136 2         52.3   332</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>      137 1         47.0   250</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>      137 2         53.0   273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>      138 1         49.0   274</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>      138 2         51.0   295</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span>      134 1        0.450   217</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span>      134 2        0.550   253</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span>      135 1        0.476   277</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span>      135 2        0.524   324</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span>      136 1        0.477   321</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span>      136 2        0.523   332</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span>      137 1        0.470   250</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span>      137 2        0.530   273</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span>      138 1        0.490   274</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span>      138 2        0.510   295</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 20 more rows</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Multi-variable (stacked)</span></span></span>
 <span class="r-in"><span><span class="fu">get_freqs</span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">riagendr</span>, <span class="va">ridreth3</span><span class="op">)</span>, names_to <span class="op">=</span> <span class="st">"item"</span>, values_to <span class="op">=</span> <span class="st">"value"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 8 × 4</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   item     value   pct     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> riagendr 1     48.9   <span style="text-decoration: underline;">4</span>273</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> riagendr 2     51.1   <span style="text-decoration: underline;">4</span>431</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> ridreth3 1     10.8   <span style="text-decoration: underline;">1</span>298</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> ridreth3 2      7.27   773</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> ridreth3 3     59.1   <span style="text-decoration: underline;">2</span>931</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> ridreth3 4     11.8   <span style="text-decoration: underline;">2</span>010</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> ridreth3 6      5.59  <span style="text-decoration: underline;">1</span>086</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span> ridreth3 7      5.32   606</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   item     value    pct     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> riagendr 1     0.489   <span style="text-decoration: underline;">4</span>273</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> riagendr 2     0.511   <span style="text-decoration: underline;">4</span>431</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> ridreth3 1     0.108   <span style="text-decoration: underline;">1</span>298</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> ridreth3 2     0.072<span style="text-decoration: underline;">7</span>   773</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> ridreth3 3     0.591   <span style="text-decoration: underline;">2</span>931</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> ridreth3 4     0.118   <span style="text-decoration: underline;">2</span>010</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> ridreth3 6     0.055<span style="text-decoration: underline;">9</span>  <span style="text-decoration: underline;">1</span>086</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span> ridreth3 7     0.053<span style="text-decoration: underline;">2</span>   606</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

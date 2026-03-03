@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,31 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="surveycore-020">surveycore 0.2.0<a class="anchor" aria-label="anchor" href="#surveycore-020"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li><p><code><a href="../reference/get_freqs.html">get_freqs()</a></code> computes weighted frequency tables for categorical survey variables across all five design types, with domain estimation, value-label support, and AAPOR small-cell warnings.</p></li>
+<li><p><code><a href="../reference/get_means.html">get_means()</a></code> returns survey-weighted means with design-correct standard errors for all five design types, including grouped and domain estimation.</p></li>
+<li><p><code><a href="../reference/get_totals.html">get_totals()</a></code> returns survey-weighted population totals (and population size when called without <code>x</code>) for all five design types.</p></li>
+<li><p><code><a href="../reference/get_corr.html">get_corr()</a></code> computes survey-weighted Pearson correlation using the delta-method variance approach, with optional <code>group</code> parameter for per-group correlations and Fisher Z confidence intervals.</p></li>
+<li>
+<p><code><a href="../reference/get_quantiles.html">get_quantiles()</a></code> estimates survey-weighted quantiles using the Woodruff</p>
+<ol start="1952" style="list-style-type: decimal"><li>linearization method; supports multiple <code>probs</code> in a single call and five CI interval methods.</li>
+</ol></li>
+<li><p><code><a href="../reference/get_ratios.html">get_ratios()</a></code> estimates survey-weighted ratios (numerator total / denominator total) with design-correct SEs via the delta method (Taylor, SRS, calibrated, two-phase) or direct per-replicate computation (replicate designs).</p></li>
+<li><p>All six analysis functions gain a <code>decimals</code> argument to round numeric output columns to a fixed number of decimal places.</p></li>
+<li><p><code>na.rm = FALSE</code> now includes rows where a grouping variable is <code>NA</code> as a separate group row in all six analysis functions’ output.</p></li>
+<li><p><code><a href="../reference/infer_question_prefaces.html">infer_question_prefaces()</a></code> auto-detects shared battery prefaces from variable labels using separator-based and longest-common-prefix detection.</p></li>
+<li><p><code><a href="../reference/survey_weighting_history.html">survey_weighting_history()</a></code> returns the weighting history stored in a survey design object’s metadata; <code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>, and <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> now promote <code>"weighting_history"</code> attributes from the input data frame automatically.</p></li>
+<li><p>Two-phase variance estimation (<code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code>) is now fully supported in <code><a href="../reference/get_means.html">get_means()</a></code> and <code><a href="../reference/get_totals.html">get_totals()</a></code>, using the <code>"full"</code>, <code>"approx"</code>, and <code>"simple"</code> methods vendored from the <code>survey</code> package.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0"></a></h3>
+<ul><li><p><code><a href="../reference/get_freqs.html">get_freqs()</a></code> no longer crashes when the <code>group</code> variable contains <code>NA</code> values.</p></li>
+<li><p><code><a href="../reference/get_freqs.html">get_freqs()</a></code> now outputs <code>pct</code> as a proportion (0–1) rather than a percentage (0–100); <code>se</code> and <code>se_srs</code> are on the same scale.</p></li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="surveycore-010">surveycore 0.1.0<a class="anchor" aria-label="anchor" href="#surveycore-010"></a></h2>
 <div class="section level3">

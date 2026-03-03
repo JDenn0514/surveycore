@@ -20,6 +20,7 @@ get_ratios(
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -74,6 +75,12 @@ get_ratios(
   for rows where both numerator and denominator are non-NA in each
   group. Default `FALSE`.
 
+- decimals:
+
+  Integer or `NULL`. If an integer, rounds all numeric output columns
+  (e.g., `ratio`, `se`, `ci_low`, `ci_high`) to this many decimal
+  places. Default `NULL` (no rounding).
+
 - min_cell_n:
 
   Integer. Minimum unweighted cell count before
@@ -81,9 +88,13 @@ get_ratios(
 
 - na.rm:
 
-  Logical. If `TRUE` (default), rows where either the numerator or
-  denominator is `NA` are excluded. If `FALSE`, `NA` values propagate to
-  the estimate.
+  Logical. If `TRUE` (default), `NA` values are excluded from analysis:
+  observations where the analysis variable is `NA` are dropped from
+  calculations, and observations where any group variable is `NA` are
+  excluded from the output. If `FALSE`, `NA` observations in the
+  analysis variable are included in calculations, and observations where
+  a group variable is `NA` are collected into their own group row in the
+  output (appearing after all non-`NA` group rows).
 
 - label_values:
 
@@ -149,12 +160,12 @@ get_ratios(d, pray, attendper, group = gender)
 #> Warning: ! 1 cell has fewer than 30 unweighted observations. Estimates in these cells
 #>   may be unreliable for public reporting (AAPOR guidance).
 #> # A tibble: 4 × 5
-#>   gender ratio ci_low ci_high     n
-#>    <dbl> <dbl>  <dbl>   <dbl> <int>
-#> 1      1 0.908  0.853   0.964  2194
-#> 2      2 0.852  0.747   0.958  2758
-#> 3      3 0.953 -0.123   2.03     45
-#> 4     99 0.616  0.208   1.02     25
+#>   gender            ratio ci_low ci_high     n
+#>   <fct>             <dbl>  <dbl>   <dbl> <int>
+#> 1 A man             0.908  0.853   0.964  2194
+#> 2 A woman           0.852  0.747   0.958  2758
+#> 3 In some other way 0.953 -0.123   2.03     45
+#> 4 Refused/Web blank 0.616  0.208   1.02     25
 
 # AAPOR-compliant output
 get_ratios(d, pray, attendper, variance = c("ci", "moe"), n_weighted = TRUE)

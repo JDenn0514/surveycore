@@ -5,9 +5,11 @@
 Every analysis function in surveycore —
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
-[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+[`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+[`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
 — takes a **survey design object** as its first argument. That object
-encodes how your data were collected: which units were clustered
+encodes how your data was collected: which units were clustered
 together, which strata were defined, what weights apply, and how
 variance should be estimated. Without it, point estimates may be biased
 and standard errors are almost certainly wrong ([Lumley
@@ -49,17 +51,18 @@ Read the first row that matches your data.
 
 ### Common surveys at a glance
 
-| Survey                    | Constructor                                                                                          | Design                                          |
-|---------------------------|------------------------------------------------------------------------------------------------------|-------------------------------------------------|
-| NHANES                    | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified cluster, Taylor series               |
-| ANES                      | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified cluster, Taylor series               |
-| GSS                       | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified multi-stage cluster                  |
-| Pew NPORS                 | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified address-based sample (no PSU)        |
-| ACS PUMS (1-year)         | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 80 successive-difference replicate weights      |
-| Pew Jewish Americans 2020 | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 100 JK1 jackknife replicate weights             |
-| BRFSS                     | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | Bootstrap replicate weights                     |
-| NAEP / PISA               | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | JK2 jackknife replicate weights                 |
-| Opt-in online panels      | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Non-probability; vendor-supplied raking weights |
+| Survey                              | Constructor                                                                                          | Design                                                     |
+|-------------------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
+| NHANES                              | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified cluster, Taylor series                          |
+| ANES                                | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified cluster, Taylor series                          |
+| GSS                                 | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified multi-stage cluster                             |
+| Pew NPORS                           | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified address-based sample (no PSU)                   |
+| ACS PUMS (1-year)                   | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 80 successive-difference replicate weights                 |
+| Pew Jewish Americans 2020           | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 100 JK1 jackknife replicate weights                        |
+| BRFSS                               | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | Bootstrap replicate weights                                |
+| NAEP / PISA                         | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | JK2 jackknife replicate weights                            |
+| Nationscape (Democracy Fund + UCLA) | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Non-probability quota panel; ACS-calibrated raking weights |
+| Opt-in online panels                | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Non-probability; vendor-supplied raking weights            |
 
 ------------------------------------------------------------------------
 
@@ -100,7 +103,7 @@ Set `nest = TRUE` when PSU IDs are not globally unique across strata
 ``` r
 # NHANES: only two distinct PSU values, but 15 strata
 # Each stratum has its own PSU 1 and PSU 2 → nest = TRUE
-length(unique(nhanes_2017$sdmvpsu))  # 2
+length(unique(nhanes_2017$sdmvpsu)) # 2
 ```
 
     ## [1] 2
@@ -159,10 +162,10 @@ nhanes_exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 
 svy_nhanes <- as_survey(
   nhanes_exam,
-  ids     = sdmvpsu,
-  strata  = sdmvstra,
+  ids = sdmvpsu,
+  strata = sdmvstra,
   weights = wtmec2yr,
-  nest    = TRUE       # PSU IDs are locally unique within strata
+  nest = TRUE # PSU IDs are locally unique within strata
 )
 svy_nhanes
 ```
@@ -201,10 +204,10 @@ weight:
 ``` r
 svy_nhanes_int <- as_survey(
   nhanes_2017,
-  ids     = sdmvpsu,
-  strata  = sdmvstra,
+  ids = sdmvpsu,
+  strata = sdmvstra,
   weights = wtint2yr,
-  nest    = TRUE
+  nest = TRUE
 )
 ```
 
@@ -225,8 +228,8 @@ weight for the variables you are analyzing:
 # Pre-election analysis (party ID, ideology, candidate preference)
 svy_anes_pre <- as_survey(
   anes_2024,
-  ids     = v240103c,
-  strata  = v240103d,
+  ids = v240103c,
+  strata = v240103d,
   weights = v240103a
 )
 ```
@@ -238,8 +241,8 @@ svy_anes_pre <- as_survey(
 # Post-election analysis (validated vote choice: v242066, v242067)
 svy_anes_post <- as_survey(
   anes_2024,
-  ids     = v240103c,
-  strata  = v240103d,
+  ids = v240103c,
+  strata = v240103d,
   weights = v240103b
 )
 ```
@@ -269,8 +272,8 @@ concern:
 # Standard analysis weight
 svy_gss <- as_survey(
   gss_2024,
-  ids     = vpsu,
-  strata  = vstrat,
+  ids = vpsu,
+  strata = vstrat,
   weights = wtssps
 )
 ```
@@ -282,8 +285,8 @@ svy_gss <- as_survey(
 # Non-response adjusted weight (preferred when non-response bias is a concern)
 svy_gss_nr <- as_survey(
   gss_2024,
-  ids     = vpsu,
-  strata  = vstrat,
+  ids = vpsu,
+  strata = vstrat,
   weights = wtssnrps
 )
 ```
@@ -311,7 +314,7 @@ is its own sampling unit, so there is no PSU variable. Omit `ids`:
 ``` r
 svy_npors <- as_survey(
   pew_npors_2025,
-  strata  = stratum,
+  strata = stratum,
   weights = weight
 )
 ```
@@ -372,9 +375,9 @@ report ([U.S. Census Bureau 2022](#ref-census2022)):
 ``` r
 svy_acs <- as_survey_rep(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
-  type       = "successive-difference"
+  type = "successive-difference"
 )
 svy_acs
 ```
@@ -423,9 +426,9 @@ full-sample weight:
 ``` r
 svy_jewish <- as_survey_rep(
   pew_jewish_2020,
-  weights    = extweight,
+  weights = extweight,
   repweights = extweight1:extweight100,
-  type       = "JK1"
+  type = "JK1"
 )
 svy_jewish
 ```
@@ -544,9 +547,9 @@ phase1 <- as_survey(nwtco, ids = seqno)
 # Phase 2: subcohort, with Phase 2 sampling stratified by relapse status
 svy_twophase <- as_survey_twophase(
   phase1,
-  strata2 = rel,           # Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)
-  subset  = in.subcohort,  # Logical column: TRUE = selected into Phase 2
-  method  = "full"
+  strata2 = rel, # Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)
+  subset = in.subcohort, # Logical column: TRUE = selected into Phase 2
+  method = "full"
 )
 svy_twophase
 ```
@@ -621,22 +624,22 @@ of selection (80/400 = 0.20) — the textbook SRS case ([Cochran
 
 ``` r
 set.seed(101)
-N <- 400   # total schools in district
-n <- 80    # schools sampled
+N <- 400 # total schools in district
+n <- 80 # schools sampled
 
 school_survey <- data.frame(
-  school_id  = sample(seq_len(N), n),
-  avg_score  = round(rnorm(n, mean = 72, sd = 11), 1),
-  pct_frpl   = round(runif(n, 0.10, 0.85), 2),  # % free/reduced price lunch
+  school_id = sample(seq_len(N), n),
+  avg_score = round(rnorm(n, mean = 72, sd = 11), 1),
+  pct_frpl = round(runif(n, 0.10, 0.85), 2), # % free/reduced price lunch
   enrollment = round(runif(n, 180, 850)),
-  sw         = N / n,   # equal sampling weight = 400/80 = 5.0
-  fpc        = N        # population size for FPC
+  sw = N / n, # equal sampling weight = 400/80 = 5.0
+  fpc = N # population size for FPC
 )
 
 svy_srs <- as_survey_srs(
   school_survey,
-  weights = sw,   # each sampled school represents 5 schools in the population
-  fpc     = fpc   # reduces SEs: we sampled 20% of the population
+  weights = sw, # each sampled school represents 5 schools in the population
+  fpc = fpc # reduces SEs: we sampled 20% of the population
 )
 svy_srs
 ```
@@ -787,39 +790,24 @@ should state that you used a non-probability sample with vendor-supplied
 calibration weights, describe the calibration targets, and acknowledge
 that standard errors are approximate.**
 
-### 6.4 Worked example: Message-testing panel
+### 6.4 Worked example: Democracy Fund + UCLA Nationscape
 
-A policy organization recruits 500 opt-in panelists to test two framings
-of a healthcare message. The panel vendor provides raking weights
-calibrated to Current Population Survey marginals for age, gender,
-education, and race/ethnicity:
+The Nationscape is a large-scale non-probability survey conducted by
+Democracy Fund + UCLA, fielded weekly from July 2019 through January
+2021. Each wave recruited approximately 6,250 respondents from the Lucid
+respondent exchange using a quota design, with raking weights calibrated
+to American Community Survey (ACS) marginals for age, gender, education,
+race/ethnicity, and region, plus 2016 presidential vote choice. This is
+the textbook use case for
+[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md).
+
+| Variable | Role                                                                           | Argument  |
+|----------|--------------------------------------------------------------------------------|-----------|
+| `weight` | Raking weight calibrated to ACS demographic targets and 2016 presidential vote | `weights` |
 
 ``` r
-set.seed(2024)
-n <- 500
-
-panel_data <- data.frame(
-  respondent_id = seq_len(n),
-  age_group     = sample(
-    c("18-34", "35-54", "55+"), n,
-    replace = TRUE, prob = c(0.38, 0.37, 0.25)
-  ),
-  gender        = sample(c("Man", "Woman"), n, replace = TRUE),
-  education     = sample(
-    c("HS or less", "Some college", "College+"), n,
-    replace = TRUE, prob = c(0.38, 0.30, 0.32)
-  ),
-  race_eth      = sample(
-    c("White", "Black", "Hispanic", "Other"), n,
-    replace = TRUE, prob = c(0.60, 0.12, 0.18, 0.10)
-  ),
-  message_arm   = sample(c("Framing A", "Framing B"), n, replace = TRUE),
-  support       = sample(1:5, n, replace = TRUE),
-  rake_weight   = runif(n, 0.4, 3.2)  # vendor-provided raking weights
-)
-
-svy_panel <- as_survey_calibrated(panel_data, weights = rake_weight)
-svy_panel
+svy_ns <- as_survey_calibrated(ns_wave1, weights = weight)
+svy_ns
 ```
 
     ## 
@@ -828,25 +816,44 @@ svy_panel
 
     ## <survey_calibrated> (calibrated / non-probability) [experimental]
 
-    ## Sample size: 500
+    ## Sample size: 6422
 
     ## 
 
-    ## # A tibble: 500 × 8
-    ##    respondent_id age_group gender education    race_eth message_arm support
-    ##            <int> <chr>     <chr>  <chr>        <chr>    <chr>         <int>
-    ##  1             1 55+       Man    Some college White    Framing B         4
-    ##  2             2 18-34     Woman  HS or less   White    Framing B         1
-    ##  3             3 35-54     Man    HS or less   Hispanic Framing A         2
-    ##  4             4 35-54     Woman  Some college White    Framing B         2
-    ##  5             5 35-54     Man    Some college Other    Framing A         4
-    ##  6             6 35-54     Man    HS or less   Black    Framing A         2
-    ##  7             7 35-54     Woman  College+     White    Framing A         3
-    ##  8             8 18-34     Man    Some college White    Framing B         4
-    ##  9             9 55+       Man    Some college Black    Framing A         4
-    ## 10            10 18-34     Man    College+     Hispanic Framing A         5
-    ## # ℹ 490 more rows
-    ## # ℹ 1 more variable: rake_weight <dbl>
+    ## # A tibble: 6,422 × 171
+    ##    response_id start_date          right_track economy_better interest
+    ##    <chr>       <dttm>                    <dbl>          <dbl>    <dbl>
+    ##  1 00100002    2019-07-18 08:11:41           2              2        2
+    ##  2 00100003    2019-07-18 08:12:31           1              3        1
+    ##  3 00100004    2019-07-18 08:12:04           2              3        2
+    ##  4 00100005    2019-07-18 08:12:05           2              2        2
+    ##  5 00100007    2019-07-18 08:11:43           1              1        1
+    ##  6 00100008    2019-07-18 08:12:24           2              2        2
+    ##  7 00100009    2019-07-18 08:13:15           2              2        4
+    ##  8 00100010    2019-07-18 08:13:06           1              1        1
+    ##  9 00100011    2019-07-18 08:11:47           2              2        3
+    ## 10 00100012    2019-07-18 08:12:25           2              3        2
+    ## # ℹ 6,412 more rows
+    ## # ℹ 166 more variables: registration <dbl>, news_sources_facebook <dbl>,
+    ## #   news_sources_cnn <dbl>, news_sources_msnbc <dbl>, news_sources_fox <dbl>,
+    ## #   news_sources_network <dbl>, news_sources_localtv <dbl>,
+    ## #   news_sources_telemundo <dbl>, news_sources_npr <dbl>,
+    ## #   news_sources_amtalk <dbl>, news_sources_new_york_times <dbl>,
+    ## #   news_sources_local_newspaper <dbl>, news_sources_other <dbl>, …
+
+``` r
+# Presidential approval rating (July 2019)
+get_freqs(svy_ns, pres_approval)
+```
+
+    ## # A tibble: 5 × 3
+    ##   pres_approval          pct     n
+    ##   <fct>                <dbl> <int>
+    ## 1 Strongly approve    0.184   1222
+    ## 2 Somewhat approve    0.206   1295
+    ## 3 Somewhat disapprove 0.152    871
+    ## 4 Strongly disapprove 0.415   2799
+    ## 5 Not sure            0.0445   230
 
 This produces a `survey_calibrated` object. Use it with
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
@@ -855,6 +862,12 @@ and other estimation functions exactly as you would any other survey
 object. Standard errors are computed under an approximate variance model
 and should be interpreted with appropriate caution and disclosed in your
 methods section.
+
+The `weight` column is a raking weight, not a design weight — it was
+computed after data collection to match population marginals, not fixed
+by the sampling protocol. Using
+[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+makes this explicit to both R and future readers of your code.
 
 ### 6.5 What not to do
 
@@ -865,7 +878,7 @@ design were a probability sample:
 
 ``` r
 # Creates a survey_taylor object, which misrepresents the design
-svy_wrong <- as_survey(panel_data, weights = rake_weight)
+svy_wrong <- as_survey(ns_wave1, weights = weight)
 ```
 
 Using

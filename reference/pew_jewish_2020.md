@@ -429,14 +429,15 @@ remaining 30 variables are:
 
 - jewishcat:
 
-  Jewish identity category: `1` = Jews by religion, `2` = Jews of no
-  religion, `3` = Jewish background, `4` = Jewish affinity, `5` = Not
-  Jewish.
+  Jewish identity category: `1` = Jews By Religion, `2` = Jews Of No
+  Religion, `3` = Jewish Background, `4` = Jewish Affinity, `5` =
+  Respondent Not Jewish In Any Way.
 
 - finalmode:
 
-  Collection mode: `1` = CAWI (online), `2` = Teleform (mail), `3` =
-  Screener CAWI + Extended Teleform.
+  Collection mode: `1` = Screener And Extended Survey Via Cawi, `2` =
+  Screener And Extended Survey Via Teleform, `3` = Screener Via Cawi,
+  Extended Survey Via Teleform.
 
 - region:
 
@@ -445,17 +446,17 @@ remaining 30 variables are:
 
 - sexask:
 
-  Sex: `1` = male, `2` = female, `99` = not answered.
+  Sex: `1` = Male, `2` = Female, `99` = Not Answered.
 
 - age4cat:
 
-  Age: `1` = 18-29, `2` = 30-49, `3` = 50-64, `4` = 65+; `999` = no
-  answer.
+  Age: `1` = 18-29, `2` = 30-49, `3` = 50-64, `4` = 65+; `999` = No
+  Answer.
 
 - educ4cat:
 
-  Education: `1` = HS or less, `2` = some college, `3` = college
-  graduate, `4` = postgraduate; `99` = no answer.
+  Education: `1` = High School Or Less, `2` = Some College, `3` =
+  College Graduate, `4` = Postgrad Degree; `99` = No Answer.
 
 - religmod:
 
@@ -464,7 +465,7 @@ remaining 30 variables are:
 
 - hisp:
 
-  Hispanic origin: `1` = yes, `2` = no.
+  Hispanic origin: `1` = Yes, `2` = No, `99` = Not Answered.
 
 - racecmb:
 
@@ -476,22 +477,24 @@ remaining 30 variables are:
 
 - presapp:
 
-  Presidential approval (Trump): `1` = Strongly approve, `2` = Somewhat
-  approve, `3` = Somewhat disapprove, `4` = Strongly disapprove.
+  Presidential approval (Trump): `1` = Strongly Approve, `2` = Somewhat
+  Approve, `3` = Somewhat Disapprove, `4` = Strongly Disapprove, `99` =
+  Not Answered.
 
 - track:
 
-  Right track/wrong track: `1` = Right direction, `2` = Wrong track.
+  Right track/wrong track: `1` = Generally Headed In The Right
+  Direction, `2` = Off On The Wrong Track, `99` = Not Answered.
 
 - satisfpersmod:
 
   Personal life satisfaction: `1` = Excellent, `2` = Good, `3` = Only
-  fair, `4` = Poor.
+  Fair, `4` = Poor, `99` = Not Answered.
 
 - localrating:
 
   Community as a place to live: `1` = Excellent, `2` = Good, `3` = Only
-  fair, `4` = Poor.
+  Fair, `4` = Poor, `99` = Not Answered.
 
 - relconsider_a:
 
@@ -580,17 +583,20 @@ classification from the raw religion variables.
 **Battery question stems:**
 
 - **Battery 1** (`relconsider_a`–`relconsider_d`):
-  `"Aside from religion, do you consider yourself to be any of the following in any way (for example, ethnically, culturally, or because of your family's background)?"`
-  Values: `1` = Selected, `2` = Not selected, `99` = Refused.
+  `"ASIDE from religion, do you consider yourself to be any of the following in any way (for example ethnically, culturally or because of your family's background)?"`
+  Values: `1` = Yes, Consider Myself This, `2` = No, Do Not Consider
+  Myself This, `99` = Refused.
 
 - **Battery 2** (`relraised_a`–`relraised_d`):
   `"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."`
-  Values: `1` = Selected, `2` = Not selected, `99` = Refused.
+  Values: `1` = Yes, Was Raised In This Tradition Or Had A Parent From
+  This Background, `2` = No, Was Not Raised In This Tradition And Did
+  Not Have A Parent From This Background, `99` = Refused.
 
 - **Battery 3** (`discrim_a`–`discrim_f`):
   `"Please tell us how much discrimination there is against each of these groups in our society today."`
-  Values: `1` = A lot, `2` = Some, `3` = Not much, `4` = None at all,
-  `99` = Not answered.
+  Values: `1` = A Lot, `2` = Some, `3` = Not Much, `4` = None At All,
+  `99` = Not Answered.
 
 **Metadata:** All columns carry variable labels and value labels as R
 attributes from the original Stata file. The three battery variable
@@ -607,7 +613,7 @@ extracted into surveycore's metadata system when you call
 - **Value labels** (`"labels"` attribute): A named numeric vector
   mapping each code to its meaning. Example:
   `attr(pew_jewish_2020$relconsider_a, "labels")` returns
-  `c(Selected = 1, "Not selected" = 2, Refused = 99)`.
+  `c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2, Refused = 99)`.
 
 - **Question preface** (`"question_preface"` attribute): The shared
   question stem for each battery group. Example:
@@ -639,10 +645,8 @@ attr(pew_jewish_2020$discrim_a, "label")
 
 # Inspect value labels
 attr(pew_jewish_2020$discrim_a, "labels")
-#>         1 = A LOT          2 = SOME      3 = NOT MUCH   4 = NONE AT ALL 
-#>                 1                 2                 3                 4 
-#> 99 = NOT ANSWERED 
-#>                99 
+#>        A Lot         Some     Not Much  None At All Not Answered 
+#>            1            2            3            4           99 
 
 # Inspect question preface (shared stem across the battery)
 attr(pew_jewish_2020$discrim_a, "question_preface")

@@ -1,5 +1,76 @@
 # Changelog
 
+## surveycore 0.2.0
+
+### New features
+
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  computes weighted frequency tables for categorical survey variables
+  across all five design types, with domain estimation, value-label
+  support, and AAPOR small-cell warnings.
+
+- [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
+  returns survey-weighted means with design-correct standard errors for
+  all five design types, including grouped and domain estimation.
+
+- [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
+  returns survey-weighted population totals (and population size when
+  called without `x`) for all five design types.
+
+- [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
+  computes survey-weighted Pearson correlation using the delta-method
+  variance approach, with optional `group` parameter for per-group
+  correlations and Fisher Z confidence intervals.
+
+- [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
+  estimates survey-weighted quantiles using the Woodruff
+
+  1952. linearization method; supports multiple `probs` in a single call
+        and five CI interval methods.
+
+- [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  estimates survey-weighted ratios (numerator total / denominator total)
+  with design-correct SEs via the delta method (Taylor, SRS, calibrated,
+  two-phase) or direct per-replicate computation (replicate designs).
+
+- All six analysis functions gain a `decimals` argument to round numeric
+  output columns to a fixed number of decimal places.
+
+- `na.rm = FALSE` now includes rows where a grouping variable is `NA` as
+  a separate group row in all six analysis functions’ output.
+
+- [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
+  auto-detects shared battery prefaces from variable labels using
+  separator-based and longest-common-prefix detection.
+
+- [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+  returns the weighting history stored in a survey design object’s
+  metadata;
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
+  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+  and
+  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+  now promote `"weighting_history"` attributes from the input data frame
+  automatically.
+
+- Two-phase variance estimation
+  ([`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md))
+  is now fully supported in
+  [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
+  and
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+  using the `"full"`, `"approx"`, and `"simple"` methods vendored from
+  the `survey` package.
+
+### Bug fixes
+
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  no longer crashes when the `group` variable contains `NA` values.
+
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  now outputs `pct` as a proportion (0–1) rather than a percentage
+  (0–100); `se` and `se_srs` are on the same scale.
+
 ## surveycore 0.1.0
 
 ### New features

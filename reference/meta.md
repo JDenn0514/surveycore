@@ -39,28 +39,42 @@ A named list. Common fields present on every result:
 
   Language. Matched call to the `get_*()` function.
 
-- `group_names`:
-
-  Character vector. Grouping variable names; `character(0)` if none.
-
-- `group_labels`:
-
-  Named list. Group variable → label; `NULL` values for unlabeled group
-  variables.
-
 - `n_respondents`:
 
   Integer(1). Total rows in the design, regardless of groups, domain
   status, or weights.
 
-- `value_labels`:
+- `group`:
 
-  Named list. One key per focal variable; value is a named vector of
-  label → raw value mappings, or `NULL` for numeric/unlabelled
-  variables.
+  Named list. One entry per grouping variable; empty list
+  ([`list()`](https://rdrr.io/r/base/list.html)) when no groups are
+  active. Each entry is a named list with: `variable_label` (character
+  or `NULL`), `question_preface` (character or `NULL`), `value_labels`
+  (named vector or `NULL`).
 
-Additional function-specific fields are described in the Phase 1
-specification.
+- `x`:
+
+  Named list. One entry per focal variable. Length 1 for single-x
+  functions (`get_means`, `get_totals`, `get_quantiles`); length N for
+  multi-x functions (`get_freqs`, `get_corr`). Each entry has the same
+  sub-structure as `group` entries. `NULL` for
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
+  when called without an `x` argument.
+
+Function-specific additional fields:
+
+- `probs`:
+
+  (`get_quantiles` only) Numeric vector of quantile probabilities.
+
+- `method`:
+
+  (`get_corr` only) Character(1) correlation method.
+
+- `numerator`, `denominator`:
+
+  (`get_ratios` only) Flat named lists with keys `name`,
+  `variable_label`, `question_preface`, `value_labels`.
 
 ## Details
 
@@ -87,13 +101,12 @@ result <- structure(
     design_type   = "taylor",
     conf_level    = 0.95,
     call          = quote(get_means(d, x)),
-    group_names   = character(0),
-    group_labels  = list(),
     n_respondents = 100L,
-    variable      = "x",
-    variable_label   = NULL,
-    question_preface = NULL,
-    value_labels     = list(x = NULL)
+    group         = list(),
+    x             = list(
+      x = list(variable_label = NULL, question_preface = NULL,
+               value_labels = NULL)
+    )
   ),
   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 )

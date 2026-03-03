@@ -17,6 +17,7 @@ get_freqs(
   variance = NULL,
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -76,6 +77,12 @@ get_freqs(
   Logical. If `TRUE`, add an `n_weighted` column with the sum of weights
   (estimated population count) per cell. Default `FALSE`.
 
+- decimals:
+
+  Integer or `NULL`. If an integer, rounds all numeric output columns
+  (e.g., `pct`, `se`, `ci_low`, `ci_high`) to this many decimal places.
+  Default `NULL` (no rounding).
+
 - min_cell_n:
 
   Integer. Minimum unweighted cell count before
@@ -83,9 +90,14 @@ get_freqs(
 
 - na.rm:
 
-  Logical. If `TRUE` (default), `NA` values are excluded from all
-  proportions; `NA` does not appear as a level. If `FALSE`, `NA` appears
-  as its own last row and the denominator includes `NA` rows.
+  Logical. If `TRUE` (default), `NA` values are excluded from analysis:
+  observations where the focal variable is `NA` are dropped from
+  frequency counts, and observations where any group variable is `NA`
+  are excluded from the output. If `FALSE`, `NA` values in the focal
+  variable appear as a dedicated frequency row in the output (not merely
+  counted), and observations where a group variable is `NA` are
+  collected into their own group row (appearing after all non-`NA` group
+  rows).
 
 - label_values:
 
@@ -112,7 +124,7 @@ A `survey_freqs` tibble (also inheriting `survey_result`). Columns:
 
 - `[variable_name]` (single) or `[names_to]` + `[values_to]` (multi).
 
-- `pct` — weighted proportion as a percentage (0–100).
+- `pct` — weighted proportion (0–1).
 
 - Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
   `deff`) — only those requested via `variance`.
@@ -145,7 +157,7 @@ removed for domain/group subsets.
 
 **`na.rm = FALSE`:** `NA` is appended as the last level. All proportions
 (including non-`NA` levels) have their denominator inflated to include
-`NA` rows, so the `pct` column sums to 100.
+`NA` rows, so the `pct` column sums to 1.
 
 ## See also
 
@@ -170,45 +182,45 @@ get_freqs(d, riagendr)
 #> # A tibble: 2 × 3
 #>   riagendr   pct     n
 #>   <chr>    <dbl> <int>
-#> 1 1         48.9  4273
-#> 2 2         51.1  4431
+#> 1 1        0.489  4273
+#> 2 2        0.511  4431
 
 # With confidence intervals
 get_freqs(d, riagendr, variance = "ci")
 #> # A tibble: 2 × 5
 #>   riagendr   pct ci_low ci_high     n
 #>   <chr>    <dbl>  <dbl>   <dbl> <int>
-#> 1 1         48.9   47.4    50.4  4273
-#> 2 2         51.1   49.6    52.6  4431
+#> 1 1        0.489  0.474   0.504  4273
+#> 2 2        0.511  0.496   0.526  4431
 
 # Grouped
 get_freqs(d, riagendr, group = sdmvstra)
 #> # A tibble: 30 × 4
 #>    sdmvstra riagendr   pct     n
 #>       <dbl> <chr>    <dbl> <int>
-#>  1      134 1         45.0   217
-#>  2      134 2         55.0   253
-#>  3      135 1         47.6   277
-#>  4      135 2         52.4   324
-#>  5      136 1         47.7   321
-#>  6      136 2         52.3   332
-#>  7      137 1         47.0   250
-#>  8      137 2         53.0   273
-#>  9      138 1         49.0   274
-#> 10      138 2         51.0   295
+#>  1      134 1        0.450   217
+#>  2      134 2        0.550   253
+#>  3      135 1        0.476   277
+#>  4      135 2        0.524   324
+#>  5      136 1        0.477   321
+#>  6      136 2        0.523   332
+#>  7      137 1        0.470   250
+#>  8      137 2        0.530   273
+#>  9      138 1        0.490   274
+#> 10      138 2        0.510   295
 #> # ℹ 20 more rows
 
 # Multi-variable (stacked)
 get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
 #> # A tibble: 8 × 4
-#>   item     value   pct     n
-#>   <chr>    <chr> <dbl> <int>
-#> 1 riagendr 1     48.9   4273
-#> 2 riagendr 2     51.1   4431
-#> 3 ridreth3 1     10.8   1298
-#> 4 ridreth3 2      7.27   773
-#> 5 ridreth3 3     59.1   2931
-#> 6 ridreth3 4     11.8   2010
-#> 7 ridreth3 6      5.59  1086
-#> 8 ridreth3 7      5.32   606
+#>   item     value    pct     n
+#>   <fct>    <chr>  <dbl> <int>
+#> 1 riagendr 1     0.489   4273
+#> 2 riagendr 2     0.511   4431
+#> 3 ridreth3 1     0.108   1298
+#> 4 ridreth3 2     0.0727   773
+#> 5 ridreth3 3     0.591   2931
+#> 6 ridreth3 4     0.118   2010
+#> 7 ridreth3 6     0.0559  1086
+#> 8 ridreth3 7     0.0532   606
 ```

@@ -17,7 +17,7 @@ weights alongside the main weight."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -367,36 +367,37 @@ weights alongside the main weight.</p>
 <dd><p>Unique respondent identifier.</p></dd>
 
 <dt>jewishcat</dt>
-<dd><p>Jewish identity category: <code>1</code> = Jews by religion,
-<code>2</code> = Jews of no religion, <code>3</code> = Jewish background,
-<code>4</code> = Jewish affinity, <code>5</code> = Not Jewish.</p></dd>
+<dd><p>Jewish identity category: <code>1</code> = Jews By Religion,
+<code>2</code> = Jews Of No Religion, <code>3</code> = Jewish Background,
+<code>4</code> = Jewish Affinity, <code>5</code> = Respondent Not Jewish In Any Way.</p></dd>
 
 <dt>finalmode</dt>
-<dd><p>Collection mode: <code>1</code> = CAWI (online),
-<code>2</code> = Teleform (mail),
-<code>3</code> = Screener CAWI + Extended Teleform.</p></dd>
+<dd><p>Collection mode: <code>1</code> = Screener And Extended Survey
+Via Cawi, <code>2</code> = Screener And Extended Survey Via Teleform,
+<code>3</code> = Screener Via Cawi, Extended Survey Via Teleform.</p></dd>
 
 <dt>region</dt>
 <dd><p>Census region: <code>1</code> = Northeast, <code>2</code> = Midwest,
 <code>3</code> = South, <code>4</code> = West.</p></dd>
 
 <dt>sexask</dt>
-<dd><p>Sex: <code>1</code> = male, <code>2</code> = female, <code>99</code> = not answered.</p></dd>
+<dd><p>Sex: <code>1</code> = Male, <code>2</code> = Female, <code>99</code> = Not Answered.</p></dd>
 
 <dt>age4cat</dt>
 <dd><p>Age: <code>1</code> = 18-29, <code>2</code> = 30-49, <code>3</code> = 50-64, <code>4</code> = 65+;
-<code>999</code> = no answer.</p></dd>
+<code>999</code> = No Answer.</p></dd>
 
 <dt>educ4cat</dt>
-<dd><p>Education: <code>1</code> = HS or less, <code>2</code> = some college,
-<code>3</code> = college graduate, <code>4</code> = postgraduate; <code>99</code> = no answer.</p></dd>
+<dd><p>Education: <code>1</code> = High School Or Less,
+<code>2</code> = Some College, <code>3</code> = College Graduate, <code>4</code> = Postgrad Degree;
+<code>99</code> = No Answer.</p></dd>
 
 <dt>religmod</dt>
 <dd><p>Current religion (24 categories including Jewish
 subgroups and combinations).</p></dd>
 
 <dt>hisp</dt>
-<dd><p>Hispanic origin: <code>1</code> = yes, <code>2</code> = no.</p></dd>
+<dd><p>Hispanic origin: <code>1</code> = Yes, <code>2</code> = No, <code>99</code> = Not Answered.</p></dd>
 
 <dt>racecmb</dt>
 <dd><p>Race (5 categories).</p></dd>
@@ -405,21 +406,22 @@ subgroups and combinations).</p></dd>
 <dd><p>Race-ethnicity (4 categories).</p></dd>
 
 <dt>presapp</dt>
-<dd><p>Presidential approval (Trump): <code>1</code> = Strongly approve,
-<code>2</code> = Somewhat approve, <code>3</code> = Somewhat disapprove,
-<code>4</code> = Strongly disapprove.</p></dd>
+<dd><p>Presidential approval (Trump): <code>1</code> = Strongly Approve,
+<code>2</code> = Somewhat Approve, <code>3</code> = Somewhat Disapprove,
+<code>4</code> = Strongly Disapprove, <code>99</code> = Not Answered.</p></dd>
 
 <dt>track</dt>
-<dd><p>Right track/wrong track: <code>1</code> = Right direction,
-<code>2</code> = Wrong track.</p></dd>
+<dd><p>Right track/wrong track:
+<code>1</code> = Generally Headed In The Right Direction,
+<code>2</code> = Off On The Wrong Track, <code>99</code> = Not Answered.</p></dd>
 
 <dt>satisfpersmod</dt>
 <dd><p>Personal life satisfaction: <code>1</code> = Excellent,
-<code>2</code> = Good, <code>3</code> = Only fair, <code>4</code> = Poor.</p></dd>
+<code>2</code> = Good, <code>3</code> = Only Fair, <code>4</code> = Poor, <code>99</code> = Not Answered.</p></dd>
 
 <dt>localrating</dt>
 <dd><p>Community as a place to live: <code>1</code> = Excellent,
-<code>2</code> = Good, <code>3</code> = Only fair, <code>4</code> = Poor.</p></dd>
+<code>2</code> = Good, <code>3</code> = Only Fair, <code>4</code> = Poor, <code>99</code> = Not Answered.</p></dd>
 
 <dt>relconsider_a</dt>
 <dd><p>Jewish. Battery 1: religious identity
@@ -490,11 +492,15 @@ Prepared by <code>data-raw/prepare-pew-jewish-2020.R</code>.</p>
 respondents into five mutually exclusive categories used in the published
 Pew report. Use <code>jewishcat</code> rather than constructing your own
 classification from the raw religion variables.</p>
-<p><strong>Battery question stems:</strong></p><ul><li><p><strong>Battery 1</strong> (<code>relconsider_a</code>–<code>relconsider_d</code>): <code>"Aside from religion, do you consider yourself to be any of the following in any way (for example, ethnically, culturally, or because of your family's background)?"</code> Values: <code>1</code> = Selected, <code>2</code> = Not selected, <code>99</code> = Refused.</p></li>
-<li><p><strong>Battery 2</strong> (<code>relraised_a</code>–<code>relraised_d</code>): <code>"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."</code> Values: <code>1</code> = Selected,
-<code>2</code> = Not selected, <code>99</code> = Refused.</p></li>
-<li><p><strong>Battery 3</strong> (<code>discrim_a</code>–<code>discrim_f</code>): <code>"Please tell us how much discrimination there is against each of these groups in our society today."</code> Values: <code>1</code> = A lot, <code>2</code> = Some, <code>3</code> = Not much,
-<code>4</code> = None at all, <code>99</code> = Not answered.</p></li>
+<p><strong>Battery question stems:</strong></p><ul><li><p><strong>Battery 1</strong> (<code>relconsider_a</code>–<code>relconsider_d</code>): <code>"ASIDE from religion, do you consider yourself to be any of the following in any way (for example ethnically, culturally or because of your family's background)?"</code>
+Values: <code>1</code> = Yes, Consider Myself This, <code>2</code> = No, Do Not Consider
+Myself This, <code>99</code> = Refused.</p></li>
+<li><p><strong>Battery 2</strong> (<code>relraised_a</code>–<code>relraised_d</code>): <code>"Please indicate whether you were raised in any of the following traditions or had a parent from any of the following backgrounds."</code> Values: <code>1</code> = Yes, Was Raised In
+This Tradition Or Had A Parent From This Background, <code>2</code> = No, Was Not
+Raised In This Tradition And Did Not Have A Parent From This Background,
+<code>99</code> = Refused.</p></li>
+<li><p><strong>Battery 3</strong> (<code>discrim_a</code>–<code>discrim_f</code>): <code>"Please tell us how much discrimination there is against each of these groups in our society today."</code> Values: <code>1</code> = A Lot, <code>2</code> = Some, <code>3</code> = Not Much,
+<code>4</code> = None At All, <code>99</code> = Not Answered.</p></li>
 </ul><p><strong>Metadata:</strong>
 All columns carry variable labels and value labels as R attributes from the
 original Stata file. The three battery variable groups additionally carry a
@@ -507,7 +513,7 @@ returns <code>"Jewish"</code>.</p></li>
 <li><p><strong>Value labels</strong> (<code>"labels"</code> attribute): A named numeric vector mapping
 each code to its meaning. Example:
 <code>attr(pew_jewish_2020$relconsider_a, "labels")</code> returns
-<code>c(Selected = 1, "Not selected" = 2, Refused = 99)</code>.</p></li>
+<code>c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2, Refused = 99)</code>.</p></li>
 <li><p><strong>Question preface</strong> (<code>"question_preface"</code> attribute): The shared question
 stem for each battery group. Example:
 <code>attr(pew_jewish_2020$discrim_a, "question_preface")</code> returns
@@ -538,10 +544,8 @@ stem for each battery group. Example:
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Inspect value labels</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">pew_jewish_2020</span><span class="op">$</span><span class="va">discrim_a</span>, <span class="st">"labels"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         1 = A LOT          2 = SOME      3 = NOT MUCH   4 = NONE AT ALL </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                 1                 2                 3                 4 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 99 = NOT ANSWERED </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                99 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        A Lot         Some     Not Much  None At All Not Answered </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            1            2            3            4           99 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Inspect question preface (shared stem across the battery)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">pew_jewish_2020</span><span class="op">$</span><span class="va">discrim_a</span>, <span class="st">"question_preface"</span><span class="op">)</span></span></span>

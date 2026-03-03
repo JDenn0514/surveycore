@@ -14,14 +14,14 @@ vendored variance estimation code. License: GPL-3.
 
 ## Current Phase Status
 
-| Phase                                                                                                            | Status      | Notes                                           |
-|------------------------------------------------------------------------------------------------------------------|-------------|-------------------------------------------------|
-| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete | Tagged v0.1.0                                   |
-| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete | Separate `surveytidy` package                   |
-| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | ✅ Complete | See `plans/survey-srs-formal-specification.md`  |
-| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ✅ Complete | Required before Phase 1                         |
-| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | All merged to main                              |
-| Phase 2 — Regression (`survey_glm_fit`, `survey_glm()`)                                                          | 🔜 Next     | See `plans/phase-2-glm-formal-specification.md` |
+| Phase                                                                                                            | Status      | Notes                                                                                                 |
+|------------------------------------------------------------------------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------|
+| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                   | ✅ Complete | Tagged v0.1.0                                                                                         |
+| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                    | ✅ Complete | Separate `surveytidy` package                                                                         |
+| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                 | ✅ Complete | See `plans/survey-srs-formal-specification.md`                                                        |
+| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                          | ✅ Complete | Required before Phase 1                                                                               |
+| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | Core functions on main (v0.3.0); nested `.meta` + group label refactor merged to develop (PR \#22–23) |
+| Phase 2 — Regression (`survey_glm_fit`, `survey_glm()`)                                                          | 🔜 Next     | See `plans/phase-2-glm-formal-specification.md`                                                       |
 
 **Next action:** Begin Phase 2 — Regression. Spec at
 `plans/phase-2-glm-formal-specification.md`.

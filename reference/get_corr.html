@@ -11,7 +11,7 @@ intervals. Returns results in long or wide format."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,12 +47,14 @@ intervals. Returns results in long or wide format.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_corr</span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  <span class="va">x</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"long"</span>, <span class="st">"wide"</span><span class="op">)</span>,</span>
 <span>  redundant <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  diagonal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  variance <span class="op">=</span> <span class="st">"ci"</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  n_weighted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  decimals <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_cell_n <span class="op">=</span> <span class="fl">30L</span>,</span>
 <span>  na.rm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -76,10 +78,17 @@ numeric variable names. Non-numeric variables are dropped with a warning.
 At least two numeric variables must remain.</p></dd>
 
 
+<dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
+<dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Optional grouping
+variable(s). Combined with any grouping set by <code>group_by()</code>. Default
+<code>NULL</code>.</p></dd>
+
+
 <dt id="arg-format">format<a class="anchor" aria-label="anchor" href="#arg-format"></a></dt>
 <dd><p><code>"long"</code> (default) or <code>"wide"</code>. Long format returns one row
 per variable pair with inference statistics. Wide format returns the
-correlation matrix (<code>r</code> values only — no variance or inference columns).</p></dd>
+correlation matrix (<code>r</code> values only — no variance or inference columns).
+When <code>group</code> is active, group columns are prepended in both formats.</p></dd>
 
 
 <dt id="arg-redundant">redundant<a class="anchor" aria-label="anchor" href="#arg-redundant"></a></dt>
@@ -112,6 +121,12 @@ applies to long format.</p></dd>
 pairwise sum of weights (both variables non-NA). Default <code>FALSE</code>.</p></dd>
 
 
+<dt id="arg-decimals">decimals<a class="anchor" aria-label="anchor" href="#arg-decimals"></a></dt>
+<dd><p>Integer or <code>NULL</code>. If an integer, rounds all numeric output
+columns (e.g., <code>r</code>, <code>se</code>, <code>ci_low</code>, <code>ci_high</code>) to this many decimal
+places. Default <code>NULL</code> (no rounding).</p></dd>
+
+
 <dt id="arg-min-cell-n">min_cell_n<a class="anchor" aria-label="anchor" href="#arg-min-cell-n"></a></dt>
 <dd><p>Integer. Minimum pairwise unweighted count before
 <code>surveycore_warning_small_cell</code> fires. Default <code>30L</code> (AAPOR guidance).</p></dd>
@@ -119,12 +134,17 @@ pairwise sum of weights (both variables non-NA). Default <code>FALSE</code>.</p>
 
 <dt id="arg-na-rm">na.rm<a class="anchor" aria-label="anchor" href="#arg-na-rm"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> (default), pairs use complete cases for
-each variable pair separately (pairwise deletion).</p></dd>
+each variable pair separately (pairwise deletion), and observations where
+any group variable is <code>NA</code> are excluded from the output. If <code>FALSE</code>,
+pairwise complete cases are still used for each variable pair, and
+observations where a group variable is <code>NA</code> are collected into their own
+group row in the output (appearing after all non-<code>NA</code> group rows).</p></dd>
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity; has no visible
-effect. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (default) and the grouping variable
+has value labels, the group column is converted to a labelled factor.
+Has no visible effect when no groups are active.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -143,7 +163,10 @@ format.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>survey_corr</code> tibble (also inheriting <code>survey_result</code>).</p>
-<p><strong>Long format</strong> columns:</p><ul><li><p><code>var1</code>, <code>var2</code> — variable names (or labels when <code>label_vars = TRUE</code>).</p></li>
+<p>When <code>group</code> is active, group variable columns are prepended before all
+other columns in both long and wide formats.</p>
+<p><strong>Long format</strong> columns:</p><ul><li><p><code>[group_cols...]</code> — group variable columns (when active), first.</p></li>
+<li><p><code>var1</code>, <code>var2</code> — variable names (or labels when <code>label_vars = TRUE</code>).</p></li>
 <li><p><code>r</code> — Pearson correlation coefficient.</p></li>
 <li><p>Variance columns (<code>se</code>, <code>var</code>, <code>cv</code>, <code>ci_low</code>, <code>ci_high</code>, <code>moe</code>,
 <code>deff</code>) — only those requested via <code>variance</code>.</p></li>
@@ -152,7 +175,8 @@ format.</p></dd>
 <li><p><code>df</code> — degrees of freedom for the t-test (n minus 2).</p></li>
 <li><p><code>n</code> — pairwise unweighted count.</p></li>
 <li><p><code>n_weighted</code> — pairwise sum of weights (only when requested).</p></li>
-</ul><p><strong>Wide format</strong> columns:</p><ul><li><p><code>variable</code> — row variable names (or labels).</p></li>
+</ul><p><strong>Wide format</strong> columns:</p><ul><li><p><code>[group_cols...]</code> — group variable columns (when active), first.</p></li>
+<li><p><code>variable</code> — row variable names (or labels).</p></li>
 <li><p>One column per focal variable, containing <code>r</code> values.</p></li>
 </ul><p>Use <code>meta(result)</code> to access design type, variable labels, and
 <code>method</code> (<code>"pearson"</code>).</p>
@@ -175,7 +199,7 @@ format.</p></dd>
 <span class="r-in"><span><span class="fu">get_corr</span><span class="op">(</span><span class="va">d</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ridageyr</span>, <span class="va">bpxsy1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 9</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   var1                  var2      r ci_low ci_high p_value statistic    df     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Age in years at scre… Syst… 0.544  0.529   0.559       0      51.5  <span style="text-decoration: underline;">6</span>300  <span style="text-decoration: underline;">6</span>302</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Wide correlation matrix</span></span></span>
@@ -193,7 +217,7 @@ format.</p></dd>
 <span class="r-in"><span>         variance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ci"</span>, <span class="st">"moe"</span><span class="op">)</span>, n_weighted <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 11</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   var1           var2      r ci_low ci_high    moe p_value statistic    df     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Age in years … Syst… 0.544  0.529   0.559 0.015<span style="text-decoration: underline;">1</span>       0      51.5  <span style="text-decoration: underline;">6</span>300  <span style="text-decoration: underline;">6</span>302</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 1 more variable: n_weighted &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>

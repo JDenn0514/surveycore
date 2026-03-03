@@ -14,6 +14,7 @@ get_means(
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -57,6 +58,12 @@ get_means(
   Logical. If `TRUE`, add an `n_weighted` column with the sum of weights
   for non-NA observations in each group. Default `FALSE`.
 
+- decimals:
+
+  Integer or `NULL`. If an integer, rounds all numeric output columns
+  (e.g., `mean`, `se`, `ci_low`, `ci_high`) to this many decimal places.
+  Default `NULL` (no rounding).
+
 - min_cell_n:
 
   Integer. Minimum unweighted cell count before
@@ -64,7 +71,13 @@ get_means(
 
 - na.rm:
 
-  Logical. If `TRUE` (default), `NA` values in `x` are excluded.
+  Logical. If `TRUE` (default), `NA` values are excluded from analysis:
+  observations where the analysis variable is `NA` are dropped from
+  calculations, and observations where any group variable is `NA` are
+  excluded from the output. If `FALSE`, `NA` observations in the
+  analysis variable are included in calculations, and observations where
+  a group variable is `NA` are collected into their own group row in the
+  output (appearing after all non-`NA` group rows).
 
 - label_values:
 

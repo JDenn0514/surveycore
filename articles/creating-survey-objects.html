@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,9 +63,10 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>Every analysis function in surveycore — <code><a href="../reference/get_means.html">get_means()</a></code>,
-<code><a href="../reference/get_totals.html">get_totals()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code> — takes a
+<code><a href="../reference/get_totals.html">get_totals()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>,
+<code><a href="../reference/get_ratios.html">get_ratios()</a></code>, <code><a href="../reference/get_corr.html">get_corr()</a></code> — takes a
 <strong>survey design object</strong> as its first argument. That object
-encodes how your data were collected: which units were clustered
+encodes how your data was collected: which units were clustered
 together, which strata were defined, what weights apply, and how
 variance should be estimated. Without it, point estimates may be biased
 and standard errors are almost certainly wrong <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>; <a href="#ref-lohr2022">Lohr 2022</a>)</span>.</p>
@@ -192,6 +193,11 @@ weights</td>
 <td>JK2 jackknife replicate weights</td>
 </tr>
 <tr class="odd">
+<td>Nationscape (Democracy Fund + UCLA)</td>
+<td><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></td>
+<td>Non-probability quota panel; ACS-calibrated raking weights</td>
+</tr>
+<tr class="even">
 <td>Opt-in online panels</td>
 <td><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></td>
 <td>Non-probability; vendor-supplied raking weights</td>
@@ -269,7 +275,7 @@ across strata <span class="citation">(<a href="#ref-lumley2010">Lumley
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># NHANES: only two distinct PSU values, but 15 strata</span></span>
 <span><span class="co"># Each stratum has its own PSU 1 and PSU 2 → nest = TRUE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">sdmvpsu</span><span class="op">)</span><span class="op">)</span>  <span class="co"># 2</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">sdmvpsu</span><span class="op">)</span><span class="op">)</span> <span class="co"># 2</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 2</span></span></code></pre>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">sdmvstra</span><span class="op">)</span><span class="op">)</span> <span class="co"># 15</span></span></code></pre></div>
@@ -354,10 +360,10 @@ website <span class="citation">(<a href="#ref-lumley2010">Lumley
 <span></span>
 <span><span class="va">svy_nhanes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">nhanes_exam</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">sdmvpsu</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">sdmvstra</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span>
-<span>  nest    <span class="op">=</span> <span class="cn">TRUE</span>       <span class="co"># PSU IDs are locally unique within strata</span></span>
+<span>  nest <span class="op">=</span> <span class="cn">TRUE</span> <span class="co"># PSU IDs are locally unique within strata</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_nhanes</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -387,10 +393,10 @@ positive interview weight:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_nhanes_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">nhanes_2017</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">sdmvpsu</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">sdmvstra</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span>
-<span>  nest    <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -437,8 +443,8 @@ weight for the variables you are analyzing:</p>
 <code class="sourceCode R"><span><span class="co"># Pre-election analysis (party ID, ideology, candidate preference)</span></span>
 <span><span class="va">svy_anes_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">anes_2024</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">v240103c</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">v240103c</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">v240103d</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">v240103a</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span>, <span style="color: #0000BB;">"10"</span>, <span style="color: #0000BB;">"11"</span>, <span style="color: #0000BB;">"12"</span>, and <span style="color: #0000BB;">"13"</span>.</span></span>
@@ -447,8 +453,8 @@ weight for the variables you are analyzing:</p>
 <code class="sourceCode R"><span><span class="co"># Post-election analysis (validated vote choice: v242066, v242067)</span></span>
 <span><span class="va">svy_anes_post</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">anes_2024</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">v240103c</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">v240103c</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">v240103d</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">v240103b</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span>, <span style="color: #0000BB;">"10"</span>, <span style="color: #0000BB;">"11"</span>, <span style="color: #0000BB;">"12"</span>, and <span style="color: #0000BB;">"13"</span>.</span></span>
@@ -503,8 +509,8 @@ is a concern:</p>
 <code class="sourceCode R"><span><span class="co"># Standard analysis weight</span></span>
 <span><span class="va">svy_gss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">gss_2024</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">vpsu</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">vstrat</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtssps</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>. If PSUs are nested</span></span>
@@ -513,8 +519,8 @@ is a concern:</p>
 <code class="sourceCode R"><span><span class="co"># Non-response adjusted weight (preferred when non-response bias is a concern)</span></span>
 <span><span class="va">svy_gss_nr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">gss_2024</span>,</span>
-<span>  ids     <span class="op">=</span> <span class="va">vpsu</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">vstrat</span>,</span>
+<span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wtssnrps</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>. If PSUs are nested</span></span>
@@ -560,7 +566,7 @@ variable. Omit <code>ids</code>:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_npors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_npors_2025</span>,</span>
-<span>  strata  <span class="op">=</span> <span class="va">stratum</span>,</span>
+<span>  strata <span class="op">=</span> <span class="va">stratum</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">weight</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <hr>
@@ -695,9 +701,9 @@ Methodology report <span class="citation">(<a href="#ref-census2022">U.S. Census
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_acs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
 <span>  <span class="va">acs_pums_wy</span>,</span>
-<span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span>
+<span>  weights <span class="op">=</span> <span class="va">pwgtp</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span>
-<span>  type       <span class="op">=</span> <span class="st">"successive-difference"</span></span>
+<span>  type <span class="op">=</span> <span class="st">"successive-difference"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_acs</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -760,9 +766,9 @@ the full-sample weight:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_jewish</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
-<span>  weights    <span class="op">=</span> <span class="va">extweight</span>,</span>
+<span>  weights <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
-<span>  type       <span class="op">=</span> <span class="st">"JK1"</span></span>
+<span>  type <span class="op">=</span> <span class="st">"JK1"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_jewish</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -909,9 +915,9 @@ for subcohort members plus all relapse cases <span class="citation">(<a href="#r
 <code class="sourceCode R"><span><span class="co"># Phase 2: subcohort, with Phase 2 sampling stratified by relapse status</span></span>
 <span><span class="va">svy_twophase</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_twophase.html">as_survey_twophase</a></span><span class="op">(</span></span>
 <span>  <span class="va">phase1</span>,</span>
-<span>  strata2 <span class="op">=</span> <span class="va">rel</span>,           <span class="co"># Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)</span></span>
-<span>  subset  <span class="op">=</span> <span class="va">in.subcohort</span>,  <span class="co"># Logical column: TRUE = selected into Phase 2</span></span>
-<span>  method  <span class="op">=</span> <span class="st">"full"</span></span>
+<span>  strata2 <span class="op">=</span> <span class="va">rel</span>, <span class="co"># Phase 2 strata: cases (rel=1) vs. non-cases (rel=0)</span></span>
+<span>  subset <span class="op">=</span> <span class="va">in.subcohort</span>, <span class="co"># Logical column: TRUE = selected into Phase 2</span></span>
+<span>  method <span class="op">=</span> <span class="st">"full"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_twophase</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -999,22 +1005,22 @@ from a complete roster of 400 schools. Every school has an equal
 probability of selection (80/400 = 0.20) — the textbook SRS case <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 2)</span>:</p>
 <div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">101</span><span class="op">)</span></span>
-<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">400</span>   <span class="co"># total schools in district</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span>    <span class="co"># schools sampled</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">400</span> <span class="co"># total schools in district</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span> <span class="co"># schools sampled</span></span>
 <span></span>
 <span><span class="va">school_survey</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  school_id  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span>,</span>
-<span>  avg_score  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">72</span>, sd <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  pct_frpl   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.10</span>, <span class="fl">0.85</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,  <span class="co"># % free/reduced price lunch</span></span>
+<span>  school_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span>,</span>
+<span>  avg_score <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">72</span>, sd <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  pct_frpl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.10</span>, <span class="fl">0.85</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, <span class="co"># % free/reduced price lunch</span></span>
 <span>  enrollment <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">180</span>, <span class="fl">850</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  sw         <span class="op">=</span> <span class="va">N</span> <span class="op">/</span> <span class="va">n</span>,   <span class="co"># equal sampling weight = 400/80 = 5.0</span></span>
-<span>  fpc        <span class="op">=</span> <span class="va">N</span>        <span class="co"># population size for FPC</span></span>
+<span>  sw <span class="op">=</span> <span class="va">N</span> <span class="op">/</span> <span class="va">n</span>, <span class="co"># equal sampling weight = 400/80 = 5.0</span></span>
+<span>  fpc <span class="op">=</span> <span class="va">N</span> <span class="co"># population size for FPC</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">svy_srs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span></span>
 <span>  <span class="va">school_survey</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">sw</span>,   <span class="co"># each sampled school represents 5 schools in the population</span></span>
-<span>  fpc     <span class="op">=</span> <span class="va">fpc</span>   <span class="co"># reduces SEs: we sampled 20% of the population</span></span>
+<span>  weights <span class="op">=</span> <span class="va">sw</span>, <span class="co"># each sampled school represents 5 schools in the population</span></span>
+<span>  fpc <span class="op">=</span> <span class="va">fpc</span> <span class="co"># reduces SEs: we sampled 20% of the population</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">svy_srs</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -1189,73 +1195,92 @@ describe the calibration targets, and acknowledge that standard errors
 are approximate.</strong></p>
 </div>
 <div class="section level3">
-<h3 id="worked-example-message-testing-panel">6.4 Worked example: Message-testing panel<a class="anchor" aria-label="anchor" href="#worked-example-message-testing-panel"></a>
+<h3 id="worked-example-democracy-fund-ucla-nationscape">6.4 Worked example: Democracy Fund + UCLA Nationscape<a class="anchor" aria-label="anchor" href="#worked-example-democracy-fund-ucla-nationscape"></a>
 </h3>
-<p>A policy organization recruits 500 opt-in panelists to test two
-framings of a healthcare message. The panel vendor provides raking
-weights calibrated to Current Population Survey marginals for age,
-gender, education, and race/ethnicity:</p>
+<p>The Nationscape is a large-scale non-probability survey conducted by
+Democracy Fund + UCLA, fielded weekly from July 2019 through January
+2021. Each wave recruited approximately 6,250 respondents from the Lucid
+respondent exchange using a quota design, with raking weights calibrated
+to American Community Survey (ACS) marginals for age, gender, education,
+race/ethnicity, and region, plus 2016 presidential vote choice. This is
+the textbook use case for <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>.</p>
+<table class="table">
+<colgroup>
+<col width="10%">
+<col width="78%">
+<col width="11%">
+</colgroup>
+<thead><tr class="header">
+<th>Variable</th>
+<th>Role</th>
+<th>Argument</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td><code>weight</code></td>
+<td>Raking weight calibrated to ACS demographic targets and 2016
+presidential vote</td>
+<td><code>weights</code></td>
+</tr></tbody>
+</table>
 <div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2024</span><span class="op">)</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">500</span></span>
-<span></span>
-<span><span class="va">panel_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  respondent_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>,</span>
-<span>  age_group     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"18-34"</span>, <span class="st">"35-54"</span>, <span class="st">"55+"</span><span class="op">)</span>, <span class="va">n</span>,</span>
-<span>    replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.38</span>, <span class="fl">0.37</span>, <span class="fl">0.25</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  gender        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Man"</span>, <span class="st">"Woman"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  education     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"HS or less"</span>, <span class="st">"Some college"</span>, <span class="st">"College+"</span><span class="op">)</span>, <span class="va">n</span>,</span>
-<span>    replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.38</span>, <span class="fl">0.30</span>, <span class="fl">0.32</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  race_eth      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"White"</span>, <span class="st">"Black"</span>, <span class="st">"Hispanic"</span>, <span class="st">"Other"</span><span class="op">)</span>, <span class="va">n</span>,</span>
-<span>    replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.60</span>, <span class="fl">0.12</span>, <span class="fl">0.18</span>, <span class="fl">0.10</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  message_arm   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Framing A"</span>, <span class="st">"Framing B"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  support       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>  rake_weight   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.4</span>, <span class="fl">3.2</span><span class="op">)</span>  <span class="co"># vendor-provided raking weights</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">svy_panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">panel_data</span>, weights <span class="op">=</span> <span class="va">rake_weight</span><span class="op">)</span></span>
-<span><span class="va">svy_panel</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">svy_ns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
+<span><span class="va">svy_ns</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_calibrated&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
-<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">500</span></span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">6422</span></span></span></code></pre>
 <pre><code><span><span class="co">## </span></span></code></pre>
-<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 500 × 8</span></span></span>
-<span><span class="co">##    respondent_id age_group gender education    race_eth message_arm support</span></span>
-<span><span class="co">##            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 1</span>             1 55+       Man    Some college White    Framing B         4</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 2</span>             2 18-34     Woman  HS or less   White    Framing B         1</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 3</span>             3 35-54     Man    HS or less   Hispanic Framing A         2</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 4</span>             4 35-54     Woman  Some college White    Framing B         2</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 5</span>             5 35-54     Man    Some college Other    Framing A         4</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 6</span>             6 35-54     Man    HS or less   Black    Framing A         2</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 7</span>             7 35-54     Woman  College+     White    Framing A         3</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 8</span>             8 18-34     Man    Some college White    Framing B         4</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;"> 9</span>             9 55+       Man    Some college Black    Framing A         4</span></span>
-<span><span class="co">## <span style="color: #BCBCBC;">10</span>            10 18-34     Man    College+     Hispanic Framing A         5</span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 490 more rows</span></span></span>
-<span><span class="co">## <span style="color: #949494;"># ℹ 1 more variable: rake_weight &lt;dbl&gt;</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6,422 × 171</span></span></span>
+<span><span class="co">##    response_id start_date          right_track economy_better interest</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dttm&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> 00100002    2019-07-18 <span style="color: #949494;">08:11:41</span>           2              2        2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> 00100003    2019-07-18 <span style="color: #949494;">08:12:31</span>           1              3        1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> 00100004    2019-07-18 <span style="color: #949494;">08:12:04</span>           2              3        2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> 00100005    2019-07-18 <span style="color: #949494;">08:12:05</span>           2              2        2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> 00100007    2019-07-18 <span style="color: #949494;">08:11:43</span>           1              1        1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> 00100008    2019-07-18 <span style="color: #949494;">08:12:24</span>           2              2        2</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> 00100009    2019-07-18 <span style="color: #949494;">08:13:15</span>           2              2        4</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> 00100010    2019-07-18 <span style="color: #949494;">08:13:06</span>           1              1        1</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> 00100011    2019-07-18 <span style="color: #949494;">08:11:47</span>           2              2        3</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> 00100012    2019-07-18 <span style="color: #949494;">08:12:25</span>           2              3        2</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 6,412 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 166 more variables: registration &lt;dbl&gt;, news_sources_facebook &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   news_sources_cnn &lt;dbl&gt;, news_sources_msnbc &lt;dbl&gt;, news_sources_fox &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   news_sources_network &lt;dbl&gt;, news_sources_localtv &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   news_sources_telemundo &lt;dbl&gt;, news_sources_npr &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   news_sources_amtalk &lt;dbl&gt;, news_sources_new_york_times &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   news_sources_local_newspaper &lt;dbl&gt;, news_sources_other &lt;dbl&gt;, …</span></span></span></code></pre>
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Presidential approval rating (July 2019)</span></span>
+<span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">svy_ns</span>, <span class="va">pres_approval</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
+<span><span class="co">##   pres_approval          pct     n</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> Strongly approve    0.184   <span style="text-decoration: underline;">1</span>222</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> Somewhat approve    0.206   <span style="text-decoration: underline;">1</span>295</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> Somewhat disapprove 0.152    871</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> Strongly disapprove 0.415   <span style="text-decoration: underline;">2</span>799</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> Not sure            0.044<span style="text-decoration: underline;">5</span>   230</span></span></code></pre>
 <p>This produces a <code>survey_calibrated</code> object. Use it with
 <code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>, and other estimation
 functions exactly as you would any other survey object. Standard errors
 are computed under an approximate variance model and should be
 interpreted with appropriate caution and disclosed in your methods
 section.</p>
+<p>The <code>weight</code> column is a raking weight, not a design
+weight — it was computed after data collection to match population
+marginals, not fixed by the sampling protocol. Using
+<code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> makes this explicit to both R and
+future readers of your code.</p>
 </div>
 <div class="section level3">
 <h3 id="what-not-to-do">6.5 What not to do<a class="anchor" aria-label="anchor" href="#what-not-to-do"></a>
 </h3>
 <p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and
 present standard errors as if the design were a probability sample:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Creates a survey_taylor object, which misrepresents the design</span></span>
-<span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">panel_data</span>, weights <span class="op">=</span> <span class="va">rake_weight</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <p>Using <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> makes the non-probability
 nature of the design explicit — both to R and to future readers of your
 code. This distinction matters for transparency in reporting and for
@@ -1276,12 +1301,12 @@ registrar demographics (year, major, housing status), use
 <code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code>. This is the appropriate constructor
 whenever the weights were derived to make the respondents resemble the
 full student body:</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">ps_weight</span><span class="op">)</span></span></code></pre></div>
 <p><strong>If no calibration weights are available and you still want to
 use surveycore functions:</strong> Add a column of 1s and use
 <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">campus_survey</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>This treats all respondents as equally weighted. The SEs it produces
@@ -1391,7 +1416,7 @@ survey design object.</p>
 attitudes of students in these specific classrooms without generalizing
 — you can treat the participants as a census. Add a column of 1s and use
 <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classroom_data</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>Equal weights treat all participants as equally represented. The SEs

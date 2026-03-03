@@ -9,7 +9,7 @@ returned by any get_*() analysis function."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,27 +71,37 @@ returned by any <code>get_*()</code> analysis function.</p>
 <dt><code>call</code></dt>
 <dd><p>Language. Matched call to the <code>get_*()</code> function.</p></dd>
 
-<dt><code>group_names</code></dt>
-<dd><p>Character vector. Grouping variable names;
-<code>character(0)</code> if none.</p></dd>
-
-<dt><code>group_labels</code></dt>
-<dd><p>Named list. Group variable → label; <code>NULL</code> values
-for unlabeled group variables.</p></dd>
-
 <dt><code>n_respondents</code></dt>
 <dd><p>Integer(1). Total rows in the design, regardless
 of groups, domain status, or weights.</p></dd>
 
-<dt><code>value_labels</code></dt>
-<dd><p>Named list. One key per focal variable; value is a
-named vector of label → raw value mappings, or <code>NULL</code> for
-numeric/unlabelled variables.</p></dd>
+<dt><code>group</code></dt>
+<dd><p>Named list. One entry per grouping variable; empty list
+(<code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>) when no groups are active. Each entry is a named list with:
+<code>variable_label</code> (character or <code>NULL</code>), <code>question_preface</code> (character
+or <code>NULL</code>), <code>value_labels</code> (named vector or <code>NULL</code>).</p></dd>
+
+<dt><code>x</code></dt>
+<dd><p>Named list. One entry per focal variable. Length 1 for
+single-x functions (<code>get_means</code>, <code>get_totals</code>, <code>get_quantiles</code>);
+length N for multi-x functions (<code>get_freqs</code>, <code>get_corr</code>). Each entry
+has the same sub-structure as <code>group</code> entries. <code>NULL</code> for
+<code><a href="get_totals.html">get_totals()</a></code> when called without an <code>x</code> argument.</p></dd>
 
 
-</dl><p>Additional function-specific fields are described in the Phase 1
-specification.</p>
-    </div>
+</dl><p>Function-specific additional fields:</p><dl><dt><code>probs</code></dt>
+<dd><p>(<code>get_quantiles</code> only) Numeric vector of quantile
+probabilities.</p></dd>
+
+<dt><code>method</code></dt>
+<dd><p>(<code>get_corr</code> only) Character(1) correlation method.</p></dd>
+
+<dt><code>numerator</code>, <code>denominator</code></dt>
+<dd><p>(<code>get_ratios</code> only) Flat named lists
+with keys <code>name</code>, <code>variable_label</code>, <code>question_preface</code>, <code>value_labels</code>.</p></dd>
+
+
+</dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This is the <strong>only</strong> supported way to access result metadata — do not use
@@ -117,13 +127,12 @@ specification.</p>
 <span class="r-in"><span>    design_type   <span class="op">=</span> <span class="st">"taylor"</span>,</span></span>
 <span class="r-in"><span>    conf_level    <span class="op">=</span> <span class="fl">0.95</span>,</span></span>
 <span class="r-in"><span>    call          <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/substitute.html" class="external-link">quote</a></span><span class="op">(</span><span class="fu"><a href="get_means.html">get_means</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    group_names   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    group_labels  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    n_respondents <span class="op">=</span> <span class="fl">100L</span>,</span></span>
-<span class="r-in"><span>    variable      <span class="op">=</span> <span class="st">"x"</span>,</span></span>
-<span class="r-in"><span>    variable_label   <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
-<span class="r-in"><span>    question_preface <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
-<span class="r-in"><span>    value_labels     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    group         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    x             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>variable_label <span class="op">=</span> <span class="cn">NULL</span>, question_preface <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
+<span class="r-in"><span>               value_labels <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  class <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"survey_means"</span>, <span class="st">"survey_result"</span>, <span class="st">"tbl_df"</span>, <span class="st">"tbl"</span>, <span class="st">"data.frame"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>

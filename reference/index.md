@@ -60,6 +60,8 @@ lists.
   : Set an Analyst Note
 - [`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md)
   : Set Analyst Notes for Multiple Variables
+- [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
+  : Infer Question Prefaces from Variable Labels
 
 ## Metadata — extractors
 
@@ -73,6 +75,8 @@ Retrieve metadata for a single variable.
   : Extract a Question Preface
 - [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md)
   : Extract an Analyst Note
+- [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+  : Extract the Weighting History from a Survey Object
 
 ## Conversion
 
@@ -134,3 +138,5 @@ Real-world survey datasets included for testing and illustration.
   : Pew Jewish Americans 2020
 - [`pew_npors_2025`](https://jdenn0514.github.io/surveycore/reference/pew_npors_2025.md)
   : Pew NPORS 2025: National Public Opinion Reference Survey
+- [`ns_wave1`](https://jdenn0514.github.io/surveycore/reference/ns_wave1.md)
+  : Nationscape Wave 1: July 18, 2019

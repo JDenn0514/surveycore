@@ -10,12 +10,14 @@ confidence intervals. Returns results in long or wide format.
 get_corr(
   design,
   x,
+  group = NULL,
   format = c("long", "wide"),
   redundant = FALSE,
   diagonal = FALSE,
   variance = "ci",
   conf_level = 0.95,
   n_weighted = FALSE,
+  decimals = NULL,
   min_cell_n = 30L,
   na.rm = TRUE,
   label_values = TRUE,
@@ -37,12 +39,19 @@ get_corr(
   Two or more unquoted numeric variable names. Non-numeric variables are
   dropped with a warning. At least two numeric variables must remain.
 
+- group:
+
+  \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
+  Optional grouping variable(s). Combined with any grouping set by
+  `group_by()`. Default `NULL`.
+
 - format:
 
   `"long"` (default) or `"wide"`. Long format returns one row per
   variable pair with inference statistics. Wide format returns the
   correlation matrix (`r` values only — no variance or inference
-  columns).
+  columns). When `group` is active, group columns are prepended in both
+  formats.
 
 - redundant:
 
@@ -73,6 +82,12 @@ get_corr(
   Logical. If `TRUE`, add an `n_weighted` column with the pairwise sum
   of weights (both variables non-NA). Default `FALSE`.
 
+- decimals:
+
+  Integer or `NULL`. If an integer, rounds all numeric output columns
+  (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal places.
+  Default `NULL` (no rounding).
+
 - min_cell_n:
 
   Integer. Minimum pairwise unweighted count before
@@ -81,12 +96,17 @@ get_corr(
 - na.rm:
 
   Logical. If `TRUE` (default), pairs use complete cases for each
-  variable pair separately (pairwise deletion).
+  variable pair separately (pairwise deletion), and observations where
+  any group variable is `NA` are excluded from the output. If `FALSE`,
+  pairwise complete cases are still used for each variable pair, and
+  observations where a group variable is `NA` are collected into their
+  own group row in the output (appearing after all non-`NA` group rows).
 
 - label_values:
 
-  Logical. Accepted for API uniformity; has no visible effect. Default
-  `TRUE`.
+  Logical. If `TRUE` (default) and the grouping variable has value
+  labels, the group column is converted to a labelled factor. Has no
+  visible effect when no groups are active.
 
 - label_vars:
 
@@ -103,7 +123,12 @@ get_corr(
 
 A `survey_corr` tibble (also inheriting `survey_result`).
 
+When `group` is active, group variable columns are prepended before all
+other columns in both long and wide formats.
+
 **Long format** columns:
+
+- `[group_cols...]` — group variable columns (when active), first.
 
 - `var1`, `var2` — variable names (or labels when `label_vars = TRUE`).
 
@@ -123,6 +148,8 @@ A `survey_corr` tibble (also inheriting `survey_result`).
 - `n_weighted` — pairwise sum of weights (only when requested).
 
 **Wide format** columns:
+
+- `[group_cols...]` — group variable columns (when active), first.
 
 - `variable` — row variable names (or labels).
 
@@ -149,7 +176,7 @@ d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
 get_corr(d, x = c(ridageyr, bpxsy1))
 #> # A tibble: 1 × 9
 #>   var1                  var2      r ci_low ci_high p_value statistic    df     n
-#>   <chr>                 <chr> <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
+#>   <fct>                 <fct> <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
 #> 1 Age in years at scre… Syst… 0.544  0.529   0.559       0      51.5  6300  6302
 
 # Wide correlation matrix
@@ -167,7 +194,7 @@ get_corr(d, x = c(ridageyr, bpxsy1),
          variance = c("ci", "moe"), n_weighted = TRUE)
 #> # A tibble: 1 × 11
 #>   var1           var2      r ci_low ci_high    moe p_value statistic    df     n
-#>   <chr>          <chr> <dbl>  <dbl>   <dbl>  <dbl>   <dbl>     <dbl> <int> <int>
+#>   <fct>          <fct> <dbl>  <dbl>   <dbl>  <dbl>   <dbl>     <dbl> <int> <int>
 #> 1 Age in years … Syst… 0.544  0.529   0.559 0.0151       0      51.5  6300  6302
 #> # ℹ 1 more variable: n_weighted <dbl>
 ```
