@@ -29,7 +29,7 @@ The shared helpers (`.build_group_combos()`, `.match_group_combo()`,
 `get_na_group_rows()`) live in PR 1; PRs 2–5 will fail to compile without them.
 
 - [x] PR 1: `fix/group-na-rows-helpers` — Add shared helpers and NA-group test fixtures
-- [ ] PR 2: `fix/group-na-rows-freqs` — Extend `get_freqs()` to include NA group rows
+- [x] PR 2: `fix/group-na-rows-freqs` — Extend `get_freqs()` to include NA group rows
 - [ ] PR 3: `fix/group-na-rows-means-totals` — Extend `get_means()` and `get_totals()`
 - [ ] PR 4: `fix/group-na-rows-corr-quantiles` — Extend `get_corr()` and `get_quantiles()`
 - [ ] PR 5: `fix/group-na-rows-ratios` — Extend `get_ratios()`
