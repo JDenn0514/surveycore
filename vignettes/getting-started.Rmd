@@ -17,6 +17,7 @@ library(surveycore)
 knitr::opts_chunk$set(
   comment = "#>"
 )
+has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
 ```
 
 `surveycore` gives you a (mostly) complete workflow for survey data analysis.
@@ -498,10 +499,6 @@ get_freqs(pew_jewish_svy, age4cat, n_weighted = TRUE)
 
 ```{r, eval=FALSE}
 pak::pak("jacobdennen/surveytidy")
-```
-
-```{r surveytidy-check, include=FALSE}
-has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
 ```
 
 
