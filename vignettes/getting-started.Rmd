@@ -331,7 +331,7 @@ ns_wave1_svy |>
 Next, let's look at favorability across multiple variables.
 
 
-```{r corr-multi}
+```{r corr-multi, eval=has_surveytidy}
 ns_wave1_svy |>
   drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
   # filter out any respondents who said "Not sure"
@@ -350,7 +350,7 @@ intervals, p-values, and other relevant information.
 
 Switch to wide format for a more familiar correlation-matrix layout:
 
-```{r corr-wide}
+```{r corr-wide, eval=has_surveytidy}
 ns_wave1_svy |>
   drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
   # filter out any respondents who said "Not sure"
@@ -385,7 +385,7 @@ Trump's aggregate favorability score to Biden's. A ratio less than 1 means
 Trump's aggregate score is lower — i.e., he is viewed more favorably on
 average; a ratio greater than 1 means Biden is viewed more favorably.
 
-```{r ratios-basic}
+```{r ratios-basic, eval=has_surveytidy}
 ns_wave1_svy |>
   # drop NAs
   drop_na(cand_favorability_trump, cand_favorability_biden) |>
@@ -514,7 +514,7 @@ We'll rename the variable for Biden's favorability, then create a new one
 where we add 1 to it, and then select the relevant columns to compare.
 
 
-```{r }
+```{r eval=has_surveytidy}
 
 ns_wave1_svy |>
   # rename the variable
@@ -531,7 +531,7 @@ ns_wave1_svy |>
 Now let's do a slightly more in-depth example. We're going to look at how 
 people view Trump by age group. First, let's create the necessary variables.
 
-```{r}
+```{r eval=has_surveytidy}
 ns_wave1_svy <- ns_wave1_svy |>
   # rename trump favorability
   rename(fav_trump = cand_favorability_trump) |>
@@ -579,7 +579,7 @@ use `group_by()` on an age category. A simpler method is using the `filter()` an
 surveytidy.
 For example:
 
-```{r filter}
+```{r filter, eval=has_surveytidy}
 ns_wave1_svy |>
   # keep only people under 30 in the domain
   filter(age < 30) |>
