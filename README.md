@@ -34,7 +34,7 @@ install.packages("surveycore")
 pak::pak("JDenn0514/surveycore")
 ```
 
-## What Phase 0 provides
+## What surveycore provides
 
 - **S7 survey objects**: `survey_taylor`, `survey_replicate`,
   `survey_twophase`
@@ -43,8 +43,8 @@ pak::pak("JDenn0514/surveycore")
 - **Metadata system**: `set_var_label()`, `set_val_labels()`,
   `extract_var_label()`, `extract_val_labels()` — with automatic haven
   attribute import
-- **Variance estimation**: `get_means()`, `get_totals()` — Taylor
-  linearization and replicate weights
+- **Analysis functions**: `get_freqs()`, `get_means()`, `get_totals()`,
+  `get_corr()`, `get_quantiles()`, `get_ratios()`
 - **Design utilities**: `update_design()`, `as_svydesign()`,
   `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()`
 
@@ -87,23 +87,15 @@ d
 
 # ── Weighted mean and total ────────────────────────────────────────────────────
 get_means(d, income)
-#> $variable
-#> [1] "income"
-#> 
-#> $mean
-#> [1] 50205.73
-#> 
-#> $se
-#> [1] 1165.6
+#> # A tibble: 1 × 4
+#>     mean ci_low ci_high     n
+#>    <dbl>  <dbl>   <dbl> <int>
+#> 1 50206. 47921.  52490.   100
 get_totals(d, income)
-#> $variable
-#> [1] "income"
-#> 
-#> $total
-#> [1] 6460063
-#> 
-#> $se
-#> [1] 282508.9
+#> # A tibble: 1 × 4
+#>      total   ci_low  ci_high     n
+#>      <dbl>    <dbl>    <dbl> <int>
+#> 1 6460063. 5906356. 7013770.   100
 ```
 
 ## Complex survey designs
@@ -175,14 +167,17 @@ d_rt <- from_svydesign(svy)
 d_rt
 ```
 
-## What’s coming
+## The surveyverse ecosystem
 
-- **Phase 0.5** — `filter()`, `select()`, `mutate()`, `group_by()` verbs
-  via the `surveytidy` package
-- **Phase 1** — `get_freqs()`, `get_quantiles()`, `get_ratios()`,
-  `get_diffs()`, `get_corr()`
-- **Phase 2** — `survey_glm()`, `survey_lm()` regression
-- **Phase 2.5** — Calibration / post-stratification via `surveyweights`
+surveycore is the foundation of the surveyverse — a family of packages
+built around it:
+
+- **[surveytidy](https://jdenn0514.github.io/surveytidy/)** — dplyr
+  verbs (`filter()`, `select()`, `mutate()`, `group_by()`) that respect
+  survey design structure, so grouped summaries and subsetting always
+  propagate weights and strata correctly.
+- **surveyweights** — calibration and post-stratification for survey
+  weights. Coming soon.
 
 ## License
 
