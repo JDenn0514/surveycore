@@ -766,3 +766,76 @@ test_that("all three concrete classes inherit from survey_base", {
   expect_true(S7::S7_inherits(d_r,  survey_base))
   expect_true(S7::S7_inherits(d_tp, survey_base))
 })
+
+# ── survey_taylor validator: list-column design variable ──────────────────────
+
+test_that("survey_taylor validator rejects list-column design variable", {
+  df <- data.frame(
+    wt     = rep(1, 5),
+    y      = 1:5,
+    stringsAsFactors = FALSE
+  )
+  # Add a list-column for the weights position
+  df$psu <- vector("list", 5)  # list-column
+  for (i in seq_len(5)) df$psu[[i]] <- i
+
+  expect_error(
+    survey_taylor(
+      data      = df,
+      variables = .taylor_vars(weights = "wt", ids = "psu")
+    ),
+    class = "surveycore_error_design_var_list"
+  )
+})
+
+test_that("survey_taylor validator rejects non-numeric weight column", {
+  df <- data.frame(
+    wt = as.character(1:5),   # character, not numeric
+    y  = 1:5,
+    stringsAsFactors = FALSE
+  )
+  expect_error(
+    survey_taylor(
+      data      = df,
+      variables = .taylor_vars(weights = "wt")
+    ),
+    class = "surveycore_error_weights_not_numeric"
+  )
+})
+
+# ── survey_replicate validator: list-column design variable ───────────────────
+
+test_that("survey_replicate validator rejects list-column design variable", {
+  df <- .df_rep(R = 2L)
+  df$rw1 <- as.list(df$rw1)  # make a repweight column a list-column
+
+  expect_error(
+    survey_replicate(
+      data      = df,
+      variables = .rep_vars(weights = "wt", repweights = c("rw1", "rw2"))
+    ),
+    class = "surveycore_error_design_var_list"
+  )
+})
+
+# ── survey_calibrated validator: non-numeric weight column ───────────────────
+
+test_that("survey_calibrated validator rejects non-numeric weight column", {
+  df <- data.frame(y = 1:5, wt = c("a", "b", "c", "d", "e"))
+
+  expect_error(
+    survey_calibrated(
+      data      = df,
+      variables = list(
+        weights        = "wt",
+        probs_provided = FALSE,
+        ids            = NULL,
+        strata         = NULL,
+        fpc            = NULL,
+        nest           = FALSE,
+        visible_vars   = NULL
+      )
+    ),
+    class = "surveycore_error_weights_not_numeric"
+  )
+})

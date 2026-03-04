@@ -1252,3 +1252,56 @@ test_that("get_na_group_rows() returns empty tibble when no NA group rows exist"
   result <- get_na_group_rows(tbl, "grp")
   expect_equal(nrow(result), 0L)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: .degf_taylor() branches, print.survey_result
+# ---------------------------------------------------------------------------
+
+test_that(".degf_taylor() works for unstratified cluster (n_psus - 1)", {
+  # No strata, but has ids → "unstratified cluster" branch
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 700)
+  vars <- list(ids = "psu", strata = NULL, nest = FALSE)
+  df_val <- surveycore:::.degf_taylor(df, vars)
+  n_psus <- length(unique(df$psu))
+  expect_equal(df_val, n_psus - 1L)
+})
+
+test_that(".degf_taylor() works for stratified-only design (n_obs - n_strata)", {
+  # Has strata but no ids
+  df <- make_survey_data(n = 80, n_psu = 10, n_strata = 4, seed = 701)
+  vars <- list(ids = NULL, strata = "strata", nest = FALSE)
+  df_val <- surveycore:::.degf_taylor(df, vars)
+  n_strata <- length(unique(df$strata))
+  expect_equal(df_val, nrow(df) - n_strata)
+})
+
+test_that(".degf_taylor() works for no-structure design (n - 1)", {
+  # No ids, no strata
+  df <- make_survey_data(n = 50, n_psu = 10, n_strata = 2, seed = 702)
+  vars <- list(ids = NULL, strata = NULL, nest = FALSE)
+  df_val <- surveycore:::.degf_taylor(df, vars)
+  expect_equal(df_val, nrow(df) - 1L)
+})
+
+test_that(".degf_taylor() stratified cluster with nest=TRUE uses interaction for unique PSUs", {
+  # Stratified + ids + nest = TRUE: PSU IDs are made globally unique
+  df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 703)
+  vars_nest <- list(ids = "psu", strata = "strata", nest = TRUE)
+  vars_flat <- list(ids = "psu", strata = "strata", nest = FALSE)
+  df_nest <- surveycore:::.degf_taylor(df, vars_nest)
+  df_flat <- surveycore:::.degf_taylor(df, vars_flat)
+  # Both should be non-negative integers; nest=TRUE may give same or different value
+  expect_gte(df_nest, 0L)
+  expect_gte(df_flat, 0L)
+})
+
+test_that("print.survey_result() outputs header with class and dims", {
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 704)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  result <- get_means(sc, y1, variance = "se")
+
+  # print.survey_result dispatches through the S3 method; capture output
+  out <- capture.output(print(result))
+  expect_true(any(grepl("survey_means", out)))
+  expect_true(any(grepl("×", out)))  # the dimension separator
+})

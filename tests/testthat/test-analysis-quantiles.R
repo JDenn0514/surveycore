@@ -1003,3 +1003,79 @@ test_that("get_quantiles() multi-group NA row estimate matches filtered taylor d
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n, expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: NA CI propagation, empty domain
+# ---------------------------------------------------------------------------
+
+test_that("get_quantiles() empty domain returns NA estimate and se (covers NA CI path)", {
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 800)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_quantiles(sc, y1, probs = 0.5, variance = "se")
+  # Empty domain → p_hat is NA → CI path returns NA
+  expect_true(all(is.na(result$estimate)))
+})
+
+test_that("get_quantiles() works for survey_srs design", {
+  set.seed(801)
+  n <- 100L
+  df <- data.frame(y = rnorm(n), w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  result <- get_quantiles(sc, y, probs = c(0.25, 0.5, 0.75), variance = "se")
+  test_result_invariants(result, "survey_quantiles")
+  expect_equal(nrow(result), 3L)
+  expect_true(all(is.finite(result$estimate)))
+})
+
+test_that("get_quantiles() works for survey_twophase design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 802)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  result <- get_quantiles(sc, y1, probs = 0.5, variance = "se")
+  test_result_invariants(result, "survey_quantiles")
+  expect_true(is.finite(result$estimate[[1L]]))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: NA p_hat/se_p path in .quantile_woodruff_cell()
+# ---------------------------------------------------------------------------
+
+test_that("get_quantiles() empty domain triggers NA p_hat path in .quantile_woodruff_cell()", {
+  # When the domain is empty, .mean_cell() returns NA p_hat/se_p → early return in woodruff
+  set.seed(901)
+  df <- make_survey_data(n = 80, n_psu = 10, n_strata = 2, seed = 901)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 80L)
+  result <- suppressWarnings(get_quantiles(sc, y1, probs = 0.5))
+  expect_true(is.na(result$estimate[[1L]]))
+  expect_true(is.na(result$ci_low[[1L]]))
+  expect_true(is.na(result$ci_high[[1L]]))
+})
+
+# ---------------------------------------------------------------------------
+# Coverage: is.na(se_p) early-return path (lines 188-196) in
+# .quantile_woodruff_cell().
+#
+# The empty-domain test above (all FALSE) does NOT reach lines 188-196
+# because n_d == 0 is caught at line 156 first. To reach lines 188-196 we
+# need n_d > 0 but .mean_cell() returning NA for se. This occurs with an
+# SRS design when n_d == 1: .srs_mean_cell() returns se = NA_real_ for
+# single-observation domains (no variance with one point).
+# ---------------------------------------------------------------------------
+
+test_that("get_quantiles() single-row SRS domain triggers is.na(se_p) path in .quantile_woodruff_cell()", {
+  n  <- 50L
+  df <- make_survey_data(n = n, seed = 910L)
+  sc <- as_survey_srs(df, weights = wt)
+  # Domain contains exactly 1 non-NA observation → n_d == 1
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
+  result <- suppressWarnings(get_quantiles(sc, y1, probs = 0.5))
+  # estimate is the single observed value (not NA); CI is NA (no SE with n=1)
+  expect_false(is.na(result$estimate[[1L]]))
+  expect_true(is.na(result$ci_low[[1L]]))
+  expect_true(is.na(result$ci_high[[1L]]))
+})
