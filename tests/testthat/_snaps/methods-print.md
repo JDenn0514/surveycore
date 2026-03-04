@@ -437,3 +437,250 @@
       
       Metadata: 0 of 2 variable(s) labeled
 
+# print.survey_taylor() shows domain line when domain column is present
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Domain: 50 of 50 rows
+      
+    Output
+      # A tibble: 50 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
+       1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A     TRUE                 
+       2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B     TRUE                 
+       3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B     TRUE                 
+       4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A     TRUE                 
+       5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B     TRUE                 
+       6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C     TRUE                 
+       7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A     TRUE                 
+       8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B     TRUE                 
+       9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     TRUE                 
+      10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     TRUE                 
+      # i 40 more rows
+
+# print.survey_taylor() domain count excludes NAs
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Domain: 17 of 50 rows
+      
+    Output
+      # A tibble: 50 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
+       1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A     TRUE                 
+       2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B     FALSE                
+       3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B     NA                   
+       4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A     TRUE                 
+       5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B     FALSE                
+       6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C     NA                   
+       7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A     TRUE                 
+       8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B     FALSE                
+       9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     NA                   
+      10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     TRUE                 
+      # i 40 more rows
+
+# print.survey_taylor() domain line appears before groups line
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Domain: 50 of 50 rows
+      Groups: strata
+      
+    Output
+      # A tibble: 50 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
+       1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A     TRUE                 
+       2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B     TRUE                 
+       3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B     TRUE                 
+       4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A     TRUE                 
+       5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B     TRUE                 
+       6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C     TRUE                 
+       7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A     TRUE                 
+       8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B     TRUE                 
+       9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     TRUE                 
+      10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     TRUE                 
+      # i 40 more rows
+
+# print.survey_srs() shows domain line when domain column is present
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_srs> (simple random sample)
+      Sample size: 30
+      Domain: 30 of 30 rows
+      
+    Output
+      # A tibble: 30 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
+       1 psu_1 stratum_1   145 14.3   55.0 -0.727      1 A     TRUE                 
+       2 psu_1 stratum_1   145 12.9   32.8  1.30       1 B     TRUE                 
+       3 psu_1 stratum_1   145 17.8   42.2  0.336      1 A     TRUE                 
+       4 psu_2 stratum_1   145 12.9   41.5  1.04       0 A     TRUE                 
+       5 psu_2 stratum_1   145 19.7   25.9  0.921      1 A     TRUE                 
+       6 psu_2 stratum_1   145 13.0   50.4  0.721      1 C     TRUE                 
+       7 psu_2 stratum_1   145 17.1   52.1 -1.04       1 B     TRUE                 
+       8 psu_2 stratum_1   145 20.8   46.4 -0.0902     1 B     TRUE                 
+       9 psu_3 stratum_1   145  9.98  57.6  0.624      0 B     TRUE                 
+      10 psu_3 stratum_1   145 12.5   42.7 -0.954      1 A     TRUE                 
+      # i 20 more rows
+
+# print.survey_replicate() shows domain line when domain column is present
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (BRR, 5 replicates)
+      Sample size: 50
+      Domain: 50 of 50 rows
+      
+    Output
+      # A tibble: 50 x 14
+         psu   strata      fpc    wt    y1      y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A        14.4    13.2   13.3 
+       2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B        19.0    22.6   20.3 
+       3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B        11.6    12.6   15.2 
+       4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A        17.5    19.0   19.0 
+       5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B        22.9    21.2   24.3 
+       6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C        12.7    13.1    9.77
+       7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A        15.3    12.5   15.1 
+       8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B        14.0    15.2   14.9 
+       9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C        18.0    15.3   15.9 
+      10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A        11.8    13.1   15.8 
+      # i 40 more rows
+      # i 3 more variables: repwt_4 <dbl>, repwt_5 <dbl>, ..surveycore_domain.. <lgl>
+
+# print.survey_twophase() shows domain line when domain column is present
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_twophase> (method: full)
+      Phase 1 sample size: 60
+      Phase 2 sample size: 29
+      Domain: 29 of 29 Phase 2 rows
+      
+    Output
+      # A tibble: 60 x 12
+         psu   strata      fpc    wt    y1         y2    y3 group subset phase1_prob
+         <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl>        <dbl>
+       1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE        0.0687
+       2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE       0.0687
+       3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE       0.0687
+       4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE        0.0687
+       5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE       0.0687
+       6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE        0.0687
+       7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE        0.0687
+       8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE       0.0687
+       9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE        0.0687
+      10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE        0.0687
+      # i 50 more rows
+      # i 2 more variables: phase2_prob <dbl>, ..surveycore_domain.. <lgl>
+
+# print.survey_calibrated() default output
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 30
+      
+    Output
+      # A tibble: 30 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group cal_wt
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>  <dbl>
+       1 psu_1 stratum_1   145 14.3   55.0 -0.727      1 A       13.7
+       2 psu_1 stratum_1   145 12.9   32.8  1.30       1 B       13.6
+       3 psu_1 stratum_1   145 17.8   42.2  0.336      1 A       17.5
+       4 psu_2 stratum_1   145 12.9   41.5  1.04       0 A       13.9
+       5 psu_2 stratum_1   145 19.7   25.9  0.921      1 A       21.5
+       6 psu_2 stratum_1   145 13.0   50.4  0.721      1 C       11.8
+       7 psu_2 stratum_1   145 17.1   52.1 -1.04       1 B       17.2
+       8 psu_2 stratum_1   145 20.8   46.4 -0.0902     1 B       22.5
+       9 psu_3 stratum_1   145  9.98  57.6  0.624      0 B       10.1
+      10 psu_3 stratum_1   145 12.5   42.7 -0.954      1 A       12.4
+      # i 20 more rows
+
+# print.survey_calibrated() shows domain line when domain column is present
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_calibrated> (calibrated / non-probability) [experimental]
+      Sample size: 30
+      Domain: 30 of 30 rows
+      
+    Output
+      # A tibble: 30 x 10
+         psu   strata      fpc    wt    y1      y2    y3 group cal_wt
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>  <dbl>
+       1 psu_1 stratum_1   145 14.3   55.0 -0.727      1 A       13.7
+       2 psu_1 stratum_1   145 12.9   32.8  1.30       1 B       13.6
+       3 psu_1 stratum_1   145 17.8   42.2  0.336      1 A       17.5
+       4 psu_2 stratum_1   145 12.9   41.5  1.04       0 A       13.9
+       5 psu_2 stratum_1   145 19.7   25.9  0.921      1 A       21.5
+       6 psu_2 stratum_1   145 13.0   50.4  0.721      1 C       11.8
+       7 psu_2 stratum_1   145 17.1   52.1 -1.04       1 B       17.2
+       8 psu_2 stratum_1   145 20.8   46.4 -0.0902     1 B       22.5
+       9 psu_3 stratum_1   145  9.98  57.6  0.624      0 B       10.1
+      10 psu_3 stratum_1   145 12.5   42.7 -0.954      1 A       12.4
+      # i 20 more rows
+      # i 1 more variable: ..surveycore_domain.. <lgl>
+
+# print.survey_taylor() shows domain line when zero rows are in domain
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Domain: 0 of 50 rows
+      
+    Output
+      # A tibble: 50 x 9
+         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
+       1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A     FALSE                
+       2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B     FALSE                
+       3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B     FALSE                
+       4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A     FALSE                
+       5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B     FALSE                
+       6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C     FALSE                
+       7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A     FALSE                
+       8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B     FALSE                
+       9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     FALSE                
+      10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     FALSE                
+      # i 40 more rows
+

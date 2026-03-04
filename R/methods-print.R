@@ -66,6 +66,28 @@
   ))
 }
 
+# Print a domain membership line when SURVEYCORE_DOMAIN_COL is present in @data.
+# For survey_twophase, uses Phase 2 row counts to match what analysis computes.
+# Does nothing when the column is absent (no filter applied via surveytidy).
+# @param x Any survey_base subclass.
+# @return invisible(NULL)
+# @noRd
+.print_domain_info <- function(x) {
+  if (!SURVEYCORE_DOMAIN_COL %in% names(x@data)) return(invisible(NULL))
+
+  if (S7::S7_inherits(x, survey_twophase)) {
+    ph2_mask <- x@data[[x@variables$subset]]
+    n_domain <- sum(x@data[[SURVEYCORE_DOMAIN_COL]][ph2_mask], na.rm = TRUE)
+    n_total  <- sum(ph2_mask, na.rm = TRUE)
+    cli::cli_text("Domain: {.val {n_domain}} of {.val {n_total}} Phase 2 rows")
+  } else {
+    n_domain <- sum(x@data[[SURVEYCORE_DOMAIN_COL]], na.rm = TRUE)
+    n_total  <- nrow(x@data)
+    cli::cli_text("Domain: {.val {n_domain}} of {.val {n_total}} row{?s}")
+  }
+  invisible(NULL)
+}
+
 
 # ── print.survey_taylor ────────────────────────────────────────────────────
 
@@ -102,6 +124,7 @@ S7::method(print, survey_taylor) <- function(
   cli::cli_h1("Survey Design")
   cli::cli_text("{.cls survey_taylor} (Taylor series linearization)")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+  .print_domain_info(x)
 
   if (length(x@groups) > 0L) {
     cli::cli_text("Groups: {.field {x@groups}}")
@@ -229,6 +252,7 @@ S7::method(print, survey_srs) <- function(
   cli::cli_h1("Survey Design")
   cli::cli_text("{.cls survey_srs} (simple random sample)")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+  .print_domain_info(x)
 
   if (length(x@groups) > 0L) {
     cli::cli_text("Groups: {.field {x@groups}}")
@@ -346,6 +370,7 @@ S7::method(print, survey_replicate) <- function(
     "{.cls survey_replicate} ({toupper(x@variables$type)}, {n_reps} replicates)"
   )
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+  .print_domain_info(x)
 
   if (length(x@groups) > 0L) {
     cli::cli_text("Groups: {.field {x@groups}}")
@@ -454,6 +479,7 @@ S7::method(print, survey_twophase) <- function(
   if (!is.na(n_phase2)) {
     cli::cli_text("Phase 2 sample size: {.val {n_phase2}}")
   }
+  .print_domain_info(x)
 
   if (length(x@groups) > 0L) {
     cli::cli_text("Groups: {.field {x@groups}}")
@@ -562,6 +588,7 @@ S7::method(print, survey_calibrated) <- function(
   cli::cli_h1("Survey Design")
   cli::cli_text("{.cls survey_calibrated} (calibrated / non-probability) [experimental]")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
+  .print_domain_info(x)
 
   if (length(x@groups) > 0L) {
     cli::cli_text("Groups: {.field {x@groups}}")

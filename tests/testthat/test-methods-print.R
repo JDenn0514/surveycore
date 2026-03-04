@@ -106,6 +106,7 @@ make_twophase_design <- function(seed = 42L) {
 test_that("print.survey_taylor default output matches snapshot", {
   d <- make_taylor_design()
   test_invariants(d)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
 })
@@ -217,6 +218,7 @@ test_that("print.survey_taylor SRS design omits 'Weights provided as:' line", {
 test_that("print.survey_replicate default output matches snapshot", {
   d <- make_rep_design()
   test_invariants(d)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
 })
@@ -247,6 +249,7 @@ test_that("print.survey_replicate returns x invisibly", {
 test_that("print.survey_twophase default output matches snapshot", {
   d <- make_twophase_design()
   test_invariants(d)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
 })
@@ -359,6 +362,7 @@ test_that("print.survey_srs default output matches snapshot", {
     weights = wt
   )
   test_invariants(d)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
 })
@@ -484,4 +488,128 @@ test_that("print.survey_srs shows '(from sampling probabilities)' when probs_pro
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, design_info = TRUE), type = "message")
   expect_true(any(grepl("from sampling probabilities", out)))
+})
+
+
+# ── Domain info line ─────────────────────────────────────────────────────────
+# 28. print.survey_taylor — domain line present (snapshot)
+# 29. print.survey_taylor — domain count excludes NAs (snapshot)
+# 30. print.survey_taylor — domain line appears before groups line (snapshot)
+# 31. print.survey_srs — domain line present (snapshot)
+# 32. print.survey_replicate — domain line present (snapshot)
+# 33. print.survey_twophase — domain line present (snapshot)
+# 34. print.survey_calibrated — default output (snapshot; net-new baseline)
+# 35. print.survey_calibrated — domain line present (snapshot)
+# 36. print.survey_taylor — zero rows in domain (snapshot)
+
+
+# ── 28. print.survey_taylor — domain line present ────────────────────────────
+
+test_that("print.survey_taylor() shows domain line when domain column is present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_taylor_design()
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  expect_snapshot(print(d))
+})
+
+
+# ── 29. print.survey_taylor — domain count excludes NAs ──────────────────────
+
+test_that("print.survey_taylor() domain count excludes NAs", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_taylor_design()
+  test_invariants(d)
+  mask <- rep(c(TRUE, FALSE, NA), length.out = nrow(d@data))
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
+  expect_snapshot(print(d))
+})
+
+
+# ── 30. print.survey_taylor — domain line appears before groups line ──────────
+
+test_that("print.survey_taylor() domain line appears before groups line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_taylor_design()
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  d@groups <- "strata"
+  expect_snapshot(print(d))
+})
+
+
+# ── 31. print.survey_srs — domain line present ───────────────────────────────
+
+test_that("print.survey_srs() shows domain line when domain column is present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- as_survey_srs(
+    make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L),
+    weights = wt
+  )
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  expect_snapshot(print(d))
+})
+
+
+# ── 32. print.survey_replicate — domain line present ─────────────────────────
+
+test_that("print.survey_replicate() shows domain line when domain column is present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_rep_design()
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  expect_snapshot(print(d))
+})
+
+
+# ── 33. print.survey_twophase — domain line present ──────────────────────────
+
+test_that("print.survey_twophase() shows domain line when domain column is present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_twophase_design()
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  expect_snapshot(print(d))
+})
+
+
+# ── 34. print.survey_calibrated — default output (net-new baseline) ──────────
+
+test_that("print.survey_calibrated() default output", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
+  set.seed(123L)
+  df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
+  d <- as_survey_calibrated(df, weights = cal_wt)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
+  expect_snapshot(print(d))
+})
+
+
+# ── 35. print.survey_calibrated — domain line present ────────────────────────
+
+test_that("print.survey_calibrated() shows domain line when domain column is present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
+  set.seed(123L)
+  df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
+  d <- as_survey_calibrated(df, weights = cal_wt)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_calibrated))
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
+  expect_snapshot(print(d))
+})
+
+
+# ── 36. print.survey_taylor — zero rows in domain ────────────────────────────
+
+test_that("print.survey_taylor() shows domain line when zero rows are in domain", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_taylor_design()
+  test_invariants(d)
+  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  expect_snapshot(print(d))
 })
