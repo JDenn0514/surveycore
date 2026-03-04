@@ -583,3 +583,43 @@ test_that(".SURVEYCORE_WT_COL is the expected string constant", {
     "..surveycore_wt.."
   )
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: survey_weighting_history() error path
+# ---------------------------------------------------------------------------
+
+test_that("survey_weighting_history() errors for non-survey-object input", {
+  expect_error(
+    survey_weighting_history(list(x = 1)),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_snapshot(error = TRUE, survey_weighting_history(42))
+})
+
+test_that("survey_weighting_history() returns empty list for design with no history", {
+  df <- make_survey_data(n = 40, n_psu = 8, n_strata = 2, seed = 999)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  result <- survey_weighting_history(sc)
+  expect_equal(result, list())
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: .delete_metadata_col() internal function
+# ---------------------------------------------------------------------------
+
+test_that(".delete_metadata_col() removes column from all metadata slots", {
+  df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_var_label(sc, y1, "Outcome variable")
+
+  # Confirm label is present
+  expect_identical(sc@metadata@variable_labels[["y1"]], "Outcome variable")
+
+  # Delete the metadata column
+  sc2 <- surveycore:::.delete_metadata_col(sc, "y1")
+  expect_null(sc2@metadata@variable_labels[["y1"]])
+  expect_null(sc2@metadata@value_labels[["y1"]])
+  expect_null(sc2@metadata@question_prefaces[["y1"]])
+  expect_null(sc2@metadata@notes[["y1"]])
+  expect_null(sc2@metadata@transformations[["y1"]])
+})

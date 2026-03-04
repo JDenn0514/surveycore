@@ -217,3 +217,88 @@ test_that(".svy_rep_var() errors when all replicates are NA [direct]", {
     class = "surveycore_error_all_replicates_na"
   )
 })
+
+# ---------------------------------------------------------------------------
+# Block 22: Direct .replicate_mean() and .replicate_total() calls
+# ---------------------------------------------------------------------------
+
+test_that(".replicate_mean() returns finite mean and se for BRR design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 50)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+
+  result <- surveycore:::.replicate_mean(sc, "y1")
+  expect_true(is.finite(result$mean))
+  expect_true(is.finite(result$se))
+  expect_gte(result$se, 0)
+  expect_true(is.finite(result$var))
+})
+
+test_that(".replicate_mean() na.rm = FALSE errors when all replicates produce NA", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 51)
+  d$y1[[1L]] <- NA_real_
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+
+  expect_error(
+    surveycore:::.replicate_mean(sc, "y1", na.rm = FALSE),
+    class = "surveycore_error_all_replicates_na"
+  )
+})
+
+test_that(".replicate_total() returns finite total and se for BRR design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 52)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+
+  result <- surveycore:::.replicate_total(sc, "y1")
+  expect_true(is.finite(result$total))
+  expect_true(is.finite(result$se))
+  expect_gte(result$se, 0)
+})
+
+test_that(".replicate_total() na.rm = FALSE errors when all replicates produce NA", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 53)
+  d$y1[[2L]] <- NA_real_
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+
+  expect_error(
+    surveycore:::.replicate_total(sc, "y1", na.rm = FALSE),
+    class = "surveycore_error_all_replicates_na"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# Block 23: get_corr() with replicate design — covers .vcov_pair_replicate()
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() works for survey_replicate (BRR) design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 54)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_identical(as.character(result$var1[[1L]]), "y1")
+  expect_identical(as.character(result$var2[[1L]]), "y2")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() replicate returns NA for domain with fewer than 2 paired obs", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 55)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  # Only 1 row in domain → n_d < 2 → NA r
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(d)) == 1L
+
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  expect_true(is.na(result$r[[1L]]))
+})

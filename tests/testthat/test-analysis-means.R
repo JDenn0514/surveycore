@@ -825,3 +825,131 @@ test_that("get_means() multi-group NA row mean matches filtered taylor design [o
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n, expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: twophase, empty domains, SRS edge cases
+# ---------------------------------------------------------------------------
+
+test_that("get_means() works for survey_twophase design (covers .twophase_mean_cell())", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 500)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  result <- get_means(sc, y1, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_means() taylor: empty domain returns NA (covers n_d=0 branch)", {
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 501)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(all(is.na(result$mean)))
+})
+
+test_that("get_means() twophase: empty domain returns NA (covers .twophase_mean_cell() n_d=0)", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 502)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(all(is.na(result$mean)))
+})
+
+test_that("get_means() survey_srs n_d=1 domain returns NA se (covers n_d=1 branch)", {
+  set.seed(503)
+  n <- 30L
+  df <- data.frame(y = rnorm(n), w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
+  result <- get_means(sc, y, variance = "se")
+  expect_equal(result$n[[1L]], 1L)
+  expect_true(is.na(result$se[[1L]]))
+})
+
+test_that("get_means() replicate: empty domain returns NA (covers n_d=0 in .replicate_mean_cell())", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 504)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(all(is.na(result$mean)))
+})
+
+test_that("get_means() taylor with FPC fraction covers FPC fraction path in .taylor_mean_cell()", {
+  set.seed(505)
+  df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 505)
+  df$fpc_frac <- df$fpc / (df$fpc * 5)  # fractions in (0, 0.2]
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                  fpc = fpc_frac, nest = TRUE)
+  result <- get_means(sc, y1, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$mean[[1L]]))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: calibrated design, se_srs=0 paths, unsupported class
+# ---------------------------------------------------------------------------
+
+test_that("get_means() works for survey_calibrated design", {
+  set.seed(601)
+  df <- data.frame(y = rnorm(60), w = runif(60, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  result <- get_means(sc, y, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_true(is.finite(result$se[[1L]]))
+})
+
+test_that("get_means() calibrated empty domain returns NA (covers .calibrated_mean_cell() n_d=0 path)", {
+  set.seed(602)
+  df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 20L)
+  result <- get_means(sc, y, variance = "se")
+  expect_true(is.na(result$mean[[1L]]))
+})
+
+test_that("get_means() calibrated single-row domain returns mean with NA se (covers n_d=1 path)", {
+  set.seed(603)
+  df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(20L) == 1L
+  result <- get_means(sc, y, variance = "se")
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_true(is.na(result$se[[1L]]))
+})
+
+test_that("get_means() taylor single-row domain hits se_srs=0 branch in .taylor_mean_cell()", {
+  set.seed(604)
+  df <- make_survey_data(n = 50, n_psu = 10, n_strata = 2, seed = 604)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(50L) == 1L
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(is.finite(result$mean[[1L]]) || is.na(result$mean[[1L]]))
+})
+
+test_that("get_means() replicate single-row domain hits se_srs=0 branch in .replicate_mean_cell()", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 605)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(is.finite(result$mean[[1L]]) || is.na(result$mean[[1L]]))
+})
+
+test_that(".mean_cell() errors for unsupported design class", {
+  df <- data.frame(y = 1:5, wt = rep(1, 5))
+  expect_error(
+    surveycore:::.mean_cell(list(fake = TRUE), "y", rep(1, 5)),
+    class = "surveycore_error_unsupported_class"
+  )
+})

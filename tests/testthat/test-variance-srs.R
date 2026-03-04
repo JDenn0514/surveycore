@@ -250,3 +250,184 @@ test_that("get_means() na.rm = FALSE with FPC returns NA when data has NA", {
   result <- get_means(sc, y, na.rm = FALSE)
   expect_true(is.na(result$mean[[1L]]))
 })
+
+# ---------------------------------------------------------------------------
+# Block 19: Direct .srs_mean() calls — orphaned function coverage
+# ---------------------------------------------------------------------------
+
+test_that(".srs_mean() population FPC path: SE reduced vs no FPC", {
+  set.seed(200)
+  n <- 80L; N <- 800L
+  df <- data.frame(y = rnorm(n), w = rep(N / n, n), pop = rep(N, n))
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+
+  result_no  <- surveycore:::.srs_mean(
+    as_survey_srs(data.frame(y = df$y, w = df$w), weights = w),
+    "y"
+  )
+  result_fpc <- surveycore:::.srs_mean(sc, "y")
+
+  expect_equal(result_no$mean, result_fpc$mean, tolerance = 1e-14)
+  expect_true(is.finite(result_fpc$se))
+  expect_lt(result_fpc$se, result_no$se)          # FPC shrinks SE
+  expect_equal(result_fpc$df, n - 1L)
+})
+
+test_that(".srs_mean() fraction FPC path: SE reduced vs no FPC", {
+  set.seed(201)
+  n <- 60L; frac <- 0.1
+  df <- data.frame(y = rnorm(n), w = rep(1 / frac, n), f = rep(frac, n))
+  sc <- as_survey_srs(df, weights = w, fpc = f)
+
+  result_fpc <- surveycore:::.srs_mean(sc, "y")
+
+  expect_true(is.finite(result_fpc$mean))
+  expect_true(is.finite(result_fpc$se))
+  expect_gte(result_fpc$se, 0)
+})
+
+test_that(".srs_mean() returns NA when all values are NA (n_used = 0)", {
+  df <- data.frame(y = rep(NA_real_, 10), w = rep(1, 10))
+  sc <- as_survey_srs(df, weights = w)
+  result <- surveycore:::.srs_mean(sc, "y", na.rm = TRUE)
+  expect_true(is.na(result$mean))
+  expect_true(is.na(result$se))
+  expect_equal(result$df, 0L)
+})
+
+test_that(".srs_mean() n = 1 returns point estimate with NA se", {
+  df <- data.frame(y = 42, w = 1)
+  sc <- suppressWarnings(as_survey_srs(df, weights = w))
+  result <- surveycore:::.srs_mean(sc, "y")
+  expect_equal(result$mean, 42, tolerance = 1e-14)
+  expect_true(is.na(result$se))
+  expect_equal(result$df, 0L)
+})
+
+test_that(".srs_mean() na.rm = FALSE propagates NA", {
+  df <- data.frame(y = c(1, 2, NA_real_, 4, 5), w = rep(1, 5))
+  sc <- as_survey_srs(df, weights = w)
+  result <- surveycore:::.srs_mean(sc, "y", na.rm = FALSE)
+  expect_true(is.na(result$mean))
+  expect_true(is.na(result$se))
+})
+
+# ---------------------------------------------------------------------------
+# Block 20: Direct .srs_total() calls — orphaned function coverage
+# ---------------------------------------------------------------------------
+
+test_that(".srs_total() population FPC path: SE reduced vs no FPC", {
+  set.seed(202)
+  n <- 80L; N <- 800L
+  df <- data.frame(y = rnorm(n), w = rep(N / n, n), pop = rep(N, n))
+  sc_fpc  <- as_survey_srs(df, weights = w, fpc = pop)
+  sc_nofpc <- as_survey_srs(data.frame(y = df$y, w = df$w), weights = w)
+
+  result_fpc   <- surveycore:::.srs_total(sc_fpc, "y")
+  result_nofpc <- surveycore:::.srs_total(sc_nofpc, "y")
+
+  expect_true(is.finite(result_fpc$total))
+  expect_true(is.finite(result_fpc$se))
+  expect_lt(result_fpc$se, result_nofpc$se)
+})
+
+test_that(".srs_total() fraction FPC path: produces finite SE", {
+  set.seed(203)
+  n <- 60L; frac <- 0.2
+  df <- data.frame(y = rnorm(n), w = rep(1 / frac, n), f = rep(frac, n))
+  sc <- as_survey_srs(df, weights = w, fpc = f)
+  result <- surveycore:::.srs_total(sc, "y")
+  expect_true(is.finite(result$total))
+  expect_true(is.finite(result$se))
+  expect_gte(result$se, 0)
+})
+
+test_that(".srs_total() n = 1 returns point estimate with NA se", {
+  df <- data.frame(y = 5, w = 2)
+  sc <- suppressWarnings(as_survey_srs(df, weights = w))
+  result <- surveycore:::.srs_total(sc, "y")
+  expect_equal(result$total, 10, tolerance = 1e-14)  # 5 * 2
+  expect_true(is.na(result$se))
+  expect_equal(result$df, 0L)
+})
+
+test_that(".srs_total() all-NA column returns NA", {
+  df <- data.frame(y = rep(NA_real_, 8), w = rep(1, 8))
+  sc <- as_survey_srs(df, weights = w)
+  result <- surveycore:::.srs_total(sc, "y", na.rm = TRUE)
+  expect_true(is.na(result$total))
+  expect_true(is.na(result$se))
+  expect_equal(result$df, 0L)
+})
+
+test_that(".srs_total() na.rm = FALSE propagates NA", {
+  df <- data.frame(y = c(1, 2, NA_real_, 4, 5), w = rep(1, 5))
+  sc <- as_survey_srs(df, weights = w)
+  result <- surveycore:::.srs_total(sc, "y", na.rm = FALSE)
+  expect_true(is.na(result$total))
+  expect_true(is.na(result$se))
+})
+
+# ---------------------------------------------------------------------------
+# Block 21: get_corr() with survey_srs — covers .vcov_pair_srs()
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() works for survey_srs design", {
+  set.seed(204)
+  n <- 100L
+  x <- rnorm(n); y <- x + rnorm(n, sd = 0.5)
+  df <- data.frame(x = x, y = y, w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  result <- get_corr(sc, x = c(x, y), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_identical(as.character(result$var1[[1L]]), "x")
+  expect_identical(as.character(result$var2[[1L]]), "y")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() SRS with FPC covers .vcov_pair_srs() FPC path", {
+  set.seed(205)
+  n <- 80L; N <- 800L
+  x <- rnorm(n); y <- x + rnorm(n, sd = 0.5)
+  df <- data.frame(x = x, y = y, w = rep(N / n, n), pop = rep(N, n))
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  result <- get_corr(sc, x = c(x, y), variance = "se")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() SRS returns NA when domain has fewer than 2 paired obs", {
+  set.seed(206)
+  n <- 20L
+  df <- data.frame(
+    x = c(rnorm(19L), NA_real_),
+    y = c(rnorm(19L), NA_real_),
+    w = rep(1, n)
+  )
+  sc <- as_survey_srs(df, weights = w)
+  # Only the last row is in domain; it has NA x and y, so paired n_d < 2
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- c(rep(FALSE, 19L), TRUE)
+  result <- get_corr(sc, x = c(x, y), variance = "se")
+  expect_true(is.na(result$r[[1L]]))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: FPC fraction path in .vcov_pair_srs()
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() SRS with FPC fraction covers FPC fraction branch in .vcov_pair_srs()", {
+  set.seed(901)
+  n <- 80L
+  frac <- 0.1
+  df <- data.frame(
+    x = rnorm(n), y = rnorm(n),
+    w = rep(1 / frac, n),
+    frac = rep(frac, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = frac)
+  result <- get_corr(sc, x = c(x, y), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})

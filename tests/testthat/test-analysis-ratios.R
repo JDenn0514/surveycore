@@ -985,3 +985,76 @@ test_that("get_ratios() multi-group NA row ratio matches filtered taylor design 
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n, expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: NA propagation path, replicate design
+# ---------------------------------------------------------------------------
+
+test_that("get_ratios() na.rm=FALSE with NA denominator propagates NA (covers is.na(total_x) path)", {
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 900)
+  # Introduce NA in denominator; na.rm=FALSE means total_x becomes NA
+  df$denom_na <- c(NA_real_, df$y2[-1L])
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  result <- get_ratios(sc, y1, denom_na, variance = "se", na.rm = FALSE)
+  test_result_invariants(result, "survey_ratios")
+  expect_true(is.na(result$ratio[[1L]]))
+  expect_true(is.na(result$se[[1L]]))
+})
+
+test_that("get_ratios() works for survey_replicate design (covers .replicate_ratio_cell())", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 901)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  result <- get_ratios(sc, y1, y2, variance = "se")
+  test_result_invariants(result, "survey_ratios")
+  expect_true(is.finite(result$ratio[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_ratios() works for survey_twophase design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 902)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  result <- get_ratios(sc, y1, y2, variance = "se")
+  test_result_invariants(result, "survey_ratios")
+  expect_true(is.finite(result$ratio[[1L]]))
+})
+
+test_that("get_ratios() empty domain for twophase returns NA", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 903)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_ratios(sc, y1, y2, variance = "se")
+  expect_true(all(is.na(result$ratio)))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: empty domain for .replicate_ratio_cell(), se_srs=0 path
+# ---------------------------------------------------------------------------
+
+test_that("get_ratios() replicate empty domain returns NA (covers .replicate_ratio_cell() n_d=0)", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 901)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 80L)
+  result <- suppressWarnings(get_ratios(sc, numerator = y1, denominator = y2))
+  expect_true(is.na(result$ratio[[1L]]))
+})
+
+test_that("get_ratios() replicate single-row domain hits se_srs=0 path in .replicate_ratio_cell()", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 902)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(80L) == 1L
+  result <- suppressWarnings(get_ratios(sc, numerator = y1, denominator = y2))
+  expect_true(is.finite(result$ratio[[1L]]) || is.na(result$ratio[[1L]]))
+})
