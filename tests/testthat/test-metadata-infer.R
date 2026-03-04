@@ -412,3 +412,70 @@ test_that("infer_question_prefaces() rejects non-survey non-data-frame input", {
   )
   expect_snapshot(error = TRUE, infer_question_prefaces(list(x = 1)))
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: .find_lcp() and .trim_to_word_boundary() edge cases
+# ---------------------------------------------------------------------------
+
+test_that(".find_lcp() returns empty string for empty input", {
+  result <- surveycore:::.find_lcp(character(0))
+  expect_identical(result, "")
+})
+
+test_that(".find_lcp() returns the string itself for single-element input", {
+  result <- surveycore:::.find_lcp("hello world")
+  expect_identical(result, "hello world")
+})
+
+test_that(".find_lcp() returns empty string when shortest string has zero characters", {
+  result <- surveycore:::.find_lcp(c("abc", ""))
+  expect_identical(result, "")
+})
+
+test_that(".find_lcp() stops at first mismatch and returns correct prefix", {
+  result <- surveycore:::.find_lcp(c("abcde", "abcfg", "abcxy"))
+  expect_identical(result, "abc")
+})
+
+test_that(".find_lcp() returns full string when all strings are identical", {
+  result <- surveycore:::.find_lcp(c("hello", "hello", "hello"))
+  expect_identical(result, "hello")
+})
+
+test_that(".trim_to_word_boundary() returns empty string for empty input", {
+  result <- surveycore:::.trim_to_word_boundary("")
+  expect_identical(result, "")
+})
+
+test_that(".trim_to_word_boundary() always trims to last word boundary", {
+  # "hello world" → last space at pos 6 → returns "hello" (trims "world")
+  result <- surveycore:::.trim_to_word_boundary("hello world")
+  expect_identical(result, "hello")
+})
+
+test_that(".trim_to_word_boundary() trims trailing whitespace then trims to last word", {
+  # "hello world  " → trimws → "hello world" → trims "world" → "hello"
+  result <- surveycore:::.trim_to_word_boundary("hello world  ")
+  expect_identical(result, "hello")
+})
+
+test_that(".trim_to_word_boundary() returns trimmed string when no internal whitespace", {
+  # Single word with no spaces: last_space == -1 → return trimmed string
+  result <- surveycore:::.trim_to_word_boundary("nospaces")
+  expect_identical(result, "nospaces")
+})
+
+test_that("infer_question_prefaces() handles labels with no common prefix", {
+  # Labels with no shared prefix → empty LCP → no preface extracted
+  df <- data.frame(
+    x = 1:4, y = 1:4, z = 1:4, w = rep(1, 4)
+  )
+  attr(df$x, "label") <- "Apple is red"
+  attr(df$y, "label") <- "Banana is yellow"
+  attr(df$z, "label") <- "Cherry is red"
+  sc <- suppressWarnings(as_survey(df, weights = w))
+  result <- infer_question_prefaces(sc)
+  # No common prefix → prefaces should be NULL or absent
+  expect_true(is.null(result@metadata@question_prefaces[["x"]]) ||
+              identical(result@metadata@question_prefaces[["x"]], ""))
+})

@@ -613,3 +613,142 @@ test_that("print.survey_taylor() shows domain line when zero rows are in domain"
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
   expect_snapshot(print(d))
 })
+
+# ── 37. print.survey_srs — groups line ───────────────────────────────────────
+
+test_that("print.survey_srs() shows groups line when @groups is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- as_survey_srs(
+    make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L),
+    weights = wt
+  )
+  test_invariants(d)
+  d@groups <- "strata"
+  out <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("Groups", out)))
+})
+
+# ── 38. print.survey_replicate — groups + FPC ────────────────────────────────
+
+test_that("print.survey_replicate() shows groups when @groups is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_rep_design()
+  test_invariants(d)
+  d@groups <- "strata"
+  out <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("Groups", out)))
+})
+
+test_that("print.survey_replicate() with FPC covers FPC design_info block", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_rep_design()
+  test_invariants(d)
+  # Add a synthetic FPC column to trigger the FPC design_info block
+  d@data$fpc_rep <- rep(500L, nrow(d@data))
+  d@variables$fpc     <- "fpc_rep"
+  d@variables$fpctype <- "population"
+  out <- capture.output(print(d, design_info = TRUE), type = "message")
+  expect_true(any(grepl("FPC", out)))
+})
+
+# ── 39. print.survey_twophase — groups + Phase 2 strata/ids ─────────────────
+
+test_that("print.survey_twophase() shows groups when @groups is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_twophase_design()
+  test_invariants(d)
+  d@groups <- "strata"
+  out <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("Groups", out)))
+})
+
+test_that("print.survey_twophase full=TRUE includes Phase 2 fields", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_twophase_design()
+  test_invariants(d)
+  out <- capture.output(print(d, full = TRUE), type = "message")
+  expect_true(any(grepl("Phase 2", out)))
+})
+
+# ── 40. summary.survey_replicate — content checks ────────────────────────────
+
+test_that("summary.survey_replicate() shows BRR type and replicate count", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_rep_design()
+  test_invariants(d)
+  out <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("BRR", out)))
+  expect_true(any(grepl("Replicate", out, ignore.case = TRUE)))
+})
+
+# ── 41. summary.survey_twophase — content checks ─────────────────────────────
+
+test_that("summary.survey_twophase() shows Phase 1 and Phase 2 sections", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_twophase_design()
+  test_invariants(d)
+  out <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("Phase 1", out)))
+  expect_true(any(grepl("Phase 2", out)))
+})
+
+test_that("summary.survey_twophase() shows Phase 2 IDs and strata when present", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  # Build a twophase design that has Phase 2 strata and IDs
+  df <- make_survey_data(n = 80L, n_psu = 10L, n_strata = 2L,
+                         design = "twophase", seed = 99L)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(
+    phase1,
+    subset  = subset,
+    ids2    = psu,
+    strata2 = strata
+  )
+  out <- capture.output(summary(sc), type = "message")
+  expect_true(any(grepl("Phase 2", out)))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: calibrated print, replicate FPC summary,
+# twophase print with Phase 2 ids/strata
+# ---------------------------------------------------------------------------
+
+test_that("print.survey_calibrated() runs without error and produces output", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  set.seed(901)
+  df <- data.frame(y = rnorm(30), w = runif(30, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  out <- capture.output(print(sc), type = "message")
+  expect_true(any(grepl("survey_calibrated", out)))
+})
+
+test_that("summary.survey_replicate() with FPC covers the FPC line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 902)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols),
+                      type = "BRR", fpc = fpc, fpctype = "fraction")
+  out <- capture.output(summary(sc), type = "message")
+  expect_true(any(grepl("FPC", out)))
+})
+
+test_that("print.survey_twophase() with full=TRUE shows Phase 2 ids and strata lines", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 903)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, ids2 = psu, strata2 = strata)
+  out <- capture.output(print(sc, full = TRUE), type = "message")
+  expect_true(any(grepl("Phase 2", out)))
+  expect_true(any(grepl("IDs|Strata|ids|strata", out)))
+})
+
+test_that("summary.survey_twophase() with Phase 1 strata covers the Strata line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 904)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  out <- capture.output(summary(sc), type = "message")
+  expect_true(any(grepl("Strata|strata", out)))
+})

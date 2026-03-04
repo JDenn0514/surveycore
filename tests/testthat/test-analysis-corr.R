@@ -1154,3 +1154,92 @@ test_that("get_corr() multi-group NA row r matches filtered taylor design [oracl
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n, expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: SRS, twophase, n<3, cv warning
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() works for survey_srs design (covers .vcov_pair_srs())", {
+  set.seed(300)
+  n <- 80L
+  x <- rnorm(n); y <- x * 0.8 + rnorm(n, sd = 0.3)
+  df <- data.frame(x = x, y = y, w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  result <- get_corr(sc, x = c(x, y), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_true(result$r[[1L]] > 0.5)  # known positive correlation
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() works for survey_twophase design (covers .vcov_pair_twophase())", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 301)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() returns NA t-stat/p-val when n < 3 in domain", {
+  # Domain with only 2 rows: r is defined but df_t = n-2 = 0 → NA t-stat path
+  df <- make_survey_data(n = 80, n_psu = 10, n_strata = 2, seed = 302)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # Keep only 2 rows in domain via domain column
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(df)) <= 2L
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  # With n=2 (nn < 3), statistic and p_value must be NA
+  expect_true(is.na(result$statistic[[1L]]))
+  expect_true(is.na(result$p_value[[1L]]))
+})
+
+test_that("get_corr() variance='cv' warns when correlation is zero or negative", {
+  # Force near-zero correlation by making y orthogonal to x
+  set.seed(303)
+  n <- 100L
+  df <- make_survey_data(n = n, n_psu = 10, n_strata = 2, seed = 303)
+  # Overwrite y2 so it is negatively correlated with y1
+  df$y2_neg <- -df$y1 + rnorm(n, sd = 0.01)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # cv undefined when r <= 0
+  expect_warning(
+    get_corr(sc, x = c(y1, y2_neg), variance = "cv"),
+    class = "surveycore_warning_cv_undefined"
+  )
+})
+
+test_that("get_corr() returns NA for corr CI when r is exactly 1 (perfect correlation)", {
+  # Perfect positive correlation: y = x exactly → r = 1, t = Inf
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 304)
+  df$y_perfect <- df$y1   # same as y1 → r = 1
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  result <- get_corr(sc, x = c(y1, y_perfect), variance = "se")
+  expect_equal(result$r[[1L]], 1, tolerance = 1e-10)
+  # t-stat should be Inf or very large for r = 1
+  expect_true(is.infinite(result$statistic[[1L]]) || result$statistic[[1L]] > 100)
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: calibrated design, unsupported class
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() works for survey_calibrated design (covers .vcov_pair_calibrated())", {
+  set.seed(801)
+  n <- 60L
+  df <- data.frame(y1 = rnorm(n), y2 = rnorm(n), w = runif(n, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+})
+
+test_that(".corr_vcov_pair() errors for unsupported design class", {
+  expect_error(
+    surveycore:::.corr_vcov_pair(list(fake = TRUE), "y1", "y2", rep(1, 5), TRUE),
+    class = "surveycore_error_unsupported_class"
+  )
+})

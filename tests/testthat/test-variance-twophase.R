@@ -455,3 +455,87 @@ test_that(".twophase_mean() returns finite SE with small Phase 2 sample", {
   expect_true(is.numeric(result$mean))
   expect_true(is.numeric(result$se) && result$se >= 0)
 })
+
+# ---------------------------------------------------------------------------
+# Block: get_corr() and edge cases for variance-twophase.R coverage
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() works for survey_twophase design", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 70)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_corr() twophase with small domain returns NA r", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 71)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  # Keep only 1 phase-2 row in domain via domain column
+  ph2_rows <- which(d$subset)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <-
+    seq_len(nrow(d)) == ph2_rows[[1L]]
+
+  result <- get_corr(sc, x = c(y1, y2), variance = "se")
+  expect_true(is.na(result$r[[1L]]))
+})
+
+test_that("twophase design with nested phase1 PSUs covers nest branch in .twophasevar()", {
+  # Use nest = TRUE in phase1 to trigger the PSU-uniqueness branch
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 72)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+
+  result <- get_means(sc, y1, variance = "se")
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that(".twophase_total() via get_totals() returns finite values", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 73)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: "simple" method, .twophase_df() no-ids/no-strata
+# ---------------------------------------------------------------------------
+
+test_that("get_means() twophase with method='simple' covers .twophasevar() simple path", {
+  # 'simple' method with no explicit ids2/strata2 requires method='simple'
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 901)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "simple")
+  result <- get_means(sc, y1, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$mean[[1L]]))
+})
+
+test_that(".twophase_total() NA path fires when all domain values are NA", {
+  # All y1 values set to NA with na.rm=FALSE → total is NA → early return in .twophase_total()
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 902)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  sc@data$y1 <- NA_real_
+  result <- surveycore:::.twophase_total(sc, "y1", na.rm = FALSE)
+  expect_true(is.na(result$total))
+})

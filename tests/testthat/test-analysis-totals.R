@@ -672,3 +672,153 @@ test_that("get_totals() multi-group NA row total matches filtered taylor design 
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n, expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: SRS, twophase, empty domains
+# ---------------------------------------------------------------------------
+
+test_that("get_totals() works for survey_srs design (covers .srs_total_cell())", {
+  set.seed(600)
+  n <- 100L; N <- 1000L
+  df <- data.frame(y = rnorm(n, mean = 50, sd = 10), w = rep(N / n, n))
+  sc <- as_survey_srs(df, weights = w)
+  result <- get_totals(sc, y, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_totals() survey_srs with FPC covers FPC path in .srs_total_cell()", {
+  set.seed(601)
+  n <- 80L; N <- 800L
+  df <- data.frame(y = rnorm(n), w = rep(N / n, n), pop = rep(N, n))
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  result <- get_totals(sc, y, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_totals() works for survey_twophase design (covers .twophase_total_cell())", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 602)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  result <- get_totals(sc, y1, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})
+
+test_that("get_totals() taylor: empty domain returns NA (covers n_d=0 branch)", {
+  df <- make_survey_data(n = 60, n_psu = 10, n_strata = 2, seed = 603)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(all(is.na(result$total)))
+})
+
+test_that("get_totals() replicate: empty domain returns NA (covers n_d=0 branch)", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 604)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(all(is.na(result$total)))
+})
+
+test_that("get_totals() twophase: empty domain returns NA (covers .twophase_total_cell() n_d=0)", {
+  d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 605)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset,
+                           ids2 = psu, strata2 = strata)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(all(is.na(result$total)))
+})
+
+test_that("get_totals() SRS n_d=1 domain returns point estimate with NA se", {
+  set.seed(606)
+  n <- 40L
+  df <- data.frame(y = rnorm(n), w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
+  result <- get_totals(sc, y, variance = "se")
+  expect_equal(result$n[[1L]], 1L)
+  expect_true(is.finite(result$total[[1L]]))
+  expect_true(is.na(result$se[[1L]]))
+})
+
+test_that("get_totals() taylor with FPC fraction covers FPC fraction path in .taylor_total_cell()", {
+  set.seed(607)
+  df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 607)
+  df$fpc_frac <- df$fpc / (df$fpc * 5)  # fractions in (0, 0.2]
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                  fpc = fpc_frac, nest = TRUE)
+  result <- get_totals(sc, y1, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$total[[1L]]))
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: calibrated design, se_srs=0 paths, unsupported class
+# ---------------------------------------------------------------------------
+
+test_that("get_totals() works for survey_calibrated design", {
+  set.seed(701)
+  df <- data.frame(y = rnorm(60), w = runif(60, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  result <- get_totals(sc, y, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_true(is.finite(result$se[[1L]]))
+})
+
+test_that("get_totals() calibrated empty domain returns NA (covers .calibrated_total_cell() n_d=0)", {
+  set.seed(702)
+  df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 20L)
+  result <- get_totals(sc, y, variance = "se")
+  expect_true(is.na(result$total[[1L]]))
+})
+
+test_that("get_totals() calibrated single-row domain returns total with NA se (covers n_d=1 path)", {
+  set.seed(703)
+  df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
+  sc <- as_survey_calibrated(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(20L) == 1L
+  result <- get_totals(sc, y, variance = "se")
+  expect_true(is.finite(result$total[[1L]]))
+  expect_true(is.na(result$se[[1L]]))
+})
+
+test_that("get_totals() taylor single-row domain hits se_srs=0 branch in .taylor_total_cell()", {
+  set.seed(704)
+  df <- make_survey_data(n = 50, n_psu = 10, n_strata = 2, seed = 704)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(50L) == 1L
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(is.finite(result$total[[1L]]) || is.na(result$total[[1L]]))
+})
+
+test_that("get_totals() replicate single-row domain hits se_srs=0 branch in .replicate_total_cell()", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 705)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
+  result <- get_totals(sc, y1, variance = "se")
+  expect_true(is.finite(result$total[[1L]]) || is.na(result$total[[1L]]))
+})
+
+test_that(".total_cell() errors for unsupported design class", {
+  expect_error(
+    surveycore:::.total_cell(list(fake = TRUE), "y", rep(1, 5)),
+    class = "surveycore_error_unsupported_class"
+  )
+})

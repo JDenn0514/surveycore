@@ -1207,3 +1207,219 @@ test_that("get_freqs() multi-group NA row estimate matches filtered taylor desig
   expect_true(all(is.finite(na_x_rows$se)))
   expect_equal(na_x_rows$n,   expected$n)
 })
+
+# ---------------------------------------------------------------------------
+# Additional coverage: SRS and twophase design paths
+# ---------------------------------------------------------------------------
+
+test_that("get_freqs() works for survey_srs design (covers .srs_freq_cell())", {
+  set.seed(400)
+  df <- data.frame(
+    x = sample(c("A", "B", "C"), 100, replace = TRUE),
+    w = rep(1, 100)
+  )
+  sc <- as_survey_srs(df, weights = w)
+  result <- get_freqs(sc, x = x)
+  test_result_invariants(result, "survey_freqs")
+  expect_true(all(is.finite(result$pct)))
+  expect_gte(min(result$n), 0)
+})
+
+test_that("get_freqs() survey_srs with FPC covers FPC path in .srs_freq_cell()", {
+  set.seed(401)
+  n <- 80L; N <- 800L
+  df <- data.frame(
+    x   = sample(c("A", "B"), n, replace = TRUE),
+    w   = rep(N / n, n),
+    pop = rep(N, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  result <- get_freqs(sc, x = x)
+  test_result_invariants(result, "survey_freqs")
+  expect_equal(sum(result$pct), 1, tolerance = 1e-10)
+})
+
+test_that("get_freqs() works for survey_twophase design (covers .twophase_freq_cell())", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
+                        design = "twophase", seed = 402)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  result <- get_freqs(sc, x = group)
+  test_result_invariants(result, "survey_freqs")
+  expect_true(all(is.finite(result$pct)))
+  expect_equal(sum(result$pct), 1, tolerance = 1e-10)
+})
+
+test_that("get_freqs() taylor design with FPC fraction covers FPC branch in .taylor_freq_cell()", {
+  set.seed(403)
+  df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 403)
+  df$fpc_frac <- df$fpc / (df$fpc * 3)  # sampling fractions < 1
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata,
+                  fpc = fpc_frac, nest = TRUE)
+  result <- get_freqs(sc, x = group)
+  test_result_invariants(result, "survey_freqs")
+  expect_true(all(is.finite(result$pct)))
+})
+
+test_that("get_freqs() survey_srs fraction FPC path in .srs_freq_cell()", {
+  set.seed(404)
+  n <- 80L; frac <- 0.1
+  df <- data.frame(
+    x    = sample(c("A", "B", "C"), n, replace = TRUE),
+    w    = rep(1 / frac, n),
+    frac = rep(frac, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = frac)
+  result <- get_freqs(sc, x = x)
+  test_result_invariants(result, "survey_freqs")
+  expect_equal(sum(result$pct), 1, tolerance = 1e-10)
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage: empty domain paths, n_g<2, nest=FALSE, unsupported class
+# ---------------------------------------------------------------------------
+
+test_that("get_freqs() taylor empty domain returns NA (covers .taylor_freq_cell() n_g=0 path)", {
+  set.seed(501)
+  df <- make_survey_data(n = 50, n_psu = 10, n_strata = 2, seed = 501)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 50L)
+  result <- suppressWarnings(get_freqs(sc, x = group))
+  expect_true(all(is.na(result$pct)))
+})
+
+test_that("get_freqs() taylor design with nest=FALSE covers non-nested psu_id path", {
+  set.seed(502)
+  df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 502)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = FALSE)
+  result <- get_freqs(sc, x = group)
+  test_result_invariants(result, "survey_freqs")
+  expect_true(all(is.finite(result$pct)))
+})
+
+test_that("get_freqs() replicate empty domain returns NA (covers .replicate_freq_cell() n_g=0 path)", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 503)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 60L)
+  result <- suppressWarnings(get_freqs(sc, x = group))
+  expect_true(all(is.na(result$pct)))
+})
+
+test_that("get_freqs() replicate single-row domain hits se_srs=0 branch (n_g<2)", {
+  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
+                        design = "replicate", type = "brr", seed = 504)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
+  result <- suppressWarnings(get_freqs(sc, x = group))
+  expect_true(nrow(result) >= 1L)
+})
+
+test_that("get_freqs() srs empty domain returns NA (covers .srs_freq_cell() n_g=0 path)", {
+  set.seed(505)
+  n <- 50L
+  df <- data.frame(cat = sample(c("A", "B"), n, replace = TRUE), w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, n)
+  result <- suppressWarnings(get_freqs(sc, x = cat))
+  expect_true(all(is.na(result$pct)))
+})
+
+test_that("get_freqs() srs single-row domain hits n_g<2 path in .srs_freq_cell()", {
+  set.seed(506)
+  n <- 50L
+  df <- data.frame(cat = sample(c("A", "B"), n, replace = TRUE), w = rep(1, n))
+  sc <- as_survey_srs(df, weights = w)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
+  result <- suppressWarnings(get_freqs(sc, x = cat))
+  expect_true(nrow(result) >= 1L)
+})
+
+test_that("get_freqs() twophase empty domain returns NA (covers .twophase_freq_cell() n_g=0 path)", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 507)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(d))
+  result <- suppressWarnings(get_freqs(sc, x = group))
+  expect_true(all(is.na(result$pct)))
+})
+
+test_that("get_freqs() twophase single-row domain hits se_srs=0 path in .twophase_freq_cell()", {
+  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 508)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(d)) == which(d$subset)[[1L]]
+  result <- suppressWarnings(get_freqs(sc, x = group))
+  expect_true(nrow(result) >= 1L)
+})
+
+test_that(".freq_cell() errors for unsupported design class", {
+  expect_error(
+    surveycore:::.freq_cell(list(fake = TRUE), c(1, 0), c(1, 1)),
+    class = "surveycore_error_unsupported_class"
+  )
+})
+
+# ---------------------------------------------------------------------------
+# Coverage: n_g == 0 early-return paths in all four backend cell functions.
+#
+# These branches fire when a group combo exists in the data but ALL of its
+# members have NA for the focal variable (with na.rm = TRUE), making
+# denom = 0. The earlier empty-domain tests (domain_mask = all FALSE) do
+# NOT hit these branches because x_domain is then empty → levels_vn is
+# empty → the level loop never runs → the cell function is never called.
+# ---------------------------------------------------------------------------
+
+test_that("get_freqs() taylor: group with all-NA focal var hits n_g=0 in .taylor_freq_cell()", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 610L)
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # G2 rows all have NA cat2; G1 rows have non-NA → levels_vn is non-empty
+  d@data$cat2 <- ifelse(d@data$group == "A", "X", NA_character_)
+  d@data$grp2 <- ifelse(d@data$group == "A", "G1", "G2")
+  result <- suppressWarnings(get_freqs(d, x = cat2, group = grp2))
+  g2_rows <- result[result$grp2 == "G2", ]
+  expect_true(all(is.na(g2_rows$pct)))
+})
+
+test_that("get_freqs() replicate: group with all-NA focal var hits n_g=0 in .replicate_freq_cell()", {
+  d <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                        design = "replicate", type = "brr", seed = 611L)
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  sc <- as_survey_rep(d, weights = wt,
+                      repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc@data$cat2 <- ifelse(sc@data$group == "A", "X", NA_character_)
+  sc@data$grp2 <- ifelse(sc@data$group == "A", "G1", "G2")
+  result <- suppressWarnings(get_freqs(sc, x = cat2, group = grp2))
+  g2_rows <- result[result$grp2 == "G2", ]
+  expect_true(all(is.na(g2_rows$pct)))
+})
+
+test_that("get_freqs() srs: group with all-NA focal var hits n_g=0 in .srs_freq_cell()", {
+  d  <- make_survey_data(n = 100L, seed = 612L)
+  sc <- as_survey_srs(d, weights = wt)
+  sc@data$cat2 <- ifelse(sc@data$group == "A", "X", NA_character_)
+  sc@data$grp2 <- ifelse(sc@data$group == "A", "G1", "G2")
+  result <- suppressWarnings(get_freqs(sc, x = cat2, group = grp2))
+  g2_rows <- result[result$grp2 == "G2", ]
+  expect_true(all(is.na(g2_rows$pct)))
+})
+
+test_that("get_freqs() twophase: group with all-NA focal var in phase 2 hits n_g=0 in .twophase_freq_cell()", {
+  d <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
+                        design = "twophase", seed = 613L)
+  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
+                      fpc = fpc, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  # Phase-2 "B" rows get NA; phase1-only "B" rows stay non-NA.
+  # .twophase_freq_cell() only inspects denom[subset] (phase-2 rows), so
+  # n_g == 0 for the "GroupB" combo → early-return branch is hit.
+  sc@data$cat2 <- sc@data$group
+  sc@data$cat2[sc@data$subset & sc@data$group == "B"] <- NA_character_
+  sc@data$grp2 <- ifelse(sc@data$group == "B", "GroupB", "GroupAC")
+  result <- suppressWarnings(get_freqs(sc, x = cat2, group = grp2))
+  groupb_rows <- result[result$grp2 == "GroupB", ]
+  expect_true(all(is.na(groupb_rows$pct)))
+})
