@@ -1,3 +1,14 @@
+# surveycore 0.3.3
+
+## New features
+
+* `print()` methods for all five survey design classes (`survey_taylor`,
+  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_calibrated`)
+  now display a `Domain: <n> of <N> rows` line when `surveytidy::filter()`
+  has been applied. The line appears after the sample size line and before
+  the `Groups:` line. For two-phase designs, domain counts reflect Phase 2
+  rows only.
+
 # surveycore 0.3.0
 
 ## New features
