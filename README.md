@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# surveycore
+# surveycore <a href = "https://jdenn0514.github.io/surveycore/index.html"><img src="man/figures/logo.png" align="right" height="138" /></a>
 
 <!-- badges: start -->
 
@@ -56,11 +56,11 @@ library(surveycore)
 # ── Simple SRS design ──────────────────────────────────────────────────────────
 set.seed(42)
 df <- data.frame(
-  psu     = rep(1:10, each = 10),
-  strata  = rep(c("A", "B"), each = 50),
-  weight  = runif(100, 0.5, 2),
-  income  = rnorm(100, 50000, 10000),
-  age     = sample(18:80, 100, replace = TRUE)
+  psu = rep(1:10, each = 10),
+  strata = rep(c("A", "B"), each = 50),
+  weight = runif(100, 0.5, 2),
+  income = rnorm(100, 50000, 10000),
+  age = sample(18:80, 100, replace = TRUE)
 )
 
 d <- as_survey(df, ids = psu, weights = weight, strata = strata, nest = TRUE)
@@ -103,8 +103,8 @@ get_totals(d, income)
 ``` r
 # ── Replicate weights (BRR) ───────────────────────────────────────────────────
 df_rep <- data.frame(
-  y    = rnorm(20),
-  wt   = runif(20, 1, 3),
+  y = rnorm(20),
+  wt = runif(20, 1, 3),
   rep1 = runif(20, 0.5, 2),
   rep2 = runif(20, 0.5, 2),
   rep3 = runif(20, 0.5, 2),
@@ -113,9 +113,9 @@ df_rep <- data.frame(
 
 d_rep <- as_survey_rep(
   df_rep,
-  weights    = wt,
+  weights = wt,
   repweights = starts_with("rep"),
-  type       = "BRR"
+  type = "BRR"
 )
 d_rep
 #> 
@@ -176,7 +176,7 @@ built around it:
   verbs (`filter()`, `select()`, `mutate()`, `group_by()`) that respect
   survey design structure, so grouped summaries and subsetting always
   propagate weights and strata correctly.
-- **surveyweights** — calibration and post-stratification for survey
+- **surveywts** — calibration and post-stratification for survey
   weights. Coming soon.
 
 ## License

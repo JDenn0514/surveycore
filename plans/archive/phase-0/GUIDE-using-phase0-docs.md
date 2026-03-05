@@ -224,7 +224,7 @@ Once Phase 0 is complete:
 1. **Phase 0.5:** surveytidy package (dplyr verb implementations) — can run in parallel with Phase 1
 2. **Phase 1:** Core analysis functions (get_means, get_totals, get_freqs, etc.)
 3. **Phase 2:** Regression (survey_glm), crosstabs, vignettes
-4. **Phase 2.5:** surveyweights package — can run in parallel with Phases 1-2
+4. **Phase 2.5:** surveywts package — can run in parallel with Phases 1-2
 5. **Phase 3:** Polish & Release (all four packages at 0.1.0)
 
 But don't think about those yet. Focus on Phase 0. Do it right.

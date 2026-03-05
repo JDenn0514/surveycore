@@ -16,7 +16,7 @@ questions:
       - label: "surveytidy"
         description: "dplyr/tidyr verbs for survey design objects (filter, select, mutate, group_by). Phase 0.5 is complete; future phases TBD."
       - label: "Other surveyverse package"
-        description: "surveyweights, the surveyverse meta-package, or a new package in the ecosystem."
+        description: "surveywts, the surveyverse meta-package, or a new package in the ecosystem."
 
   - question: "Is there an existing roadmap or upstream spec to reference?"
     header: "Context docs"

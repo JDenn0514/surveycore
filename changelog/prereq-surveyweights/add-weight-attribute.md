@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-02
 **Branch**: fix/add-weight-attribute
-**Phase**: Prereq — surveyweights
+**Phase**: Prereq — surveywts
 
 ## Changes
 

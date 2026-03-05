@@ -30,9 +30,9 @@ history (populated automatically during operations).}
 
 \item{weighting_history}{A list recording weighting operations applied to
 the survey object (e.g., raking, trimming). Each entry is written by
-a \pkg{surveyweights} function and contains the operation name,
+a \pkg{surveywts} function and contains the operation name,
 parameters, effective sample size before/after, and design effect.
-Always \code{list()} until a \pkg{surveyweights} weighting function is
+Always \code{list()} until a \pkg{surveywts} weighting function is
 applied. Reserved for Phase 2.5.}
 }
 \value{
