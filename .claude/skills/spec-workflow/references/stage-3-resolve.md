@@ -1,5 +1,16 @@
 # Stage 3: Resolve Issues + Log Decisions
 
+## Contents
+- Before Starting
+- Choose a Batch Size
+- Working Through the Issues
+- Issue Format
+- Applying Fixes
+- Decisions Log
+- After Resolution
+
+---
+
 ## Before Starting
 
 Check for a spec-review file at `plans/spec-review-{id}.md`.
@@ -41,36 +52,56 @@ Wait for the answer before presenting any issues.
 Work through the issues **in the order they appear in the review file** —
 do not re-group or re-sequence them.
 
-Present a batch (4 or 1 depending on the chosen mode). For each issue in the
-batch, show the issue text and options, then wait for the user's direction.
-After the user has resolved all issues in the batch, ask:
-
+**In BIG mode (4 at a time):** Show all issues in the batch as markdown text
+first, then use `AskUserQuestion` for each issue in the batch sequentially.
+Apply fixes after all decisions in the batch are collected. Then ask:
 > "Ready for the next batch?"
 
-Then present the next batch. Do not apply fixes speculatively — wait for
-explicit direction on each issue.
+**In SMALL mode (1 at a time):** Show the issue text, use `AskUserQuestion`,
+apply the fix immediately, then move to the next issue.
+
+Do not apply fixes speculatively — wait for the `AskUserQuestion` response
+on each issue before editing the spec.
 
 ---
 
 ## Issue Format
 
-For each issue (whether from the review file or found during this session):
+Show each issue as markdown, then immediately use `AskUserQuestion`. The
+recommended option **must be first**. Every option **must be labeled** with
+the issue number and letter so the user always knows what they're selecting.
+
+Present the issue text:
 
 ```
 **Issue [N]: [Short title]**
+Severity: BLOCKING | REQUIRED | SUGGESTION
+[Rule violated, e.g. "Violates code-style.md §3."]
 
-[Concrete description, with section/spec reference. Cite rule file if applicable,
-e.g. "Violates code-style.md §3."]
+[Concrete description, with section/spec reference.]
 
 Options:
 - **[A]** [Description] — Effort: [low/medium/high], Risk: [low/medium/high],
-  Impact: [what this affects], Maintenance: [ongoing burden]
+  Impact: [what this affects]
 - **[B]** [Description]
 - **[C] Do nothing** — [consequences of not addressing this]
 
-**Recommendation: [A/B/C]** — [Why, mapped to engineering-preferences.md.]
+**Recommendation: Option [A/B/C]** — [Why, mapped to engineering-preferences.md.]
+```
 
-> Do you agree with option [letter], or would you prefer a different direction?
+Then call AskUserQuestion:
+
+```
+question: "Issue [N] — [Short title]: which option?"
+header: "Issue [N]"
+multiSelect: false
+options:
+  - label: "Issue [N] — Option [Rec]: [short label] (Recommended)"
+    description: "[effort/risk/impact summary]"
+  - label: "Issue [N] — Option [Alt]: [short label]"
+    description: "[trade-offs]"
+  - label: "Issue [N] — Option C: Do nothing"
+    description: "[consequences]"
 ```
 
 ---
