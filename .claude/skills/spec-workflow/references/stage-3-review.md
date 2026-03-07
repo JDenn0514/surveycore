@@ -1,4 +1,4 @@
-# Stage 2: Adversarial Spec Review
+# Stage 3: Code/Architecture Review
 
 ## Contents
 - Input Requirement
@@ -17,7 +17,11 @@ Be adversarial. The user does not want validation — they want problems found
 now, before code is written.
 
 This stage produces a **complete issue list saved to a file**. It is a batch
-pass — do not resolve issues here. Resolution happens in Stage 3.
+pass — do not resolve issues here. Resolution happens in Stage 4.
+
+Methodology issues (mathematical correctness, variance formulas, degrees of
+freedom) should already be resolved by Stage 2. Do not re-raise them here
+unless a code-level decision has introduced a new statistical error.
 
 ---
 
@@ -237,5 +241,5 @@ honest, not performatively negative.
 3. End the session with:
 
    > "Pass [N] complete: {N} new issues ({X} blocking, {Y} required, {Z}
-   > suggestions). Start a new session with `/spec-workflow stage 3` to resolve
+   > suggestions). Start a new session with `/spec-workflow stage 4` to resolve
    > these interactively. Review appended to `plans/spec-review-{id}.md`."
