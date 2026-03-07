@@ -667,3 +667,11 @@ applications with the library. If this is what you want to do, use the
 GNU Lesser General Public License instead of this License. But first,
 please read
 \<[http://www.gnu.org/philosophy/why-not-lgpl.html](http://www.gnu.org/philosophy/why-not-lgpl.md)\>.
+
+## Third-party assets
+
+### Hex sticker icon
+
+- **Icon:** Survey icons created by Candy Design - Flaticon
+- **Source:** <https://www.flaticon.com/free-icons/survey>
+- **License:** [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)

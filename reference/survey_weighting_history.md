@@ -1,7 +1,7 @@
 # Extract the Weighting History from a Survey Object
 
 Returns the list of weighting operations recorded on a survey design
-object. Each entry is appended by surveyweights after a calibration or
+object. Each entry is appended by surveywts after a calibration or
 nonresponse adjustment step. Returns an empty list when no history has
 been recorded.
 

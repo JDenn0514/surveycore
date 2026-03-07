@@ -50,11 +50,11 @@ survey_calibrated(
 
 - calibration:
 
-  The calibration provenance object returned by a surveyweights
-  calibration function (e.g., `surveyweights::rake()`), or `NULL` if
-  calibration was performed externally. Stores the calibration targets,
-  variables, and trimming parameters for reproducibility and future
-  bootstrap re-calibration. Default `NULL`.
+  The calibration provenance object returned by a surveywts calibration
+  function (e.g., `surveywts::rake()`), or `NULL` if calibration was
+  performed externally. Stores the calibration targets, variables, and
+  trimming parameters for reproducibility and future bootstrap
+  re-calibration. Default `NULL`.
 
 ## Value
 
@@ -66,12 +66,12 @@ This class is a **skeleton** added in Phase 0 to reserve its place in
 the class hierarchy. The constructor
 [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
 accepts pre-computed calibration weights and stores calibration
-provenance from surveyweights output.
+provenance from surveywts output.
 
 Full functionality — including bootstrap variance with re-calibration on
 each replicate — will be implemented in Phase 2.5 alongside the
-surveyweights package. Until then, estimation uses SRS-based variance
-(same assumption as
+surveywts package. Until then, estimation uses SRS-based variance (same
+assumption as
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 with weights only).
 
@@ -101,11 +101,11 @@ for guidance on when this is appropriate and what the limitations are.
 
 ## Calibration provenance (`@calibration`)
 
-When calibration is performed via surveyweights, the returned
-calibration object is stored here. It contains the calibration targets,
-variables used, trimming cap, effective sample size before and after,
-and design effect. `NULL` when calibration was performed externally
-(e.g., via `anesrake`).
+When calibration is performed via surveywts, the returned calibration
+object is stored here. It contains the calibration targets, variables
+used, trimming cap, effective sample size before and after, and design
+effect. `NULL` when calibration was performed externally (e.g., via
+`anesrake`).
 
 ## See also
 

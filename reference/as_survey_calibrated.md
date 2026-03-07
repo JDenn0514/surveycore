@@ -21,16 +21,16 @@ as_survey_calibrated(data, weights, calibration = NULL)
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
   Calibration weight column (a single column, values strictly \> 0).
   Typically produced by an external raking function (e.g.,
-  `anesrake::anesrake()`) or a surveyweights calibration function.
+  `anesrake::anesrake()`) or a surveywts calibration function.
 
 - calibration:
 
-  Optional. The calibration provenance object returned by a
-  surveyweights calibration function (e.g., `surveyweights::rake()`).
-  Stored in `@calibration` for reproducibility. Supply `NULL` (the
-  default) when calibration was performed externally and provenance
-  metadata is not available. The object's structure is defined by
-  surveyweights and will be formally specified in Phase 2.5.
+  Optional. The calibration provenance object returned by a surveywts
+  calibration function (e.g., `surveywts::rake()`). Stored in
+  `@calibration` for reproducibility. Supply `NULL` (the default) when
+  calibration was performed externally and provenance metadata is not
+  available. The object's structure is defined by surveywts and will be
+  formally specified in Phase 2.5.
 
 ## Value
 
@@ -41,7 +41,7 @@ A `survey_calibrated` object.
 Creates a survey design object for non-probability samples and post-hoc
 calibrated designs (e.g., raked online panels, post-stratified samples).
 Accepts pre-computed calibration weights and optionally stores
-calibration provenance from surveyweights output for reproducibility.
+calibration provenance from surveywts output for reproducibility.
 
 ## Phase 2.5 skeleton
 
@@ -51,7 +51,7 @@ object supports estimation via a model-assisted SRS variance assumption
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 with weights only. Full bootstrap re-calibration variance (which
 re-applies the raking procedure on each replicate) will be implemented
-in Phase 2.5 alongside the surveyweights package.
+in Phase 2.5 alongside the surveywts package.
 
 ## When to use
 
