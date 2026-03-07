@@ -38,9 +38,9 @@
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
 #'   the survey object (e.g., raking, trimming). Each entry is written by
-#'   a \pkg{surveyweights} function and contains the operation name,
+#'   a \pkg{surveywts} function and contains the operation name,
 #'   parameters, effective sample size before/after, and design effect.
-#'   Always `list()` until a \pkg{surveyweights} weighting function is
+#'   Always `list()` until a \pkg{surveywts} weighting function is
 #'   applied. Reserved for Phase 2.5.
 #'
 #' @return A `survey_metadata` object.
@@ -70,10 +70,10 @@ survey_metadata <- S7::new_class(
       S7::class_list,
       default = quote(list())
     ),
-    # RESERVED: Phase 2.5 — populated by surveyweights calibration functions.
+    # RESERVED: Phase 2.5 — populated by surveywts calibration functions.
     # Each entry records one weighting operation (rake, trim_weights, etc.)
     # with parameters, effective n before/after, and design effect.
-    # Always list() until surveyweights writes to it.
+    # Always list() until surveywts writes to it.
     weighting_history = S7::new_property(
       S7::class_list,
       default = quote(list())
@@ -709,11 +709,11 @@ survey_srs <- S7::new_class(
 #' This class is a **skeleton** added in Phase 0 to reserve its place in the
 #' class hierarchy. The constructor [as_survey_calibrated()] accepts
 #' pre-computed calibration weights and stores calibration provenance from
-#' \pkg{surveyweights} output.
+#' \pkg{surveywts} output.
 #'
 #' Full functionality — including bootstrap variance with re-calibration on
 #' each replicate — will be implemented in Phase 2.5 alongside the
-#' \pkg{surveyweights} package. Until then, estimation uses SRS-based variance
+#' \pkg{surveywts} package. Until then, estimation uses SRS-based variance
 #' (same assumption as [as_survey()] with weights only).
 #'
 #' @section Non-probability samples:
@@ -732,7 +732,7 @@ survey_srs <- S7::new_class(
 #' @param variables A named list of design specification (`weights`,
 #'   `probs_provided`). Set automatically by [as_survey_calibrated()].
 #' @param calibration The calibration provenance object returned by a
-#'   \pkg{surveyweights} calibration function (e.g., `surveyweights::rake()`),
+#'   \pkg{surveywts} calibration function (e.g., `surveywts::rake()`),
 #'   or `NULL` if calibration was performed externally. Stores the
 #'   calibration targets, variables, and trimming parameters for
 #'   reproducibility and future bootstrap re-calibration. Default `NULL`.
@@ -747,7 +747,7 @@ survey_srs <- S7::new_class(
 #' }
 #'
 #' @section Calibration provenance (`@calibration`):
-#' When calibration is performed via \pkg{surveyweights}, the returned calibration
+#' When calibration is performed via \pkg{surveywts}, the returned calibration
 #' object is stored here. It contains the calibration targets, variables used,
 #' trimming cap, effective sample size before and after, and design effect.
 #' `NULL` when calibration was performed externally (e.g., via `anesrake`).
@@ -769,7 +769,7 @@ survey_calibrated <- S7::new_class(
   "survey_calibrated",
   parent    = survey_base,
   properties = list(
-    # Stores calibration provenance from surveyweights output.
+    # Stores calibration provenance from surveywts output.
     # NULL when calibration was done externally.
     # RESERVED for full population in Phase 2.5.
     calibration = S7::new_property(default = NULL)

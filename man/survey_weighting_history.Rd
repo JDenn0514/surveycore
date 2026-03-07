@@ -14,7 +14,7 @@ A \code{list} of history entries, or \code{list()} if no history is present.
 }
 \description{
 Returns the list of weighting operations recorded on a survey design object.
-Each entry is appended by surveyweights after a calibration or nonresponse
+Each entry is appended by surveywts after a calibration or nonresponse
 adjustment step. Returns an empty list when no history has been recorded.
 }
 \examples{

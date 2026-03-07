@@ -1,84 +1,37 @@
 ---
 name: r-implement
 description: >
-  Use when it's time to write R implementation code for surveycore. Trigger
-  when the user says "implement", "code this up", "start coding", "write the
-  code", "start the PR", or "let's build this". Also use when commit-and-pr
-  produces a CI Failure handoff block and the user needs the failure fixed.
+  Implements R package code for surveycore from an approved implementation plan.
+  Three modes: (A) single-session implementation of one plan section with TDD,
+  (B) CI failure diagnosis and fix after a failed push, (C) subagent-driven
+  execution with fresh subagents per section and two-stage spec compliance and
+  code quality review. Trigger when the user says "implement", "start coding",
+  "write the code", "start the PR", "let's build this", or "subagent mode".
+  Also triggers when commit-and-pr produces a CI Failure handoff block.
 ---
 
 # R Implementation Skill
-
-You are implementing R package code for surveycore.
 
 ---
 
 ## Entry Mode — Determine This First
 
-**Mode A: Normal** — starting a new implementation section from the plan.
-Signs: user says "implement", "start coding", "let's build this", or similar.
+**Mode A: Normal** — implementing a single plan section in this session.
+Signs: "implement", "start coding", "let's build this".
 → Go to **Pre-flight**.
 
-**Mode B: CI-fix** — fixing a failure surfaced by commit-and-pr after push.
-Signs: user provides a "CI Failure — Handoff to r-implement" block, or says
-"CI is failing", "fix the CI failure", "commit-and-pr handed off to you", etc.
-→ Go to **CI-Fix Mode** below. Skip Pre-flight entirely.
+**Mode B: CI-Fix** — fixing a CI failure after a push.
+Signs: user provides a "CI Failure — Handoff to r-implement" block, or
+"CI is failing", "fix the CI failure", "commit-and-pr handed off to you".
+→ Read `references/ci-fix.md`. Skip Pre-flight entirely.
+
+**Mode C: Subagent-Driven** — dispatching fresh subagents per plan section.
+Signs: "subagent mode", "drive it yourself", "auto-implement the plan".
+→ Read `references/mode-c-subagent.md`. Skip Pre-flight.
 
 ---
 
-## CI-Fix Mode
-
-Use this mode when commit-and-pr has already created a PR and CI has failed.
-
-### Step 1: Read the handoff block
-
-The user will provide a CI failure handoff block (fields: Run, PR, Job, Step, Error,
-Local repro). Read it carefully. Identify: which check failed (check vs test), which
-job (OS + R version), and the exact error message.
-
-### Step 2: Reproduce locally
-
-```bash
-Rscript -e "devtools::check()"
-Rscript -e "devtools::test()"
-```
-
-Match the failure to what CI reported. If the failure doesn't reproduce
-locally, report that and describe what you see instead — do not guess.
-
-### Step 3: Diagnose and fix
-
-Attempt to diagnose and fix. After **3 failed attempts on the same failure**,
-stop and report:
-
-- The exact error output
-- What was tried
-- Why it is still failing
-
-### Step 4: Verify
-
-Run both checks after the fix:
-
-```bash
-Rscript -e "devtools::test()"
-Rscript -e "devtools::check()"
-```
-
-Run `devtools::document()` if any roxygen2 tags changed.
-
-### Step 5: Report
-
-When both pass, report:
-
-> "Fixed. Re-invoke `/commit-and-pr` — it will push the fix and resume
-> monitoring CI."
-
-**Do NOT mark the implementation plan section complete again.** It was already
-marked `[x]` before commit-and-pr was invoked.
-
----
-
-## Pre-flight (Normal Mode — do these FIRST, before writing any code)
+## Pre-flight (Mode A — do these FIRST, before writing any code)
 
 ### Step 1: Check the branch
 
@@ -86,52 +39,62 @@ marked `[x]` before commit-and-pr was invoked.
 git branch --show-current
 ```
 
-**If on `main`:**
+**If on `main`:** Stop. Tell the user:
 
-Stop. Feature branches must be cut from `develop`, not `main`. Tell the user:
-
-> "Feature branches should start from `develop`. Please run `git checkout develop`
+> "Feature branches must start from `develop`. Run `git checkout develop`
 > and re-invoke `/r-implement`."
 
-Do not proceed until the user is on `develop` or a feature branch.
-
 **If on `develop`:**
-
-1. Ask the user for the implementation plan path if not already provided
-2. Read the plan and find the first unchecked `- [ ]` section
-3. Determine the branch name from that section's entry
-4. Show: "I'll create branch `feature/X` from `develop` — is that right?"
-5. On confirmation: `git checkout -b feature/X`
-6. Continue to Step 2
+1. Ask for the implementation plan path if not provided
+2. Read the plan → find the first unchecked `- [ ]` section
+3. Show: "I'll create branch `feature/X` from `develop` — is that right?"
+4. On confirmation: `git checkout -b feature/X`
 
 **If already on a feature branch:** continue to Step 2.
 
 ### Step 2: Read the implementation plan
 
-Ask the user for the path if not provided (e.g., `plans/phase-1-implementation-plan.md`).
+Find the **first unchecked `- [ ]` section**. That section is the entire scope
+for this session. Do not implement anything outside it.
 
-Find the **first unchecked `- [ ]` section**. That section defines the scope for this
-entire session. Do not implement anything outside that scope.
-
-If all sections are checked: report "All sections complete — nothing left to implement."
-and stop.
+If all sections are checked: report "All sections complete — nothing left to
+implement." and stop.
 
 ### Step 3: Read the spec section
 
-Read the spec file for the section you are about to implement. Before writing any code,
-verify:
+Verify before writing any code:
 
 - Every function's behavior is fully specified (inputs, outputs, errors)
 - All error conditions exist in `plans/error-messages.md`
 - All argument types and defaults are defined
 - All edge cases are explicitly handled
 
-**If anything is ambiguous or underspecified: STOP. Ask the user to clarify before
-writing a single line of code.** Do not make architectural guesses — surface the question.
+**If anything is ambiguous or underspecified: STOP. Ask the user to clarify
+before writing a single line of code.**
 
 ### Step 4: Update `plans/error-messages.md`
 
-Add any new error/warning classes you will need **before** writing code that uses them.
+Add any new error/warning classes **before** writing code that uses them.
+
+---
+
+## TDD Iron Law
+
+```
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+```
+
+Write code before the test? Delete it. Start over. No exceptions.
+
+Do not keep it "as reference" — delete means delete. Implement fresh from tests.
+
+| Rationalization | Reality |
+|---|---|
+| "Too simple to need a test" | Simple code breaks. The test takes 2 minutes. |
+| "I'll add tests after" | Tests written after pass immediately, proving nothing. |
+| "I already know it works" | Tests-first force edge case discovery. Tests-after verify memory. |
+| "Just this once" | That's how untested code accumulates. |
+| "I manually tested it" | Manual testing is ad-hoc, unrepeatable, and undocumented. |
 
 ---
 
@@ -158,34 +121,42 @@ devtools::test()
 devtools::check()
 ```
 
-**If either fails:** attempt to diagnose and fix, then re-run. After **3 failed attempts
-on the same failure**, stop and report:
+**If either fails:** diagnose and fix, then re-run. After **3 failed attempts
+on the same failure**, stop and report the exact error, what was tried, and
+why it is still failing. Do not mark the section complete.
 
-- The exact error output
-- What was tried
-- Why it is still failing
+### Two-Stage Review (required before marking `[x]`)
 
-Do not mark the section complete until both pass.
+After both checks pass, complete both review stages before marking the
+section complete:
+
+**Stage 1 — Spec Compliance:** Does the code match what the spec said?
+
+- [ ] Every function signature matches the spec's argument table
+- [ ] Every error class from the spec's error table is present in the code
+- [ ] Every output column matches the spec's output contract
+- [ ] No behavior added beyond the spec's scope
+
+**Stage 2 — Code Quality:** Does the code follow surveycore rules?
+
+- [ ] No `UseMethod()` on S7 objects — uses `S7::S7_inherits()` instead
+- [ ] `class=` on every `cli_abort()` and `cli_warn()` call
+- [ ] No `@importFrom` — all external calls use `::`
+- [ ] `test_invariants(design)` is first assertion in every constructor test block
+- [ ] Dual pattern (class= + snapshot) on all Layer 3 errors
+
+If either stage finds issues, fix them before marking complete.
 
 ---
 
 ## Completion
 
-When `devtools::test()` and `devtools::check()` both pass:
+When both checks and both review stages pass:
 
 1. Mark the section complete in the implementation plan: `- [ ]` → `- [x]`
 2. Report:
 
 > "Section complete. Start a new session with `/commit-and-pr` to create the PR."
-
----
-
-## Conventions (always in context — no need to re-read)
-
-All coding conventions are in the rule files loaded at session start.
-Key rules: `code-style.md` (S7 patterns, cli errors, arg order), `r-package-conventions.md`
-(imports, roxygen2), `testing-standards.md` + `testing-surveycore.md` (test patterns).
-Error class names: `plans/error-messages.md` — update BEFORE using any new class.
 
 ---
 
@@ -197,6 +168,6 @@ Do not mark the section complete until ALL are true:
 - [ ] `devtools::check()` — 0 errors, 0 warnings, ≤2 notes
 - [ ] `devtools::document()` run (if roxygen2 changed); `_pkgdown.yml` updated (if new exports)
 - [ ] `plans/error-messages.md` updated (if new error classes added)
-- [ ] No `UseMethod()` on S7 objects; no missing `class=`; no `@importFrom`
-- [ ] `test_invariants(design)` first in every constructor test; dual pattern on Layer 3 errors
+- [ ] Stage 1 spec compliance review: all items checked
+- [ ] Stage 2 code quality review: all items checked
 - [ ] Implementation plan section marked `[x]`

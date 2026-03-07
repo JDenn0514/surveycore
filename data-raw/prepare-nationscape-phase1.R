@@ -21,7 +21,7 @@
 ##   as_survey_calibrated(data, weights = weight) — designed for exactly this
 ##   use case. Current variance uses a conservative SRS approximation
 ##   (Rivers & Bailey 2009); bootstrap re-calibration variance (Deville &
-##   Sarndal 1992) will be available in Phase 2.5 via surveyweights.
+##   Sarndal 1992) will be available in Phase 2.5 via surveywts.
 ##
 ## Run from the package root: source("data-raw/prepare-nationscape-phase1.R")
 

@@ -29,7 +29,7 @@ standalone surveycore use.}
 \item{call}{Language object capturing the construction call.}
 
 \item{calibration}{The calibration provenance object returned by a
-\pkg{surveyweights} calibration function (e.g., \code{surveyweights::rake()}),
+\pkg{surveywts} calibration function (e.g., \code{surveywts::rake()}),
 or \code{NULL} if calibration was performed externally. Stores the
 calibration targets, variables, and trimming parameters for
 reproducibility and future bootstrap re-calibration. Default \code{NULL}.}
@@ -47,11 +47,11 @@ designs (e.g., raked online panels, post-stratified samples). Create with
 This class is a \strong{skeleton} added in Phase 0 to reserve its place in the
 class hierarchy. The constructor \code{\link[=as_survey_calibrated]{as_survey_calibrated()}} accepts
 pre-computed calibration weights and stores calibration provenance from
-\pkg{surveyweights} output.
+\pkg{surveywts} output.
 
 Full functionality — including bootstrap variance with re-calibration on
 each replicate — will be implemented in Phase 2.5 alongside the
-\pkg{surveyweights} package. Until then, estimation uses SRS-based variance
+\pkg{surveywts} package. Until then, estimation uses SRS-based variance
 (same assumption as \code{\link[=as_survey]{as_survey()}} with weights only).
 }
 
@@ -76,7 +76,7 @@ appropriate and what the limitations are.
 
 \section{Calibration provenance (\verb{@calibration})}{
 
-When calibration is performed via \pkg{surveyweights}, the returned calibration
+When calibration is performed via \pkg{surveywts}, the returned calibration
 object is stored here. It contains the calibration targets, variables used,
 trimming cap, effective sample size before and after, and design effect.
 \code{NULL} when calibration was performed externally (e.g., via \code{anesrake}).

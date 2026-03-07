@@ -14,13 +14,13 @@ unique column names.}
 \item{weights}{<\code{\link[tidyselect:language]{tidy-select}}> Calibration weight
 column (a single column, values strictly > 0). Typically produced by
 an external raking function (e.g., \code{anesrake::anesrake()}) or a
-\pkg{surveyweights} calibration function.}
+\pkg{surveywts} calibration function.}
 
 \item{calibration}{Optional. The calibration provenance object returned by
-a \pkg{surveyweights} calibration function (e.g., \code{surveyweights::rake()}).
+a \pkg{surveywts} calibration function (e.g., \code{surveywts::rake()}).
 Stored in \verb{@calibration} for reproducibility. Supply \code{NULL} (the default)
 when calibration was performed externally and provenance metadata is not
-available. The object's structure is defined by \pkg{surveyweights} and will
+available. The object's structure is defined by \pkg{surveywts} and will
 be formally specified in Phase 2.5.}
 }
 \value{
@@ -33,7 +33,7 @@ A \code{survey_calibrated} object.
 Creates a survey design object for non-probability samples and post-hoc
 calibrated designs (e.g., raked online panels, post-stratified samples).
 Accepts pre-computed calibration weights and optionally stores calibration
-provenance from \pkg{surveyweights} output for reproducibility.
+provenance from \pkg{surveywts} output for reproducibility.
 }
 \section{Phase 2.5 skeleton}{
 
@@ -41,7 +41,7 @@ This constructor is a \strong{skeleton}. The resulting \code{survey_calibrated} 
 supports estimation via a model-assisted SRS variance assumption — the same
 as calling \code{\link[=as_survey]{as_survey()}} with weights only. Full bootstrap re-calibration
 variance (which re-applies the raking procedure on each replicate) will be
-implemented in Phase 2.5 alongside the \pkg{surveyweights} package.
+implemented in Phase 2.5 alongside the \pkg{surveywts} package.
 }
 
 \section{When to use}{

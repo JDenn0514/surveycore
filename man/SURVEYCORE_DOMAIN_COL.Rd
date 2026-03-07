@@ -13,7 +13,7 @@ SURVEYCORE_DOMAIN_COL
 \description{
 The name of the logical column added to \verb{@data} by \code{filter()} (from
 \code{surveytidy}) to mark domain membership. Exposed here so that sibling
-packages (\code{surveytidy}, \code{surveyweights}) can reference it without
+packages (\code{surveytidy}, \code{surveywts}) can reference it without
 using \code{:::}.
 }
 \keyword{internal}

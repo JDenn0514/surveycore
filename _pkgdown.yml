@@ -9,9 +9,9 @@ template:
     heading_font: {google: "Roboto"}
     bg: "#fcfbf9"         # lighten springwood background
     fg: "#000000"         # contrast ratio: 15.76 for text
-    primary: "#14A2FCFF"  # light blue link text
-    navbar-bg: "#e5f3f7"  # change nav bar background
-    navbar-light-hover-color: "#14A2FCFF"
+    primary: "#6666CC"    # periwinkle — links, active states
+    navbar-bg: "#CCCCFF"  # periwinkle tint — navbar background
+    navbar-light-hover-color: "#6666CC"
 
 home:
   title: "surveycore — Modern Survey Analysis Infrastructure"
@@ -21,7 +21,7 @@ home:
 
 navbar:
   type: "light"
-  bg: "#e5f3f7"  # apparently this plus navbar-bg needs to be set to same color?
+  bg: "#CCCCFF"  # must match navbar-bg in bslib
   pill-active: "#000000"
   structure:
     left:  [intro, articles, reference, news]

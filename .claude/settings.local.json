@@ -98,7 +98,21 @@
       "Bash(ls*)",
       "Bash(R CMD:*)",
       "Bash(/Users/jacobdennen/surveycore/plans/spec-review-group-na-rows.md:*)",
-      "Bash(/Users/jacobdennen/surveycore/plans/plan-review-group-na-rows.md:*)"
+      "Bash(/Users/jacobdennen/surveycore/plans/plan-review-group-na-rows.md:*)",
+      "Bash(gh release:*)",
+      "Bash(tests/testthat/test-analysis-means.R:*)",
+      "Bash(tests/testthat/test-analysis-totals.R:*)",
+      "Bash(tests/testthat/test-analysis-quantiles.R:*)",
+      "Bash(tests/testthat/test-methods-print.R:*)",
+      "Bash(tests/testthat/test-utils.R:*)",
+      "Bash(tests/testthat/test-s7-classes.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-analysis-freqs.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-variance-taylor.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-variance-srs.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-methods-print.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-s7-classes.R:*)",
+      "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-utils.R:*)",
+      "Bash(gh:*)"
     ]
   }
 }

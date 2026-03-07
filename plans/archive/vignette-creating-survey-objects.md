@@ -222,7 +222,7 @@ samples and may not realize the implications.
 
 #### 5.4 Better approaches
 
-- Calibration raking (available in surveyweights, Phase 2.5): formally
+- Calibration raking (available in surveywts, Phase 2.5): formally
   creates calibration weights with better variance properties
 - Propensity score weighting: estimate selection propensity against a
   reference probability sample; cite Elliott & Valliant (2017)

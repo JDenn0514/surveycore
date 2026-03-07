@@ -42,7 +42,7 @@ survey_data <- function(x) {
 #' Extract the Weighting History from a Survey Object
 #'
 #' Returns the list of weighting operations recorded on a survey design object.
-#' Each entry is appended by surveyweights after a calibration or nonresponse
+#' Each entry is appended by surveywts after a calibration or nonresponse
 #' adjustment step. Returns an empty list when no history has been recorded.
 #'
 #' @param x A survey design object (any class inheriting from `survey_base`).
@@ -75,7 +75,7 @@ survey_weighting_history <- function(x) {
 #'
 #' The name of the logical column added to `@data` by `filter()` (from
 #' `surveytidy`) to mark domain membership. Exposed here so that sibling
-#' packages (`surveytidy`, `surveyweights`) can reference it without
+#' packages (`surveytidy`, `surveywts`) can reference it without
 #' using `:::`.
 #'
 #' @keywords internal

@@ -32,7 +32,7 @@ Create a modern, tidyverse-compatible ecosystem for survey analysis in R that pr
 surveyverse/
 ├── surveycore/       # Core: S7 objects, metadata, analysis functions
 ├── surveytidy/       # Adapters: dplyr/tidyr verb implementations
-├── surveyweights/    # Weighting: Calibration, raking, propensity, replicate creation
+├── surveywts/    # Weighting: Calibration, raking, propensity, replicate creation
 └── surveyverse/      # Meta: Load all packages together
 ```
 
@@ -68,7 +68,7 @@ surveyverse/
 
 ---
 
-### Package 2: surveyweights
+### Package 2: surveywts
 
 **Purpose:** Survey weighting, calibration, and replicate weight creation
 
@@ -223,14 +223,14 @@ surveyverse/
 **Purpose:** Meta-package for easy installation and loading
 
 **Key Components:**
-- Loads surveycore, surveytidy, and surveyweights
+- Loads surveycore, surveytidy, and surveywts
 - Provides unified startup message
 - Version compatibility checking
 
 **Dependencies:**
 - surveycore (required)
 - surveytidy (required)
-- surveyweights (required)
+- surveywts (required)
 
 **Usage:**
 ```r
@@ -253,7 +253,7 @@ survey_metadata                      # Metadata container
     ├── transformations: list       # name → transformation history (dplyr ops)
     ├── notes: list                 # name → user notes
     └── weighting_history: list     # ordered log of weighting operations applied
-                                    # (RESERVED: Phase 2.5 — surveyweights writes to this)
+                                    # (RESERVED: Phase 2.5 — surveywts writes to this)
 
 survey_base                          # Abstract base class
 ├── properties:
@@ -294,7 +294,7 @@ survey_base                          # Abstract base class
         ├── @variables keys:
         │   ├── weights: character     # calibrated weight column name
         │   └── probs_provided: FALSE  # always FALSE for calibrated designs
-        └── @calibration               # provenance object from surveyweights
+        └── @calibration               # provenance object from surveywts
                                        # NULL when calibration was external
 
 survey_glm_fit                     # Regression output
@@ -804,7 +804,7 @@ get_means(svy, x = income, domain = age > 18)
 
 ---
 
-### Phase 2.5: Weighting & Calibration (surveyweights package)
+### Phase 2.5: Weighting & Calibration (surveywts package)
 **Duration:** 3-4 weeks
 **Status:** Planning
 
@@ -823,7 +823,7 @@ get_means(svy, x = income, domain = age > 18)
    - Full bootstrap variance with re-calibration on each replicate (the key
      statistical improvement over using `as_survey()` with calibration weights)
    - `calibration` argument formally accepts the provenance object returned
-     by `surveyweights::rake()` and related functions
+     by `surveywts::rake()` and related functions
    - Estimation functions (`get_means()`, etc.) dispatch on `survey_calibrated`
      and use bootstrap variance by default
    - `as_survey_calibrated()` gains `variance = c("bootstrap", "srs")` argument
@@ -1114,7 +1114,7 @@ get_means(svy, x = income, domain = age > 18)
    - README with examples
    - NEWS.md
 
-3. **Documentation - surveyweights:**
+3. **Documentation - surveywts:**
    - pkgdown website
    - Vignettes:
      - `calibration-and-raking.Rmd` - Weight calibration methods
@@ -1143,7 +1143,7 @@ get_means(svy, x = income, domain = age > 18)
 6. **Testing - Comprehensive:**
    - surveycore: >90% code coverage
    - surveytidy: >90% code coverage
-   - surveyweights: >90% code coverage
+   - surveywts: >90% code coverage
    - Real-world dataset examples (from survey package or public data)
    - Edge case handling documented
    - Known limitations documented
@@ -1463,7 +1463,7 @@ surveyverse.tidysurvey.org/
 - ✅ Replicate weights match svrep package
 - ✅ Propensity weighting achieves covariate balance
 - ✅ All diagnostics work correctly
-- ✅ >90% test coverage for surveyweights
+- ✅ >90% test coverage for surveywts
 
 ### Phase 3
 - ✅ All four packages at 0.1.0
@@ -1480,7 +1480,7 @@ surveyverse.tidysurvey.org/
 1. ✅ **DECIDED:** S7 for class system
 2. ✅ **DECIDED:** Metadata in separate property (not on data.frame columns)
 3. ✅ **DECIDED:** Vendor survey variance code (with attribution)
-4. ✅ **DECIDED:** Four separate packages (surveycore, surveytidy, surveyweights, surveyverse)
+4. ✅ **DECIDED:** Four separate packages (surveycore, surveytidy, surveywts, surveyverse)
 5. ✅ **DECIDED:** Replicate weights use type property, not subclasses
 
 ### Naming Decisions
@@ -1595,7 +1595,7 @@ surveyverse.tidysurvey.org/
 **Migration path:** Similar syntax, easy to switch
 
 ### vs. svrep package
-**Advantages of surveyweights:**
+**Advantages of surveywts:**
 - ✅ Integrated with full survey ecosystem
 - ✅ Adds propensity score weighting
 - ✅ Unified interface for all weighting methods

@@ -1,8 +1,13 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.3.4
+Version: 0.3.5
 Authors@R:
-    person("Jacob", "Dennen", , "jdenn0514@gmail.com", role = c("aut", "cre", "cph"))
+    person(
+        "Jacob", "Dennen", 
+        email = "jdenn0514@gmail.com", 
+        role = c("aut", "cre", "cph"),
+        comment = c(ORCID = "0000-0003-3006-7364")
+    )
 Description: Provides 'S7'-based infrastructure for survey analysis including
     design objects, metadata preservation, and variance estimation. Forms the
     foundation of the surveyverse ecosystem. Supports Taylor series, replicate
