@@ -1039,3 +1039,256 @@ All 8 issues from 2026-02-27 (Round 2, v0.3 spec) are resolved. Decisions record
 
 **Overall assessment:** The v0.6 spec is close but not yet implementation-ready. The one blocking gap — no test plan for the 12 expanded S3 methods added in Round 2 — is a direct consequence of those methods being added to the spec without updating the test plan section. The four REQUIRED issues are tight, localized, and low-effort to resolve (wrong meta key in quality gate; missing `label` algorithm; unspecified print format; undefined zero-weight behavior). Two rounds of improvements have substantially strengthened this spec; one more targeted editing pass will close the remaining gaps.
 
+---
+
+## Spec Review: phase-2 — Pass 4 (2026-03-08)
+
+**Reviewer:** Claude (adversarial batch pass — fourth pass)
+**Spec version:** 1.0 — "Methodology-locked — ready for Stage 3 code/architecture review"
+
+### Prior Issues (Pass 3)
+
+| # | Title | Status |
+|---|---|---|
+| 39 | Test plan missing for all 12 expanded S3 methods (Sections 5.8–5.19) | ✅ Resolved — items 17–36 added to `test-glm-methods.R` plan |
+| 40 | `surveycore_error_predict_no_fit` untested for 6 additional call sites | ✅ Resolved — dual-pattern items added per method |
+| 41 | `print(clean(fit))` output format not shown or specified | ✅ Resolved — Section 6.6 added with verbatim example |
+| 42 | `label` column stripping algorithm for factor dummy names unspecified | ✅ Resolved — model-frame lookup algorithm specified |
+| 43 | Zero-weight rows in design data: behavior undefined | ✅ Resolved — `surveycore_warning_nonpositive_weights` added |
+| 44 | Quality gate uses wrong meta key `variable_labels` instead of `variables` | ✅ Resolved — quality gate updated to `$variables` |
+| 45 | `confint()` error for invalid `parm` unspecified | ✅ Resolved — delegated to base R behavior (SUGGESTION accepted as-is) |
+| 46 | Ordered factor `.L`/`.Q`/`.C` stripping algorithm ambiguous | ✅ Resolved — recommendation B accepted (SUGGESTION deferred) |
+
+---
+
+### New Issues
+
+#### Section III / IX: `survey_glm_fit` Class + Testing Strategy
+
+**Issue 47: No `test_glm_fit_invariants()` helper defined for `survey_glm_fit` objects**
+Severity: REQUIRED
+Violates testing-surveycore.md (invariant checker pattern) and engineering-preferences.md §2 (more tests is better).
+
+Section 9.3 defines `test_glm_tidy_invariants()` as the **first assertion** in every `clean()` happy-path test block. This is the established surveycore pattern for domain objects. But `survey_glm_fit` — the output of `survey_glm()` — has no analogous helper.
+
+Section 9.2, test-glm.R item 1 says: "basic call produces a valid `survey_glm_fit`; verify key properties (coefficients length, vcov dimension, converged = TRUE, degf > 0)." These inline checks duplicate invariant logic that will be scattered across every construction test block rather than centralized in a helper.
+
+The structural invariants for `survey_glm_fit` are already defined in Section 3.3 (the S7 validator). A `test_glm_fit_invariants(fit)` helper — analogous to `test_glm_tidy_invariants()` — would:
+1. Centralize property checks that must hold for every valid `survey_glm_fit`
+2. Ensure consistent invariant coverage across all construction test blocks
+3. Make it obvious when a new test block fails to check required structure
+
+Options:
+- **[A]** Add a Section 9.3a defining `test_glm_fit_invariants(fit)` with at least: `expect_true(S7::S7_inherits(fit, survey_glm_fit))`, `expect_true(length(fit@coefficients) > 0)`, `expect_identical(dim(fit@vcov), c(p, p))` where `p = length(fit@coefficients)`, `expect_gt(fit@degf, 0)`, `expect_type(fit@converged, "logical")`, `expect_true(inherits(fit@formula, "formula"))`. Specify it as the first assertion in every `survey_glm()` happy-path test block. Effort: low, Risk: none, Impact: consistent invariant coverage.
+- **[B] Do nothing** — each test block checks properties inline; coverage exists but is inconsistent.
+
+**Recommendation: [A]** — The `test_glm_tidy_invariants()` pattern was added specifically to avoid scattered inline checks. `survey_glm_fit` deserves the same treatment.
+
+---
+
+**Issue 48: `summary()` with `fit_` = NULL not in Section X error table or test plan**
+Severity: REQUIRED
+Violates Lens 2 (error paths) and Lens 3 (contract completeness).
+
+Section 5.2.2 states: "Requires `model@fit_` to be non-`NULL`; if `NULL`, `summary()` errors with `surveycore_error_predict_no_fit`."
+
+Two gaps follow from this:
+
+1. **Section X error table (P2-14)** currently reads: "`predict.survey_glm_fit()` | `fit_` is NULL | ERROR | `surveycore_error_predict_no_fit`." The call site in `summary()` is not listed. Since `summary()` is a separate S3 method, its `fit_`-is-NULL path is effectively undocumented in the error table.
+
+2. **Test plan** (Section 9.2, test-glm-methods.R) has item 2: "`summary()` — produces output (structural, not numerical); returns `survey_glm_summary` class." No item covers `summary(fit_with_null_fit_)`.
+
+Per `testing-standards.md §2`: "every typed error class gets a test." `surveycore_error_predict_no_fit` from `summary()` is an untested error path.
+
+Options:
+- **[A]** Add to Section X: a row for `summary.survey_glm_fit()` | `fit_` is NULL | ERROR | `surveycore_error_predict_no_fit` (note: same class as P2-14, shared across call sites). Add a test plan item to test-glm-methods.R: "`summary()` with `fit_` = NULL — errors with `surveycore_error_predict_no_fit` (dual pattern: `class=` + `expect_snapshot(error = TRUE)`)." Effort: low.
+- **[B]** Add a note to P2-14 in Section X: "Also thrown by `summary()`, `terms()`, `model.matrix()`, `model.frame()`, `hatvalues()`, `logLik()`, `AIC()`, `BIC()` when `fit_` is NULL." Add a single catch-all test. Effort: trivial.
+
+**Recommendation: [A]** — Explicit per-method test items prevent the coverage ambiguity that round 3 Issue 40 was introduced to fix.
+
+---
+
+#### Section V / X: S3 Methods + Error Table
+
+**Issue 49: `confint()` error `surveycore_error_invalid_conf_level` missing from Section X error table**
+Severity: REQUIRED
+Violates Lens 3 (contract completeness — all errors must appear in the error table).
+
+Section 5.8 specifies: "`level` must be in `(0, 1)`. Invalid `level` errors with `surveycore_error_invalid_conf_level` (reuse Phase 1 definition)."
+
+Section 6.5 (clean() error table) lists: "P2-13 | `conf_level` invalid | ERROR | `surveycore_error_invalid_conf_level`."
+
+Section X error table also lists P2-13 for `clean()` only.
+
+`confint.survey_glm_fit()` fires the same error class but it appears in neither Section 6.5 nor Section X. An implementer reading the error tables to understand all call sites for this error class will miss `confint()`. The test plan (item 19) correctly has this test — but it has no corresponding error table entry.
+
+Options:
+- **[A]** Add a row to Section X: "`confint.survey_glm_fit()` | `level` not in (0, 1) | ERROR | `surveycore_error_invalid_conf_level` (reuse Phase 1 definition; same class as P2-13)." Effort: trivial.
+- **[B]** Extend P2-13's "Function" column to list both `clean()` and `confint.survey_glm_fit()`. Effort: trivial.
+
+**Recommendation: [A]** — Each error table row maps one function+condition pair; one entry per call site keeps auditing clear.
+
+---
+
+#### Section V: `predict.survey_glm_fit()`
+
+**Issue 50: `predict(new_data = NULL, type = "link")` contract not verified in test plan**
+Severity: REQUIRED
+Violates Lens 2 (behavioral branches must be covered) and Lens 6 (API coherence — type is silently ignored in early spec versions; the fix must be tested).
+
+Issue 15 (Round 1, now resolved) identified that when `new_data = NULL` and `type != "response"`, the original spec silently ignored `type` and always returned response-scale values. The fix was to delegate to `stats::predict(object@fit_, type = type)` for all non-NULL and NULL `new_data` cases.
+
+The current spec (Section 5.5) defines `type` as controlling the scale of predictions with values `"response"`, `"link"`, and `"terms"`. But the test plan items for `predict()` are:
+- Item 5: "`predict(newdata = NULL)` — returns fitted values" (no `type` specified; implies `"response"` only)
+- Item 6: "`predict(newdata = df)` — returns numeric vector of correct length" (no `type` specified)
+
+Neither item tests `type = "link"` or `type = "terms"`. The fix for Issue 15 introduced two code paths that neither of these items exercises. Without tests for non-response `type`, the fix can silently regress.
+
+Options:
+- **[A]** Add to Section 9.2 test-glm-methods.R:
+  - After item 5: "`predict(new_data = NULL, type = 'link')` — returns link-scale values (same as `predict(object@fit_, type = 'link')`); differs from response-scale for binomial/Poisson families."
+  - After item 6: "`predict(new_data = df, type = 'terms')` — returns a matrix with one column per model term."
+  Effort: low.
+- **[B]** Amend item 5: "returns fitted values on the correct scale for each `type` value." Effort: trivial but underspecified.
+
+**Recommendation: [A]** — The `"link"` path is the exact fix from Issue 15; it deserves an explicit test.
+
+---
+
+#### Section V / VI: DRY
+
+**Issue 51: `confint()` and `clean()` independently implement the same CI formula**
+Severity: REQUIRED
+Violates engineering-preferences.md §1 (DRY — highest priority; repeated logic in two functions).
+
+Both `confint.survey_glm_fit()` (Section 5.8) and `clean()` (Section 6.3) compute confidence intervals using the identical formula:
+
+```
+estimate ± qt((1 + level) / 2, df = model@degf - (p - 1)) * se
+```
+
+Section 5.8 says the two "must produce identical numerical results for equivalent `conf_level` / `level` values." This promise cannot be enforced by tests alone — if one implementation has a typo (e.g., `model@df_residual` instead of `model@degf - (p - 1)`) and the other is correct, the test plan has no oracle to compare them against each other.
+
+The right fix is a shared internal helper `.glm_confint(coefs, vcov, degf, level, parm)` called by both `confint()` and `clean()`. The spec currently describes two separate implementations. DRY violations in the spec lead to DRY violations in the code.
+
+Options:
+- **[A]** Add `.glm_confint(estimates, se, degf_design, n_coef, level, parm = NULL)` to Section 2.2 internal helpers. Specify that it computes `estimate ± qt((1 + level)/2, df = degf_design - (n_coef - 1)) * se` and returns a two-column matrix with row names from `parm`. Both `confint.survey_glm_fit()` and `clean()` call this helper. Effort: low, Risk: none, Impact: single implementation of the CI formula; the "must match" promise becomes a structural guarantee.
+- **[B]** Add a cross-reference: "The CI formula used in `clean()` (Section 6.3) is identical to the one in `confint()` (Section 5.8). Implementations must use the same helper or be numerically verified against each other in tests." Leave implementation to the coder. Effort: trivial.
+- **[C] Do nothing** — two separate CI implementations; a typo in one is undetectable without a cross-function oracle test.
+
+**Recommendation: [A]** — engineering-preferences.md §1 is explicit: "Duplicated logic is a bug waiting to happen." Two functions that describe the same formula should share a helper. This is DRY, not over-engineering.
+
+---
+
+#### Section IX / test-glm-methods.R: Test Completeness
+
+**Issue 52: `print.survey_glm_summary()` has no snapshot test**
+Severity: REQUIRED
+Violates Lens 2, category 13 (Print snapshot required for every result class with a `print()` method).
+
+`survey_glm_summary` is an S3 class returned by `summary.survey_glm_fit()`. Section 5.2.2 defines `print.survey_glm_summary()` and shows its exact verbatim output format. Per the review instruction: "Print snapshot — required for every result class that has a `print()` method."
+
+The test plan has:
+- Item 1 in test-glm-methods.R: snapshot for `print(fit)` (the model object) ✅
+- Item 17 in test-glm-methods.R: snapshot for `print(clean(fit))` (the tidy result) ✅
+
+But there is no item for `print(summary(fit))` (the `survey_glm_summary` object). The output format is fully specified in Section 5.2.2 — a snapshot test is both possible and required.
+
+Options:
+- **[A]** Add a test plan item to test-glm-methods.R between current items 2 and 3: "`print(summary(fit))` — snapshot of `print.survey_glm_summary()` output matches expected format (Section 5.2.2); returns `invisible(x)`." Effort: low.
+- **[B] Do nothing** — the print format is specified but never snapshot-tested; regressions in the summary output format are silent.
+
+**Recommendation: [A]** — Three result classes (fit, tidy, summary) each have a `print()` method; all three must have snapshot tests.
+
+---
+
+#### Section II: Internal Helpers (Suggestions)
+
+**Issue 53: `set_coef()` "bypasses the S7 validator" claim is technically incorrect**
+Severity: SUGGESTION
+Misleading description; may cause implementer confusion.
+
+Section 7.4 states: "**Validity:** `set_coef` bypasses the S7 validator. The perturbed object it returns is not a valid `survey_glm_fit` for inference — its `@vcov` is stale relative to the new `@coefficients`."
+
+S7 property assignments via `@<-` trigger the class validator. The assignment `model@coefficients <- coefs` in `set_coef` DOES trigger the S7 validator. The validator checks: same `p = length(self@coefficients)`, same `vcov` dimensions (p × p), etc. — all structural invariants. Since marginaleffects perturbs coefficient values without changing their count, the structural validator passes.
+
+The semantic invalidity (stale `@vcov`) is different from bypassing the validator. The current phrasing implies the implementer needs to find a way to bypass S7's validation mechanism — which is not true. The correct statement is: "The S7 validator runs normally but only checks structural invariants (dimensions, types). Semantic validity (vcov consistent with coefficients) is not enforced by the validator; the returned object has structurally valid but semantically stale vcov."
+
+Options:
+- **[A]** Replace the Validity note with: "The S7 validator runs normally on `model@coefficients <- coefs` but only enforces structural invariants (dimensions, types). The returned object is structurally valid but semantically stale (`@vcov` was computed for the original `@coefficients`). This is intentional: marginaleffects uses the perturbed object only for numerical differentiation, never for inference." Effort: trivial.
+- **[B] Do nothing** — developer will discover the correct behavior empirically; not a blocking gap.
+
+**Recommendation: [A]** — One sentence clarification prevents a potentially wasted investigation into S7 validator bypass mechanisms.
+
+---
+
+**Issue 54: `n_weighted` computation source not specified**
+Severity: SUGGESTION
+Minor contract gap; leaves one `.meta` value's derivation implicit.
+
+Section 6.3 defines `n_weighted` as "Sum of survey weights for in-model observations (after `na.action`)." The source data is unambiguous conceptually but the implementation detail is not stated: which vector is summed?
+
+The candidates are:
+1. `sum(model.frame(fit)$"(weights)")` — weights as seen by the GLM model frame
+2. `sum(design@data[[design@variables$weights]][in_model_rows])` — survey weights column in design data, subset to rows not dropped by `na.action`
+
+Both should give the same result for non-domain designs, but may differ when rows are excluded. Option 1 is more robust (the GLM's model frame is the canonical record of what was fitted) and is already accessible via `model@fit_`.
+
+Options:
+- **[A]** Add to Section 6.3 `n_weighted` description: "Computed as `sum(model.frame(model@fit_)$'(weights)')` — the sum of survey weights in the final model frame after domain filtering and `na.action`." Effort: trivial.
+- **[B] Do nothing** — derivable by a competent implementer; edge cases only matter when rows are dropped.
+
+**Recommendation: [B]** — Acceptable implementation latitude; the conceptual definition is clear.
+
+---
+
+**Issue 55: `lapply()` state leakage test (Section 9.4) not mapped to a numbered test plan item**
+Severity: SUGGESTION
+Orphaned test requirement; may be skipped during implementation.
+
+Section 9.4 edge cases include: "`survey_glm()`: programmatic interface is suitable for `lapply()`/`purrr::map()` iteration over outcome variables (verify no state leakage across calls)."
+
+Section 9.2 (the numbered test plan for test-glm.R) has item 7 covering the programmatic interface, but no item for the `lapply()` state leakage check. Edge cases from Section 9.4 that are not mirrored in the Section 9.2 numbered plan may be missed during implementation because the numbered plan is what engineers use as a checklist.
+
+Options:
+- **[A]** Add to Section 9.2 test-glm.R: "7b. **Programmatic interface — `lapply()` iteration** — run `lapply(c('y1', 'y2'), function(v) survey_glm(d, response = v, predictors = 'x1'))` and verify each result is an independent `survey_glm_fit` with the correct `@formula`; check that `coef(results[[1]])` differs from `coef(results[[2]])` when the outcomes have different means." Effort: low.
+- **[B] Do nothing** — item 7 covers the programmatic interface; state leakage test is implicit.
+
+**Recommendation: [A]** — State leakage across `lapply()` calls is a real risk when global state or environment closures are used incorrectly. An explicit test item makes the expectation concrete.
+
+---
+
+### Summary (Pass 4)
+
+#### Prior Issues Status
+
+| Round | Total Issues | Status |
+|---|---|---|
+| Round 1 (Issues 1–30) | 30 | ✅ All resolved |
+| Round 2 (Issues 31–38) | 8 | ✅ All resolved |
+| Round 3 (Issues 39–46) | 8 | ✅ All resolved |
+
+#### New Issues (Pass 4)
+
+| # | Section | Title | Severity |
+|---|---|---|---|
+| 47 | IX | No `test_glm_fit_invariants()` helper for `survey_glm_fit` objects | REQUIRED |
+| 48 | V / X | `summary()` with `fit_` = NULL not in error table or test plan | REQUIRED |
+| 49 | V / X | `confint()` error `surveycore_error_invalid_conf_level` missing from Section X | REQUIRED |
+| 50 | V / IX | `predict(new_data = NULL, type = "link")` not in test plan | REQUIRED |
+| 51 | II / V / VI | DRY: `confint()` and `clean()` implement same CI formula independently | REQUIRED |
+| 52 | IX | `print.survey_glm_summary()` snapshot test missing from test plan | REQUIRED |
+| 53 | VII | `set_coef()` "bypasses validator" description technically incorrect | SUGGESTION |
+| 54 | VI | `n_weighted` computation source not specified | SUGGESTION |
+| 55 | IX | `lapply()` state leakage test not in numbered test plan items | SUGGESTION |
+
+| Severity | Count |
+|---|---|
+| BLOCKING | 0 |
+| REQUIRED | 6 |
+| SUGGESTION | 3 |
+
+**Total new issues (Pass 4):** 9 (zero blocking, six required, three suggestions)
+
+**Overall assessment:** The v1.0 spec is nearly implementation-ready. Three rounds of review have eliminated all blocking gaps. The six REQUIRED issues are localized and low-effort: two test plan omissions (`summary()` NULL-fit and `predict()` type), two error table gaps (`summary()` and `confint()`), one missing invariant helper, and one DRY violation in the CI formula. The DRY issue (Issue 51) is the most substantive — two separate CI implementations are a maintenance risk that a shared helper eliminates cleanly. Resolving all six REQUIRED items in Stage 4 will produce a spec ready for the implementation plan.
+

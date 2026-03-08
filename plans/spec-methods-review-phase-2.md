@@ -278,3 +278,153 @@ Two components of the API require access to `y` (the original response vector), 
 ## Note on Genuine Uncertainty in the Literature
 
 One area where practice diverges from a single authoritative answer: the correct degrees of freedom for the t-reference distribution in survey GLM Wald tests. The `degf(design) - (p-1)` formula (Korn & Graubard 1990) is the most widely cited, and `survey::svyglm()` uses it — so following that convention is defensible. But the choice of `(p-1)` vs `p` vs `(p - num_strata)` remains contested for complex designs with many predictors relative to design df, and there is no consensus in the literature for designs where `degf(design) < p`. The spec's warn-and-clamp approach (BLOCKING-1 of the prior review, now resolved as `surveycore_warning_insufficient_df`) is the right call given the uncertainty.
+
+---
+
+## Methodology Review: phase-2 — Pass 2 (2026-03-08)
+
+**Spec version reviewed:** v0.9 (`plans/spec-phase-2.md`)
+
+---
+
+### Prior Issues (Pass 1 — v0.8)
+
+| # | Title | Lens | Status |
+|---|---|---|---|
+| BLOCKING-1 | Information matrix wrong for non-Gaussian families | 1 | ✅ Resolved — Section 8.2 now specifies `bread = summary(fit)$cov.unscaled = (X'W̃X)⁻¹` with explicit documentation that `(X'WX/n)⁻¹` is Gaussian-only |
+| BLOCKING-2 | SRS variance formula only valid for Gaussian | 2 | ✅ Resolved — Section 8.4 replaced with score-based SRS sandwich using `N²(1-f)/n · S²_{u_j}` for all families |
+| BLOCKING-3 | `summary()` labels working residuals as "Deviance Residuals" | 3 | ✅ Resolved — Section 5.2.2 now uses `fivenum(residuals(model@fit_, type = "deviance"))` |
+| BLOCKING-4 | `residuals(type="response")` requires `y`, not stored | 1 | ✅ Resolved — Section 5.7 now specifies `model.response(model.frame(object@fit_))` with explicit `@fit_` requirement and note on transformed-response scale |
+| REQUIRED-5 | `@df_null` computation never specified | 3 | ✅ Resolved — Section 3.2 now specifies `df_null` = `fit$df.null` (classical `n - 1`) |
+| REQUIRED-6 | `@df_residual` declared `class_integer` but computed from non-integer `degf()` | 3 | ✅ Resolved — Section 3.1 class definition now uses `S7::class_numeric` for both `df_null` and `df_residual` |
+| REQUIRED-7 | Reference row `term` column contradicts decisions log | 3 | ✅ Resolved — Section 6.3 explicitly notes the v0.8 reversal of the `[ref]` suffix decision; spec body is canonical |
+| REQUIRED-8 | Replicate domain estimation mechanism contradictory | 4 | ✅ Resolved — Section 4.5 now cleanly separates Taylor (zero-score masking) from replicate (restricted refit, no masking); non-convergence behavior specified |
+| REQUIRED-9 | `cbind()` LHS error detection mechanism wrong | 1 | ✅ Resolved — Section 4.4 now adds explicit `is.call(formula[[2]]) && identical(formula[[2]][[1]], quote(cbind))` pre-check for `surveycore_error_cbind_response_unsupported` |
+| REQUIRED-10 | `na.action = na.fail` has no test | 3 | ✅ Resolved — Section 9.4 now includes an explicit edge case for `na.action = na.fail` |
+| REQUIRED-11 | Binomial "non-integer successes" warning unhandled | 2 | ✅ Resolved — Section 4.4 Step 4 now specifies `suppressWarnings()` for `binomial()`/`quasibinomial()` |
+| REQUIRED-12 | `@df_residual` conflates design-based and classical df | 3 | ✅ Resolved — Section 8.5 now defines two distinct quantities: `@df_residual` (classical `n - p`) for deviance display; `degf - (p-1)` computed inline for t-tests |
+| ADVISORY-13 | marginaleffects AME SEs provenance not documented | 5 | ✅ Resolved — Section 7.5 now includes a documentation note on the hybrid design-based / delta-method provenance |
+| ADVISORY-14 | `@vcov` not validated as PSD | 2 | ✅ Resolved — Quality gate in Section XI now requires `all(eigen(vcov(fit))$values >= -1e-10)` for all oracle test fits |
+| ADVISORY-15 | `predict(se_fit=TRUE)` SEs are model-based — asymmetry not documented | 5 | ✅ Resolved — Section 5.5 now includes explicit "Note on se_fit" documenting the model-based / design-based asymmetry |
+| ADVISORY-16 | `logLik()`/`AIC()`/`BIC()` model-based warning not in clean() `.meta` | 5 | ✅ Resolved — Section 5.18 now requires `@note` roxygen warning against using AIC/BIC for model selection |
+
+All 16 prior issues resolved. Spec correctly promoted to v0.9.
+
+---
+
+### New Issues
+
+#### Lens 1 — Estimator Specification
+
+**Issue 17: SRS meat matrix specifies only diagonal entries — off-diagonal covariance terms absent**
+Severity: BLOCKING
+Resolution type: UNAMBIGUOUS
+
+Section 8.4 specifies the SRS meat matrix entry for a single score-total column as:
+
+```
+Var_SRS(T_j) = N² · (1 - f) / n · S²_{u_j}
+```
+
+Step 3 then says "Assemble the p × p meat matrix from these column variances."
+
+The problem: this formula gives the *diagonal* entry `(j, j)` of the `p × p` meat matrix. The off-diagonal entries `Cov_SRS(T_j, T_k)` are never specified. For the Binder sandwich `Var(β̂) = bread · meat · bread`, the full `p × p` meat matrix is required — not a diagonal matrix constructed from the column-wise variances alone.
+
+**Why this is BLOCKING:** When `bread = (X'W̃X)⁻¹` is not diagonal (which it almost never is), `bread · diag(S²_{u_j}) · bread` ≠ `bread · full_meat · bread` for the diagonal elements. Concretely, for a model with intercept and one continuous predictor (p = 2):
+
+```
+Var(β̂_1) = b₁₁² · m₁₁  +  2·b₁₁·b₁₂·m₁₂  +  b₁₂² · m₂₂
+```
+
+Using only diagonal entries omits the `2·b₁₁·b₁₂·m₁₂` term. Whenever score columns are correlated (`m₁₂ ≠ 0`) and the bread is non-diagonal, every SE from the SRS path is wrong. The oracle comparison for any multivariate SRS model against `survey::svyglm()` would fail.
+
+**Resolution:** Replace Step 2–3 of Section 8.4 with the full `p × p` sample covariance formulation:
+
+```
+Cov_SRS(T_j, T_k) = N² · (1 - f) / n · S_{u_j, u_k}
+```
+
+where `S_{u_j, u_k}` is the sample covariance between columns `j` and `k` of the score matrix. In matrix form, the meat is:
+
+```r
+meat <- N^2 * (1 - f) / n * var(score_matrix)   # uses R's var(), which gives sample cov matrix
+# More explicitly:
+U_centered <- sweep(score_matrix, 2, colMeans(score_matrix))
+meat <- N^2 * (1 - f) / n * (t(U_centered) %*% U_centered) / (n - 1)
+```
+
+where `N` and `f` follow the existing rule (from `design@variables$fpc` if available, else `N = sum(weights)`).
+
+The `survey_calibrated` path uses the same formula. Add an explicit oracle test for the SRS path with ≥ 2 predictors (e.g., `y ~ x1 + x2` on synthetic SRS data) verifying that `sqrt(diag(vcov(fit_sc)))` matches `SE(fit_sv)` within 1e-8.
+
+Source: Binder (1983), JASA 78(382):626–631 — the full meat matrix `Var_design(T)` is the design-based covariance matrix of the total score *vector*, not the diagonal matrix of marginal score variances.
+
+---
+
+#### Lens 2 — Variance Estimation
+
+No new issues found beyond Issue 17 (SRS meat matrix). The Taylor path passes the full score matrix to `.svy_recvar()` which handles the complete `p × p` covariance structure. The replicate path constructs the full outer product `Σ c_r d_r d_r'`. Only the SRS path was affected.
+
+---
+
+#### Lens 3 — Degrees of Freedom and Inference
+
+**Issue 18: `df_residual` mislabeled as "design-based" in two places**
+Severity: REQUIRED
+Resolution type: UNAMBIGUOUS
+
+Section 8.5 (correctly) establishes that `@df_residual` stores the *classical* `fit$df.residual` (i.e., `n - p`), used only for the deviance display, while the design-based residual df `degf - (p - 1)` is computed inline. However, two other sections of the spec contradict this:
+
+1. **Section 5.2.1** (`survey_glm_summary` structure table): `df_residual` description reads "Design-based residual df (`model@df_residual`)." The value `model@df_residual` is classical `n - p`, so the label "Design-based" is wrong.
+
+2. **Section 5.14** (`df.residual.survey_glm_fit()`): "Returns `object@df_residual` — the **design-based** residual degrees of freedom." Same mislabeling.
+
+An implementer reading only Section 5.2.1 or Section 5.14 would conclude that `@df_residual` holds the design-based df (e.g., ~16 for NHANES), which contradicts Section 8.5. This would cause the deviance display to show design-based df instead of classical df — the opposite of the intended behavior.
+
+**Resolution:**
+
+- Section 5.2.1, `df_residual` description: change to "Classical residual degrees of freedom (`model@df_residual` = `fit$df.residual` = `n - p`). Used for the deviance display only. For t-tests and CIs, design-based df is used (`model@degf - (p - 1)`), computed inline."
+- Section 5.14: change "design-based" to "classical (`n - p`) residual degrees of freedom, stored from `fit$df.residual`."
+
+Source: Section 8.5 of the same spec — this is an internal consistency fix, not a methodological judgment.
+
+---
+
+#### Lens 4 — Domain Estimation
+
+No new issues found. Section 4.5 correctly specifies zero-score masking for Taylor, restricted refit (no masking) for replicate, non-convergence handling, and empty-domain error.
+
+---
+
+#### Lens 5 — Established Practice
+
+**Issue 19: `survey_calibrated` N determination not explicitly confirmed for SRS formula**
+Severity: ADVISORY
+Resolution type: UNAMBIGUOUS
+
+Section 8.4 states: "N is the population size (from `design@variables$fpc` if available, otherwise `n/f` from the weight sum)." Section 8.1 confirms that `survey_calibrated` uses the SRS sandwich path. However, the spec does not explicitly confirm which weights' sum to use for N when `survey_calibrated` has no fpc: the pre-calibration weights, the post-calibration weights, or some design-level quantity.
+
+In practice, N = `sum(design@variables$weights)` (the calibrated weights, which are the current `@variables$weights`) is the correct choice — calibrated weights approximately sum to the population total. But this is left implicit. If an implementer mistakenly uses pre-calibration weights (from some other slot) or the raw row count, the SRS variance would be wrong for calibrated designs.
+
+**Resolution:** Add one sentence to Section 8.4 (or Section I): "For `survey_calibrated` designs, N is approximated as `sum(design@variables$weights)` (the calibrated survey weights, which sum to approximately the population size)."
+
+**Issue 20: NA-removed rows' score contribution to variance not explicitly specified**
+Severity: ADVISORY
+Resolution type: UNAMBIGUOUS
+
+Section 4.4 Step 3 states: "Rows removed by `na.action` are excluded from fitting and from variance estimation." For the score-based sandwich, "excluded from variance estimation" means zero score contribution (`u_i = 0` for NA rows). This is the correct and natural behavior — NA rows have no fitted value, so their score is undefined and treated as zero — but the spec never states this explicitly. An implementer unfamiliar with the score-based approach might wonder how to handle the `n × p` score matrix when the GLM was fit on only `n_complete < n` rows.
+
+**Resolution:** Add one sentence to `.taylor_var_score_matrix()` in Section 2.2 or to Step 5 of Section 4.4: "Rows excluded by `na.action` (and out-of-domain rows) have zero score contribution — the `n × p` score matrix has `u_i = 0` for these rows, and `.taylor_var_score_matrix()` is called on the full `n × p` matrix including these zero rows."
+
+---
+
+### Summary (Pass 2)
+
+| # | Title | Severity | Status |
+|---|---|---|---|
+| 17 | SRS meat matrix diagonal-only — off-diagonal covariance terms absent | BLOCKING | ✅ Resolved — Section 8.4 now specifies full `p × p` sample covariance via `var(score_matrix)`; oracle test for SRS with ≥ 2 predictors added |
+| 18 | `df_residual` mislabeled as "design-based" in Section 5.2.1 and 5.14 | REQUIRED | ✅ Resolved — both sections now read "Classical residual df (`n - p`)" with a note that design-based df is computed inline |
+| 19 | `survey_calibrated` N determination not explicit | ADVISORY | ✅ Resolved — Section 8.4 now states N = `sum(design@variables$weights)` for calibrated designs |
+| 20 | NA-removed rows' zero score contribution not explicit | ADVISORY | ✅ Resolved — Step 5 of Section 4.4 now states `u_i = 0` for NA-excluded rows; full `n × p` matrix passed to `.taylor_var_score_matrix()` |
+
+All 4 Pass 2 issues resolved. Spec promoted to **v1.0 — methodology-locked**.

@@ -114,5 +114,6 @@
       "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-utils.R:*)",
       "Bash(gh:*)"
     ]
-  }
+  },
+  "outputStyle": "default"
 }
