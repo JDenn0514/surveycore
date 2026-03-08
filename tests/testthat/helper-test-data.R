@@ -529,3 +529,101 @@ make_all_na_group_design <- function(n = 100, seed = 1) {
 get_na_group_rows <- function(result, group_col) {
   result[is.na(result[[group_col]]), ]
 }
+
+# ------------------------------------------------------------------------------
+# test_glm_fit_invariants()
+# ------------------------------------------------------------------------------
+
+#' Assert all formal invariants on a survey_glm_fit object
+#'
+#' Call this as the FIRST assertion in every test_that() block that calls
+#' survey_glm() and expects a valid fit. Checks all invariants from spec
+#' Section 9.3a.
+#'
+#' @param fit A survey_glm_fit object.
+#' @return Returns fit invisibly on success. Throws testthat failure on any
+#'   violated invariant.
+#' @keywords internal
+test_glm_fit_invariants <- function(fit) {
+  p <- length(fit@coefficients)
+  # 1. Correct S7 class
+  testthat::expect_true(S7::S7_inherits(fit, survey_glm_fit))
+  # 2. Coefficients non-empty
+  testthat::expect_true(p > 0)
+  # 3. vcov is p x p
+  testthat::expect_identical(dim(fit@vcov), c(p, p))
+  # 4. degf > 0
+  testthat::expect_gt(fit@degf, 0)
+  # 5. converged is logical
+  testthat::expect_type(fit@converged, "logical")
+  # 6. formula is a formula object
+  testthat::expect_true(inherits(fit@formula, "formula"))
+  invisible(fit)
+}
+
+# ------------------------------------------------------------------------------
+# test_glm_tidy_invariants()
+# ------------------------------------------------------------------------------
+
+#' Assert all formal invariants on a survey_glm_tidy (clean()) result
+#'
+#' Call this as the FIRST assertion in every test_that() block that calls
+#' clean() and expects a valid tidy result. Checks all invariants from spec
+#' Section 9.3.
+#'
+#' @param result A survey_glm_tidy object (output of clean()).
+#' @return Returns result invisibly on success. Throws testthat failure on any
+#'   violated invariant.
+#' @keywords internal
+test_glm_tidy_invariants <- function(result) {
+  # 1. Correct S3 class hierarchy
+  testthat::expect_true(inherits(result, "survey_glm_tidy"))
+  testthat::expect_true(inherits(result, "survey_result"))
+  testthat::expect_true(tibble::is_tibble(result))
+  # 2. Required columns always present
+  expected_cols <- c(
+    "term", "variable", "var_label", "label", "reference_row",
+    "estimate", "std_error", "p_value", "conf_low", "conf_high"
+  )
+  testthat::expect_true(all(expected_cols %in% names(result)))
+  # 3. reference_row is logical, no NAs
+  testthat::expect_type(result$reference_row, "logical")
+  testthat::expect_false(anyNA(result$reference_row))
+  # 4. label is character, never NA
+  testthat::expect_type(result$label, "character")
+  testthat::expect_false(anyNA(result$label))
+  # 5. meta() returns non-NULL list with all 15 required keys
+  m <- meta(result)
+  testthat::expect_false(is.null(m))
+  required_keys <- c(
+    "formula", "family", "link", "design_type", "conf_level",
+    "call", "group_names", "group_labels", "n_observations",
+    "n_weighted", "degf", "exponentiate", "include_reference",
+    "converged", "variables"
+  )
+  testthat::expect_true(all(required_keys %in% names(m)))
+  # 6. group_names is always character(0) for regression
+  testthat::expect_identical(m$group_names, character(0))
+  # 7. n_observations is positive integer
+  testthat::expect_type(m$n_observations, "integer")
+  testthat::expect_gt(m$n_observations, 0L)
+  # 8. n_weighted is positive numeric
+  testthat::expect_type(m$n_weighted, "double")
+  testthat::expect_gt(m$n_weighted, 0)
+  # 9. degf is positive numeric
+  testthat::expect_type(m$degf, "double")
+  testthat::expect_gt(m$degf, 0)
+  # 10. $variables is a named list; each entry has all 7 required sub-keys
+  vars <- m$variables
+  testthat::expect_type(vars, "list")
+  var_subkeys <- c(
+    "var_label", "var_class", "var_type", "var_nlevels",
+    "contrasts", "reference_level", "value_labels"
+  )
+  for (v in vars) {
+    testthat::expect_true(all(var_subkeys %in% names(v)))
+    testthat::expect_type(v$var_label, "character") # never NULL; falls back to name
+    testthat::expect_false(is.null(v$var_label))
+  }
+  invisible(result)
+}
