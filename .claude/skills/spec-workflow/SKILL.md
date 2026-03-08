@@ -90,3 +90,7 @@ Methodology review:      plans/spec-methods-review-{id}.md
 Code review:             plans/spec-review-{id}.md
 Decisions log:           plans/decisions-{id}.md
 ```
+
+**Determining `{id}`:** Infer from user context first (e.g., "phase 2 spec" → `phase-2`,
+"survey-srs spec" → `survey-srs`). If the spec file already exists, derive `{id}` from
+its filename. If ambiguous, ask the user before reading or writing any file.

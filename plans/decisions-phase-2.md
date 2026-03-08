@@ -5,6 +5,105 @@ Each entry corresponds to one planning session.
 
 ---
 
+## 2026-03-07 — Methodology lock: GLM variance, residuals, degrees of freedom
+
+### Context
+
+Stage 2 Resolve worked through 16 issues from the adversarial methodology
+review of spec v0.8. 11 issues had one mathematically correct answer (applied
+as a batch without discussion). 5 required judgment calls resolved in this
+session.
+
+### Questions & Decisions
+
+**Q: BLOCKING-2 — SRS variance formula `σ̂² (X'WX)⁻¹` is wrong for
+non-Gaussian families. Which fix?**
+- Options considered:
+  - **[A] Unified score-based path:** Remove analytic formula; use score-based
+    sandwich for all families — `.glm_score()` → SRS variance of score total
+    (`N²(1-f)/n · S²_u`) → `bread · meat · bread`.
+  - **[B] Gaussian analytic + score-based fallback:** Keep analytic formula for
+    Gaussian; add score-based branch for all other families.
+- **Decision:** Option A — unified score-based path for all families.
+- **Rationale:** Single code path, correct for all 8 families, no family
+  dispatch inside the SRS variance function. Analytic formula is equivalent for
+  Gaussian but adds no benefit given the unified path.
+
+---
+
+**Q: BLOCKING-4 — `residuals(type = "response")` needs original response `y`,
+not stored in the S7 object. Where does `y` come from?**
+- Options considered:
+  - **[A] Require `@fit_`:** Extract via `model.response(model.frame(fit_))`;
+    error with `surveycore_error_predict_no_fit` if `fit_` is NULL.
+  - **[B] Store `@response` property:** New property populated at construction.
+    Available even after `fit_` is stripped.
+- **Decision:** Option A — require `@fit_` for `type = "response"`.
+- **Rationale:** Consistent with existing `@fit_` requirement for `"pearson"`,
+  `"deviance"`, and `"partial"`. Adding `"response"` is a small extension of an
+  established pattern. Tradeoff (unavailable post-serialization without `fit_`)
+  is acceptable since the same limitation already applies to four other types.
+
+---
+
+**Q: REQUIRED-5 — `@df_null` computation unspecified. Classical `n - 1` or
+design-based `degf(design)`?**
+- Options considered:
+  - **[A] Classical `fit$df.null`:** Store `n - 1` from `stats::glm()`. Remove
+    `"(design-based)"` label from null deviance line. Matches `survey::svyglm()`.
+  - **[B] Design-based `degf(design)`:** For NHANES: ~17 instead of 199.
+- **Decision:** Option A — classical `fit$df.null`.
+- **Rationale:** Matches `survey::svyglm()` and base `summary.glm()` output.
+  The `"(design-based)"` label in the v0.8 example was inconsistent with 199
+  (clearly `n - 1` for 200 rows). Design-based inference is shown separately
+  in the Design df line; the deviance block is a descriptive goodness-of-fit
+  display.
+
+---
+
+**Q: REQUIRED-12 — `@df_residual` is used for deviance display (classical `n - p`)
+and t-tests (design-based `degf - (p-1)`) — two incompatible values. How to resolve?**
+- Options considered:
+  - **[A] Classical storage + inline design-based:** `@df_residual` stores
+    `fit$df.residual` (classical `n - p`) for deviance display. Design-based
+    `degf(design) - (p - 1)` computed inline in `confint()`, `clean()`, and
+    `summary()` from `model@degf`. No new property.
+  - **[B] Design-based storage + classical property:** `@df_residual` stores
+    design-based value; add `@df_residual_classical` for deviance line.
+- **Decision:** Option A — classical `@df_residual` + inline design-based.
+- **Rationale:** Matches `survey::svyglm()` exactly. Avoids a second property
+  whose only use is one summary line. Design-based df is derivable from
+  `model@degf` (stored) and `p` (from `length(model@coefficients)`), so no
+  information is lost.
+
+---
+
+**Q: ADVISORY-14 — `@vcov` not validated as PSD; non-PSD produces silent NaN SEs.
+Add check where?**
+- Options considered:
+  - **[A] Quality gate only:** Add PSD assertion to Section XI; verify against
+    all oracle fits. No overhead on construction.
+  - **[B] S7 validator:** `all(eigen(self@vcov)$values >= -1e-10)` runs on
+    every `survey_glm_fit` construction.
+  - **[C] Do nothing.**
+- **Decision:** Option A — quality gate only.
+- **Rationale:** Running `eigen()` on every GLM fit adds overhead with no
+  benefit for well-behaved designs (99%+ of use cases). Quality gate catches
+  implementation bugs without penalizing normal usage.
+
+### Outcome
+
+Spec updated to v0.9, methodology-locked. Key changes: Section 8.2 bread
+corrected to `summary(fit)$cov.unscaled`; Section 8.4 SRS formula replaced
+with unified score-based path; Section 5.2 deviance residuals use
+`residuals(fit_, type="deviance")`; Section 5.7 `"response"` type requires
+`@fit_`; `@df_null`/`@df_residual` property types changed to `S7::class_numeric`;
+classical/design-based df split documented in Section 8.5; `confint()` and
+`clean()` CI formulas updated to use `model@degf - (p-1)` inline; new error
+class `surveycore_error_cbind_response_unsupported` added.
+
+---
+
 ## 2026-02-27 — Stage 3 spec resolution (Issues 43–46)
 
 ### Context

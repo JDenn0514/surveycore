@@ -18,14 +18,14 @@ questions:
       - label: "Other surveyverse package"
         description: "surveywts, the surveyverse meta-package, or a new package in the ecosystem."
 
-  - question: "Is there an existing roadmap or upstream spec to reference?"
-    header: "Context docs"
+  - question: "Is there an existing roadmap or prior phase spec to reference?"
+    header: "Reference documents"
     multiSelect: false
     options:
-      - label: "Yes — I'll share the path or paste the content"
-        description: "Provide the document before the draft begins."
-      - label: "No roadmap exists yet"
-        description: "Draft from scratch based on this conversation."
+      - label: "Yes — I'll share the path(s) or paste the content"
+        description: "Provide all reference documents before the draft begins."
+      - label: "No — draft from scratch based on this conversation"
+        description: "This spec is self-contained."
 
   - question: "Are there upstream phase specs that constrain this one?"
     header: "Upstream specs"
@@ -36,6 +36,10 @@ questions:
       - label: "No upstream constraints"
         description: "This phase is self-contained."
 ```
+
+Confirm the `{id}` with the user if not obvious from context. Default patterns:
+"phase 2" → `phase-2`, "survey-srs" → `survey-srs`. The output file will be
+`plans/spec-{id}.md` — establish this before writing anything.
 
 Wait for the user to provide any referenced documents. Read all provided
 context before writing a single line of the spec.
@@ -88,5 +92,8 @@ Model every spec on the Phase 1 structure. Required sections:
 
 Tell the user:
 
-> "This is a first draft. I expect there are gaps — run Stage 2 in a new
-> session to get an adversarial review before we resolve anything."
+> "This is a first draft. I expect there are gaps. Next steps:
+> - If this spec contains variance estimation, estimators, or statistical inference:
+>   run Stage 2 (methodology review) in a new session.
+> - Otherwise: run Stage 3 (code/architecture review) in a new session.
+> Either way, do not resolve anything until the review is complete."

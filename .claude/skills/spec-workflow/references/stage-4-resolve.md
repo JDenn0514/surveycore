@@ -58,7 +58,10 @@ do not re-group or re-sequence them.
 
 **In BIG mode (4 at a time):** Show all issues in the batch as markdown text
 first, then use `AskUserQuestion` for each issue in the batch sequentially.
-Apply fixes after all decisions in the batch are collected. Then ask:
+Apply fixes after all decisions in the batch are collected. After applying
+each fix, check whether it materially changes the framing of any remaining
+issues in the batch — if so, re-present the affected issue with updated
+context before applying its fix. Then ask:
 > "Ready for the next batch?"
 
 **In SMALL mode (1 at a time):** Show the issue text, use `AskUserQuestion`,
@@ -172,3 +175,14 @@ Entry format:
 
 Only log decisions — not implementation details already determined by the spec
 or a rule file. If the answer was predetermined, there is no decision to log.
+
+---
+
+## After Resolution
+
+1. Update the spec version in the header block.
+2. End the session with:
+
+   > "Code review resolved. {N} issues resolved ({X} blocking, {Y} required,
+   > {Z} suggestions). Spec at version [X.Y] is approved. Start
+   > `/implementation-workflow` in a new session to build the implementation plan."

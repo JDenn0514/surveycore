@@ -2,7 +2,7 @@
 
 ## Contents
 - Input Requirement
-- Five Review Lenses (DRY, Test Completeness, Contract Completeness, Edge Cases, Engineering Level)
+- Six Review Lenses (DRY, Test Completeness, Contract Completeness, Edge Cases, Engineering Level, API Coherence)
 - Issue Format
 - If a Review File Already Exists
 - Output Structure
@@ -27,13 +27,16 @@ unless a code-level decision has introduced a new statistical error.
 
 ## Input Requirement
 
-If no spec document is provided in the message, ask the user to paste the spec
-or provide the file path. Read the full spec once before generating any output.
-Do not start reporting issues mid-read.
+First, attempt to locate the spec at `plans/spec-{id}.md` (infer `{id}` from
+context). If found, read it directly. Only ask the user to provide the spec if
+the file cannot be found.
+
+Read the full spec once before generating any output. Do not start reporting
+issues mid-read.
 
 ---
 
-## Five Review Lenses (apply all five, in order)
+## Six Review Lenses (apply all six, in order)
 
 ### Lens 1 — DRY (highest priority)
 
@@ -48,7 +51,11 @@ Find every place two functions describe the same behavior:
 
 ### Lens 2 — Test Completeness
 
-For every exported function, verify a test plan exists for each category:
+Apply all 13 categories to every exported function. If a category doesn't
+apply to a specific function (e.g., `label_values` for a function with no
+label argument, `meta() contract` for a function that emits no `.meta`), mark
+it **N/A** and state why. N/A is a deliberate decision — if you cannot explain
+why it's N/A, it probably applies.
 
 1. **Happy path** — standard inputs, expected output
 2. **Numerical oracle** — estimates match a reference implementation at the
@@ -98,16 +105,23 @@ For every function:
 
 Do these scenarios appear explicitly somewhere in the spec?
 
-- NAs in weight column
-- NAs in strata column
-- NAs in PSU column
-- Zero-weight rows in `@data`
-- Single-level strata (degenerate for variance estimation)
-- Single PSU in a stratum
-- FPC values outside (0, 1]
-- Empty design (0 rows)
+**For every input the function accepts:**
+- NA values in that input
+- Zero or near-zero values (for numeric inputs)
+- Out-of-range values (for bounded inputs, e.g., FPC outside (0, 1])
+- Empty input (0 rows, length-0 vectors)
+- Single-level categorical inputs (degenerate for variance)
+
+**For every analysis the function performs:**
+- All-NA outcome column (computation proceeds but yields NA estimates)
+- Zero-weight or near-zero-weight domain
+- Empty domain (0 in-domain rows)
+- Single PSU or single stratum (degenerate variance)
 - Domain estimation combined with grouping
-- `@variables` keys absent vs. `NULL` — are they distinguished?
+
+**Cross-design consistency:**
+- Does each edge case behave correctly across all supported design types
+  (taylor, replicate, twophase, srs)?
 
 "The implementation should handle edge cases gracefully" is not a spec.
 
@@ -122,6 +136,40 @@ actually happens, error classes named but absent from the error table.
 **Over-engineered:** abstraction layers without two real call sites in the spec,
 generalization for hypothetical future phases not in the current roadmap,
 performance optimization specified before correctness is established.
+
+### Lens 6 — API Coherence & User Expectations
+
+The function must do what its name and signature suggest, for every input type
+it accepts. This lens catches "technically works, deeply surprising" bugs — the
+kind that survive all tests but produce methodologically wrong workflows.
+
+**For every accepted input class:**
+- What class does the function return? Is it the same class as the input, a
+  narrower class, or a different class entirely? Any narrowing must be
+  explicitly stated and must either be the correct behavior or accompanied by
+  a warning.
+- What information is preserved vs. discarded? If the input carries PSU/strata
+  structure, metadata, or grouping state that the output no longer contains,
+  the spec must say so explicitly — not leave it implicit.
+- Does the function *do* what its name implies for this input type? A function
+  called `update_design()` applied to a `survey_taylor` should update the
+  design while preserving the design structure, not silently convert the object
+  to a different class.
+
+**For the API as a whole:**
+- Would a survey analyst reading the function name and signature expect the
+  described behavior? If not, either the behavior or the name is wrong.
+- Is there a plausible workflow where a user chains this function with others
+  and gets a silently wrong result? (e.g., filter a design → lose domain
+  membership tracking → compute wrong domain estimates → no error thrown)
+- Are default values for optional arguments the correct choice for the majority
+  of real survey use cases, or just a convenient programming default?
+- If the function accepts multiple input classes with meaningfully different
+  behavior, is the behavioral difference surfaced to the user (via message,
+  return class, or attribute) rather than hidden?
+
+"Methodologically correct but confusing" is flagged as REQUIRED.
+"Technically correct but will cause user error in realistic workflows" is flagged as BLOCKING.
 
 ---
 
@@ -138,7 +186,8 @@ Severity: BLOCKING | REQUIRED | SUGGESTION
 or name the thing that is absent.]
 
 Options:
-- **[A]** [Description] — Effort: [low/medium/high], Risk: [low/medium/high], Impact: [what]
+- **[A]** [Description] — Effort: [low/medium/high], Risk: [low/medium/high],
+  Impact: [what], Maintenance: [ongoing burden]
 - **[B]** [Alternative description]
 - **[C] Do nothing** — [what stays broken or ambiguous]
 
@@ -223,9 +272,11 @@ contract that must be resolved before coding begins."]
 
 Ask yourself:
 
-- Have I applied all five lenses, not just the ones that found issues?
+- Have I applied all six lenses, not just the ones that found issues?
 - For every function contract: did I check argument order, the error table,
   and all `@variables` key behaviors?
+- For Lens 6: did I trace at least one realistic multi-function workflow and
+  verify it produces the right result without silent surprises?
 - Have I flagged actual problems, not manufactured ones?
 - Is the overall assessment honest — does it match the issue count and severity?
 

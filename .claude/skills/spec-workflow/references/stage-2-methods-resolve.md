@@ -110,16 +110,54 @@ After all issues are resolved, the spec is **methodology-locked**:
 ## Decisions Log
 
 After all issues are resolved, append a decisions log entry to
-`plans/decisions-{id}.md` if ANY judgment call was resolved. Use the same
-format as Stage 4 (see `stage-4-resolve.md`). If every fix was unambiguous,
-skip the log entry.
+`plans/decisions-{id}.md` if ANY judgment call was resolved. If every fix
+was unambiguous, skip the log entry.
+
+The log lives at `plans/decisions-{id}.md` and is **append-only**. Create it
+with this header only if it does not exist yet:
+
+```markdown
+# Decisions Log — [package] [id]
+
+This file records planning decisions made during [id].
+Each entry corresponds to one planning session.
+
+---
+```
+
+Entry format:
+
+```markdown
+## [YYYY-MM-DD] — Methodology lock: [component]
+
+### Context
+
+[1–2 sentences: what methodology questions were resolved in this session.]
+
+### Questions & Decisions
+
+**Q: [The question that came up]**
+- Options considered:
+  - **[Option A]:** [description and trade-offs]
+  - **[Option B]:** [description and trade-offs]
+- **Decision:** [what was decided]
+- **Rationale:** [why]
+
+### Outcome
+
+[1 sentence: what the spec now says as a result of this session]
+
+---
+```
 
 ---
 
 ## After Resolution
 
-End the session with:
+1. Update the spec version in the header block (bump the minor version, e.g.
+   `1.0` → `1.1`).
+2. End the session with:
 
-> "Methodology locked. {N} issues resolved ({X} unambiguous fixes, {Y}
-> judgment calls). Spec is at version [X.Y]. Start Stage 3 in a new session
-> to run the code/architecture review."
+   > "Methodology locked. {N} issues resolved ({X} unambiguous fixes, {Y}
+   > judgment calls). Spec is at version [X.Y]. Start Stage 3 in a new session
+   > to run the code/architecture review."
