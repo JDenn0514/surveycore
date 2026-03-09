@@ -26,8 +26,7 @@ test_that(".twophasevar() phase 1 variance component is nonzero for clustered ph
   d   <- as_survey_twophase(ph1, subset = subset, method = "approx")
 
   inp    <- .twophase_build_inputs(d, "y1", na.rm = TRUE)
-  pi2    <- .compute_phase2_probs(d, d@data[[d@variables$subset]])
-  v1     <- .twophase_phase1_var(inp$influence_mean, d, pi2, "approx", "remove")
+  v1     <- .twophase_phase1_var(inp$influence_mean, d, "approx", "remove")
 
   expect_true(is.finite(v1))
   expect_gt(v1, 0)
@@ -41,10 +40,9 @@ test_that(".twophasevar() full variance > phase 1 variance alone (phase 2 adds u
 
   inp    <- .twophase_build_inputs(d, "y1", na.rm = TRUE)
   subset <- d@data[[d@variables$subset]]
-  pi2    <- .compute_phase2_probs(d, subset)
 
   v_total <- .twophasevar(inp$influence_mean, d)
-  v1_only <- .twophase_phase1_var(inp$influence_mean, d, pi2, "approx", "remove")
+  v1_only <- .twophase_phase1_var(inp$influence_mean, d, "approx", "remove")
   v2_only <- .twophase_phase2_var(inp$influence_mean, d, subset, "remove")
 
   expect_equal(v_total, v1_only + v2_only, tolerance = 1e-15)
@@ -63,11 +61,9 @@ test_that('.twophasevar() with method = "simple" equals phase 1 component only',
   )
 
   inp    <- .twophase_build_inputs(d_simple, "y1", na.rm = TRUE)
-  subset <- d_simple@data[[d_simple@variables$subset]]
-  pi2    <- .compute_phase2_probs(d_simple, subset)
 
   v_simple  <- .twophasevar(inp$influence_mean, d_simple)
-  v1_simple <- .twophase_phase1_var(inp$influence_mean, d_simple, pi2,
+  v1_simple <- .twophase_phase1_var(inp$influence_mean, d_simple,
                                      "simple", "remove")
 
   expect_equal(v_simple, v1_simple, tolerance = 1e-15)

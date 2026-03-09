@@ -46,11 +46,8 @@
     }
   }
 
-  # Phase 2 conditional inclusion probabilities (pi2|1)
-  pi2 <- .compute_phase2_probs(design, subset)
-
   # Phase 1 variance contribution
-  v1 <- .twophase_phase1_var(influence, design, pi2, method, lonely.psu)
+  v1 <- .twophase_phase1_var(influence, design, method, lonely.psu)
 
   if (identical(method, "simple")) {
     return(v1)
@@ -74,10 +71,11 @@
 #   V1 = sum_s { nPSUfull_s/(nPSUfull_s-1) *
 #                sum_j { ((x_j * pi2_j - xcenter_s) / sqrt(pi2_j))^2 } }
 # where nPSU_s = phase 2 PSUs in stratum, nPSUfull_s = phase 1 PSUs in stratum,
+# pi2_j = nPSU_s/nPSUfull_s (PSU-level stratum sampling fraction, survey's `usu`),
 # and xcenter_s = mean(x_j * nPSU_s/nPSUfull_s) centering term.
 # Returns a numeric scalar.
 #' @noRd
-.twophase_phase1_var <- function(influence, design, pi2, method, lonely.psu) {
+.twophase_phase1_var <- function(influence, design, method, lonely.psu) {
   ph1_data <- design@data
   ph1_vars <- design@variables$phase1
   subset   <- design@data[[design@variables$subset]]
@@ -133,13 +131,33 @@
   # full or approx: implement onestrat.phase1 formula using phase 2 rows only
   ph2_idx  <- which(subset)
   infl_ph2 <- influence[ph2_idx]
-  pi2_ph2  <- pi2[ph2_idx]
   strata_ph2 <- strata_all[ph2_idx]
   psu_ph2    <- psu_all[ph2_idx]
 
   # nPSUfull per phase 1 stratum (total distinct PSU IDs across all n1 rows)
   nPSUfull_by_strat <- tapply(psu_all, strata_all,
                                function(p) length(unique(p)))
+
+  # Compute per-row Phase 2 PSU sampling fraction (survey's `usu`).
+  # With phase 2 strata: n_ph2_PSU_in_strata2 / n_ph1_PSU_in_strata2 per Phase 2 row.
+  # Without phase 2 strata: n_ph2_PSU_in_ph1_strat / n_ph1_PSU_in_ph1_strat per Phase 2 row.
+  strata2_var <- design@variables$phase2$strata
+  if (!is.null(strata2_var)) {
+    strata2_all <- ph1_data[[strata2_var]]
+    strata2_ph2 <- strata2_all[ph2_idx]
+    n_ph2_by_s2 <- tapply(psu_ph2, strata2_ph2, function(p) length(unique(p)))
+    n_ph1_by_s2 <- tapply(psu_all, strata2_all, function(p) length(unique(p)))
+    usu_ph2 <- as.numeric(
+      n_ph2_by_s2[as.character(strata2_ph2)] /
+        n_ph1_by_s2[as.character(strata2_ph2)]
+    )
+  } else {
+    n_ph2_by_strat <- tapply(psu_ph2, strata_ph2, function(p) length(unique(p)))
+    usu_ph2 <- as.numeric(
+      n_ph2_by_strat[as.character(strata_ph2)] /
+        nPSUfull_by_strat[as.character(strata_ph2)]
+    )
+  }
 
   # Phase 1 FPC column (if provided)
   fpc_all <- if (!is.null(ph1_vars$fpc)) ph1_data[[ph1_vars$fpc]] else NULL
@@ -151,14 +169,15 @@
   for (s in unique_strata) {
     idx_s       <- which(strata_ph2 == s)
     x_s         <- infl_ph2[idx_s]
-    pi2_s       <- pi2_ph2[idx_s]
     psu_s       <- psu_ph2[idx_s]
     nPSUfull_s  <- as.integer(nPSUfull_by_strat[[as.character(s)]])
 
-    # Aggregate influence and pi2 to PSU level
-    x_agg   <- as.numeric(tapply(x_s,   psu_s, sum))
-    pi2_agg <- as.numeric(tapply(pi2_s, psu_s, mean))
-    nPSU_s  <- length(x_agg)
+    # Aggregate influence to PSU level
+    x_agg  <- as.numeric(tapply(x_s, psu_s, sum))
+    nPSU_s <- length(x_agg)
+
+    # Aggregate usu to PSU level (mean handles PSUs spanning multiple phase 2 strata)
+    pi2_agg <- as.numeric(tapply(usu_ph2[idx_s], psu_s, mean))
 
     if (nPSU_s <= 1L) next  # lonely PSU: contributes 0
 
