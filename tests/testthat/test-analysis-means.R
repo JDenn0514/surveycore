@@ -30,7 +30,7 @@ test_that("get_means() works for survey_replicate design", {
   df <- make_survey_data(n = 100L, n_psu = 10L, design = "replicate",
                          type = "brr", seed = 2L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d <- as_survey_rep(df, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  d <- as_survey_repweights(df, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
 
   result <- get_means(d, y1)
   test_result_invariants(result, "survey_means")
@@ -726,12 +726,12 @@ test_that("get_means() NA group row mean matches filtered replicate design [orac
   set.seed(43L)
   df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_rep(df_r, weights = wt,
+  design_rep <- as_survey_repweights(df_r, weights = wt,
                                repweights = tidyselect::all_of(repwt_cols),
                                type = "BRR")
   na_df_r       <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
                                   repweights = tidyselect::all_of(repwt_cols_na),
                                   type = "BRR")
   expected <- get_means(na_design_rep, y1, variance = "se")
@@ -877,7 +877,7 @@ test_that("get_means() replicate: empty domain returns NA (covers n_d=0 in .repl
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 504)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
   result <- get_means(sc, y1, variance = "se")
   expect_true(all(is.na(result$mean)))
@@ -940,7 +940,7 @@ test_that("get_means() replicate single-row domain hits se_srs=0 branch in .repl
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 605)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
   result <- get_means(sc, y1, variance = "se")
   expect_true(is.finite(result$mean[[1L]]) || is.na(result$mean[[1L]]))

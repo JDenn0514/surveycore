@@ -78,7 +78,7 @@ Supports optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
 \examples{
-d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
+d <- as_survey_repweights(acs_pums_wy, weights = pwgtp,
                    repweights = pwgtp1:pwgtp80,
                    type = "successive-difference")
 

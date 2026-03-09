@@ -42,7 +42,7 @@ test_that("get_ratios() returns correct result for survey_replicate", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
                          design = "replicate", type = "brr", seed = 2L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d <- as_survey_rep(df, weights = wt,
+  d <- as_survey_repweights(df, weights = wt,
                      repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   result <- get_ratios(d, y1, y2)
@@ -142,7 +142,7 @@ test_that("get_ratios() BRR matches svyratio() mse=FALSE [oracle]", {
                          design = "replicate", type = "brr", seed = 6L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
 
-  d_sc <- as_survey_rep(df, weights = wt,
+  d_sc <- as_survey_repweights(df, weights = wt,
                         repweights = tidyselect::all_of(repwt_cols),
                         type = "BRR", mse = FALSE)
   d_sv <- survey::svrepdesign(weights = ~wt,
@@ -885,12 +885,12 @@ test_that("get_ratios() NA group row ratio matches filtered replicate design [or
   set.seed(43L)
   df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_rep(df_r, weights = wt,
+  design_rep <- as_survey_repweights(df_r, weights = wt,
                                repweights = tidyselect::all_of(repwt_cols),
                                type = "BRR")
   na_df_r       <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
                                   repweights = tidyselect::all_of(repwt_cols_na),
                                   type = "BRR")
   expected <- get_ratios(na_design_rep, y1, y2, variance = "se")
@@ -1005,7 +1005,7 @@ test_that("get_ratios() works for survey_replicate design (covers .replicate_rat
   d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 901)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   result <- get_ratios(sc, y1, y2, variance = "se")
   test_result_invariants(result, "survey_ratios")
   expect_true(is.finite(result$ratio[[1L]]))
@@ -1043,7 +1043,7 @@ test_that("get_ratios() replicate empty domain returns NA (covers .replicate_rat
   d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 901)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 80L)
   result <- suppressWarnings(get_ratios(sc, numerator = y1, denominator = y2))
   expect_true(is.na(result$ratio[[1L]]))
@@ -1053,7 +1053,7 @@ test_that("get_ratios() replicate single-row domain hits se_srs=0 path in .repli
   d <- make_survey_data(n = 80, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 902)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(80L) == 1L
   result <- suppressWarnings(get_ratios(sc, numerator = y1, denominator = y2))
   expect_true(is.finite(result$ratio[[1L]]) || is.na(result$ratio[[1L]]))

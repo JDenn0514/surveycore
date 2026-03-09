@@ -316,7 +316,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey_srs,
-# as_survey, as_survey_rep). Returns the metadata object unchanged when the
+# as_survey, as_survey_repweights). Returns the metadata object unchanged when the
 # attribute is absent or is not a non-empty list.
 #
 # @param data     A data.frame (may or may not have "weighting_history" attr).

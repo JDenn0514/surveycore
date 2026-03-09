@@ -101,12 +101,12 @@ d2b <- as_survey_twophase(
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for Taylor series designs,
-\code{\link[=as_survey_rep]{as_survey_rep()}} for replicate-weight designs
+\code{\link[=as_survey_repweights]{as_survey_repweights()}} for replicate-weight designs
 
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_rep}()},
+\code{\link{as_survey_repweights}()},
 \code{\link{as_survey_srs}()},
 \code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},

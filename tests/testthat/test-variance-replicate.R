@@ -16,7 +16,7 @@ test_that("get_means() replicate SE matches survey::svymean() — BRR design", {
                         design = "replicate", type = "brr", seed = 7)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
 
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
   sv <- survey::svrepdesign(
     weights    = d$wt,
     repweights = d[, repwt_cols],
@@ -41,7 +41,7 @@ test_that("get_totals() replicate SE matches survey::svytotal() — BRR design",
                         design = "replicate", type = "brr", seed = 7)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
 
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
   sv <- survey::svrepdesign(
     weights    = d$wt,
     repweights = d[, repwt_cols],
@@ -70,7 +70,7 @@ test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
   n_rep <- length(repwt_cols)
   jk1_scale <- (n_rep - 1L) / n_rep
 
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "JK1")
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols), type = "JK1")
   sv <- suppressWarnings(survey::svrepdesign(
     weights    = d$wt,
     repweights = d[, repwt_cols],
@@ -96,7 +96,7 @@ test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
                         design = "replicate", type = "brr", seed = 22)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
 
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols),
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols),
                       type = "BRR", mse = FALSE)
   sv <- survey::svrepdesign(
     weights    = d$wt,
@@ -118,7 +118,7 @@ test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
 test_that("get_means() and get_totals() work for survey_replicate (return structure)", {
   d <- make_survey_data(n = 100, n_psu = 10, design = "replicate", type = "brr", seed = 3)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
 
   m <- get_means(sc, y1, variance = "se")
   test_result_invariants(m, "survey_means")
@@ -143,7 +143,7 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
   n_rep      <- length(repwt_cols)  # should be 10 (n_psu / 2)
 
-  sc <- as_survey_rep(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = all_of(repwt_cols), type = "BRR")
   # survey hardcodes scale = 1/R for BRR internally; the scale= argument is
   # ignored. Both packages independently compute (1/n_rep) * sum((theta_r - theta)^2).
   sv <- survey::svrepdesign(
@@ -172,7 +172,7 @@ test_that("get_means() na.rm = FALSE on replicate design covers .replicate_mean 
   df         <- make_survey_data(n = 50L, n_psu = 10L,
                                  design = "replicate", type = "brr", seed = 200L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  sc         <- as_survey_rep(df, weights = wt,
+  sc         <- as_survey_repweights(df, weights = wt,
                                repweights = all_of(repwt_cols), type = "BRR")
   # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
   result <- get_means(sc, y1, variance = "se", na.rm = FALSE)
@@ -184,7 +184,7 @@ test_that("get_totals() na.rm = FALSE on replicate design covers .replicate_tota
   df         <- make_survey_data(n = 50L, n_psu = 10L,
                                  design = "replicate", type = "brr", seed = 201L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  sc         <- as_survey_rep(df, weights = wt,
+  sc         <- as_survey_repweights(df, weights = wt,
                                repweights = all_of(repwt_cols), type = "BRR")
   # na.rm = FALSE on NA-free data exercises the else branch and returns a valid estimate
   result <- get_totals(sc, y1, variance = "se", na.rm = FALSE)
@@ -226,7 +226,7 @@ test_that(".replicate_mean() returns finite mean and se for BRR design", {
   d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 50)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   result <- surveycore:::.replicate_mean(sc, "y1")
   expect_true(is.finite(result$mean))
@@ -240,7 +240,7 @@ test_that(".replicate_mean() na.rm = FALSE errors when all replicates produce NA
                         design = "replicate", type = "brr", seed = 51)
   d$y1[[1L]] <- NA_real_
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   expect_error(
     surveycore:::.replicate_mean(sc, "y1", na.rm = FALSE),
@@ -252,7 +252,7 @@ test_that(".replicate_total() returns finite total and se for BRR design", {
   d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 52)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   result <- surveycore:::.replicate_total(sc, "y1")
   expect_true(is.finite(result$total))
@@ -265,7 +265,7 @@ test_that(".replicate_total() na.rm = FALSE errors when all replicates produce N
                         design = "replicate", type = "brr", seed = 53)
   d$y1[[2L]] <- NA_real_
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   expect_error(
     surveycore:::.replicate_total(sc, "y1", na.rm = FALSE),
@@ -281,7 +281,7 @@ test_that("get_corr() works for survey_replicate (BRR) design", {
   d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 54)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   result <- get_corr(sc, x = c(y1, y2), variance = "se")
   test_result_invariants(result, "survey_corr")
@@ -295,7 +295,7 @@ test_that("get_corr() replicate returns NA for domain with fewer than 2 paired o
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 55)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   # Only 1 row in domain → n_d < 2 → NA r
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(d)) == 1L
 

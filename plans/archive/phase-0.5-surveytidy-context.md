@@ -58,7 +58,7 @@ These are the exact symbols exported by `surveycore` as of Phase 0 completion.
 | Symbol | Returns | Description |
 |--------|---------|-------------|
 | `as_survey()` | `survey_taylor` | Create design from data frame |
-| `as_survey_rep()` | `survey_replicate` | Create replicate weight design |
+| `as_survey_repweights()` | `survey_replicate` | Create replicate weight design |
 | `as_survey_twophase()` | `survey_twophase` | Create two-phase design |
 
 ### Metadata Getters

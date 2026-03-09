@@ -39,7 +39,7 @@ test_that("Gaussian oracle: Replicate BRR design (mse=FALSE) — coef and SE mat
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
 
-  d_sc <- as_survey_rep(
+  d_sc <- as_survey_repweights(
     df_rep,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),
@@ -329,7 +329,7 @@ test_that(".degf() oracle: Replicate BRR design matches survey::degf()", {
   skip_if_not_installed("survey")
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
-  d_sc <- as_survey_rep(
+  d_sc <- as_survey_repweights(
     df_rep,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),
@@ -398,7 +398,7 @@ test_that("PSD check: SRS vcov is positive semi-definite", {
 test_that("PSD check: Replicate BRR vcov is positive semi-definite", {
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
-  d_sc <- as_survey_rep(
+  d_sc <- as_survey_repweights(
     df_rep,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),

@@ -16,7 +16,7 @@ survey_base(
 All survey design objects (\code{survey_srs}, \code{survey_taylor},
 \code{survey_replicate}, \code{survey_twophase}, \code{survey_calibrated}) inherit from
 \code{survey_base}. This class is abstract and cannot be instantiated directly —
-use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_rep]{as_survey_rep()}}, \code{\link[=as_survey_twophase]{as_survey_twophase()}}, or
+use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_repweights]{as_survey_repweights()}}, \code{\link[=as_survey_twophase]{as_survey_twophase()}}, or
 \code{\link[=as_survey_calibrated]{as_survey_calibrated()}} instead.
 }
 \section{Properties}{

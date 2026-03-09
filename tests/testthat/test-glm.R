@@ -36,7 +36,7 @@ library(surveycore)
     n = 200L, n_psu = 20L, n_strata = 4L,
     design = "replicate", type = "brr", seed = seed
   )
-  as_survey_rep(
+  as_survey_repweights(
     df, weights = wt,
     repweights = starts_with("repwt"),
     type = "BRR"

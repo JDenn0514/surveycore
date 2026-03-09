@@ -89,7 +89,7 @@ survey_metadata <- S7::new_class(
 #' All survey design objects (`survey_srs`, `survey_taylor`,
 #' `survey_replicate`, `survey_twophase`, `survey_calibrated`) inherit from
 #' `survey_base`. This class is abstract and cannot be instantiated directly —
-#' use [as_survey()], [as_survey_rep()], [as_survey_twophase()], or
+#' use [as_survey()], [as_survey_repweights()], [as_survey_twophase()], or
 #' [as_survey_calibrated()] instead.
 #'
 #' @section Properties:
@@ -297,15 +297,15 @@ survey_taylor <- S7::new_class(
 #' Replicate Weights Survey Design
 #'
 #' A survey design object using replicate weights for variance estimation.
-#' Create with [as_survey_rep()].
+#' Create with [as_survey_repweights()].
 #'
 #' @param data A `data.frame` containing the survey data. Prefer
-#'   [as_survey_rep()] over calling this constructor directly.
+#'   [as_survey_repweights()] over calling this constructor directly.
 #' @param metadata A [survey_metadata] object. Created automatically by
-#'   [as_survey_rep()].
+#'   [as_survey_repweights()].
 #' @param variables A named list of design specification (weights,
 #'   repweights, type, scale, rscales, fpc, fpctype, mse). Set
-#'   automatically by [as_survey_rep()].
+#'   automatically by [as_survey_repweights()].
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -336,7 +336,7 @@ survey_taylor <- S7::new_class(
 #'   groups = character(0),
 #'   call = NULL
 #' )
-#' @seealso [as_survey_rep()] to create a `survey_replicate` object.
+#' @seealso [as_survey_repweights()] to create a `survey_replicate` object.
 #' @family constructors
 #' @export
 survey_replicate <- S7::new_class(
@@ -717,7 +717,7 @@ survey_srs <- S7::new_class(
 #' (same assumption as [as_survey()] with weights only).
 #'
 #' @section Non-probability samples:
-#' Unlike [as_survey()], [as_survey_rep()], and [as_survey_twophase()], this
+#' Unlike [as_survey()], [as_survey_repweights()], and [as_survey_twophase()], this
 #' class does **not** assume a probability sampling design. Standard errors
 #' produced from a `survey_calibrated` object rest on a model-assisted SRS
 #' assumption, which is consistent with common practice for calibrated

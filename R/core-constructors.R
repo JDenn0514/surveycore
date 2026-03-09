@@ -5,7 +5,7 @@
 # Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
 #   as_survey_srs()         — creates a survey_srs object (equal-probability SRS)
 #   as_survey()             — creates a survey_taylor object (Taylor series design)
-#   as_survey_rep()         — creates a survey_replicate object (replicate weights)
+#   as_survey_repweights()         — creates a survey_replicate object (replicate weights)
 #   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
 #   as_survey_calibrated()  — creates a survey_calibrated object (Phase 2.5 skeleton)
 #
@@ -53,7 +53,7 @@
 #' d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
 #'
 #' @seealso [as_survey()] for designs with cluster or stratification structure,
-#'   [as_survey_rep()] for replicate-weight designs
+#'   [as_survey_repweights()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export
@@ -311,7 +311,7 @@ as_survey_srs <- function(
 #'                   strata = sdmvstra, nest = TRUE)
 #'
 #' @seealso
-#'   [as_survey_rep()] for replicate-weight designs,
+#'   [as_survey_repweights()] for replicate-weight designs,
 #'   [as_survey_twophase()] for two-phase designs,
 #'   [set_var_label()], [set_variable_labels()] to add variable metadata
 #'
@@ -530,7 +530,7 @@ as_survey <- function(
 }
 
 
-# ── as_survey_rep ──────────────────────────────────────────────────────────────
+# ── as_survey_repweights ──────────────────────────────────────────────────────────────
 
 #' Create a Replicate Weights Survey Design
 #'
@@ -577,9 +577,9 @@ as_survey <- function(
 #' Both `weights` and `repweights` support tidy-select syntax:
 #' ```r
 #' # Bare name for weights
-#' as_survey_rep(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+#' as_survey_repweights(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
 #' # c() for explicit replicate columns
-#' as_survey_rep(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+#' as_survey_repweights(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
 #' ```
 #'
 #' @section Replicate weight matrix:
@@ -598,7 +598,7 @@ as_survey <- function(
 #'
 #' @examples
 #' # ACS PUMS Wyoming: 80 successive-difference replicate weights
-#' d_acs <- as_survey_rep(
+#' d_acs <- as_survey_repweights(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = pwgtp1:pwgtp80,
@@ -606,7 +606,7 @@ as_survey <- function(
 #' )
 #'
 #' # Explicit replicate columns using c()
-#' d_sub <- as_survey_rep(
+#' d_sub <- as_survey_repweights(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
@@ -620,7 +620,7 @@ as_survey <- function(
 #'
 #' @family constructors
 #' @export
-as_survey_rep <- function(
+as_survey_repweights <- function(
   data,
   weights,
   repweights,
@@ -813,7 +813,7 @@ as_survey_rep <- function(
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
-#'   [as_survey_rep()] for replicate-weight designs
+#'   [as_survey_repweights()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export
@@ -1044,7 +1044,7 @@ as_survey_twophase <- function(
 #' }
 #'
 #' If your data comes from a probability sample with known design structure,
-#' use [as_survey()], [as_survey_rep()], or [as_survey_twophase()] instead.
+#' use [as_survey()], [as_survey_repweights()], or [as_survey_twophase()] instead.
 #'
 #' @section Variance estimation note:
 #' Standard errors from a `survey_calibrated` object assume simple random
@@ -1080,7 +1080,7 @@ as_survey_twophase <- function(
 #'
 #' @seealso
 #'   [as_survey()] for probability designs with Taylor variance,
-#'   [as_survey_rep()] for replicate-weight designs
+#'   [as_survey_repweights()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export

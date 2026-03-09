@@ -14,14 +14,14 @@ survey_replicate(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey data. Prefer
-\code{\link[=as_survey_rep]{as_survey_rep()}} over calling this constructor directly.}
+\code{\link[=as_survey_repweights]{as_survey_repweights()}} over calling this constructor directly.}
 
 \item{metadata}{A \link{survey_metadata} object. Created automatically by
-\code{\link[=as_survey_rep]{as_survey_rep()}}.}
+\code{\link[=as_survey_repweights]{as_survey_repweights()}}.}
 
 \item{variables}{A named list of design specification (weights,
 repweights, type, scale, rscales, fpc, fpctype, mse). Set
-automatically by \code{\link[=as_survey_rep]{as_survey_rep()}}.}
+automatically by \code{\link[=as_survey_repweights]{as_survey_repweights()}}.}
 
 \item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
 standalone surveycore use.}
@@ -33,7 +33,7 @@ A \code{survey_replicate} object.
 }
 \description{
 A survey design object using replicate weights for variance estimation.
-Create with \code{\link[=as_survey_rep]{as_survey_rep()}}.
+Create with \code{\link[=as_survey_repweights]{as_survey_repweights()}}.
 }
 \section{Design variables (\verb{@variables})}{
 
@@ -56,12 +56,12 @@ a property.}
 }
 
 \seealso{
-\code{\link[=as_survey_rep]{as_survey_rep()}} to create a \code{survey_replicate} object.
+\code{\link[=as_survey_repweights]{as_survey_repweights()}} to create a \code{survey_replicate} object.
 
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_rep}()},
+\code{\link{as_survey_repweights}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_calibrated}()},

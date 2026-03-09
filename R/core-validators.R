@@ -30,7 +30,7 @@ NULL
 
 # ── .validate_data_frame ──────────────────────────────────────────────────────
 
-# Validates the `data` argument shared by as_survey(), as_survey_rep(), and
+# Validates the `data` argument shared by as_survey(), as_survey_repweights(), and
 # as_survey_calibrated() (Layer 3, errors 1–4 from error-messages.md).
 # Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
 #' @noRd

@@ -301,7 +301,7 @@ survey_taylor <- S7::new_class(
 #'
 #' @examples
 #' # Jackknife with tidy-select
-#' jk_design <- as_survey_rep(
+#' jk_design <- as_survey_repweights(
 #'   my_data,
 #'   weights = wt,
 #'   repweights = starts_with("repwt"),
@@ -309,7 +309,7 @@ survey_taylor <- S7::new_class(
 #' )
 #'
 #' # Bootstrap with explicit columns
-#' boot_design <- as_survey_rep(
+#' boot_design <- as_survey_repweights(
 #'   my_data,
 #'   weights = wt,
 #'   repweights = c(rep1, rep2, rep3, rep4, rep5),
@@ -641,12 +641,12 @@ the canonical form expected by Layer 1. Runs BEFORE the S7 object is created.
 
 Reference: `plans/error-messages.md` (canonical message text and error classes).
 The table below maps conditions to implementation location within `as_survey()`,
-`as_survey_rep()`, and `as_survey_twophase()`. All uses of `cli_abort()` must
+`as_survey_repweights()`, and `as_survey_twophase()`. All uses of `cli_abort()` must
 pass a `class = "surveycore_error_<condition>"` argument.
 
 | # | Condition | Level | Constructor | Layer |
 |---|-----------|-------|-------------|-------|
-| 1 | `data` not a data frame | ERROR | `as_survey()`, `as_survey_rep()`, `as_survey_twophase()` | 3 |
+| 1 | `data` not a data frame | ERROR | `as_survey()`, `as_survey_repweights()`, `as_survey_twophase()` | 3 |
 | 2 | `data` has 0 rows | ERROR | all | 3 |
 | 3 | `data` has duplicate column names | ERROR | all | 3 |
 | 4 | `data` has 1 row | WARN | all | 3 |
@@ -661,9 +661,9 @@ pass a `class = "surveycore_error_<condition>"` argument.
 | 13 | `fpc` matches >1 column | ERROR | `as_survey()` | 3 |
 | 14 | `fpc` column has NAs | ERROR | `as_survey()` | 3 (via `.validate_fpc`) |
 | 15 | `nest = TRUE` without `strata` | ERROR | `as_survey()` | 3 |
-| 16 | `repweights` matches 0 columns | ERROR | `as_survey_rep()` | 3 |
-| 17 | `rscales` length ≠ number of repweights | ERROR | `as_survey_rep()` | 3 (via `.validate_rscales`) |
-| 18 | `type` not valid (match.arg) | ERROR | `as_survey_rep()` | 3 |
+| 16 | `repweights` matches 0 columns | ERROR | `as_survey_repweights()` | 3 |
+| 17 | `rscales` length ≠ number of repweights | ERROR | `as_survey_repweights()` | 3 (via `.validate_rscales`) |
+| 18 | `type` not valid (match.arg) | ERROR | `as_survey_repweights()` | 3 |
 | 19 | `phase1` not `survey_taylor` | ERROR | `as_survey_twophase()` | 3 |
 | 20 | `subset` missing | ERROR | `as_survey_twophase()` | 3 |
 | 21 | `subset` matches >1 column | ERROR | `as_survey_twophase()` | 3 |
@@ -910,7 +910,7 @@ as_survey <- function(data,
 }
 ```
 
-#### 3.2 as_survey_rep() - Replicate Weights Design
+#### 3.2 as_survey_repweights() - Replicate Weights Design
 
 ```r
 #' Create Replicate Weights Survey Design
@@ -937,7 +937,7 @@ as_survey <- function(data,
 #' library(surveycore)
 #' 
 #' # Jackknife with explicit columns
-#' jk_design <- as_survey_rep(
+#' jk_design <- as_survey_repweights(
 #'   my_data,
 #'   weights = wt,
 #'   repweights = c(repwt1, repwt2, repwt3),
@@ -945,7 +945,7 @@ as_survey <- function(data,
 #' )
 #' 
 #' # Bootstrap with tidy-select helper
-#' boot_design <- as_survey_rep(
+#' boot_design <- as_survey_repweights(
 #'   my_data,
 #'   weights = wt,
 #'   repweights = starts_with("repwt"),
@@ -953,7 +953,7 @@ as_survey <- function(data,
 #' )
 #'
 #' @export
-as_survey_rep <- function(data,
+as_survey_repweights <- function(data,
                           weights,
                           repweights,
                           type = c("JK1", "JK2", "JKn", "BRR", "Fay", 
@@ -1849,7 +1849,7 @@ test_that("Replicate SE matches survey package — ACS PUMS BRR", {
   skip_if_not_installed("survey")
 
   # ACS PUMS Wyoming uses BRR replicate weights (repwt1..repwt80)
-  sc_rep <- as_survey_rep(
+  sc_rep <- as_survey_repweights(
     acs_pums_wy,
     weights    = pwgtp,
     repweights = starts_with("pwgtp"),
@@ -1947,12 +1947,12 @@ test_that("as_survey warns: single stratum [row 12]", {
   )
 })
 
-# --- Error Paths: as_survey_rep() ---
+# --- Error Paths: as_survey_repweights() ---
 
-test_that("as_survey_rep errors: rscales length mismatch [row 17]", {
+test_that("as_survey_repweights errors: rscales length mismatch [row 17]", {
   d <- make_survey_data(design = "replicate")
   expect_error(
-    as_survey_rep(d, weights = wt, repweights = starts_with("repwt"),
+    as_survey_repweights(d, weights = wt, repweights = starts_with("repwt"),
                   type = "BRR", rscales = c(1, 2)),  # wrong length
     class = "surveycore_error_rscales_length"
   )
@@ -2024,9 +2024,9 @@ test_that("as_survey works without ids for SRS", {
   expect_null(design@variables$ids)
 })
 
-test_that("as_survey_rep supports tidy-select helpers", {
+test_that("as_survey_repweights supports tidy-select helpers", {
   # Data with repwt1, repwt2, ..., repwt20
-  design <- as_survey_rep(
+  design <- as_survey_repweights(
     test_data_repweights,
     weights = wt,
     repweights = starts_with("repwt"),
@@ -2101,7 +2101,7 @@ complex_survey <- as_survey(
 )
 
 # Replicate weights with tidy-select helper
-rep_survey <- as_survey_rep(
+rep_survey <- as_survey_repweights(
   data = my_data,
   weights = wt,
   repweights = starts_with("repwt"),  # Tidy-select helper!
@@ -2163,7 +2163,7 @@ extract_var_label(my_survey, age)
 
 5. **Constructors (Days 6-9)** [Extended for tidy-select]
    - Implement as_survey() with tidy-select
-   - Implement as_survey_rep() with tidy-select
+   - Implement as_survey_repweights() with tidy-select
    - Implement as_survey_twophase()
    - Integrate metadata extraction
    - Write comprehensive tests

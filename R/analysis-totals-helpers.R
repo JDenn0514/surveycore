@@ -444,7 +444,7 @@
     cli::cli_abort(
       c(
         "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_totals}.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_rep}, or {.fn as_survey_twophase}."
+        "i" = "Use {.fn as_survey}, {.fn as_survey_repweights}, or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_unsupported_class"
     )

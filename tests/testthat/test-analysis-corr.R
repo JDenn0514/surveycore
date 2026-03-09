@@ -41,7 +41,7 @@ test_that("get_corr() works for survey_replicate design", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "replicate",
                          type = "brr", seed = 2L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d <- as_survey_rep(df, weights = wt, repweights = all_of(repwt_cols),
+  d <- as_survey_repweights(df, weights = wt, repweights = all_of(repwt_cols),
                      type = "BRR")
 
   result <- get_corr(d, x = c(y1, y2))
@@ -626,7 +626,7 @@ test_that("get_corr() r matches survey::svyvar() oracle for BRR [numerical]", {
   df <- make_survey_data(n = 500L, n_psu = 50L, design = "replicate",
                          type = "brr", seed = 31L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d_sc <- as_survey_rep(df, weights = wt, repweights = all_of(repwt_cols),
+  d_sc <- as_survey_repweights(df, weights = wt, repweights = all_of(repwt_cols),
                         type = "BRR")
   d_sv <- survey::svrepdesign(
     weights = ~wt,
@@ -1054,12 +1054,12 @@ test_that("get_corr() NA group row r matches filtered replicate design [oracle]"
   set.seed(43L)
   df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_rep(df_r, weights = wt,
+  design_rep <- as_survey_repweights(df_r, weights = wt,
                                repweights = tidyselect::all_of(repwt_cols),
                                type = "BRR")
   na_df_r       <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
                                   repweights = tidyselect::all_of(repwt_cols_na),
                                   type = "BRR")
   expected <- get_corr(na_design_rep, x = c(y1, y2), variance = "se")

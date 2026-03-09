@@ -532,7 +532,7 @@ survey_glm_fit <- S7::new_class(
 #' All five surveycore design classes are supported.
 #'
 #' @param design A survey design object created by [as_survey()],
-#'   [as_survey_rep()], [as_survey_twophase()], [as_survey_srs()], or
+#'   [as_survey_repweights()], [as_survey_twophase()], [as_survey_srs()], or
 #'   [as_survey_calibrated()].
 #' @param formula A model formula in standard R notation
 #'   (e.g. `y ~ x1 + x2`). Mutually exclusive with `response`/`predictors`.

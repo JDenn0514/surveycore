@@ -75,7 +75,7 @@ make_rep_design <- function(seed = 42L) {
     design = "replicate", type = "brr", seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  as_survey_rep(
+  as_survey_repweights(
     df,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),
@@ -728,7 +728,7 @@ test_that("summary.survey_replicate() with FPC covers the FPC line", {
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 902)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols),
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols),
                       type = "BRR", fpc = fpc, fpctype = "fraction")
   out <- capture.output(summary(sc), type = "message")
   expect_true(any(grepl("FPC", out)))

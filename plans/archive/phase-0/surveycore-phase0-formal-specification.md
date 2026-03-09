@@ -256,11 +256,11 @@ repweights = starts_with("repwt")  # This works!
 
 ---
 
-#### as_survey_rep()
+#### as_survey_repweights()
 
 **Signature:**
 ```r
-as_survey_rep(
+as_survey_repweights(
   data,
   weights,
   repweights,
@@ -1128,7 +1128,7 @@ extract_haven_metadata <- function(data) {
 
 **Behaviour:**
 - Returns a `survey_metadata` object (empty metadata if no haven attributes found)
-- Called automatically in `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`
+- Called automatically in `as_survey()`, `as_survey_repweights()`, `as_survey_twophase()`
 - No warning if no haven attributes present (silent no-op)
 
 **Edge Cases (all must be handled explicitly in implementation):**
@@ -1412,7 +1412,7 @@ Phase 0 is **COMPLETE** when ALL of the following are TRUE:
 
 - [ ] All S7 classes defined (survey_metadata, survey_base, survey_taylor, survey_replicate, survey_twophase)
 - [ ] All S7 validators implemented and tested
-- [ ] Constructor functions work for all design types (as_survey, as_survey_rep, as_survey_twophase)
+- [ ] Constructor functions work for all design types (as_survey, as_survey_repweights, as_survey_twophase)
 - [ ] Tidy-select fully implemented in constructors
 - [ ] Metadata system fully implemented (extract_*, set_*, set_*_labels())
 - [ ] Metadata extraction from haven works
@@ -1557,7 +1557,7 @@ model@details$aic  # Access via S7 slot ($ does not apply to S7 properties)
 #'
 #' # Using tidy-select helpers
 #' # (if you have repwt1, repwt2, ..., repwt80)
-#' rep_design <- as_survey_rep(
+#' rep_design <- as_survey_repweights(
 #'   my_data,
 #'   weights = wt,
 #'   repweights = starts_with("repwt"),
@@ -1565,7 +1565,7 @@ model@details$aic  # Access via S7 slot ($ does not apply to S7 properties)
 #' )
 #'
 #' @seealso 
-#' [as_survey_rep()] for replicate weight designs,
+#' [as_survey_repweights()] for replicate weight designs,
 #' [as_survey_twophase()] for two-phase designs,
 #' [update_design()] to modify design after construction
 #'

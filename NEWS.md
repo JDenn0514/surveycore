@@ -55,7 +55,7 @@
   variable labels using separator-based and longest-common-prefix detection.
 
 * `survey_weighting_history()` returns the weighting history stored in a
-  survey design object's metadata; `as_survey()`, `as_survey_rep()`, and
+  survey design object's metadata; `as_survey()`, `as_survey_repweights()`, and
   `as_survey_srs()` now promote `"weighting_history"` attributes from the
   input data frame automatically.
 
@@ -79,7 +79,7 @@
   (`ids`, `weights`, `strata`, `fpc`, `probs`); supports Taylor linearization
   for stratified, clustered, and SRS designs.
 
-* `as_survey_rep()` creates `survey_replicate` objects; supports BRR, Fay BRR,
+* `as_survey_repweights()` creates `survey_replicate` objects; supports BRR, Fay BRR,
   JK1, JK2, JKn, bootstrap, ACS, and successive-difference replicate schemes.
 
 * `as_survey_twophase()` creates `survey_twophase` objects; supports "full",

@@ -97,35 +97,36 @@
       Error in `as_survey()`:
       x `nest = TRUE` requires `strata` to be specified
 
-# as_survey_rep() errors when data is not a data frame [row 1]
+# as_survey_repweights() errors when data is not a data frame [row 1]
 
     Code
-      as_survey_rep(list(x = 1:5), weights = x, repweights = starts_with("r"), type = "JK1")
+      as_survey_repweights(list(x = 1:5), weights = x, repweights = starts_with("r"),
+      type = "JK1")
     Condition
-      Error in `as_survey_rep()`:
+      Error in `as_survey_repweights()`:
       x `data` must be a data frame, not <list>
 
-# as_survey_rep() errors when data has 0 rows [row 2]
+# as_survey_repweights() errors when data has 0 rows [row 2]
 
     Code
-      as_survey_rep(empty_df, weights = w, repweights = r1, type = "JK1")
+      as_survey_repweights(empty_df, weights = w, repweights = r1, type = "JK1")
     Condition
-      Error in `as_survey_rep()`:
+      Error in `as_survey_repweights()`:
       x `data` must have at least one row
 
-# as_survey_rep() errors when repweights matches no columns [row 16]
+# as_survey_repweights() errors when repweights matches no columns [row 16]
 
     Code
-      as_survey_rep(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
+      as_survey_repweights(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
     Condition
-      Error in `as_survey_rep()`:
+      Error in `as_survey_repweights()`:
       x `repweights` must select at least one column
 
-# as_survey_rep() errors when rscales length doesn't match n_rep [row 17]
+# as_survey_repweights() errors when rscales length doesn't match n_rep [row 17]
 
     Code
-      as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
-      rscales = c(1, 2))
+      as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
+      type = "BRR", rscales = c(1, 2))
     Condition
       Error in `.validate_rscales()`:
       x Length of `rscales` (2) must equal number of replicate weights (10).

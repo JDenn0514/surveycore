@@ -39,7 +39,7 @@
     cli::cli_abort(
       c(
         "x" = "{.arg x} must be a survey design object, not {.cls {class(x)[[1L]]}}.",
-        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_rep},",
+        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_repweights},",
         " " = "or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_not_survey",

@@ -424,7 +424,7 @@ make_all_designs <- function(seed = 42L) {
     design = "replicate", type = "brr", seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  replicate  <- as_survey_rep(
+  replicate  <- as_survey_repweights(
     df_r,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),

@@ -631,7 +631,7 @@ test_that(".degf() returns design-based finite df for survey_replicate", {
     design = "replicate", type = "brr", seed = 11L
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d          <- as_survey_rep(
+  d          <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = tidyselect::all_of(repwt_cols),

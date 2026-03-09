@@ -399,7 +399,7 @@ Use `y3` (binary 0/1, 2 levels) as the focal variable — not `y1` (continuous).
 `y3` produces 2 oracle rows (one per level), making failures interpretable and
 testing the primary `get_freqs()` use case (categorical focal variable).
 
-For the replicate oracle, add `grp` to `df_r` before calling `as_survey_rep()`.
+For the replicate oracle, add `grp` to `df_r` before calling `as_survey_repweights()`.
 For twophase, add `grp` to `df_p` before `as_survey_twophase()`. For calibrated,
 add `grp` to `df_c` before `as_survey_calibrated()`. For srs, add `grp` to
 `df_s` before `as_survey_srs()`. Use `set.seed(43L)` before each `sample()` call
@@ -738,12 +738,12 @@ df_r       <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
 set.seed(43L)
 df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
 repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-design_rep <- as_survey_rep(df_r, weights = wt,
+design_rep <- as_survey_repweights(df_r, weights = wt,
                              repweights = tidyselect::all_of(repwt_cols),
                              type = "BRR")
 na_df_rep  <- df_r[is.na(df_r$grp), ]
 repwt_cols_na <- grep("^repwt_", names(na_df_rep), value = TRUE)
-na_design_rep <- as_survey_rep(na_df_rep, weights = wt,
+na_design_rep <- as_survey_repweights(na_df_rep, weights = wt,
                                 repweights = tidyselect::all_of(repwt_cols_na),
                                 type = "BRR")
 expected   <- get_X(na_design_rep, x)
