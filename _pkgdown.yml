@@ -36,6 +36,7 @@ articles:
     contents:
       - getting-started
       - creating-survey-objects
+      - surveycore-vs-survey
 
 reference:
   - title: "Survey design constructors"
@@ -45,7 +46,7 @@ reference:
     contents:
       - as_survey
       - as_survey_srs
-      - as_survey_rep
+      - as_survey_repweights
       - as_survey_twophase
       - as_survey_calibrated
       - update_design
@@ -61,6 +62,15 @@ reference:
       - get_corr
       - get_quantiles
       - get_ratios
+
+  - title: "Regression"
+    desc: >
+      Survey-weighted generalised linear models with Binder (1983)
+      sandwich variance estimation.
+    contents:
+      - survey_glm
+      - survey_glm_fit
+      - clean
 
   - title: "Metadata — setters"
     desc: >
@@ -114,6 +124,7 @@ reference:
     contents:
       - survey_data
       - SURVEYCORE_DOMAIN_COL
+      - .get_design_vars_flat
 
   - title: "Example datasets"
     desc: >

@@ -12,6 +12,8 @@ description: >
 
 # Surveyverse Implementation Workflow
 
+**Announce at start:** "Running implementation-workflow Stage N — [stage name]."
+
 This skill governs implementation plan work for surveycore (and other surveyverse
 packages). Three stages, always in order:
 
@@ -20,6 +22,28 @@ packages). Three stages, always in order:
 3. **Stage 3 — Resolve:** Interactively work through issues and log decisions
 
 After the plan is approved, hand off to `/r-implement`.
+
+```dot
+digraph impl_stages {
+    rankdir=LR;
+    S1 [label="Stage 1\nDraft Plan", shape=box];
+    S2 [label="Stage 2\nAdversarial Review", shape=box];
+    S3 [label="Stage 3\nResolve + Log", shape=box];
+    done [label="→ /r-implement", shape=doublecircle];
+
+    S1 -> S2;
+    S2 -> S3 [label="issues found"];
+    S2 -> done [label="clean"];
+    S3 -> S2 [label="new issues\ndiscovered"];
+    S3 -> done [label="all resolved"];
+}
+```
+
+<HARD-GATE>
+Do not hand off to `/r-implement` until Stage 3 is complete, all issues in
+`plans/plan-review-{id}.md` are resolved, and `plans/decisions-{id}.md` is
+populated. No implementation begins until the plan is fully approved.
+</HARD-GATE>
 
 ---
 
@@ -48,6 +72,22 @@ Then read the corresponding reference file before doing anything else:
 | 1 | `.claude/skills/implementation-workflow/references/stage-1-draft.md` |
 | 2 | `.claude/skills/implementation-workflow/references/stage-2-review.md` |
 | 3 | `.claude/skills/implementation-workflow/references/stage-3-resolve.md` |
+
+## Task Granularity (Stage 1)
+
+Each task in the plan should be one action (2–5 minutes). TDD sub-steps must be
+explicit steps, not collapsed into one: write the failing test → run to confirm
+failure → write minimal code → run to confirm passing → commit. This granularity
+lets r-implement work through tasks without ambiguity about what "done" means for
+each step.
+
+## Common Shortcuts to Resist
+
+| Rationalization | Why it fails |
+|---|---|
+| "The plan is clear enough, Stage 2 would just nitpick" | Stage 2 catches missing error paths, wrong task order, and DRY violations before code is written. |
+| "Some issues are minor, I'll resolve them later" | `plans/decisions-{id}.md` must be fully populated before handing off. |
+| "We can figure out edge cases during implementation" | Edge cases discovered during implementation are plan bugs. Resolve them here. |
 
 ---
 

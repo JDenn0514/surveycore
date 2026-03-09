@@ -646,7 +646,7 @@ Both `get_means()` and `get_totals()` require updates in two places:
 ```r
 #' @param design A survey design object. Supported classes: [survey_taylor]
 #'   (created by [as_survey()]), [survey_replicate] (created by
-#'   [as_survey_rep()]), [survey_srs] (created by [as_survey_srs()] or
+#'   [as_survey_repweights()]), [survey_srs] (created by [as_survey_srs()] or
 #'   [as_survey()]), [survey_twophase] (created by [as_survey_twophase()]),
 #'   and [survey_calibrated] (created by [as_survey_calibrated()]).
 ```

@@ -565,7 +565,7 @@ test_that("get_freqs() replicate design produces correct row count", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
                          design = "replicate", type = "brr", seed = 115L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d  <- as_survey_rep(df, weights = wt,
+  d  <- as_survey_repweights(df, weights = wt,
                       repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   r  <- get_freqs(d, group)
 
@@ -667,10 +667,10 @@ test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]",
   df$ind_A <- as.integer(df$group == "A")
   df$ind_B <- as.integer(df$group == "B")
 
-  d_sc <- as_survey_rep(df, weights = wt,
+  d_sc <- as_survey_repweights(df, weights = wt,
                         repweights = tidyselect::all_of(repwt_cols),
                         type = "BRR", mse = TRUE)
-  # mse = TRUE to match as_survey_rep default (survey package default is FALSE)
+  # mse = TRUE to match as_survey_repweights default (survey package default is FALSE)
   d_sv <- survey::svrepdesign(
     weights    = ~wt,
     repweights = df[, repwt_cols, drop = FALSE],
@@ -1108,12 +1108,12 @@ test_that("get_freqs() NA group row pct matches filtered replicate design [oracl
   set.seed(43L)
   df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_rep(df_r, weights = wt,
+  design_rep <- as_survey_repweights(df_r, weights = wt,
                                repweights = tidyselect::all_of(repwt_cols),
                                type = "BRR")
   na_df_r       <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
                                   repweights = tidyselect::all_of(repwt_cols_na),
                                   type = "BRR")
   expected <- get_freqs(na_design_rep, y3, variance = "se")
@@ -1302,7 +1302,7 @@ test_that("get_freqs() replicate empty domain returns NA (covers .replicate_freq
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 503)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 60L)
   result <- suppressWarnings(get_freqs(sc, x = group))
   expect_true(all(is.na(result$pct)))
@@ -1312,7 +1312,7 @@ test_that("get_freqs() replicate single-row domain hits se_srs=0 branch (n_g<2)"
   d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
                         design = "replicate", type = "brr", seed = 504)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
   result <- suppressWarnings(get_freqs(sc, x = group))
   expect_true(nrow(result) >= 1L)
@@ -1388,7 +1388,7 @@ test_that("get_freqs() replicate: group with all-NA focal var hits n_g=0 in .rep
   d <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
                         design = "replicate", type = "brr", seed = 611L)
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_rep(d, weights = wt,
+  sc <- as_survey_repweights(d, weights = wt,
                       repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   sc@data$cat2 <- ifelse(sc@data$group == "A", "X", NA_character_)
   sc@data$grp2 <- ifelse(sc@data$group == "A", "G1", "G2")

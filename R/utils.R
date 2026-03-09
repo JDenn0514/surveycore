@@ -9,6 +9,38 @@
 # infrastructure and are co-located with their associated validation logic.
 
 
+# ── .glm_confint() ────────────────────────────────────────────────────────────
+#
+# Shared CI helper for survey_glm_fit. Called by both confint.survey_glm_fit()
+# (in glm-methods.R) and clean() (in glm-clean.R). Single implementation
+# guarantees numerical identity between the two callers.
+#
+# Formula: estimate ± qt((1 + level) / 2, df = degf_design - (n_coef - 1)) * se
+#
+# @param estimates   Named numeric vector of coefficient estimates.
+# @param se          Numeric vector of standard errors (same length).
+# @param degf_design Design degrees of freedom (model@degf). Finite value.
+# @param n_coef      Total number of coefficients p = length(estimates).
+# @param level       Confidence level in (0, 1). Validated upstream.
+# @param parm        Character or integer index to subset; NULL = all.
+# @return Two-column numeric matrix with columns "lower" and "upper".
+#' @noRd
+.glm_confint <- function(estimates, se, degf_design, n_coef, level,
+                          parm = NULL) {
+  if (!is.null(parm)) {
+    estimates <- estimates[parm]
+    se        <- se[parm]
+  }
+  df_res <- max(1, degf_design - (n_coef - 1L))
+  half_w <- stats::qt((1 + level) / 2, df = df_res) * se
+  matrix(
+    c(estimates - half_w, estimates + half_w),
+    ncol      = 2L,
+    dimnames  = list(names(estimates), c("lower", "upper"))
+  )
+}
+
+
 # ── Exported accessor ─────────────────────────────────────────────────────────
 
 #' Access the Data Component of a Survey Design Object
@@ -175,15 +207,15 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # ── Internal design-variable helpers ─────────────────────────────────────────
 
-# Return a flat character vector of all design-variable column names.
-# NULL entries are dropped by c(). Unique names are returned.
-# Works for all five survey types: survey_taylor, survey_replicate,
-# survey_twophase, survey_calibrated, and survey_srs.
-# Used by conversion methods (05-methods-conversion.R), variance
-# estimation (06-variance-dispatch.R), and surveytidy verbs.
-# Exported (with @export) so surveytidy can call surveycore::.get_design_vars_flat()
-# without needing :::. The . prefix is intentional — this is not part of
-# the public user-facing API.
+#' Get design variable column names
+#'
+#' Returns a flat character vector of all design-variable column names
+#' (ids, weights, strata, fpc) for any survey design class. `NULL` entries
+#' are dropped; names are unique. Exported for use by extension packages
+#' (e.g., `surveytidy`); not intended for end users.
+#'
+#' @param design A survey design object (`survey_base` subclass).
+#' @return A character vector of column names.
 #' @keywords internal
 #' @export
 .get_design_vars_flat <- function(design) {
@@ -284,7 +316,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey_srs,
-# as_survey, as_survey_rep). Returns the metadata object unchanged when the
+# as_survey, as_survey_repweights). Returns the metadata object unchanged when the
 # attribute is absent or is not a non-empty list.
 #
 # @param data     A data.frame (may or may not have "weighting_history" attr).

@@ -49,7 +49,7 @@ make_rep <- function(seed = 42L) {
     design = "replicate", type = "brr", seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  as_survey_rep(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  as_survey_repweights(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 }
 
 make_twophase <- function(seed = 42L) {

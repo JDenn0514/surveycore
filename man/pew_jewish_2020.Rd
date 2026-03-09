@@ -178,10 +178,10 @@ contain Jewish respondents. The dataset carries 100 jackknife replicate
 weights alongside the main weight.
 }
 \details{
-\strong{Survey design:} Jackknife replication — use \code{as_survey_rep()} with all
+\strong{Survey design:} Jackknife replication — use \code{as_survey_repweights()} with all
 100 replicate weights:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_rep(
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_repweights(
   pew_jewish_2020,
   weights    = extweight,
   repweights = extweight1:extweight100,
@@ -212,7 +212,7 @@ All columns carry variable labels and value labels as R attributes from the
 original Stata file. The three battery variable groups additionally carry a
 \code{"question_preface"} attribute with the shared question stem. All three
 attribute types are automatically extracted into surveycore's metadata
-system when you call \code{as_survey_rep()}.
+system when you call \code{as_survey_repweights()}.
 \itemize{
 \item \strong{Variable labels} (\code{"label"} attribute): A human-readable description of
 each column — for battery items this is the unique item text (e.g.,

@@ -55,6 +55,13 @@ gh run view <run-id> --log-failed 2>&1 | tail -40
 gh run view <run-id> --log-failed 2>&1 | grep -A 5 -B 5 "Error\|FAIL\|failed"
 ```
 
+Classify the failure before writing the handoff block. This helps r-implement
+diagnose faster:
+- **Test failure** (`devtools::test()` failing): logic issue in R source or test
+- **R CMD check error**: documentation, NAMESPACE, or syntax issue
+- **Platform-specific failure** (Windows or macOS only, not ubuntu-latest):
+  environment issue; confirm it does not reproduce locally before handing off
+
 Update the CI task:
 
 ```

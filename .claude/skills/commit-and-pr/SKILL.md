@@ -10,6 +10,8 @@ description: >
 
 # Commit and PR Skill
 
+**Announce at start:** "Running commit-and-pr skill."
+
 ## HARD CONSTRAINT — READ THIS FIRST
 
 **YOU ARE A COMMIT/PR AGENT.**
@@ -55,8 +57,8 @@ git log develop..HEAD --oneline
 git status
 ```
 
-**If on `main`: STOP.** Inform the user that implementation work must be on a
-feature branch. Do not proceed.
+**If on `main` or `develop`: STOP.** Inform the user that implementation work
+must be on a feature branch cut from `develop`. Do not proceed.
 
 Create the main tracking task:
 
@@ -83,7 +85,7 @@ Steps:
    suggests Phase 0.75) — ask the user if unclear
 2. Check if `changelog/phase-{X}/{branch-name}.md` exists
 3. **If it does not exist:** create it following `changelog-workflow.md`,
-   using `git log main..HEAD --oneline` to populate the `## Changes` section
+   using `git log develop..HEAD --oneline` to populate the `## Changes` section
 4. **If it exists:** verify it is populated — not empty, no `<!-- TODO -->`
    placeholders, `## Changes` has at least one real bullet
 
@@ -126,6 +128,10 @@ Required results:
 ```bash
 git status
 ```
+
+Review the changed files list. If any `.R` source or test files appear that were
+not part of this implementation task, stop and report to the user before staging.
+This skill does not write code — unexpected `.R` changes need investigation.
 
 Stage SPECIFIC files by name — never `git add -A` or `git add .`.
 
@@ -229,3 +235,23 @@ TaskUpdate (PR task):
 
 **Do NOT merge the PR.** Merging is the user's decision.
 
+---
+
+## Quick Reference: What This Skill CAN and CANNOT Do
+
+| Action | Allowed? |
+|---|---|
+| Read `.R` files to understand what was implemented | Yes |
+| Create `changelog/phase-{X}/{branch-name}.md` | Yes |
+| Run `devtools::check()` and `devtools::test()` | Yes |
+| Stage and commit files | Yes |
+| Push the branch | Yes |
+| Create the PR | Yes |
+| Monitor CI | Yes |
+| Produce CI failure handoff block for r-implement | Yes |
+| Write or edit `.R` source files | **NO** |
+| Write or edit `.R` test files | **NO** |
+| Fix failing tests | **NO** |
+| Fix R CMD check errors | **NO** |
+| Amend commits | **NO** |
+| Merge the PR | **NO** |

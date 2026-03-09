@@ -112,7 +112,12 @@
       "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-methods-print.R:*)",
       "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-s7-classes.R:*)",
       "Bash(/Users/jacobdennen/surveycore/tests/testthat/test-utils.R:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(Rscript:*)",
+      "Bash(R:*)",
+      "Bash(Rscript 2:*)",
+      "WebFetch(domain:gdfe.co)"
     ]
-  }
+  },
+  "outputStyle": "default"
 }

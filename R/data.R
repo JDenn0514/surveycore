@@ -219,10 +219,10 @@
 #'
 #' @details
 #' **Survey design:** Successive difference replication (SDR). Use
-#' `as_survey_rep()` with all 80 replicate weights:
+#' `as_survey_repweights()` with all 80 replicate weights:
 #'
 #' ```r
-#' svy <- as_survey_rep(
+#' svy <- as_survey_repweights(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = pwgtp1:pwgtp80,
@@ -820,11 +820,11 @@
 #' }
 #'
 #' @details
-#' **Survey design:** Jackknife replication — use `as_survey_rep()` with all
+#' **Survey design:** Jackknife replication — use `as_survey_repweights()` with all
 #' 100 replicate weights:
 #'
 #' ```r
-#' svy <- as_survey_rep(
+#' svy <- as_survey_repweights(
 #'   pew_jewish_2020,
 #'   weights    = extweight,
 #'   repweights = extweight1:extweight100,
@@ -860,7 +860,7 @@
 #' original Stata file. The three battery variable groups additionally carry a
 #' `"question_preface"` attribute with the shared question stem. All three
 #' attribute types are automatically extracted into surveycore's metadata
-#' system when you call `as_survey_rep()`.
+#' system when you call `as_survey_repweights()`.
 #'
 #' - **Variable labels** (`"label"` attribute): A human-readable description of
 #'   each column — for battery items this is the unique item text (e.g.,

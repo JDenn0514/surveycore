@@ -48,16 +48,16 @@ familiarity with survey package conventions.
 
 - A decision table or flowchart — primary entry point for most readers
 - Three branches:
-  1. "My data has explicit replicate weights (repwt_1, repwt_2, ...)" → `as_survey_rep()`
+  1. "My data has explicit replicate weights (repwt_1, repwt_2, ...)" → `as_survey_repweights()`
   2. "My data has two phases of sampling" → `as_survey_twophase()`
   3. "Everything else" → `as_survey()`
 - Quick-reference table: common survey programs and which constructor they use
   | Survey | Constructor | Why |
   |--------|-------------|-----|
   | NHANES | `as_survey()` | Stratified cluster, no provided replicates |
-  | BRFSS | `as_survey_rep()` | Provides pre-computed raking weights as replicates |
-  | ACS PUMS | `as_survey_rep()` | Provides 80 replicate weights (pwgtp1-pwgtp80) |
-  | CPS ASEC | `as_survey_rep()` | Provides replicate weights |
+  | BRFSS | `as_survey_repweights()` | Provides pre-computed raking weights as replicates |
+  | ACS PUMS | `as_survey_repweights()` | Provides 80 replicate weights (pwgtp1-pwgtp80) |
+  | CPS ASEC | `as_survey_repweights()` | Provides replicate weights |
   | ANES | `as_survey()` | Stratified; no provided replicates |
   | GSS | `as_survey()` | Complex cluster design |
   | Lucid/Dynata | See §5 | Non-probability; special considerations |
@@ -106,7 +106,7 @@ replicate weights.
 - Produce a survey_taylor object
 - Annotate what the print output means
 
-### 3. `as_survey_rep()` — Replicate Weight Designs
+### 3. `as_survey_repweights()` — Replicate Weight Designs
 
 #### 3.1 What are replicate weights and why do surveys provide them?
 
@@ -248,8 +248,8 @@ A lookup table for common codebook terms and how they map to arguments.
 | "PSU", "primary sampling unit", "cluster ID" | `ids =` | |
 | "stratum", "design stratum", "sampling stratum" | `strata =` | |
 | "FPC", "finite population correction", "population size" | `fpc =` | |
-| "replicate weights", "bootstrap weights", "BRR weights" | `repweights =` | → use `as_survey_rep()` |
-| "base weight", "design weight" | `weights =` in `as_survey_rep()` | |
+| "replicate weights", "bootstrap weights", "BRR weights" | `repweights =` | → use `as_survey_repweights()` |
+| "base weight", "design weight" | `weights =` in `as_survey_repweights()` | |
 | "Fay coefficient", "Fay factor" | `fay_rho =` | With `type = "Fay"` |
 | "number of replicates" | Count of repweight columns | Used to verify `repweights =` resolved correctly |
 

@@ -1,11 +1,11 @@
 # tests/testthat/test-constructors.R
 #
-# Tests for R/03-constructors.R — as_survey_srs(), as_survey(), as_survey_rep(),
+# Tests for R/03-constructors.R — as_survey_srs(), as_survey(), as_survey_repweights(),
 # and as_survey_twophase().
 #
 # Coverage (per plans/error-messages.md):
 #   Rows 1–15: as_survey() errors and warnings
-#   Rows 1–4, 8–10, 16–18: as_survey_rep() errors and warnings
+#   Rows 1–4, 8–10, 16–18: as_survey_repweights() errors and warnings
 #   Rows 19–25: as_survey_twophase() errors and warnings
 #   Rows 56–61: as_survey_srs() errors and warnings
 #
@@ -483,15 +483,15 @@ test_that("as_survey() ids = NULL means SRS (no cluster)", {
 
 
 # ==============================================================================
-# as_survey_rep()
+# as_survey_repweights()
 # ==============================================================================
 
 
 # ── Happy paths ───────────────────────────────────────────────────────────────
 
-test_that("as_survey_rep() creates survey_replicate for BRR design (starts_with)", {
+test_that("as_survey_repweights() creates survey_replicate for BRR design (starts_with)", {
   df <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 1L)
-  d  <- as_survey_rep(
+  d  <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),
@@ -505,9 +505,9 @@ test_that("as_survey_rep() creates survey_replicate for BRR design (starts_with)
   expect_true(all(startsWith(d@variables$repweights, "repwt_")))
 })
 
-test_that("as_survey_rep() creates survey_replicate for JK1 design (bare names)", {
+test_that("as_survey_repweights() creates survey_replicate for JK1 design (bare names)", {
   df <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", type = "jk1", seed = 2L)
-  d  <- as_survey_rep(
+  d  <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),
@@ -518,9 +518,9 @@ test_that("as_survey_rep() creates survey_replicate for JK1 design (bare names)"
   expect_identical(d@variables$type, "JK1")
 })
 
-test_that("as_survey_rep() creates survey_replicate for bootstrap design", {
+test_that("as_survey_repweights() creates survey_replicate for bootstrap design", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", type = "bootstrap", seed = 3L)
-  d  <- as_survey_rep(
+  d  <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),
@@ -531,31 +531,31 @@ test_that("as_survey_rep() creates survey_replicate for bootstrap design", {
   expect_identical(d@variables$type, "bootstrap")
 })
 
-test_that("as_survey_rep() stores call in @call", {
+test_that("as_survey_repweights() stores call in @call", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 4L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   expect_false(is.null(d@call))
   expect_true(is.call(d@call))
 })
 
-test_that("as_survey_rep() extracts haven metadata when present", {
+test_that("as_survey_repweights() extracts haven metadata when present", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", with_labels = TRUE, seed = 5L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   test_invariants(d)
   expect_identical(d@metadata@variable_labels[["y1"]], "Outcome variable 1 (continuous)")
 })
 
-test_that("as_survey_rep() returns empty metadata when no haven attrs", {
+test_that("as_survey_repweights() returns empty metadata when no haven attrs", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 6L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
 
-test_that("as_survey_rep() accepts explicit rscales of correct length", {
+test_that("as_survey_repweights() accepts explicit rscales of correct length", {
   df    <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", type = "jk1", seed = 7L)
   n_rep <- sum(startsWith(names(df), "repwt_"))
-  d     <- as_survey_rep(
+  d     <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),
@@ -566,9 +566,9 @@ test_that("as_survey_rep() accepts explicit rscales of correct length", {
   expect_identical(length(d@variables$rscales), n_rep)
 })
 
-test_that("as_survey_rep() accepts explicit scale argument", {
+test_that("as_survey_repweights() accepts explicit scale argument", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 8L)
-  d  <- as_survey_rep(
+  d  <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),
@@ -579,56 +579,56 @@ test_that("as_survey_rep() accepts explicit scale argument", {
   expect_equal(d@variables$scale, 0.5)
 })
 
-test_that("as_survey_rep() computes BRR default scale = 1/R", {
+test_that("as_survey_repweights() computes BRR default scale = 1/R", {
   # BRR scale = 1/R (matching survey::svrepdesign() default)
   # n_psu = 20 → R = 10 BRR replicates → scale = 1/10 = 0.1
   df    <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 9L)
   n_rep <- sum(startsWith(names(df), "repwt_"))
-  d     <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
+  d     <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
   expect_equal(d@variables$scale, 1 / n_rep)
 })
 
-test_that("as_survey_rep() computes JK1 default scale = (R-1)/R", {
+test_that("as_survey_repweights() computes JK1 default scale = (R-1)/R", {
   df    <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", type = "jk1", seed = 10L)
   n_rep <- sum(startsWith(names(df), "repwt_"))
-  d     <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d     <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   expect_equal(d@variables$scale, (n_rep - 1L) / n_rep)
 })
 
-test_that("as_survey_rep() computes bootstrap default scale = 1/R", {
+test_that("as_survey_repweights() computes bootstrap default scale = 1/R", {
   df    <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", type = "bootstrap", seed = 11L)
   n_rep <- sum(startsWith(names(df), "repwt_"))
-  d     <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "bootstrap")
+  d     <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "bootstrap")
   expect_equal(d@variables$scale, 1 / n_rep)
 })
 
-test_that("as_survey_rep() stores repweights as column names (not matrix)", {
+test_that("as_survey_repweights() stores repweights as column names (not matrix)", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 12L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   # repweights must be a character vector, not a matrix
   expect_true(is.character(d@variables$repweights))
   expect_true(all(d@variables$repweights %in% names(d@data)))
 })
 
-test_that("as_survey_rep() stores mse as logical", {
+test_that("as_survey_repweights() stores mse as logical", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 13L)
-  d1 <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1", mse = TRUE)
-  d2 <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1", mse = FALSE)
+  d1 <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1", mse = TRUE)
+  d2 <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1", mse = FALSE)
   expect_true(d1@variables$mse)
   expect_false(d2@variables$mse)
 })
 
-test_that("as_survey_rep() stores fpc column name when fpc provided", {
+test_that("as_survey_repweights() stores fpc column name when fpc provided", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"),
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
                       type = "BRR", fpc = fpc)
   test_invariants(d)
   expect_identical(d@variables$fpc, "fpc")
 })
 
-test_that("as_survey_rep() sets fpc = NULL when not provided", {
+test_that("as_survey_repweights() sets fpc = NULL when not provided", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 15L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   expect_null(d@variables$fpc)
 })
 
@@ -636,98 +636,98 @@ test_that("as_survey_rep() sets fpc = NULL when not provided", {
 # ── Error paths ───────────────────────────────────────────────────────────────
 
 # Row 1: data not a data frame
-test_that("as_survey_rep() errors when data is not a data frame [row 1]", {
+test_that("as_survey_repweights() errors when data is not a data frame [row 1]", {
   expect_error(
-    as_survey_rep(list(x = 1:5), weights = x,
+    as_survey_repweights(list(x = 1:5), weights = x,
                   repweights = starts_with("r"), type = "JK1"),
     class = "surveycore_error_not_data_frame"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_rep(list(x = 1:5), weights = x,
+    as_survey_repweights(list(x = 1:5), weights = x,
                   repweights = starts_with("r"), type = "JK1")
   )
 })
 
 # Row 2: data has 0 rows
-test_that("as_survey_rep() errors when data has 0 rows [row 2]", {
+test_that("as_survey_repweights() errors when data has 0 rows [row 2]", {
   empty_df <- data.frame(x = numeric(0), w = numeric(0), r1 = numeric(0))
   expect_error(
-    as_survey_rep(empty_df, weights = w, repweights = r1, type = "JK1"),
+    as_survey_repweights(empty_df, weights = w, repweights = r1, type = "JK1"),
     class = "surveycore_error_empty_data"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_rep(empty_df, weights = w, repweights = r1, type = "JK1")
+    as_survey_repweights(empty_df, weights = w, repweights = r1, type = "JK1")
   )
 })
 
 # Row 3: duplicate column names
-test_that("as_survey_rep() errors when data has duplicate column names [row 3]", {
+test_that("as_survey_repweights() errors when data has duplicate column names [row 3]", {
   df <- data.frame(x = 1:3, r = 4:6)
   names(df) <- c("x", "x")
   expect_error(
-    as_survey_rep(df, weights = x, repweights = x, type = "JK1"),
+    as_survey_repweights(df, weights = x, repweights = x, type = "JK1"),
     class = "surveycore_error_duplicate_names"
   )
 })
 
 # Row 4: data has 1 row (warning, not error)
-test_that("as_survey_rep() warns when data has 1 row [row 4]", {
+test_that("as_survey_repweights() warns when data has 1 row [row 4]", {
   df <- data.frame(x = 1, w = 1, r1 = 0.9)
   expect_warning(
-    as_survey_rep(df, weights = w, repweights = r1, type = "JK1"),
+    as_survey_repweights(df, weights = w, repweights = r1, type = "JK1"),
     class = "surveycore_warning_single_row"
   )
 })
 
 # Row 8: weights selects 0 columns
-test_that("as_survey_rep() errors when weights helper matches no columns [row 8]", {
+test_that("as_survey_repweights() errors when weights helper matches no columns [row 8]", {
   df <- make_survey_data(n = 50, n_psu = 10L, design = "replicate", seed = 16L)
   expect_error(
-    as_survey_rep(df, weights = starts_with("zzz"),
+    as_survey_repweights(df, weights = starts_with("zzz"),
                   repweights = starts_with("repwt_"), type = "JK1"),
     class = "surveycore_error_weights_not_found"
   )
 })
 
 # Row 9: weights selects >1 column
-test_that("as_survey_rep() errors when weights expression selects multiple columns [row 9]", {
+test_that("as_survey_repweights() errors when weights expression selects multiple columns [row 9]", {
   df <- data.frame(y = 1:5, wt1 = 1:5, wt2 = 1:5, r1 = rep(1, 5), r2 = rep(1, 5))
   expect_error(
-    as_survey_rep(df, weights = starts_with("wt"), repweights = starts_with("r"),
+    as_survey_repweights(df, weights = starts_with("wt"), repweights = starts_with("r"),
                   type = "JK1"),
     class = "surveycore_error_weights_multiple"
   )
 })
 
 # Row 10: weights all zero
-test_that("as_survey_rep() errors when all weights are zero [row 10]", {
+test_that("as_survey_repweights() errors when all weights are zero [row 10]", {
   df <- data.frame(y = 1:5, wt = c(0, 0, 0, 0, 0), r1 = rep(1, 5))
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = r1, type = "JK1"),
+    as_survey_repweights(df, weights = wt, repweights = r1, type = "JK1"),
     class = "surveycore_error_weights_all_zero"
   )
 })
 
 # Row 16: repweights matches 0 columns
-test_that("as_survey_rep() errors when repweights matches no columns [row 16]", {
+test_that("as_survey_repweights() errors when repweights matches no columns [row 16]", {
   df <- make_survey_data(n = 50, n_psu = 10L, design = "replicate", seed = 17L)
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = starts_with("zzz"), type = "JK1"),
+    as_survey_repweights(df, weights = wt, repweights = starts_with("zzz"), type = "JK1"),
     class = "surveycore_error_repweights_empty"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_rep(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
+    as_survey_repweights(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
   )
 })
 
 # Row 17: rscales length mismatch
-test_that("as_survey_rep() errors when rscales length doesn't match n_rep [row 17]", {
+test_that("as_survey_repweights() errors when rscales length doesn't match n_rep [row 17]", {
   df <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 18L)
   expect_error(
-    as_survey_rep(
+    as_survey_repweights(
       df,
       weights    = wt,
       repweights = starts_with("repwt_"),
@@ -738,7 +738,7 @@ test_that("as_survey_rep() errors when rscales length doesn't match n_rep [row 1
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_rep(
+    as_survey_repweights(
       df,
       weights    = wt,
       repweights = starts_with("repwt_"),
@@ -749,10 +749,10 @@ test_that("as_survey_rep() errors when rscales length doesn't match n_rep [row 1
 })
 
 # Row 18: invalid type (handled by match.arg)
-test_that("as_survey_rep() errors when type is not a valid replicate method [row 18]", {
+test_that("as_survey_repweights() errors when type is not a valid replicate method [row 18]", {
   df <- make_survey_data(n = 50, n_psu = 10L, design = "replicate", seed = 19L)
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"),
+    as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
                   type = "invalid_type"),
     regexp = "should be one of"
   )
@@ -761,26 +761,26 @@ test_that("as_survey_rep() errors when type is not a valid replicate method [row
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
 
-test_that("as_survey_rep() with tibble input (inherits data.frame)", {
+test_that("as_survey_repweights() with tibble input (inherits data.frame)", {
   skip_if_not_installed("tibble")
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 20L)
   tb <- tibble::as_tibble(df)
-  d  <- as_survey_rep(tb, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d  <- as_survey_repweights(tb, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
 })
 
-test_that("as_survey_rep() populates all expected @variables keys", {
+test_that("as_survey_repweights() populates all expected @variables keys", {
   df            <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 21L)
-  d             <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
+  d             <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1")
   expected_keys <- c("weights", "repweights", "type", "scale", "rscales",
                      "fpc", "fpctype", "mse")
   expect_true(all(expected_keys %in% names(d@variables)))
 })
 
-test_that("as_survey_rep() accepts fpctype argument", {
+test_that("as_survey_repweights() accepts fpctype argument", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 22L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"),
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
                       type = "BRR", fpctype = "correction")
   expect_identical(d@variables$fpctype, "correction")
 })
@@ -788,29 +788,29 @@ test_that("as_survey_rep() accepts fpctype argument", {
 
 # ── Tidy-select interface ─────────────────────────────────────────────────────
 
-test_that("as_survey_rep() accepts starts_with() for repweights", {
+test_that("as_survey_repweights() accepts starts_with() for repweights", {
   df <- make_survey_data(n = 200, n_psu = 20L, design = "replicate", seed = 23L)
-  d  <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
+  d  <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR")
   test_invariants(d)
   expect_true(all(startsWith(d@variables$repweights, "repwt_")))
 })
 
-test_that("as_survey_rep() accepts c() for explicit repweight columns", {
+test_that("as_survey_repweights() accepts c() for explicit repweight columns", {
   df <- data.frame(
     y = 1:10, wt = rep(1, 10),
     r1 = rep(1, 10), r2 = rep(1, 10), r3 = rep(1, 10)
   )
-  d <- as_survey_rep(df, weights = wt, repweights = c(r1, r2, r3), type = "JK1")
+  d <- as_survey_repweights(df, weights = wt, repweights = c(r1, r2, r3), type = "JK1")
   test_invariants(d)
   expect_identical(d@variables$repweights, c("r1", "r2", "r3"))
 })
 
-test_that("as_survey_rep() accepts bare name for weights", {
+test_that("as_survey_repweights() accepts bare name for weights", {
   df <- data.frame(
     y = 1:10, sampling_weight = rep(1, 10),
     r1 = rep(1, 10), r2 = rep(1, 10)
   )
-  d <- as_survey_rep(df, weights = sampling_weight, repweights = starts_with("r"),
+  d <- as_survey_repweights(df, weights = sampling_weight, repweights = starts_with("r"),
                      type = "JK1")
   test_invariants(d)
   expect_identical(d@variables$weights, "sampling_weight")
@@ -990,7 +990,7 @@ test_that("as_survey_twophase() errors when phase1 is not a survey_taylor [row 1
 
 test_that("as_survey_twophase() errors when phase1 is a survey_replicate [row 19]", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 20L)
-  phase_rep <- as_survey_rep(df, weights = wt, repweights = starts_with("repwt_"),
+  phase_rep <- as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
                               type = "JK1")
   # phase1 class error fires before subset is resolved — bare name doesn't matter
   expect_error(
@@ -1198,9 +1198,9 @@ test_that("as_survey() errors when probs expression selects multiple columns", {
 })
 
 
-# ── Coverage: as_survey_rep() fpc multiple columns ───────────────────────────
+# ── Coverage: as_survey_repweights() fpc multiple columns ───────────────────────────
 
-test_that("as_survey_rep() errors when fpc expression selects multiple columns", {
+test_that("as_survey_repweights() errors when fpc expression selects multiple columns", {
   df <- data.frame(
     y    = 1:5,
     wt   = rep(1, 5),
@@ -1209,7 +1209,7 @@ test_that("as_survey_rep() errors when fpc expression selects multiple columns",
     fpc2 = rep(2000L, 5)
   )
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = r1, type = "JK1",
+    as_survey_repweights(df, weights = wt, repweights = r1, type = "JK1",
                   fpc = starts_with("fpc")),
     class = "surveycore_error_fpc_multiple"
   )
@@ -1280,24 +1280,24 @@ test_that("as_survey() errors when fpc expression matches no columns", {
   )
 })
 
-test_that("as_survey_rep() errors when fpc expression matches no columns", {
+test_that("as_survey_repweights() errors when fpc expression matches no columns", {
   df <- data.frame(
     y  = 1:10, wt = rep(1, 10), r1 = rep(1, 10), r2 = rep(1, 10)
   )
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = c(r1, r2), type = "BRR",
+    as_survey_repweights(df, weights = wt, repweights = c(r1, r2), type = "BRR",
                   fpc = tidyselect::starts_with("nonexistent_xyz")),
     class = "surveycore_error_fpc_not_found"
   )
 })
 
-test_that("as_survey_rep() validates fpc column for NAs", {
+test_that("as_survey_repweights() validates fpc column for NAs", {
   df <- data.frame(
     y   = 1:10, wt = rep(1, 10), r1 = rep(1, 10), r2 = rep(1, 10),
     fpc = c(100L, NA_integer_, rep(100L, 8L))
   )
   expect_error(
-    as_survey_rep(df, weights = wt, repweights = c(r1, r2), type = "BRR",
+    as_survey_repweights(df, weights = wt, repweights = c(r1, r2), type = "BRR",
                   fpc = fpc),
     class = "surveycore_error_fpc_na"
   )
@@ -1996,13 +1996,13 @@ test_that("as_survey() promotes weighting_history attribute from data", {
   expect_identical(d@metadata@weighting_history, history)
 })
 
-test_that("as_survey_rep() promotes weighting_history attribute from data", {
+test_that("as_survey_repweights() promotes weighting_history attribute from data", {
   df <- make_survey_data(
     n = 100L, n_psu = 10L, design = "replicate", seed = 102L
   )
   history <- list(list(step = 1L, operation = "calibration"))
   attr(df, "weighting_history") <- history
-  d <- as_survey_rep(
+  d <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),

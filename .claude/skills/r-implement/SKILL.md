@@ -100,6 +100,15 @@ Do not keep it "as reference" — delete means delete. Implement fresh from test
 
 ## Implementation
 
+```
+NO TEST FILE WRITTEN = NO SOURCE FILE WRITTEN
+Watch the tests fail before writing a single function.
+```
+
+The red phase isn't ceremony — it's proof. A test written after implementation almost
+always passes immediately, which tells you nothing about whether it's testing real
+behavior. Watching it fail proves the test is exercising what you think it is.
+
 Follow TDD order — tests before source, always.
 
 1. Write the test file (from the spec's test categories for this section)
@@ -109,6 +118,11 @@ Follow TDD order — tests before source, always.
 4. Run `devtools::document()` if any roxygen2 tags changed
 5. Update `_pkgdown.yml` if any new functions were exported — add them to the
    correct `reference:` section (match the `@family` tag used in roxygen)
+
+**Red flags — stop immediately if:**
+- All new tests pass before any source code is written
+- You are writing source before running `devtools::test()` to confirm failures
+- A spec error condition has no corresponding failing test in the test file
 
 ---
 
@@ -125,33 +139,32 @@ devtools::check()
 on the same failure**, stop and report the exact error, what was tried, and
 why it is still failing. Do not mark the section complete.
 
-### Two-Stage Review (required before marking `[x]`)
+---
 
-After both checks pass, complete both review stages before marking the
-section complete:
+## Sub-task Self-Check
 
-**Stage 1 — Spec Compliance:** Does the code match what the spec said?
+After each sub-task (one `- [ ]` item) passes `devtools::test()`, run these two
+checks before marking it `[x]`:
 
-- [ ] Every function signature matches the spec's argument table
-- [ ] Every error class from the spec's error table is present in the code
-- [ ] Every output column matches the spec's output contract
-- [ ] No behavior added beyond the spec's scope
+**Spec compliance** — does the implementation match the spec's exact contracts?
+- Every error condition in the spec fires correctly and has a corresponding test?
+- Every explicitly listed edge case has a test?
+- Return type visibility matches the spec (`invisible()` vs. visible)?
 
-**Stage 2 — Code Quality:** Does the code follow surveycore rules?
+**Conventions** — does it follow the package rules?
+- No `UseMethod()` on S7 objects? No S7 class string comparisons?
+- `class=` on every `cli_abort()` and `cli_warn()`?
+- No `@importFrom` anywhere; all external calls use `::`?
+- `test_invariants(design)` first assertion in every constructor test block?
+- Dual pattern (snapshot + `class=`) on all Layer 3 errors?
 
-- [ ] No `UseMethod()` on S7 objects — uses `S7::S7_inherits()` instead
-- [ ] `class=` on every `cli_abort()` and `cli_warn()` call
-- [ ] No `@importFrom` — all external calls use `::`
-- [ ] `test_invariants(design)` is first assertion in every constructor test block
-- [ ] Dual pattern (class= + snapshot) on all Layer 3 errors
-
-If either stage finds issues, fix them before marking complete.
+If either check reveals a gap, fix it before moving to the next sub-task.
 
 ---
 
 ## Completion
 
-When both checks and both review stages pass:
+When both checks pass:
 
 1. Mark the section complete in the implementation plan: `- [ ]` → `- [x]`
 2. Report:
@@ -171,3 +184,19 @@ Do not mark the section complete until ALL are true:
 - [ ] Stage 1 spec compliance review: all items checked
 - [ ] Stage 2 code quality review: all items checked
 - [ ] Implementation plan section marked `[x]`
+
+---
+
+## Conventions (always in context — no need to re-read)
+
+All surveycore coding conventions are in the rule files loaded at session start.
+Quick index:
+
+| What you need | Where it is |
+|---|---|
+| S7 class patterns, cli errors, arg order, helper placement | `code-style.md §2–4` |
+| `cli_abort()` / `cli_warn()` structure and `class=` | `code-style.md §3` |
+| `::` everywhere, no `@importFrom`, roxygen2 | `r-package-conventions.md §2` |
+| Naming, families, visibility, export policy | `surveycore-conventions.md` |
+| Test structure, constructor invariants, error testing | `testing-standards.md` + `testing-surveycore.md` |
+| Error class names | `plans/error-messages.md` — update this file BEFORE using any new class |

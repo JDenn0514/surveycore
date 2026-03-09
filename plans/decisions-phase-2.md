@@ -5,6 +5,105 @@ Each entry corresponds to one planning session.
 
 ---
 
+## 2026-03-07 — Methodology lock: GLM variance, residuals, degrees of freedom
+
+### Context
+
+Stage 2 Resolve worked through 16 issues from the adversarial methodology
+review of spec v0.8. 11 issues had one mathematically correct answer (applied
+as a batch without discussion). 5 required judgment calls resolved in this
+session.
+
+### Questions & Decisions
+
+**Q: BLOCKING-2 — SRS variance formula `σ̂² (X'WX)⁻¹` is wrong for
+non-Gaussian families. Which fix?**
+- Options considered:
+  - **[A] Unified score-based path:** Remove analytic formula; use score-based
+    sandwich for all families — `.glm_score()` → SRS variance of score total
+    (`N²(1-f)/n · S²_u`) → `bread · meat · bread`.
+  - **[B] Gaussian analytic + score-based fallback:** Keep analytic formula for
+    Gaussian; add score-based branch for all other families.
+- **Decision:** Option A — unified score-based path for all families.
+- **Rationale:** Single code path, correct for all 8 families, no family
+  dispatch inside the SRS variance function. Analytic formula is equivalent for
+  Gaussian but adds no benefit given the unified path.
+
+---
+
+**Q: BLOCKING-4 — `residuals(type = "response")` needs original response `y`,
+not stored in the S7 object. Where does `y` come from?**
+- Options considered:
+  - **[A] Require `@fit_`:** Extract via `model.response(model.frame(fit_))`;
+    error with `surveycore_error_predict_no_fit` if `fit_` is NULL.
+  - **[B] Store `@response` property:** New property populated at construction.
+    Available even after `fit_` is stripped.
+- **Decision:** Option A — require `@fit_` for `type = "response"`.
+- **Rationale:** Consistent with existing `@fit_` requirement for `"pearson"`,
+  `"deviance"`, and `"partial"`. Adding `"response"` is a small extension of an
+  established pattern. Tradeoff (unavailable post-serialization without `fit_`)
+  is acceptable since the same limitation already applies to four other types.
+
+---
+
+**Q: REQUIRED-5 — `@df_null` computation unspecified. Classical `n - 1` or
+design-based `degf(design)`?**
+- Options considered:
+  - **[A] Classical `fit$df.null`:** Store `n - 1` from `stats::glm()`. Remove
+    `"(design-based)"` label from null deviance line. Matches `survey::svyglm()`.
+  - **[B] Design-based `degf(design)`:** For NHANES: ~17 instead of 199.
+- **Decision:** Option A — classical `fit$df.null`.
+- **Rationale:** Matches `survey::svyglm()` and base `summary.glm()` output.
+  The `"(design-based)"` label in the v0.8 example was inconsistent with 199
+  (clearly `n - 1` for 200 rows). Design-based inference is shown separately
+  in the Design df line; the deviance block is a descriptive goodness-of-fit
+  display.
+
+---
+
+**Q: REQUIRED-12 — `@df_residual` is used for deviance display (classical `n - p`)
+and t-tests (design-based `degf - (p-1)`) — two incompatible values. How to resolve?**
+- Options considered:
+  - **[A] Classical storage + inline design-based:** `@df_residual` stores
+    `fit$df.residual` (classical `n - p`) for deviance display. Design-based
+    `degf(design) - (p - 1)` computed inline in `confint()`, `clean()`, and
+    `summary()` from `model@degf`. No new property.
+  - **[B] Design-based storage + classical property:** `@df_residual` stores
+    design-based value; add `@df_residual_classical` for deviance line.
+- **Decision:** Option A — classical `@df_residual` + inline design-based.
+- **Rationale:** Matches `survey::svyglm()` exactly. Avoids a second property
+  whose only use is one summary line. Design-based df is derivable from
+  `model@degf` (stored) and `p` (from `length(model@coefficients)`), so no
+  information is lost.
+
+---
+
+**Q: ADVISORY-14 — `@vcov` not validated as PSD; non-PSD produces silent NaN SEs.
+Add check where?**
+- Options considered:
+  - **[A] Quality gate only:** Add PSD assertion to Section XI; verify against
+    all oracle fits. No overhead on construction.
+  - **[B] S7 validator:** `all(eigen(self@vcov)$values >= -1e-10)` runs on
+    every `survey_glm_fit` construction.
+  - **[C] Do nothing.**
+- **Decision:** Option A — quality gate only.
+- **Rationale:** Running `eigen()` on every GLM fit adds overhead with no
+  benefit for well-behaved designs (99%+ of use cases). Quality gate catches
+  implementation bugs without penalizing normal usage.
+
+### Outcome
+
+Spec updated to v0.9, methodology-locked. Key changes: Section 8.2 bread
+corrected to `summary(fit)$cov.unscaled`; Section 8.4 SRS formula replaced
+with unified score-based path; Section 5.2 deviance residuals use
+`residuals(fit_, type="deviance")`; Section 5.7 `"response"` type requires
+`@fit_`; `@df_null`/`@df_residual` property types changed to `S7::class_numeric`;
+classical/design-based df split documented in Section 8.5; `confint()` and
+`clean()` CI formulas updated to use `model@degf - (p-1)` inline; new error
+class `surveycore_error_cbind_response_unsupported` added.
+
+---
+
 ## 2026-02-27 — Stage 3 spec resolution (Issues 43–46)
 
 ### Context
@@ -612,5 +711,143 @@ Spec updated with: (1) explicit `$family`/`$link` extraction note covering all
 families, (2) degf full-design-always rule at top of Section 7.5, (3) test
 plan item 11 for validator errors, (4) item 7 updated with dual pattern + layer
 distinction.
+
+---
+
+## 2026-03-08 — Stage 4 resolve: Pass 4 issues (47–55)
+
+### Context
+
+Working through the 9 issues from the Pass 4 adversarial review of the v1.0
+spec. Zero blocking issues; 6 REQUIRED and 3 SUGGESTION. All 9 resolutions
+were chosen interactively with the user.
+
+### Questions & Decisions
+
+**Q: Issue 47 — Add `test_glm_fit_invariants()` helper for `survey_glm_fit`?**
+- Options considered:
+  - **Option A:** Add Section 9.3a with the helper (6 structural checks); require as first assertion in all `survey_glm()` happy-path test blocks.
+  - **Option B:** Leave inline checks scattered across test blocks.
+- **Decision:** Option A.
+- **Rationale:** The `test_glm_tidy_invariants()` pattern was added for the same reason; `survey_glm_fit` deserves equivalent treatment. Consistent with `engineering-preferences.md §2`.
+
+---
+
+**Q: Issue 48 — `summary()` NULL-`fit_` gap: error table row + test item?**
+- Options considered:
+  - **Option A:** Add P2-14a to Section X error table; add test item 2a (renamed 2b after 52 was added) for the NULL path.
+  - **Option B:** Extend P2-14 to list all call sites.
+- **Decision:** Option A.
+- **Rationale:** Per-method error table rows keep auditing clear.
+
+---
+
+**Q: Issue 49 — `confint()` error table: separate row vs. extend P2-13?**
+- Options considered:
+  - **Option A:** Add P2-13a for `confint.survey_glm_fit()`.
+  - **Option B:** Extend P2-13 to list both `clean()` and `confint()`.
+- **Decision:** Option A.
+- **Rationale:** One row per function+condition pair; consistent with Issue 48 decision.
+
+---
+
+**Q: Issue 50 — Add explicit `predict(type = "link")` and `predict(type = "terms")` test items?**
+- Options considered:
+  - **Option A:** Add items 5a and 6a with explicit `type` tests.
+  - **Option B:** Amend item 5 to broaden wording.
+- **Decision:** Option A.
+- **Rationale:** The `type = "link"` path is the exact fix from Issue 15 (Round 1); it must be explicitly tested to guard against silent regression.
+
+---
+
+**Q: Issue 51 — DRY: shared `.glm_confint()` helper vs. cross-reference note?**
+- Options considered:
+  - **Option A:** Add `.glm_confint()` to Section 2.2; both `confint()` and `clean()` call it.
+  - **Option B:** Cross-reference note only.
+  - **Option C:** Do nothing.
+- **Decision:** Option A.
+- **Rationale:** `engineering-preferences.md §1` (DRY, highest priority): duplicated CI formula is a bug waiting to happen. Shared helper makes the "must match" promise a structural guarantee.
+
+---
+
+**Q: Issue 52 — Add `print(summary(fit))` snapshot test?**
+- Options considered:
+  - **Option A:** Add test item 2a between items 2 and 2a (NULL-fit test).
+  - **Option B:** Do nothing.
+- **Decision:** Option A.
+- **Rationale:** Three result classes (`survey_glm_fit`, `survey_glm_summary`, `survey_glm_tidy`) all have `print()` methods; all three require snapshot tests. Consistent with Lens 2 / testing-standards.md.
+
+---
+
+**Q: Issue 53 — Fix misleading `set_coef()` "bypasses validator" description?**
+- Options considered:
+  - **Option A:** Replace with accurate description.
+  - **Option B:** Do nothing.
+- **Decision:** Option A.
+- **Rationale:** Prevents wasted investigation into S7 validator bypass mechanisms.
+
+---
+
+**Q: Issue 54 — Add `n_weighted` computation source?**
+- Options considered:
+  - **Option A:** Add exact derivation (`sum(model.frame(model@fit_)$"(weights)")`).
+  - **Option B:** Do nothing.
+- **Decision:** Option B.
+- **Rationale:** Conceptual definition is clear enough. Acceptable implementation latitude.
+
+---
+
+**Q: Issue 55 — Add `lapply()` state leakage test item 7b?**
+- Options considered:
+  - **Option A:** Add numbered item 7b.
+  - **Option B:** Do nothing.
+- **Decision:** Option A.
+- **Rationale:** State leakage across `lapply()` calls is a real risk when closures or global state are used; explicit test item makes the expectation concrete.
+
+### Outcome
+
+All 9 Pass 4 issues resolved. Spec updated to v1.1 with status "Approved —
+all Stage 3 code/architecture issues resolved; ready for implementation plan."
+Key changes: `test_glm_fit_invariants()` helper added (Section 9.3a); `.glm_confint()`
+shared CI helper added (Section 2.2); error table extended with P2-13a and
+P2-14a; test plan extended with items 2a, 2b, 5a, 6a, 7b.
+
+---
+
+## 2026-03-08 — Implementation plan Stage 3: resolve adversarial review issues
+
+### Context
+
+Stage 3 of the implementation workflow: working through the 9 issues (1 BLOCKING,
+5 REQUIRED, 3 SUGGESTIONS) identified in the Stage 2 adversarial review of
+`plans/impl-phase-2.md`.
+
+### Questions & Decisions
+
+**Q: Error class count was inconsistent — PR 1 said 20, Quality Gates said 16. Which is correct?**
+- **Decision:** 20 (from spec §X), updated further to 21 after adding a new error class (see below).
+- **Rationale:** Actual unique class count from spec §X is the authoritative source. "16" was stale.
+
+**Q: `na.action = na.fail` — propagate base R error, or throw a custom surveycore error?**
+- Options considered:
+  - **Propagate base R:** Matches original spec. Base R message: `"missing values in object"` — uninformative.
+  - **Custom `surveycore_error_na_in_data`:** Pre-check for NAs before calling `stats::glm()`; message lists offending columns and NA counts with a `"v"` bullet suggesting `na.omit`.
+- **Decision:** Custom surveycore error (`surveycore_error_na_in_data`, now P2-21 in spec §X).
+- **Rationale:** Base R's `na.fail()` message gives users no actionable information. The pre-check is straightforward (we know the model frame variables). Consistent with surveycore's approach of always providing typed, informative errors. Added to spec §X, spec §9.4, spec §XI quality gates, and both PR 1 and PR 2 acceptance criteria. Error count updated from 20 to 21.
+
+**Q: `predict()` with missing `newdata` columns — custom surveycore error or base R propagation?**
+- Options considered:
+  - **Custom error:** Pre-check `newdata` columns against model terms. Non-trivial: must handle interactions, transformations, polynomials.
+  - **Base R propagation:** `stats::predict.glm()` already says `"variable 'x2' was used in fitting but is not available in 'newdata'"` — informative.
+- **Decision:** Keep base R propagation. Document in `@param newdata` roxygen. Test with `expect_error()` (no `class=`).
+- **Rationale:** Unlike `na.fail`, base R's `predict()` error for missing columns is already informative. Adding a pre-check would require non-trivial term parsing (interactions, polys) for marginal UX improvement — over-engineered per engineering-preferences.md §3.
+
+### Outcome
+
+All 10 review issues resolved. Plan updated with: corrected error class counts (21 total),
+new `surveycore_error_na_in_data` class (P2-21), PR 6 dependency on PR 5, `R/utils.R` added
+to PR 2 Files, `predict()` missing-column test added to PR 3, `insufficient_df` warning test
+added to PR 2, Poisson oracle template column name fixed (`weight` → `wt`), domain oracle
+placement note added to PR 6, and §X reference disambiguated throughout.
 
 ---

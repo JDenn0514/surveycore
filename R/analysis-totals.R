@@ -54,7 +54,7 @@
 #' `meta(result)$variable`. Use `meta(result)` for additional metadata.
 #'
 #' @examples
-#' d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
+#' d <- as_survey_repweights(acs_pums_wy, weights = pwgtp,
 #'                    repweights = pwgtp1:pwgtp80,
 #'                    type = "successive-difference")
 #'
@@ -126,7 +126,7 @@ get_totals <- function(
 
   group_vars  <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf        <- .degf(design)
+  degf        <- Inf  # Normal approximation; matches survey::svytotal() default
 
   # ── Step 3: Single-level warning for group variables ─────────────────────────
   if (length(group_vars) > 0L) {

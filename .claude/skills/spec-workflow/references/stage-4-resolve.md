@@ -1,4 +1,4 @@
-# Stage 3: Resolve Issues + Log Decisions
+# Stage 4: Resolve Issues + Log Decisions
 
 ## Contents
 - Before Starting
@@ -13,16 +13,20 @@
 
 ## Before Starting
 
-Check for a spec-review file at `plans/spec-review-{id}.md`.
+Check for a code review file at `plans/spec-review-{id}.md`.
 
 **If the file exists:** Work through those issues in order. Do not do a fresh
-review pass — the adversarial review is already done. Skip to the review mode
-question below.
+review pass — the adversarial review is already done.
+
+Note: methodology issues (from `plans/spec-methods-review-{id}.md`) should
+already be resolved by Stage 2 Resolve and are not re-raised here. If a
+code-level decision has introduced a new statistical error, flag it and
+suggest running a targeted Stage 2 pass on that section only.
 
 **If no file exists:** Tell the user:
 
-> "No spec-review file found at `plans/spec-review-{id}.md`.
-> Run Stage 2 first to get a saved issue list, then come back here to
+> "No code review file found at `plans/spec-review-{id}.md`.
+> Run Stage 3 first to get a saved issue list, then come back here to
 > resolve them. Alternatively, confirm you want an informal review pass
 > without a saved issue list."
 
@@ -54,7 +58,10 @@ do not re-group or re-sequence them.
 
 **In BIG mode (4 at a time):** Show all issues in the batch as markdown text
 first, then use `AskUserQuestion` for each issue in the batch sequentially.
-Apply fixes after all decisions in the batch are collected. Then ask:
+Apply fixes after all decisions in the batch are collected. After applying
+each fix, check whether it materially changes the framing of any remaining
+issues in the batch — if so, re-present the affected issue with updated
+context before applying its fix. Then ask:
 > "Ready for the next batch?"
 
 **In SMALL mode (1 at a time):** Show the issue text, use `AskUserQuestion`,
@@ -168,3 +175,14 @@ Entry format:
 
 Only log decisions — not implementation details already determined by the spec
 or a rule file. If the answer was predetermined, there is no decision to log.
+
+---
+
+## After Resolution
+
+1. Update the spec version in the header block.
+2. End the session with:
+
+   > "Code review resolved. {N} issues resolved ({X} blocking, {Y} required,
+   > {Z} suggestions). Spec at version [X.Y] is approved. Start
+   > `/implementation-workflow` in a new session to build the implementation plan."

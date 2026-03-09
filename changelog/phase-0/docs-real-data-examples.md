@@ -16,7 +16,7 @@ datasets that ship with the package (`nhanes_2017` and `acs_pums_wy`). Users
 reading the documentation now see realistic survey designs — NHANES stratified
 cluster designs and ACS PUMS replicate-weight designs — rather than random
 20-row toy data frames. This also fixed a pre-existing bug in the
-`as_survey_rep()` example where `starts_with("pwgtp")` inadvertently included
+`as_survey_repweights()` example where `starts_with("pwgtp")` inadvertently included
 the main weight column `pwgtp` in the replicate weights list.
 
 ---
@@ -42,7 +42,7 @@ and the ACS replicate-weight pattern that real analysts encounter.
   - `as_survey()`: replaced 6 synthetic examples with 3 NHANES examples
     covering a full stratified-cluster design, a stratified-only design, and
     a blood pressure analysis (filtered to exam participants with `wtmec2yr`).
-  - `as_survey_rep()`: fixed bug — `starts_with("pwgtp")` was matching the
+  - `as_survey_repweights()`: fixed bug — `starts_with("pwgtp")` was matching the
     main weight column `pwgtp` in addition to the 80 replicate weights; replaced
     with `matches("^pwgtp[0-9]+$")`. Corrected type from `"ACS"` to
     `"successive-difference"` to match the data documentation.

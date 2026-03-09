@@ -5,7 +5,7 @@
 **Status:** Authoritative — spec prose and plan templates must match this table exactly.
 
 **Phase 1 rows:** 43–64 (analysis functions)
-**Phase 2 rows:** 65–77 (survey GLM)
+**Phase 2 rows:** 65–87 (survey GLM — 19 new + 2 reused from Phase 1)
 
 ---
 
@@ -40,13 +40,13 @@ against the messages defined here.
 | 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
 | 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
-| 13 | `as_survey()` / `as_survey_rep()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
-| 13b | `as_survey()` / `as_survey_rep()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
+| 13 | `as_survey()` / `as_survey_repweights()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
+| 13b | `as_survey()` / `as_survey_repweights()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
 | 14 | `as_survey()` | `fpc` column contains `NA` | ERROR | `surveycore_error_fpc_na` | `"{.arg fpc} column {.field {fpc_var}} contains {sum(is.na(fpc_col))} NA value(s). FPC must be fully observed."` |
 | 15 | `as_survey()` | `nest = TRUE` with no `strata` | ERROR | `surveycore_error_nest_without_strata` | `"{.arg nest = TRUE} requires {.arg strata} to be specified"` |
-| 16 | `as_survey_rep()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
-| 17 | `as_survey_rep()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
-| 18 | `as_survey_rep()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
+| 16 | `as_survey_repweights()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
+| 17 | `as_survey_repweights()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
+| 18 | `as_survey_repweights()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
 | 19 | `as_survey_twophase()` | `phase1` is not a `survey_taylor` | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a {.cls survey_taylor} object, not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
@@ -108,6 +108,12 @@ against the messages defined here.
 | 75 | `clean()` | `model` not a `survey_glm_fit` | ERROR | `surveycore_error_not_glm_fit` | `"{.arg model} must be a {.cls survey_glm_fit} object, not {.cls {class(model)[1]}}."` |
 | 76 | `predict.survey_glm_fit()`, `residuals.survey_glm_fit()` | `fit_` slot is `NULL` | ERROR | `surveycore_error_predict_no_fit` | `"The internal {.field fit_} slot is NULL. This can happen after serialization. Refit the model to restore prediction support."` |
 | 77 | `survey_glm()` | `df_residual` would be ≤ 0 | WARN | `surveycore_warning_insufficient_df` | `"Design degrees of freedom ({degf}) minus model parameters ({p - 1}) is ≤ 0. Clamping {.code df_residual = 1}. CI bounds and p-values are conservative."` |
+| 82 | `survey_glm()` | Both `formula` and `response`/`predictors` supplied | ERROR | `surveycore_error_formula_conflict` | `"{.arg formula} and {.arg response}/{.arg predictors} are mutually exclusive. {.i Specify the model using either {.arg formula} or {.arg response}/{.arg predictors}, not both.}"` |
+| 83 | `survey_glm()` | Active domain contains zero in-domain rows | ERROR | `surveycore_error_empty_domain` | `"Active domain contains no in-domain rows. {.i Apply a less restrictive {.fn surveytidy::filter} before calling {.fn survey_glm}.}"` |
+| 84 | `clean()` | `exponentiate = TRUE` with non-log link | WARN | `surveycore_warning_exponentiate_nonlog` | `"{.arg exponentiate = TRUE} with a non-log link ({.val {model@family$link}}) may produce uninterpretable estimates."` |
+| 85 | `survey_glm()` | Weight column contains zero or negative values | WARN | `surveycore_warning_nonpositive_weights` | `"Weight column {.field {wt_var}} contains {sum(wt <= 0)} non-positive value(s). {.i Zero-weight rows are excluded from fitting by {.fn stats::glm}. Negative weights are statistically invalid.}"` |
+| 86 | `survey_glm()` | `cbind()` on LHS of formula | ERROR | `surveycore_error_cbind_response_unsupported` | `"{.code cbind()} on the left-hand side of {.arg formula} is not supported. {.i Multinomial logistic regression is deferred to a later phase. Use a single binary or continuous response variable.}"` |
+| 87 | `survey_glm()` | `na.action = na.fail` and response/predictor has NA | ERROR | `surveycore_error_na_in_data` | `"x" = "{n_na_cols} column{?s} in the model {?has/have} NA values with {.arg na.action = na.fail}: {.field {na_info}}.", "v" = "Set {.arg na.action = na.omit} to drop rows with NA, or remove them manually before calling {.fn survey_glm}."` |
 | 78 | `infer_question_prefaces()` | `x` is not a survey object or data frame | ERROR | `surveycore_error_not_survey_or_df` | `"{.arg x} must be a survey design object or a data frame, not {.cls {class(x)[[1L]]}}."` |
 | 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
 | 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
@@ -162,6 +168,7 @@ Which test files cover which error table rows:
 | `test-analysis-corr.R` | 43, 44, 45, 45a, 45b, 46, 49, 50, 51, 54 |
 | `test-analysis-quantiles.R` | 45, 45a, 45b, 46, 47, 49, 50, 54 |
 | `test-analysis-ratios.R` | 43, 45, 45a, 45b, 46, 48, 49, 50, 54 |
-| `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74 (Layer 3 dual pattern), 77; S7 validator errors in Section 3.3 (class= only, not in this table) |
+| `test-glm.R` | 64 (via `.check_unsupported_class()`), 65–74, 77, 82–87 (Layer 3 dual pattern); S7 validator errors in Section 3.3 (class= only, not in this table) |
 | `test-glm-methods.R` | 76 |
+| `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |

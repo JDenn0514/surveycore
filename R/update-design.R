@@ -73,7 +73,7 @@
 #'
 #' @seealso
 #'   [as_survey()] to create a `survey_taylor` object,
-#'   [as_survey_rep()] to create a `survey_replicate` object
+#'   [as_survey_repweights()] to create a `survey_replicate` object
 #'
 #' @family update
 #' @export

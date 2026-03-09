@@ -683,16 +683,22 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 
 # ── .degf() ───────────────────────────────────────────────────────────────────
 #
-# Return design degrees of freedom as a numeric scalar. Used for t-distribution
-# critical values in CI computation.
+# Return design-based degrees of freedom as a numeric scalar.
 #
-# Design-specific rules:
-#   All designs: Inf — CI uses normal approximation, matching the survey
-#   package's confint.svystat() default (df = Inf). Finite-df correction is
-#   only applied by survey when the user passes df= explicitly.
+# Used by survey_glm() for t-distribution critical values in CIs and Wald
+# tests. Phase 1 analysis functions (get_means, get_totals, etc.) use Inf
+# directly (normal approximation matching survey::svymean() defaults) and do
+# NOT call .degf().
+#
+# Design-specific formulas (matching survey::degf()):
+#   Taylor:    Σ(n_h - 1) = total PSUs − number of strata (.degf_taylor())
+#   Replicate: R − 1 where R = number of replicate columns
+#   Twophase:  Phase-1 Taylor df
+#   SRS:       n − 1
+#   Calibrated: n − 1 (conservative approximation)
 #
 # @param design A survey design object.
-# @return Numeric(1): degrees of freedom.
+# @return Numeric(1): degrees of freedom (always >= 1).
 .degf <- function(design) {
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
@@ -702,5 +708,19 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
       class = "surveycore_error_unsupported_class"
     )
   }
-  Inf
+  if (S7::S7_inherits(design, survey_taylor)) {
+    max(1, .degf_taylor(design@data, design@variables))
+  } else if (S7::S7_inherits(design, survey_replicate)) {
+    rep_mat <- as.matrix(
+      design@data[, design@variables$repweights, drop = FALSE]
+    )
+    max(1L, ncol(rep_mat) - 1L)
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    subset   <- design@data[[design@variables$subset]]
+    ph1_data <- design@data[subset, , drop = FALSE]
+    max(1, .degf_taylor(ph1_data, design@variables$phase1))
+  } else {
+    # survey_srs, survey_calibrated, unknown
+    max(1L, nrow(design@data) - 1L)
+  }
 }

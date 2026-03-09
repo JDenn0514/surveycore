@@ -45,7 +45,7 @@ test_that("get_quantiles() returns correct result for survey_replicate", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
                          design = "replicate", type = "brr", seed = 2L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d <- as_survey_rep(df, weights = wt,
+  d <- as_survey_repweights(df, weights = wt,
                      repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 
   result <- get_quantiles(d, y1, probs = 0.5)
@@ -158,7 +158,7 @@ test_that("get_quantiles() BRR matches svyquantile() mse=FALSE [oracle]", {
                          design = "replicate", type = "brr", seed = 6L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
 
-  d_sc <- as_survey_rep(df, weights = wt,
+  d_sc <- as_survey_repweights(df, weights = wt,
                         repweights = tidyselect::all_of(repwt_cols),
                         type = "BRR", mse = FALSE)
   d_sv <- survey::svrepdesign(weights = ~wt,
@@ -903,12 +903,12 @@ test_that("get_quantiles() NA group row estimate matches filtered replicate desi
   set.seed(43L)
   df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_rep(df_r, weights = wt,
+  design_rep <- as_survey_repweights(df_r, weights = wt,
                                repweights = tidyselect::all_of(repwt_cols),
                                type = "BRR")
   na_df_r       <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_rep(na_df_r, weights = wt,
+  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
                                   repweights = tidyselect::all_of(repwt_cols_na),
                                   type = "BRR")
   expected <- get_quantiles(na_design_rep, y1, probs = 0.5, variance = "se")

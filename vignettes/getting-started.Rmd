@@ -58,7 +58,7 @@ the survey design.
 
 1. `as_survey()`
 
-2. `as_survey_rep()`
+2. `as_survey_repweights()`
 
 3. `as_survey_srs()`
 
@@ -88,7 +88,7 @@ gss_svy
 ```
 
 
-### `as_survey_rep()`
+### `as_survey_repweights()`
 
 Use this when the data you have comes with pre-built replicate weight columns 
 like `repwt_1`, `repwt_2`. For example, Pew's Jewish American study from 2020
@@ -96,7 +96,7 @@ uses replicate weights.
 
 
 ```{r replicate}
-pew_jewish_svy <- as_survey_rep(
+pew_jewish_svy <- as_survey_repweights(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,

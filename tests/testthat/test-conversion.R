@@ -75,7 +75,7 @@ make_rep <- function(seed = 42L) {
     design = "replicate", type = "brr", seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  as_survey_rep(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  as_survey_repweights(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
 }
 
 make_twophase <- function(seed = 42L) {
@@ -209,12 +209,12 @@ test_that("as_svydesign(survey_replicate) gives svymean matching survey::svrepde
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
 
-  d_sc <- as_survey_rep(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  d_sc <- as_survey_repweights(df, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
   d_sv <- survey::svrepdesign(
     weights    = df$wt,
     repweights = df[, repwt_cols],
     type       = "BRR",
-    mse        = TRUE,   # as_survey_rep() defaults to mse = TRUE
+    mse        = TRUE,   # as_survey_repweights() defaults to mse = TRUE
     data       = df
   )
 
@@ -514,7 +514,7 @@ test_that("as_svydesign() converts JK1 replicate design (scale arg non-NULL path
   df  <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L,
                           design = "replicate", type = "jk1", seed = 300L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d   <- as_survey_rep(df, weights = wt,
+  d   <- as_survey_repweights(df, weights = wt,
                        repweights = tidyselect::all_of(repwt_cols), type = "JK1")
   sv  <- as_svydesign(d)
   expect_true(inherits(sv, "svyrep.design"))

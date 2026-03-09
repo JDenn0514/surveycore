@@ -92,17 +92,19 @@ d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 
 }
 \seealso{
-\code{\link[=as_survey_rep]{as_survey_rep()}} for replicate-weight designs,
+\code{\link[=as_survey_repweights]{as_survey_repweights()}} for replicate-weight designs,
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,
 \code{\link[=set_var_label]{set_var_label()}}, \code{\link[=set_variable_labels]{set_variable_labels()}} to add variable metadata
 
 Other constructors: 
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_rep}()},
+\code{\link{as_survey_repweights}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
+\code{\link{survey_glm}()},
+\code{\link{survey_glm_fit}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},

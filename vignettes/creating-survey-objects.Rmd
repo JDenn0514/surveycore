@@ -50,7 +50,7 @@ Read the first row that matches your data.
 | My data...                                                           | Constructor              | Why                                              |
 |----------------------------------------------------------------------|--------------------------|--------------------------------------------------|
 | Has cluster IDs, strata, and/or design weights                       | `as_survey()`            | Taylor series linearization — the general case   |
-| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | `as_survey_rep()`        | Uses the agency-supplied variance replicates     |
+| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | `as_survey_repweights()`        | Uses the agency-supplied variance replicates     |
 | Is a pure SRS — equal probability, no clustering, no strata          | `as_survey_srs()`        | Simpler estimator for equal-probability samples  |
 | Is a non-probability panel or opt-in sample with calibration weights | `as_survey_calibrated()` | Calibrated design; SEs are approximate           |
 | Was sampled in two stages with an expensive Phase 2 measurement      | `as_survey_twophase()`   | Two-phase variance accounting for both stages    |
@@ -63,10 +63,10 @@ Read the first row that matches your data.
 | ANES                      | `as_survey()`            | Stratified cluster, Taylor series             |
 | GSS                       | `as_survey()`            | Stratified multi-stage cluster                |
 | Pew NPORS                 | `as_survey()`            | Stratified address-based sample (no PSU)      |
-| ACS PUMS (1-year)         | `as_survey_rep()`        | 80 successive-difference replicate weights    |
-| Pew Jewish Americans 2020 | `as_survey_rep()`        | 100 JK1 jackknife replicate weights           |
-| BRFSS                     | `as_survey_rep()`        | Bootstrap replicate weights                   |
-| NAEP / PISA               | `as_survey_rep()`        | JK2 jackknife replicate weights               |
+| ACS PUMS (1-year)         | `as_survey_repweights()`        | 80 successive-difference replicate weights    |
+| Pew Jewish Americans 2020 | `as_survey_repweights()`        | 100 JK1 jackknife replicate weights           |
+| BRFSS                     | `as_survey_repweights()`        | Bootstrap replicate weights                   |
+| NAEP / PISA               | `as_survey_repweights()`        | JK2 jackknife replicate weights               |
 | Nationscape (Democracy Fund + UCLA) | `as_survey_calibrated()` | Non-probability quota panel; ACS-calibrated raking weights |
 | Opt-in online panels      | `as_survey_calibrated()` | Non-probability; vendor-supplied raking weights |
 
@@ -270,9 +270,9 @@ svy_npors <- as_survey(
 
 ---
 
-## 3. `as_survey_rep()` — Replicate Weight Designs {#sec-rep}
+## 3. `as_survey_repweights()` — Replicate Weight Designs {#sec-rep}
 
-Use `as_survey_rep()` when your data provider has supplied pre-computed
+Use `as_survey_repweights()` when your data provider has supplied pre-computed
 replicate weight columns — columns like `repwt_1`, `repwt_2`, ..., or
 `pwgtp1`–`pwgtp80`. Replicate-based variance estimation works by repeatedly
 re-estimating the target statistic under small perturbations of the sample,
@@ -318,7 +318,7 @@ variance estimation, documented in the ACS Design and Methodology report
 | `pwgtp1`–`pwgtp80`   | Successive-difference replicate weights (80 replicates) | `repweights`  |
 
 ```{r acs}
-svy_acs <- as_survey_rep(
+svy_acs <- as_survey_repweights(
   acs_pums_wy,
   weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
@@ -338,7 +338,7 @@ full-sample weight:
 | `extweight1`–`extweight100`    | JK1 jackknife replicate weights (100 replicates) | `repweights` |
 
 ```{r pew-jewish}
-svy_jewish <- as_survey_rep(
+svy_jewish <- as_survey_repweights(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,
@@ -676,7 +676,7 @@ The three constructors most users encounter — `as_survey()`,
 `as_survey_srs()`, and `as_survey_calibrated()` — differ in one fundamental
 way: *where the weights come from*.
 
-| | `as_survey()` / `as_survey_rep()` | `as_survey_srs()` | `as_survey_calibrated()` |
+| | `as_survey()` / `as_survey_repweights()` | `as_survey_srs()` | `as_survey_calibrated()` |
 |---|---|---|---|
 | Weight source | Sampling protocol (1/π_i) | Equal-probability selection | Post-hoc adjustment |
 | Selection probabilities | Known and controlled | Known; equal for all units | Unknown or overridden by calibration |
@@ -739,7 +739,7 @@ of all students at the school.
 
 | Design | Appropriate tool | Notes |
 |---|---|---|
-| Probability sample with design weights | `as_survey()`, `as_survey_rep()`, `as_survey_srs()` | Exact variance |
+| Probability sample with design weights | `as_survey()`, `as_survey_repweights()`, `as_survey_srs()` | Exact variance |
 | Any sample with calibration/raking/PSW/matching weights | `as_survey_calibrated()` | Approximate variance |
 | Voluntary response or convenience sample, no weights | `as_survey_srs()` with `weights = 1` | Conditional inference only; disclose |
 | Causal inference (treatment effect estimation) | Not surveycore | Use MatchIt, WeightIt, lme4, etc. |
@@ -763,8 +763,8 @@ arguments:
 | "PSU", "primary sampling unit", "cluster ID"                     | `ids =`                              |                                           |
 | "stratum", "design stratum", "sampling stratum"                  | `strata =`                           |                                           |
 | "FPC", "finite population correction", "population size"         | `fpc =`                              |                                           |
-| "replicate weights", "bootstrap weights", "BRR weights"          | `repweights =`                       | Use `as_survey_rep()`                     |
-| "base weight", "design weight" (with separate replicates)        | `weights =` in `as_survey_rep()`     |                                           |
+| "replicate weights", "bootstrap weights", "BRR weights"          | `repweights =`                       | Use `as_survey_repweights()`                     |
+| "base weight", "design weight" (with separate replicates)        | `weights =` in `as_survey_repweights()`     |                                           |
 | "Fay coefficient", "Fay factor", "epsilon"                       | `fay_rho =`                          | With `type = "Fay"`                       |
 | "raking weights", "post-stratification weights", "cal weights"   | `weights =` in `as_survey_calibrated()` | Non-probability design               |
 | "two-phase", "double sampling", "case-cohort"                    | Phase 1 → `as_survey()`, then `as_survey_twophase()` |                        |

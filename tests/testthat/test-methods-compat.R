@@ -19,7 +19,7 @@ test_that("names() returns @data column names for survey_taylor", {
 
 test_that("names() returns @data column names for survey_replicate", {
   df <- make_survey_data(n = 100, design = "replicate", seed = 2)
-  d  <- as_survey_rep(
+  d  <- as_survey_repweights(
     df,
     weights    = wt,
     repweights = starts_with("repwt_"),

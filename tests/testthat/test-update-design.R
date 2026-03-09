@@ -62,7 +62,7 @@ test_that("update_design() updates weights on survey_replicate", {
   df      <- make_survey_data(n = 100L, n_psu = 20L, design = "replicate",
                                type = "brr", seed = 10L)
   df$wt2  <- df$wt * 1.05
-  d       <- as_survey_rep(df, weights = wt,
+  d       <- as_survey_repweights(df, weights = wt,
                             repweights = tidyselect::starts_with("repwt"),
                             type = "BRR")
   d2      <- suppressMessages(update_design(d, weights = wt2))
@@ -73,7 +73,7 @@ test_that("update_design() updates weights on survey_replicate", {
 test_that("update_design() updates repweights on survey_replicate", {
   df  <- make_survey_data(n = 100L, n_psu = 20L, design = "replicate",
                            type = "brr", seed = 11L)
-  d   <- as_survey_rep(df, weights = wt,
+  d   <- as_survey_repweights(df, weights = wt,
                         repweights = tidyselect::starts_with("repwt"),
                         type = "BRR")
   # Update to use only the first 3 replicate columns
@@ -246,7 +246,7 @@ test_that("update_design() validate=FALSE skips validation for survey_replicate"
   df        <- make_survey_data(n = 100L, n_psu = 20L,
                                 design = "replicate", type = "brr", seed = 70L)
   df$bad_wt <- -1
-  d         <- as_survey_rep(df, weights = wt,
+  d         <- as_survey_repweights(df, weights = wt,
                               repweights = tidyselect::starts_with("repwt"),
                               type = "BRR")
   d@data    <- df

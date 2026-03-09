@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.3.5
+Version: 0.4.0
 Authors@R:
     person(
         "Jacob", "Dennen", 
@@ -36,6 +36,8 @@ Suggests:
     haven (>= 2.5.0),
     dplyr (>= 1.1.0),
     lifecycle (>= 1.0.0),
+    broom (>= 1.0.0),
+    marginaleffects (>= 0.18.0),
     covr,
     knitr,
     rmarkdown
