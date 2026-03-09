@@ -7,6 +7,7 @@
 <url><loc>https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/articles/getting-started.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/articles/index.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/articles/surveycore-vs-survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/authors.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/index.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/news/index.html</loc></url>
@@ -15,11 +16,13 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/anes_2024.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.html</loc></url>
-<url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_rep.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_srs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_svydesign.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/clean.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/dot-get_design_vars_flat.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_question_preface.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_val_labels.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_var_label.html</loc></url>
@@ -52,6 +55,8 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_base.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_calibrated.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_data.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/survey_glm.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_metadata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_replicate.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_srs.html</loc></url>

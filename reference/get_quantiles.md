@@ -134,6 +134,7 @@ position measures. *Journal of the American Statistical Association*,
 ## See also
 
 Other analysis:
+[`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),

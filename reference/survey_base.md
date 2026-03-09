@@ -5,7 +5,7 @@ All survey design objects (`survey_srs`, `survey_taylor`,
 `survey_base`. This class is abstract and cannot be instantiated
 directly — use
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-[`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
 or
 [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)

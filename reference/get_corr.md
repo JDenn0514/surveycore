@@ -161,6 +161,7 @@ Use `meta(result)` to access design type, variable labels, and `method`
 ## See also
 
 Other analysis:
+[`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),

@@ -110,6 +110,7 @@ The variable name (or `NULL` for no-variable mode) is in
 ## See also
 
 Other analysis:
+[`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
@@ -120,7 +121,7 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey_rep(acs_pums_wy, weights = pwgtp,
+d <- as_survey_repweights(acs_pums_wy, weights = pwgtp,
                    repweights = pwgtp1:pwgtp80,
                    type = "successive-difference")
 

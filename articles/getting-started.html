@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,7 +99,7 @@ variance and bias from the survey design.</p>
 constructors:</p>
 <ol style="list-style-type: decimal">
 <li><p><code><a href="../reference/as_survey.html">as_survey()</a></code></p></li>
-<li><p><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></p></li>
+<li><p><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code></p></li>
@@ -151,14 +151,14 @@ strata, and design weights.</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   attend &lt;dbl&gt;, relig &lt;dbl&gt;</span></span></span></code></pre>
 </div>
 <div class="section level3">
-<h3 id="as_survey_rep">
-<code>as_survey_rep()</code><a class="anchor" aria-label="anchor" href="#as_survey_rep"></a>
+<h3 id="as_survey_repweights">
+<code>as_survey_repweights()</code><a class="anchor" aria-label="anchor" href="#as_survey_repweights"></a>
 </h3>
 <p>Use this when the data you have comes with pre-built replicate weight
 columns like <code>repwt_1</code>, <code>repwt_2</code>. For example,
 Pew’s Jewish American study from 2020 uses replicate weights.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>

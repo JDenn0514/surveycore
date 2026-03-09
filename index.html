@@ -32,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,7 @@
 <strong>S7 survey objects</strong>: <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>
 </li>
 <li>
-<strong>Constructors</strong>: <code><a href="reference/as_survey.html">as_survey()</a></code>, <code><a href="reference/as_survey_rep.html">as_survey_rep()</a></code>, <code><a href="reference/as_survey_twophase.html">as_survey_twophase()</a></code>
+<strong>Constructors</strong>: <code><a href="reference/as_survey.html">as_survey()</a></code>, <code>as_survey_rep()</code>, <code><a href="reference/as_survey_twophase.html">as_survey_twophase()</a></code>
 </li>
 <li>
 <strong>Metadata system</strong>: <code><a href="reference/set_var_label.html">set_var_label()</a></code>, <code><a href="reference/set_val_labels.html">set_val_labels()</a></code>, <code><a href="reference/extract_var_label.html">extract_var_label()</a></code>, <code><a href="reference/extract_val_labels.html">extract_val_labels()</a></code> — with automatic haven attribute import</li>
@@ -166,7 +166,7 @@
 <span>  rep4 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">d_rep</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
+<span><span class="va">d_rep</span> <span class="op">&lt;-</span> <span class="fu">as_survey_rep</span><span class="op">(</span></span>
 <span>  <span class="va">df_rep</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">wt</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"rep"</span><span class="op">)</span>,</span>

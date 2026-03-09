@@ -426,10 +426,10 @@ U.S. Census Bureau. 2022 ACS 1-Year PUMS.
 ## Details
 
 **Survey design:** Successive difference replication (SDR). Use
-[`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
 with all 80 replicate weights:
 
-    svy <- as_survey_rep(
+    svy <- as_survey_repweights(
       acs_pums_wy,
       weights    = pwgtp,
       repweights = pwgtp1:pwgtp80,

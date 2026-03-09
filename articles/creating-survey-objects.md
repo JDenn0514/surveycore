@@ -44,7 +44,7 @@ Read the first row that matches your data.
 | My data…                                                             | Constructor                                                                                          | Why                                             |
 |----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|-------------------------------------------------|
 | Has cluster IDs, strata, and/or design weights                       | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Taylor series linearization — the general case  |
-| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …)  | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | Uses the agency-supplied variance replicates    |
+| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …)  | [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | Uses the agency-supplied variance replicates    |
 | Is a pure SRS — equal probability, no clustering, no strata          | [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)               | Simpler estimator for equal-probability samples |
 | Is a non-probability panel or opt-in sample with calibration weights | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Calibrated design; SEs are approximate          |
 | Was sampled in two stages with an expensive Phase 2 measurement      | [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)     | Two-phase variance accounting for both stages   |
@@ -57,10 +57,10 @@ Read the first row that matches your data.
 | ANES                                | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified cluster, Taylor series                          |
 | GSS                                 | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified multi-stage cluster                             |
 | Pew NPORS                           | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                       | Stratified address-based sample (no PSU)                   |
-| ACS PUMS (1-year)                   | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 80 successive-difference replicate weights                 |
-| Pew Jewish Americans 2020           | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | 100 JK1 jackknife replicate weights                        |
-| BRFSS                               | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | Bootstrap replicate weights                                |
-| NAEP / PISA                         | [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)               | JK2 jackknife replicate weights                            |
+| ACS PUMS (1-year)                   | [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | 80 successive-difference replicate weights                 |
+| Pew Jewish Americans 2020           | [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | 100 JK1 jackknife replicate weights                        |
+| BRFSS                               | [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | Bootstrap replicate weights                                |
+| NAEP / PISA                         | [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | JK2 jackknife replicate weights                            |
 | Nationscape (Democracy Fund + UCLA) | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Non-probability quota panel; ACS-calibrated raking weights |
 | Opt-in online panels                | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) | Non-probability; vendor-supplied raking weights            |
 
@@ -321,10 +321,10 @@ svy_npors <- as_survey(
 
 ------------------------------------------------------------------------
 
-## 3. `as_survey_rep()` — Replicate Weight Designs
+## 3. `as_survey_repweights()` — Replicate Weight Designs
 
 Use
-[`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
 when your data provider has supplied pre-computed replicate weight
 columns — columns like `repwt_1`, `repwt_2`, …, or `pwgtp1`–`pwgtp80`.
 Replicate-based variance estimation works by repeatedly re-estimating
@@ -373,7 +373,7 @@ report ([U.S. Census Bureau 2022](#ref-census2022)):
 | `pwgtp1`–`pwgtp80` | Successive-difference replicate weights (80 replicates) | `repweights` |
 
 ``` r
-svy_acs <- as_survey_rep(
+svy_acs <- as_survey_repweights(
   acs_pums_wy,
   weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
@@ -424,7 +424,7 @@ full-sample weight:
 | `extweight1`–`extweight100` | JK1 jackknife replicate weights (100 replicates) | `repweights` |
 
 ``` r
-svy_jewish <- as_survey_rep(
+svy_jewish <- as_survey_repweights(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,
@@ -939,12 +939,12 @@ and
 [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
 — differ in one fundamental way: *where the weights come from*.
 
-|                         | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) / [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md) | [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| Weight source           | Sampling protocol (1/π_i)                                                                                                                                               | Equal-probability selection                                                            | Post-hoc adjustment                                                                                  |
-| Selection probabilities | Known and controlled                                                                                                                                                    | Known; equal for all units                                                             | Unknown or overridden by calibration                                                                 |
-| Weight values           | Vary across respondents                                                                                                                                                 | Same for all respondents                                                               | Vary (reflect adjustment, not design)                                                                |
-| Variance estimator      | Design-based (exact)                                                                                                                                                    | Design-based (exact)                                                                   | Approximate                                                                                          |
+|                         | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) / [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) | [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| Weight source           | Sampling protocol (1/π_i)                                                                                                                                                             | Equal-probability selection                                                            | Post-hoc adjustment                                                                                  |
+| Selection probabilities | Known and controlled                                                                                                                                                                  | Known; equal for all units                                                             | Unknown or overridden by calibration                                                                 |
+| Weight values           | Vary across respondents                                                                                                                                                               | Same for all respondents                                                               | Vary (reflect adjustment, not design)                                                                |
+| Variance estimator      | Design-based (exact)                                                                                                                                                                  | Design-based (exact)                                                                   | Approximate                                                                                          |
 
 In
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
@@ -1009,12 +1009,12 @@ representative of all students at the school.
 
 ### 8.2 General decision rule
 
-| Design                                                  | Appropriate tool                                                                                                                                                                                                                                               | Notes                                |
-|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| Probability sample with design weights                  | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md), [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) | Exact variance                       |
-| Any sample with calibration/raking/PSW/matching weights | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)                                                                                                                                                           | Approximate variance                 |
-| Voluntary response or convenience sample, no weights    | [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) with `weights = 1`                                                                                                                                                      | Conditional inference only; disclose |
-| Causal inference (treatment effect estimation)          | Not surveycore                                                                                                                                                                                                                                                 | Use MatchIt, WeightIt, lme4, etc.    |
+| Design                                                  | Appropriate tool                                                                                                                                                                                                                                                             | Notes                                |
+|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| Probability sample with design weights                  | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md), [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) | Exact variance                       |
+| Any sample with calibration/raking/PSW/matching weights | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)                                                                                                                                                                         | Approximate variance                 |
+| Voluntary response or convenience sample, no weights    | [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) with `weights = 1`                                                                                                                                                                    | Conditional inference only; disclose |
+| Causal inference (treatment effect estimation)          | Not surveycore                                                                                                                                                                                                                                                               | Use MatchIt, WeightIt, lme4, etc.    |
 
 When you use
 [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
@@ -1031,17 +1031,17 @@ can be independently defended as representative.
 A lookup table for common codebook terms and how they map to constructor
 arguments:
 
-| Codebook term                                                  | Maps to                                                                                                                                                                                         | Notes                                                                                      |
-|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| “sampling weight”, “survey weight”, “person weight”            | `weights =`                                                                                                                                                                                     |                                                                                            |
-| “PSU”, “primary sampling unit”, “cluster ID”                   | `ids =`                                                                                                                                                                                         |                                                                                            |
-| “stratum”, “design stratum”, “sampling stratum”                | `strata =`                                                                                                                                                                                      |                                                                                            |
-| “FPC”, “finite population correction”, “population size”       | `fpc =`                                                                                                                                                                                         |                                                                                            |
-| “replicate weights”, “bootstrap weights”, “BRR weights”        | `repweights =`                                                                                                                                                                                  | Use [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md) |
-| “base weight”, “design weight” (with separate replicates)      | `weights =` in [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)                                                                                           |                                                                                            |
-| “Fay coefficient”, “Fay factor”, “epsilon”                     | `fay_rho =`                                                                                                                                                                                     | With `type = "Fay"`                                                                        |
-| “raking weights”, “post-stratification weights”, “cal weights” | `weights =` in [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)                                                                             | Non-probability design                                                                     |
-| “two-phase”, “double sampling”, “case-cohort”                  | Phase 1 → [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), then [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) |                                                                                            |
+| Codebook term                                                  | Maps to                                                                                                                                                                                         | Notes                                                                                                    |
+|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| “sampling weight”, “survey weight”, “person weight”            | `weights =`                                                                                                                                                                                     |                                                                                                          |
+| “PSU”, “primary sampling unit”, “cluster ID”                   | `ids =`                                                                                                                                                                                         |                                                                                                          |
+| “stratum”, “design stratum”, “sampling stratum”                | `strata =`                                                                                                                                                                                      |                                                                                                          |
+| “FPC”, “finite population correction”, “population size”       | `fpc =`                                                                                                                                                                                         |                                                                                                          |
+| “replicate weights”, “bootstrap weights”, “BRR weights”        | `repweights =`                                                                                                                                                                                  | Use [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md) |
+| “base weight”, “design weight” (with separate replicates)      | `weights =` in [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)                                                                             |                                                                                                          |
+| “Fay coefficient”, “Fay factor”, “epsilon”                     | `fay_rho =`                                                                                                                                                                                     | With `type = "Fay"`                                                                                      |
+| “raking weights”, “post-stratification weights”, “cal weights” | `weights =` in [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)                                                                             | Non-probability design                                                                                   |
+| “two-phase”, “double sampling”, “case-cohort”                  | Phase 1 → [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), then [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) |                                                                                                          |
 
 ------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,7 @@
 </tr><tr class="odd"><td>Phase 1 — Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
 <td>✅ Complete</td>
 <td>Core functions on main (v0.3.0); nested <code>.meta</code> + group label refactor merged to develop (PR #22–23)</td>
-</tr><tr class="even"><td>Phase 2 — Regression (<code>survey_glm_fit</code>, <code>survey_glm()</code>)</td>
+</tr><tr class="even"><td>Phase 2 — Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
 <td>🔜 Next</td>
 <td>See <code>plans/phase-2-glm-formal-specification.md</code>
 </td>
@@ -65,7 +65,7 @@
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
 <ul><li>S7 classes: <code>survey_base</code>, <code>survey_srs</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_calibrated</code>
 </li>
-<li>GLM fit class: <code>survey_glm_fit</code> (constructor function is <code>survey_glm()</code>)</li>
+<li>GLM fit class: <code>survey_glm_fit</code> (constructor function is <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</li>
 <li>Result classes: <code>survey_mean</code>, <code>survey_total</code>, <code>survey_freq</code>, etc. (S3 built on tibble)</li>
 </ul></div>
 <div class="section level2">

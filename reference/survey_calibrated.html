@@ -11,7 +11,7 @@ as_survey_calibrated()."><meta property="og:image" content="https://jdenn0514.gi
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,7 +110,7 @@ each replicate — will be implemented in Phase 2.5 alongside the
     <h2 id="non-probability-samples">Non-probability samples<a class="anchor" aria-label="anchor" href="#non-probability-samples"></a></h2>
 
 
-<p>Unlike <code><a href="as_survey.html">as_survey()</a></code>, <code><a href="as_survey_rep.html">as_survey_rep()</a></code>, and <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>, this
+<p>Unlike <code><a href="as_survey.html">as_survey()</a></code>, <code><a href="as_survey_repweights.html">as_survey_repweights()</a></code>, and <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>, this
 class does <strong>not</strong> assume a probability sampling design. Standard errors
 produced from a <code>survey_calibrated</code> object rest on a model-assisted SRS
 assumption, which is consistent with common practice for calibrated
@@ -145,10 +145,12 @@ trimming cap, effective sample size before and after, and design effect.
 <p>Other constructors:
 <code><a href="as_survey.html">as_survey()</a></code>,
 <code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>,
-<code><a href="as_survey_rep.html">as_survey_rep()</a></code>,
+<code><a href="as_survey_repweights.html">as_survey_repweights()</a></code>,
 <code><a href="as_survey_srs.html">as_survey_srs()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
 <code><a href="survey_data.html">survey_data()</a></code>,
+<code><a href="survey_glm.html">survey_glm()</a></code>,
+<code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
 <code><a href="survey_replicate.html">survey_replicate()</a></code>,
 <code><a href="survey_srs.html">survey_srs()</a></code>,
 <code><a href="survey_taylor.html">survey_taylor()</a></code>,

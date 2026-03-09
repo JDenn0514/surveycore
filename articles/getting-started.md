@@ -40,7 +40,7 @@ variance and bias from the survey design.
 
 1.  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 
-2.  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+2.  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
 
 3.  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
 
@@ -104,14 +104,14 @@ gss_svy
     #> #   happy <dbl>, health <dbl>, trust <dbl>, natfare <dbl>, abany <dbl>,
     #> #   attend <dbl>, relig <dbl>
 
-### `as_survey_rep()`
+### `as_survey_repweights()`
 
 Use this when the data you have comes with pre-built replicate weight
 columns like `repwt_1`, `repwt_2`. For example, Pew’s Jewish American
 study from 2020 uses replicate weights.
 
 ``` r
-pew_jewish_svy <- as_survey_rep(
+pew_jewish_svy <- as_survey_repweights(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,

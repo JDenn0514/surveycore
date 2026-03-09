@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -120,7 +120,7 @@ are covered in <code>vignette("estimation")</code>.</p>
 <tr class="even">
 <td>Comes with pre-built replicate weight columns (repwt_1, repwt_2,
 …)</td>
-<td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
+<td><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></td>
 <td>Uses the agency-supplied variance replicates</td>
 </tr>
 <tr class="odd">
@@ -178,22 +178,22 @@ weights</td>
 </tr>
 <tr class="odd">
 <td>ACS PUMS (1-year)</td>
-<td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
+<td><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></td>
 <td>80 successive-difference replicate weights</td>
 </tr>
 <tr class="even">
 <td>Pew Jewish Americans 2020</td>
-<td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
+<td><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></td>
 <td>100 JK1 jackknife replicate weights</td>
 </tr>
 <tr class="odd">
 <td>BRFSS</td>
-<td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
+<td><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></td>
 <td>Bootstrap replicate weights</td>
 </tr>
 <tr class="even">
 <td>NAEP / PISA</td>
-<td><code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code></td>
+<td><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></td>
 <td>JK2 jackknife replicate weights</td>
 </tr>
 <tr class="odd">
@@ -577,10 +577,11 @@ variable. Omit <code>ids</code>:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="sec-rep">3. <code>as_survey_rep()</code> — Replicate Weight Designs<a class="anchor" aria-label="anchor" href="#sec-rep"></a>
+<h2 id="sec-rep">3. <code>as_survey_repweights()</code> — Replicate Weight
+Designs<a class="anchor" aria-label="anchor" href="#sec-rep"></a>
 </h2>
-<p>Use <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code> when your data provider has supplied
-pre-computed replicate weight columns — columns like
+<p>Use <code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code> when your data provider has
+supplied pre-computed replicate weight columns — columns like
 <code>repwt_1</code>, <code>repwt_2</code>, …, or
 <code>pwgtp1</code>–<code>pwgtp80</code>. Replicate-based variance
 estimation works by repeatedly re-estimating the target statistic under
@@ -703,7 +704,7 @@ Methodology report <span class="citation">(<a href="#ref-census2022">U.S. Census
 </tbody>
 </table>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">svy_acs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">svy_acs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
 <span>  <span class="va">acs_pums_wy</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">pwgtp</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span>
@@ -768,7 +769,7 @@ the full-sample weight:</p>
 </tbody>
 </table>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">svy_jewish</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_rep.html">as_survey_rep</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">svy_jewish</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
@@ -1345,7 +1346,7 @@ distinction<a class="anchor" aria-label="anchor" href="#sec-weight-types"></a>
 <thead><tr class="header">
 <th></th>
 <th>
-<code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>
+<code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code>
 </th>
 <th><code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code></th>
 <th><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></th>
@@ -1445,7 +1446,7 @@ as representative of all students at the school.</p>
 <tr class="odd">
 <td>Probability sample with design weights</td>
 <td>
-<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>,
+<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code>,
 <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>
 </td>
 <td>Exact variance</td>
@@ -1518,13 +1519,13 @@ constructor arguments:</p>
 <tr class="odd">
 <td>“replicate weights”, “bootstrap weights”, “BRR weights”</td>
 <td><code>repweights =</code></td>
-<td>Use <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>
+<td>Use <code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code>
 </td>
 </tr>
 <tr class="even">
 <td>“base weight”, “design weight” (with separate replicates)</td>
 <td>
-<code>weights =</code> in <code><a href="../reference/as_survey_rep.html">as_survey_rep()</a></code>
+<code>weights =</code> in <code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code>
 </td>
 <td></td>
 </tr>

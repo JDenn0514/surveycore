@@ -79,7 +79,7 @@ with weights only).
 
 Unlike
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-[`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
 and
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
 this class does **not** assume a probability sampling design. Standard
@@ -115,10 +115,12 @@ to create a `survey_calibrated` object.
 Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md),
-[`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
 [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
+[`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
+[`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
 [`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),

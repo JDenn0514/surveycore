@@ -31,7 +31,7 @@ pak::pak("JDenn0514/surveycore")
   `survey_twophase`
 - **Constructors**:
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+  `as_survey_rep()`,
   [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
 - **Metadata system**:
   [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),

@@ -9,7 +9,7 @@ interface — bare column names, no formula syntax.
   : Create a Taylor Series Linearization Survey Design
 - [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
   : Create a Simple Random Sample Survey Design
-- [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+- [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
   : Create a Replicate Weights Survey Design
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
   : Create a Two-Phase Survey Design
@@ -37,6 +37,18 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Quantiles
 - [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
   : Survey-Weighted Ratio Estimation
+
+## Regression
+
+Survey-weighted generalised linear models with Binder (1983) sandwich
+variance estimation.
+
+- [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  : Fit a Survey-Weighted Generalised Linear Model
+- [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md)
+  : Survey-Weighted GLM Fit Object
+- [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md)
+  : Tidy a Survey GLM Fit
 
 ## Metadata — setters
 
@@ -121,6 +133,8 @@ Internal helpers exported for use in extension packages.
   : Access the Data Component of a Survey Design Object
 - [`SURVEYCORE_DOMAIN_COL`](https://jdenn0514.github.io/surveycore/reference/SURVEYCORE_DOMAIN_COL.md)
   : Internal Domain Column Name Constant
+- [`.get_design_vars_flat()`](https://jdenn0514.github.io/surveycore/reference/dot-get_design_vars_flat.md)
+  : Get design variable column names
 
 ## Example datasets
 

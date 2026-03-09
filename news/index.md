@@ -1,5 +1,64 @@
 # Changelog
 
+## surveycore 0.4.0
+
+### New features
+
+- [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  fits survey-weighted generalized linear models for all five design
+  classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
+  `survey_twophase`, `survey_calibrated`); returns a `survey_glm_fit`
+  object with design-based (Binder 1983 sandwich) standard errors and
+  degrees of freedom.
+
+- [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md)
+  converts a `survey_glm_fit` to a tidy `survey_glm_tidy` tibble with
+  one row per coefficient, design-based confidence intervals, structured
+  metadata, and optional reference rows for factor predictors.
+
+- `survey_glm_fit` objects support 20 S3 methods:
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`coef()`](https://rdrr.io/r/stats/coef.html),
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html),
+  [`predict()`](https://rdrr.io/r/stats/predict.html),
+  [`fitted()`](https://rdrr.io/r/stats/fitted.values.html),
+  [`residuals()`](https://rdrr.io/r/stats/residuals.html),
+  [`confint()`](https://rdrr.io/r/stats/confint.html),
+  [`formula()`](https://rdrr.io/r/stats/formula.html),
+  [`terms()`](https://rdrr.io/r/stats/terms.html),
+  [`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html),
+  [`model.frame()`](https://rdrr.io/r/stats/model.frame.html),
+  [`deviance()`](https://rdrr.io/r/stats/deviance.html),
+  [`df.residual()`](https://rdrr.io/r/stats/df.residual.html),
+  [`nobs()`](https://rdrr.io/r/stats/nobs.html),
+  [`hatvalues()`](https://rdrr.io/r/stats/influence.measures.html),
+  [`logLik()`](https://rdrr.io/r/stats/logLik.html),
+  [`AIC()`](https://rdrr.io/r/stats/AIC.html),
+  [`BIC()`](https://rdrr.io/r/stats/AIC.html), and
+  [`update()`](https://rdrr.io/r/stats/update.html).
+
+- `survey_glm_fit` integrates with the `marginaleffects` package; when
+  `marginaleffects` is installed, `avg_slopes()`, `avg_predictions()`,
+  and the full marginaleffects API work directly on `survey_glm_fit`
+  objects.
+
+- [`broom::tidy()`](https://generics.r-lib.org/reference/tidy.html) is
+  supported for `survey_glm_fit` objects via a shim that delegates to
+  [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md).
+
+- `as_survey_rep()` has been renamed to
+  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+  to avoid a namespace clash with the `srvyr` package.
+
+### Bug fixes
+
+- [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  variance estimation (`method = "approx"` and `"full"`) now uses the
+  correct PSU-level Phase 2 stratum sampling fraction instead of a
+  row-level fraction, resolving an approximately 2× variance
+  underestimation.
+
 ## surveycore 0.3.3
 
 ### New features
@@ -69,7 +128,7 @@
   returns the weighting history stored in a survey design object’s
   metadata;
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-  [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md),
+  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
   and
   [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
   now promote `"weighting_history"` attributes from the input data frame
@@ -102,7 +161,7 @@
   `weights`, `strata`, `fpc`, `probs`); supports Taylor linearization
   for stratified, clustered, and SRS designs.
 
-- [`as_survey_rep()`](https://jdenn0514.github.io/surveycore/reference/as_survey_rep.md)
+- [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
   creates `survey_replicate` objects; supports BRR, Fay BRR, JK1, JK2,
   JKn, bootstrap, ACS, and successive-difference replicate schemes.
 
