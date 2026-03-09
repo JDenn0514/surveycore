@@ -36,6 +36,7 @@ articles:
     contents:
       - getting-started
       - creating-survey-objects
+      - surveycore-vs-survey
 
 reference:
   - title: "Survey design constructors"
@@ -123,6 +124,7 @@ reference:
     contents:
       - survey_data
       - SURVEYCORE_DOMAIN_COL
+      - .get_design_vars_flat
 
   - title: "Example datasets"
     desc: >
