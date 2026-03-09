@@ -207,15 +207,15 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # ── Internal design-variable helpers ─────────────────────────────────────────
 
-# Return a flat character vector of all design-variable column names.
-# NULL entries are dropped by c(). Unique names are returned.
-# Works for all five survey types: survey_taylor, survey_replicate,
-# survey_twophase, survey_calibrated, and survey_srs.
-# Used by conversion methods (05-methods-conversion.R), variance
-# estimation (06-variance-dispatch.R), and surveytidy verbs.
-# Exported (with @export) so surveytidy can call surveycore::.get_design_vars_flat()
-# without needing :::. The . prefix is intentional — this is not part of
-# the public user-facing API.
+#' Get design variable column names
+#'
+#' Returns a flat character vector of all design-variable column names
+#' (ids, weights, strata, fpc) for any survey design class. `NULL` entries
+#' are dropped; names are unique. Exported for use by extension packages
+#' (e.g., `surveytidy`); not intended for end users.
+#'
+#' @param design A survey design object (`survey_base` subclass).
+#' @return A character vector of column names.
 #' @keywords internal
 #' @export
 .get_design_vars_flat <- function(design) {
