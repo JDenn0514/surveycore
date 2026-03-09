@@ -140,7 +140,7 @@ get_freqs <- function(
   var_names  <- .resolve_tidy_select(x_quo, design@data)
   group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)   # logical, full length
-  degf        <- .degf(design)
+  degf        <- Inf  # Normal approximation; matches survey::svymean() default
 
   n_vars   <- length(var_names)
   is_multi <- n_vars >= 2L

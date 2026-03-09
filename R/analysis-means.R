@@ -124,7 +124,7 @@ get_means <- function(
 
   group_vars  <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf        <- .degf(design)
+  degf        <- Inf  # Normal approximation; matches survey::svymean() default
 
   # ── Step 3: Single-level warning for group variables ─────────────────────────
   if (length(group_vars) > 0L) {
