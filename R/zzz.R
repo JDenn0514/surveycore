@@ -65,5 +65,31 @@
                      tidy.survey_glm_fit,
                      envir = asNamespace("broom"))
   }
+
+  # Phase 2: marginaleffects extension (conditional)
+  if (requireNamespace("marginaleffects", quietly = TRUE)) {
+    registerS3method("get_coef",    "surveycore::survey_glm_fit",
+                     get_coef.survey_glm_fit,
+                     envir = asNamespace("marginaleffects"))
+    registerS3method("set_coef",    "surveycore::survey_glm_fit",
+                     set_coef.survey_glm_fit,
+                     envir = asNamespace("marginaleffects"))
+    registerS3method("get_vcov",    "surveycore::survey_glm_fit",
+                     get_vcov.survey_glm_fit,
+                     envir = asNamespace("marginaleffects"))
+    registerS3method("get_predict", "surveycore::survey_glm_fit",
+                     get_predict.survey_glm_fit,
+                     envir = asNamespace("marginaleffects"))
+    # Register class in marginaleffects supported-class list.
+    # marginaleffects ≥ 0.25 requires classes to be listed in
+    # getOption("marginaleffects_model_classes") in addition to implementing
+    # the extension interface methods. Without this, avg_slopes() / avg_predictions()
+    # reject the model with "class not supported". Existing entries are preserved.
+    existing <- getOption("marginaleffects_model_classes", default = NULL)
+    if (!"surveycore::survey_glm_fit" %in% existing) {
+      options(marginaleffects_model_classes =
+                c(existing, "surveycore::survey_glm_fit"))
+    }
+  }
 }
 # nocov end
