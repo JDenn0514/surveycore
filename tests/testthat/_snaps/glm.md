@@ -117,3 +117,21 @@
       x 1 column in the model has NA values with `na.action = na.fail`: y1 (1 NA).
       v Set `na.action = na.omit` to drop rows with NA, or remove them manually before calling `survey_glm()`.
 
+# clean() rejects non-survey_glm_fit input with typed error
+
+    Code
+      clean(list(x = 1))
+    Condition
+      Error in `clean()`:
+      x `model` must be a <survey_glm_fit> object, not <list>.
+      v Create a model with `survey_glm()`.
+
+# clean() rejects invalid conf_level with typed error
+
+    Code
+      clean(fit, conf_level = 1.5)
+    Condition
+      Error in `clean()`:
+      x `conf_level` must be a single number in (0, 1).
+      i Got 1.5.
+

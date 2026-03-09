@@ -592,3 +592,20 @@ test_that("update(fit, family = poisson()) returns new survey_glm_fit with Poiss
   expect_true(S7::S7_inherits(fit_pois, survey_glm_fit))
   expect_identical(fit_pois@family$family, "poisson")
 })
+
+# ---------------------------------------------------------------------------
+# Item 17: clean() happy path (added in PR 4 — feature/glm-clean)
+# ---------------------------------------------------------------------------
+
+test_that("print(clean(fit)) snapshot matches expected format and class is correct", {
+  d      <- .glm_taylor()
+  fit    <- survey_glm(d, y1 ~ y2)
+  result <- clean(fit)
+  # Class hierarchy
+  expect_identical(class(result), c("survey_glm_tidy", "survey_result",
+                                    "tbl_df", "tbl", "data.frame"))
+  # Invariants
+  test_glm_tidy_invariants(result)
+  # Print snapshot — inherits print.survey_result() from Phase 1
+  expect_snapshot(print(result))
+})

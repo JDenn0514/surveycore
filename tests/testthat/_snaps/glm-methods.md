@@ -170,3 +170,16 @@
       x The internal fit_ slot is NULL. This can happen after serialization.
       v Refit the model to restore prediction support.
 
+# print(clean(fit)) snapshot matches expected format and class is correct
+
+    Code
+      print(result)
+    Output
+      # A <survey_glm_tidy> [2 × 11]
+      # A tibble: 2 x 11
+        term       variable var_label label reference_row estimate std_error statistic
+      * <chr>      <chr>    <chr>     <chr> <lgl>            <dbl>     <dbl>     <dbl>
+      1 (Intercep~ (Interc~ <NA>      (Int~ FALSE          5.04e+1     0.633   7.95e+1
+      2 y2         y2       y2        y2    FALSE          4.67e-5     0.837   5.59e-5
+      # i 3 more variables: p_value <dbl>, conf_low <dbl>, conf_high <dbl>
+
