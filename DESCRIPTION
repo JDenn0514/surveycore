@@ -36,6 +36,7 @@ Suggests:
     haven (>= 2.5.0),
     dplyr (>= 1.1.0),
     lifecycle (>= 1.0.0),
+    broom (>= 1.0.0),
     covr,
     knitr,
     rmarkdown

@@ -58,5 +58,12 @@
                    update.survey_glm_fit,        envir = asNamespace("stats"))
   registerS3method("getCall",      "surveycore::survey_glm_fit",
                    getCall.survey_glm_fit,       envir = asNamespace("stats"))
+
+  # Phase 2: broom compatibility (conditional)
+  if (requireNamespace("broom", quietly = TRUE)) {
+    registerS3method("tidy", "surveycore::survey_glm_fit",
+                     tidy.survey_glm_fit,
+                     envir = asNamespace("broom"))
+  }
 }
 # nocov end
