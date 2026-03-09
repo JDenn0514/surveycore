@@ -24,7 +24,7 @@ tests.
 ## PR Map
 
 - [x] PR 1: `chore/glm-pre-implementation` — error table + test helper infrastructure
-- [ ] PR 2: `feature/glm-core` — `survey_glm_fit` S7 class + `survey_glm()` + variance engine
+- [x] PR 2: `feature/glm-core` — `survey_glm_fit` S7 class + `survey_glm()` + variance engine
 - [ ] PR 3: `feature/glm-methods` — 20 S3 methods + `survey_glm_summary`
 - [ ] PR 4: `feature/glm-clean` — `clean()` + `broom::tidy()` shim
 - [ ] PR 5: `feature/glm-marginaleffects` — marginaleffects extension interface

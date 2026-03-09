@@ -62,6 +62,14 @@ reference:
       - get_quantiles
       - get_ratios
 
+  - title: "Regression"
+    desc: >
+      Survey-weighted generalised linear models with Binder (1983)
+      sandwich variance estimation.
+    contents:
+      - survey_glm
+      - survey_glm_fit
+
   - title: "Metadata — setters"
     desc: >
       Assign variable labels, value labels, question prefaces, and notes.

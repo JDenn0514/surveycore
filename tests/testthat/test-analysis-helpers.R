@@ -615,15 +615,17 @@ test_that('.apply_name_style() renames p_value to p.value for get_corr() output'
 
 # ── Category 8: .degf() ──────────────────────────────────────────────────────
 
-test_that(".degf() returns Inf for survey_taylor (normal approximation CI)", {
+test_that(".degf() returns design-based finite df for survey_taylor", {
+  # 10 PSUs across 2 strata → degf = 10 - 2 = 8
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
   d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   test_invariants(d)
 
-  expect_equal(.degf(d), Inf)
+  expect_equal(.degf(d), 8L)
 })
 
-test_that(".degf() returns Inf for survey_replicate (normal approximation CI)", {
+test_that(".degf() returns design-based finite df for survey_replicate", {
+  # BRR with 5 repweights → degf = 5 - 1 = 4
   df <- make_survey_data(
     n = 100L, n_psu = 10L, n_strata = 2L,
     design = "replicate", type = "brr", seed = 11L
@@ -637,10 +639,11 @@ test_that(".degf() returns Inf for survey_replicate (normal approximation CI)", 
   )
   test_invariants(d)
 
-  expect_equal(.degf(d), Inf)
+  expect_equal(.degf(d), length(repwt_cols) - 1L)
 })
 
-test_that(".degf() returns Inf for survey_twophase (normal approximation CI)", {
+test_that(".degf() returns design-based finite df for survey_twophase", {
+  # Phase 1 is the same Taylor design → same degf as phase1
   df <- make_survey_data(
     n = 100L, n_psu = 10L, n_strata = 2L,
     design = "twophase", seed = 12L
@@ -648,27 +651,32 @@ test_that(".degf() returns Inf for survey_twophase (normal approximation CI)", {
   phase1   <- as_survey(
     df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
   )
-  twophase <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  twophase <- suppressWarnings(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
   test_invariants(twophase)
 
-  expect_equal(.degf(twophase), Inf)
-  expect_equal(.degf(phase1),   Inf)
+  expect_equal(.degf(twophase), .degf(phase1))
+  expect_true(is.finite(.degf(phase1)))
+  expect_gte(.degf(phase1), 1L)
 })
 
-test_that(".degf() returns Inf for survey_srs (normal approximation CI)", {
+test_that(".degf() returns design-based finite df for survey_srs", {
+  # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
   d  <- as_survey_srs(df, weights = wt)
   test_invariants(d)
 
-  expect_equal(.degf(d), Inf)
+  expect_equal(.degf(d), nrow(df) - 1L)
 })
 
-test_that(".degf() returns Inf for survey_calibrated (normal approximation CI)", {
+test_that(".degf() returns design-based finite df for survey_calibrated", {
+  # Calibrated with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 14L)
   d  <- as_survey_calibrated(df, weights = wt)
   test_invariants(d)
 
-  expect_equal(.degf(d), Inf)
+  expect_equal(.degf(d), nrow(df) - 1L)
 })
 
 test_that(".degf() throws surveycore_error_unsupported_class for non-design object", {

@@ -169,7 +169,7 @@ get_ratios <- function(
 
   group_vars  <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf        <- .degf(design)
+  degf        <- Inf  # Normal approximation; matches survey::svyratio() default
 
   # Flag for replicate dispatch
   is_replicate <- S7::S7_inherits(design, survey_replicate)

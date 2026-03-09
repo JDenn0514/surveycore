@@ -9,6 +9,38 @@
 # infrastructure and are co-located with their associated validation logic.
 
 
+# ── .glm_confint() ────────────────────────────────────────────────────────────
+#
+# Shared CI helper for survey_glm_fit. Called by both confint.survey_glm_fit()
+# (in glm-methods.R) and clean() (in glm-clean.R). Single implementation
+# guarantees numerical identity between the two callers.
+#
+# Formula: estimate ± qt((1 + level) / 2, df = degf_design - (n_coef - 1)) * se
+#
+# @param estimates   Named numeric vector of coefficient estimates.
+# @param se          Numeric vector of standard errors (same length).
+# @param degf_design Design degrees of freedom (model@degf). Finite value.
+# @param n_coef      Total number of coefficients p = length(estimates).
+# @param level       Confidence level in (0, 1). Validated upstream.
+# @param parm        Character or integer index to subset; NULL = all.
+# @return Two-column numeric matrix with columns "lower" and "upper".
+#' @noRd
+.glm_confint <- function(estimates, se, degf_design, n_coef, level,
+                          parm = NULL) {
+  if (!is.null(parm)) {
+    estimates <- estimates[parm]
+    se        <- se[parm]
+  }
+  df_res <- max(1, degf_design - (n_coef - 1L))
+  half_w <- stats::qt((1 + level) / 2, df = df_res) * se
+  matrix(
+    c(estimates - half_w, estimates + half_w),
+    ncol      = 2L,
+    dimnames  = list(names(estimates), c("lower", "upper"))
+  )
+}
+
+
 # ── Exported accessor ─────────────────────────────────────────────────────────
 
 #' Access the Data Component of a Survey Design Object
