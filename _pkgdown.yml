@@ -69,6 +69,7 @@ reference:
     contents:
       - survey_glm
       - survey_glm_fit
+      - clean
 
   - title: "Metadata — setters"
     desc: >
