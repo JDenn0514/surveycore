@@ -1,3 +1,40 @@
+# surveycore 0.4.0
+
+## New features
+
+* `survey_glm()` fits survey-weighted generalized linear models for all five
+  design classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
+  `survey_twophase`, `survey_calibrated`); returns a `survey_glm_fit` object
+  with design-based (Binder 1983 sandwich) standard errors and degrees of
+  freedom.
+
+* `clean()` converts a `survey_glm_fit` to a tidy `survey_glm_tidy` tibble
+  with one row per coefficient, design-based confidence intervals, structured
+  metadata, and optional reference rows for factor predictors.
+
+* `survey_glm_fit` objects support 20 S3 methods: `print()`, `summary()`,
+  `coef()`, `vcov()`, `predict()`, `fitted()`, `residuals()`, `confint()`,
+  `formula()`, `terms()`, `model.matrix()`, `model.frame()`, `deviance()`,
+  `df.residual()`, `nobs()`, `hatvalues()`, `logLik()`, `AIC()`, `BIC()`, and
+  `update()`.
+
+* `survey_glm_fit` integrates with the `marginaleffects` package; when
+  `marginaleffects` is installed, `avg_slopes()`, `avg_predictions()`, and the
+  full marginaleffects API work directly on `survey_glm_fit` objects.
+
+* `broom::tidy()` is supported for `survey_glm_fit` objects via a shim that
+  delegates to `clean()`.
+
+* `as_survey_rep()` has been renamed to `as_survey_repweights()` to avoid a
+  namespace clash with the `srvyr` package.
+
+## Bug fixes
+
+* `as_survey_twophase()` variance estimation (`method = "approx"` and
+  `"full"`) now uses the correct PSU-level Phase 2 stratum sampling fraction
+  instead of a row-level fraction, resolving an approximately 2× variance
+  underestimation.
+
 # surveycore 0.3.3
 
 ## New features
