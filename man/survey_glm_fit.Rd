@@ -36,7 +36,12 @@ survey_glm_fit(
 
 \item{design}{The original \link{survey_base} survey design object.}
 
-\item{degf}{Design degrees of freedom (positive scalar).}
+\item{degf}{Raw design degrees of freedom (positive scalar): number of
+PSUs minus number of strata for Taylor designs, number of replicates
+minus one for replicate designs, and \code{n - 1} for SRS designs. This is
+\emph{not} the residual degrees of freedom used for t-statistics and confidence
+intervals; those are computed as \code{degf - (p - 1)} where \code{p} is the number
+of model coefficients.}
 
 \item{family}{GLM family object (e.g. \code{gaussian()}, \code{binomial()}).}
 

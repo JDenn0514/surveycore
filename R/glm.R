@@ -31,7 +31,12 @@
 #' @param residuals Working residuals from IRLS, length `n`.
 #' @param weights Survey weights used in fitting, length `n`.
 #' @param design The original [survey_base] survey design object.
-#' @param degf Design degrees of freedom (positive scalar).
+#' @param degf Raw design degrees of freedom (positive scalar): number of
+#'   PSUs minus number of strata for Taylor designs, number of replicates
+#'   minus one for replicate designs, and `n - 1` for SRS designs. This is
+#'   *not* the residual degrees of freedom used for t-statistics and confidence
+#'   intervals; those are computed as `degf - (p - 1)` where `p` is the number
+#'   of model coefficients.
 #' @param family GLM family object (e.g. `gaussian()`, `binomial()`).
 #' @param formula Model formula.
 #' @param null_deviance Null model deviance.
@@ -100,15 +105,23 @@ survey_glm_fit <- S7::new_class(
 # ── .glm_score() ──────────────────────────────────────────────────────────────
 #
 # Compute the per-observation score matrix for the Binder (1983) sandwich.
-# Score for obs i: u_i = w_i * x_i * e_i, where e_i = working residual.
 #
-# Working residuals from the final IRLS step are the correct choice for
-# all GLM families. For Gaussian/identity they equal response residuals;
-# for binomial and Poisson they differ — using response residuals here
-# would produce wrong SEs.
+# The correct Binder score for obs i is:
+#   u_i = survey_wt_i * x_i * (y_i - mu_i)
+#
+# This is computed as fit$weights * working_residual, because:
+#   fit$weights  = survey_wt_i * IRLS_wt_i  (final IRLS weights from stats::glm)
+#   working_resid = (y_i - mu_i) / IRLS_wt_i
+#   product      = survey_wt_i * (y_i - mu_i)  ✓
+#
+# For Gaussian/identity, IRLS_wt = 1 so fit$weights = survey_wt; the score
+# reduces to survey_wt * (y - mu). For binomial logit, IRLS_wt = mu*(1-mu)
+# and working_resid = (y-mu)/(mu*(1-mu)), giving the same correct result.
+# Using survey_wt alone (with working residuals) is wrong for non-Gaussian
+# families because it introduces a spurious 1/IRLS_wt factor.
 #
 # @param fit    A stats::glm() result (fitted model with survey weights).
-# @param design The survey_base design object (for weights).
+# @param design The survey_base design object.
 # @param row_mask Integer or logical vector indexing the rows of design@data
 #   that were used in fitting. NULL means all rows were used.
 # @param domain_mask Logical vector length nrow(design@data). TRUE = in-domain.
@@ -118,11 +131,11 @@ survey_glm_fit <- S7::new_class(
 .glm_score <- function(fit, design, row_mask = NULL, domain_mask = NULL) {
   n_full <- nrow(design@data)
   p      <- length(stats::coef(fit))
-  w_full <- design@data[[design@variables$weights]]
 
-  # Build full-design model matrix (n_full × p), zero for excluded rows
+  # Build full-design score matrix, zero for excluded rows
   mm_full  <- matrix(0.0, nrow = n_full, ncol = p)
   res_full <- numeric(n_full)
+  wt_full  <- numeric(n_full)   # will hold fit$weights at fit rows
 
   if (is.null(row_mask)) {
     row_idx <- seq_len(n_full)
@@ -130,21 +143,54 @@ survey_glm_fit <- S7::new_class(
     row_idx <- row_mask
   }
 
-  mm_fit  <- stats::model.matrix(fit)   # n_fit × p
+  mm_fit  <- stats::model.matrix(fit)          # n_fit × p
   res_fit <- stats::residuals(fit, type = "working")  # n_fit
+  # fit$weights = survey_wt * IRLS_wt_final (final IRLS working weights)
+  wt_fit  <- fit$weights                        # n_fit
 
   mm_full[row_idx, ]  <- mm_fit
   res_full[row_idx]   <- res_fit
+  wt_full[row_idx]    <- wt_fit
 
   # Apply domain mask: out-of-domain contributions are zero
   if (!is.null(domain_mask)) {
     zero_rows              <- !domain_mask
     mm_full[zero_rows, ]   <- 0.0
     res_full[zero_rows]    <- 0.0
+    wt_full[zero_rows]     <- 0.0
   }
 
-  # u_i = w_i * x_i * e_i  (element-wise; broadcasting weight over p cols)
-  mm_full * (w_full * res_full)
+  # u_i = (survey_wt_i * IRLS_wt_i) * x_i * wr_i
+  #      = survey_wt_i * (y_i - mu_i) * x_i   [correct Binder score]
+  mm_full * (wt_full * res_full)
+}
+
+
+# ── .get_glm_weights() ────────────────────────────────────────────────────────
+#
+# Return the full n_full-length weight vector for GLM fitting and score
+# computation.
+#
+# For survey_twophase: calibrated weight = w_ph1 / pi2|1. Non-phase-2 rows
+#   are set to 0 (not NA) so that mm_full * w_full computations in
+#   .glm_score() produce 0 rather than NA for excluded rows.
+# For all other design types: the standard weight column from design@data.
+#
+# @param design A survey design object.
+# @return Numeric vector of length nrow(design@data).
+#' @noRd
+.get_glm_weights <- function(design) {
+  if (S7::S7_inherits(design, survey_twophase)) {
+    data   <- design@data
+    subset <- data[[design@variables$subset]]
+    w_ph1  <- data[[design@variables$phase1$weights]]
+    pi2    <- .compute_phase2_probs(design, subset)
+    cal_wt <- w_ph1 / pi2
+    cal_wt[!subset] <- 0  # non-phase-2 rows contribute zero to scores
+    cal_wt
+  } else {
+    design@data[[design@variables$weights]]
+  }
 }
 
 
@@ -349,13 +395,13 @@ survey_glm_fit <- S7::new_class(
     wr    <- rep_mat[fit_rows, r]
     fit_r <- tryCatch(
       suppressWarnings(
-        stats::glm(
-          formula  = stats::formula(fit),
-          family   = stats::family(fit),
-          data     = fit_data,
-          weights  = wr,
+        do.call(stats::glm, list(
+          formula   = stats::formula(fit),
+          family    = stats::family(fit),
+          data      = fit_data,
+          weights   = wr,
           na.action = stats::na.omit
-        )
+        ))
       ),
       error = function(e) NULL
     )
@@ -392,13 +438,19 @@ survey_glm_fit <- S7::new_class(
 # ── .glm_srs_vcov() ───────────────────────────────────────────────────────────
 #
 # SRS score-based sandwich (also used for survey_calibrated):
-#   meat = N² * (1 - f) / n * var(score_matrix)
+#   meat = (1 - f) * n * S²_u
 #
-# Uses the full p × p sample covariance matrix of the score columns —
-# off-diagonal terms are required when bread is non-diagonal (multiple
-# predictors). Using only the diagonal would produce wrong SEs.
+# where u_i = w_i * x_i * e_i (pre-weighted scores from .glm_score()) and
+# S²_u is the p × p sample covariance matrix of the score rows.  This is the
+# correct SRS sandwich formula because u_i already carries the weight w_i:
+#   Var(Σ u_i) = (N/n)² * N² * (1-f)/n * S²_{unweighted}
+#              = (1-f) * n * S²_u   [substituting S²_{unweighted} = (n/N)² * S²_u]
 #
-# N is approximated from the weight sum when not supplied explicitly via FPC.
+# Uses the full p × p sample covariance matrix — off-diagonal terms are
+# required when bread is non-diagonal (multiple predictors).
+#
+# When no FPC column is specified, f = 0 (infinite population, matching
+# survey::svydesign() with fpc = NULL).
 #
 # @param fit         Full-sample stats::glm() result.
 # @param design      A survey_srs or survey_calibrated object.
@@ -410,9 +462,7 @@ survey_glm_fit <- S7::new_class(
   bread     <- summary(fit)$cov.unscaled
   score_mat <- .glm_score(fit, design, row_mask, domain_mask)
 
-  n_full   <- nrow(design@data)
-  w_full   <- design@data[[design@variables$weights]]
-  N_approx <- sum(w_full)
+  n_full <- nrow(design@data)
 
   # Use only rows that contributed to the fit for variance estimation
   fit_rows <- if (is.null(row_mask)) seq_len(n_full) else row_mask
@@ -421,19 +471,23 @@ survey_glm_fit <- S7::new_class(
   }
   n_fit <- length(fit_rows)
 
-  # Sampling fraction f = n/N
-  vars <- design@variables
+  # Sampling fraction f: from explicit FPC column when present, else 0.
+  # When no FPC is specified the design assumes an infinite population
+  # (matching survey::svydesign() with fpc = NULL).
+  vars    <- design@variables
   fpc_var <- if (S7::S7_inherits(design, survey_srs)) vars$fpc else NULL
-  if (!is.null(fpc_var) && !is.null(fpc_var)) {
+  if (!is.null(fpc_var)) {
     fpc_val <- design@data[[fpc_var]][fit_rows[1L]]
     f <- if (fpc_val > 1) n_fit / fpc_val else fpc_val
   } else {
-    f <- n_fit / N_approx
+    f <- 0
   }
 
-  # p × p sample covariance of score columns (includes off-diagonals)
+  # p × p sample covariance of score columns (includes off-diagonals).
+  # score_used rows = u_i = w_i * x_i * e_i (pre-weighted scores).
+  # SRS sandwich: Var(Σ u_i) = (1-f) * n * S²_u.
   score_used <- score_mat[fit_rows, , drop = FALSE]
-  meat       <- N_approx^2 * (1 - f) / n_fit * stats::var(score_used)
+  meat       <- (1 - f) * n_fit * stats::var(score_used)
 
   .glm_sandwich_vcov(meat, bread)
 }
@@ -714,7 +768,16 @@ survey_glm <- function(
 
   # ── Step 2: Apply domain ───────────────────────────────────────────────────
   domain_mask <- .apply_domain(design)
-  fit_data    <- design@data[domain_mask, , drop = FALSE]
+
+  # For twophase designs, restrict fitting to phase-2 (observed) rows only.
+  # Phase-1-only rows have no outcome or predictor measurements.
+  if (S7::S7_inherits(design, survey_twophase)) {
+    subset_col  <- design@variables$subset
+    subset_mask <- design@data[[subset_col]]
+    domain_mask <- domain_mask & subset_mask
+  }
+
+  fit_data <- design@data[domain_mask, , drop = FALSE]
 
   if (nrow(fit_data) == 0L) {
     cli::cli_abort(
@@ -733,19 +796,25 @@ survey_glm <- function(
   domain_idx <- which(domain_mask)
 
   # ── Step 3: Check weights, apply na.action ─────────────────────────────────
-  wt_var <- design@variables$weights
-  wt_all <- design@data[[wt_var]]
+  wt_all <- .get_glm_weights(design)
+  wt_var <- if (S7::S7_inherits(design, survey_twophase)) {
+    NULL  # calibrated weight, no single column name
+  } else {
+    design@variables$weights
+  }
   wt_fit <- wt_all[domain_idx]
 
   # Check for NA weights
   n_na_wt <- sum(is.na(wt_fit))
   if (n_na_wt > 0L) {
+    msg_na_x <- if (S7::S7_inherits(design, survey_twophase)) {
+      "Calibrated weights contain {n_na_wt} NA value(s)."
+    } else {
+      "Weight column {.field {wt_var}} contains {n_na_wt} NA value(s)."
+    }
     cli::cli_abort(
       c(
-        "x" = paste0(
-          "Weight column {.field {wt_var}} contains ",
-          "{n_na_wt} NA value(s)."
-        ),
+        "x" = msg_na_x,
         "i" = paste0(
           "Survey weights must be fully observed. Remove rows with missing ",
           "weights or impute before calling {.fn survey_glm}."
@@ -762,12 +831,14 @@ survey_glm <- function(
   # safety net for corrupted design objects.
   n_nonpos <- sum(wt_fit <= 0, na.rm = TRUE)
   if (n_nonpos > 0L) {
+    msg_nonpos_x <- if (S7::S7_inherits(design, survey_twophase)) {
+      "Calibrated weights contain {n_nonpos} non-positive value(s)."
+    } else {
+      "Weight column {.field {wt_var}} contains {n_nonpos} non-positive value(s)."
+    }
     cli::cli_warn(
       c(
-        "!" = paste0(
-          "Weight column {.field {wt_var}} contains ",
-          "{n_nonpos} non-positive value(s)."
-        ),
+        "!" = msg_nonpos_x,
         "i" = paste0(
           "Zero-weight rows are excluded from fitting by {.fn stats::glm}. ",
           "Negative weights are statistically invalid."
