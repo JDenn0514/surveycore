@@ -2,7 +2,7 @@
 
 **Filed:** 2026-03-09
 **Priority:** High — affects all Phase 1 analysis functions + GLM for twophase designs
-**Status:** Not started
+**Status:** Fixed — `R/variance-twophase.R` (2026-03-09)
 
 ---
 
