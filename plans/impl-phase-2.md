@@ -27,7 +27,7 @@ tests.
 - [x] PR 2: `feature/glm-core` — `survey_glm_fit` S7 class + `survey_glm()` + variance engine
 - [x] PR 3: `feature/glm-methods` — 20 S3 methods + `survey_glm_summary`
 - [x] PR 4: `feature/glm-clean` — `clean()` + `broom::tidy()` shim
-- [ ] PR 5: `feature/glm-marginaleffects` — marginaleffects extension interface
+- [x] PR 5: `feature/glm-marginaleffects` — marginaleffects extension interface
 - [ ] PR 6: `feature/glm-numerical-tests` — oracle tests vs `survey::svyglm()` (depends on PR 4 + PR 5)
 
 ---
