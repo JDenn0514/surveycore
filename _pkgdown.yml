@@ -45,7 +45,7 @@ reference:
     contents:
       - as_survey
       - as_survey_srs
-      - as_survey_rep
+      - as_survey_repweights
       - as_survey_twophase
       - as_survey_calibrated
       - update_design
