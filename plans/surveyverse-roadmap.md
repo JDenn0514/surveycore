@@ -49,7 +49,7 @@ surveyverse/
 - Analysis functions: `get_freqs()`, `get_means()`, `get_diffs()`, `get_corr()`, `get_totals()`, `get_quantiles()`, `get_ratios()`
 - Regression: `survey_glm()`, `clean()`
 - Crosstabs: `get_crosstab()`
-- Object creation: `as_survey()`, `as_survey_repweights()`, `as_survey_twophase()`,
+- Object creation: `as_survey()`, `as_survey_replicate()`, `as_survey_twophase()`,
   `as_survey_calibrated()` (skeleton in Phase 0; full implementation in Phase 2.5)
 - Conversion utilities: `as_svydesign()`, `as_tbl_svy()`
 
@@ -504,7 +504,7 @@ get_means(svy, x = income, domain = age > 18)
 3. **Object Creation Functions:**
    ```r
    as_survey(data, ids, strata, weights, fpc, nest)
-   as_survey_repweights(data, repweights, weights, type, scale, rscales, rho, mse)
+   as_survey_replicate(data, repweights, weights, type, scale, rscales, rho, mse)
    as_survey_twophase(phase1_design, phase2_design, method)
    ```
 

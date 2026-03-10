@@ -56,30 +56,29 @@
 survey_glm_fit <- S7::new_class(
   "survey_glm_fit",
   properties = list(
-    coefficients  = S7::new_property(S7::class_numeric),
-    vcov          = S7::new_property(S7::class_any),
+    coefficients = S7::new_property(S7::class_numeric),
+    vcov = S7::new_property(S7::class_any),
     fitted_values = S7::new_property(S7::class_numeric),
-    residuals     = S7::new_property(S7::class_numeric),
-    weights       = S7::new_property(S7::class_numeric),
-    design        = S7::new_property(class = survey_base),
-    degf          = S7::new_property(S7::class_numeric),
-    family        = S7::new_property(S7::class_list),
-    formula       = S7::new_property(default = NULL),
+    residuals = S7::new_property(S7::class_numeric),
+    weights = S7::new_property(S7::class_numeric),
+    design = S7::new_property(class = survey_base),
+    degf = S7::new_property(S7::class_numeric),
+    family = S7::new_property(S7::class_list),
+    formula = S7::new_property(default = NULL),
     null_deviance = S7::new_property(S7::class_numeric),
-    deviance      = S7::new_property(S7::class_numeric),
-    df_null       = S7::new_property(S7::class_numeric),
-    df_residual   = S7::new_property(S7::class_numeric),
-    converged     = S7::new_property(S7::class_logical),
-    call          = S7::new_property(default = NULL),
-    fit_          = S7::new_property(default = NULL)
+    deviance = S7::new_property(S7::class_numeric),
+    df_null = S7::new_property(S7::class_numeric),
+    df_residual = S7::new_property(S7::class_numeric),
+    converged = S7::new_property(S7::class_logical),
+    call = S7::new_property(default = NULL),
+    fit_ = S7::new_property(default = NULL)
   ),
   validator = function(self) {
     p <- length(self@coefficients)
     if (p == 0L) {
       "coefficients must be non-empty"
     } else if (!identical(dim(self@vcov), c(p, p))) {
-      paste0("vcov must be ", p, "x", p,
-             " (same dimension as coefficients)")
+      paste0("vcov must be ", p, "x", p, " (same dimension as coefficients)")
     } else if (length(self@fitted_values) == 0L) {
       "fitted_values must be non-empty"
     } else if (length(self@residuals) != length(self@fitted_values)) {
@@ -88,8 +87,10 @@ survey_glm_fit <- S7::new_class(
       "weights and fitted_values must have the same length"
     } else if (length(self@degf) != 1L || self@degf <= 0) {
       "degf must be a single positive number"
-    } else if (!is.null(self@formula) &&
-               !inherits(self@formula, "formula")) {
+    } else if (
+      !is.null(self@formula) &&
+        !inherits(self@formula, "formula")
+    ) {
       "formula must be a formula object or NULL"
     } else {
       NULL
@@ -130,12 +131,12 @@ survey_glm_fit <- S7::new_class(
 #' @noRd
 .glm_score <- function(fit, design, row_mask = NULL, domain_mask = NULL) {
   n_full <- nrow(design@data)
-  p      <- length(stats::coef(fit))
+  p <- length(stats::coef(fit))
 
   # Build full-design score matrix, zero for excluded rows
-  mm_full  <- matrix(0.0, nrow = n_full, ncol = p)
+  mm_full <- matrix(0.0, nrow = n_full, ncol = p)
   res_full <- numeric(n_full)
-  wt_full  <- numeric(n_full)   # will hold fit$weights at fit rows
+  wt_full <- numeric(n_full) # will hold fit$weights at fit rows
 
   if (is.null(row_mask)) {
     row_idx <- seq_len(n_full)
@@ -143,21 +144,21 @@ survey_glm_fit <- S7::new_class(
     row_idx <- row_mask
   }
 
-  mm_fit  <- stats::model.matrix(fit)          # n_fit × p
-  res_fit <- stats::residuals(fit, type = "working")  # n_fit
+  mm_fit <- stats::model.matrix(fit) # n_fit × p
+  res_fit <- stats::residuals(fit, type = "working") # n_fit
   # fit$weights = survey_wt * IRLS_wt_final (final IRLS working weights)
-  wt_fit  <- fit$weights                        # n_fit
+  wt_fit <- fit$weights # n_fit
 
-  mm_full[row_idx, ]  <- mm_fit
-  res_full[row_idx]   <- res_fit
-  wt_full[row_idx]    <- wt_fit
+  mm_full[row_idx, ] <- mm_fit
+  res_full[row_idx] <- res_fit
+  wt_full[row_idx] <- wt_fit
 
   # Apply domain mask: out-of-domain contributions are zero
   if (!is.null(domain_mask)) {
-    zero_rows              <- !domain_mask
-    mm_full[zero_rows, ]   <- 0.0
-    res_full[zero_rows]    <- 0.0
-    wt_full[zero_rows]     <- 0.0
+    zero_rows <- !domain_mask
+    mm_full[zero_rows, ] <- 0.0
+    res_full[zero_rows] <- 0.0
+    wt_full[zero_rows] <- 0.0
   }
 
   # u_i = (survey_wt_i * IRLS_wt_i) * x_i * wr_i
@@ -181,12 +182,12 @@ survey_glm_fit <- S7::new_class(
 #' @noRd
 .get_glm_weights <- function(design) {
   if (S7::S7_inherits(design, survey_twophase)) {
-    data   <- design@data
+    data <- design@data
     subset <- data[[design@variables$subset]]
-    w_ph1  <- data[[design@variables$phase1$weights]]
-    pi2    <- .compute_phase2_probs(design, subset)
+    w_ph1 <- data[[design@variables$phase1$weights]]
+    pi2 <- .compute_phase2_probs(design, subset)
     cal_wt <- w_ph1 / pi2
-    cal_wt[!subset] <- 0  # non-phase-2 rows contribute zero to scores
+    cal_wt[!subset] <- 0 # non-phase-2 rows contribute zero to scores
     cal_wt
   } else {
     design@data[[design@variables$weights]]
@@ -227,7 +228,7 @@ survey_glm_fit <- S7::new_class(
 .taylor_var_score_matrix <- function(score_matrix, design) {
   vars <- design@variables
   data <- design@data
-  n    <- nrow(data)
+  n <- nrow(data)
 
   strata_id <- if (!is.null(vars$strata)) {
     data[[vars$strata]]
@@ -247,10 +248,12 @@ survey_glm_fit <- S7::new_class(
   }
 
   clusters_mat <- matrix(psu_id, ncol = 1L)
-  strata_mat   <- matrix(strata_id, ncol = 1L)
+  strata_mat <- matrix(strata_id, ncol = 1L)
 
   psu_per_stratum <- tapply(
-    psu_id, strata_id, function(ps) length(unique(ps))
+    psu_id,
+    strata_id,
+    function(ps) length(unique(ps))
   )
   sampsize_vec <- as.integer(psu_per_stratum[as.character(strata_id)])
   sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
@@ -266,11 +269,14 @@ survey_glm_fit <- S7::new_class(
     NULL
   }
 
-  fpcs       <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   .svy_recvar(
-    score_matrix, clusters_mat, strata_mat, fpcs,
+    score_matrix,
+    clusters_mat,
+    strata_mat,
+    fpcs,
     lonely.psu = lonely.psu
   )
 }
@@ -287,7 +293,7 @@ survey_glm_fit <- S7::new_class(
 # @return p × p meat matrix.
 #' @noRd
 .twophase_var_score_matrix <- function(score_matrix, design) {
-  p    <- ncol(score_matrix)
+  p <- ncol(score_matrix)
   meat <- matrix(0.0, p, p)
 
   # Diagonal: Var(col j)
@@ -299,11 +305,13 @@ survey_glm_fit <- S7::new_class(
   if (p > 1L) {
     for (j in seq_len(p - 1L)) {
       for (k in (j + 1L):p) {
-        sum_jk      <- score_matrix[, j] + score_matrix[, k]
-        cov_jk      <- (.twophasevar(sum_jk, design) -
-                         meat[j, j] - meat[k, k]) / 2
-        meat[j, k]  <- cov_jk
-        meat[k, j]  <- cov_jk
+        sum_jk <- score_matrix[, j] + score_matrix[, k]
+        cov_jk <- (.twophasevar(sum_jk, design) -
+          meat[j, j] -
+          meat[k, k]) /
+          2
+        meat[j, k] <- cov_jk
+        meat[k, j] <- cov_jk
       }
     }
   }
@@ -327,17 +335,14 @@ survey_glm_fit <- S7::new_class(
 
   if (S7::S7_inherits(design, survey_taylor)) {
     score_mat <- .glm_score(fit, design, row_mask, domain_mask)
-    meat      <- .taylor_var_score_matrix(score_mat, design)
+    meat <- .taylor_var_score_matrix(score_mat, design)
     .glm_sandwich_vcov(meat, bread)
-
   } else if (S7::S7_inherits(design, survey_twophase)) {
     score_mat <- .glm_score(fit, design, row_mask, domain_mask)
-    meat      <- .twophase_var_score_matrix(score_mat, design)
+    meat <- .twophase_var_score_matrix(score_mat, design)
     .glm_sandwich_vcov(meat, bread)
-
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .glm_replicate_vcov(fit, design, row_mask, domain_mask)
-
   } else {
     # survey_srs, survey_calibrated — SRS sandwich
     .glm_srs_vcov(fit, design, row_mask, domain_mask)
@@ -362,16 +367,16 @@ survey_glm_fit <- S7::new_class(
 # @return p × p matrix.
 #' @noRd
 .glm_replicate_vcov <- function(fit, design, row_mask, domain_mask) {
-  vars    <- design@variables
-  data    <- design@data
+  vars <- design@variables
+  data <- design@data
   rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  n_rep   <- ncol(rep_mat)
-  coef_0  <- stats::coef(fit)
-  p       <- length(coef_0)
+  n_rep <- ncol(rep_mat)
+  coef_0 <- stats::coef(fit)
+  p <- length(coef_0)
 
-  scale   <- vars$scale
+  scale <- vars$scale
   rscales <- if (!is.null(vars$rscales)) vars$rscales else rep(1.0, n_rep)
-  mse     <- isTRUE(vars$mse)
+  mse <- isTRUE(vars$mse)
 
   # Determine fitting rows (intersection of row_mask and domain_mask)
   if (is.null(row_mask)) {
@@ -387,21 +392,24 @@ survey_glm_fit <- S7::new_class(
   fit_data <- data[fit_rows, , drop = FALSE]
 
   # Accumulate variance: sigma = scale * Σ rscales_r * d_r d_r'
-  sigma    <- matrix(0.0, p, p)
-  center   <- if (mse) coef_0 else NULL
+  sigma <- matrix(0.0, p, p)
+  center <- if (mse) coef_0 else NULL
   rep_coefs <- matrix(NA_real_, nrow = n_rep, ncol = p)
 
   for (r in seq_len(n_rep)) {
-    wr    <- rep_mat[fit_rows, r]
+    wr <- rep_mat[fit_rows, r]
     fit_r <- tryCatch(
       suppressWarnings(
-        do.call(stats::glm, list(
-          formula   = stats::formula(fit),
-          family    = stats::family(fit),
-          data      = fit_data,
-          weights   = wr,
-          na.action = stats::na.omit
-        ))
+        do.call(
+          stats::glm,
+          list(
+            formula = stats::formula(fit),
+            family = stats::family(fit),
+            data = fit_data,
+            weights = wr,
+            na.action = stats::na.omit
+          )
+        )
       ),
       error = function(e) NULL
     )
@@ -416,20 +424,20 @@ survey_glm_fit <- S7::new_class(
           class = "surveycore_warning_glm_convergence"
         )
       }
-      rep_coefs[r, ] <- coef_0  # zero deviation
+      rep_coefs[r, ] <- coef_0 # zero deviation
     } else {
       rep_coefs[r, ] <- stats::coef(fit_r)
     }
   }
 
   if (!mse) {
-    ok     <- !apply(rep_coefs, 1L, anyNA)
+    ok <- !apply(rep_coefs, 1L, anyNA)
     center <- colMeans(rep_coefs[ok & rscales > 0, , drop = FALSE])
   }
 
   for (r in seq_len(n_rep)) {
-    d_r    <- rep_coefs[r, ] - center
-    sigma  <- sigma + rscales[r] * outer(d_r, d_r)
+    d_r <- rep_coefs[r, ] - center
+    sigma <- sigma + rscales[r] * outer(d_r, d_r)
   }
   sigma * scale
 }
@@ -459,7 +467,7 @@ survey_glm_fit <- S7::new_class(
 # @return p × p matrix.
 #' @noRd
 .glm_srs_vcov <- function(fit, design, row_mask, domain_mask) {
-  bread     <- summary(fit)$cov.unscaled
+  bread <- summary(fit)$cov.unscaled
   score_mat <- .glm_score(fit, design, row_mask, domain_mask)
 
   n_full <- nrow(design@data)
@@ -474,7 +482,7 @@ survey_glm_fit <- S7::new_class(
   # Sampling fraction f: from explicit FPC column when present, else 0.
   # When no FPC is specified the design assumes an infinite population
   # (matching survey::svydesign() with fpc = NULL).
-  vars    <- design@variables
+  vars <- design@variables
   fpc_var <- if (S7::S7_inherits(design, survey_srs)) vars$fpc else NULL
   if (!is.null(fpc_var)) {
     fpc_val <- design@data[[fpc_var]][fit_rows[1L]]
@@ -487,7 +495,7 @@ survey_glm_fit <- S7::new_class(
   # score_used rows = u_i = w_i * x_i * e_i (pre-weighted scores).
   # SRS sandwich: Var(Σ u_i) = (1-f) * n * S²_u.
   score_used <- score_mat[fit_rows, , drop = FALSE]
-  meat       <- (1 - f) * n_fit * stats::var(score_used)
+  meat <- (1 - f) * n_fit * stats::var(score_used)
 
   .glm_sandwich_vcov(meat, bread)
 }
@@ -502,14 +510,18 @@ survey_glm_fit <- S7::new_class(
 # @return Numeric(1): max(1, .degf(design) - (p - 1)).
 #' @noRd
 .glm_degrees_of_freedom <- function(design, n_coef) {
-  degf_raw  <- .degf(design)
-  df_resid  <- degf_raw - (n_coef - 1L)
+  degf_raw <- .degf(design)
+  df_resid <- degf_raw - (n_coef - 1L)
   if (df_resid <= 0) {
     cli::cli_warn(
       c(
         "!" = paste0(
-          "Design degrees of freedom (", degf_raw, ") minus model ",
-          "parameters (", n_coef - 1L, ") is \u2264 0. ",
+          "Design degrees of freedom (",
+          degf_raw,
+          ") minus model ",
+          "parameters (",
+          n_coef - 1L,
+          ") is \u2264 0. ",
           "Clamping {.code df_residual = 1}."
         ),
         "i" = "CI bounds and p-values are conservative."
@@ -517,7 +529,7 @@ survey_glm_fit <- S7::new_class(
       class = "surveycore_warning_insufficient_df"
     )
   }
-  degf_raw  # store the raw degf; clamping happens in .glm_confint()
+  degf_raw # store the raw degf; clamping happens in .glm_confint()
 }
 
 
@@ -532,7 +544,7 @@ survey_glm_fit <- S7::new_class(
 #' All five surveycore design classes are supported.
 #'
 #' @param design A survey design object created by [as_survey()],
-#'   [as_survey_repweights()], [as_survey_twophase()], [as_survey_srs()], or
+#'   [as_survey_replicate()], [as_survey_twophase()], [as_survey_srs()], or
 #'   [as_survey_calibrated()].
 #' @param formula A model formula in standard R notation
 #'   (e.g. `y ~ x1 + x2`). Mutually exclusive with `response`/`predictors`.
@@ -599,15 +611,15 @@ survey_glm_fit <- S7::new_class(
 #' @export
 survey_glm <- function(
   design,
-  formula    = NULL,
-  response   = NULL,
+  formula = NULL,
+  response = NULL,
   predictors = NULL,
-  family     = stats::gaussian(),
-  na.action  = stats::na.omit,
-  start      = NULL,
-  etastart   = NULL,
-  mustart    = NULL,
-  control    = list()
+  family = stats::gaussian(),
+  na.action = stats::na.omit,
+  start = NULL,
+  etastart = NULL,
+  mustart = NULL,
+  control = list()
 ) {
   # ── Step 1: Validate inputs ────────────────────────────────────────────────
   .check_unsupported_class(design, "survey_glm")
@@ -627,8 +639,8 @@ survey_glm <- function(
   }
 
   # Formula resolution
-  has_formula    <- !is.null(formula)
-  has_response   <- !is.null(response)
+  has_formula <- !is.null(formula)
+  has_response <- !is.null(response)
   has_predictors <- !is.null(predictors)
 
   if (has_formula && (has_response || has_predictors)) {
@@ -668,7 +680,7 @@ survey_glm <- function(
   if (!has_formula && has_response) {
     formula <- stats::reformulate(
       termlabels = if (!is.null(predictors)) predictors else "1",
-      response   = response
+      response = response
     )
     # Reset environment: reformulate() inherits survey_glm()'s frame, which
     # would embed all local variables in the stored object. Use globalenv()
@@ -772,7 +784,7 @@ survey_glm <- function(
   # For twophase designs, restrict fitting to phase-2 (observed) rows only.
   # Phase-1-only rows have no outcome or predictor measurements.
   if (S7::S7_inherits(design, survey_twophase)) {
-    subset_col  <- design@variables$subset
+    subset_col <- design@variables$subset
     subset_mask <- design@data[[subset_col]]
     domain_mask <- domain_mask & subset_mask
   }
@@ -798,7 +810,7 @@ survey_glm <- function(
   # ── Step 3: Check weights, apply na.action ─────────────────────────────────
   wt_all <- .get_glm_weights(design)
   wt_var <- if (S7::S7_inherits(design, survey_twophase)) {
-    NULL  # calibrated weight, no single column name
+    NULL # calibrated weight, no single column name
   } else {
     design@variables$weights
   }
@@ -851,15 +863,19 @@ survey_glm <- function(
 
   # Check for na.action = na.fail: pre-detect NAs and throw typed error
   na_action_fn <- match.fun(na.action)
-  is_na_fail   <- identical(na_action_fn, stats::na.fail)
+  is_na_fail <- identical(na_action_fn, stats::na.fail)
   if (is_na_fail) {
     # Build model frame to find which variables have NAs
     model_vars <- unique(c(resp_vars, pred_vars))
-    na_info    <- vapply(model_vars, function(v) {
-      col    <- fit_data[[v]]
-      n_miss <- sum(is.na(col))
-      if (n_miss > 0L) paste0(v, " (", n_miss, " NA)") else NA_character_
-    }, character(1L))
+    na_info <- vapply(
+      model_vars,
+      function(v) {
+        col <- fit_data[[v]]
+        n_miss <- sum(is.na(col))
+        if (n_miss > 0L) paste0(v, " (", n_miss, " NA)") else NA_character_
+      },
+      character(1L)
+    )
     na_info <- na_info[!is.na(na_info)]
     if (length(na_info) > 0L) {
       n_na_cols <- length(na_info)
@@ -880,7 +896,7 @@ survey_glm <- function(
   }
 
   # ── Step 4: Fit weighted GLM ───────────────────────────────────────────────
-  fam  <- family
+  fam <- family
   is_binomial <- identical(fam$family, "binomial") ||
     identical(fam$family, "quasibinomial")
 
@@ -889,15 +905,15 @@ survey_glm <- function(
   # in environment(formula), not in survey_glm()'s local frame. do.call()
   # embeds the vector value directly, bypassing the symbol-lookup failure.
   glm_args <- list(
-    formula   = formula,
-    family    = fam,
-    data      = fit_data,
-    weights   = wt_fit,
+    formula = formula,
+    family = fam,
+    data = fit_data,
+    weights = wt_fit,
     na.action = na.action,
-    start     = start,
-    etastart  = etastart,
-    mustart   = mustart,
-    control   = do.call(stats::glm.control, control)
+    start = start,
+    etastart = etastart,
+    mustart = mustart,
+    control = do.call(stats::glm.control, control)
   )
 
   fit <- if (is_binomial) {
@@ -948,8 +964,8 @@ survey_glm <- function(
   # Determine which rows of design@data were used in the fit (after na.action)
   # stats::glm() drops rows with NA via na.action; use the na.action attribute
   # on the model frame to find which rows were kept.
-  mf       <- stats::model.frame(fit)
-  na_idx   <- attr(mf, "na.action")   # indices of dropped rows (in fit_data)
+  mf <- stats::model.frame(fit)
+  na_idx <- attr(mf, "na.action") # indices of dropped rows (in fit_data)
 
   # Translate to indices in full design@data
   if (!is.null(na_idx)) {
@@ -959,38 +975,39 @@ survey_glm <- function(
   }
 
   # Build full-length domain indicator for score zeroing
-  domain_for_score            <- logical(nrow(design@data))
+  domain_for_score <- logical(nrow(design@data))
   domain_for_score[used_in_fit] <- TRUE
 
   vcov_mat <- .glm_vcov_dispatch(
-    fit, design,
-    row_mask    = used_in_fit,
+    fit,
+    design,
+    row_mask = used_in_fit,
     domain_mask = domain_for_score
   )
 
   # Name the vcov matrix
-  coef_names             <- names(stats::coef(fit))
-  dimnames(vcov_mat)     <- list(coef_names, coef_names)
+  coef_names <- names(stats::coef(fit))
+  dimnames(vcov_mat) <- list(coef_names, coef_names)
 
   # ── Step 6: Check degf and assemble survey_glm_fit ────────────────────────
   degf_val <- .glm_degrees_of_freedom(design, n_coef = length(coef_names))
 
   survey_glm_fit(
-    coefficients  = stats::coef(fit),
-    vcov          = vcov_mat,
+    coefficients = stats::coef(fit),
+    vcov = vcov_mat,
     fitted_values = as.numeric(stats::fitted(fit)),
-    residuals     = as.numeric(stats::residuals(fit, type = "working")),
-    weights       = as.numeric(wt_fit[seq_len(length(stats::fitted(fit)))]),
-    design        = design,
-    degf          = degf_val,
-    family        = as.list(fam),
-    formula       = formula,
+    residuals = as.numeric(stats::residuals(fit, type = "working")),
+    weights = as.numeric(wt_fit[seq_len(length(stats::fitted(fit)))]),
+    design = design,
+    degf = degf_val,
+    family = as.list(fam),
+    formula = formula,
     null_deviance = fit$null.deviance,
-    deviance      = fit$deviance,
-    df_null       = as.numeric(fit$df.null),
-    df_residual   = as.numeric(fit$df.residual),
-    converged     = isTRUE(fit$converged),
-    call          = match.call(),
-    fit_          = fit
+    deviance = fit$deviance,
+    df_null = as.numeric(fit$df.null),
+    df_residual = as.numeric(fit$df.residual),
+    converged = isTRUE(fit$converged),
+    call = match.call(),
+    fit_ = fit
   )
 }

@@ -119,7 +119,7 @@ Severity: REQUIRED
 `testing-surveycore.md` states:
 
 > "`test_invariants()` required as **first** assertion in every constructor test block"
-> "Every `test_that()` block that creates a survey object via `as_survey()`, `as_survey_repweights()`,
+> "Every `test_that()` block that creates a survey object via `as_survey()`, `as_survey_replicate()`,
 > or `as_survey_twophase()` must call `test_invariants(design)` as its **first** assertion."
 
 All eight new test blocks (28–35) create survey objects through fixture helpers

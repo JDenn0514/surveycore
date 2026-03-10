@@ -29,7 +29,6 @@
 #     .validate_val_labels()     — check label completeness
 #     .extract_haven_metadata()  — read haven-style attrs from a data.frame
 
-
 # ── Input check helper ────────────────────────────────────────────────────────
 
 # Used by all exported functions to produce a consistent error when x is not
@@ -39,11 +38,11 @@
     cli::cli_abort(
       c(
         "x" = "{.arg x} must be a survey design object, not {.cls {class(x)[[1L]]}}.",
-        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_repweights},",
+        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_replicate},",
         " " = "or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_not_survey",
-      call  = call
+      call = call
     )
   }
   invisible(NULL)
@@ -347,8 +346,8 @@ set_var_note <- function(x, var, note) {
 set_variable_labels <- function(x, ...) {
   .check_is_survey(x)
   labels_list <- rlang::list2(...)
-  var_names   <- names(labels_list)
-  missing     <- setdiff(var_names, names(x@data))
+  var_names <- names(labels_list)
+  missing <- setdiff(var_names, names(x@data))
   if (length(missing) > 0L) {
     cli::cli_abort(
       c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
@@ -389,8 +388,8 @@ set_variable_labels <- function(x, ...) {
 set_value_labels <- function(x, ...) {
   .check_is_survey(x)
   labels_list <- rlang::list2(...)
-  var_names   <- names(labels_list)
-  missing     <- setdiff(var_names, names(x@data))
+  var_names <- names(labels_list)
+  missing <- setdiff(var_names, names(x@data))
   if (length(missing) > 0L) {
     cli::cli_abort(
       c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
@@ -431,9 +430,9 @@ set_value_labels <- function(x, ...) {
 #' @export
 set_question_prefaces <- function(x, ...) {
   .check_is_survey(x)
-  prefaces  <- rlang::list2(...)
+  prefaces <- rlang::list2(...)
   var_names <- names(prefaces)
-  missing   <- setdiff(var_names, names(x@data))
+  missing <- setdiff(var_names, names(x@data))
   if (length(missing) > 0L) {
     cli::cli_abort(
       c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
@@ -462,9 +461,9 @@ set_question_prefaces <- function(x, ...) {
 #' @export
 set_variable_notes <- function(x, ...) {
   .check_is_survey(x)
-  notes     <- rlang::list2(...)
+  notes <- rlang::list2(...)
   var_names <- names(notes)
-  missing   <- setdiff(var_names, names(x@data))
+  missing <- setdiff(var_names, names(x@data))
   if (length(missing) > 0L) {
     cli::cli_abort(
       c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
@@ -499,8 +498,8 @@ set_variable_notes <- function(x, ...) {
 .validate_val_labels <- function(var, labels, var_name, strict = FALSE) {
   unique_vals <- unique(var[!is.na(var)])
   # label_vals: the DATA CODES covered by labels (the vector VALUES, not names)
-  label_vals  <- as.character(labels)
-  missing     <- setdiff(as.character(unique_vals), label_vals)
+  label_vals <- as.character(labels)
+  missing <- setdiff(as.character(unique_vals), label_vals)
 
   if (length(missing) > 0L) {
     if (strict) {
@@ -557,9 +556,9 @@ set_variable_notes <- function(x, ...) {
     var_lbl <- attr(col, "label", exact = TRUE)
     if (
       !is.null(var_lbl) &&
-      is.character(var_lbl) &&
-      length(var_lbl) > 0L &&
-      nzchar(var_lbl[[1L]])
+        is.character(var_lbl) &&
+        length(var_lbl) > 0L &&
+        nzchar(var_lbl[[1L]])
     ) {
       var_labels[[col_name]] <- var_lbl[[1L]]
     }
@@ -569,8 +568,8 @@ set_variable_notes <- function(x, ...) {
     val_lbl <- attr(col, "labels", exact = TRUE)
     if (
       !is.null(val_lbl) &&
-      length(val_lbl) > 0L &&
-      !is.null(names(val_lbl))
+        length(val_lbl) > 0L &&
+        !is.null(names(val_lbl))
     ) {
       # NA keys (SPSS user-defined missing values) are preserved as-is
       val_labels[[col_name]] <- val_lbl
@@ -580,16 +579,16 @@ set_variable_notes <- function(x, ...) {
     q_preface <- attr(col, "question_preface", exact = TRUE)
     if (
       !is.null(q_preface) &&
-      is.character(q_preface) &&
-      nzchar(q_preface[[1L]])
+        is.character(q_preface) &&
+        nzchar(q_preface[[1L]])
     ) {
       q_prefaces[[col_name]] <- q_preface[[1L]]
     }
   }
 
   survey_metadata(
-    variable_labels   = var_labels,
-    value_labels      = val_labels,
+    variable_labels = var_labels,
+    value_labels = val_labels,
     question_prefaces = q_prefaces
   )
 }

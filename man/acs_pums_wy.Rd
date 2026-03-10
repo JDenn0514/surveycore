@@ -140,9 +140,9 @@ file — ideal for fast tests and examples.
 }
 \details{
 \strong{Survey design:} Successive difference replication (SDR). Use
-\code{as_survey_repweights()} with all 80 replicate weights:
+\code{as_survey_replicate()} with all 80 replicate weights:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_repweights(
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_replicate(
   acs_pums_wy,
   weights    = pwgtp,
   repweights = pwgtp1:pwgtp80,

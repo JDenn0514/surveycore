@@ -59,6 +59,27 @@ internally (avoids collision with user columns named `.weights`).
 - Run `devtools::document()` before committing any file with roxygen2 changes
 - Run `devtools::check()` before opening a PR
 
+## Git Workflow
+
+- When asked to commit and create a PR, always target the `develop` branch unless explicitly told otherwise. Never assume `main` is the target.
+- When the user asks for a simple git push, just push. Do not invoke the full commit/PR skill workflow unless explicitly requested.
+
+## CI / Package Development
+
+- For R package CI (pkgdown, R CMD check): always guard vignette chunks that depend on optional/in-development packages with `eval = requireNamespace("pkg", quietly = TRUE)`. Test locally before pushing.
+
+## R Package Conventions
+
+- Use the GSS dataset (not NHANES or gss_2024) for examples and tests unless told otherwise. Use rlang patterns over deparse().
+
+## General Behavior
+
+- Before reading many files, check if the user's question can be answered from context already available. Prefer concise answers over exhaustive file exploration.
+
+## Project Structure
+
+- Skills are located in `.claude/skills/` (e.g., `.claude/skills/spec-workflow/`). Always check there first when referencing or modifying skills.
+
 ## R CMD Check Gotchas
 
 **Examples must load Imports packages explicitly.** R CMD check runs examples in a fresh session

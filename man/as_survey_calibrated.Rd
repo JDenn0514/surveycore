@@ -57,7 +57,7 @@ weights for reproducibility
 }
 
 If your data comes from a probability sample with known design structure,
-use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_repweights]{as_survey_repweights()}}, or \code{\link[=as_survey_twophase]{as_survey_twophase()}} instead.
+use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, or \code{\link[=as_survey_twophase]{as_survey_twophase()}} instead.
 }
 
 \section{Variance estimation note}{
@@ -81,11 +81,11 @@ d <- as_survey_calibrated(df, weights = cal_wt)
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for probability designs with Taylor variance,
-\code{\link[=as_survey_repweights]{as_survey_repweights()}} for replicate-weight designs
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
 Other constructors: 
 \code{\link{as_survey}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_calibrated}()},

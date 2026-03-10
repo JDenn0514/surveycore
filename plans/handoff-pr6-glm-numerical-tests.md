@@ -109,7 +109,7 @@ Updated `survey_glm()`:
 | Twophase (synthetic) | 1.4e-14 | ~0.61 | ✗ pre-existing variance bug |
 | Calibrated | not yet tested | — | — |
 
-**Replicate oracle note:** Must use `mse = FALSE` in `as_survey_repweights()` to match
+**Replicate oracle note:** Must use `mse = FALSE` in `as_survey_replicate()` to match
 `survey::svrepdesign()` default. The oracle test must explicitly pass `mse =
 FALSE` on the surveycore side.
 
@@ -136,7 +136,7 @@ fit_sv <- survey::svyglm(age ~ educ + sex, design = d_sv)
 # Replicate (synthetic BRR — mse=FALSE on BOTH sides)
 df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
 repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
-d_sc <- as_survey_repweights(df_rep, weights = wt, repweights = all_of(repwt_cols),
+d_sc <- as_survey_replicate(df_rep, weights = wt, repweights = all_of(repwt_cols),
                        type = "BRR", mse = FALSE)
 d_sv <- survey::svrepdesign(data = df_rep, weights = ~wt,
                               repweights = df_rep[, repwt_cols], type = "BRR")

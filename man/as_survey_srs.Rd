@@ -45,12 +45,12 @@ d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for designs with cluster or stratification structure,
-\code{\link[=as_survey_repweights]{as_survey_repweights()}} for replicate-weight designs
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},

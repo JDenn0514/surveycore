@@ -56,16 +56,51 @@ Wait for the answer before presenting any issues.
 Work through the issues **in the order they appear in the review file** —
 do not re-group or re-sequence them.
 
-**In BIG mode (4 at a time):** Show all issues in the batch as markdown text
-first, then use `AskUserQuestion` for each issue in the batch sequentially.
-Apply fixes after all decisions in the batch are collected. After applying
-each fix, check whether it materially changes the framing of any remaining
-issues in the batch — if so, re-present the affected issue with updated
-context before applying its fix. Then ask:
+**In BIG mode (4 at a time):** Before presenting the batch to the user, spawn
+one `Explore` sub-agent per issue in the batch using the `Agent` tool. Run all
+four agents simultaneously (single message, multiple `Agent` calls). Each agent
+deepens the analysis for its issue:
+
+```
+You are a senior R package engineer reviewing an issue from a spec review.
+Your job: research this issue and enrich the options analysis.
+
+Spec file: plans/spec-{id}.md
+Codebase root: [working directory]
+
+Issue to research:
+[paste the full issue text from the review file]
+
+Do the following:
+1. Read the relevant section(s) of the spec this issue references.
+2. Search the codebase for any existing code related to this issue
+   (e.g., if it concerns variance estimation, read the relevant R/ files).
+3. Check plans/decisions-{id}.md for any prior decisions touching this issue.
+4. Return a short enrichment block (3–8 sentences) covering:
+   - What the spec currently says (quote it)
+   - Whether any existing code already handles or conflicts with the options
+   - Any prior decision that constrains the choice
+   - Any cross-issue dependency (e.g., "choosing Option A here forces Option B
+     on Issue [M]")
+   - Confirm or update the effort/risk estimates for each option based on
+     what you found in the codebase
+
+Do NOT rewrite the issue or change the recommendation — just add the
+enrichment. Return nothing else.
+```
+
+Wait for all four agents to complete. Merge each enrichment block into its
+issue's presentation under a `> **Context:**` blockquote before showing it
+to the user. Then present the full batch, and use `AskUserQuestion` for each
+issue sequentially. Apply fixes after all decisions in the batch are collected.
+After applying each fix, check whether it materially changes the framing of
+any remaining issues in the batch — if so, re-present the affected issue with
+updated context before applying its fix. Then ask:
 > "Ready for the next batch?"
 
 **In SMALL mode (1 at a time):** Show the issue text, use `AskUserQuestion`,
-apply the fix immediately, then move to the next issue.
+apply the fix immediately, then move to the next issue. No sub-agent
+pre-analysis in SMALL mode — the single-issue cadence is already focused.
 
 Do not apply fixes speculatively — wait for the `AskUserQuestion` response
 on each issue before editing the spec.

@@ -57,7 +57,7 @@ each replicate — will be implemented in Phase 2.5 alongside the
 
 \section{Non-probability samples}{
 
-Unlike \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_repweights]{as_survey_repweights()}}, and \code{\link[=as_survey_twophase]{as_survey_twophase()}}, this
+Unlike \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, and \code{\link[=as_survey_twophase]{as_survey_twophase()}}, this
 class does \strong{not} assume a probability sampling design. Standard errors
 produced from a \code{survey_calibrated} object rest on a model-assisted SRS
 assumption, which is consistent with common practice for calibrated
@@ -88,7 +88,7 @@ trimming cap, effective sample size before and after, and design effect.
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_data}()},

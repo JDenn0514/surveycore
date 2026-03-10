@@ -7,7 +7,7 @@
 ## Changes
 
 - Add `vignettes/creating-survey-objects.qmd`: a full worked-example vignette
-  covering all five constructors (`as_survey()`, `as_survey_repweights()`,
+  covering all five constructors (`as_survey()`, `as_survey_replicate()`,
   `as_survey_srs()`, `as_survey_calibrated()`, `as_survey_twophase()`)
   with a decision guide, codebook variable reference tables (with Function
   Argument column), and worked examples for NHANES, ANES, GSS, Pew NPORS,

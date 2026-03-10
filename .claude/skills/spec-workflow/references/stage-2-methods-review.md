@@ -65,7 +65,66 @@ the first blocking problem. A partial review that misses issues is worse than
 a complete review that finds them all — resolved methodology issues cannot be
 reopened cheaply after Stage 3 has shaped the architecture.
 
-Read the full spec once. Then apply all five lenses. Then write the output.
+Read the full spec once. Then apply all five lenses (in parallel — see below).
+Then synthesize and write the output.
+
+---
+
+## Parallel Agent Execution
+
+After the Scope Assessment, spawn one `Explore` sub-agent per applicable lens
+using the `Agent` tool. Run all applicable lens agents simultaneously (in a
+single message with multiple `Agent` tool calls) — do not wait for one to
+finish before starting the next.
+
+**Each lens agent receives this prompt (substitute the lens number, name, and
+definition):**
+
+```
+You are a senior survey methodologist performing a statistical spec review.
+Your job: apply Lens [N] — [Lens Name] — to the surveycore Phase 2 spec.
+
+Read the full spec at: plans/spec-{id}.md
+
+Apply ONLY the checks listed under Lens [N] (copied below). Do not assess
+other lenses — those are handled by parallel agents.
+
+Lens [N] — [Lens Name]:
+[paste the full lens definition from the Five Review Lenses section]
+
+Return ALL issues you find, using this exact format for each:
+
+**Issue: [Short title]**
+Lens: [N]
+Severity: BLOCKING | REQUIRED | ADVISORY
+Resolution type: UNAMBIGUOUS | JUDGMENT CALL
+
+[Concrete description. Quote the spec text that is wrong or absent.
+For UNAMBIGUOUS: state the correct formula or fix directly.
+For JUDGMENT CALL: state the options and their statistical trade-offs.]
+
+Options:
+- **[A]** [Description] — Effort: [low/medium/high], Risk: [low/medium/high],
+  Impact: [what], Maintenance: [ongoing burden]
+- **[B]** [Alternative]
+- **[C] Do nothing** — [what stays wrong]
+
+**Recommendation: [A/B/C]** — [One sentence rationale]
+
+Source: [Citation if applicable. Mark uncertain citations as "[verify]".]
+
+If no issues are found under this lens, say: "Lens [N] — No issues found."
+```
+
+**After all lens agents complete:**
+1. Collect all results
+2. Assign sequential issue numbers across lenses (Issue 1, 2, 3…)
+3. Check for duplicates or cross-lens conflicts — if two agents flagged the
+   same problem from different angles, merge into one issue citing both lenses
+4. Write the output file as specified below
+
+If a lens is not applicable (Scope Assessment ruled it out), skip its agent
+and note "Lens [N] not applicable: [reason]" in the output.
 
 ---
 

@@ -487,7 +487,7 @@ Options:
   `@examples` — one minimal runnable example: `as_survey_srs(data.frame(y = 1:5))`
   — Effort: low.
 - **[B] Do nothing** — implementer infers from context; docs likely inconsistent
-  with `as_survey()` and `as_survey_repweights()`.
+  with `as_survey()` and `as_survey_replicate()`.
 
 **Recommendation: A**.
 

@@ -15,12 +15,11 @@
 #   8. .degf()
 #   9. .check_unsupported_class()
 
-
 # ── Category 1: .validate_shared_args() ──────────────────────────────────────
 
 test_that(".validate_shared_args() returns invisible TRUE for valid args", {
   result <- .validate_shared_args(
-    variance   = c("se", "ci"),
+    variance = c("se", "ci"),
     conf_level = 0.95,
     name_style = "surveycore"
   )
@@ -30,7 +29,7 @@ test_that(".validate_shared_args() returns invisible TRUE for valid args", {
 test_that(".validate_shared_args() accepts variance as a character vector", {
   expect_no_error(
     .validate_shared_args(
-      variance   = c("se", "ci", "var", "cv", "moe", "deff"),
+      variance = c("se", "ci", "var", "cv", "moe", "deff"),
       conf_level = 0.95,
       name_style = "surveycore"
     )
@@ -40,7 +39,7 @@ test_that(".validate_shared_args() accepts variance as a character vector", {
 test_that(".validate_shared_args() accepts NULL variance", {
   expect_no_error(
     .validate_shared_args(
-      variance   = NULL,
+      variance = NULL,
       conf_level = 0.95,
       name_style = "surveycore"
     )
@@ -50,7 +49,7 @@ test_that(".validate_shared_args() accepts NULL variance", {
 test_that('.validate_shared_args() accepts "deff" as a valid variance value', {
   expect_no_error(
     .validate_shared_args(
-      variance   = "deff",
+      variance = "deff",
       conf_level = 0.95,
       name_style = "surveycore"
     )
@@ -130,18 +129,18 @@ test_that(".validate_shared_args() accepts broom name_style", {
 
 test_that(".resolve_groups() returns @groups when group= is NULL", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 1L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   # Set @groups on the design (simulate group_by())
   d@groups <- c("group")
-  result   <- .resolve_groups(d, rlang::quo(NULL))
+  result <- .resolve_groups(d, rlang::quo(NULL))
 
   expect_identical(result, "group")
 })
 
 test_that(".resolve_groups() returns group= arg when @groups is empty", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 2L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- .resolve_groups(d, rlang::quo(group))
   expect_identical(result, "group")
@@ -150,7 +149,7 @@ test_that(".resolve_groups() returns group= arg when @groups is empty", {
 test_that(".resolve_groups() ANDs @groups and group= together", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 3L)
   df$region <- sample(c("North", "South"), nrow(df), replace = TRUE)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   d@groups <- c("region")
 
   result <- .resolve_groups(d, rlang::quo(group))
@@ -161,16 +160,16 @@ test_that(".resolve_groups() ANDs @groups and group= together", {
 
 test_that(".resolve_groups() deduplicates when @groups and group= overlap", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 4L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   d@groups <- c("group")
 
   result <- .resolve_groups(d, rlang::quo(group))
-  expect_identical(result, "group")  # deduplicated to one entry
+  expect_identical(result, "group") # deduplicated to one entry
 })
 
 test_that(".resolve_groups() returns character(0) when neither source has groups", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 5L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- .resolve_groups(d, rlang::quo(NULL))
   expect_identical(result, character(0))
@@ -181,7 +180,7 @@ test_that(".resolve_groups() returns character(0) when neither source has groups
 
 test_that(".apply_domain() returns all TRUE when no domain column present", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 6L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   mask <- .apply_domain(d)
   expect_true(is.logical(mask))
@@ -191,7 +190,7 @@ test_that(".apply_domain() returns all TRUE when no domain column present", {
 
 test_that(".apply_domain() returns domain column values when present", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 7L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   # Manually inject a domain column
   domain_mask <- rep(c(TRUE, FALSE), length.out = nrow(d@data))
@@ -206,27 +205,35 @@ test_that(".apply_domain() returns domain column values when present", {
 
 test_that(".make_result_tibble() produces the correct S3 class hierarchy", {
   designs <- make_all_designs(seed = 42L)
-  d       <- designs$taylor
+  d <- designs$taylor
 
-  col_vecs   <- list(mean = c(10.0, 20.0), n = c(25L, 25L))
-  groups_df  <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
-  meta_args  <- list(
+  col_vecs <- list(mean = c(10.0, 20.0), n = c(25L, 25L))
+  groups_df <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
+  meta_args <- list(
     conf_level = 0.95,
-    call       = quote(get_means(d, y1)),
-    group      = list(group = list(variable_label = NULL,
-                                   question_preface = NULL,
-                                   value_labels = NULL)),
-    x          = list(y1 = list(variable_label = NULL,
-                                question_preface = NULL,
-                                value_labels = NULL))
+    call = quote(get_means(d, y1)),
+    group = list(
+      group = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    ),
+    x = list(
+      y1 = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    )
   )
 
   result <- .make_result_tibble(
-    col_vecs           = col_vecs,
-    groups_df          = groups_df,
-    class_name         = "survey_means",
-    design             = d,
-    meta_args          = meta_args,
+    col_vecs = col_vecs,
+    groups_df = groups_df,
+    class_name = "survey_means",
+    design = d,
+    meta_args = meta_args,
     required_meta_keys = MEANS_META_KEYS
   )
 
@@ -238,25 +245,29 @@ test_that(".make_result_tibble() produces the correct S3 class hierarchy", {
 
 test_that(".make_result_tibble() attaches .meta attribute", {
   designs <- make_all_designs(seed = 42L)
-  d       <- designs$srs
+  d <- designs$srs
 
-  col_vecs   <- list(mean = 42.0, n = 50L)
-  groups_df  <- data.frame()
-  meta_args  <- list(
+  col_vecs <- list(mean = 42.0, n = 50L)
+  groups_df <- data.frame()
+  meta_args <- list(
     conf_level = 0.95,
-    call       = quote(get_means(d, y1)),
-    group      = list(),
-    x          = list(y1 = list(variable_label = NULL,
-                                question_preface = NULL,
-                                value_labels = NULL))
+    call = quote(get_means(d, y1)),
+    group = list(),
+    x = list(
+      y1 = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    )
   )
 
   result <- .make_result_tibble(
-    col_vecs           = col_vecs,
-    groups_df          = groups_df,
-    class_name         = "survey_means",
-    design             = d,
-    meta_args          = meta_args,
+    col_vecs = col_vecs,
+    groups_df = groups_df,
+    class_name = "survey_means",
+    design = d,
+    meta_args = meta_args,
     required_meta_keys = MEANS_META_KEYS
   )
 
@@ -270,24 +281,24 @@ test_that(".make_result_tibble() attaches .meta attribute", {
 
 test_that(".make_result_tibble() stopifnot fires when required keys missing", {
   designs <- make_all_designs(seed = 42L)
-  d       <- designs$taylor
+  d <- designs$taylor
 
-  col_vecs  <- list(mean = 42.0)
+  col_vecs <- list(mean = 42.0)
   groups_df <- data.frame()
   # meta_args is missing "group" and "x" which are in MEANS_META_KEYS
   incomplete_meta <- list(
     conf_level = 0.95,
-    call       = quote(get_means(d, y1))
+    call = quote(get_means(d, y1))
     # deliberately missing "group" and "x"
   )
 
   expect_error(
     .make_result_tibble(
-      col_vecs           = col_vecs,
-      groups_df          = groups_df,
-      class_name         = "survey_means",
-      design             = d,
-      meta_args          = incomplete_meta,
+      col_vecs = col_vecs,
+      groups_df = groups_df,
+      class_name = "survey_means",
+      design = d,
+      meta_args = incomplete_meta,
       required_meta_keys = MEANS_META_KEYS
     )
   )
@@ -295,27 +306,35 @@ test_that(".make_result_tibble() stopifnot fires when required keys missing", {
 
 test_that(".make_result_tibble() includes group columns before result columns", {
   designs <- make_all_designs(seed = 42L)
-  d       <- designs$taylor
+  d <- designs$taylor
 
-  col_vecs  <- list(mean = c(10.0, 20.0))
+  col_vecs <- list(mean = c(10.0, 20.0))
   groups_df <- data.frame(group = c("A", "B"), stringsAsFactors = FALSE)
   meta_args <- list(
     conf_level = 0.95,
-    call       = quote(get_means(d, y1)),
-    group      = list(group = list(variable_label = NULL,
-                                   question_preface = NULL,
-                                   value_labels = NULL)),
-    x          = list(y1 = list(variable_label = NULL,
-                                question_preface = NULL,
-                                value_labels = NULL))
+    call = quote(get_means(d, y1)),
+    group = list(
+      group = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    ),
+    x = list(
+      y1 = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    )
   )
 
   result <- .make_result_tibble(
-    col_vecs           = col_vecs,
-    groups_df          = groups_df,
-    class_name         = "survey_means",
-    design             = d,
-    meta_args          = meta_args,
+    col_vecs = col_vecs,
+    groups_df = groups_df,
+    class_name = "survey_means",
+    design = d,
+    meta_args = meta_args,
     required_meta_keys = MEANS_META_KEYS
   )
 
@@ -328,47 +347,47 @@ test_that(".make_result_tibble() includes group columns before result columns", 
 
 test_that(".build_meta() returns design_type = 'taylor' for survey_taylor", {
   designs <- make_all_designs(seed = 42L)
-  meta    <- .build_meta(designs$taylor, list(conf_level = 0.95))
+  meta <- .build_meta(designs$taylor, list(conf_level = 0.95))
   expect_identical(meta$design_type, "taylor")
 })
 
 test_that(".build_meta() returns design_type = 'replicate' for survey_replicate", {
   designs <- make_all_designs(seed = 42L)
-  meta    <- .build_meta(designs$replicate, list(conf_level = 0.95))
+  meta <- .build_meta(designs$replicate, list(conf_level = 0.95))
   expect_identical(meta$design_type, "replicate")
 })
 
 test_that(".build_meta() returns design_type = 'twophase' for survey_twophase", {
   designs <- make_all_designs(seed = 42L)
-  meta    <- .build_meta(designs$twophase, list(conf_level = 0.95))
+  meta <- .build_meta(designs$twophase, list(conf_level = 0.95))
   expect_identical(meta$design_type, "twophase")
 })
 
 test_that(".build_meta() returns design_type = 'srs' for survey_srs", {
   designs <- make_all_designs(seed = 42L)
-  meta    <- .build_meta(designs$srs, list(conf_level = 0.95))
+  meta <- .build_meta(designs$srs, list(conf_level = 0.95))
   expect_identical(meta$design_type, "srs")
 })
 
 test_that(".build_meta() returns design_type = 'calibrated' for survey_calibrated", {
   designs <- make_all_designs(seed = 42L)
-  meta    <- .build_meta(designs$calibrated, list(conf_level = 0.95))
+  meta <- .build_meta(designs$calibrated, list(conf_level = 0.95))
   expect_identical(meta$design_type, "calibrated")
 })
 
 test_that(".build_meta() returns n_respondents = nrow(design@data) as integer", {
   designs <- make_all_designs(seed = 42L)
-  d       <- designs$taylor
-  meta    <- .build_meta(d, list())
+  d <- designs$taylor
+  meta <- .build_meta(d, list())
   expect_identical(meta$n_respondents, as.integer(nrow(d@data)))
   expect_type(meta$n_respondents, "integer")
 })
 
 test_that(".build_meta() merges meta_args into the returned list", {
-  designs   <- make_all_designs(seed = 42L)
+  designs <- make_all_designs(seed = 42L)
   meta_args <- list(
-    conf_level   = 0.90,
-    variable     = "y1",
+    conf_level = 0.90,
+    variable = "y1",
     value_labels = list(y1 = NULL)
   )
   meta <- .build_meta(designs$taylor, meta_args)
@@ -392,22 +411,22 @@ test_that(".build_meta() fallback throws surveycore_error_unsupported_class", {
 
 test_that(".add_variance_cols() returns empty list when variance = NULL", {
   result <- .add_variance_cols(
-    se_vec       = c(1.0, 2.0),
+    se_vec = c(1.0, 2.0),
     estimate_vec = c(10.0, 20.0),
-    conf_level   = 0.95,
-    degf         = 100L,
-    variance     = NULL
+    conf_level = 0.95,
+    degf = 100L,
+    variance = NULL
   )
   expect_identical(result, list())
 })
 
 test_that(".add_variance_cols() returns se column when requested", {
   result <- .add_variance_cols(
-    se_vec       = c(1.0, 2.0),
+    se_vec = c(1.0, 2.0),
     estimate_vec = c(10.0, 20.0),
-    conf_level   = 0.95,
-    degf         = 100L,
-    variance     = "se"
+    conf_level = 0.95,
+    degf = 100L,
+    variance = "se"
   )
   expect_true("se" %in% names(result))
   expect_equal(result$se, c(1.0, 2.0))
@@ -415,22 +434,22 @@ test_that(".add_variance_cols() returns se column when requested", {
 
 test_that(".add_variance_cols() computes var = se^2", {
   result <- .add_variance_cols(
-    se_vec       = c(2.0, 3.0),
+    se_vec = c(2.0, 3.0),
     estimate_vec = c(10.0, 20.0),
-    conf_level   = 0.95,
-    degf         = 100L,
-    variance     = "var"
+    conf_level = 0.95,
+    degf = 100L,
+    variance = "var"
   )
   expect_equal(result$var, c(4.0, 9.0))
 })
 
 test_that(".add_variance_cols() computes cv = se/estimate (ratio, not percentage)", {
   result <- .add_variance_cols(
-    se_vec       = c(1.0, 2.0),
+    se_vec = c(1.0, 2.0),
     estimate_vec = c(10.0, 20.0),
-    conf_level   = 0.95,
-    degf         = 100L,
-    variance     = "cv"
+    conf_level = 0.95,
+    degf = 100L,
+    variance = "cv"
   )
   # cv = se / estimate as a ratio: 1/10 = 0.1, 2/20 = 0.1
   expect_equal(result$cv, c(0.1, 0.1))
@@ -439,11 +458,11 @@ test_that(".add_variance_cols() computes cv = se/estimate (ratio, not percentage
 test_that(".add_variance_cols() sets cv = NA and warns for zero estimate", {
   expect_warning(
     result <- .add_variance_cols(
-      se_vec       = c(1.0, 2.0),
-      estimate_vec = c(0.0, 20.0),  # first estimate is zero
-      conf_level   = 0.95,
-      degf         = 100L,
-      variance     = "cv"
+      se_vec = c(1.0, 2.0),
+      estimate_vec = c(0.0, 20.0), # first estimate is zero
+      conf_level = 0.95,
+      degf = 100L,
+      variance = "cv"
     ),
     class = "surveycore_warning_cv_undefined"
   )
@@ -454,11 +473,11 @@ test_that(".add_variance_cols() sets cv = NA and warns for zero estimate", {
 test_that(".add_variance_cols() sets cv = NA and warns for negative estimate", {
   expect_warning(
     result <- .add_variance_cols(
-      se_vec       = c(1.0, 2.0),
+      se_vec = c(1.0, 2.0),
       estimate_vec = c(-5.0, 20.0),
-      conf_level   = 0.95,
-      degf         = 100L,
-      variance     = "cv"
+      conf_level = 0.95,
+      degf = 100L,
+      variance = "cv"
     ),
     class = "surveycore_warning_cv_undefined"
   )
@@ -466,28 +485,28 @@ test_that(".add_variance_cols() sets cv = NA and warns for negative estimate", {
 })
 
 test_that(".add_variance_cols() computes ci_low and ci_high using t distribution", {
-  se  <- 1.0
+  se <- 1.0
   est <- 10.0
-  df  <- 49L
+  df <- 49L
   result <- .add_variance_cols(
-    se_vec       = se,
+    se_vec = se,
     estimate_vec = est,
-    conf_level   = 0.95,
-    degf         = df,
-    variance     = "ci"
+    conf_level = 0.95,
+    degf = df,
+    variance = "ci"
   )
   t_crit <- stats::qt(0.975, df = df)
-  expect_equal(result$ci_low,  est - t_crit * se)
+  expect_equal(result$ci_low, est - t_crit * se)
   expect_equal(result$ci_high, est + t_crit * se)
 })
 
 test_that(".add_variance_cols() computes moe = (ci_high - ci_low) / 2", {
   result <- .add_variance_cols(
-    se_vec       = 1.0,
+    se_vec = 1.0,
     estimate_vec = 10.0,
-    conf_level   = 0.95,
-    degf         = 49L,
-    variance     = "moe"
+    conf_level = 0.95,
+    degf = 49L,
+    variance = "moe"
   )
   expect_true("moe" %in% names(result))
   expect_false("ci_low" %in% names(result))
@@ -497,36 +516,36 @@ test_that(".add_variance_cols() computes moe = (ci_high - ci_low) / 2", {
 
 test_that(".add_variance_cols() computes deff = (se / se_srs)^2", {
   result <- .add_variance_cols(
-    se_vec       = 2.0,
+    se_vec = 2.0,
     estimate_vec = 10.0,
-    se_srs_vec   = 1.0,
-    conf_level   = 0.95,
-    degf         = 49L,
-    variance     = "deff"
+    se_srs_vec = 1.0,
+    conf_level = 0.95,
+    degf = 49L,
+    variance = "deff"
   )
   expect_equal(result$deff, 4.0)
 })
 
 test_that(".add_variance_cols() returns NA deff when se_srs_vec is NULL", {
   result <- .add_variance_cols(
-    se_vec       = 2.0,
+    se_vec = 2.0,
     estimate_vec = 10.0,
-    se_srs_vec   = NULL,
-    conf_level   = 0.95,
-    degf         = 49L,
-    variance     = "deff"
+    se_srs_vec = NULL,
+    conf_level = 0.95,
+    degf = 49L,
+    variance = "deff"
   )
   expect_true(is.na(result$deff))
 })
 
 test_that(".add_variance_cols() column ordering is se, var, cv, ci_low, ci_high, moe, deff", {
   result <- .add_variance_cols(
-    se_vec       = 1.0,
+    se_vec = 1.0,
     estimate_vec = 10.0,
-    se_srs_vec   = 0.5,
-    conf_level   = 0.95,
-    degf         = 49L,
-    variance     = c("se", "var", "cv", "ci", "moe", "deff")
+    se_srs_vec = 0.5,
+    conf_level = 0.95,
+    degf = 49L,
+    variance = c("se", "var", "cv", "ci", "moe", "deff")
   )
   expect_identical(
     names(result),
@@ -536,11 +555,11 @@ test_that(".add_variance_cols() column ordering is se, var, cv, ci_low, ci_high,
 
 test_that(".add_variance_cols() can return any subset of columns", {
   result <- .add_variance_cols(
-    se_vec       = 1.0,
+    se_vec = 1.0,
     estimate_vec = 10.0,
-    conf_level   = 0.95,
-    degf         = 49L,
-    variance     = c("ci", "moe")
+    conf_level = 0.95,
+    degf = 49L,
+    variance = c("ci", "moe")
   )
   expect_true("ci_low" %in% names(result))
   expect_true("ci_high" %in% names(result))
@@ -554,9 +573,15 @@ test_that(".add_variance_cols() can return any subset of columns", {
 
 test_that('.apply_name_style() is a no-op for name_style = "surveycore"', {
   result <- structure(
-    tibble::tibble(mean = 10.0, se = 1.0, ci_low = 8.0, ci_high = 12.0, n = 50L),
-    .meta  = list(design_type = "srs"),
-    class  = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
+    tibble::tibble(
+      mean = 10.0,
+      se = 1.0,
+      ci_low = 8.0,
+      ci_high = 12.0,
+      n = 50L
+    ),
+    .meta = list(design_type = "srs"),
+    class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "surveycore")
   expect_identical(names(out), names(result))
@@ -564,9 +589,15 @@ test_that('.apply_name_style() is a no-op for name_style = "surveycore"', {
 
 test_that('.apply_name_style() renames columns for name_style = "broom"', {
   result <- structure(
-    tibble::tibble(mean = 10.0, se = 1.0, ci_low = 8.0, ci_high = 12.0, n = 50L),
-    .meta  = list(design_type = "srs"),
-    class  = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
+    tibble::tibble(
+      mean = 10.0,
+      se = 1.0,
+      ci_low = 8.0,
+      ci_high = 12.0,
+      n = 50L
+    ),
+    .meta = list(design_type = "srs"),
+    class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
   expect_true("estimate" %in% names(out))
@@ -580,8 +611,8 @@ test_that('.apply_name_style() renames columns for name_style = "broom"', {
 test_that(".apply_name_style() preserves .meta and class after rename", {
   result <- structure(
     tibble::tibble(mean = 10.0, se = 1.0),
-    .meta  = list(design_type = "srs", n_respondents = 50L),
-    class  = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
+    .meta = list(design_type = "srs", n_respondents = 50L),
+    class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
   expect_identical(attr(out, ".meta"), attr(result, ".meta"))
@@ -592,8 +623,8 @@ test_that(".apply_name_style() only renames columns that are present", {
   # result has 'mean' but not 'se'; 'se' should not be added
   result <- structure(
     tibble::tibble(mean = 10.0, n = 50L),
-    .meta  = list(design_type = "srs"),
-    class  = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
+    .meta = list(design_type = "srs"),
+    class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
   expect_false("std.error" %in% names(out))
@@ -603,8 +634,8 @@ test_that(".apply_name_style() only renames columns that are present", {
 test_that('.apply_name_style() renames p_value to p.value for get_corr() output', {
   result <- structure(
     tibble::tibble(r = 0.5, p_value = 0.01, df = 48L),
-    .meta  = list(design_type = "taylor"),
-    class  = c("survey_corr", "survey_result", "tbl_df", "tbl", "data.frame")
+    .meta = list(design_type = "taylor"),
+    class = c("survey_corr", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
   expect_true("p.value" %in% names(out))
@@ -618,7 +649,7 @@ test_that('.apply_name_style() renames p_value to p.value for get_corr() output'
 test_that(".degf() returns design-based finite df for survey_taylor", {
   # 10 PSUs across 2 strata → degf = 10 - 2 = 8
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   test_invariants(d)
 
   expect_equal(.degf(d), 8L)
@@ -627,15 +658,19 @@ test_that(".degf() returns design-based finite df for survey_taylor", {
 test_that(".degf() returns design-based finite df for survey_replicate", {
   # BRR with 5 repweights → degf = 5 - 1 = 4
   df <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "replicate", type = "brr", seed = 11L
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 11L
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d          <- as_survey_repweights(
+  d <- as_survey_replicate(
     df,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR"
+    type = "BRR"
   )
   test_invariants(d)
 
@@ -645,11 +680,19 @@ test_that(".degf() returns design-based finite df for survey_replicate", {
 test_that(".degf() returns design-based finite df for survey_twophase", {
   # Phase 1 is the same Taylor design → same degf as phase1
   df <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "twophase", seed = 12L
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 12L
   )
-  phase1   <- as_survey(
-    df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   twophase <- suppressWarnings(
     as_survey_twophase(phase1, subset = subset, method = "approx")
@@ -664,7 +707,7 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
 test_that(".degf() returns design-based finite df for survey_srs", {
   # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
-  d  <- as_survey_srs(df, weights = wt)
+  d <- as_survey_srs(df, weights = wt)
   test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)
@@ -673,7 +716,7 @@ test_that(".degf() returns design-based finite df for survey_srs", {
 test_that(".degf() returns design-based finite df for survey_calibrated", {
   # Calibrated with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 14L)
-  d  <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_calibrated(df, weights = wt)
   test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)
@@ -719,7 +762,7 @@ test_that(".check_unsupported_class() returns invisibly for all five supported c
 
 test_that(".check_unsupported_class() returns NULL invisibly on success", {
   designs <- make_all_designs(seed = 42L)
-  result  <- .check_unsupported_class(designs$taylor, "get_means")
+  result <- .check_unsupported_class(designs$taylor, "get_means")
   expect_null(result)
 })
 
@@ -728,12 +771,15 @@ test_that(".check_unsupported_class() returns NULL invisibly on success", {
 
 test_that(".extract_var_meta() returns all-NULL list for plain numeric column", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 20L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # y1 has no metadata and no haven attrs in this data
   result <- .extract_var_meta(d, "y1")
 
   expect_type(result, "list")
-  expect_identical(names(result), c("variable_label", "question_preface", "value_labels"))
+  expect_identical(
+    names(result),
+    c("variable_label", "question_preface", "value_labels")
+  )
   expect_null(result$variable_label)
   expect_null(result$question_preface)
   expect_null(result$value_labels)
@@ -741,8 +787,8 @@ test_that(".extract_var_meta() returns all-NULL list for plain numeric column", 
 
 test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 21L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d  <- set_var_label(d, y1, "Annual household income")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_var_label(d, y1, "Annual household income")
 
   result <- .extract_var_meta(d, "y1")
   expect_identical(result$variable_label, "Annual household income")
@@ -750,7 +796,7 @@ test_that(".extract_var_meta() returns variable_label from @metadata@variable_la
 
 test_that(".extract_var_meta() falls back to attr(col, 'label') when @metadata has no entry", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 22L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # Manually attach a haven label attribute to a column (bypassing @metadata)
   attr(d@data[["y2"]], "label") <- "Manually attached label"
 
@@ -760,8 +806,8 @@ test_that(".extract_var_meta() falls back to attr(col, 'label') when @metadata h
 
 test_that(".extract_var_meta() returns question_preface from @metadata@question_prefaces", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 23L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d  <- set_question_preface(d, y1, "How would you rate...")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_question_preface(d, y1, "How would you rate...")
 
   result <- .extract_var_meta(d, "y1")
   expect_identical(result$question_preface, "How would you rate...")
@@ -769,9 +815,9 @@ test_that(".extract_var_meta() returns question_preface from @metadata@question_
 
 test_that(".extract_var_meta() returns value_labels from @metadata@value_labels", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 24L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   lbs <- c("No" = 0L, "Yes" = 1L)
-  d  <- set_val_labels(d, y3, lbs)
+  d <- set_val_labels(d, y3, lbs)
 
   result <- .extract_var_meta(d, "y3")
   expect_identical(result$value_labels, lbs)
@@ -779,7 +825,7 @@ test_that(".extract_var_meta() returns value_labels from @metadata@value_labels"
 
 test_that(".extract_var_meta() falls back to attr(col, 'labels') for haven-labelled column", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 25L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # Manually attach haven-style labels to a column that has no @metadata entry
   haven_lbs <- c("Male" = 1L, "Female" = 2L)
   attr(d@data[["y3"]], "labels") <- haven_lbs
@@ -789,7 +835,7 @@ test_that(".extract_var_meta() falls back to attr(col, 'labels') for haven-label
 })
 
 test_that(".extract_var_meta() returns value_labels as named integer for factor column", {
-  df    <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 26L)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 26L)
   df$gender <- factor(
     sample(c("Male", "Female"), nrow(df), replace = TRUE),
     levels = c("Male", "Female")
@@ -805,9 +851,9 @@ test_that(".extract_var_meta() returns value_labels as named integer for factor 
 
 test_that(".extract_var_meta() @metadata takes precedence over haven column attrs", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 27L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # Set label in @metadata
-  d  <- set_var_label(d, y1, "Metadata label")
+  d <- set_var_label(d, y1, "Metadata label")
   # Also attach haven attr directly to the column
   attr(d@data[["y1"]], "label") <- "Haven attr label"
 
@@ -816,10 +862,10 @@ test_that(".extract_var_meta() @metadata takes precedence over haven column attr
 })
 
 test_that(".extract_var_meta() @metadata value_labels take precedence over haven labels attr", {
-  df  <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 28L)
-  d   <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 28L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   meta_lbs <- c("No" = 0L, "Yes" = 1L)
-  d   <- set_val_labels(d, y3, meta_lbs)
+  d <- set_val_labels(d, y3, meta_lbs)
   # Also attach different haven attrs directly to the column
   attr(d@data[["y3"]], "labels") <- c("Nein" = 0L, "Ja" = 1L)
 
@@ -832,7 +878,7 @@ test_that(".extract_var_meta() @metadata value_labels take precedence over haven
 
 test_that(".build_group_meta() returns list() for empty group_vars", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 30L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- .build_group_meta(d, character(0))
   expect_identical(result, list())
@@ -840,7 +886,7 @@ test_that(".build_group_meta() returns list() for empty group_vars", {
 
 test_that(".build_group_meta() returns named list of length 1 for one group var", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 31L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- .build_group_meta(d, "group")
   expect_type(result, "list")
@@ -849,9 +895,9 @@ test_that(".build_group_meta() returns named list of length 1 for one group var"
 })
 
 test_that(".build_group_meta() returns named list of length N for N group vars", {
-  df      <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 32L)
-  df$sex  <- factor(sample(c("Male", "Female"), nrow(df), replace = TRUE))
-  d       <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 32L)
+  df$sex <- factor(sample(c("Male", "Female"), nrow(df), replace = TRUE))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
   result <- .build_group_meta(d, c("group", "sex"))
   expect_length(result, 2L)
@@ -860,21 +906,21 @@ test_that(".build_group_meta() returns named list of length N for N group vars",
 
 test_that(".build_group_meta() each entry has the three required sub-keys", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 33L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d  <- set_var_label(d, group, "Survey group")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_var_label(d, group, "Survey group")
 
   result <- .build_group_meta(d, "group")
-  entry  <- result[["group"]]
+  entry <- result[["group"]]
 
-  expect_true("variable_label"   %in% names(entry))
+  expect_true("variable_label" %in% names(entry))
   expect_true("question_preface" %in% names(entry))
-  expect_true("value_labels"     %in% names(entry))
+  expect_true("value_labels" %in% names(entry))
 })
 
 test_that(".build_group_meta() captures variable_label for labelled group var", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 34L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d  <- set_var_label(d, group, "Demographic group")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_var_label(d, group, "Demographic group")
 
   result <- .build_group_meta(d, "group")
   expect_identical(result$group$variable_label, "Demographic group")
@@ -884,10 +930,10 @@ test_that(".build_group_meta() captures variable_label for labelled group var", 
 # ── Category 12: .apply_group_labels() ───────────────────────────────────────
 
 test_that(".apply_group_labels() leaves unlabelled integer columns unchanged", {
-  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 40L)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 40L)
   df$gender_code <- sample(1L:2L, nrow(df), replace = TRUE)
-  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  combos    <- data.frame(gender_code = c(1L, 2L))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  combos <- data.frame(gender_code = c(1L, 2L))
 
   result <- .apply_group_labels(combos, "gender_code", d, label_values = TRUE)
   expect_identical(result$gender_code, c(1L, 2L))
@@ -895,10 +941,10 @@ test_that(".apply_group_labels() leaves unlabelled integer columns unchanged", {
 })
 
 test_that(".apply_group_labels() converts haven-labelled integer codes to factor", {
-  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 41L)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 41L)
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
-  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
 
   combos <- data.frame(gender = c(1L, 2L))
   result <- .apply_group_labels(combos, "gender", d, label_values = TRUE)
@@ -909,11 +955,11 @@ test_that(".apply_group_labels() converts haven-labelled integer codes to factor
 })
 
 test_that(".apply_group_labels() factor levels ordered by code value for haven labels", {
-  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
-  df$cat    <- sample(c(3L, 1L, 2L), nrow(df), replace = TRUE)
-  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  df$cat <- sample(c(3L, 1L, 2L), nrow(df), replace = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # labels declared in non-numeric order
-  d         <- set_val_labels(d, cat, c("Low" = 1L, "Mid" = 2L, "High" = 3L))
+  d <- set_val_labels(d, cat, c("Low" = 1L, "Mid" = 2L, "High" = 3L))
 
   combos <- data.frame(cat = c(1L, 2L, 3L))
   result <- .apply_group_labels(combos, "cat", d, label_values = TRUE)
@@ -922,10 +968,10 @@ test_that(".apply_group_labels() factor levels ordered by code value for haven l
 })
 
 test_that(".apply_group_labels() converts plain R factor to factor preserving level order", {
-  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 43L)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 43L)
   df$status <- factor(
     sample(c("Active", "Inactive"), nrow(df), replace = TRUE),
-    levels = c("Inactive", "Active")   # non-alphabetical order
+    levels = c("Inactive", "Active") # non-alphabetical order
   )
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
 
@@ -940,28 +986,35 @@ test_that(".apply_group_labels() converts plain R factor to factor preserving le
 })
 
 test_that(".apply_group_labels() with label_values = FALSE returns group_combos unchanged", {
-  df        <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 44L)
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 44L)
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
-  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
 
-  combos   <- data.frame(gender = c(1L, 2L))
-  result   <- .apply_group_labels(combos, "gender", d, label_values = FALSE)
+  combos <- data.frame(gender = c(1L, 2L))
+  result <- .apply_group_labels(combos, "gender", d, label_values = FALSE)
 
   expect_identical(result$gender, c(1L, 2L))
   expect_false(is.factor(result$gender))
 })
 
 test_that(".apply_group_labels() only converts labelled columns in multi-group combos", {
-  df        <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 45L)
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 45L)
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
-  df$region <- sample(1L:3L, nrow(df), replace = TRUE)  # no labels
-  d         <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d         <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  df$region <- sample(1L:3L, nrow(df), replace = TRUE) # no labels
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
 
-  combos <- data.frame(gender = c(1L, 2L, 1L, 2L, 1L, 2L),
-                       region = c(1L, 1L, 2L, 2L, 3L, 3L))
-  result <- .apply_group_labels(combos, c("gender", "region"), d, label_values = TRUE)
+  combos <- data.frame(
+    gender = c(1L, 2L, 1L, 2L, 1L, 2L),
+    region = c(1L, 1L, 2L, 2L, 3L, 3L)
+  )
+  result <- .apply_group_labels(
+    combos,
+    c("gender", "region"),
+    d,
+    label_values = TRUE
+  )
 
   expect_true(is.factor(result$gender))
   expect_identical(as.character(result$gender[1L:2L]), c("Male", "Female"))
@@ -974,19 +1027,19 @@ test_that(".apply_group_labels() only converts labelled columns in multi-group c
 
 test_that(".apply_decimals() rounds double columns to specified places", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 51L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  r  <- get_means(d, y1, variance = "se")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r <- get_means(d, y1, variance = "se")
 
   r_rounded <- .apply_decimals(r, 2L)
 
   expect_equal(r_rounded$mean, round(r$mean, 2L))
-  expect_equal(r_rounded$se,   round(r$se,   2L))
+  expect_equal(r_rounded$se, round(r$se, 2L))
 })
 
 test_that(".apply_decimals() leaves integer columns unchanged", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 52L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  r  <- get_means(d, y1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r <- get_means(d, y1)
 
   r_rounded <- .apply_decimals(r, 0L)
 
@@ -996,8 +1049,8 @@ test_that(".apply_decimals() leaves integer columns unchanged", {
 
 test_that(".apply_decimals() preserves .meta attribute", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 53L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  r  <- get_means(d, y1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r <- get_means(d, y1)
   m_before <- attr(r, ".meta")
 
   r_rounded <- .apply_decimals(r, 2L)
@@ -1007,8 +1060,8 @@ test_that(".apply_decimals() preserves .meta attribute", {
 
 test_that(".apply_decimals() preserves S3 class", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 54L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  r  <- get_means(d, y1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r <- get_means(d, y1)
   cls_before <- class(r)
 
   r_rounded <- .apply_decimals(r, 2L)
@@ -1105,36 +1158,45 @@ test_that('.validate_shared_args() rejects na.rm = "yes" (character)', {
 # ── Category 11: .build_group_combos() ───────────────────────────────────────
 
 test_that(".build_group_combos() excludes NA rows when na.rm = TRUE", {
-  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  df <- data.frame(
+    grp = c("A", "B", NA_character_, "A"),
+    stringsAsFactors = FALSE
+  )
   result <- .build_group_combos(df, na.rm = TRUE)
   expect_false(anyNA(result$grp))
   expect_equal(nrow(result), 2L)
 })
 
 test_that(".build_group_combos() includes NA rows when na.rm = FALSE", {
-  df <- data.frame(grp = c("A", "B", NA_character_, "A"), stringsAsFactors = FALSE)
+  df <- data.frame(
+    grp = c("A", "B", NA_character_, "A"),
+    stringsAsFactors = FALSE
+  )
   result <- .build_group_combos(df, na.rm = FALSE)
   expect_true(anyNA(result$grp))
   expect_equal(nrow(result), 3L)
 })
 
 test_that(".build_group_combos() sorts NA combos after non-NA combos", {
-  df <- data.frame(grp = c(NA_character_, "B", "A", NA_character_), stringsAsFactors = FALSE)
+  df <- data.frame(
+    grp = c(NA_character_, "B", "A", NA_character_),
+    stringsAsFactors = FALSE
+  )
   result <- .build_group_combos(df, na.rm = FALSE)
   # Non-NA rows come first; NA row is last
   non_na_rows <- which(!is.na(result$grp))
-  na_rows     <- which(is.na(result$grp))
+  na_rows <- which(is.na(result$grp))
   expect_true(all(na_rows > max(non_na_rows)))
 })
 
 test_that(".build_group_combos() sorts NA combos last with multi-column input", {
   df <- data.frame(
-    grp  = c("A", NA_character_, "B", "A"),
-    grp2 = c("X", "Y",           "X", "Y"),
+    grp = c("A", NA_character_, "B", "A"),
+    grp2 = c("X", "Y", "X", "Y"),
     stringsAsFactors = FALSE
   )
   result <- .build_group_combos(df, na.rm = FALSE)
-  na_rows    <- which(is.na(result$grp))
+  na_rows <- which(is.na(result$grp))
   non_na_rows <- which(!is.na(result$grp))
   expect_true(length(na_rows) > 0L)
   expect_true(all(na_rows > max(non_na_rows)))
@@ -1149,7 +1211,10 @@ test_that(".build_group_combos() returns empty data.frame when input has 0 rows"
 })
 
 test_that(".build_group_combos() returns empty data.frame when na.rm=TRUE removes all rows", {
-  df <- data.frame(grp = c(NA_character_, NA_character_), stringsAsFactors = FALSE)
+  df <- data.frame(
+    grp = c(NA_character_, NA_character_),
+    stringsAsFactors = FALSE
+  )
   result <- .build_group_combos(df, na.rm = TRUE)
   expect_equal(nrow(result), 0L)
 })
@@ -1180,20 +1245,28 @@ test_that(".match_group_combo() matches non-NA values correctly", {
 
 test_that(".match_group_combo() handles multi-column combos with NA in first var", {
   data_cols <- list(
-    grp  = c("A", NA_character_, "B", NA_character_),
-    grp2 = c("X", "X",          "X", "Y")
+    grp = c("A", NA_character_, "B", NA_character_),
+    grp2 = c("X", "X", "X", "Y")
   )
-  combo_row <- data.frame(grp = NA_character_, grp2 = "X", stringsAsFactors = FALSE)
+  combo_row <- data.frame(
+    grp = NA_character_,
+    grp2 = "X",
+    stringsAsFactors = FALSE
+  )
   result <- .match_group_combo(data_cols, combo_row)
   expect_equal(result, c(FALSE, TRUE, FALSE, FALSE))
 })
 
 test_that(".match_group_combo() handles multi-column combos with NA in second var", {
   data_cols <- list(
-    grp  = c("A", "A", "B"),
+    grp = c("A", "A", "B"),
     grp2 = c(NA_character_, "X", NA_character_)
   )
-  combo_row <- data.frame(grp = "A", grp2 = NA_character_, stringsAsFactors = FALSE)
+  combo_row <- data.frame(
+    grp = "A",
+    grp2 = NA_character_,
+    stringsAsFactors = FALSE
+  )
   result <- .match_group_combo(data_cols, combo_row)
   expect_equal(result, c(TRUE, FALSE, FALSE))
 })
@@ -1202,20 +1275,32 @@ test_that(".match_group_combo() handles multi-column combos with NA in second va
 # ── Category 13: .apply_group_labels() tagged-NA path ────────────────────────
 
 # Helper: build a minimal valid design with a custom column for label tests.
-.make_label_test_design <- function(extra_col, extra_labels, col_name, seed = 42L) {
+.make_label_test_design <- function(
+  extra_col,
+  extra_labels,
+  col_name,
+  seed = 42L
+) {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = seed)
   # Recycle extra_col to fill 100 rows
   df[[col_name]] <- rep_len(extra_col, 100L)
   attr(df[[col_name]], "labels") <- extra_labels
-  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 }
 
 test_that(".apply_group_labels() leaves plain NAs as NA in factor output when no label", {
   labels_vec <- c("GroupA" = 1L, "GroupB" = 2L)
   design <- .make_label_test_design(
-    extra_col    = c(1L, 2L, NA_integer_),
+    extra_col = c(1L, 2L, NA_integer_),
     extra_labels = labels_vec,
-    col_name     = "grp_plain"
+    col_name = "grp_plain"
   )
   gc <- data.frame(grp_plain = c(1L, 2L, NA_integer_))
   result <- .apply_group_labels(gc, "grp_plain", design, label_values = TRUE)
@@ -1228,12 +1313,12 @@ test_that(".apply_group_labels() leaves plain NAs as NA in factor output when no
 
 test_that(".apply_group_labels() converts tagged NAs to factor levels when label exists", {
   skip_if_not_installed("haven")
-  tagged_r    <- haven::tagged_na("r")
-  labels_vec  <- c("GroupA" = 1L, "GroupB" = 2L, "Refused" = tagged_r)
+  tagged_r <- haven::tagged_na("r")
+  labels_vec <- c("GroupA" = 1L, "GroupB" = 2L, "Refused" = tagged_r)
   design <- .make_label_test_design(
-    extra_col    = c(1L, 2L, tagged_r),
+    extra_col = c(1L, 2L, tagged_r),
     extra_labels = labels_vec,
-    col_name     = "grp_tagged"
+    col_name = "grp_tagged"
   )
   # group_combos has 3 rows: one per unique combo (GroupA, GroupB, Refused/NA)
   gc <- data.frame(grp_tagged = c(1L, 2L, tagged_r))
@@ -1249,7 +1334,10 @@ test_that(".apply_group_labels() converts tagged NAs to factor levels when label
 # ── Category 14: get_na_group_rows() ─────────────────────────────────────────
 
 test_that("get_na_group_rows() returns rows where group_col is NA", {
-  tbl <- tibble::tibble(grp = c("A", NA_character_, "B", NA_character_), val = 1:4)
+  tbl <- tibble::tibble(
+    grp = c("A", NA_character_, "B", NA_character_),
+    val = 1:4
+  )
   result <- get_na_group_rows(tbl, "grp")
   expect_equal(nrow(result), 2L)
   expect_true(all(is.na(result$grp)))
@@ -1311,5 +1399,5 @@ test_that("print.survey_result() outputs header with class and dims", {
   # print.survey_result dispatches through the S3 method; capture output
   out <- capture.output(print(result))
   expect_true(any(grepl("survey_means", out)))
-  expect_true(any(grepl("×", out)))  # the dimension separator
+  expect_true(any(grepl("×", out))) # the dimension separator
 })

@@ -17,7 +17,6 @@
 #
 # Error classes match plans/error-messages.md exactly.
 
-
 # ── survey_metadata ────────────────────────────────────────────────────────────
 
 #' Survey Metadata Container
@@ -50,11 +49,11 @@
 survey_metadata <- S7::new_class(
   "survey_metadata",
   properties = list(
-    variable_labels   = S7::new_property(
+    variable_labels = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
-    value_labels      = S7::new_property(
+    value_labels = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
@@ -62,11 +61,11 @@ survey_metadata <- S7::new_class(
       S7::class_list,
       default = quote(list())
     ),
-    notes             = S7::new_property(
+    notes = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
-    transformations   = S7::new_property(
+    transformations = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
@@ -89,7 +88,7 @@ survey_metadata <- S7::new_class(
 #' All survey design objects (`survey_srs`, `survey_taylor`,
 #' `survey_replicate`, `survey_twophase`, `survey_calibrated`) inherit from
 #' `survey_base`. This class is abstract and cannot be instantiated directly —
-#' use [as_survey()], [as_survey_repweights()], [as_survey_twophase()], or
+#' use [as_survey()], [as_survey_replicate()], [as_survey_twophase()], or
 #' [as_survey_calibrated()] instead.
 #'
 #' @section Properties:
@@ -111,12 +110,12 @@ survey_base <- S7::new_class(
   "survey_base",
   abstract = TRUE,
   properties = list(
-    data     = S7::new_property(
+    data = S7::new_property(
       S7::class_data.frame,
       default = quote(data.frame())
     ),
     metadata = S7::new_property(
-      class   = survey_metadata,
+      class = survey_metadata,
       default = quote(survey_metadata())
     ),
     variables = S7::new_property(
@@ -125,11 +124,11 @@ survey_base <- S7::new_class(
     ),
     # Set by surveytidy's group_by(). Always character(0) in standalone
     # surveycore use. Do NOT read or write in surveycore code.
-    groups   = S7::new_property(
+    groups = S7::new_property(
       S7::class_character,
       default = quote(character(0))
     ),
-    call     = S7::new_property(default = NULL)
+    call = S7::new_property(default = NULL)
   )
 )
 
@@ -178,10 +177,9 @@ survey_base <- S7::new_class(
 #' @export
 survey_taylor <- S7::new_class(
   "survey_taylor",
-  parent    = survey_base,
+  parent = survey_base,
   properties = list(),
   validator = function(self) {
-
     # ── Gather all named design column names ─────────────────────────────────
     # c() with NULL args drops them automatically
     design_vars <- c(
@@ -256,20 +254,21 @@ survey_taylor <- S7::new_class(
 
     # ── Warning 35: PSU appearing in multiple strata ─────────────────────────
     # Only check when ids, strata are both present and nest = FALSE.
-    ids_vars   <- self@variables$ids
+    ids_vars <- self@variables$ids
     strata_var <- self@variables$strata
-    nest       <- isTRUE(self@variables$nest)
+    nest <- isTRUE(self@variables$nest)
 
     if (
       length(ids_vars) > 0L &&
-      !is.null(strata_var) &&
-      strata_var %in% names(self@data) &&
-      !nest
+        !is.null(strata_var) &&
+        strata_var %in% names(self@data) &&
+        !nest
     ) {
-      psu_col    <- as.character(self@data[[ids_vars[[1L]]]])
+      psu_col <- as.character(self@data[[ids_vars[[1L]]]])
       strata_col <- as.character(self@data[[strata_var]])
       psu_n_strata <- tapply(
-        strata_col, psu_col,
+        strata_col,
+        psu_col,
         function(s) length(unique(s))
       )
       multi_strata_psus <- names(psu_n_strata)[psu_n_strata > 1L]
@@ -297,15 +296,15 @@ survey_taylor <- S7::new_class(
 #' Replicate Weights Survey Design
 #'
 #' A survey design object using replicate weights for variance estimation.
-#' Create with [as_survey_repweights()].
+#' Create with [as_survey_replicate()].
 #'
 #' @param data A `data.frame` containing the survey data. Prefer
-#'   [as_survey_repweights()] over calling this constructor directly.
+#'   [as_survey_replicate()] over calling this constructor directly.
 #' @param metadata A [survey_metadata] object. Created automatically by
-#'   [as_survey_repweights()].
+#'   [as_survey_replicate()].
 #' @param variables A named list of design specification (weights,
 #'   repweights, type, scale, rscales, fpc, fpctype, mse). Set
-#'   automatically by [as_survey_repweights()].
+#'   automatically by [as_survey_replicate()].
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -336,16 +335,15 @@ survey_taylor <- S7::new_class(
 #'   groups = character(0),
 #'   call = NULL
 #' )
-#' @seealso [as_survey_repweights()] to create a `survey_replicate` object.
+#' @seealso [as_survey_replicate()] to create a `survey_replicate` object.
 #' @family constructors
 #' @export
 survey_replicate <- S7::new_class(
   "survey_replicate",
-  parent    = survey_base,
+  parent = survey_base,
   properties = list(),
   validator = function(self) {
-
-    weights_var     <- self@variables$weights
+    weights_var <- self@variables$weights
     repweights_vars <- self@variables$repweights
     all_design_vars <- c(weights_var, repweights_vars)
 
@@ -475,11 +473,10 @@ survey_replicate <- S7::new_class(
 #' @export
 survey_twophase <- S7::new_class(
   "survey_twophase",
-  parent    = survey_base,
+  parent = survey_base,
   properties = list(),
   validator = function(self) {
-
-    subset_var  <- self@variables$subset
+    subset_var <- self@variables$subset
     phase2_vars <- self@variables$phase2
 
     # ── Subset column must exist in @data ────────────────────────────────────
@@ -498,8 +495,8 @@ survey_twophase <- S7::new_class(
     # ── Subset column must be logical ────────────────────────────────────────
     if (
       !is.null(subset_var) &&
-      subset_var %in% names(self@data) &&
-      !is.logical(self@data[[subset_var]])
+        subset_var %in% names(self@data) &&
+        !is.logical(self@data[[subset_var]])
     ) {
       col_class <- class(self@data[[subset_var]])
       cli::cli_abort(
@@ -517,7 +514,7 @@ survey_twophase <- S7::new_class(
     if (!is.null(phase2_vars)) {
       non_null_p2 <- phase2_vars[!vapply(phase2_vars, is.null, logical(1L))]
       phase2_cols <- unlist(non_null_p2, use.names = FALSE)
-      missing_p2  <- setdiff(phase2_cols, names(self@data))
+      missing_p2 <- setdiff(phase2_cols, names(self@data))
       if (length(missing_p2) > 0L) {
         cli::cli_abort(
           c(
@@ -534,10 +531,10 @@ survey_twophase <- S7::new_class(
     # ── Warning 26: phase 2 design var all-NA within phase 2 subset ──────────
     if (
       !is.null(subset_var) &&
-      subset_var %in% names(self@data) &&
-      !is.null(phase2_vars)
+        subset_var %in% names(self@data) &&
+        !is.null(phase2_vars)
     ) {
-      subset_col  <- self@data[[subset_var]]
+      subset_col <- self@data[[subset_var]]
       phase2_rows <- which(!is.na(subset_col) & subset_col)
 
       if (length(phase2_rows) > 0L) {
@@ -635,12 +632,11 @@ survey_twophase <- S7::new_class(
 #' @export
 survey_srs <- S7::new_class(
   "survey_srs",
-  parent    = survey_base,
+  parent = survey_base,
   properties = list(),
   validator = function(self) {
-
     weights_var <- self@variables$weights
-    fpc_var     <- self@variables$fpc
+    fpc_var <- self@variables$fpc
 
     # ── Weight column must exist in @data ─────────────────────────────────────
     if (!is.null(weights_var) && !weights_var %in% names(self@data)) {
@@ -717,7 +713,7 @@ survey_srs <- S7::new_class(
 #' (same assumption as [as_survey()] with weights only).
 #'
 #' @section Non-probability samples:
-#' Unlike [as_survey()], [as_survey_repweights()], and [as_survey_twophase()], this
+#' Unlike [as_survey()], [as_survey_replicate()], and [as_survey_twophase()], this
 #' class does **not** assume a probability sampling design. Standard errors
 #' produced from a `survey_calibrated` object rest on a model-assisted SRS
 #' assumption, which is consistent with common practice for calibrated
@@ -767,7 +763,7 @@ survey_srs <- S7::new_class(
 #' @export
 survey_calibrated <- S7::new_class(
   "survey_calibrated",
-  parent    = survey_base,
+  parent = survey_base,
   properties = list(
     # Stores calibration provenance from surveywts output.
     # NULL when calibration was done externally.
@@ -775,7 +771,6 @@ survey_calibrated <- S7::new_class(
     calibration = S7::new_property(default = NULL)
   ),
   validator = function(self) {
-
     weights_var <- self@variables$weights
 
     # ── Weight column must exist in @data ─────────────────────────────────────

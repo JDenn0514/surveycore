@@ -50,22 +50,24 @@
 #' @return A data.frame.
 #' @keywords internal
 make_survey_data <- function(
-  n           = 500L,
-  n_psu       = 50L,
-  n_strata    = 5L,
-  design      = c("taylor", "replicate", "twophase"),
-  type        = "brr",
+  n = 500L,
+  n_psu = 50L,
+  n_strata = 5L,
+  design = c("taylor", "replicate", "twophase"),
+  type = "brr",
   phase2_frac = 0.4,
   with_labels = FALSE,
-  seed        = 42L
+  seed = 42L
 ) {
   design <- match.arg(design)
-  type   <- tolower(type)
+  type <- tolower(type)
 
   if (type %in% c("brr", "fay") && n_psu %% 2L != 0L) {
     stop(
       "n_psu must be even for BRR/Fay replicate designs. ",
-      "Got n_psu = ", n_psu, "."
+      "Got n_psu = ",
+      n_psu,
+      "."
     )
   }
 
@@ -74,9 +76,12 @@ make_survey_data <- function(
   # --- PSU-to-stratum assignment ---
   # Distribute PSUs across strata as evenly as possible
   psus_per_stratum <- rep(n_psu %/% n_strata, n_strata)
-  remainder        <- n_psu %% n_strata
+  remainder <- n_psu %% n_strata
   if (remainder > 0L) {
-    psus_per_stratum[seq_len(remainder)] <- psus_per_stratum[seq_len(remainder)] + 1L
+    psus_per_stratum[seq_len(remainder)] <- psus_per_stratum[seq_len(
+      remainder
+    )] +
+      1L
   }
   psu_stratum <- rep(seq_len(n_strata), psus_per_stratum) # stratum for each PSU
 
@@ -85,82 +90,89 @@ make_survey_data <- function(
   # remaining rows to PSUs with largest fractional parts. Guarantees all
   # PSU sizes >= 1 and sum exactly to n.
   psu_sizes_raw <- sample(5:15, n_psu, replace = TRUE)
-  exact         <- psu_sizes_raw / sum(psu_sizes_raw) * n
-  psu_sizes     <- as.integer(floor(exact))
-  psu_sizes     <- pmax(psu_sizes, 1L)        # ensure every PSU has >= 1 row
-  remaining     <- n - sum(psu_sizes)
+  exact <- psu_sizes_raw / sum(psu_sizes_raw) * n
+  psu_sizes <- as.integer(floor(exact))
+  psu_sizes <- pmax(psu_sizes, 1L) # ensure every PSU has >= 1 row
+  remaining <- n - sum(psu_sizes)
   if (remaining > 0L) {
-    top_idx           <- order(exact - floor(exact), decreasing = TRUE)[seq_len(remaining)]
+    top_idx <- order(exact - floor(exact), decreasing = TRUE)[seq_len(
+      remaining
+    )]
     psu_sizes[top_idx] <- psu_sizes[top_idx] + 1L
   }
 
   psu_index <- rep(seq_len(n_psu), times = psu_sizes) # row-level PSU index
-  strata    <- psu_stratum[psu_index]                  # row-level stratum index
+  strata <- psu_stratum[psu_index] # row-level stratum index
 
   # --- FPC: integer population size per stratum ---
-  stratum_n   <- tabulate(strata, nbins = n_strata)
+  stratum_n <- tabulate(strata, nbins = n_strata)
   stratum_pop <- round(stratum_n * runif(n_strata, 8, 15))
-  fpc         <- stratum_pop[strata]
+  fpc <- stratum_pop[strata]
 
   # --- Sampling weights: lognormal variation around stratum base weight ---
-  base_wt <- stratum_pop / stratum_n    # population/sample ratio per stratum
-  wt      <- base_wt[strata] * exp(rnorm(n, mean = 0, sd = 0.2))
+  base_wt <- stratum_pop / stratum_n # population/sample ratio per stratum
+  wt <- base_wt[strata] * exp(rnorm(n, mean = 0, sd = 0.2))
 
   # --- Outcome variables ---
-  y1    <- rnorm(n, mean = 50, sd = 10)
-  y2    <- rnorm(n, mean = 0, sd = 1)
-  y3    <- as.integer(runif(n) < 0.3)
+  y1 <- rnorm(n, mean = 50, sd = 10)
+  y2 <- rnorm(n, mean = 0, sd = 1)
+  y3 <- as.integer(runif(n) < 0.3)
   group <- sample(c("A", "B", "C"), n, replace = TRUE)
 
   df <- data.frame(
-    psu    = paste0("psu_", psu_index),
+    psu = paste0("psu_", psu_index),
     strata = paste0("stratum_", strata),
-    fpc    = fpc,
-    wt     = wt,
-    y1     = y1,
-    y2     = y2,
-    y3     = y3,
-    group  = group,
+    fpc = fpc,
+    wt = wt,
+    y1 = y1,
+    y2 = y2,
+    y3 = y3,
+    group = group,
     stringsAsFactors = FALSE
   )
 
   # --- Replicate weights ---
   if (design == "replicate") {
-    R <- switch(type,
-      brr       = n_psu %/% 2L,
-      fay       = n_psu %/% 2L,
-      jk1       = ,
-      jk2       = ,
-      jkn       = ,
+    R <- switch(
+      type,
+      brr = n_psu %/% 2L,
+      fay = n_psu %/% 2L,
+      jk1 = ,
+      jk2 = ,
+      jkn = ,
       bootstrap = n_psu,
       n_psu
     )
-    repwt_matrix        <- matrix(
+    repwt_matrix <- matrix(
       wt * exp(matrix(rnorm(n * R, mean = 0, sd = 0.1), nrow = n, ncol = R)),
       nrow = n,
       ncol = R
     )
-    repwt_df            <- as.data.frame(repwt_matrix)
-    names(repwt_df)     <- paste0("repwt_", seq_len(R))
-    df                  <- cbind(df, repwt_df)
+    repwt_df <- as.data.frame(repwt_matrix)
+    names(repwt_df) <- paste0("repwt_", seq_len(R))
+    df <- cbind(df, repwt_df)
   }
 
   # --- Two-phase indicator and inclusion probabilities ---
   if (design == "twophase") {
-    df$subset      <- runif(n) < phase2_frac
+    df$subset <- runif(n) < phase2_frac
     df$phase1_prob <- stratum_n[strata] / stratum_pop[strata]
     df$phase2_prob <- rep(phase2_frac, n)
   }
 
   # --- Haven-style label attributes ---
   if (with_labels) {
-    attr(df$y1,    "label")  <- "Outcome variable 1 (continuous)"
-    attr(df$y2,    "label")  <- "Outcome variable 2 (continuous)"
-    attr(df$y3,    "label")  <- "Outcome variable 3 (binary, 0/1)"
-    attr(df$y3,    "labels") <- c("No" = 0L, "Yes" = 1L)
-    attr(df$group, "label")  <- "Demographic group"
-    attr(df$group, "labels") <- c("Group A" = "A", "Group B" = "B", "Group C" = "C")
-    attr(df$wt,    "label")  <- "Sampling weight"
+    attr(df$y1, "label") <- "Outcome variable 1 (continuous)"
+    attr(df$y2, "label") <- "Outcome variable 2 (continuous)"
+    attr(df$y3, "label") <- "Outcome variable 3 (binary, 0/1)"
+    attr(df$y3, "labels") <- c("No" = 0L, "Yes" = 1L)
+    attr(df$group, "label") <- "Demographic group"
+    attr(df$group, "labels") <- c(
+      "Group A" = "A",
+      "Group B" = "B",
+      "Group C" = "C"
+    )
+    attr(df$wt, "label") <- "Sampling weight"
   }
 
   df
@@ -181,7 +193,6 @@ make_survey_data <- function(
 #'   violated invariant.
 #' @keywords internal
 test_invariants <- function(design) {
-
   # survey_srs has additional @variables keys (fpc_type, visible_vars) — check here
   # before the general invariants run.
   if (S7::S7_inherits(design, survey_srs)) {
@@ -223,7 +234,10 @@ test_invariants <- function(design) {
         label = paste0("weight column '", wt_var, "' present in @data")
       )
       wt_col <- design@data[[wt_var]]
-      testthat::expect_true(is.numeric(wt_col), label = "weight column is numeric")
+      testthat::expect_true(
+        is.numeric(wt_col),
+        label = "weight column is numeric"
+      )
       testthat::expect_true(
         sum(!is.na(wt_col)) > 0L,
         label = "weight column has at least one non-NA value"
@@ -260,7 +274,10 @@ test_invariants <- function(design) {
     p1 <- design@variables$phase1
     p2 <- design@variables$phase2
     design_vars <- c(
-      p1$ids, p1$weights, p1$strata, p1$fpc,
+      p1$ids,
+      p1$weights,
+      p1$strata,
+      p1$fpc,
       if (!is.null(p2)) c(p2$ids, p2$strata, p2$probs, p2$fpc),
       design@variables$subset
     )
@@ -410,57 +427,81 @@ test_result_invariants <- function(result, expected_class) {
 make_all_designs <- function(seed = 42L) {
   # Taylor series design
   df_t <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "taylor", seed = seed
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "taylor",
+    seed = seed
   )
   taylor <- as_survey(
     df_t,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
 
   # Replicate weights design
   df_r <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "replicate", type = "brr", seed = seed
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  replicate  <- as_survey_repweights(
+  replicate <- as_survey_replicate(
     df_r,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR"
+    type = "BRR"
   )
 
   # Two-phase design
   df_p <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "twophase", seed = seed
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = seed
   )
-  phase1   <- as_survey(
+  phase1 <- as_survey(
     df_p,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   twophase <- as_survey_twophase(phase1, subset = subset, method = "approx")
 
   # Calibrated design (non-probability, weights only)
   df_c <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "taylor", seed = seed
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "taylor",
+    seed = seed
   )
   calibrated <- as_survey_calibrated(df_c, weights = wt)
 
   # Simple random sample design
   df_s <- make_survey_data(
-    n = 100L, n_psu = 10L, n_strata = 2L,
-    design = "taylor", seed = seed
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "taylor",
+    seed = seed
   )
   srs <- as_survey_srs(df_s, weights = wt)
 
   list(
-    srs        = srs,
-    taylor     = taylor,
-    replicate  = replicate,
-    twophase   = twophase,
+    srs = srs,
+    taylor = taylor,
+    replicate = replicate,
+    twophase = twophase,
     calibrated = calibrated
   )
 }
@@ -484,13 +525,20 @@ make_all_designs <- function(seed = 42L) {
 #' @return A survey_taylor object.
 #' @keywords internal
 make_na_group_design <- function(n = 200, na_frac = 0.2, seed = 42) {
-  df     <- make_survey_data(n = n, seed = seed)
+  df <- make_survey_data(n = n, seed = seed)
   set.seed(seed + 1L)
   na_idx <- sample(seq_len(n), size = floor(n * na_frac))
   df$grp <- sample(c("A", "B", "C"), n, replace = TRUE)
   df$grp[na_idx] <- NA_character_
   df$grp2 <- sample(c("X", "Y"), n, replace = TRUE)
-  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 }
 
 # ------------------------------------------------------------------------------
@@ -507,9 +555,16 @@ make_na_group_design <- function(n = 200, na_frac = 0.2, seed = 42) {
 #' @return A survey_taylor object.
 #' @keywords internal
 make_all_na_group_design <- function(n = 100, seed = 1) {
-  df     <- make_survey_data(n = n, seed = seed)
+  df <- make_survey_data(n = n, seed = seed)
   df$grp <- NA_character_
-  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 }
 
 # ------------------------------------------------------------------------------
@@ -582,8 +637,16 @@ test_glm_tidy_invariants <- function(result) {
   testthat::expect_true(tibble::is_tibble(result))
   # 2. Required columns always present
   expected_cols <- c(
-    "term", "variable", "var_label", "label", "reference_row",
-    "estimate", "std_error", "p_value", "conf_low", "conf_high"
+    "term",
+    "variable",
+    "var_label",
+    "label",
+    "reference_row",
+    "estimate",
+    "std_error",
+    "p_value",
+    "conf_low",
+    "conf_high"
   )
   testthat::expect_true(all(expected_cols %in% names(result)))
   # 3. reference_row is logical, no NAs
@@ -596,10 +659,21 @@ test_glm_tidy_invariants <- function(result) {
   m <- meta(result)
   testthat::expect_false(is.null(m))
   required_keys <- c(
-    "formula", "family", "link", "design_type", "conf_level",
-    "call", "group_names", "group_labels", "n_observations",
-    "n_weighted", "degf", "exponentiate", "include_reference",
-    "converged", "variables"
+    "formula",
+    "family",
+    "link",
+    "design_type",
+    "conf_level",
+    "call",
+    "group_names",
+    "group_labels",
+    "n_observations",
+    "n_weighted",
+    "degf",
+    "exponentiate",
+    "include_reference",
+    "converged",
+    "variables"
   )
   testthat::expect_true(all(required_keys %in% names(m)))
   # 6. group_names is always character(0) for regression
@@ -617,8 +691,13 @@ test_glm_tidy_invariants <- function(result) {
   vars <- m$variables
   testthat::expect_type(vars, "list")
   var_subkeys <- c(
-    "var_label", "var_class", "var_type", "var_nlevels",
-    "contrasts", "reference_level", "value_labels"
+    "var_label",
+    "var_class",
+    "var_type",
+    "var_nlevels",
+    "contrasts",
+    "reference_level",
+    "value_labels"
   )
   for (v in vars) {
     testthat::expect_true(all(var_subkeys %in% names(v)))

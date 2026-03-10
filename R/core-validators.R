@@ -30,7 +30,7 @@ NULL
 
 # ── .validate_data_frame ──────────────────────────────────────────────────────
 
-# Validates the `data` argument shared by as_survey(), as_survey_repweights(), and
+# Validates the `data` argument shared by as_survey(), as_survey_replicate(), and
 # as_survey_calibrated() (Layer 3, errors 1–4 from error-messages.md).
 # Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
 #' @noRd
@@ -45,7 +45,7 @@ NULL
         )
       ),
       class = "surveycore_error_not_data_frame",
-      call  = call
+      call = call
     )
   }
 
@@ -54,7 +54,7 @@ NULL
     cli::cli_abort(
       c("x" = "{.arg data} must have at least one row"),
       class = "surveycore_error_empty_data",
-      call  = call
+      call = call
     )
   }
 
@@ -69,7 +69,7 @@ NULL
         )
       ),
       class = "surveycore_error_duplicate_names",
-      call  = call
+      call = call
     )
   }
 
@@ -78,7 +78,7 @@ NULL
     cli::cli_warn(
       c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
       class = "surveycore_warning_single_row",
-      call  = call
+      call = call
     )
   }
 
@@ -154,7 +154,9 @@ NULL
 # (not list-columns). Pass `vars = NULL` or `vars = character(0)` to no-op.
 #' @noRd
 .validate_design_vars <- function(vars, data) {
-  if (is.null(vars) || length(vars) == 0L) return(invisible(TRUE))
+  if (is.null(vars) || length(vars) == 0L) {
+    return(invisible(TRUE))
+  }
 
   # Existence check
   missing_vars <- setdiff(vars, names(data))
@@ -195,7 +197,9 @@ NULL
 # Pass `fpc_var = NULL` to no-op.
 #' @noRd
 .validate_fpc <- function(fpc_var, data) {
-  if (is.null(fpc_var)) return(invisible(TRUE))
+  if (is.null(fpc_var)) {
+    return(invisible(TRUE))
+  }
 
   # Existence check
   if (!fpc_var %in% names(data)) {
@@ -209,7 +213,7 @@ NULL
   }
 
   fpc_col <- data[[fpc_var]]
-  n_na    <- sum(is.na(fpc_col))
+  n_na <- sum(is.na(fpc_col))
 
   if (n_na > 0L) {
     cli::cli_abort(
@@ -258,12 +262,18 @@ NULL
 
   # Numeric check — collect ALL non-numeric columns before aborting
   # (consistent with .validate_design_vars() which collects all missing vars)
-  not_numeric <- repweights_vars[!vapply(
-    repweights_vars, function(rw) is.numeric(data[[rw]]), logical(1L)
-  )]
+  not_numeric <- repweights_vars[
+    !vapply(
+      repweights_vars,
+      function(rw) is.numeric(data[[rw]]),
+      logical(1L)
+    )
+  ]
   if (length(not_numeric) > 0L) {
     bad_classes <- vapply(
-      not_numeric, function(rw) class(data[[rw]])[[1L]], character(1L)
+      not_numeric,
+      function(rw) class(data[[rw]])[[1L]],
+      character(1L)
     )
     cli::cli_abort(
       c(
@@ -292,10 +302,10 @@ NULL
     return(invisible(TRUE))
   }
 
-  psu_col    <- as.character(data[[ids[[1L]]]])
+  psu_col <- as.character(data[[ids[[1L]]]])
   strata_col <- as.character(data[[strata]])
 
-  psu_n_strata      <- tapply(strata_col, psu_col, function(s) length(unique(s)))
+  psu_n_strata <- tapply(strata_col, psu_col, function(s) length(unique(s)))
   multi_strata_psus <- names(psu_n_strata)[psu_n_strata > 1L]
 
   if (length(multi_strata_psus) > 0L) {
@@ -321,7 +331,9 @@ NULL
 # of replicate weight columns. Pass `rscales = NULL` to no-op.
 #' @noRd
 .validate_rscales <- function(rscales, n_rep) {
-  if (is.null(rscales)) return(invisible(TRUE))
+  if (is.null(rscales)) {
+    return(invisible(TRUE))
+  }
 
   if (length(rscales) != n_rep) {
     cli::cli_abort(
@@ -362,13 +374,13 @@ NULL
 
   # Update ids (character vector, may have multiple stages)
   if (!is.null(vars$ids)) {
-    matched           <- vars$ids %in% names(rename_map)
+    matched <- vars$ids %in% names(rename_map)
     vars$ids[matched] <- rename_map[vars$ids[matched]]
   }
 
   # Update replicate weight column names (survey_replicate only)
   if (!is.null(vars$repweights)) {
-    matched                  <- vars$repweights %in% names(rename_map)
+    matched <- vars$repweights %in% names(rename_map)
     vars$repweights[matched] <- rename_map[vars$repweights[matched]]
   }
 
@@ -386,17 +398,28 @@ NULL
 .rename_metadata_keys <- function(metadata, rename_map) {
   # Renames matched keys in a named list; leaves others unchanged.
   .rename_list_keys <- function(lst, map) {
-    if (length(lst) == 0L || is.null(names(lst))) return(lst)
-    matched         <- names(lst) %in% names(map)
+    if (length(lst) == 0L || is.null(names(lst))) {
+      return(lst)
+    }
+    matched <- names(lst) %in% names(map)
     names(lst)[matched] <- map[names(lst)[matched]]
     lst
   }
 
-  metadata@variable_labels   <- .rename_list_keys(metadata@variable_labels, rename_map)
-  metadata@value_labels      <- .rename_list_keys(metadata@value_labels, rename_map)
-  metadata@question_prefaces <- .rename_list_keys(metadata@question_prefaces, rename_map)
-  metadata@notes             <- .rename_list_keys(metadata@notes, rename_map)
-  metadata@transformations   <- .rename_list_keys(metadata@transformations, rename_map)
+  metadata@variable_labels <- .rename_list_keys(
+    metadata@variable_labels,
+    rename_map
+  )
+  metadata@value_labels <- .rename_list_keys(metadata@value_labels, rename_map)
+  metadata@question_prefaces <- .rename_list_keys(
+    metadata@question_prefaces,
+    rename_map
+  )
+  metadata@notes <- .rename_list_keys(metadata@notes, rename_map)
+  metadata@transformations <- .rename_list_keys(
+    metadata@transformations,
+    rename_map
+  )
 
   metadata
 }
@@ -414,11 +437,11 @@ NULL
 #' @noRd
 .delete_metadata_col <- function(design, col) {
   md <- design@metadata
-  md@variable_labels[[col]]   <- NULL
-  md@value_labels[[col]]      <- NULL
+  md@variable_labels[[col]] <- NULL
+  md@value_labels[[col]] <- NULL
   md@question_prefaces[[col]] <- NULL
-  md@notes[[col]]             <- NULL
-  md@transformations[[col]]   <- NULL
+  md@notes[[col]] <- NULL
+  md@transformations[[col]] <- NULL
   design@metadata <- md
   design
 }

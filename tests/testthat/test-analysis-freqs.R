@@ -17,14 +17,19 @@
 #   12. Numerical oracle tests (survey package)
 #   13. Cross-design type consistency
 
-
 # ── 1. Happy path — single-variable mode ──────────────────────────────────────
 
 test_that("get_freqs() returns a survey_freqs object for a Taylor design", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 11L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group)
 
   test_result_invariants(r, "survey_freqs")
   expect_identical(names(r), c("group", "pct", "n"))
@@ -36,8 +41,14 @@ test_that("get_freqs() returns a survey_freqs object for a Taylor design", {
 test_that("get_freqs() respects factor level order", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 12L)
   df$group_f <- factor(df$group, levels = c("C", "B", "A"))
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                 nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- get_freqs(d, group_f)
 
   test_result_invariants(r, "survey_freqs")
@@ -49,9 +60,15 @@ test_that("get_freqs() respects factor level order", {
 
 test_that("get_freqs() sorts non-factor levels ascending", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 13L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group)
 
   test_result_invariants(r, "survey_freqs")
   expect_identical(r$group, sort(unique(df$group)))
@@ -59,10 +76,16 @@ test_that("get_freqs() sorts non-factor levels ascending", {
 
 test_that("get_freqs() single-var meta has required keys", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 14L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group)
-  m  <- meta(r)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group)
+  m <- meta(r)
 
   expect_identical(names(m$x), "group")
   expect_type(m$group, "list")
@@ -71,9 +94,15 @@ test_that("get_freqs() single-var meta has required keys", {
 
 test_that("get_freqs() works for binary (0/1 integer) variable", {
   df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 15L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, y3)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, y3)
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 2L)
@@ -85,9 +114,15 @@ test_that("get_freqs() works for binary (0/1 integer) variable", {
 
 test_that("get_freqs() stacks rows in multi-variable mode", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 21L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(group, y3), names_to = "item", values_to = "response")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, c(group, y3), names_to = "item", values_to = "response")
 
   test_result_invariants(r, "survey_freqs")
   expect_identical(names(r), c("item", "response", "pct", "n"))
@@ -95,31 +130,45 @@ test_that("get_freqs() stacks rows in multi-variable mode", {
   expect_equal(nrow(r), 5L)
   # Proportions within each variable sum to 1
   pct_group <- r$pct[r$item == "group"]
-  pct_y3    <- r$pct[r$item == "y3"]
+  pct_y3 <- r$pct[r$item == "y3"]
   expect_equal(sum(pct_group), 1, tolerance = 1e-8)
-  expect_equal(sum(pct_y3),    1, tolerance = 1e-8)
+  expect_equal(sum(pct_y3), 1, tolerance = 1e-8)
 })
 
 test_that("get_freqs() multi-var meta has required keys", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 22L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(group, y3), names_to = "item", values_to = "resp")
-  m  <- meta(r)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, c(group, y3), names_to = "item", values_to = "resp")
+  m <- meta(r)
 
   expect_identical(names(m$x), c("group", "y3"))
   expect_type(m$x, "list")
   expect_length(m$x, 2L)
   # Each x entry has variable_label, question_preface, value_labels
-  expect_true(all(c("variable_label", "question_preface", "value_labels") %in%
-                    names(m$x$group)))
+  expect_true(all(
+    c("variable_label", "question_preface", "value_labels") %in%
+      names(m$x$group)
+  ))
 })
 
 test_that("get_freqs() custom names_to and values_to are used", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 23L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(group, y3), names_to = "var_nm", values_to = "val_nm")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, c(group, y3), names_to = "var_nm", values_to = "val_nm")
 
   expect_true("var_nm" %in% names(r))
   expect_true("val_nm" %in% names(r))
@@ -130,9 +179,15 @@ test_that("get_freqs() custom names_to and values_to are used", {
 
 test_that("get_freqs() places group columns first", {
   df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 31L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- suppressWarnings(get_freqs(d, group, group = strata))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- suppressWarnings(get_freqs(d, group, group = strata))
 
   test_result_invariants(r, "survey_freqs")
   expect_identical(names(r)[[1L]], "strata")
@@ -143,22 +198,38 @@ test_that("get_freqs() places group columns first", {
 
 test_that("get_freqs() pct sums to 100 within each group combo", {
   df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 32L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- suppressWarnings(get_freqs(d, group, group = strata))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- suppressWarnings(get_freqs(d, group, group = strata))
 
   for (s in unique(r$strata)) {
-    expect_equal(sum(r$pct[r$strata == s]), 1, tolerance = 1e-8,
-                 label = paste0("pct sums to 1 in strata = ", s))
+    expect_equal(
+      sum(r$pct[r$strata == s]),
+      1,
+      tolerance = 1e-8,
+      label = paste0("pct sums to 1 in strata = ", s)
+    )
   }
 })
 
 test_that("get_freqs() grouped meta has group set correctly", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 33L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- suppressWarnings(get_freqs(d, group, group = strata))
-  m  <- meta(r)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- suppressWarnings(get_freqs(d, group, group = strata))
+  m <- meta(r)
 
   expect_identical(names(m$group), "strata")
   expect_type(m$group, "list")
@@ -169,9 +240,15 @@ test_that("get_freqs() grouped meta has group set correctly", {
 
 test_that("get_freqs() variance=NULL produces no uncertainty columns", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 41L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group)
 
   expect_false("se" %in% names(r))
   expect_false("ci_low" %in% names(r))
@@ -179,9 +256,15 @@ test_that("get_freqs() variance=NULL produces no uncertainty columns", {
 
 test_that("get_freqs() variance='se' adds only se column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 42L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = "se")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = "se")
 
   expect_true("se" %in% names(r))
   expect_false("ci_low" %in% names(r))
@@ -190,11 +273,17 @@ test_that("get_freqs() variance='se' adds only se column", {
 
 test_that("get_freqs() variance='ci' adds ci_low and ci_high", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 43L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = "ci")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = "ci")
 
-  expect_true("ci_low"  %in% names(r))
+  expect_true("ci_low" %in% names(r))
   expect_true("ci_high" %in% names(r))
   expect_true(all(r$ci_high >= r$ci_low, na.rm = TRUE))
   # n comes after ci_high
@@ -203,9 +292,15 @@ test_that("get_freqs() variance='ci' adds ci_low and ci_high", {
 
 test_that("get_freqs() variance='deff' adds deff column", {
   df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L, seed = 44L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = "deff")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = "deff")
 
   expect_true("deff" %in% names(r))
   expect_true(all(r$deff >= 0, na.rm = TRUE))
@@ -213,19 +308,31 @@ test_that("get_freqs() variance='deff' adds deff column", {
 
 test_that("get_freqs() variance=c('ci','moe') adds both sets of columns", {
   df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L, seed = 45L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = c("ci", "moe"))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = c("ci", "moe"))
 
-  expect_true("ci_low"  %in% names(r))
+  expect_true("ci_low" %in% names(r))
   expect_true("ci_high" %in% names(r))
-  expect_true("moe"     %in% names(r))
+  expect_true("moe" %in% names(r))
 })
 
 test_that("get_freqs() conf_level=0.99 widens CIs vs 0.95", {
-  df  <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L, seed = 46L)
-  d   <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                   nest = TRUE)
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L, seed = 46L)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r95 <- get_freqs(d, group, variance = "ci", conf_level = 0.95)
   r99 <- get_freqs(d, group, variance = "ci", conf_level = 0.99)
 
@@ -237,9 +344,15 @@ test_that("get_freqs() conf_level=0.99 widens CIs vs 0.95", {
 
 test_that("get_freqs() n_weighted=TRUE adds n_weighted as last column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 51L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, n_weighted = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, n_weighted = TRUE)
 
   expect_true("n_weighted" %in% names(r))
   expect_identical(names(r)[[length(names(r))]], "n_weighted")
@@ -248,9 +361,15 @@ test_that("get_freqs() n_weighted=TRUE adds n_weighted as last column", {
 
 test_that("get_freqs() n_weighted=FALSE does not add n_weighted column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 52L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, n_weighted = FALSE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, n_weighted = FALSE)
 
   expect_false("n_weighted" %in% names(r))
 })
@@ -259,64 +378,129 @@ test_that("get_freqs() n_weighted=FALSE does not add n_weighted column", {
 # ── 6. label_values and label_vars ────────────────────────────────────────────
 
 test_that("get_freqs() applies haven value labels when label_values=TRUE", {
-  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
-                         with_labels = TRUE, seed = 61L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, y3, label_values = TRUE)
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    with_labels = TRUE,
+    seed = 61L
+  )
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, y3, label_values = TRUE)
 
   test_result_invariants(r, "survey_freqs")
   # y3 has labels c("No" = 0L, "Yes" = 1L)
-  expect_true("No"  %in% r$y3)
+  expect_true("No" %in% r$y3)
   expect_true("Yes" %in% r$y3)
 })
 
 test_that("get_freqs() uses raw values when label_values=FALSE", {
-  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
-                         with_labels = TRUE, seed = 62L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, y3, label_values = FALSE)
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    with_labels = TRUE,
+    seed = 62L
+  )
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, y3, label_values = FALSE)
 
   expect_true("0" %in% r$y3 || 0L %in% r$y3)
   expect_false("No" %in% r$y3)
 })
 
 test_that("get_freqs() multi-var label_vars=TRUE uses variable labels in names_to", {
-  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
-                         with_labels = TRUE, seed = 63L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(y3, group), names_to = "item", values_to = "response",
-                  label_vars = TRUE)
+  df <- make_survey_data(
+    n = 300L,
+    n_psu = 30L,
+    n_strata = 3L,
+    with_labels = TRUE,
+    seed = 63L
+  )
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(
+    d,
+    c(y3, group),
+    names_to = "item",
+    values_to = "response",
+    label_vars = TRUE
+  )
 
   # y3 has label "Outcome variable 3 (binary, 0/1)"
   expect_true("Outcome variable 3 (binary, 0/1)" %in% r$item)
 })
 
 test_that("get_freqs() multi-var label_vars=FALSE uses raw variable names", {
-  df <- make_survey_data(n = 300L, n_psu = 30L, n_strata = 3L,
-                         with_labels = TRUE, seed = 64L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(y3, group), names_to = "item", values_to = "response",
-                  label_vars = FALSE)
+  df <- make_survey_data(
+    n = 300L,
+    n_psu = 30L,
+    n_strata = 3L,
+    with_labels = TRUE,
+    seed = 64L
+  )
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(
+    d,
+    c(y3, group),
+    names_to = "item",
+    values_to = "response",
+    label_vars = FALSE
+  )
 
-  expect_true("y3"    %in% r$item)
+  expect_true("y3" %in% r$item)
   expect_true("group" %in% r$item)
   expect_false("Outcome variable 3 (binary, 0/1)" %in% r$item)
 })
 
 test_that("get_freqs() label_vars falls back to raw name when no label set", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 65L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, c(group, y3), names_to = "item", values_to = "response",
-                  label_vars = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(
+    d,
+    c(group, y3),
+    names_to = "item",
+    values_to = "response",
+    label_vars = TRUE
+  )
 
   # No labels set — raw names used
   expect_true("group" %in% r$item)
-  expect_true("y3"    %in% r$item)
+  expect_true("y3" %in% r$item)
 })
 
 
@@ -324,14 +508,20 @@ test_that("get_freqs() label_vars falls back to raw name when no label set", {
 
 test_that("get_freqs() name_style='broom' renames pct to estimate", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 71L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = "se", name_style = "broom")
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = "se", name_style = "broom")
 
-  expect_true("estimate"  %in% names(r))
+  expect_true("estimate" %in% names(r))
   expect_true("std.error" %in% names(r))
   expect_false("pct" %in% names(r))
-  expect_false("se"  %in% names(r))
+  expect_false("se" %in% names(r))
 })
 
 
@@ -340,9 +530,15 @@ test_that("get_freqs() name_style='broom' renames pct to estimate", {
 test_that("get_freqs() na.rm=TRUE excludes NA from levels and denominator", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 81L)
   df$group[1:20] <- NA
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, na.rm = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, na.rm = TRUE)
 
   test_result_invariants(r, "survey_freqs")
   # NA should not appear as a level
@@ -356,9 +552,15 @@ test_that("get_freqs() na.rm=TRUE excludes NA from levels and denominator", {
 test_that("get_freqs() na.rm=FALSE adds NA as last level", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 82L)
   df$group[1:10] <- NA
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- suppressWarnings(get_freqs(d, group, na.rm = FALSE))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- suppressWarnings(get_freqs(d, group, na.rm = FALSE))
 
   test_result_invariants(r, "survey_freqs")
   # 4 rows: A, B, C, NA
@@ -386,8 +588,14 @@ test_that("get_freqs() rejects non-survey-base objects", {
 
 test_that("get_freqs() rejects invalid variance argument", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 91L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group, variance = "bad_val"),
@@ -401,8 +609,14 @@ test_that("get_freqs() rejects invalid variance argument", {
 
 test_that("get_freqs() rejects invalid conf_level", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 92L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group, conf_level = 1.5),
@@ -416,8 +630,14 @@ test_that("get_freqs() rejects invalid conf_level", {
 
 test_that("get_freqs() rejects invalid name_style", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 93L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group, name_style = "tidyverse"),
@@ -432,8 +652,14 @@ test_that("get_freqs() rejects invalid name_style", {
 test_that("get_freqs() throws surveycore_error_all_na when na.rm=FALSE and all-NA", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 94L)
   df$group_all_na <- NA_character_
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group_all_na, na.rm = FALSE),
@@ -450,8 +676,14 @@ test_that("get_freqs() throws surveycore_error_all_na when na.rm=FALSE and all-N
 
 test_that("get_freqs() warns surveycore_warning_small_cell when n < min_cell_n", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 101L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   # Group by strata forces small cell counts
   expect_warning(
@@ -464,8 +696,14 @@ test_that("get_freqs() warns surveycore_warning_single_level for 1-level group",
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 102L)
   # Set strata to a single value — single-level grouping variable
   df$single_grp <- "only_level"
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_warning(
     get_freqs(d, group, group = single_grp),
@@ -476,8 +714,14 @@ test_that("get_freqs() warns surveycore_warning_single_level for 1-level group",
 test_that("get_freqs() warns surveycore_warning_all_na_freqs when na.rm=TRUE and all-NA", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 103L)
   df$group_all_na <- NA_character_
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_warning(
     get_freqs(d, group_all_na, na.rm = TRUE),
@@ -488,8 +732,14 @@ test_that("get_freqs() warns surveycore_warning_all_na_freqs when na.rm=TRUE and
 test_that("get_freqs() warns surveycore_warning_all_na_freqs returns 0-row result", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 104L)
   df$group_all_na <- NA_character_
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_warning(
     result <- get_freqs(d, group_all_na, na.rm = TRUE),
@@ -500,11 +750,17 @@ test_that("get_freqs() warns surveycore_warning_all_na_freqs returns 0-row resul
 
 test_that("get_freqs() warns surveycore_warning_mixed_prefaces for multi-var with different prefaces", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 105L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   # Set different non-NULL question prefaces
-  d  <- set_question_preface(d, group, "First section preface")
-  d  <- set_question_preface(d, y3,    "Second section preface")
+  d <- set_question_preface(d, group, "First section preface")
+  d <- set_question_preface(d, y3, "Second section preface")
 
   expect_warning(
     get_freqs(d, c(group, y3), names_to = "item", values_to = "resp"),
@@ -518,9 +774,15 @@ test_that("get_freqs() warns surveycore_warning_mixed_prefaces for multi-var wit
 test_that("get_freqs() single-level variable returns 1 row with pct=100", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 111L)
   df$constant_var <- "only"
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, constant_var)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, constant_var)
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 1L)
@@ -529,8 +791,14 @@ test_that("get_freqs() single-level variable returns 1 row with pct=100", {
 
 test_that("get_freqs() min_cell_n=0 suppresses small-cell warnings", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 112L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_no_warning(
     get_freqs(d, group, group = strata, min_cell_n = 0L)
@@ -541,9 +809,15 @@ test_that("get_freqs() factor variable with empty levels drops empty levels", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 113L)
   # 4-level factor but data only has A, B, C
   df$group_f <- factor(df$group, levels = c("A", "B", "C", "D"))
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group_f)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group_f)
 
   test_result_invariants(r, "survey_freqs")
   # "D" has no data — should not appear in output
@@ -553,21 +827,37 @@ test_that("get_freqs() factor variable with empty levels drops empty levels", {
 
 test_that("get_freqs() n column counts unweighted respondents (not weighted)", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 114L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group)
 
   expect_equal(sum(r$n), nrow(df))
   expect_identical(class(r$n)[[1L]], "integer")
 })
 
 test_that("get_freqs() replicate design produces correct row count", {
-  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
-                         design = "replicate", type = "brr", seed = 115L)
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "brr",
+    seed = 115L
+  )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  d  <- as_survey_repweights(df, weights = wt,
-                      repweights = tidyselect::all_of(repwt_cols), type = "BRR")
-  r  <- get_freqs(d, group)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+  r <- get_freqs(d, group)
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
@@ -575,12 +865,23 @@ test_that("get_freqs() replicate design produces correct row count", {
 })
 
 test_that("get_freqs() two-phase design returns valid result", {
-  df   <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L,
-                           design = "twophase", seed = 116L)
-  ph1  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                    nest = TRUE)
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "twophase",
+    seed = 116L
+  )
+  ph1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   twop <- as_survey_twophase(ph1, subset = subset, method = "approx")
-  r    <- suppressWarnings(get_freqs(twop, group))
+  r <- suppressWarnings(get_freqs(twop, group))
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
@@ -590,9 +891,15 @@ test_that("get_freqs() two-phase design returns valid result", {
 test_that("get_freqs() na.rm=FALSE NA row is last", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 117L)
   df$group[c(5L, 20L, 40L)] <- NA
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- suppressWarnings(get_freqs(d, group, na.rm = FALSE))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- suppressWarnings(get_freqs(d, group, na.rm = FALSE))
 
   expect_true(is.na(r$group[[nrow(r)]]))
   expect_false(is.na(r$group[[1L]]))
@@ -601,9 +908,15 @@ test_that("get_freqs() na.rm=FALSE NA row is last", {
 test_that("get_freqs() na.rm=FALSE factor variable: NA row after factor levels", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 118L)
   df$group[1:5] <- NA
-  df$group_f    <- factor(df$group, levels = c("C", "B", "A"))
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                 nest = TRUE)
+  df$group_f <- factor(df$group, levels = c("C", "B", "A"))
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- suppressWarnings(get_freqs(d, group_f, na.rm = FALSE))
 
   # Factor order: C, B, A, then NA last
@@ -613,8 +926,8 @@ test_that("get_freqs() na.rm=FALSE factor variable: NA row after factor levels",
 
 test_that("get_freqs() survey_calibrated design returns valid result", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 119L)
-  d  <- as_survey_calibrated(df, weights = wt)
-  r  <- get_freqs(d, group)
+  d <- as_survey_calibrated(df, weights = wt)
+  r <- get_freqs(d, group)
 
   test_result_invariants(r, "survey_freqs")
   expect_equal(nrow(r), 3L)
@@ -627,16 +940,33 @@ test_that("get_freqs() survey_calibrated design returns valid result", {
 test_that("get_freqs() Taylor pct matches survey::svymean on indicator [numerical]", {
   skip_if_not_installed("survey")
 
-  df <- make_survey_data(n = 500L, n_psu = 50L, n_strata = 5L,
-                         design = "taylor", seed = 121L)
+  df <- make_survey_data(
+    n = 500L,
+    n_psu = 50L,
+    n_strata = 5L,
+    design = "taylor",
+    seed = 121L
+  )
   df$ind_A <- as.integer(df$group == "A")
   df$ind_B <- as.integer(df$group == "B")
   df$ind_C <- as.integer(df$group == "C")
 
-  d_sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                    nest = TRUE)
-  d_sv <- survey::svydesign(ids = ~psu, weights = ~wt, strata = ~strata,
-                             fpc = ~fpc, data = df, nest = TRUE)
+  d_sc <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  d_sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    fpc = ~fpc,
+    data = df,
+    nest = TRUE
+  )
 
   r_sc <- get_freqs(d_sc, group, variance = "se")
 
@@ -644,53 +974,93 @@ test_that("get_freqs() Taylor pct matches survey::svymean on indicator [numerica
   sv_B <- survey::svymean(~ind_B, d_sv)
   sv_C <- survey::svymean(~ind_C, d_sv)
 
-  expect_equal(r_sc$pct[r_sc$group == "A"],
-               as.numeric(coef(sv_A)), tolerance = 1e-10)
-  expect_equal(r_sc$pct[r_sc$group == "B"],
-               as.numeric(coef(sv_B)), tolerance = 1e-10)
-  expect_equal(r_sc$pct[r_sc$group == "C"],
-               as.numeric(coef(sv_C)), tolerance = 1e-10)
-  expect_equal(r_sc$se[r_sc$group == "A"],
-               as.numeric(survey::SE(sv_A)), tolerance = 1e-8)
-  expect_equal(r_sc$se[r_sc$group == "B"],
-               as.numeric(survey::SE(sv_B)), tolerance = 1e-8)
-  expect_equal(r_sc$se[r_sc$group == "C"],
-               as.numeric(survey::SE(sv_C)), tolerance = 1e-8)
+  expect_equal(
+    r_sc$pct[r_sc$group == "A"],
+    as.numeric(coef(sv_A)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    r_sc$pct[r_sc$group == "B"],
+    as.numeric(coef(sv_B)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    r_sc$pct[r_sc$group == "C"],
+    as.numeric(coef(sv_C)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    r_sc$se[r_sc$group == "A"],
+    as.numeric(survey::SE(sv_A)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    r_sc$se[r_sc$group == "B"],
+    as.numeric(survey::SE(sv_B)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    r_sc$se[r_sc$group == "C"],
+    as.numeric(survey::SE(sv_C)),
+    tolerance = 1e-8
+  )
 })
 
 test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]", {
   skip_if_not_installed("survey")
 
-  df <- make_survey_data(n = 500L, n_psu = 50L, n_strata = 5L,
-                         design = "replicate", type = "brr", seed = 122L)
+  df <- make_survey_data(
+    n = 500L,
+    n_psu = 50L,
+    n_strata = 5L,
+    design = "replicate",
+    type = "brr",
+    seed = 122L
+  )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
   df$ind_A <- as.integer(df$group == "A")
   df$ind_B <- as.integer(df$group == "B")
 
-  d_sc <- as_survey_repweights(df, weights = wt,
-                        repweights = tidyselect::all_of(repwt_cols),
-                        type = "BRR", mse = TRUE)
-  # mse = TRUE to match as_survey_repweights default (survey package default is FALSE)
+  d_sc <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    mse = TRUE
+  )
+  # mse = TRUE to match as_survey_replicate default (survey package default is FALSE)
   d_sv <- survey::svrepdesign(
-    weights    = ~wt,
+    weights = ~wt,
     repweights = df[, repwt_cols, drop = FALSE],
-    type       = "BRR",
-    mse        = TRUE,
-    data       = df
+    type = "BRR",
+    mse = TRUE,
+    data = df
   )
 
   r_sc <- get_freqs(d_sc, group, variance = "se")
   sv_A <- survey::svymean(~ind_A, d_sv)
   sv_B <- survey::svymean(~ind_B, d_sv)
 
-  expect_equal(r_sc$pct[r_sc$group == "A"],
-               as.numeric(coef(sv_A)), tolerance = 1e-10)
-  expect_equal(r_sc$pct[r_sc$group == "B"],
-               as.numeric(coef(sv_B)), tolerance = 1e-10)
-  expect_equal(r_sc$se[r_sc$group == "A"],
-               as.numeric(survey::SE(sv_A)), tolerance = 1e-8)
-  expect_equal(r_sc$se[r_sc$group == "B"],
-               as.numeric(survey::SE(sv_B)), tolerance = 1e-8)
+  expect_equal(
+    r_sc$pct[r_sc$group == "A"],
+    as.numeric(coef(sv_A)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    r_sc$pct[r_sc$group == "B"],
+    as.numeric(coef(sv_B)),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    r_sc$se[r_sc$group == "A"],
+    as.numeric(survey::SE(sv_A)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    r_sc$se[r_sc$group == "B"],
+    as.numeric(survey::SE(sv_B)),
+    tolerance = 1e-8
+  )
 })
 
 test_that("get_freqs() pct sums to 1 for all design types [oracle sanity]", {
@@ -699,8 +1069,12 @@ test_that("get_freqs() pct sums to 1 for all design types [oracle sanity]", {
   designs <- make_all_designs(seed = 123L)
   for (nm in names(designs)) {
     r <- suppressWarnings(get_freqs(designs[[nm]], group))
-    expect_equal(sum(r$pct), 1, tolerance = 1e-8,
-                 label = paste0("pct sums to 1 for design = ", nm))
+    expect_equal(
+      sum(r$pct),
+      1,
+      tolerance = 1e-8,
+      label = paste0("pct sums to 1 for design = ", nm)
+    )
   }
 })
 
@@ -712,11 +1086,15 @@ test_that("get_freqs() returns consistent column structure across design types",
   for (nm in names(designs)) {
     r <- suppressWarnings(get_freqs(designs[[nm]], group, variance = "se"))
     expect_identical(
-      names(r), c("group", "pct", "se", "n"),
+      names(r),
+      c("group", "pct", "se", "n"),
       label = paste0("column names consistent for design = ", nm)
     )
-    expect_equal(nrow(r), 3L,
-                 label = paste0("3 rows (A, B, C) for design = ", nm))
+    expect_equal(
+      nrow(r),
+      3L,
+      label = paste0("3 rows (A, B, C) for design = ", nm)
+    )
   }
 })
 
@@ -736,10 +1114,12 @@ test_that("get_freqs() column types are consistent across design types", {
 
 test_that("get_freqs() group column is <fct> when group var has haven labels", {
   df <- data.frame(
-    x      = sample(1:3, 100, replace = TRUE),
-    gender = structure(c(1L, 2L)[rep(1:2, 50)],
-                       labels = c(Male = 1L, Female = 2L)),
-    w      = rep(1, 100)
+    x = sample(1:3, 100, replace = TRUE),
+    gender = structure(
+      c(1L, 2L)[rep(1:2, 50)],
+      labels = c(Male = 1L, Female = 2L)
+    ),
+    w = rep(1, 100)
   )
   d <- as_survey_srs(df, weights = w)
 
@@ -750,10 +1130,12 @@ test_that("get_freqs() group column is <fct> when group var has haven labels", {
 
 test_that("get_freqs() group column retains raw codes when label_values = FALSE", {
   df <- data.frame(
-    x      = sample(1:3, 100, replace = TRUE),
-    gender = structure(c(1L, 2L)[rep(1:2, 50)],
-                       labels = c(Male = 1L, Female = 2L)),
-    w      = rep(1, 100)
+    x = sample(1:3, 100, replace = TRUE),
+    gender = structure(
+      c(1L, 2L)[rep(1:2, 50)],
+      labels = c(Male = 1L, Female = 2L)
+    ),
+    w = rep(1, 100)
   )
   d <- as_survey_srs(df, weights = w)
 
@@ -763,8 +1145,7 @@ test_that("get_freqs() group column retains raw codes when label_values = FALSE"
 
 test_that("get_freqs() value column is <fct> when label_values = TRUE and labels exist", {
   df <- data.frame(
-    x = structure(c(1L, 2L)[rep(1:2, 50)],
-                  labels = c(Yes = 1L, No = 2L)),
+    x = structure(c(1L, 2L)[rep(1:2, 50)], labels = c(Yes = 1L, No = 2L)),
     w = rep(1, 100)
   )
   d <- as_survey_srs(df, weights = w)
@@ -790,23 +1171,22 @@ test_that("get_freqs() name column is <fct> with levels in supply order (multi-v
 
 test_that("get_freqs() meta$x stores value_labels regardless of label_values", {
   df <- data.frame(
-    x = structure(c(1L, 2L)[rep(1:2, 50)],
-                  labels = c(Yes = 1L, No = 2L)),
+    x = structure(c(1L, 2L)[rep(1:2, 50)], labels = c(Yes = 1L, No = 2L)),
     w = rep(1, 100)
   )
   d <- as_survey_srs(df, weights = w)
 
-  r_true  <- get_freqs(d, x, label_values = TRUE)
+  r_true <- get_freqs(d, x, label_values = TRUE)
   r_false <- get_freqs(d, x, label_values = FALSE)
 
-  expect_equal(meta(r_true)$x$x$value_labels,  c(Yes = 1L, No = 2L))
+  expect_equal(meta(r_true)$x$x$value_labels, c(Yes = 1L, No = 2L))
   expect_equal(meta(r_false)$x$x$value_labels, c(Yes = 1L, No = 2L))
 })
 
 test_that("get_freqs() meta$group always present (empty list when no groups)", {
   df <- data.frame(x = 1:3, w = rep(1, 3))
-  d  <- as_survey_srs(df, weights = w)
-  r  <- get_freqs(d, x)
+  d <- as_survey_srs(df, weights = w)
+  r <- get_freqs(d, x)
   expect_type(meta(r)$group, "list")
   expect_length(meta(r)$group, 0L)
 })
@@ -816,15 +1196,24 @@ test_that("get_freqs() meta$group always present (empty list when no groups)", {
 
 test_that("get_freqs() decimals=2 rounds all double columns", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 201L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, variance = "ci", decimals = 2L)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, variance = "ci", decimals = 2L)
 
   # All double columns should have at most 2 decimal places
   dbl_cols <- names(r)[vapply(r, is.double, logical(1L))]
   for (col in dbl_cols) {
-    expect_equal(r[[col]], round(r[[col]], 2L),
-                 label = paste0(col, " rounded to 2 decimals"))
+    expect_equal(
+      r[[col]],
+      round(r[[col]], 2L),
+      label = paste0(col, " rounded to 2 decimals")
+    )
   }
   # integer n column must not be rounded
   expect_identical(class(r$n)[[1L]], "integer")
@@ -832,9 +1221,15 @@ test_that("get_freqs() decimals=2 rounds all double columns", {
 
 test_that("get_freqs() decimals=NULL applies no rounding", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 202L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r_none    <- get_freqs(d, group, variance = "se", decimals = NULL)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r_none <- get_freqs(d, group, variance = "se", decimals = NULL)
   r_rounded <- get_freqs(d, group, variance = "se", decimals = 4L)
 
   # At least one pct value should differ (more precision without rounding)
@@ -843,9 +1238,15 @@ test_that("get_freqs() decimals=NULL applies no rounding", {
 
 test_that("get_freqs() decimals preserves .meta and S3 class", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 203L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
-  r  <- get_freqs(d, group, decimals = 2L)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  r <- get_freqs(d, group, decimals = 2L)
 
   expect_true("survey_freqs" %in% class(r))
   expect_false(is.null(attr(r, ".meta")))
@@ -853,8 +1254,14 @@ test_that("get_freqs() decimals preserves .meta and S3 class", {
 
 test_that("get_freqs() rejects negative decimals", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 204L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group, decimals = -1L),
@@ -868,8 +1275,14 @@ test_that("get_freqs() rejects negative decimals", {
 
 test_that("get_freqs() rejects non-integer decimals", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 205L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                  nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   expect_error(
     get_freqs(d, group, decimals = 1.5),
@@ -887,8 +1300,14 @@ test_that("get_freqs() silently excludes rows where group variable is NA", {
   df$grp2 <- sample(c("X", "Y"), nrow(df), replace = TRUE)
   df$grp2[1:60] <- NA
 
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                 nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   # Must not error — this was the reported crash
   r <- get_freqs(d, group, group = grp2)
@@ -907,8 +1326,14 @@ test_that("get_freqs() group NA exclusion: pct sums to ~1 within each non-NA gro
   df$grp2 <- sample(c("X", "Y"), nrow(df), replace = TRUE)
   df$grp2[1:50] <- NA
 
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc,
-                 nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 
   r <- get_freqs(d, group, group = grp2)
 
@@ -939,8 +1364,8 @@ test_that("get_freqs() includes NA group row when na.rm = FALSE", {
 # Block 3: NA group row is last
 
 test_that("get_freqs() places NA group row after non-NA rows", {
-  d      <- make_na_group_design()
-  r      <- get_freqs(d, y3, group = grp, na.rm = FALSE)
+  d <- make_na_group_design()
+  r <- get_freqs(d, y3, group = grp, na.rm = FALSE)
   na_idx <- which(is.na(r$grp))
   nn_idx <- which(!is.na(r$grp))
   expect_true(all(na_idx > max(nn_idx)))
@@ -949,8 +1374,8 @@ test_that("get_freqs() places NA group row after non-NA rows", {
 # Block 4: NA group row has finite pct estimate
 
 test_that("get_freqs() NA group row has finite pct estimate", {
-  d      <- make_na_group_design()
-  r      <- get_freqs(d, y3, group = grp, na.rm = FALSE)
+  d <- make_na_group_design()
+  r <- get_freqs(d, y3, group = grp, na.rm = FALSE)
   na_row <- get_na_group_rows(r, "grp")
   expect_true(all(is.finite(na_row$pct)))
 })
@@ -958,7 +1383,7 @@ test_that("get_freqs() NA group row has finite pct estimate", {
 # Block 5a: multi-group — NA in first group var
 
 test_that("get_freqs() handles NA in first of two group vars (na.rm = FALSE)", {
-  d <- make_na_group_design()  # grp has NAs; grp2 has none
+  d <- make_na_group_design() # grp has NAs; grp2 has none
   r <- get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE)
   expect_true(any(is.na(r$grp) & !is.na(r$grp2)))
 })
@@ -968,10 +1393,16 @@ test_that("get_freqs() handles NA in first of two group vars (na.rm = FALSE)", {
 test_that("get_freqs() handles NA in second of two group vars (na.rm = FALSE)", {
   df <- make_survey_data(n = 200L, seed = 42L)
   set.seed(43L)
-  df$grp  <- sample(c("A", "B", "C"), 200L, replace = TRUE)
+  df$grp <- sample(c("A", "B", "C"), 200L, replace = TRUE)
   df$grp2 <- sample(c("X", "Y", NA_character_), 200L, replace = TRUE)
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                 fpc = fpc, nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE)
   expect_true(any(!is.na(r$grp) & is.na(r$grp2)))
 })
@@ -999,8 +1430,14 @@ test_that("get_freqs() regular NA group row is NA in factor when label_values = 
   set.seed(43L)
   df$grp <- sample(c(1L, 2L, NA_integer_), 200L, replace = TRUE)
   attr(df$grp, "labels") <- c("GroupA" = 1L, "GroupB" = 2L)
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                 fpc = fpc, nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE)
 
   expect_true(is.factor(r$grp))
@@ -1019,12 +1456,18 @@ test_that("get_freqs() haven-labeled NA group rows become factor levels when lab
   df$grp <- as.double(df$grp)
   df$grp[sample(200L, 40L)] <- haven::tagged_na("r")
   attr(df$grp, "labels") <- c(
-    "GroupA"  = 1,
-    "GroupB"  = 2,
+    "GroupA" = 1,
+    "GroupB" = 2,
     "Refused" = haven::tagged_na("r")
   )
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                 fpc = fpc, nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE)
 
   expect_true(is.factor(r$grp))
@@ -1070,10 +1513,16 @@ test_that("get_freqs() rejects na.rm = NA with surveycore_error_na_rm_not_logica
 test_that("get_freqs() includes both focal-NA row and NA-group row when na.rm = FALSE", {
   df <- make_survey_data(n = 200L, seed = 42L)
   set.seed(100L)
-  df$focal  <- sample(c(0L, 1L, NA_integer_), 200L, replace = TRUE)
+  df$focal <- sample(c(0L, 1L, NA_integer_), 200L, replace = TRUE)
   df$grp_na <- sample(c("A", "B", NA_character_), 200L, replace = TRUE)
-  d <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                 fpc = fpc, nest = TRUE)
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   r <- get_freqs(d, focal, group = grp_na, na.rm = FALSE)
 
   expect_true(any(is.na(r$grp_na)))
@@ -1088,59 +1537,120 @@ test_that("get_freqs() NA group row pct matches filtered taylor design [oracle]"
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_oracle <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                              fpc = fpc, nest = TRUE)
-  na_df     <- df[is.na(df$grp), ]
-  na_design <- as_survey(na_df, ids = psu, weights = wt, strata = strata,
-                          fpc = fpc, nest = TRUE)
+  design_oracle <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  na_df <- df[is.na(df$grp), ]
+  na_design <- as_survey(
+    na_df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   expected <- get_freqs(na_design, y3, variance = "se")
-  result   <- get_freqs(design_oracle, y3, group = grp, na.rm = FALSE,
-                        variance = "se")
-  na_row   <- get_na_group_rows(result, "grp")
+  result <- get_freqs(
+    design_oracle,
+    y3,
+    group = grp,
+    na.rm = FALSE,
+    variance = "se"
+  )
+  na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
-  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
-  expect_equal(na_row$n,   expected$n)
+  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  expect_equal(na_row$n, expected$n)
 })
 
 test_that("get_freqs() NA group row pct matches filtered replicate design [oracle]", {
-  df_r <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
-                            design = "replicate", type = "brr", seed = 42L)
+  df_r <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 42L
+  )
   set.seed(43L)
-  df_r$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df_r$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
-  design_rep <- as_survey_repweights(df_r, weights = wt,
-                               repweights = tidyselect::all_of(repwt_cols),
-                               type = "BRR")
-  na_df_r       <- df_r[is.na(df_r$grp), ]
+  design_rep <- as_survey_replicate(
+    df_r,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+  na_df_r <- df_r[is.na(df_r$grp), ]
   repwt_cols_na <- grep("^repwt_", names(na_df_r), value = TRUE)
-  na_design_rep <- as_survey_repweights(na_df_r, weights = wt,
-                                  repweights = tidyselect::all_of(repwt_cols_na),
-                                  type = "BRR")
+  na_design_rep <- as_survey_replicate(
+    na_df_r,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols_na),
+    type = "BRR"
+  )
   expected <- get_freqs(na_design_rep, y3, variance = "se")
-  result   <- get_freqs(design_rep, y3, group = grp, na.rm = FALSE,
-                        variance = "se")
-  na_row   <- get_na_group_rows(result, "grp")
+  result <- get_freqs(
+    design_rep,
+    y3,
+    group = grp,
+    na.rm = FALSE,
+    variance = "se"
+  )
+  na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
-  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
-  expect_equal(na_row$n,   expected$n)
+  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  expect_equal(na_row$n, expected$n)
 })
 
 test_that("get_freqs() NA group row pct matches filtered twophase design [oracle]", {
-  df_p <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
-                            design = "twophase", seed = 42L)
+  df_p <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 42L
+  )
   set.seed(43L)
-  df_p$grp       <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  phase1         <- as_survey(df_p, ids = psu, weights = wt, strata = strata,
-                               fpc = fpc, nest = TRUE)
-  design_twophase <- as_survey_twophase(phase1, subset = subset,
-                                        method = "approx")
-  na_df_p            <- df_p[is.na(df_p$grp), ]
-  na_phase1          <- as_survey(na_df_p, ids = psu, weights = wt,
-                                   strata = strata, fpc = fpc, nest = TRUE)
-  na_design_twophase <- as_survey_twophase(na_phase1, subset = subset,
-                                            method = "approx")
-  expected <- suppressWarnings(get_freqs(na_design_twophase, y3, variance = "se"))
-  result   <- suppressWarnings(
+  df_p$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  phase1 <- as_survey(
+    df_p,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  design_twophase <- as_survey_twophase(
+    phase1,
+    subset = subset,
+    method = "approx"
+  )
+  na_df_p <- df_p[is.na(df_p$grp), ]
+  na_phase1 <- as_survey(
+    na_df_p,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  na_design_twophase <- as_survey_twophase(
+    na_phase1,
+    subset = subset,
+    method = "approx"
+  )
+  expected <- suppressWarnings(get_freqs(
+    na_design_twophase,
+    y3,
+    variance = "se"
+  ))
+  result <- suppressWarnings(
     get_freqs(design_twophase, y3, group = grp, na.rm = FALSE, variance = "se")
   )
   na_row <- get_na_group_rows(result, "grp")
@@ -1148,64 +1658,91 @@ test_that("get_freqs() NA group row pct matches filtered twophase design [oracle
   # SE legitimately differs: two-phase variance correction depends on total
   # sample structure; domain estimation (full design) != pre-filtered oracle.
   expect_true(all(is.finite(na_row$se)))
-  expect_equal(na_row$n,   expected$n)
+  expect_equal(na_row$n, expected$n)
 })
 
 test_that("get_freqs() NA group row pct matches filtered calibrated design [oracle]", {
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
-  df_c$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   design_cal <- as_survey_calibrated(df_c, weights = wt)
-  na_df_c       <- df_c[is.na(df_c$grp), ]
+  na_df_c <- df_c[is.na(df_c$grp), ]
   na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
   expected <- get_freqs(na_design_cal, y3, variance = "se")
-  result   <- get_freqs(design_cal, y3, group = grp, na.rm = FALSE,
-                        variance = "se")
-  na_row   <- get_na_group_rows(result, "grp")
+  result <- get_freqs(
+    design_cal,
+    y3,
+    group = grp,
+    na.rm = FALSE,
+    variance = "se"
+  )
+  na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
   # SE legitimately differs: calibrated variance depends on total sample size;
   # domain estimation (full design, n=100) != pre-filtered oracle (n=~30).
   expect_true(all(is.finite(na_row$se)))
-  expect_equal(na_row$n,   expected$n)
+  expect_equal(na_row$n, expected$n)
 })
 
 test_that("get_freqs() NA group row pct matches filtered srs design [oracle]", {
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
-  df_s$grp   <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   design_srs <- as_survey_srs(df_s, weights = wt)
-  na_df_s       <- df_s[is.na(df_s$grp), ]
+  na_df_s <- df_s[is.na(df_s$grp), ]
   na_design_srs <- as_survey_srs(na_df_s, weights = wt)
   expected <- get_freqs(na_design_srs, y3, variance = "se")
-  result   <- get_freqs(design_srs, y3, group = grp, na.rm = FALSE,
-                        variance = "se")
-  na_row   <- get_na_group_rows(result, "grp")
+  result <- get_freqs(
+    design_srs,
+    y3,
+    group = grp,
+    na.rm = FALSE,
+    variance = "se"
+  )
+  na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$pct, expected$pct, tolerance = 1e-10)
-  expect_equal(na_row$se,  expected$se,  tolerance = 1e-8)
-  expect_equal(na_row$n,   expected$n)
+  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  expect_equal(na_row$n, expected$n)
 })
 
 test_that("get_freqs() multi-group NA row estimate matches filtered taylor design [oracle]", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
-  df$grp  <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
+  df$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
   df$grp2 <- sample(c("X", "Y"), 100L, replace = TRUE)
-  design_multi <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                             fpc = fpc, nest = TRUE)
-  result <- suppressWarnings(
-    get_freqs(design_multi, y3, group = c(grp, grp2),
-              na.rm = FALSE, variance = "se")
+  design_multi <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
-  oracle_df     <- df[is.na(df$grp) & df$grp2 == "X", ]
-  oracle_design <- as_survey(oracle_df, ids = psu, weights = wt,
-                              strata = strata, fpc = fpc, nest = TRUE)
-  expected  <- suppressWarnings(get_freqs(oracle_design, y3, variance = "se"))
+  result <- suppressWarnings(
+    get_freqs(
+      design_multi,
+      y3,
+      group = c(grp, grp2),
+      na.rm = FALSE,
+      variance = "se"
+    )
+  )
+  oracle_df <- df[is.na(df$grp) & df$grp2 == "X", ]
+  oracle_design <- as_survey(
+    oracle_df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expected <- suppressWarnings(get_freqs(oracle_design, y3, variance = "se"))
   na_x_rows <- result[is.na(result$grp) & result$grp2 == "X", ]
   expect_equal(na_x_rows$pct, expected$pct, tolerance = 1e-10)
   # SE legitimately differs: multi-group oracle cells are small (~5 rows);
   # domain estimation uses full cluster/strata structure, oracle uses subset.
   expect_true(all(is.finite(na_x_rows$se)))
-  expect_equal(na_x_rows$n,   expected$n)
+  expect_equal(na_x_rows$n, expected$n)
 })
 
 # ---------------------------------------------------------------------------
@@ -1227,10 +1764,11 @@ test_that("get_freqs() works for survey_srs design (covers .srs_freq_cell())", {
 
 test_that("get_freqs() survey_srs with FPC covers FPC path in .srs_freq_cell()", {
   set.seed(401)
-  n <- 80L; N <- 800L
+  n <- 80L
+  N <- 800L
   df <- data.frame(
-    x   = sample(c("A", "B"), n, replace = TRUE),
-    w   = rep(N / n, n),
+    x = sample(c("A", "B"), n, replace = TRUE),
+    w = rep(N / n, n),
     pop = rep(N, n)
   )
   sc <- as_survey_srs(df, weights = w, fpc = pop)
@@ -1240,10 +1778,21 @@ test_that("get_freqs() survey_srs with FPC covers FPC path in .srs_freq_cell()",
 })
 
 test_that("get_freqs() works for survey_twophase design (covers .twophase_freq_cell())", {
-  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2,
-                        design = "twophase", seed = 402)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
-                      fpc = fpc, nest = TRUE)
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    n_strata = 2,
+    design = "twophase",
+    seed = 402
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
   result <- get_freqs(sc, x = group)
   test_result_invariants(result, "survey_freqs")
@@ -1254,9 +1803,15 @@ test_that("get_freqs() works for survey_twophase design (covers .twophase_freq_c
 test_that("get_freqs() taylor design with FPC fraction covers FPC branch in .taylor_freq_cell()", {
   set.seed(403)
   df <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, seed = 403)
-  df$fpc_frac <- df$fpc / (df$fpc * 3)  # sampling fractions < 1
-  sc <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                  fpc = fpc_frac, nest = TRUE)
+  df$fpc_frac <- df$fpc / (df$fpc * 3) # sampling fractions < 1
+  sc <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc_frac,
+    nest = TRUE
+  )
   result <- get_freqs(sc, x = group)
   test_result_invariants(result, "survey_freqs")
   expect_true(all(is.finite(result$pct)))
@@ -1264,10 +1819,11 @@ test_that("get_freqs() taylor design with FPC fraction covers FPC branch in .tay
 
 test_that("get_freqs() survey_srs fraction FPC path in .srs_freq_cell()", {
   set.seed(404)
-  n <- 80L; frac <- 0.1
+  n <- 80L
+  frac <- 0.1
   df <- data.frame(
-    x    = sample(c("A", "B", "C"), n, replace = TRUE),
-    w    = rep(1 / frac, n),
+    x = sample(c("A", "B", "C"), n, replace = TRUE),
+    w = rep(1 / frac, n),
     frac = rep(frac, n)
   )
   sc <- as_survey_srs(df, weights = w, fpc = frac)
@@ -1299,20 +1855,42 @@ test_that("get_freqs() taylor design with nest=FALSE covers non-nested psu_id pa
 })
 
 test_that("get_freqs() replicate empty domain returns NA (covers .replicate_freq_cell() n_g=0 path)", {
-  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
-                        design = "replicate", type = "brr", seed = 503)
+  d <- make_survey_data(
+    n = 60,
+    n_psu = 10,
+    n_strata = 2,
+    design = "replicate",
+    type = "brr",
+    seed = 503
+  )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 60L)
   result <- suppressWarnings(get_freqs(sc, x = group))
   expect_true(all(is.na(result$pct)))
 })
 
 test_that("get_freqs() replicate single-row domain hits se_srs=0 branch (n_g<2)", {
-  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
-                        design = "replicate", type = "brr", seed = 504)
+  d <- make_survey_data(
+    n = 60,
+    n_psu = 10,
+    n_strata = 2,
+    design = "replicate",
+    type = "brr",
+    seed = 504
+  )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(60L) == 1L
   result <- suppressWarnings(get_freqs(sc, x = group))
   expect_true(nrow(result) >= 1L)
@@ -1339,8 +1917,21 @@ test_that("get_freqs() srs single-row domain hits n_g<2 path in .srs_freq_cell()
 })
 
 test_that("get_freqs() twophase empty domain returns NA (covers .twophase_freq_cell() n_g=0 path)", {
-  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 507)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    n_strata = 2,
+    design = "twophase",
+    seed = 507
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(d))
   result <- suppressWarnings(get_freqs(sc, x = group))
@@ -1348,10 +1939,24 @@ test_that("get_freqs() twophase empty domain returns NA (covers .twophase_freq_c
 })
 
 test_that("get_freqs() twophase single-row domain hits se_srs=0 path in .twophase_freq_cell()", {
-  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 508)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    n_strata = 2,
+    design = "twophase",
+    seed = 508
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(d)) == which(d$subset)[[1L]]
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(nrow(d)) ==
+    which(d$subset)[[1L]]
   result <- suppressWarnings(get_freqs(sc, x = group))
   expect_true(nrow(result) >= 1L)
 })
@@ -1375,7 +1980,7 @@ test_that(".freq_cell() errors for unsupported design class", {
 
 test_that("get_freqs() taylor: group with all-NA focal var hits n_g=0 in .taylor_freq_cell()", {
   df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 610L)
-  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # G2 rows all have NA cat2; G1 rows have non-NA → levels_vn is non-empty
   d@data$cat2 <- ifelse(d@data$group == "A", "X", NA_character_)
   d@data$grp2 <- ifelse(d@data$group == "A", "G1", "G2")
@@ -1385,11 +1990,21 @@ test_that("get_freqs() taylor: group with all-NA focal var hits n_g=0 in .taylor
 })
 
 test_that("get_freqs() replicate: group with all-NA focal var hits n_g=0 in .replicate_freq_cell()", {
-  d <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
-                        design = "replicate", type = "brr", seed = 611L)
+  d <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 611L
+  )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_repweights(d, weights = wt,
-                      repweights = tidyselect::all_of(repwt_cols), type = "BRR")
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
   sc@data$cat2 <- ifelse(sc@data$group == "A", "X", NA_character_)
   sc@data$grp2 <- ifelse(sc@data$group == "A", "G1", "G2")
   result <- suppressWarnings(get_freqs(sc, x = cat2, group = grp2))
@@ -1398,7 +2013,7 @@ test_that("get_freqs() replicate: group with all-NA focal var hits n_g=0 in .rep
 })
 
 test_that("get_freqs() srs: group with all-NA focal var hits n_g=0 in .srs_freq_cell()", {
-  d  <- make_survey_data(n = 100L, seed = 612L)
+  d <- make_survey_data(n = 100L, seed = 612L)
   sc <- as_survey_srs(d, weights = wt)
   sc@data$cat2 <- ifelse(sc@data$group == "A", "X", NA_character_)
   sc@data$grp2 <- ifelse(sc@data$group == "A", "G1", "G2")
@@ -1408,10 +2023,21 @@ test_that("get_freqs() srs: group with all-NA focal var hits n_g=0 in .srs_freq_
 })
 
 test_that("get_freqs() twophase: group with all-NA focal var in phase 2 hits n_g=0 in .twophase_freq_cell()", {
-  d <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L,
-                        design = "twophase", seed = 613L)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata,
-                      fpc = fpc, nest = TRUE)
+  d <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 613L
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
   # Phase-2 "B" rows get NA; phase1-only "B" rows stay non-NA.
   # .twophase_freq_cell() only inspects denom[subset] (phase-2 rows), so

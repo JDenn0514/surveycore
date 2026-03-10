@@ -226,7 +226,7 @@ variables <- list(
 survey_srs(data = data, variables = variables, call = match.call())
 ```
 
-`call = match.call()` captures the user's call expression, consistent with `as_survey()` and `as_survey_repweights()`.
+`call = match.call()` captures the user's call expression, consistent with `as_survey()` and `as_survey_replicate()`.
 
 ### Return value
 
@@ -235,7 +235,7 @@ A `survey_srs` object. Visible (not wrapped in `invisible()`).
 ### Documentation
 
 Roxygen2 tags required for `as_survey_srs()` (consistent with `as_survey()` and
-`as_survey_repweights()`):
+`as_survey_replicate()`):
 
 - `@family constructors`
 - `@seealso [as_survey()]`

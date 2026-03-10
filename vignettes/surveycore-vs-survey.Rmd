@@ -171,7 +171,7 @@ acs_srvyr
 ```
 
 ```{r repwt-acs-sc}
-acs_sc <- as_survey_repweights(
+acs_sc <- as_survey_replicate(
   acs_pums_wy,
   weights    = pwgtp,
   repweights = tidyselect::matches("^pwgtp[0-9]+$"), # tidyselect
@@ -183,7 +183,7 @@ acs_sc
 **Pew Jewish Americans 2020 — JK1 jackknife replicates**
 
 ```{r repwt-pew-sc}
-pew_sc <- as_survey_repweights(
+pew_sc <- as_survey_replicate(
   pew_jewish_2020,
   weights    = extweight,
   repweights = extweight1:extweight100,
@@ -233,7 +233,7 @@ For a full worked example using `survival::nwtco`, see
 | SRS | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey_srs(...)` |
 | Stratified | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
-| Replicate wts | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_repweights(repweights=matches(...))` |
+| Replicate wts | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
 | Calibrated/NPS | `svydesign(ids=~1, weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_calibrated(...)` |
 | Two-phase | `twophase(...)` | `as_survey_twophase(...)` | `as_survey_twophase(...)` |
 
@@ -736,7 +736,7 @@ as_survey_calibrated(ns_wave1, weights = weight) |>
 | SRS design | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey_srs(...)` |
 | Stratified design | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster design | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
-| Replicate weights | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_repweights(repweights=matches(...))` |
+| Replicate weights | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
 | Calibrated/NPS | `svydesign(weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_calibrated(...)` |
 | Two-phase | `twophase(...)` | `as_survey_twophase(...)` | `as_survey_twophase(...)` |
 | Weighted mean | `svymean(~x, d)` | `summarise(survey_mean(x))` | `get_means(d, x)` |

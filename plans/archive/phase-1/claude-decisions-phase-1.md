@@ -123,7 +123,7 @@ semantically confusing for a plain equal-probability sample.**
 | `as_survey(df)` | `survey_srs` |
 | `as_survey(df, weights = w)` | `survey_taylor` |
 | `as_survey(df, ids = psu, weights = w, strata = s)` | `survey_taylor` |
-| `as_survey_repweights(df, weights = w, repweights = rw)` | `survey_replicate` |
+| `as_survey_replicate(df, weights = w, repweights = rw)` | `survey_replicate` |
 | `as_survey_twophase(phase1, subset = s2)` | `survey_twophase` |
 | `as_survey_calibrated(df, weights = w)` | `survey_calibrated` |
 

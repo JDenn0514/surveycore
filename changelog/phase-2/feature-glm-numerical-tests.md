@@ -113,8 +113,8 @@ Family oracle (Taylor, all families): coef diff < 1e-10, SE diff < 1e-8.
 ## Key Implementation Notes
 
 - **BRR oracle**: must use `mse = FALSE` on both sides. `survey::svrepdesign()`
-  defaults to `mse = FALSE`; our `as_survey_repweights()` defaults to `mse = TRUE`.
-  Tests explicitly pass `mse = FALSE` to `as_survey_repweights()`.
+  defaults to `mse = FALSE`; our `as_survey_replicate()` defaults to `mse = TRUE`.
+  Tests explicitly pass `mse = FALSE` to `as_survey_replicate()`.
 - **Twophase oracle**: SE oracle skipped due to pre-existing variance
   underestimation (~sqrt(2)×). Tests verify only: no error, correct coefficient
   names, all SEs positive and finite. Tracked in

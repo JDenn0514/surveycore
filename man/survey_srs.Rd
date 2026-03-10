@@ -83,7 +83,7 @@ specified.}
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_calibrated}()},

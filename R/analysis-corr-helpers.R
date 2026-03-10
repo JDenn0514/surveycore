@@ -32,7 +32,7 @@
     cli::cli_abort(
       c(
         "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_corr}.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_repweights}, or {.fn as_survey_twophase}."
+        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -59,16 +59,19 @@
 # @return Named list: r, se_r, se_srs, n, n_weighted. NA when n < 2 or
 #   variance-covariance is undefined.
 .corr_pair_result <- function(vcov_out) {
-  a     <- vcov_out$a
-  b     <- vcov_out$b
+  a <- vcov_out$a
+  b <- vcov_out$b
   c_val <- vcov_out$c
   sigma <- vcov_out$sigma
-  n_d   <- vcov_out$n
+  n_d <- vcov_out$n
 
   if (is.na(a) || is.na(b) || is.na(c_val) || a <= 0 || c_val <= 0) {
     return(list(
-      r = NA_real_, se_r = NA_real_, se_srs = NA_real_,
-      n = n_d, n_weighted = vcov_out$n_weighted
+      r = NA_real_,
+      se_r = NA_real_,
+      se_srs = NA_real_,
+      n = n_d,
+      n_weighted = vcov_out$n_weighted
     ))
   }
 
@@ -77,8 +80,8 @@
   r <- max(-1, min(1, r))
 
   # Delta method gradient: g = (dr/da, dr/db, dr/dc)
-  g  <- c(-r / (2 * a), 1 / sqrt(a * c_val), -r / (2 * c_val))
-  v  <- as.numeric(t(g) %*% sigma %*% g)
+  g <- c(-r / (2 * a), 1 / sqrt(a * c_val), -r / (2 * c_val))
+  v <- as.numeric(t(g) %*% sigma %*% g)
   se_r <- if (is.na(v) || v < 0) NA_real_ else sqrt(v)
 
   # SRS-equivalent SE: (1 - r^2) / sqrt(max(n-3, 1)) (Fisher Z approximation)
@@ -88,7 +91,13 @@
     NA_real_
   }
 
-  list(r = r, se_r = se_r, se_srs = se_srs, n = n_d, n_weighted = vcov_out$n_weighted)
+  list(
+    r = r,
+    se_r = se_r,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = vcov_out$n_weighted
+  )
 }
 
 
@@ -110,20 +119,28 @@
 # @param diagonal      Logical: include diagonal (r = 1) in matrix.
 # @return Named list: list(variable = ..., "ColName1" = ..., ...).
 .corr_build_matrix_col_vecs <- function(
-  x_names, display_names, pairs_i, pairs_j, pair_results, diagonal
+  x_names,
+  display_names,
+  pairs_i,
+  pairs_j,
+  pair_results,
+  diagonal
 ) {
-  p       <- length(x_names)
+  p <- length(x_names)
   n_pairs <- length(pairs_i)
 
   r_mat <- matrix(NA_real_, p, p)
   for (k in seq_len(n_pairs)) {
-    i <- pairs_i[[k]]; j <- pairs_j[[k]]
+    i <- pairs_i[[k]]
+    j <- pairs_j[[k]]
     r_mat[i, j] <- pair_results[[k]]$r
     r_mat[j, i] <- pair_results[[k]]$r
   }
-  if (isTRUE(diagonal)) diag(r_mat) <- 1
+  if (isTRUE(diagonal)) {
+    diag(r_mat) <- 1
+  }
 
-  var_col  <- display_names[x_names]
+  var_col <- display_names[x_names]
   col_vecs <- list(variable = var_col)
   for (k in seq_len(p)) {
     col_vecs[[display_names[[k]]]] <- r_mat[, k]

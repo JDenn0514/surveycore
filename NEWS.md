@@ -1,3 +1,10 @@
+# surveycore 0.4.1.9001
+
+## Renaming
+
+* `as_survey_repweights()` has been renamed to `as_survey_replicate()` to
+  match the underlying `survey_replicate` class name.
+
 # surveycore 0.4.0
 
 ## New features
@@ -25,7 +32,7 @@
 * `broom::tidy()` is supported for `survey_glm_fit` objects via a shim that
   delegates to `clean()`.
 
-* `as_survey_rep()` has been renamed to `as_survey_repweights()` to avoid a
+* `as_survey_rep()` has been renamed to `as_survey_replicate()` to avoid a
   namespace clash with the `srvyr` package.
 
 ## Bug fixes
@@ -92,7 +99,7 @@
   variable labels using separator-based and longest-common-prefix detection.
 
 * `survey_weighting_history()` returns the weighting history stored in a
-  survey design object's metadata; `as_survey()`, `as_survey_repweights()`, and
+  survey design object's metadata; `as_survey()`, `as_survey_replicate()`, and
   `as_survey_srs()` now promote `"weighting_history"` attributes from the
   input data frame automatically.
 
@@ -116,7 +123,7 @@
   (`ids`, `weights`, `strata`, `fpc`, `probs`); supports Taylor linearization
   for stratified, clustered, and SRS designs.
 
-* `as_survey_repweights()` creates `survey_replicate` objects; supports BRR, Fay BRR,
+* `as_survey_replicate()` creates `survey_replicate` objects; supports BRR, Fay BRR,
   JK1, JK2, JKn, bootstrap, ACS, and successive-difference replicate schemes.
 
 * `as_survey_twophase()` creates `survey_twophase` objects; supports "full",
