@@ -15,16 +15,13 @@
 #     extract_val_labels()       — single variable value labels
 #     extract_question_preface() — single variable question preface
 #     extract_var_note()         — single variable analyst note
-#   Singular setters:
-#     set_var_label()            — set label for one variable
-#     set_val_labels()           — set value labels for one variable
-#     set_question_preface()     — set question preface for one variable
-#     set_var_note()             — set note for one variable
-#   Plural setters:
-#     set_variable_labels()      — set labels for multiple variables
-#     set_value_labels()         — set value labels for multiple variables
-#     set_question_prefaces()    — set question prefaces for multiple variables
-#     set_variable_notes()       — set notes for multiple variables
+#   Unified setters (conventions 1/2/3, survey objects + data frames):
+#     set_var_label()            — set label for one or more variables
+#     set_val_labels()           — set value labels for one or more variables
+#     set_question_preface()     — set question preface for one or more variables
+#     set_var_note()             — set note for one or more variables
+#     set_universe()             — set universe description for one or more vars
+#     set_missing_codes()        — set missing codes for one or more variables
 #   Internal helpers:
 #     .validate_val_labels()     — check label completeness
 #     .extract_haven_metadata()  — read haven-style attrs from a data.frame
@@ -454,329 +451,488 @@ extract_var_note <- function(x, var) {
 }
 
 
-# ── Singular setters ─────────────────────────────────────────────────────────
+# ── Unified setters ───────────────────────────────────────────────────────────
 
-#' Set a Variable Label
-#'
-#' Sets the variable label for a single variable in a survey design object.
-#'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable to label
-#'   (bare, unquoted).
-#' @param label A character string. The variable label to assign.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' d <- set_var_label(d, indfmpir, "Income-to-poverty ratio")
-#'
-#' # Pipe-friendly
-#' d <- d |> set_var_label(bpxsy1, "Systolic BP (1st reading)")
-#'
-#' @seealso [set_variable_labels()] for setting multiple labels at once,
-#'   [extract_var_label()] to retrieve a label
-#' @family metadata
-#' @export
-set_var_label <- function(x, var, label) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  if (!var_name %in% names(x@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in {.arg x}.",
-        "i" = "Available: {.field {names(x@data)}}"
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  x@metadata@variable_labels[[var_name]] <- label
-  invisible(x)
-}
-
-
-#' Set Value Labels for a Variable
-#'
-#' Sets value labels for a single variable in a survey design object. Extra
-#' labels (for values not present in the data) are allowed — they document the
-#' full coding scheme. A warning is issued if some observed data values lack a
-#' label.
-#'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable to label
-#'   (bare, unquoted).
-#' @param labels A fully named vector where names are the display labels and
-#'   values are the data codes (e.g., `c(Male = 1L, Female = 2L)`). All
-#'   elements must be named.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' d <- set_val_labels(
-#'   d, ridstatr, c("Interview only" = 1L, "Interview + exam" = 2L)
-#' )
-#'
-#' @seealso [set_value_labels()] for setting labels for multiple variables,
-#'   [extract_val_labels()] to retrieve value labels
-#' @family metadata
-#' @export
-set_val_labels <- function(x, var, labels) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  if (!var_name %in% names(x@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in {.arg x}.",
-        "i" = "Available: {.field {names(x@data)}}"
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  if (is.null(names(labels)) || any(names(labels) == "")) {
-    cli::cli_abort(
-      c(
-        "x" = "{.arg labels} must be a fully named vector.",
-        "i" = "All elements must have names."
-      ),
-      class = "surveycore_error_labels_unnamed"
-    )
-  }
-  .validate_val_labels(x@data[[var_name]], labels, var_name = var_name)
-  x@metadata@value_labels[[var_name]] <- labels
-  invisible(x)
-}
-
-
-#' Set a Question Preface
-#'
-#' Sets the question preface string for a single variable in a survey design
-#' object. Question prefaces are the shared introductory text for a battery of
-#' related questions.
-#'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
-#' @param preface A character string. The question preface text.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @seealso [set_question_prefaces()] for setting prefaces for multiple
-#'   variables, [extract_question_preface()] to retrieve a preface
-#' @family metadata
-#' @export
-set_question_preface <- function(x, var, preface) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  if (!var_name %in% names(x@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in {.arg x}.",
-        "i" = "Available: {.field {names(x@data)}}"
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  x@metadata@question_prefaces[[var_name]] <- preface
-  invisible(x)
-}
-
-
-#' Set an Analyst Note
-#'
-#' Sets an analyst note for a single variable in a survey design object. Notes
-#' are free-text annotations for documenting processing decisions, data quality
-#' concerns, or other context.
-#'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
-#' @param note A character string. The analyst note to attach.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @seealso [set_variable_notes()] for setting notes for multiple variables,
-#'   [extract_var_note()] to retrieve a note
-#' @family metadata
-#' @export
-set_var_note <- function(x, var, note) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  if (!var_name %in% names(x@data)) {
-    cli::cli_abort(
-      c(
-        "x" = "Variable {.field {var_name}} not found in {.arg x}.",
-        "i" = "Available: {.field {names(x@data)}}"
-      ),
-      class = "surveycore_error_var_not_found"
-    )
-  }
-  x@metadata@notes[[var_name]] <- note
-  invisible(x)
-}
-
-
-# ── Plural setters ────────────────────────────────────────────────────────────
-
-#' Set Variable Labels for Multiple Variables
-#'
-#' Sets variable labels for multiple variables at once using named arguments.
-#' All variable names must exist in the survey data.
-#'
-#' @param x A survey design object.
-#' @param ... Named arguments where the name is the variable (unquoted) and the
-#'   value is the label string. Supports `!!!` list splicing for programmatic
-#'   use.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' d <- set_variable_labels(
-#'   d,
-#'   bpxsy1 = "Systolic BP, 1st reading (mm Hg)",
-#'   bpxdi1 = "Diastolic BP, 1st reading (mm Hg)"
-#' )
-#'
-#' # Programmatic with list splicing
-#' lbls <- list(bpxsy1 = "Systolic BP", bpxdi1 = "Diastolic BP")
-#' d <- set_variable_labels(d, !!!lbls)
-#'
-#' @seealso [set_var_label()] for setting a single label
-#' @family metadata
-#' @export
-set_variable_labels <- function(x, ...) {
-  .check_is_survey(x)
-  labels_list <- rlang::list2(...)
-  var_names <- names(labels_list)
-  missing <- setdiff(var_names, names(x@data))
-  if (length(missing) > 0L) {
-    cli::cli_abort(
-      c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
-      class = "surveycore_error_vars_not_found"
-    )
-  }
-  for (var_name in var_names) {
-    x@metadata@variable_labels[[var_name]] <- labels_list[[var_name]]
-  }
-  invisible(x)
-}
-
-
-#' Set Value Labels for Multiple Variables
-#'
-#' Sets value labels for multiple variables at once using named arguments.
-#' Each argument value must be a fully named vector. A warning is issued for
-#' any variable where some observed values lack a label.
-#'
-#' @param x A survey design object.
-#' @param ... Named arguments where the name is the variable (unquoted) and the
-#'   value is a named vector of value labels.
-#'
-#' @return The modified survey object, invisibly.
-#'
-#' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' d <- set_value_labels(
-#'   d,
-#'   riagendr = c(Male = 1L, Female = 2L),
-#'   ridstatr = c("Interview only" = 1L, "Interview + exam" = 2L)
-#' )
-#'
-#' @seealso [set_val_labels()] for setting value labels for a single variable
-#' @family metadata
-#' @export
-set_value_labels <- function(x, ...) {
-  .check_is_survey(x)
-  labels_list <- rlang::list2(...)
-  var_names <- names(labels_list)
-  missing <- setdiff(var_names, names(x@data))
-  if (length(missing) > 0L) {
-    cli::cli_abort(
-      c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
-      class = "surveycore_error_vars_not_found"
-    )
-  }
-  for (var_name in var_names) {
-    labels <- labels_list[[var_name]]
-    if (is.null(names(labels)) || any(names(labels) == "")) {
+# Internal helper: shared scalar validation for set_var_label(),
+# set_question_preface(), set_var_note(), and set_universe().
+# Errors with surveycore_error_label_not_scalar when content is non-NULL and
+# is not a character scalar.
+.validate_scalar_content <- function(content, var_name, call) {
+  if (!is.null(content)) {
+    if (!is.character(content) || length(content) != 1L) {
       cli::cli_abort(
         c(
-          "x" = "{.arg labels} must be a fully named vector.",
-          "i" = "All elements must have names."
+          "x" = paste0(
+            "Label content for {.field {var_name}} must be a character",
+            " scalar, not {.cls {class(content)[[1L]]}} of length",
+            " {length(content)}."
+          ),
+          "v" = paste0(
+            "Pass a single character string, e.g.",
+            " {.code set_var_label(x, {var_name} = 'My label')}."
+          )
         ),
-        class = "surveycore_error_labels_unnamed"
+        class = "surveycore_error_label_not_scalar",
+        call  = call
       )
     }
-    .validate_val_labels(x@data[[var_name]], labels, var_name = var_name)
-    x@metadata@value_labels[[var_name]] <- labels
+  }
+  invisible(NULL)
+}
+
+
+#' Set Variable Label(s)
+#'
+#' Sets variable labels using one of three conventions.
+#'
+#' **Convention 1 (named `...`)** — recommended for interactive use:
+#' ```r
+#' set_var_label(x, age = "Age in years", income = "Annual income")
+#' set_var_label(x, !!!labels_list)   # list splicing
+#' ```
+#'
+#' **Convention 2 (named vector in `...`)** — useful for programmatic use:
+#' ```r
+#' set_var_label(x, c(age = "Age in years", income = "Annual income"))
+#' ```
+#'
+#' **Convention 3 (`variable` + `label` arguments)** — for vector input:
+#' ```r
+#' vars <- c("age", "income")
+#' lbls <- c("Age in years", "Annual income")
+#' set_var_label(x, variable = vars, label = lbls)
+#' ```
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the label string. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names. Use with `label`.
+#' @param label A character vector of label strings, one per element of
+#'   `variable`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_var_label(d, indfmpir = "Income-to-poverty ratio")
+#'
+#' # Multiple variables
+#' d <- set_var_label(d, bpxsy1 = "Systolic BP (1st reading)",
+#'                       bpxdi1 = "Diastolic BP (1st reading)")
+#'
+#' @seealso [extract_var_label()] to retrieve a label
+#' @family metadata
+#' @export
+set_var_label <- function(x, ..., variable = NULL, label = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  # Detect old positional form: set_var_label(x, bare_symbol, "string")
+  dot_quos <- rlang::enquos(...)
+  nms      <- names(dot_quos)
+  if (
+    length(dot_quos) == 2L &&
+    (is.null(nms) ||
+      (!nzchar(if (!is.null(nms[[1L]])) nms[[1L]] else "") &&
+        !nzchar(if (!is.null(nms[[2L]])) nms[[2L]] else ""))) &&
+    rlang::quo_is_symbol(dot_quos[[1L]])
+  ) {
+    val2 <- tryCatch(rlang::eval_tidy(dot_quos[[2L]]), error = function(e) NULL)
+    if (is.character(val2) && length(val2) == 1L) {
+      var_nm2 <- rlang::as_name(dot_quos[[1L]])
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "The old positional calling form",
+            " {.code set_var_label(x, var, content)} is no longer supported."
+          ),
+          "i" = "The new unified setter uses named arguments.",
+          "v" = "Use {.code set_var_label(x, {var_nm2} = {.val {val2}})} instead."
+        ),
+        class = "surveycore_error_old_positional_setter",
+        call  = call
+      )
+    }
+  }
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = label,
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    .validate_scalar_content(content, var_name, call)
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@variable_labels[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "label") <- content
+    }
   }
   invisible(x)
 }
 
 
-#' Set Question Prefaces for Multiple Variables
+#' Set Value Labels
 #'
-#' Sets question preface text for multiple variables at once using named
-#' arguments.
+#' Sets value labels for one or more variables using one of three conventions.
 #'
-#' @param x A survey design object.
-#' @param ... Named arguments where the name is the variable (unquoted) and the
-#'   value is the preface string.
+#' **Convention 1 (named `...`)** — recommended:
+#' ```r
+#' set_val_labels(x, sex = c(Male = 1L, Female = 2L))
+#' ```
 #'
-#' @return The modified survey object, invisibly.
+#' **Convention 2 (single named list in `...`)**:
+#' ```r
+#' set_val_labels(x, list(sex = c(Male = 1L, Female = 2L)))
+#' ```
 #'
-#' @seealso [set_question_preface()] for setting a single question preface
+#' **Convention 3 (`variable` + `labels`)**:
+#' ```r
+#' set_val_labels(x, variable = "sex", labels = c(Male = 1L, Female = 2L))
+#' ```
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   a fully named vector of value labels. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names.
+#' @param labels A list of named vectors, one per element of `variable`. When
+#'   `variable` has length 1, a bare named vector is also accepted.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
+#'
+#' @seealso [extract_val_labels()] to retrieve value labels
 #' @family metadata
 #' @export
-set_question_prefaces <- function(x, ...) {
-  .check_is_survey(x)
-  prefaces <- rlang::list2(...)
-  var_names <- names(prefaces)
-  missing <- setdiff(var_names, names(x@data))
-  if (length(missing) > 0L) {
-    cli::cli_abort(
-      c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
-      class = "surveycore_error_vars_not_found"
-    )
+set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  # Convention 3 bare-vector exception: wrap scalar atomic vector in a list
+  # when length(variable) == 1 and labels is not already a list.
+  if (!is.null(variable) && length(variable) == 1L &&
+    !is.null(labels) && !is.list(labels) && is.atomic(labels)) {
+    labels <- list(labels)
   }
-  for (var_name in var_names) {
-    x@metadata@question_prefaces[[var_name]] <- prefaces[[var_name]]
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = labels,
+    content_arg_name = "labels",
+    content_type     = "vector",
+    fn_name          = "set_val_labels",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    if (!is.null(content)) {
+      if (is.null(names(content)) || any(!nzchar(names(content)))) {
+        cli::cli_abort(
+          c(
+            "x" = "{.arg labels} must be a fully named vector.",
+            "i" = "All elements must have names."
+          ),
+          class = "surveycore_error_labels_unnamed",
+          call  = call
+        )
+      }
+      var_data <- if (S7::S7_inherits(x, survey_base)) {
+        x@data[[var_name]]
+      } else {
+        x[[var_name]]
+      }
+      .validate_val_labels(var_data, content, var_name = var_name)
+    }
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@value_labels[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "labels") <- content
+    }
   }
   invisible(x)
 }
 
 
-#' Set Analyst Notes for Multiple Variables
+#' Set Question Preface(s)
 #'
-#' Sets analyst notes for multiple variables at once using named arguments.
+#' Sets the question preface string for one or more variables. Question prefaces
+#' are the shared introductory text for a battery of related questions.
 #'
-#' @param x A survey design object.
-#' @param ... Named arguments where the name is the variable (unquoted) and the
-#'   value is the note string.
+#' Supports Conventions 1, 2, and 3 — see [set_var_label()] for details.
 #'
-#' @return The modified survey object, invisibly.
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the preface string. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names. Use with `preface`.
+#' @param preface A character vector of preface strings, one per element of
+#'   `variable`.
 #'
-#' @seealso [set_var_note()] for setting a single note
+#' @return The modified object, invisibly.
+#'
+#' @seealso [extract_question_preface()] to retrieve a preface
 #' @family metadata
 #' @export
-set_variable_notes <- function(x, ...) {
-  .check_is_survey(x)
-  notes <- rlang::list2(...)
-  var_names <- names(notes)
-  missing <- setdiff(var_names, names(x@data))
-  if (length(missing) > 0L) {
-    cli::cli_abort(
-      c("x" = "Variable(s) not found in {.arg x}: {.field {missing}}"),
-      class = "surveycore_error_vars_not_found"
-    )
+set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = preface,
+    content_arg_name = "preface",
+    content_type     = "scalar",
+    fn_name          = "set_question_preface",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    .validate_scalar_content(content, var_name, call)
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@question_prefaces[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "question_preface") <- content
+    }
   }
-  for (var_name in var_names) {
-    x@metadata@notes[[var_name]] <- notes[[var_name]]
+  invisible(x)
+}
+
+
+#' Set Analyst Note(s)
+#'
+#' Sets an analyst note for one or more variables. Notes are free-text
+#' annotations for documenting processing decisions, data quality concerns,
+#' or other context.
+#'
+#' Supports Conventions 1, 2, and 3 — see [set_var_label()] for details.
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the note string. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names. Use with `note`.
+#' @param note A character vector of note strings, one per element of
+#'   `variable`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @seealso [extract_var_note()] to retrieve a note
+#' @family metadata
+#' @export
+set_var_note <- function(x, ..., variable = NULL, note = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = note,
+    content_arg_name = "note",
+    content_type     = "scalar",
+    fn_name          = "set_var_note",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    .validate_scalar_content(content, var_name, call)
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@notes[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "note") <- content
+    }
+  }
+  invisible(x)
+}
+
+
+#' Set Universe Description(s)
+#'
+#' Sets the universe description for one or more variables. The universe
+#' describes the population to which a variable applies
+#' (e.g., `"Adults 18+"`).
+#'
+#' Supports Conventions 1, 2, and 3 — see [set_var_label()] for details.
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the universe description string. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names. Use with `universe`.
+#' @param universe A character vector of universe description strings, one per
+#'   element of `variable`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @family metadata
+#' @export
+set_universe <- function(x, ..., variable = NULL, universe = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = universe,
+    content_arg_name = "universe",
+    content_type     = "scalar",
+    fn_name          = "set_universe",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    .validate_scalar_content(content, var_name, call)
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@universe[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "universe") <- content
+    }
+  }
+  invisible(x)
+}
+
+
+#' Set Missing Code(s)
+#'
+#' Sets missing-value codes for one or more variables. Missing codes are atomic
+#' vectors documenting which data values represent missing data
+#' (e.g., `c(Refused = -2L, DontKnow = -1L)`).
+#'
+#' Supports Conventions 1, 2, and 3 — see [set_var_label()] for details on
+#' the calling conventions. For Convention 3 with a single variable, a bare
+#' named atomic vector is accepted in addition to a list.
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   a named atomic vector of missing codes. Supports `!!!` list splicing.
+#' @param variable A character vector of variable names. Use with `codes`.
+#' @param codes A list of named atomic vectors, one per element of `variable`.
+#'   When `variable` has length 1, a bare named atomic vector is also accepted.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @family metadata
+#' @export
+set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  # Convention 3 bare-vector exception: wrap atomic vector in a list
+  # when length(variable) == 1 and codes is not already a list.
+  if (!is.null(variable) && length(variable) == 1L &&
+    !is.null(codes) && !is.list(codes) && is.atomic(codes)) {
+    codes <- list(codes)
+  }
+
+  dots  <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots             = dots,
+    variable         = variable,
+    content          = codes,
+    content_arg_name = "codes",
+    content_type     = "vector",
+    fn_name          = "set_missing_codes",
+    call             = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  for (var_name in names(pairs)) {
+    content <- pairs[[var_name]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        class = "surveycore_warning_var_not_found",
+        call  = call
+      )
+      next
+    }
+    if (!is.null(content) && is.list(content)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Missing codes for {.field {var_name}} must be an atomic",
+            " vector, not a list."
+          ),
+          "i" = paste0(
+            "Got class {.cls {class(content)[[1L]]}}."
+          ),
+          "v" = paste0(
+            "Use {.code set_missing_codes(x, {var_name} =",
+            " c(Missing = -1L))} instead."
+          )
+        ),
+        class = "surveycore_error_missing_codes_not_vector",
+        call  = call
+      )
+    }
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@missing_codes[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "missing_codes") <- content
+    }
   }
   invisible(x)
 }
@@ -849,9 +1005,12 @@ set_variable_notes <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 .extract_haven_metadata <- function(data) {
-  var_labels <- list()
-  val_labels <- list()
-  q_prefaces <- list()
+  var_labels   <- list()
+  val_labels   <- list()
+  q_prefaces   <- list()
+  notes        <- list()
+  universe     <- list()
+  missing_codes <- list()
 
   for (col_name in names(data)) {
     col <- data[[col_name]]
@@ -889,11 +1048,40 @@ set_variable_notes <- function(x, ...) {
     ) {
       q_prefaces[[col_name]] <- q_preface[[1L]]
     }
+
+    # ── Analyst note ──────────────────────────────────────────────────────────
+    var_note <- attr(col, "note", exact = TRUE)
+    if (
+      !is.null(var_note) &&
+        is.character(var_note) &&
+        nzchar(var_note[[1L]])
+    ) {
+      notes[[col_name]] <- var_note[[1L]]
+    }
+
+    # ── Universe description ──────────────────────────────────────────────────
+    var_universe <- attr(col, "universe", exact = TRUE)
+    if (
+      !is.null(var_universe) &&
+        is.character(var_universe) &&
+        nzchar(var_universe[[1L]])
+    ) {
+      universe[[col_name]] <- var_universe[[1L]]
+    }
+
+    # ── Missing codes ─────────────────────────────────────────────────────────
+    var_missing <- attr(col, "missing_codes", exact = TRUE)
+    if (!is.null(var_missing) && is.atomic(var_missing) && length(var_missing) > 0L) {
+      missing_codes[[col_name]] <- var_missing
+    }
   }
 
   survey_metadata(
-    variable_labels = var_labels,
-    value_labels = val_labels,
-    question_prefaces = q_prefaces
+    variable_labels   = var_labels,
+    value_labels      = val_labels,
+    question_prefaces = q_prefaces,
+    notes             = notes,
+    universe          = universe,
+    missing_codes     = missing_codes
   )
 }

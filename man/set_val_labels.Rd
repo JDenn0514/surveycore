@@ -2,39 +2,50 @@
 % Please edit documentation in R/core-metadata.R
 \name{set_val_labels}
 \alias{set_val_labels}
-\title{Set Value Labels for a Variable}
+\title{Set Value Labels}
 \usage{
-set_val_labels(x, var, labels)
+set_val_labels(x, ..., variable = NULL, labels = NULL)
 }
 \arguments{
-\item{x}{A survey design object.}
+\item{x}{A survey design object or a data frame.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable to label
-(bare, unquoted).}
+\item{...}{Named arguments where the name is the variable and the value is
+a fully named vector of value labels. Supports \verb{!!!} list splicing.}
 
-\item{labels}{A fully named vector where names are the display labels and
-values are the data codes (e.g., \code{c(Male = 1L, Female = 2L)}). All
-elements must be named.}
+\item{variable}{A character vector of variable names.}
+
+\item{labels}{A list of named vectors, one per element of \code{variable}. When
+\code{variable} has length 1, a bare named vector is also accepted.}
 }
 \value{
-The modified survey object, invisibly.
+The modified object, invisibly.
 }
 \description{
-Sets value labels for a single variable in a survey design object. Extra
-labels (for values not present in the data) are allowed — they document the
-full coding scheme. A warning is issued if some observed data values lack a
-label.
+Sets value labels for one or more variables using one of three conventions.
+}
+\details{
+\strong{Convention 1 (named \code{...})} — recommended:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{set_val_labels(x, sex = c(Male = 1L, Female = 2L))
+}\if{html}{\out{</div>}}
+
+\strong{Convention 2 (single named list in \code{...})}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{set_val_labels(x, list(sex = c(Male = 1L, Female = 2L)))
+}\if{html}{\out{</div>}}
+
+\strong{Convention 3 (\code{variable} + \code{labels})}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{set_val_labels(x, variable = "sex", labels = c(Male = 1L, Female = 2L))
+}\if{html}{\out{</div>}}
 }
 \examples{
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
-d <- set_val_labels(
-  d, ridstatr, c("Interview only" = 1L, "Interview + exam" = 2L)
-)
+d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
 
 }
 \seealso{
-\code{\link[=set_value_labels]{set_value_labels()}} for setting labels for multiple variables,
 \code{\link[=extract_val_labels]{extract_val_labels()}} to retrieve value labels
 
 Other metadata: 
@@ -43,13 +54,11 @@ Other metadata:
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
-\code{\link{set_value_labels}()},
+\code{\link{set_universe}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }

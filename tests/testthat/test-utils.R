@@ -659,7 +659,7 @@ test_that("survey_weighting_history() returns empty list for design with no hist
 test_that(".delete_metadata_col() removes column from all metadata slots", {
   df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  sc <- set_var_label(sc, y1, "Outcome variable")
+  sc <- set_var_label(sc, y1 = "Outcome variable")
 
   # Confirm label is present
   expect_identical(sc@metadata@variable_labels[["y1"]], "Outcome variable")

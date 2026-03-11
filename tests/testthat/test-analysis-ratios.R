@@ -537,8 +537,8 @@ test_that("get_ratios() meta() stores design_type", {
 test_that("get_ratios() meta() stores variable labels when present", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 62L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, y1, "Numerator variable")
-  d <- set_var_label(d, y2, "Denominator variable")
+  d <- set_var_label(d, y1 = "Numerator variable")
+  d <- set_var_label(d, y2 = "Denominator variable")
 
   result <- get_ratios(d, y1, y2)
   expect_identical(meta(result)$numerator$variable_label, "Numerator variable")
@@ -758,7 +758,7 @@ test_that("get_ratios() returns finite ratio for all 5 design types", {
 test_that("get_ratios() meta$numerator has nested list structure", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 80L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, y1, "Income")
+  d <- set_var_label(d, y1 = "Income")
 
   result <- get_ratios(d, y1, y2)
   m <- meta(result)

@@ -7,7 +7,7 @@
 #   Row 29: surveycore_error_labels_unnamed  — set_val_labels / set_value_labels
 #   Row 30: surveycore_warning_missing_labels — set_val_labels / set_value_labels
 
-# ── Test fixture ──────────────────────────────────────────────────────────────
+# ── Test fixtures ─────────────────────────────────────────────────────────────
 
 # Minimal survey_taylor for metadata tests (constructed directly because
 # as_survey() is not implemented until Component 3).
@@ -32,6 +32,21 @@ make_design <- function() {
   )
 }
 
+# Design with labels, universe, and missing codes for integration tests.
+# Uses new unified setters — works after Steps 3.4–3.11 are complete.
+make_labeled_design <- function(seed = 42) {
+  df  <- make_survey_data(n = 100, seed = seed)
+  svy <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  svy <- set_var_label(svy, y1 = "Outcome 1", y2 = "Outcome 2")
+  svy <- set_val_labels(
+    svy,
+    strata = setNames(seq_len(5L), paste0("Stratum ", seq_len(5L)))
+  )
+  svy <- set_universe(svy, y1 = "All respondents")
+  svy <- set_missing_codes(svy, y1 = c("Missing" = -1L))
+  svy
+}
+
 
 # ── extract_var_label() ───────────────────────────────────────────────────────
 
@@ -42,7 +57,7 @@ test_that("extract_var_label() returns NULL when no label set", {
 
 test_that("extract_var_label() returns the label after set_var_label()", {
   d <- make_design()
-  d <- set_var_label(d, age, "Age in years")
+  d <- set_var_label(d, age = "Age in years")
   expect_identical(extract_var_label(d, age), "Age in years")
 })
 
@@ -62,7 +77,7 @@ test_that("extract_val_labels() returns NULL when no labels set", {
 
 test_that("extract_val_labels() returns the labels after set_val_labels()", {
   d <- make_design()
-  d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
+  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
   result <- extract_val_labels(d, sex)
   expect_identical(result, c(Male = 1L, Female = 2L))
 })
@@ -77,7 +92,7 @@ test_that("extract_question_preface() returns NULL when no preface set", {
 
 test_that("extract_question_preface() returns preface after set_question_preface()", {
   d <- make_design()
-  d <- set_question_preface(d, age, "In the past 12 months, how old were you?")
+  d <- set_question_preface(d, age = "In the past 12 months, how old were you?")
   expect_identical(
     extract_question_preface(d, age),
     "In the past 12 months, how old were you?"
@@ -94,7 +109,7 @@ test_that("extract_var_note() returns NULL when no note set", {
 
 test_that("extract_var_note() returns the note after set_var_note()", {
   d <- make_design()
-  d <- set_var_note(d, income, "Imputed for 3% of respondents.")
+  d <- set_var_note(d, income = "Imputed for 3% of respondents.")
   expect_identical(
     extract_var_note(d, income),
     "Imputed for 3% of respondents."
@@ -104,55 +119,259 @@ test_that("extract_var_note() returns the note after set_var_note()", {
 
 # ── set_var_label() ───────────────────────────────────────────────────────────
 
-test_that("set_var_label() stores a variable label and returns invisibly", {
+test_that("set_var_label() convention 1 sets label for one variable", {
+  d <- make_design()
+  d <- set_var_label(d, age = "Age in years")
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+})
+
+test_that("set_var_label() convention 1 sets labels for multiple variables", {
+  d <- make_design()
+  d <- set_var_label(d, age = "Age in years", income = "Annual income")
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+  expect_identical(d@metadata@variable_labels[["income"]], "Annual income")
+})
+
+test_that("set_var_label() convention 1 with !!! splicing sets labels", {
+  d    <- make_design()
+  lbls <- list(age = "Age in years", income = "Annual income")
+  d    <- set_var_label(d, !!!lbls)
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+  expect_identical(d@metadata@variable_labels[["income"]], "Annual income")
+})
+
+test_that("set_var_label() convention 2 (named char vector in ...) sets labels", {
+  d <- make_design()
+  d <- set_var_label(d, c(age = "Age in years", income = "Annual income"))
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+  expect_identical(d@metadata@variable_labels[["income"]], "Annual income")
+})
+
+test_that("set_var_label() convention 3 (variable + label) sets one label", {
+  d <- make_design()
+  d <- set_var_label(d, variable = "age", label = "Age in years")
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+})
+
+test_that("set_var_label() convention 3 (variable + label) sets multiple labels", {
+  d <- make_design()
+  d <- set_var_label(
+    d,
+    variable = c("age", "income"),
+    label    = c("Age in years", "Annual income")
+  )
+  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
+  expect_identical(d@metadata@variable_labels[["income"]], "Annual income")
+})
+
+test_that("set_var_label() returns x invisibly", {
   d      <- make_design()
-  result <- withVisible(set_var_label(d, age, "Age in years"))
+  result <- withVisible(set_var_label(d, age = "Age in years"))
   expect_false(result$visible)
   expect_identical(result$value@metadata@variable_labels[["age"]], "Age in years")
 })
 
-test_that("set_var_label() is pipe-friendly", {
+test_that("set_var_label() survives pipe chain of three calls", {
   d <- make_design() |>
-    set_var_label(age, "Age in years") |>
-    set_var_label(sex, "Biological sex")
-  expect_identical(d@metadata@variable_labels[["age"]], "Age in years")
-  expect_identical(d@metadata@variable_labels[["sex"]], "Biological sex")
+    set_var_label(age = "Age") |>
+    set_var_label(sex = "Sex") |>
+    set_var_label(income = "Income")
+  expect_identical(d@metadata@variable_labels[["age"]], "Age")
+  expect_identical(d@metadata@variable_labels[["sex"]], "Sex")
+  expect_identical(d@metadata@variable_labels[["income"]], "Income")
+})
+
+test_that("set_var_label() NULL label deletes the existing entry", {
+  d <- make_design()
+  d <- set_var_label(d, age = "Age in years")
+  d <- set_var_label(d, age = NULL)
+  expect_false("age" %in% names(d@metadata@variable_labels))
+})
+
+test_that("set_var_label() data frame: sets attr(df$age, 'label')", {
+  df  <- data.frame(age = 1:3, wt = 1:3)
+  df2 <- set_var_label(df, age = "Age in years")
+  expect_identical(attr(df2$age, "label"), "Age in years")
 })
 
 test_that("set_var_label() does not modify other metadata", {
   d <- make_design()
-  d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
-  d <- set_var_label(d, age, "Age in years")
-  # Value labels for sex must be unchanged
+  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  d <- set_var_label(d, age = "Age in years")
   expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
 })
 
-test_that("set_var_label() errors on variable not in data [row 27]", {
-  d <- make_design()
+test_that("set_var_label() errors with surveycore_error_not_survey_or_df for list x", {
   expect_error(
-    set_var_label(d, zzz_missing, "Label"),
-    class = "surveycore_error_var_not_found"
+    set_var_label(list(x = 1), age = "A"),
+    class = "surveycore_error_not_survey_or_df"
   )
 })
 
-test_that("set_var_label() error snapshot [row 27]", {
+test_that("set_var_label() errors with surveycore_error_setter_ambiguous", {
   d <- make_design()
-  expect_snapshot(error = TRUE, set_var_label(d, zzz_missing, "Label"))
+  expect_error(
+    set_var_label(d, age = "A", variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
 })
 
-test_that("set_var_label() overwrites an existing label", {
+test_that("set_var_label() errors with surveycore_error_setter_empty", {
   d <- make_design()
-  d <- set_var_label(d, age, "Original label")
-  d <- set_var_label(d, age, "Updated label")
-  expect_identical(extract_var_label(d, age), "Updated label")
+  expect_error(
+    set_var_label(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_var_label() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_var_label(d, variable = c("age", "income"), label = "Age"),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_var_label() errors with surveycore_error_old_positional_setter for old form", {
+  d <- make_design()
+  expect_error(
+    set_var_label(d, age, "Age in years"),
+    class = "surveycore_error_old_positional_setter"
+  )
+})
+
+test_that("set_var_label() errors with surveycore_error_label_not_scalar for non-character", {
+  d <- make_design()
+  expect_error(
+    set_var_label(d, age = 123L),
+    class = "surveycore_error_label_not_scalar"
+  )
+})
+
+test_that("set_var_label() errors with surveycore_error_label_not_scalar for length > 1", {
+  d <- make_design()
+  expect_error(
+    set_var_label(d, age = c("A", "B")),
+    class = "surveycore_error_label_not_scalar"
+  )
+})
+
+test_that("set_var_label() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_var_label(d, "Age in years"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_var_label() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_var_label(d, zzz_missing = "Label"),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_var_label() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_var_label(d, age = "Age", zzz_missing = "Gone")
+  )
+  expect_identical(result@metadata@variable_labels[["age"]], "Age")
+  expect_false("zzz_missing" %in% names(result@metadata@variable_labels))
+})
+
+test_that("set_var_label() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_var_label(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_var_label() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_var_label(list(x = 1), age = "A"))
+})
+
+test_that("snapshot: set_var_label() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_label(d, age = "A", variable = "income"))
+})
+
+test_that("snapshot: set_var_label() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_label(d))
+})
+
+test_that("snapshot: set_var_label() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_var_label(d, variable = c("age", "income"), label = "Age")
+  )
+})
+
+test_that("snapshot: set_var_label() surveycore_error_old_positional_setter", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_label(d, age, "Age in years"))
+})
+
+test_that("snapshot: set_var_label() surveycore_error_label_not_scalar", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_label(d, age = 123L))
+})
+
+test_that("snapshot: set_var_label() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_var_label(d, zzz_missing = "Label"))
+})
+
+test_that("snapshot: set_var_label() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_var_label(d, variable = character(0)))
 })
 
 
 # ── set_val_labels() ──────────────────────────────────────────────────────────
 
-test_that("set_val_labels() stores value labels and returns invisibly", {
+test_that("set_val_labels() convention 1 sets labels for one variable", {
+  d <- make_design()
+  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+})
+
+test_that("set_val_labels() convention 1 sets labels for multiple variables", {
+  d <- make_design()
+  d <- set_val_labels(
+    d,
+    sex = c(Male = 1L, Female = 2L),
+    age = c("25" = 25L, "30" = 30L, "35" = 35L, "45" = 45L, "50" = 50L)
+  )
+  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+  expect_false(is.null(d@metadata@value_labels[["age"]]))
+})
+
+test_that("set_val_labels() convention 2 (single named list in ...) sets labels", {
+  d <- make_design()
+  d <- set_val_labels(d, list(sex = c(Male = 1L, Female = 2L)))
+  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+})
+
+test_that("set_val_labels() convention 3 (variable + labels list) sets labels", {
+  d <- make_design()
+  d <- set_val_labels(d, variable = "sex", labels = list(c(Male = 1L, Female = 2L)))
+  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+})
+
+test_that("set_val_labels() convention 3 bare named vector accepted when length(variable) == 1", {
+  d <- make_design()
+  d <- set_val_labels(d, variable = "sex", labels = c(Male = 1L, Female = 2L))
+  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+})
+
+test_that("set_val_labels() returns x invisibly", {
   d      <- make_design()
-  result <- withVisible(set_val_labels(d, sex, c(Male = 1L, Female = 2L)))
+  result <- withVisible(set_val_labels(d, sex = c(Male = 1L, Female = 2L)))
   expect_false(result$visible)
   expect_identical(
     result$value@metadata@value_labels[["sex"]],
@@ -160,63 +379,196 @@ test_that("set_val_labels() stores value labels and returns invisibly", {
   )
 })
 
+test_that("set_val_labels() NULL value deletes the entry", {
+  d <- make_design()
+  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  d <- set_val_labels(d, sex = NULL)
+  expect_false("sex" %in% names(d@metadata@value_labels))
+})
+
+test_that("set_val_labels() data frame: sets attr(df$sex, 'labels')", {
+  df  <- data.frame(sex = c(1L, 2L, 1L))
+  df2 <- set_val_labels(df, sex = c(Male = 1L, Female = 2L))
+  expect_identical(attr(df2$sex, "labels"), c(Male = 1L, Female = 2L))
+})
+
 test_that("set_val_labels() allows extra labels not present in data", {
   d <- make_design()
-  # sex has only 1 and 2 in data; extra label "Other = 3L" is OK
   expect_no_warning(
-    set_val_labels(d, sex, c(Male = 1L, Female = 2L, Other = 3L))
+    set_val_labels(d, sex = c(Male = 1L, Female = 2L, Other = 3L))
   )
 })
 
-test_that("set_val_labels() warns when some data values lack a label [row 30]", {
+test_that("set_val_labels() errors with surveycore_error_labels_unnamed for unnamed vector", {
   d <- make_design()
-  # sex = 1 and 2 in data; only labelling 1
+  expect_error(
+    set_val_labels(d, sex = c(1L, 2L)),
+    class = "surveycore_error_labels_unnamed"
+  )
+})
+
+test_that("set_val_labels() errors with surveycore_error_labels_unnamed for partially named", {
+  d <- make_design()
+  expect_error(
+    set_val_labels(d, sex = c(Male = 1L, 2L)),
+    class = "surveycore_error_labels_unnamed"
+  )
+})
+
+test_that("set_val_labels() warns with surveycore_warning_missing_labels for partially labeled", {
+  d <- make_design()
   expect_warning(
-    set_val_labels(d, sex, c(Male = 1L)),
+    set_val_labels(d, sex = c(Male = 1L)),
     class = "surveycore_warning_missing_labels"
   )
 })
 
-test_that("set_val_labels() warning snapshot [row 30]", {
-  d <- make_design()
-  expect_snapshot(set_val_labels(d, sex, c(Male = 1L)))
-})
-
-test_that("set_val_labels() errors on variable not in data [row 27]", {
-  d <- make_design()
-  expect_error(
-    set_val_labels(d, zzz_missing, c(A = 1L)),
-    class = "surveycore_error_var_not_found"
+test_that("set_val_labels() warns with surveycore_warning_missing_labels on data frame", {
+  df <- data.frame(sex = c(1L, 2L, 1L))
+  expect_warning(
+    set_val_labels(df, sex = c(Male = 1L)),
+    class = "surveycore_warning_missing_labels"
   )
 })
 
-test_that("set_val_labels() errors on unnamed labels [row 29]", {
-  d <- make_design()
+test_that("set_val_labels() errors with surveycore_error_not_survey_or_df for list x", {
   expect_error(
-    set_val_labels(d, sex, c(1L, 2L)),
-    class = "surveycore_error_labels_unnamed"
+    set_val_labels(list(x = 1), sex = c(Male = 1L)),
+    class = "surveycore_error_not_survey_or_df"
   )
 })
 
-test_that("set_val_labels() error snapshot for unnamed labels [row 29]", {
-  d <- make_design()
-  expect_snapshot(error = TRUE, set_val_labels(d, sex, c(1L, 2L)))
-})
-
-test_that("set_val_labels() errors on partially named labels [row 29]", {
+test_that("set_val_labels() errors with surveycore_error_setter_empty", {
   d <- make_design()
   expect_error(
-    set_val_labels(d, sex, c(Male = 1L, 2L)),
-    class = "surveycore_error_labels_unnamed"
+    set_val_labels(d),
+    class = "surveycore_error_setter_empty"
   )
+})
+
+test_that("set_val_labels() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_val_labels(d, sex = c(Male = 1L), variable = "age"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_val_labels() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_val_labels(d, variable = c("sex", "age"), labels = list(c(Male = 1L))),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_val_labels() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_val_labels(d, c(-1L, -2L)),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_val_labels() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_val_labels(d, zzz_missing = c(A = 1L)),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_val_labels() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_val_labels(d, sex = c(Male = 1L, Female = 2L), zzz_missing = c(A = 1L))
+  )
+  expect_identical(result@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
+  expect_false("zzz_missing" %in% names(result@metadata@value_labels))
+})
+
+test_that("set_val_labels() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_val_labels(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_val_labels() surveycore_error_labels_unnamed", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_val_labels(d, sex = c(1L, 2L)))
+})
+
+test_that("snapshot: set_val_labels() surveycore_warning_missing_labels", {
+  d <- make_design()
+  expect_snapshot(set_val_labels(d, sex = c(Male = 1L)))
+})
+
+test_that("snapshot: set_val_labels() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_val_labels(list(x = 1), sex = c(Male = 1L)))
+})
+
+test_that("snapshot: set_val_labels() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_val_labels(d))
+})
+
+test_that("snapshot: set_val_labels() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_val_labels(d, sex = c(Male = 1L), variable = "age"))
+})
+
+test_that("snapshot: set_val_labels() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_val_labels(d, variable = c("sex", "age"), labels = list(c(Male = 1L)))
+  )
+})
+
+test_that("snapshot: set_val_labels() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_val_labels(d, zzz_missing = c(A = 1L)))
+})
+
+test_that("snapshot: set_val_labels() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_val_labels(d, variable = character(0)))
 })
 
 
 # ── set_question_preface() ────────────────────────────────────────────────────
 
-test_that("set_question_preface() stores preface and returns invisibly", {
+test_that("set_question_preface() convention 1 sets preface for one variable", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "How old are you?")
+  expect_identical(d@metadata@question_prefaces[["age"]], "How old are you?")
+})
+
+test_that("set_question_preface() convention 1 sets prefaces for multiple variables", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "In the past year...", income = "For your household...")
+  expect_identical(d@metadata@question_prefaces[["age"]], "In the past year...")
+  expect_identical(d@metadata@question_prefaces[["income"]], "For your household...")
+})
+
+test_that("set_question_preface() convention 2 (named char vector in ...) sets prefaces", {
+  d <- make_design()
+  d <- set_question_preface(d, c(age = "In the past year...", income = "For your household..."))
+  expect_identical(d@metadata@question_prefaces[["age"]], "In the past year...")
+  expect_identical(d@metadata@question_prefaces[["income"]], "For your household...")
+})
+
+test_that("set_question_preface() convention 3 (variable + preface) sets preface", {
+  d <- make_design()
+  d <- set_question_preface(d, variable = "age", preface = "How old are you?")
+  expect_identical(d@metadata@question_prefaces[["age"]], "How old are you?")
+})
+
+test_that("set_question_preface() returns x invisibly", {
   d      <- make_design()
-  result <- withVisible(set_question_preface(d, age, "How old are you?"))
+  result <- withVisible(set_question_preface(d, age = "How old are you?"))
   expect_false(result$visible)
   expect_identical(
     result$value@metadata@question_prefaces[["age"]],
@@ -224,187 +576,643 @@ test_that("set_question_preface() stores preface and returns invisibly", {
   )
 })
 
-test_that("set_question_preface() errors on variable not in data [row 27]", {
+test_that("set_question_preface() NULL preface deletes the entry", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "How old are you?")
+  d <- set_question_preface(d, age = NULL)
+  expect_false("age" %in% names(d@metadata@question_prefaces))
+})
+
+test_that("set_question_preface() data frame: sets attr(df$age, 'question_preface')", {
+  df  <- data.frame(age = 1:3)
+  df2 <- set_question_preface(df, age = "How old are you?")
+  expect_identical(attr(df2$age, "question_preface"), "How old are you?")
+})
+
+test_that("set_question_preface() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    set_question_preface(list(x = 1), age = "Q text"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_question_preface() errors with surveycore_error_label_not_scalar for non-character", {
   d <- make_design()
   expect_error(
-    set_question_preface(d, zzz_missing, "Q text"),
-    class = "surveycore_error_var_not_found"
+    set_question_preface(d, age = 123L),
+    class = "surveycore_error_label_not_scalar"
   )
+})
+
+test_that("set_question_preface() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_question_preface(d, zzz_missing = "Q text"),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_question_preface() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_question_preface(d, age = "Q text", variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_question_preface() errors with surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_error(
+    set_question_preface(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_question_preface() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_question_preface(d, variable = c("age", "income"), preface = "Q"),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_question_preface() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_question_preface(d, "Q text"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_question_preface() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_question_preface(d, age = "Q text", zzz_missing = "Q2")
+  )
+  expect_identical(result@metadata@question_prefaces[["age"]], "Q text")
+  expect_false("zzz_missing" %in% names(result@metadata@question_prefaces))
+})
+
+test_that("set_question_preface() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_question_preface(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_question_preface() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_question_preface(list(x = 1), age = "Q text"))
+})
+
+test_that("snapshot: set_question_preface() surveycore_error_label_not_scalar", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_question_preface(d, age = 123L))
+})
+
+test_that("snapshot: set_question_preface() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_question_preface(d, age = "Q text", variable = "income"))
+})
+
+test_that("snapshot: set_question_preface() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_question_preface(d))
+})
+
+test_that("snapshot: set_question_preface() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_question_preface(d, variable = c("age", "income"), preface = "Q")
+  )
+})
+
+test_that("snapshot: set_question_preface() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_question_preface(d, zzz_missing = "Q text"))
+})
+
+test_that("snapshot: set_question_preface() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_question_preface(d, variable = character(0)))
 })
 
 
 # ── set_var_note() ────────────────────────────────────────────────────────────
 
-test_that("set_var_note() stores a note and returns invisibly", {
-  d      <- make_design()
-  result <- withVisible(set_var_note(d, income, "Top-coded at 999999"))
-  expect_false(result$visible)
-  expect_identical(
-    result$value@metadata@notes[["income"]],
-    "Top-coded at 999999"
-  )
-})
-
-test_that("set_var_note() errors on variable not in data [row 27]", {
+test_that("set_var_note() convention 1 sets note for one variable", {
   d <- make_design()
-  expect_error(
-    set_var_note(d, zzz_missing, "Some note"),
-    class = "surveycore_error_var_not_found"
-  )
+  d <- set_var_note(d, income = "Top-coded at 999999")
+  expect_identical(d@metadata@notes[["income"]], "Top-coded at 999999")
 })
 
-
-# ── set_variable_labels() ────────────────────────────────────────────────────
-
-test_that("set_variable_labels() sets multiple labels and returns invisibly", {
-  d      <- make_design()
-  result <- withVisible(
-    set_variable_labels(
-      d,
-      age    = "Age in years",
-      sex    = "Biological sex",
-      income = "Annual income"
-    )
-  )
-  expect_false(result$visible)
-  d2 <- result$value
-  expect_identical(d2@metadata@variable_labels[["age"]],    "Age in years")
-  expect_identical(d2@metadata@variable_labels[["sex"]],    "Biological sex")
-  expect_identical(d2@metadata@variable_labels[["income"]], "Annual income")
-})
-
-test_that("set_variable_labels() supports list splicing with !!!", {
-  d    <- make_design()
-  lbls <- list(age = "Age in years", income = "Annual income")
-  d    <- set_variable_labels(d, !!!lbls)
-  expect_identical(d@metadata@variable_labels[["age"]],    "Age in years")
-  expect_identical(d@metadata@variable_labels[["income"]], "Annual income")
-})
-
-test_that("set_variable_labels() errors when any variable is missing [row 28]", {
+test_that("set_var_note() convention 1 sets notes for multiple variables", {
   d <- make_design()
-  expect_error(
-    set_variable_labels(d, age = "Age", zzz_missing = "Gone"),
-    class = "surveycore_error_vars_not_found"
-  )
-})
-
-test_that("set_variable_labels() error snapshot [row 28]", {
-  d <- make_design()
-  expect_snapshot(
-    error = TRUE,
-    set_variable_labels(d, age = "Age", zzz_missing = "Gone")
-  )
-})
-
-test_that("set_variable_labels() errors when ALL variables are missing [row 28]", {
-  d <- make_design()
-  expect_error(
-    set_variable_labels(d, zzz1 = "A", zzz2 = "B"),
-    class = "surveycore_error_vars_not_found"
-  )
-})
-
-
-# ── set_value_labels() ───────────────────────────────────────────────────────
-
-test_that("set_value_labels() sets value labels for multiple variables", {
-  d <- make_design()
-  d <- set_value_labels(
-    d,
-    sex = c(Male = 1L, Female = 2L),
-    age = c("25" = 25L, "30" = 30L, "35" = 35L, "45" = 45L, "50" = 50L)
-  )
-  expect_identical(d@metadata@value_labels[["sex"]], c(Male = 1L, Female = 2L))
-  expect_true(!is.null(d@metadata@value_labels[["age"]]))
-})
-
-test_that("set_value_labels() errors when a variable is missing [row 28]", {
-  d <- make_design()
-  expect_error(
-    set_value_labels(d, sex = c(Male = 1L), zzz = c(A = 1L)),
-    class = "surveycore_error_vars_not_found"
-  )
-})
-
-test_that("set_value_labels() errors on unnamed labels [row 29]", {
-  d <- make_design()
-  expect_error(
-    set_value_labels(d, sex = c(1L, 2L)),
-    class = "surveycore_error_labels_unnamed"
-  )
-})
-
-test_that("set_value_labels() warns on missing labels [row 30]", {
-  d <- make_design()
-  expect_warning(
-    set_value_labels(d, sex = c(Male = 1L)),
-    class = "surveycore_warning_missing_labels"
-  )
-})
-
-test_that("set_value_labels() returns invisibly", {
-  d      <- make_design()
-  result <- withVisible(
-    set_value_labels(d, sex = c(Male = 1L, Female = 2L))
-  )
-  expect_false(result$visible)
-})
-
-
-# ── set_question_prefaces() ──────────────────────────────────────────────────
-
-test_that("set_question_prefaces() sets prefaces for multiple variables", {
-  d <- make_design()
-  d <- set_question_prefaces(
-    d,
-    age    = "In the past year...",
-    income = "For your household..."
-  )
-  expect_identical(d@metadata@question_prefaces[["age"]],    "In the past year...")
-  expect_identical(d@metadata@question_prefaces[["income"]], "For your household...")
-})
-
-test_that("set_question_prefaces() errors when a variable is missing [row 28]", {
-  d <- make_design()
-  expect_error(
-    set_question_prefaces(d, age = "Q text", zzz_missing = "Q text"),
-    class = "surveycore_error_vars_not_found"
-  )
-})
-
-test_that("set_question_prefaces() returns invisibly", {
-  d      <- make_design()
-  result <- withVisible(set_question_prefaces(d, age = "Q text"))
-  expect_false(result$visible)
-})
-
-
-# ── set_variable_notes() ─────────────────────────────────────────────────────
-
-test_that("set_variable_notes() sets notes for multiple variables", {
-  d <- make_design()
-  d <- set_variable_notes(
-    d,
-    age    = "Recoded from continuous to 5-year bins.",
-    income = "Top-coded at 999999."
-  )
-  expect_identical(d@metadata@notes[["age"]],    "Recoded from continuous to 5-year bins.")
+  d <- set_var_note(d, age = "Recoded from continuous.", income = "Top-coded at 999999.")
+  expect_identical(d@metadata@notes[["age"]], "Recoded from continuous.")
   expect_identical(d@metadata@notes[["income"]], "Top-coded at 999999.")
 })
 
-test_that("set_variable_notes() errors when a variable is missing [row 28]", {
+test_that("set_var_note() convention 2 (named char vector in ...) sets notes", {
   d <- make_design()
+  d <- set_var_note(d, c(age = "Recoded.", income = "Top-coded."))
+  expect_identical(d@metadata@notes[["age"]], "Recoded.")
+  expect_identical(d@metadata@notes[["income"]], "Top-coded.")
+})
+
+test_that("set_var_note() convention 3 (variable + note) sets note", {
+  d <- make_design()
+  d <- set_var_note(d, variable = "income", note = "Top-coded at 999999")
+  expect_identical(d@metadata@notes[["income"]], "Top-coded at 999999")
+})
+
+test_that("set_var_note() returns x invisibly", {
+  d      <- make_design()
+  result <- withVisible(set_var_note(d, income = "Top-coded at 999999"))
+  expect_false(result$visible)
+  expect_identical(result$value@metadata@notes[["income"]], "Top-coded at 999999")
+})
+
+test_that("set_var_note() NULL note deletes the entry", {
+  d <- make_design()
+  d <- set_var_note(d, income = "Top-coded at 999999")
+  d <- set_var_note(d, income = NULL)
+  expect_false("income" %in% names(d@metadata@notes))
+})
+
+test_that("set_var_note() data frame: sets attr(df$age, 'note')", {
+  df  <- data.frame(age = 1:3)
+  df2 <- set_var_note(df, age = "A note")
+  expect_identical(attr(df2$age, "note"), "A note")
+})
+
+test_that("set_var_note() errors with surveycore_error_not_survey_or_df for list x", {
   expect_error(
-    set_variable_notes(d, age = "Note", zzz_missing = "Note"),
-    class = "surveycore_error_vars_not_found"
+    set_var_note(list(x = 1), age = "A note"),
+    class = "surveycore_error_not_survey_or_df"
   )
 })
 
-test_that("set_variable_notes() returns invisibly", {
+test_that("set_var_note() errors with surveycore_error_label_not_scalar for non-character", {
+  d <- make_design()
+  expect_error(
+    set_var_note(d, age = 123L),
+    class = "surveycore_error_label_not_scalar"
+  )
+})
+
+test_that("set_var_note() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_var_note(d, zzz_missing = "Some note"),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_var_note() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_var_note(d, age = "A note", variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_var_note() errors with surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_error(
+    set_var_note(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_var_note() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_var_note(d, variable = c("age", "income"), note = "A note"),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_var_note() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_var_note(d, "A note"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_var_note() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_var_note(d, income = "Top-coded", zzz_missing = "Note")
+  )
+  expect_identical(result@metadata@notes[["income"]], "Top-coded")
+  expect_false("zzz_missing" %in% names(result@metadata@notes))
+})
+
+test_that("set_var_note() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_var_note(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_var_note() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_var_note(list(x = 1), age = "A note"))
+})
+
+test_that("snapshot: set_var_note() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_note(d, age = "A note", variable = "income"))
+})
+
+test_that("snapshot: set_var_note() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_note(d))
+})
+
+test_that("snapshot: set_var_note() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_var_note(d, variable = c("age", "income"), note = "A note")
+  )
+})
+
+test_that("snapshot: set_var_note() surveycore_error_label_not_scalar", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_var_note(d, age = 123L))
+})
+
+test_that("snapshot: set_var_note() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_var_note(d, zzz_missing = "Some note"))
+})
+
+test_that("snapshot: set_var_note() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_var_note(d, variable = character(0)))
+})
+
+
+# ── set_universe() ────────────────────────────────────────────────────────────
+
+test_that("set_universe() convention 1 sets universe for one variable", {
+  d <- make_design()
+  d <- set_universe(d, age = "Adults 18+")
+  expect_identical(d@metadata@universe[["age"]], "Adults 18+")
+})
+
+test_that("set_universe() convention 1 sets universe for multiple variables", {
+  d <- make_design()
+  d <- set_universe(d, age = "Adults 18+", income = "Employed adults")
+  expect_identical(d@metadata@universe[["age"]], "Adults 18+")
+  expect_identical(d@metadata@universe[["income"]], "Employed adults")
+})
+
+test_that("set_universe() convention 2 (named char vector in ...) sets universe", {
+  d <- make_design()
+  d <- set_universe(d, c(age = "Adults 18+", income = "Employed adults"))
+  expect_identical(d@metadata@universe[["age"]], "Adults 18+")
+  expect_identical(d@metadata@universe[["income"]], "Employed adults")
+})
+
+test_that("set_universe() convention 3 (variable + universe) sets universe", {
+  d <- make_design()
+  d <- set_universe(d, variable = "age", universe = "Adults 18+")
+  expect_identical(d@metadata@universe[["age"]], "Adults 18+")
+})
+
+test_that("set_universe() returns x invisibly", {
   d      <- make_design()
-  result <- withVisible(set_variable_notes(d, age = "A note"))
+  result <- withVisible(set_universe(d, age = "Adults 18+"))
   expect_false(result$visible)
+  expect_identical(result$value@metadata@universe[["age"]], "Adults 18+")
+})
+
+test_that("set_universe() NULL universe deletes the entry", {
+  d <- make_design()
+  d <- set_universe(d, age = "Adults 18+")
+  d <- set_universe(d, age = NULL)
+  expect_false("age" %in% names(d@metadata@universe))
+})
+
+test_that("set_universe() data frame: sets attr(df$age, 'universe')", {
+  df  <- data.frame(age = 1:3)
+  df2 <- set_universe(df, age = "Adults 18+")
+  expect_identical(attr(df2$age, "universe"), "Adults 18+")
+})
+
+test_that("set_universe() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    set_universe(list(x = 1), age = "Adults 18+"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_universe() errors with surveycore_error_label_not_scalar for non-character", {
+  d <- make_design()
+  expect_error(
+    set_universe(d, age = 123L),
+    class = "surveycore_error_label_not_scalar"
+  )
+})
+
+test_that("set_universe() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_universe(d, zzz_missing = "Some universe"),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_universe() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_universe(d, age = "Adults 18+", variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_universe() errors with surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_error(
+    set_universe(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_universe() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_universe(d, variable = c("age", "income"), universe = "Adults 18+"),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_universe() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_universe(d, "Adults 18+"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_universe() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_universe(d, age = "Adults 18+", zzz_missing = "Some universe")
+  )
+  expect_identical(result@metadata@universe[["age"]], "Adults 18+")
+  expect_false("zzz_missing" %in% names(result@metadata@universe))
+})
+
+test_that("set_universe() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_universe(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_universe() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_universe(list(x = 1), age = "Adults 18+"))
+})
+
+test_that("snapshot: set_universe() surveycore_error_label_not_scalar", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_universe(d, age = 123L))
+})
+
+test_that("snapshot: set_universe() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_universe(d, age = "Adults 18+", variable = "income"))
+})
+
+test_that("snapshot: set_universe() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_universe(d))
+})
+
+test_that("snapshot: set_universe() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_universe(d, variable = c("age", "income"), universe = "Adults 18+")
+  )
+})
+
+test_that("snapshot: set_universe() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_universe(d, zzz_missing = "Some universe"))
+})
+
+test_that("snapshot: set_universe() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_universe(d, variable = character(0)))
+})
+
+
+# ── set_missing_codes() ───────────────────────────────────────────────────────
+
+test_that("set_missing_codes() convention 1 sets codes for one variable", {
+  d <- make_design()
+  d <- set_missing_codes(d, age = c("Missing" = -1L, "Refused" = -2L))
+  expect_identical(d@metadata@missing_codes[["age"]], c("Missing" = -1L, "Refused" = -2L))
+})
+
+test_that("set_missing_codes() convention 1 sets codes for multiple variables", {
+  d <- make_design()
+  d <- set_missing_codes(
+    d,
+    age    = c("Missing" = -1L),
+    income = c("Refused" = -2L)
+  )
+  expect_identical(d@metadata@missing_codes[["age"]], c("Missing" = -1L))
+  expect_identical(d@metadata@missing_codes[["income"]], c("Refused" = -2L))
+})
+
+test_that("set_missing_codes() convention 2 (single named list in ...) sets codes", {
+  d <- make_design()
+  d <- set_missing_codes(d, list(age = c("Missing" = -1L)))
+  expect_identical(d@metadata@missing_codes[["age"]], c("Missing" = -1L))
+})
+
+test_that("set_missing_codes() convention 3 (variable + codes list) sets codes", {
+  d <- make_design()
+  d <- set_missing_codes(d, variable = "age", codes = list(c("Missing" = -1L)))
+  expect_identical(d@metadata@missing_codes[["age"]], c("Missing" = -1L))
+})
+
+test_that("set_missing_codes() convention 3 bare named vector accepted when length(variable) == 1", {
+  d <- make_design()
+  d <- set_missing_codes(d, variable = "age", codes = c("Missing" = -1L))
+  expect_identical(d@metadata@missing_codes[["age"]], c("Missing" = -1L))
+})
+
+test_that("set_missing_codes() returns x invisibly", {
+  d      <- make_design()
+  result <- withVisible(set_missing_codes(d, age = c("Missing" = -1L)))
+  expect_false(result$visible)
+  expect_identical(result$value@metadata@missing_codes[["age"]], c("Missing" = -1L))
+})
+
+test_that("set_missing_codes() NULL codes deletes the entry", {
+  d <- make_design()
+  d <- set_missing_codes(d, age = c("Missing" = -1L))
+  d <- set_missing_codes(d, age = NULL)
+  expect_false("age" %in% names(d@metadata@missing_codes))
+})
+
+test_that("set_missing_codes() data frame: sets attr(df$age, 'missing_codes')", {
+  df  <- data.frame(age = c(1L, -1L, 2L))
+  df2 <- set_missing_codes(df, age = c("Missing" = -1L))
+  expect_identical(attr(df2$age, "missing_codes"), c("Missing" = -1L))
+})
+
+test_that("set_missing_codes() errors with surveycore_error_missing_codes_not_vector for list entry", {
+  d <- make_design()
+  expect_error(
+    set_missing_codes(d, age = list("bad")),
+    class = "surveycore_error_missing_codes_not_vector"
+  )
+})
+
+test_that("set_missing_codes() warns with surveycore_warning_var_not_found for missing variable", {
+  d <- make_design()
+  expect_warning(
+    set_missing_codes(d, zzz_missing = c("Missing" = -1L)),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("set_missing_codes() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    set_missing_codes(list(x = 1), age = c("Missing" = -1L)),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_missing_codes() errors with surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_error(
+    set_missing_codes(d, age = c("Missing" = -1L), variable = "income"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_missing_codes() errors with surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_error(
+    set_missing_codes(d),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_missing_codes() errors with surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_error(
+    set_missing_codes(d, variable = c("age", "income"), codes = list(c("Missing" = -1L))),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_missing_codes() errors with surveycore_error_setter_mixed_dots for unnamed ...", {
+  d <- make_design()
+  expect_error(
+    set_missing_codes(d, c(-1L, -2L)),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that("set_missing_codes() skips missing var but still sets valid vars", {
+  d <- make_design()
+  result <- suppressWarnings(
+    set_missing_codes(d, age = c("Missing" = -1L), zzz_missing = c("Missing" = -1L))
+  )
+  expect_identical(result@metadata@missing_codes[["age"]], c("Missing" = -1L))
+  expect_false("zzz_missing" %in% names(result@metadata@missing_codes))
+})
+
+test_that("set_missing_codes() warns with surveycore_warning_setter_empty_variables for variable = character(0)", {
+  d <- make_design()
+  expect_warning(
+    set_missing_codes(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+})
+
+test_that("snapshot: set_missing_codes() surveycore_error_missing_codes_not_vector", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_missing_codes(d, age = list("bad")))
+})
+
+test_that("snapshot: set_missing_codes() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, set_missing_codes(list(x = 1), age = c("Missing" = -1L)))
+})
+
+test_that("snapshot: set_missing_codes() surveycore_error_setter_ambiguous", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_missing_codes(d, age = c("Missing" = -1L), variable = "income")
+  )
+})
+
+test_that("snapshot: set_missing_codes() surveycore_error_setter_empty", {
+  d <- make_design()
+  expect_snapshot(error = TRUE, set_missing_codes(d))
+})
+
+test_that("snapshot: set_missing_codes() surveycore_error_setter_mismatched_lengths", {
+  d <- make_design()
+  expect_snapshot(
+    error = TRUE,
+    set_missing_codes(d, variable = c("age", "income"), codes = list(c("Missing" = -1L)))
+  )
+})
+
+test_that("snapshot: set_missing_codes() surveycore_warning_var_not_found", {
+  d <- make_design()
+  expect_snapshot(set_missing_codes(d, zzz_missing = c("Missing" = -1L)))
+})
+
+test_that("snapshot: set_missing_codes() surveycore_warning_setter_empty_variables", {
+  d <- make_design()
+  expect_snapshot(set_missing_codes(d, variable = character(0)))
+})
+
+
+# ── Removed plural setters ────────────────────────────────────────────────────
+
+test_that("set_variable_labels() is removed — calling it errors with 'could not find function'", {
+  expect_error(
+    set_variable_labels(make_design(), age = "A"),
+    regexp = "could not find function"
+  )
+})
+
+test_that("set_value_labels() is removed — calling it errors with 'could not find function'", {
+  expect_error(
+    set_value_labels(make_design(), sex = c(Male = 1L)),
+    regexp = "could not find function"
+  )
+})
+
+test_that("set_question_prefaces() is removed — calling it errors with 'could not find function'", {
+  expect_error(
+    set_question_prefaces(make_design(), age = "Q"),
+    regexp = "could not find function"
+  )
+})
+
+test_that("set_variable_notes() is removed — calling it errors with 'could not find function'", {
+  expect_error(
+    set_variable_notes(make_design(), age = "note"),
+    regexp = "could not find function"
+  )
 })
 
 
@@ -473,17 +1281,17 @@ test_that(".extract_haven_metadata() works with make_survey_data(with_labels=TRU
 test_that("metadata operations do not modify @data", {
   d    <- make_design()
   orig <- d@data
-  d    <- set_var_label(d, age, "Age in years")
-  d    <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
+  d    <- set_var_label(d, age = "Age in years")
+  d    <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
   expect_identical(d@data, orig)
 })
 
 test_that("metadata operations do not corrupt other metadata properties", {
   d <- make_design()
-  d <- set_var_label(d, age, "Age label")
-  d <- set_val_labels(d, sex, c(Male = 1L, Female = 2L))
-  d <- set_question_preface(d, income, "Preface text")
-  d <- set_var_note(d, wt, "A note")
+  d <- set_var_label(d, age = "Age label")
+  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  d <- set_question_preface(d, income = "Preface text")
+  d <- set_var_note(d, wt = "A note")
 
   # Each property holds only what was set
   expect_identical(d@metadata@variable_labels[["age"]], "Age label")
@@ -506,31 +1314,14 @@ test_that("set_val_labels() does not warn for character value labels", {
     )
   )
   expect_no_warning(
-    set_val_labels(d, group, c("Group A" = "A", "Group B" = "B", "Group C" = "C"))
+    set_val_labels(d, group = c("Group A" = "A", "Group B" = "B", "Group C" = "C"))
   )
 })
 
 test_that("set_var_label() and extract_var_label() roundtrip for design col (wt)", {
   d <- make_design()
-  d <- set_var_label(d, wt, "Survey weight")
+  d <- set_var_label(d, wt = "Survey weight")
   expect_identical(extract_var_label(d, wt), "Survey weight")
-})
-
-
-# ── Coverage: .check_is_survey() error path ──────────────────────────────────
-
-test_that(".check_is_survey() errors for plain list input", {
-  expect_error(
-    extract_var_label(list(x = 1), x),
-    class = "surveycore_error_not_survey"
-  )
-})
-
-test_that(".check_is_survey() errors for data.frame input", {
-  expect_error(
-    extract_val_labels(data.frame(y = 1:3), y),
-    class = "surveycore_error_not_survey"
-  )
 })
 
 
