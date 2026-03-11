@@ -109,6 +109,39 @@ test_that("survey_metadata() stores value labels correctly", {
   expect_identical(m@value_labels$sex, c(Male = 1L, Female = 2L))
 })
 
+test_that("survey_metadata() stores universe as empty list by default", {
+  m <- survey_metadata()
+  expect_identical(m@universe, list())
+})
+
+test_that("survey_metadata() stores missing_codes as empty list by default", {
+  m <- survey_metadata()
+  expect_identical(m@missing_codes, list())
+})
+
+test_that("survey_metadata(universe = list(...)) stores value correctly", {
+  m <- survey_metadata(universe = list(age = "Adults 18+", income = "All respondents"))
+  expect_identical(m@universe$age,    "Adults 18+")
+  expect_identical(m@universe$income, "All respondents")
+})
+
+test_that("survey_metadata(missing_codes = list(...)) stores value correctly", {
+  m <- survey_metadata(missing_codes = list(age = c(Refused = 99L, DK = 98L)))
+  expect_identical(m@missing_codes$age, c(Refused = 99L, DK = 98L))
+})
+
+test_that("universe @ assignment round-trips on survey_metadata object", {
+  m <- survey_metadata()
+  m@universe <- list(income = "Employed adults")
+  expect_identical(m@universe$income, "Employed adults")
+})
+
+test_that("missing_codes @ assignment round-trips on survey_metadata object", {
+  m <- survey_metadata()
+  m@missing_codes <- list(age = c(-1L, -2L))
+  expect_identical(m@missing_codes$age, c(-1L, -2L))
+})
+
 
 # ── survey_base ────────────────────────────────────────────────────────────────
 

@@ -33,6 +33,12 @@
 #' @param question_prefaces A named list mapping variable names to shared
 #'   question battery preface text.
 #' @param notes A named list mapping variable names to analyst notes.
+#' @param universe A named list mapping variable names to universe
+#'   descriptions (e.g., `list(age = "Adults 18+")`). Describes the
+#'   population to which a variable applies.
+#' @param missing_codes A named list mapping variable names to atomic
+#'   vectors of missing-value codes
+#'   (e.g., `list(age = c(Refused = 99L, DK = 98L))`).
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
@@ -62,6 +68,14 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     notes = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    universe = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    missing_codes = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),

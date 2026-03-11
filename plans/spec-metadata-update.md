@@ -1,8 +1,8 @@
 # surveycore Metadata API Update — Formal Specification
 
-**Version:** 2.0
+**Version:** 3.0
 **Date:** March 2026
-**Status:** Approved — code review resolved; ready for implementation
+**Status:** Approved — code review Pass 2 resolved; ready for implementation
 
 ---
 
@@ -237,6 +237,7 @@ unnamed elements (Section IX, M-12).
   content,
   content_arg_name,
   content_type = c("scalar", "vector"),  # "scalar" for char setters; "vector" for list/code setters
+  fn_name,           # name of the calling setter, e.g. "set_var_label" — used in M-4 and M-12 messages
   call = rlang::caller_env()
 )
 ```
@@ -280,7 +281,7 @@ format. Used by `extract_val_labels()` and `extract_missing_codes()`.
 .format_list_result <- function(
   result_list,  # named list of named vectors (or NAs/NULLs)
   format,       # "list" or "data_frame"
-  fn_name       # "extract_val_labels" or "extract_missing_codes"
+  fn_name       # name of the calling extractor — used in M-6 (surveycore_error_format_invalid) message
 )
 ```
 
@@ -342,8 +343,23 @@ error with `surveycore_error_setter_ambiguous`.
 **Empty error:** If `...` is empty AND `variable` is NULL, error with
 `surveycore_error_setter_empty`.
 
+**Unnamed `...` elements:** If any element of `...` has no name (whether all
+unnamed or a mix of named and unnamed), error with
+`surveycore_error_setter_mixed_dots` (M-12). This covers the case
+`set_var_label(svy, c("Age", "Income"))` where the single unnamed element is
+itself an unnamed vector — it satisfies neither Convention 1 (elements of `...`
+must be named) nor Convention 2 (requires the single element to be a
+**named** vector).
+
 **Length mismatch (convention 3 only):** If `length(variable) != length(content)`,
 error with `surveycore_error_setter_mismatched_lengths`.
+
+**Convention 3 with `length(variable) == 0`:** Issues
+`surveycore_warning_setter_empty_variables` and returns `invisible(x)`
+unchanged. This is a valid programmatic pattern when a filter reduces the
+variable vector to zero entries at runtime (e.g.,
+`set_universe(svy, variable = vars[vars %in% valid_cols], ...)`). No metadata
+is modified.
 
 **Variable not found:** If a variable name appears in the input but not in the
 data (`x@data` or `names(x)` for data frames), issue a
@@ -352,6 +368,15 @@ it. Do NOT error — this allows safe bulk operations on heterogeneous datasets.
 
 **`!!!` splicing support:** All three conventions support `rlang::list2(...)`
 semantics, so `!!!` works with convention 1 and 2 in the `...` position.
+
+**Scalar-content validation (applies to all four scalar-content setters:
+`set_var_label()`, `set_question_preface()`, `set_var_note()`,
+`set_universe()`):** Each content value must be a character scalar
+(`is.character(v) && length(v) == 1L`, excluding `NULL` which signals
+deletion). A non-character value or a vector of length > 1 errors immediately
+with `surveycore_error_label_not_scalar`. No coercion is performed. This rule
+is defined once here and referenced (not restated) in Sections 4.3, 4.5, 4.6,
+and 4.7.
 
 **Return:** `invisible(x)` always. The modified object is returned — for survey
 objects, the `@metadata` property is updated. For data frames, column
@@ -396,8 +421,10 @@ For survey objects, `x@metadata@variable_labels` is updated. For data frames,
 `attr(df[[var]], "label")` is updated for each variable.
 
 **Behavior rules:**
-- Each label value must be a single character string. Non-character or
-  length > 1 values are coerced with a warning (using `as.character()`).
+- Each label value must be a single character string (character scalar). A
+  non-character value or a vector of length > 1 errors with
+  `surveycore_error_label_not_scalar`. (See Section 4.1 for the unified
+  scalar-content validation rule.)
 - `NULL` label removes an existing label entry (same as deleting the key from
   the named list).
 - Variable not found in data → `surveycore_warning_var_not_found`, skip.
@@ -432,7 +459,7 @@ svy <- svy |>
   set_var_label(income = "Annual income")
 ```
 
-**Error / warning rows:** See Section IX, rows M-1, M-3, M-4, M-5, M-7.
+**Error / warning rows:** See Section IX, rows M-1, M-3, M-4, M-5, M-7, M-11, M-13.
 
 ### 4.4 `set_val_labels()`
 
@@ -461,7 +488,9 @@ For survey objects, `x@metadata@value_labels` is updated. For data frames,
   any(names(entry) == "")` triggers `surveycore_error_labels_unnamed`.
 - Extra labels (codes not present in the data) are silently allowed.
 - Observed values without a label trigger `surveycore_warning_missing_labels`
-  (same as existing behavior).
+  (M-9). This check applies to both survey objects and data frames: observed
+  unique values are read from `x@data[[var]]` for survey objects, or `x[[var]]`
+  for data frames.
 - `NULL` labels value removes the entry for that variable.
 - Variable not found in data → `surveycore_warning_var_not_found`, skip.
 
@@ -528,7 +557,9 @@ For survey objects, `x@metadata@question_prefaces` is updated. For data frames,
 `attr(df[[var]], "question_preface")` is updated.
 
 **Behavior rules:**
-- Each preface value must be a single character string.
+- Each preface value must be a character scalar. Non-character or length > 1
+  errors with `surveycore_error_label_not_scalar` (see Section 4.1 unified
+  scalar-content validation rule).
 - `NULL` preface removes the entry for that variable.
 - Variable not found in data → `surveycore_warning_var_not_found`, skip.
 
@@ -588,6 +619,9 @@ For survey objects, `x@metadata@notes` is updated. For data frames,
 `attr(df[[var]], "note")` is updated.
 
 **Behavior rules:**
+- Each note value must be a character scalar. Non-character or length > 1
+  errors with `surveycore_error_label_not_scalar` (see Section 4.1 unified
+  scalar-content validation rule).
 - `NULL` note removes the entry for that variable.
 - Variable not found in data → `surveycore_warning_var_not_found`, skip.
 
@@ -633,6 +667,9 @@ set_universe(x, ..., variable = NULL, universe = NULL)
 `@metadata`. For data frames, `attr(df[[var]], "universe")` is updated.
 
 **Behavior rules:**
+- Each universe value must be a character scalar. Non-character or length > 1
+  errors with `surveycore_error_label_not_scalar` (see Section 4.1 unified
+  scalar-content validation rule).
 - `NULL` universe removes the entry for that variable.
 - Variable not found in data → `surveycore_warning_var_not_found`, skip.
 - Universe strings are documentation only — no computational validation is
@@ -719,7 +756,12 @@ svy <- set_missing_codes(
 )
 ```
 
-**Error / warning rows:** See Section IX, rows M-1, M-3, M-4, M-5, M-7, M-10.
+**Convention 3 for `codes`:** `codes` argument must be a list of atomic vectors
+(one per variable). A bare atomic vector (not wrapped in a list) for a single
+variable is accepted when `length(variable) == 1L`, parallel to
+`set_val_labels()` Section 4.4.
+
+**Error / warning rows:** See Section IX, rows M-1, M-3, M-4, M-5, M-7, M-10, M-14.
 
 ---
 
@@ -751,14 +793,32 @@ field.
 | `fill` value | Behavior |
 |-------------|----------|
 | `NULL` (default) | Variables with no metadata are OMITTED from the result. |
-| `NA_character_` | Variables with no metadata are INCLUDED with the value `NA`. For `"named_vector"` output: `NA_character_`. For `"list"` output: `NULL` (since `NA` is not a meaningful list value for vector fields). For `"data_frame"` output: `NA` in the content column. |
+| `NA_character_` | Variables with no metadata are INCLUDED. For `"named_vector"` output: `NA_character_`. For `"list"` output: `NA_character_` for scalar fields; `NULL` for vector fields (see note below). For `"data_frame"` output: `NA` in the content column. |
 
-**Note on `fill = NA_character_` in `"list"` format:** Users who pass
-`fill = NA_character_` with `format = "list"` will receive `NULL` entries for
-variables without metadata — not `NA_character_`. This is intentional: `NA`
-has no meaningful interpretation as a placeholder for a named vector field (e.g.,
-value labels). The `NULL` signals "no labels set" consistently with R list
-semantics. If you need `NA` placeholders, use `format = "data_frame"`.
+**Note on `fill = NA_character_` in `"list"` format:** Behavior differs by
+field type:
+
+- **Scalar-content extractors** (`extract_var_label`, `extract_question_preface`,
+  `extract_var_note`, `extract_universe`): `fill = NA_character_` in `"list"`
+  format yields `NA_character_` list entries for variables with no metadata.
+  `NA` is a valid placeholder for a character scalar field.
+- **Vector-content extractors** (`extract_val_labels`, `extract_missing_codes`):
+  `fill = NA_character_` in `"list"` format yields `NULL` entries. `NA` has no
+  meaningful interpretation as a placeholder for a named vector field (e.g.,
+  value labels). The `NULL` signals "no labels set" consistently with R list
+  semantics.
+
+If you need uniform `NA` placeholders regardless of field type, use
+`format = "data_frame"`.
+
+**Note on fill values for `extract_metadata()`:** `extract_metadata()` uses
+`fill = "include"` (not `fill = NA_character_`) because its output is a
+structured list, not a typed vector — `NA_character_` has no meaningful
+interpretation there. Passing `fill = NA_character_` to `extract_metadata()`
+errors with `surveycore_error_fill_invalid`. Conversely, passing
+`fill = "include"` to individual extractors (e.g., `extract_var_label()`) also
+errors with `surveycore_error_fill_invalid`. Each function validates its `fill`
+argument against its own allowed set at the top of the function body.
 
 **`format` argument:**
 
@@ -1085,7 +1145,7 @@ extract_metadata(x, ..., fill = NULL)
 |----------|------|---------|-------------|
 | `x` | survey object or `data.frame` | required | The object to query. |
 | `...` | bare names or missing | empty | Variables to include. If empty, all variables. |
-| `fill` | `NULL` or `"include"` | `NULL` | Controls whether variables with no metadata in any field are returned. `NULL` (default) omits variables where all six metadata fields are `NULL` (and `transformations` is `list()`). `"include"` returns all variables regardless of whether they have any metadata — useful for structural audits. Note: `extract_metadata()` does NOT have a `format` argument; the output structure is always a named list. |
+| `fill` | `NULL` or `"include"` | `NULL` | Controls whether variables with no metadata in any field are returned. `NULL` (default) omits variables where all six metadata fields are `NULL` (and `transformations` is `list()`). `"include"` returns all variables regardless of whether they have any metadata — useful for structural audits. Any other value (including `NA_character_`) errors with `surveycore_error_fill_invalid`. Note: `extract_metadata()` does NOT have a `format` argument; the output structure is always a named list. Unlike individual extractors which use `fill = NA_character_` to include missing variables, `extract_metadata()` uses `"include"` because its values are structured lists, not typed scalars. |
 
 `fill = "include"` is equivalent to the old always-include behavior. The
 default `fill = NULL` follows the same "omit unset variables" convention as
@@ -1330,15 +1390,21 @@ vector — this triggers `surveycore_error_setter_empty` (neither convention
 detects a valid input when an unnamed symbol and a string are passed as
 separate positional args).
 
-**Detection and error message:** Each setter captures `...` as quosures via
-`rlang::enquos(...)` **before** evaluating them, and checks for the old
-positional form at the top of the function body — before passing evaluated
-values to `.parse_setter_input()`. Detection condition: the quosures list has
-exactly two elements where the first is an unquoted symbol
-(`rlang::is_symbol(rlang::quo_get_expr(qs[[1L]]))`) and the second is a scalar
-string with no name. If detected, issue a targeted error with class
-`surveycore_error_old_positional_setter` immediately (do not call
-`.parse_setter_input()`). Only after passing this check should the setter
+**Detection and error message:** Only `set_var_label()` performs the old
+positional form check. The other five setters (`set_val_labels()`,
+`set_question_preface()`, `set_var_note()`, `set_universe()`,
+`set_missing_codes()`) never had a positional form with a bare symbol + scalar
+string signature, so they skip this check entirely and evaluate `...` directly
+via `rlang::list2(...)`.
+
+For `set_var_label()` only: capture `...` as quosures via `rlang::enquos(...)`
+**before** evaluating them, and check for the old positional form at the top of
+the function body — before passing evaluated values to `.parse_setter_input()`.
+Detection condition: the quosures list has exactly two elements where the first
+is an unquoted symbol (`rlang::is_symbol(rlang::quo_get_expr(qs[[1L]]))`) and
+the second is a scalar string with no name. If detected, issue a targeted error
+with class `surveycore_error_old_positional_setter` immediately (do not call
+`.parse_setter_input()`). Only after passing this check should `set_var_label()`
 evaluate `...` via `rlang::list2(...)` and proceed to `.parse_setter_input()`.
 
 ```
@@ -1378,13 +1444,16 @@ noted.
 | M-3 | all setters | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` |
 | M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` |
 | M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` |
-| M-6 | all extractors | `format` argument has an invalid value | ERROR | `surveycore_error_format_invalid` | `"x" = '{.arg format} must be one of {.val {valid_formats}}, not {.val {format}}.', "i" = "Got: {.val {format}}."` |
+| M-6 | all extractors | `format` argument has an invalid value | ERROR | `surveycore_error_format_invalid` | `"x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.", "i" = "{.arg format} must be one of {.val {valid_formats}}."` |
 | M-7 | all setters | A variable specified in input is not found in `x@data` / `names(x)` | WARN | `surveycore_warning_var_not_found` | `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}.", "i" = "Check spelling. Available columns: {.field {head(all_cols, 10)}}{?.}"` |
 | M-8 | `set_val_labels()`, `set_value_labels()` (deprecated) | A labels entry is not a fully named vector | ERROR | `surveycore_error_labels_unnamed` | `"x" = "Value labels for {.field {var_name}} must be a fully named vector.", "i" = "All elements must have names (e.g., {.code c(Male = 1L, Female = 2L)})."` (existing class — reuse row 29) |
 | M-9 | `set_val_labels()` | Some observed data values have no corresponding label | WARN | `surveycore_warning_missing_labels` | `"!" = "Not all values of {.field {var_name}} are labeled.", "i" = "Unlabeled values: {.val {missing}}."` (existing class — reuse row 30) |
 | M-10 | `set_missing_codes()` | A `codes` entry is not an atomic vector | ERROR | `surveycore_error_missing_codes_not_vector` | `"x" = "Missing codes for {.field {var_name}} must be an atomic vector, not {.cls {class(codes_entry)[[1L]]}}.", "i" = "Use a numeric, integer, or character vector (e.g., {.code c(Refused = 99L, {\"Don't know\"} = 98L)})."` |
 | M-11 | `set_var_label()` | Old positional NSE form detected | ERROR | `surveycore_error_old_positional_setter` | `"x" = "The old positional calling form {.code {fn_name}(x, var, content)} is no longer supported.", "i" = "The new unified setter uses named arguments.", "v" = "Use {.code {fn_name}(x, {var_name} = {.val {content_val}})} instead."` |
-| M-12 | all setters | `...` contains a mix of named and unnamed elements (matches no convention) | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` |
+| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed (matches no convention) | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` |
+| M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
+| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
+| M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
 
 **Notes:**
 - M-2 and M-7 use the same warning class `surveycore_warning_var_not_found`
@@ -1458,6 +1527,8 @@ For each of the six setters (`set_var_label`, `set_val_labels`,
 - Convention 1 with `!!!` splicing sets correct metadata
 - Convention 2 (single named vector) sets correct metadata
 - Convention 3 (explicit `variable` + content) sets correct metadata
+- **Convention 3 bare-vector exception (`set_val_labels()`):** `set_val_labels(svy, variable = "sex", labels = c(Male = 1L, Female = 2L))` (bare vector, not list) sets labels correctly when `length(variable) == 1L`
+- **Convention 3 bare-vector exception (`set_missing_codes()`):** `set_missing_codes(svy, variable = "q5", codes = c(99L, 98L))` (bare vector, not list) sets codes correctly when `length(variable) == 1L`
 - Return value is `invisible(x)` (test with `withVisible()`)
 - Result survives pipe chain: three consecutive setter calls return valid object
 - **NULL deletion (scalar-content setters: `set_var_label`, `set_question_preface`,
@@ -1473,12 +1544,16 @@ For each of the six setters (`set_var_label`, `set_val_labels`,
 - Neither provided → `surveycore_error_setter_empty` (class + snapshot)
 - Convention 3 length mismatch → `surveycore_error_setter_mismatched_lengths` (class + snapshot)
 - Old positional NSE form → `surveycore_error_old_positional_setter` (class + snapshot) [set_var_label only]
+- Non-character or length > 1 content value → `surveycore_error_label_not_scalar` (class + snapshot) [scalar-content setters only: `set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`]
+- Unnamed `...` element → `surveycore_error_setter_mixed_dots` (class + snapshot)
 
 **Warning path blocks:**
 - Variable not in data → `surveycore_warning_var_not_found` (class + snapshot)
 - Variable skipped but other variables still set (result check on the returned object)
 - `set_val_labels()` with partially labeled data → `surveycore_warning_missing_labels`
+- `set_val_labels(df, ...)` on a data frame with unlabeled values → `surveycore_warning_missing_labels` (confirms M-9 fires for data frames)
 - `set_missing_codes()` with list-type codes entry → `surveycore_error_missing_codes_not_vector`
+- Convention 3 with `variable = character(0)` → `surveycore_warning_setter_empty_variables` (class + snapshot)
 
 **Data frame blocks:**
 - `set_var_label(df, age = "Age in years")` sets `attr(df$age, "label") == "Age in years"`
