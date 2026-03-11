@@ -27,7 +27,7 @@
   else if (S7::S7_inherits(d, survey_replicate))   "Replicate weights"
   else if (S7::S7_inherits(d, survey_twophase))    "Two-phase"
   else if (S7::S7_inherits(d, survey_srs))         "SRS"
-  else if (S7::S7_inherits(d, survey_calibrated))  "Calibrated"
+  else if (S7::S7_inherits(d, survey_nonprob))  "Calibrated"
   else "Unknown"
 }
 
@@ -43,7 +43,7 @@
   else if (S7::S7_inherits(design, survey_replicate))   "replicate"
   else if (S7::S7_inherits(design, survey_twophase))    "twophase"
   else if (S7::S7_inherits(design, survey_srs))         "srs"
-  else if (S7::S7_inherits(design, survey_calibrated))  "calibrated"
+  else if (S7::S7_inherits(design, survey_nonprob))  "calibrated"
   else "unknown"
 }
 

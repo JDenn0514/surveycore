@@ -104,8 +104,8 @@ ns_sv <- svydesign(ids = ~1, weights = ~weight, data = ns_wave1)
 ns_srvyr <- ns_wave1 |> as_survey_design(weights = weight)
 
 ## ----calib-sc-----------------------------------------------------------------
-# as_survey_calibrated() makes the design type explicit
-ns_sc <- as_survey_calibrated(ns_wave1, weights = weight)
+# as_survey_nonprob() makes the design type explicit
+ns_sc <- as_survey_nonprob(ns_wave1, weights = weight)
 ns_sc
 
 ## ----means-survey, eval=has_survey--------------------------------------------

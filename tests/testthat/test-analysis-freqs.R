@@ -924,9 +924,9 @@ test_that("get_freqs() na.rm=FALSE factor variable: NA row after factor levels",
   expect_true(is.na(r$group_f[[nrow(r)]]))
 })
 
-test_that("get_freqs() survey_calibrated design returns valid result", {
+test_that("get_freqs() survey_nonprob design returns valid result", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 119L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
   r <- get_freqs(d, group)
 
   test_result_invariants(r, "survey_freqs")
@@ -1665,9 +1665,9 @@ test_that("get_freqs() NA group row pct matches filtered calibrated design [orac
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  design_cal <- as_survey_nonprob(df_c, weights = wt)
   na_df_c <- df_c[is.na(df_c$grp), ]
-  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  na_design_cal <- as_survey_nonprob(na_df_c, weights = wt)
   expected <- get_freqs(na_design_cal, y3, variance = "se")
   result <- get_freqs(
     design_cal,

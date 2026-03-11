@@ -210,12 +210,12 @@ ns_srvyr <- ns_wave1 |> as_survey_design(weights = weight)
 ```
 
 ```{r calib-sc}
-# as_survey_calibrated() makes the design type explicit
-ns_sc <- as_survey_calibrated(ns_wave1, weights = weight)
+# as_survey_nonprob() makes the design type explicit
+ns_sc <- as_survey_nonprob(ns_wave1, weights = weight)
 ns_sc
 ```
 
-`as_survey_calibrated()` preserves the distinction in code, output, and
+`as_survey_nonprob()` preserves the distinction in code, output, and
 documentation. Standard errors are approximate — they assume the calibration
 weights produce approximately correct variance estimates [@elliott2017].
 
@@ -234,7 +234,7 @@ For a full worked example using `survival::nwtco`, see
 | Stratified | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
 | Replicate wts | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
-| Calibrated/NPS | `svydesign(ids=~1, weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_calibrated(...)` |
+| Calibrated/NPS | `svydesign(ids=~1, weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_nonprob(...)` |
 | Two-phase | `twophase(...)` | `as_survey_twophase(...)` | `as_survey_twophase(...)` |
 
 ⚠ No dedicated non-probability constructor — design intent is not preserved.
@@ -401,7 +401,7 @@ ns_corr <- ns_wave1[
     !is.na(ns_wave1$cand_favorability_biden) &
     ns_wave1$cand_favorability_biden != 999,
 ]
-ns_corr_sc <- as_survey_calibrated(ns_corr, weights = weight)
+ns_corr_sc <- as_survey_nonprob(ns_corr, weights = weight)
 ```
 
 **survey** — matrix output, no confidence intervals
@@ -705,7 +705,7 @@ ns_wave1 |>
 **surveycore + surveytidy**
 
 ```{r pipeline-sc, eval=has_surveytidy}
-as_survey_calibrated(ns_wave1, weights = weight) |>
+as_survey_nonprob(ns_wave1, weights = weight) |>
   filter(age < 65) |>
   get_means(discrimination_blacks, group = pid3)
 ```
@@ -723,7 +723,7 @@ as_survey_calibrated(ns_wave1, weights = weight) |>
 | **Min-cell warning** | None | None | Default `min_cell_n = 30L` |
 | **Weighted N** | Separate call | Separate call | `n_weighted = TRUE` |
 | **Correlation CIs** | None (`svycor()`) | No verb | Fisher-Z CIs via `get_corr()` |
-| **Non-probability design** | No dedicated constructor | No dedicated constructor | `as_survey_calibrated()` |
+| **Non-probability design** | No dedicated constructor | No dedicated constructor | `as_survey_nonprob()` |
 | **Manipulation** | Pre/post construction | Bundled via pipe | `surveytidy` (separate package) |
 | **Runtime `survey` dep.** | Is `survey` | Wraps `survey` | Vendored — `survey` not required |
 
@@ -737,7 +737,7 @@ as_survey_calibrated(ns_wave1, weights = weight) |>
 | Stratified design | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster design | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
 | Replicate weights | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
-| Calibrated/NPS | `svydesign(weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_calibrated(...)` |
+| Calibrated/NPS | `svydesign(weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠ | `as_survey_nonprob(...)` |
 | Two-phase | `twophase(...)` | `as_survey_twophase(...)` | `as_survey_twophase(...)` |
 | Weighted mean | `svymean(~x, d)` | `summarise(survey_mean(x))` | `get_means(d, x)` |
 | Grouped mean | `svyby(~x, ~g, d, svymean)` | `group_by(g) \|> summarise(...)` | `get_means(d, x, group=g)` |

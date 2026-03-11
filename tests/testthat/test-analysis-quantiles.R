@@ -123,9 +123,9 @@ test_that("get_quantiles() returns correct result for survey_twophase", {
   expect_lt(result$ci_low[[1L]], result$ci_high[[1L]])
 })
 
-test_that("get_quantiles() returns correct result for survey_calibrated", {
+test_that("get_quantiles() returns correct result for survey_nonprob", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 5L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
 
   result <- get_quantiles(d, y1, probs = 0.5)
   test_result_invariants(result, "survey_quantiles")
@@ -1244,9 +1244,9 @@ test_that("get_quantiles() NA group row estimate matches filtered calibrated des
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  design_cal <- as_survey_nonprob(df_c, weights = wt)
   na_df_c <- df_c[is.na(df_c$grp), ]
-  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  na_design_cal <- as_survey_nonprob(na_df_c, weights = wt)
   expected <- get_quantiles(na_design_cal, y1, probs = 0.5, variance = "se")
   result <- get_quantiles(
     design_cal,

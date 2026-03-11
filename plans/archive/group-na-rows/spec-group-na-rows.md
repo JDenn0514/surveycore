@@ -44,7 +44,7 @@ implementation decisions must trace back to this document.
 
 All 6 analysis functions support all 5 design classes, unchanged:
 
-| Function | `survey_taylor` | `survey_replicate` | `survey_twophase` | `survey_srs` | `survey_calibrated` |
+| Function | `survey_taylor` | `survey_replicate` | `survey_twophase` | `survey_srs` | `survey_nonprob` |
 |---|---|---|---|---|---|
 | `get_freqs()` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `get_means()` | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -667,7 +667,7 @@ NA group rows use the same variance estimation path as non-NA rows. Correctness
 is validated by matching the NA-group-row estimate against a filtered design
 (all rows outside the domain excluded). This oracle test is **required for each
 of the 5 design classes** (`survey_taylor`, `survey_replicate`, `survey_twophase`,
-`survey_srs`, `survey_calibrated`) to catch per-class variance path bugs.
+`survey_srs`, `survey_nonprob`) to catch per-class variance path bugs.
 
 Build the oracle design by pre-filtering the data frame — do NOT use
 `subset(design, is.na(grp))`, which emits a `surveycore_warning_subset`
@@ -804,7 +804,7 @@ All must be satisfied before the PR is opened:
 - [ ] All required test block types (§VI blocks 1–10) present for each function
       (Block 10 is `get_freqs()` only)
 - [ ] Single-group oracle test run for all 5 design classes per function
-      (`survey_calibrated` included); SE comparison included at tolerance `1e-8`
+      (`survey_nonprob` included); SE comparison included at tolerance `1e-8`
 - [ ] Multi-group oracle test run for all 5 design classes per function
 - [ ] `make_na_group_design()`, `make_all_na_group_design()`, and
       `get_na_group_rows()` added to `helper-test-data.R`

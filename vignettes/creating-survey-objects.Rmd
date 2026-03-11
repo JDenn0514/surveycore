@@ -52,7 +52,7 @@ Read the first row that matches your data.
 | Has cluster IDs, strata, and/or design weights                       | `as_survey()`            | Taylor series linearization — the general case   |
 | Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | `as_survey_replicate()`        | Uses the agency-supplied variance replicates     |
 | Is a pure SRS — equal probability, no clustering, no strata          | `as_survey_srs()`        | Simpler estimator for equal-probability samples  |
-| Is a non-probability panel or opt-in sample with calibration weights | `as_survey_calibrated()` | Calibrated design; SEs are approximate           |
+| Is a non-probability panel or opt-in sample with calibration weights | `as_survey_nonprob()` | Calibrated design; SEs are approximate           |
 | Was sampled in two stages with an expensive Phase 2 measurement      | `as_survey_twophase()`   | Two-phase variance accounting for both stages    |
 
 ### Common surveys at a glance
@@ -67,8 +67,8 @@ Read the first row that matches your data.
 | Pew Jewish Americans 2020 | `as_survey_replicate()`        | 100 JK1 jackknife replicate weights           |
 | BRFSS                     | `as_survey_replicate()`        | Bootstrap replicate weights                   |
 | NAEP / PISA               | `as_survey_replicate()`        | JK2 jackknife replicate weights               |
-| Nationscape (Democracy Fund + UCLA) | `as_survey_calibrated()` | Non-probability quota panel; ACS-calibrated raking weights |
-| Opt-in online panels      | `as_survey_calibrated()` | Non-probability; vendor-supplied raking weights |
+| Nationscape (Democracy Fund + UCLA) | `as_survey_nonprob()` | Non-probability quota panel; ACS-calibrated raking weights |
+| Opt-in online panels      | `as_survey_nonprob()` | Non-probability; vendor-supplied raking weights |
 
 ---
 
@@ -513,14 +513,14 @@ svy_b <- as_survey(school_survey, weights = sw, fpc = fpc)
 
 ---
 
-## 6. `as_survey_calibrated()` — Non-Probability and Calibrated Samples {#sec-calibrated}
+## 6. `as_survey_nonprob()` — Non-Probability and Calibrated Samples {#sec-calibrated}
 
 If you conduct research on opt-in panels — Lucid, Dynata, Qualtrics panels,
 Prolific, or similar — and your vendor has provided raking or
 post-stratification weights, this section is for you.
 
 The short answer: **you are probably doing it roughly right, and
-`as_survey_calibrated()` is the correct constructor to use.** Here is what
+`as_survey_nonprob()` is the correct constructor to use.** Here is what
 you can and cannot claim from your estimates, and how to report them honestly.
 
 ### 6.1 The fundamental distinction
@@ -537,7 +537,7 @@ representativeness [@baker2013; @elliott2017].
 
 ### 6.2 What your vendor's weights actually are
 
-Regardless of where they come from, `as_survey_calibrated()` is the right
+Regardless of where they come from, `as_survey_nonprob()` is the right
 constructor whenever weights were derived *after* data collection to make
 the sample resemble a target population. Common forms include
 [@valliant2018, ch. 3]:
@@ -557,7 +557,7 @@ the sample resemble a target population. Common forms include
   Another approach to demographic alignment.
 
 All four share the same fundamental property: the weights were computed from
-the data, not fixed by the sampling protocol. Use `as_survey_calibrated()`
+the data, not fixed by the sampling protocol. Use `as_survey_nonprob()`
 for all of them.
 
 What calibration weights accomplish [@mercer2018; @mcphee2023]:
@@ -592,21 +592,21 @@ Each wave recruited approximately 6,250 respondents from the Lucid
 respondent exchange using a quota design, with raking weights calibrated to
 American Community Survey (ACS) marginals for age, gender, education,
 race/ethnicity, and region, plus 2016 presidential vote choice. This is the
-textbook use case for `as_survey_calibrated()`.
+textbook use case for `as_survey_nonprob()`.
 
 | Variable | Role                                                                        | Argument  |
 |----------|-----------------------------------------------------------------------------|-----------|
 | `weight` | Raking weight calibrated to ACS demographic targets and 2016 presidential vote | `weights` |
 
 ```{r nationscape}
-svy_ns <- as_survey_calibrated(ns_wave1, weights = weight)
+svy_ns <- as_survey_nonprob(ns_wave1, weights = weight)
 svy_ns
 
 # Presidential approval rating (July 2019)
 get_freqs(svy_ns, pres_approval)
 ```
 
-This produces a `survey_calibrated` object. Use it with `get_means()`,
+This produces a `survey_nonprob` object. Use it with `get_means()`,
 `get_freqs()`, and other estimation functions exactly as you would any other
 survey object. Standard errors are computed under an approximate variance
 model and should be interpreted with appropriate caution and disclosed in
@@ -614,7 +614,7 @@ your methods section.
 
 The `weight` column is a raking weight, not a design weight — it was
 computed after data collection to match population marginals, not fixed by
-the sampling protocol. Using `as_survey_calibrated()` makes this explicit
+the sampling protocol. Using `as_survey_nonprob()` makes this explicit
 to both R and future readers of your code.
 
 ### 6.5 What not to do
@@ -627,7 +627,7 @@ errors as if the design were a probability sample:
 svy_wrong <- as_survey(ns_wave1, weights = weight)
 ```
 
-Using `as_survey_calibrated()` makes the non-probability nature of the design
+Using `as_survey_nonprob()` makes the non-probability nature of the design
 explicit — both to R and to future readers of your code. This distinction
 matters for transparency in reporting and for correctly interpreting what
 your uncertainty estimates actually mean [@elliott2017; @baker2013].
@@ -641,12 +641,12 @@ the survey than those who are neutral.
 
 **If calibration weights are available:** If the university has computed
 post-stratification or raking weights using registrar demographics (year,
-major, housing status), use `as_survey_calibrated()`. This is the appropriate
+major, housing status), use `as_survey_nonprob()`. This is the appropriate
 constructor whenever the weights were derived to make the respondents
 resemble the full student body:
 
 ```r
-svy_campus <- as_survey_calibrated(campus_survey, weights = ps_weight)
+svy_campus <- as_survey_nonprob(campus_survey, weights = ps_weight)
 ```
 
 **If no calibration weights are available and you still want to use
@@ -673,10 +673,10 @@ fully corrected by any weighting strategy [@baker2013].
 ## 7. Probability, SRS, and calibration weights: understanding the distinction {#sec-weight-types}
 
 The three constructors most users encounter — `as_survey()`,
-`as_survey_srs()`, and `as_survey_calibrated()` — differ in one fundamental
+`as_survey_srs()`, and `as_survey_nonprob()` — differ in one fundamental
 way: *where the weights come from*.
 
-| | `as_survey()` / `as_survey_replicate()` | `as_survey_srs()` | `as_survey_calibrated()` |
+| | `as_survey()` / `as_survey_replicate()` | `as_survey_srs()` | `as_survey_nonprob()` |
 |---|---|---|---|
 | Weight source | Sampling protocol (1/π_i) | Equal-probability selection | Post-hoc adjustment |
 | Selection probabilities | Known and controlled | Known; equal for all units | Unknown or overridden by calibration |
@@ -690,7 +690,7 @@ A school drawn from a roster of 400 with probability 1-in-5 gets weight 5.
 The randomness that makes design-based inference valid is mechanical and
 recorded.
 
-In `as_survey_calibrated()`, weights were computed *after* data collection
+In `as_survey_nonprob()`, weights were computed *after* data collection
 to make the sample resemble a target population. The underlying selection
 mechanism is either unknown (opt-in panel, voluntary response) or was
 overridden by the calibration adjustment. Standard errors are approximate
@@ -700,7 +700,7 @@ that standard variance formulas do not fully capture.
 The practical test: **if you can point to the sampling protocol that fixed
 each unit's probability of selection, use `as_survey()` or
 `as_survey_srs()`.** If the weights were derived from the data after
-collection, use `as_survey_calibrated()`.
+collection, use `as_survey_nonprob()`.
 
 ---
 
@@ -740,7 +740,7 @@ of all students at the school.
 | Design | Appropriate tool | Notes |
 |---|---|---|
 | Probability sample with design weights | `as_survey()`, `as_survey_replicate()`, `as_survey_srs()` | Exact variance |
-| Any sample with calibration/raking/PSW/matching weights | `as_survey_calibrated()` | Approximate variance |
+| Any sample with calibration/raking/PSW/matching weights | `as_survey_nonprob()` | Approximate variance |
 | Voluntary response or convenience sample, no weights | `as_survey_srs()` with `weights = 1` | Conditional inference only; disclose |
 | Causal inference (treatment effect estimation) | Not surveycore | Use MatchIt, WeightIt, lme4, etc. |
 
@@ -766,7 +766,7 @@ arguments:
 | "replicate weights", "bootstrap weights", "BRR weights"          | `repweights =`                       | Use `as_survey_replicate()`                     |
 | "base weight", "design weight" (with separate replicates)        | `weights =` in `as_survey_replicate()`     |                                           |
 | "Fay coefficient", "Fay factor", "epsilon"                       | `fay_rho =`                          | With `type = "Fay"`                       |
-| "raking weights", "post-stratification weights", "cal weights"   | `weights =` in `as_survey_calibrated()` | Non-probability design               |
+| "raking weights", "post-stratification weights", "cal weights"   | `weights =` in `as_survey_nonprob()` | Non-probability design               |
 | "two-phase", "double sampling", "case-cohort"                    | Phase 1 → `as_survey()`, then `as_survey_twophase()` |                        |
 
 ---

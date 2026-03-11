@@ -42,7 +42,7 @@ surveyverse/
 
 **Key Components:**
 - S7 class system (survey_base, survey_taylor, survey_replicate, survey_twophase,
-  survey_calibrated)
+  survey_nonprob)
 - Metadata system (variable labels, value labels, question prefaces, transformations,
   notes, weighting_history)
 - Vendored variance estimation code from `survey` package (with attribution and refactoring)
@@ -50,7 +50,7 @@ surveyverse/
 - Regression: `survey_glm()`, `clean()`
 - Crosstabs: `get_crosstab()`
 - Object creation: `as_survey()`, `as_survey_replicate()`, `as_survey_twophase()`,
-  `as_survey_calibrated()` (skeleton in Phase 0; full implementation in Phase 2.5)
+  `as_survey_nonprob()` (skeleton in Phase 0; full implementation in Phase 2.5)
 - Conversion utilities: `as_svydesign()`, `as_tbl_svy()`
 
 **Dependencies:**
@@ -290,7 +290,7 @@ survey_base                          # Abstract base class
     │       ├── subset: character      # phase 2 membership indicator column
     │       └── method: character      # "full", "approx", "simple"
     │
-    └── survey_calibrated              # SKELETON — Phase 2.5 full implementation
+    └── survey_nonprob              # SKELETON — Phase 2.5 full implementation
         ├── @variables keys:
         │   ├── weights: character     # calibrated weight column name
         │   └── probs_provided: FALSE  # always FALSE for calibrated designs
@@ -809,7 +809,7 @@ get_means(svy, x = income, domain = age > 18)
 **Status:** Planning
 
 **Objectives:**
-- Complete `survey_calibrated` class and `as_survey_calibrated()` (skeleton already in surveycore Phase 0)
+- Complete `survey_nonprob` class and `as_survey_nonprob()` (skeleton already in surveycore Phase 0)
 - Implement calibration and raking methods
 - Implement weighting history provenance in `@metadata@weighting_history`
 - Create replicate weight generation functions
@@ -819,14 +819,14 @@ get_means(svy, x = income, domain = age > 18)
 
 **Deliverables:**
 
-1. **Complete `survey_calibrated` / `as_survey_calibrated()`:**
+1. **Complete `survey_nonprob` / `as_survey_nonprob()`:**
    - Full bootstrap variance with re-calibration on each replicate (the key
      statistical improvement over using `as_survey()` with calibration weights)
    - `calibration` argument formally accepts the provenance object returned
      by `surveywts::rake()` and related functions
-   - Estimation functions (`get_means()`, etc.) dispatch on `survey_calibrated`
+   - Estimation functions (`get_means()`, etc.) dispatch on `survey_nonprob`
      and use bootstrap variance by default
-   - `as_survey_calibrated()` gains `variance = c("bootstrap", "srs")` argument
+   - `as_survey_nonprob()` gains `variance = c("bootstrap", "srs")` argument
    - Phase 0 skeleton already in surveycore; full implementation here
 
 2. **Calibration Methods:**
@@ -842,7 +842,7 @@ get_means(svy, x = income, domain = age > 18)
    - Multiple calibration methods (raking, linear, logit)
    - Updates weights in survey object
    - **Writes calibration provenance to `@calibration`** (if used with
-     `survey_calibrated`) and **appends to `@metadata@weighting_history`**
+     `survey_nonprob`) and **appends to `@metadata@weighting_history`**
    - Preserves all other metadata
 
 2. **Sample-Based Calibration:**
@@ -1431,7 +1431,7 @@ surveyverse.tidysurvey.org/
 
 ### Phase 0
 - ✅ Can create all three design types (Taylor, replicate, two-phase)
-- ✅ survey_calibrated skeleton in place (class + as_survey_calibrated() stub)
+- ✅ survey_nonprob skeleton in place (class + as_survey_nonprob() stub)
 - ✅ weighting_history slot added to survey_metadata (reserved for Phase 2.5)
 - ✅ S7 validation catches errors
 - ✅ Metadata system works correctly

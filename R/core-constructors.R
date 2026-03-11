@@ -7,7 +7,7 @@
 #   as_survey()             — creates a survey_taylor object (Taylor series design)
 #   as_survey_replicate()         — creates a survey_replicate object (replicate weights)
 #   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
-#   as_survey_calibrated()  — creates a survey_calibrated object (Phase 2.5 skeleton)
+#   as_survey_nonprob()  — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
@@ -1044,7 +1044,7 @@ as_survey_twophase <- function(
 }
 
 
-# ── as_survey_calibrated ───────────────────────────────────────────────────────
+# ── as_survey_nonprob ───────────────────────────────────────────────────────
 
 #' Create a Calibrated / Non-Probability Survey Design
 #'
@@ -1056,14 +1056,14 @@ as_survey_twophase <- function(
 #' provenance from \pkg{surveywts} output for reproducibility.
 #'
 #' @section Phase 2.5 skeleton:
-#' This constructor is a **skeleton**. The resulting `survey_calibrated` object
+#' This constructor is a **skeleton**. The resulting `survey_nonprob` object
 #' supports estimation via a model-assisted SRS variance assumption — the same
 #' as calling [as_survey()] with weights only. Full bootstrap re-calibration
 #' variance (which re-applies the raking procedure on each replicate) will be
 #' implemented in Phase 2.5 alongside the \pkg{surveywts} package.
 #'
 #' @section When to use:
-#' Use `as_survey_calibrated()` instead of [as_survey()] when:
+#' Use `as_survey_nonprob()` instead of [as_survey()] when:
 #' \itemize{
 #'   \item Your data comes from a non-probability sample (online panel, quota
 #'     sample, MTurk/Prolific, etc.)
@@ -1077,7 +1077,7 @@ as_survey_twophase <- function(
 #' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()] instead.
 #'
 #' @section Variance estimation note:
-#' Standard errors from a `survey_calibrated` object assume simple random
+#' Standard errors from a `survey_nonprob` object assume simple random
 #' sampling within the calibrated weights. This is consistent with common
 #' applied practice for raked non-probability samples, but is technically
 #' a model-assisted approximation rather than design-based variance. See
@@ -1097,7 +1097,7 @@ as_survey_twophase <- function(
 #'   available. The object's structure is defined by \pkg{surveywts} and will
 #'   be formally specified in Phase 2.5.
 #'
-#' @return A `survey_calibrated` object.
+#' @return A `survey_nonprob` object.
 #'
 #' @examples
 #' # Minimal: pre-computed calibration weights from an external tool
@@ -1106,7 +1106,7 @@ as_survey_twophase <- function(
 #'   age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
 #'   cal_wt = runif(200, 0.5, 2.5)
 #' )
-#' d <- as_survey_calibrated(df, weights = cal_wt)
+#' d <- as_survey_nonprob(df, weights = cal_wt)
 #'
 #' @seealso
 #'   [as_survey()] for probability designs with Taylor variance,
@@ -1114,7 +1114,7 @@ as_survey_twophase <- function(
 #'
 #' @family constructors
 #' @export
-as_survey_calibrated <- function(
+as_survey_nonprob <- function(
   data,
   weights,
   calibration = NULL
@@ -1131,7 +1131,7 @@ as_survey_calibrated <- function(
   if (rlang::quo_is_missing(weights_quo)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg weights} is required for {.fn as_survey_calibrated}.",
+        "x" = "{.arg weights} is required for {.fn as_survey_nonprob}.",
         "i" = paste0(
           "Supply the column name of your calibration weight variable ",
           "(e.g., {.code weights = cal_wt})."
@@ -1169,9 +1169,9 @@ as_survey_calibrated <- function(
     visible_vars = NULL
   )
 
-  # ── Construct and return survey_calibrated object ───────────────────────────
+  # ── Construct and return survey_nonprob object ───────────────────────────
 
-  survey_calibrated(
+  survey_nonprob(
     data = data,
     metadata = metadata,
     variables = variables,

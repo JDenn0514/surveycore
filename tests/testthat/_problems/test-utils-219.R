@@ -73,7 +73,7 @@ make_twophase_with_p2 <- function(seed = 42L) {
 }
 make_calibrated <- function() {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  as_survey_calibrated(df, weights = w)
+  as_survey_nonprob(df, weights = w)
 }
 
 # test -------------------------------------------------------------------------

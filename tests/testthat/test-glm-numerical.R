@@ -116,7 +116,7 @@ test_that("Gaussian oracle: Calibrated design — runs without error and SEs are
   # Conservative SRS approximation; exact SE match not expected.
   skip_if_not_installed("survey")
   df_cal <- make_survey_data(seed = 42)
-  d_sc <- as_survey_calibrated(df_cal, weights = wt)
+  d_sc <- as_survey_nonprob(df_cal, weights = wt)
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
 
   se_sc <- sqrt(diag(vcov(fit_sc)))
@@ -497,7 +497,7 @@ test_that(".degf() oracle: Twophase design returns positive value [RELAXED — k
 test_that(".degf() oracle: Calibrated design matches survey::degf() for plain weighted design", {
   skip_if_not_installed("survey")
   df <- make_survey_data(seed = 42)
-  d_sc <- as_survey_calibrated(df, weights = wt)
+  d_sc <- as_survey_nonprob(df, weights = wt)
   # Reference: survey::svydesign with ids=~1 gives degf = n - 1, same as our formula
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
   expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)

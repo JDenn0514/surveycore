@@ -9,17 +9,17 @@
 
 ## Section I: Scope
 
-**Issue 1: `survey_calibrated` GLM variance completely unspecified**
+**Issue 1: `survey_nonprob` GLM variance completely unspecified**
 Severity: BLOCKING
 Violates engineering-preferences.md §4 (handle edge cases explicitly)
 
-The spec flags this as a GAP in Section I: "The behavior of `survey_glm()` with `survey_calibrated` designs is not fully specified." But this gap is never resolved — it appears only as a warning note. The testing section (Section VIII) has no oracle dataset for `survey_calibrated`. The dispatch in Section 7.1 says it "falls back to SRS sandwich (conservative)" but this is a one-line architectural note, not a contract.
+The spec flags this as a GAP in Section I: "The behavior of `survey_glm()` with `survey_nonprob` designs is not fully specified." But this gap is never resolved — it appears only as a warning note. The testing section (Section VIII) has no oracle dataset for `survey_nonprob`. The dispatch in Section 7.1 says it "falls back to SRS sandwich (conservative)" but this is a one-line architectural note, not a contract.
 
-If a user passes a `survey_calibrated` design to `survey_glm()`, the implementation must make a choice — but the spec gives no guidance on what that choice should be.
+If a user passes a `survey_nonprob` design to `survey_glm()`, the implementation must make a choice — but the spec gives no guidance on what that choice should be.
 
 Options:
-- **[A]** Specify `survey_calibrated` as "uses SRS sandwich formula; no calibration adjustment; conservative" — add it to Section 7 with the SRS formula and a test using synthetic calibrated data. Effort: low, Risk: low, Impact: removes a blocking gap.
-- **[B]** Raise `surveycore_error_unsupported_design_class` for `survey_calibrated` in `survey_glm()` with a clear message and no fallback. Defer support to Phase 3. Effort: low, Risk: low, Impact: explicit failure mode.
+- **[A]** Specify `survey_nonprob` as "uses SRS sandwich formula; no calibration adjustment; conservative" — add it to Section 7 with the SRS formula and a test using synthetic calibrated data. Effort: low, Risk: low, Impact: removes a blocking gap.
+- **[B]** Raise `surveycore_error_unsupported_design_class` for `survey_nonprob` in `survey_glm()` with a clear message and no fallback. Defer support to Phase 3. Effort: low, Risk: low, Impact: explicit failure mode.
 - **[C] Do nothing** — implementer must guess; no oracle test can be written.
 
 **Recommendation: [A]** — The SRS sandwich for calibrated designs is the same choice Phase 1 makes. Document it explicitly and add a test.
@@ -80,7 +80,7 @@ Section 2.2 states: "`degf()` is not yet an exported surveycore function. It exi
   else if (S7::S7_inherits(design, survey_replicate)) length(design@variables$repweights) - 1L
   else if (S7::S7_inherits(design, survey_twophase))  .degf_taylor(design@data, design@variables$phase1)
   else if (S7::S7_inherits(design, survey_srs))       nrow(design@data) - 1L
-  else if (S7::S7_inherits(design, survey_calibrated)) nrow(design@data) - 1L
+  else if (S7::S7_inherits(design, survey_nonprob)) nrow(design@data) - 1L
 }
 ```
 
@@ -585,7 +585,7 @@ Options:
 
 **Total issues:** 29
 
-**Blocking issues:** SRS variance formula is mathematically incorrect (Issue 5); `survey_glm_summary` structure undefined (Issue 17); Taylor variance pass-through architecture unspecified (Issue 3); `control = list(...)` signature broken (Issue 6); `survey_calibrated` behavior unspecified (Issue 1); domain estimation out-of-domain score treatment unresolved (Issue 30); `survey_glm_summary` quality gate depends on unspecified class (Issue 29, subsumed by 17).
+**Blocking issues:** SRS variance formula is mathematically incorrect (Issue 5); `survey_glm_summary` structure undefined (Issue 17); Taylor variance pass-through architecture unspecified (Issue 3); `control = list(...)` signature broken (Issue 6); `survey_nonprob` behavior unspecified (Issue 1); domain estimation out-of-domain score treatment unresolved (Issue 30); `survey_glm_summary` quality gate depends on unspecified class (Issue 29, subsumed by 17).
 
 **Overall assessment:** The spec has serious blocking gaps — a mathematical error in the SRS variance formula, an undefined class required by the quality gates, an underspecified architectural interface for variance computation, and a broken function signature — that must be fixed before implementation begins. The REQUIRED issues are largely edge cases and testing specifics that are well within scope to resolve. Most blocking issues have low-effort resolutions; this spec is 2-3 focused edits away from being implementable.
 

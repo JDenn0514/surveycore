@@ -603,14 +603,14 @@
       # i 50 more rows
       # i 2 more variables: phase2_prob <dbl>, ..surveycore_domain.. <lgl>
 
-# print.survey_calibrated() default output
+# print.survey_nonprob() default output
 
     Code
       print(d)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 30
       
     Output
@@ -629,14 +629,14 @@
       10 psu_3 stratum_1   145 12.5   42.7 -0.954      1 A       12.4
       # i 20 more rows
 
-# print.survey_calibrated() shows domain line when domain column is present
+# print.survey_nonprob() shows domain line when domain column is present
 
     Code
       print(d)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 30
       Domain: 30 of 30 rows
       

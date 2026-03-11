@@ -414,12 +414,12 @@ Stage 3. First batch covered Issues 1–4 from the review file.
 
 ### Questions & Decisions
 
-**Q: What variance formula should `survey_glm()` use for `survey_calibrated` designs? (Issue 1)**
+**Q: What variance formula should `survey_glm()` use for `survey_nonprob` designs? (Issue 1)**
 - Options considered:
   - **[A] SRS sandwich (conservative):** No calibration adjustment; same path as `survey_srs`. Matches Phase 1 precedent for means/totals on calibrated designs.
-  - **[B] Explicit error (`surveycore_error_unsupported_design_class`):** Defer `survey_calibrated` support to Phase 3.
+  - **[B] Explicit error (`surveycore_error_unsupported_design_class`):** Defer `survey_nonprob` support to Phase 3.
 - **Decision:** Option A — SRS sandwich, conservative, no calibration adjustment.
-- **Rationale:** User confirmed this matches `survey::svyglm()`'s behavior and is statistically correct. Consistent with the Phase 1 precedent already established for `survey_calibrated` means and totals.
+- **Rationale:** User confirmed this matches `survey::svyglm()`'s behavior and is statistically correct. Consistent with the Phase 1 precedent already established for `survey_nonprob` means and totals.
 
 **Q: Is Issue 2 (`survey_twophase` prerequisite) still applicable?**
 - **Decision:** Closed as no-longer-applicable. Phase 0.75 is complete per CLAUDE.md. The spec's prerequisite table is correct as written.
@@ -436,7 +436,7 @@ Stage 3. First batch covered Issues 1–4 from the review file.
 
 ### Outcome
 
-Spec updated with: (1) explicit `survey_calibrated` SRS-sandwich contract,
+Spec updated with: (1) explicit `survey_nonprob` SRS-sandwich contract,
 (2) `.taylor_var_score_matrix()` helper added to Section 2.2, (3) `.degf()`
 GAP removed and quality gate corrected.
 
@@ -641,13 +641,13 @@ REQUIRED issue (error-messages.md sync).
 - Options considered:
   - **[A] Write full templates for each** — verbose but unambiguous.
   - **[B] State that other designs follow the Taylor pattern** — lean, sufficient.
-- **Decision:** Option B, with `survey_calibrated` explicitly added to the oracle
+- **Decision:** Option B, with `survey_nonprob` explicitly added to the oracle
   datasets table (user noted this design was missing entirely). Quality gate updated
-  to include `survey_calibrated` alongside Taylor, replicate, SRS, and twophase.
-  For `survey_calibrated`, the oracle uses synthetic data from `make_survey_data(seed = 42)`
+  to include `survey_nonprob` alongside Taylor, replicate, SRS, and twophase.
+  For `survey_nonprob`, the oracle uses synthetic data from `make_survey_data(seed = 42)`
   calibrated via `survey::calibrate()` then converted with `from_svydesign()`.
 - **Rationale:** The Taylor template is a sufficient pattern reference; duplicating
-  boilerplate for each design type adds noise. But `survey_calibrated` was entirely
+  boilerplate for each design type adds noise. But `survey_nonprob` was entirely
   absent from the oracle table and quality gates — that gap is now closed.
 
 **Q: Should `.degf()` accuracy be independently tested? (Issue 26)**
@@ -673,7 +673,7 @@ REQUIRED issue (error-messages.md sync).
 
 ### Outcome
 
-Spec updated with: (1) `survey_calibrated` added to oracle datasets table and
+Spec updated with: (1) `survey_nonprob` added to oracle datasets table and
 quality gate; "follow Taylor pattern" note for other designs, (2) `.degf()` oracle
 test described in Section 8.1, (3) `formula = NULL` + explicit NULL check in
 Section 4.1/4.4, (4) `plans/error-messages.md` updated with rows 65–77.

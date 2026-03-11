@@ -112,9 +112,9 @@ test_that("get_totals() works for survey_twophase design", {
   expect_true(is.finite(result$total[[1L]]))
 })
 
-test_that("get_totals() works for survey_calibrated design", {
+test_that("get_totals() works for survey_nonprob design", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 7L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
 
   result <- get_totals(d, y1)
   test_result_invariants(result, "survey_totals")
@@ -769,9 +769,9 @@ test_that("get_totals() NA group row total matches filtered calibrated design [o
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  design_cal <- as_survey_nonprob(df_c, weights = wt)
   na_df_c <- df_c[is.na(df_c$grp), ]
-  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  na_design_cal <- as_survey_nonprob(na_df_c, weights = wt)
   expected <- get_totals(na_design_cal, y1, variance = "se")
   result <- get_totals(
     design_cal,
@@ -987,10 +987,10 @@ test_that("get_totals() taylor with FPC fraction covers FPC fraction path in .ta
 # Additional coverage: calibrated design, se_srs=0 paths, unsupported class
 # ---------------------------------------------------------------------------
 
-test_that("get_totals() works for survey_calibrated design", {
+test_that("get_totals() works for survey_nonprob design", {
   set.seed(701)
   df <- data.frame(y = rnorm(60), w = runif(60, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   result <- get_totals(sc, y, variance = "se")
   test_result_invariants(result, "survey_totals")
   expect_true(is.finite(result$total[[1L]]))
@@ -1000,7 +1000,7 @@ test_that("get_totals() works for survey_calibrated design", {
 test_that("get_totals() calibrated empty domain returns NA (covers .calibrated_total_cell() n_d=0)", {
   set.seed(702)
   df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 20L)
   result <- get_totals(sc, y, variance = "se")
   expect_true(is.na(result$total[[1L]]))
@@ -1009,7 +1009,7 @@ test_that("get_totals() calibrated empty domain returns NA (covers .calibrated_t
 test_that("get_totals() calibrated single-row domain returns total with NA se (covers n_d=1 path)", {
   set.seed(703)
   df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(20L) == 1L
   result <- get_totals(sc, y, variance = "se")
   expect_true(is.finite(result$total[[1L]]))

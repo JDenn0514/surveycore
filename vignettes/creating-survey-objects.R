@@ -138,7 +138,7 @@ svy_a <- as_survey_srs(school_survey, weights = sw, fpc = fpc)
 svy_b <- as_survey(school_survey, weights = sw, fpc = fpc)
 
 ## ----nationscape--------------------------------------------------------------
-svy_ns <- as_survey_calibrated(ns_wave1, weights = weight)
+svy_ns <- as_survey_nonprob(ns_wave1, weights = weight)
 svy_ns
 
 # Presidential approval rating (July 2019)

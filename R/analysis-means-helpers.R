@@ -42,7 +42,7 @@
 # have zero influence. This gives correct SEs for subpopulation means (wider
 # than physical subsetting).
 #
-# @param design  A survey_taylor or survey_calibrated object.
+# @param design  A survey_taylor or survey_nonprob object.
 # @param y_col   Character: name of the numeric variable column.
 # @param domain  Numeric 0/1 vector (full length): 1 = in domain and non-NA.
 # @return Named list: mean, se, se_srs, n, n_weighted.
@@ -331,7 +331,7 @@
 #   Var(ybar_w) = n/(n-1) * sum(z_i^2)
 #              = n/(n-1) * sum(w_i^2 * (y_i - ybar_w)^2) / N_hat^2
 #
-# @param design  A survey_calibrated object.
+# @param design  A survey_nonprob object.
 # @param y_col   Character: variable name.
 # @param domain  Numeric 0/1 vector (full length).
 # @return Named list: mean, se, se_srs, n, n_weighted.
@@ -400,7 +400,7 @@
     .twophase_mean_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_srs)) {
     .srs_mean_cell(design, y_col, domain)
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     .calibrated_mean_cell(design, y_col, domain)
   } else {
     cli::cli_abort(

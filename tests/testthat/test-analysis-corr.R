@@ -91,9 +91,9 @@ test_that("get_corr() works for survey_twophase design", {
   expect_true(is.finite(result$r[[1L]]))
 })
 
-test_that("get_corr() works for survey_calibrated design", {
+test_that("get_corr() works for survey_nonprob design", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 5L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
 
   result <- get_corr(d, x = c(y1, y2))
   test_result_invariants(result, "survey_corr")
@@ -1380,9 +1380,9 @@ test_that("get_corr() NA group row r matches filtered calibrated design [oracle]
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  design_cal <- as_survey_nonprob(df_c, weights = wt)
   na_df_c <- df_c[is.na(df_c$grp), ]
-  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  na_design_cal <- as_survey_nonprob(na_df_c, weights = wt)
   expected <- get_corr(na_design_cal, x = c(y1, y2), variance = "se")
   result <- get_corr(
     design_cal,
@@ -1553,11 +1553,11 @@ test_that("get_corr() returns NA for corr CI when r is exactly 1 (perfect correl
 # Additional coverage: calibrated design, unsupported class
 # ---------------------------------------------------------------------------
 
-test_that("get_corr() works for survey_calibrated design (covers .vcov_pair_calibrated())", {
+test_that("get_corr() works for survey_nonprob design (covers .vcov_pair_calibrated())", {
   set.seed(801)
   n <- 60L
   df <- data.frame(y1 = rnorm(n), y2 = rnorm(n), w = runif(n, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   result <- get_corr(sc, x = c(y1, y2), variance = "se")
   test_result_invariants(result, "survey_corr")
   expect_true(is.finite(result$r[[1L]]))

@@ -344,7 +344,7 @@ survey_glm_fit <- S7::new_class(
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .glm_replicate_vcov(fit, design, row_mask, domain_mask)
   } else {
-    # survey_srs, survey_calibrated — SRS sandwich
+    # survey_srs, survey_nonprob — SRS sandwich
     .glm_srs_vcov(fit, design, row_mask, domain_mask)
   }
 }
@@ -445,7 +445,7 @@ survey_glm_fit <- S7::new_class(
 
 # ── .glm_srs_vcov() ───────────────────────────────────────────────────────────
 #
-# SRS score-based sandwich (also used for survey_calibrated):
+# SRS score-based sandwich (also used for survey_nonprob):
 #   meat = (1 - f) * n * S²_u
 #
 # where u_i = w_i * x_i * e_i (pre-weighted scores from .glm_score()) and
@@ -461,7 +461,7 @@ survey_glm_fit <- S7::new_class(
 # survey::svydesign() with fpc = NULL).
 #
 # @param fit         Full-sample stats::glm() result.
-# @param design      A survey_srs or survey_calibrated object.
+# @param design      A survey_srs or survey_nonprob object.
 # @param row_mask    Rows used in fitting.
 # @param domain_mask Domain indicator.
 # @return p × p matrix.
@@ -545,7 +545,7 @@ survey_glm_fit <- S7::new_class(
 #'
 #' @param design A survey design object created by [as_survey()],
 #'   [as_survey_replicate()], [as_survey_twophase()], [as_survey_srs()], or
-#'   [as_survey_calibrated()].
+#'   [as_survey_nonprob()].
 #' @param formula A model formula in standard R notation
 #'   (e.g. `y ~ x1 + x2`). Mutually exclusive with `response`/`predictors`.
 #'   If `NULL` and `response` is also `NULL`, errors with

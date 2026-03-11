@@ -401,7 +401,7 @@ testing the primary `get_freqs()` use case (categorical focal variable).
 
 For the replicate oracle, add `grp` to `df_r` before calling `as_survey_replicate()`.
 For twophase, add `grp` to `df_p` before `as_survey_twophase()`. For calibrated,
-add `grp` to `df_c` before `as_survey_calibrated()`. For srs, add `grp` to
+add `grp` to `df_c` before `as_survey_nonprob()`. For srs, add `grp` to
 `df_s` before `as_survey_srs()`. Use `set.seed(43L)` before each `sample()` call
 for `grp` to isolate RNG from `make_survey_data()`'s internal state.
 

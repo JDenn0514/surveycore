@@ -43,11 +43,11 @@ All six `get_*()` functions support these design classes:
 | `survey_taylor` | Taylor series linearization | Full design-based variance |
 | `survey_replicate` | Replicate weights formula | Full design-based variance |
 | `survey_srs` | Standard SRS: `s²/n × (1-f)` | Equal-probability samples; `f = 0` when FPC unknown |
-| `survey_calibrated` | Weighted SRS approximation | Conservative; see Section 2.7 |
+| `survey_nonprob` | Weighted SRS approximation | Conservative; see Section 2.7 |
 | `survey_twophase` | Two-phase linearization (Phase 0.75 complete) | Full design-based variance via `R/06-variance-twophase.R` |
 
 `survey_srs` is the class returned by `as_survey(df)` with no design arguments.
-`survey_calibrated` is the class returned by `as_survey_calibrated(df, weights = w)`.
+`survey_nonprob` is the class returned by `as_survey_nonprob(df, weights = w)`.
 
 ### Stub Migration (atomic)
 
@@ -216,7 +216,7 @@ design_type <- if (S7::S7_inherits(design, survey_taylor))    "taylor"
           else if (S7::S7_inherits(design, survey_replicate)) "replicate"
           else if (S7::S7_inherits(design, survey_twophase))  "twophase"
           else if (S7::S7_inherits(design, survey_srs))       "srs"
-          else if (S7::S7_inherits(design, survey_calibrated)) "calibrated"
+          else if (S7::S7_inherits(design, survey_nonprob)) "calibrated"
           else cli::cli_abort(
             c("x" = "Unrecognized design class {.cls {class(design)[1]}}."),
             class = "surveycore_error_unsupported_class"
@@ -640,7 +640,7 @@ freedom:
 - `survey_replicate`: `degf = number of replicates - 1`
 - `survey_twophase`: `degf` from phase 1 design
 - `survey_srs`: `degf = n - 1`
-- `survey_calibrated`: `degf = n - 1` (conservative)
+- `survey_nonprob`: `degf = n - 1` (conservative)
 
 The critical value is `qt((1 + conf_level) / 2, df = degf)`.
 
@@ -825,7 +825,7 @@ Small-cell warnings fire automatically at `n < min_cell_n` (default 30).
 - For `survey_twophase`, uses two-phase linearization via `R/06-variance-twophase.R`
   (Phase 0.75 complete).
 - For `survey_srs`, proportions use the standard SRS variance formula.
-- For `survey_calibrated`, standard errors use the weighted SRS approximation
+- For `survey_nonprob`, standard errors use the weighted SRS approximation
   (conservative; SEs may be slightly overstated compared to proper calibration
   variance, which requires Phase 2.5).
 
@@ -910,7 +910,7 @@ get_means(d, income,
   `R/06-variance-replicate.R`, and `R/06-variance-srs.R` respectively.
 - `survey_srs`: uses standard SRS variance formula (`s²/n × (1-f)`; `f = 0`
   when FPC unknown).
-- `survey_calibrated`: uses weighted SRS approximation (conservative).
+- `survey_nonprob`: uses weighted SRS approximation (conservative).
 - `survey_twophase`: uses two-phase linearization via `R/06-variance-twophase.R`
   (Phase 0.75 complete).
 - `x` must resolve to a single numeric column. Throws
@@ -1014,7 +1014,7 @@ get_totals(d, income,
 - No-variable mode: equivalent to `svytotal(~1, design)`.
 - Variable mode: equivalent to `svytotal(~x, design)`.
 - `survey_srs`: uses standard SRS variance formula.
-- `survey_calibrated`: uses weighted SRS approximation (conservative).
+- `survey_nonprob`: uses weighted SRS approximation (conservative).
 - `survey_twophase`: uses two-phase linearization via `R/06-variance-twophase.R`
   (Phase 0.75 complete).
 - Throws `surveycore_error_non_numeric_variable` if a non-numeric variable is
@@ -1157,7 +1157,7 @@ pairwise `n < min_cell_n` (default 30).
   for all design types — Taylor, replicate, and SRS. This replaces the
   structural-only oracle previously specified for complex designs.
 - `survey_srs`: uses SRS variance formula for the covariance.
-- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_nonprob`: uses weighted SRS approximation.
 - `survey_twophase`: uses two-phase linearization via `R/06-variance-twophase.R`
   (Phase 0.75 complete).
 - **`surveycore_warning_small_cell` for `get_corr()`:** fires when any
@@ -1258,7 +1258,7 @@ get_quantiles(d, income,
 - CIs use the survey package's default interpolation-based method for quantile
   CIs (same method as `survey::svyquantile(ci = TRUE)`).
 - `survey_srs`: uses SRS Woodruff variance.
-- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_nonprob`: uses weighted SRS approximation.
 - `survey_twophase`: uses Woodruff variance with the two-phase design structure
   from `R/06-variance-twophase.R` (Phase 0.75 complete).
 
@@ -1334,7 +1334,7 @@ get_ratios(d, numerator = hospital_visits, denominator = person_years,
 - Variance via the delta method for ratios: linearized as
   `y_i - R * x_i` where R is the full-sample ratio estimate.
 - `survey_srs`: uses delta method with SRS variance.
-- `survey_calibrated`: uses weighted SRS approximation.
+- `survey_nonprob`: uses weighted SRS approximation.
 - `survey_twophase`: uses delta method with two-phase linearization via
   `R/06-variance-twophase.R` (Phase 0.75 complete).
 - Throws `surveycore_error_non_numeric_variable` if either variable is

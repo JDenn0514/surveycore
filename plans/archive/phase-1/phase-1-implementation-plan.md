@@ -37,7 +37,7 @@ All six Phase 1 functions dispatch on these five design classes:
 | `survey_srs` | Standard SRS: `s²/n × (1-f)` |
 | `survey_taylor` | Taylor series linearization |
 | `survey_replicate` | Replicate weights formula |
-| `survey_calibrated` | Weighted SRS approximation (conservative) |
+| `survey_nonprob` | Weighted SRS approximation (conservative) |
 | `survey_twophase` | Two-phase linearization (Phase 0.75 complete — fully supported) |
 
 ---
@@ -198,7 +198,7 @@ design_type <- if (S7::S7_inherits(design, survey_taylor))    "taylor"
           else if (S7::S7_inherits(design, survey_replicate)) "replicate"
           else if (S7::S7_inherits(design, survey_twophase))  "twophase"
           else if (S7::S7_inherits(design, survey_srs))       "srs"
-          else if (S7::S7_inherits(design, survey_calibrated)) "calibrated"
+          else if (S7::S7_inherits(design, survey_nonprob)) "calibrated"
           else cli::cli_abort(
             c("x" = "Unrecognized design class {.cls {class(design)[1]}}."),
             class = "surveycore_error_unsupported_class"
@@ -334,7 +334,7 @@ Column ordering when multiple present: `se`, `var`, `cv`, `ci_low`, `ci_high`, `
     .degf(design@variables$phase1)
   } else if (S7::S7_inherits(design, survey_srs)) {
     nrow(design@data) - 1L   # n - 1 for SRS
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     nrow(design@data) - 1L   # n - 1 (conservative)
   } else {
     cli::cli_abort(
@@ -396,7 +396,7 @@ test_result_invariants <- function(result, expected_class) {
 9. `.check_unsupported_class()` — throws `surveycore_error_unsupported_class`
    when passed a non-`survey_base` object (e.g., a plain data frame); returns
    invisibly (no error) for all five supported design classes (survey_taylor,
-   survey_replicate, survey_twophase, survey_srs, survey_calibrated)
+   survey_replicate, survey_twophase, survey_srs, survey_nonprob)
 
 ---
 
@@ -544,7 +544,7 @@ if      (S7::S7_inherits(design, survey_taylor))     .taylor_mean(design, ...)
 else if (S7::S7_inherits(design, survey_replicate))  .replicate_mean(design, ...)
 else if (S7::S7_inherits(design, survey_twophase))   .twophase_mean(design, ...)
 else if (S7::S7_inherits(design, survey_srs))        .srs_mean(design, ...)
-else if (S7::S7_inherits(design, survey_calibrated)) .calibrated_mean(design, ...)
+else if (S7::S7_inherits(design, survey_nonprob)) .calibrated_mean(design, ...)
 ```
 
 All five per-class helpers (`.taylor_mean()`, `.replicate_mean()`, `.twophase_mean()`,
@@ -729,7 +729,7 @@ machinery already present. The Taylor engine implementation in
 `R/06-variance-taylor.R` is the primary one; replicate and SRS follow
 the same pattern using their respective engines.
 
-For `survey_srs` and `survey_calibrated`, the covariance uses the weighted
+For `survey_srs` and `survey_nonprob`, the covariance uses the weighted
 SRS covariance formula. For `survey_twophase`, use the two-phase
 linearization from `R/06-variance-twophase.R`.
 
@@ -1026,7 +1026,7 @@ if      (S7::S7_inherits(design, survey_taylor))     .taylor_*(design, ...)
 else if (S7::S7_inherits(design, survey_replicate))  .replicate_*(design, ...)
 else if (S7::S7_inherits(design, survey_twophase))   .twophase_*(design, ...)
 else if (S7::S7_inherits(design, survey_srs))        .srs_*(design, ...)
-else if (S7::S7_inherits(design, survey_calibrated)) .calibrated_*(design, ...)
+else if (S7::S7_inherits(design, survey_nonprob)) .calibrated_*(design, ...)
 ```
 
 Call `.check_unsupported_class(design, fn_name)` at the very start of each

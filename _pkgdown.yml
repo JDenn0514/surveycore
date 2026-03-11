@@ -48,7 +48,7 @@ reference:
       - as_survey_srs
       - as_survey_replicate
       - as_survey_twophase
-      - as_survey_calibrated
+      - as_survey_nonprob
       - update_design
 
   - title: "Estimation"
@@ -116,7 +116,7 @@ reference:
       - survey_taylor
       - survey_replicate
       - survey_twophase
-      - survey_calibrated
+      - survey_nonprob
       - survey_metadata
 
   - title: "Utilities"

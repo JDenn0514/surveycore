@@ -18,7 +18,7 @@
 ##
 ## On variance estimation:
 ##   The Nationscape is a calibrated non-probability sample. Use
-##   as_survey_calibrated(data, weights = weight) — designed for exactly this
+##   as_survey_nonprob(data, weights = weight) — designed for exactly this
 ##   use case. Current variance uses a conservative SRS approximation
 ##   (Rivers & Bailey 2009); bootstrap re-calibration variance (Deville &
 ##   Sarndal 1992) will be available in Phase 2.5 via surveywts.
@@ -341,13 +341,13 @@ message(
 ## To create a survey design for a single wave:
 ##
 ##   wave1 <- ns_phase1[["ns20190718"]]
-##   d <- as_survey_calibrated(wave1, weights = weight)
+##   d <- as_survey_nonprob(wave1, weights = weight)
 ##   get_freqs(d, pres_approval)
 ##
 ## To combine all Phase 1 waves for cross-wave analysis:
 ##
 ##   phase1_combined <- dplyr::bind_rows(ns_phase1)
-##   d_all <- as_survey_calibrated(phase1_combined, weights = weight)
+##   d_all <- as_survey_nonprob(phase1_combined, weights = weight)
 ##
 ## NOTE: When combining waves, variables not asked in a given wave are NA.
 ## Use Nationscape-Variables-2021Dec.csv to identify which variables are

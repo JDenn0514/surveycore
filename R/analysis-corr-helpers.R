@@ -26,7 +26,7 @@
     .vcov_pair_twophase(design, x_col, y_col, domain, na.rm)
   } else if (S7::S7_inherits(design, survey_srs)) {
     .vcov_pair_srs(design, x_col, y_col, domain, na.rm)
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     .vcov_pair_calibrated(design, x_col, y_col, domain, na.rm)
   } else {
     cli::cli_abort(

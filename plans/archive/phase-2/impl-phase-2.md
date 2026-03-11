@@ -109,7 +109,7 @@ tests.
 - SRS variance: score-based sandwich using full `p × p` sample covariance matrix
   (`var(score_matrix)`) — **not** diagonal-only. Off-diagonal covariance terms are
   required. See spec §8.4.
-- `survey_calibrated` uses the SRS sandwich path (conservative approximation).
+- `survey_nonprob` uses the SRS sandwich path (conservative approximation).
   N is approximated as `sum(design@variables$weights)` — the calibrated weights,
   per spec §8.4.
 - `.glm_confint()` is the shared CI helper called by both `confint.survey_glm_fit()`
@@ -221,7 +221,7 @@ tests.
   (returns `"function"`) and NOT `model@family$family()` (a function call). See spec §2.2.
 - `design_type` mapping: `survey_taylor` → `"taylor"`, `survey_replicate` →
   `"replicate"`, `survey_srs` → `"srs"`, `survey_twophase` → `"twophase"`,
-  `survey_calibrated` → `"calibrated"` — same mapping used by Phase 1 `.build_meta()`.
+  `survey_nonprob` → `"calibrated"` — same mapping used by Phase 1 `.build_meta()`.
 - Reference level detection: `setdiff(levels(model_frame[[var]]), colnames(contrasts(model_frame[[var]])))`.
   Do NOT use `sub()` string prefix removal — it is fragile when the variable name
   is a prefix of a level name (per spec §6.3).
@@ -312,7 +312,7 @@ tests.
 - Poisson oracle requires integer count response. Use `make_survey_data(seed = 42)`
   with `rpois(n, lambda = exp(0.3 * y1 + 0.5))` for the response, per spec §9.1
   Poisson template.
-- `survey_calibrated` oracle: build using `make_survey_data(seed = 42)` +
+- `survey_nonprob` oracle: build using `make_survey_data(seed = 42)` +
   `survey::calibrate()` + `from_svydesign()`. Conservative SRS sandwich is used —
   exact match to `survey::svyglm()` is not expected; verify the design is accepted
   without error and that SEs are positive finite.

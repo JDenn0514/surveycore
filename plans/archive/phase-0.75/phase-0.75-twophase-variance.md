@@ -44,7 +44,7 @@ are opened.
   `get_quantiles()`, `get_ratios()`) — those are Phase 1.
 - Two-phase support for `get_quantiles()` — Woodruff's method adapted for
   two-phase designs is complex; defer to Phase 1 if feasible, Phase 2 otherwise.
-- `survey_calibrated` two-phase variance — deferred to Phase 2.5.
+- `survey_nonprob` two-phase variance — deferred to Phase 2.5.
 
 ---
 

@@ -48,7 +48,7 @@ New file containing:
   covariance of the score matrix (off-diagonal terms preserved).
 - **`.glm_vcov_dispatch()`** — Routes to the correct variance path based on
   design class (`survey_taylor` → Taylor; `survey_twophase` → twophase;
-  `survey_replicate` → replicate; `survey_srs`/`survey_calibrated` → SRS).
+  `survey_replicate` → replicate; `survey_srs`/`survey_nonprob` → SRS).
 - **`.glm_degrees_of_freedom()`** — Clamped design df with
   `surveycore_warning_insufficient_df` when `degf_raw - (p - 1) <= 0`.
 
@@ -69,7 +69,7 @@ design-based degrees of freedom, matching `survey::degf()`:
 | `survey_taylor` | `Σ(n_h - 1)` via `.degf_taylor()` |
 | `survey_replicate` | `R - 1` (R = replicate columns) |
 | `survey_twophase` | Phase-1 Taylor df |
-| `survey_srs` / `survey_calibrated` | `n - 1` |
+| `survey_srs` / `survey_nonprob` | `n - 1` |
 
 All return values are clamped to `max(1, ...)`.
 
