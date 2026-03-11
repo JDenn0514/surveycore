@@ -281,7 +281,7 @@ Options:
 
 **Recommendation: C** — numerical oracle test run across all 4 classes covers the essential behavior without multiplying all 6 blocks by 4.
 
-> **Resolution (2026-03-02): C** — Numerical oracle section updated to require the oracle test for all 5 design classes (`survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_srs`, `survey_calibrated`). Note: class count updated to 5 per Issue 14 resolution. Added to Quality Gates.
+> **Resolution (2026-03-02): C** — Numerical oracle section updated to require the oracle test for all 5 design classes (`survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_srs`, `survey_nonprob`). Note: class count updated to 5 per Issue 14 resolution. Added to Quality Gates.
 
 ---
 
@@ -352,24 +352,24 @@ Options:
 
 ---
 
-**Issue 14: `survey_calibrated` class absent from support matrix**
+**Issue 14: `survey_nonprob` class absent from support matrix**
 Severity: REQUIRED
 Spec says "All 6 analysis functions support all 4 design classes" but omits an implemented class.
 
 The support matrix (§I) lists `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_srs`.
-Code inspection confirms `survey_calibrated` is already implemented and dispatched in
+Code inspection confirms `survey_nonprob` is already implemented and dispatched in
 `analysis-helpers.R` (`.build_meta()` line 245, `.degf()` line 586). The spec's 4-class matrix
 is incomplete. If the implementation plan treats only 4 classes as in-scope, a reviewer would
-reasonably accept code that breaks `survey_calibrated` NA group rows.
+reasonably accept code that breaks `survey_nonprob` NA group rows.
 
 Options:
-- **[A]** Add `survey_calibrated` as a 5th column in the support matrix — Effort: low, Risk: low, Impact: accurate scope
-- **[B]** Explicitly state that `survey_calibrated` is out of scope for this feature with a rationale — Effort: low
-- **[C] Do nothing** — ambiguity about whether `survey_calibrated` is in scope
+- **[A]** Add `survey_nonprob` as a 5th column in the support matrix — Effort: low, Risk: low, Impact: accurate scope
+- **[B]** Explicitly state that `survey_nonprob` is out of scope for this feature with a rationale — Effort: low
+- **[C] Do nothing** — ambiguity about whether `survey_nonprob` is in scope
 
 **Recommendation: A** — if the class exists and is dispatched, it belongs in the matrix.
 
-> **Resolution (2026-03-02): A** — `survey_calibrated` added as 5th column to §I support matrix. §I intro updated from "all 4 design classes" to "all 5 design classes." Quality Gates oracle test requirement updated accordingly.
+> **Resolution (2026-03-02): A** — `survey_nonprob` added as 5th column to §I support matrix. §I intro updated from "all 4 design classes" to "all 5 design classes." Quality Gates oracle test requirement updated accordingly.
 
 ---
 
@@ -459,7 +459,7 @@ All 16 issues resolved. Spec updated at `plans/spec-group-na-rows.md`. Decisions
 | 11 | REQUIRED | Extended A* | Two test blocks added (7a, 7b); §III extended with haven-labeled NA contract (*user-directed scope extension beyond original option A) |
 | 12 | REQUIRED | A | `make_na_group_design()` and `make_all_na_group_design()` specified in §VI |
 | 13 | REQUIRED | A | Test Block 8 added for `group_by()` integration path |
-| 14 | REQUIRED | A | `survey_calibrated` added as 5th column to §I support matrix |
+| 14 | REQUIRED | A | `survey_nonprob` added as 5th column to §I support matrix |
 | 15 | SUGGESTION | A | Test Block 6 wired to `make_all_na_group_design()` |
 | 16 | SUGGESTION | A | Wrong `code-style.md §4` citation corrected |
 

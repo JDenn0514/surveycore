@@ -78,9 +78,9 @@ test_that("get_means() works for survey_twophase design", {
   expect_true(is.finite(result$mean[[1L]]))
 })
 
-test_that("get_means() works for survey_calibrated design", {
+test_that("get_means() works for survey_nonprob design", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 5L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
 
   result <- get_means(d, y1)
   test_result_invariants(result, "survey_means")
@@ -956,9 +956,9 @@ test_that("get_means() NA group row mean matches filtered calibrated design [ora
   df_c <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_c$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_cal <- as_survey_calibrated(df_c, weights = wt)
+  design_cal <- as_survey_nonprob(df_c, weights = wt)
   na_df_c <- df_c[is.na(df_c$grp), ]
-  na_design_cal <- as_survey_calibrated(na_df_c, weights = wt)
+  na_design_cal <- as_survey_nonprob(na_df_c, weights = wt)
   expected <- get_means(na_design_cal, y1, variance = "se")
   result <- get_means(
     design_cal,
@@ -1149,10 +1149,10 @@ test_that("get_means() taylor with FPC fraction covers FPC fraction path in .tay
 # Additional coverage: calibrated design, se_srs=0 paths, unsupported class
 # ---------------------------------------------------------------------------
 
-test_that("get_means() works for survey_calibrated design", {
+test_that("get_means() works for survey_nonprob design", {
   set.seed(601)
   df <- data.frame(y = rnorm(60), w = runif(60, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   result <- get_means(sc, y, variance = "se")
   test_result_invariants(result, "survey_means")
   expect_true(is.finite(result$mean[[1L]]))
@@ -1162,7 +1162,7 @@ test_that("get_means() works for survey_calibrated design", {
 test_that("get_means() calibrated empty domain returns NA (covers .calibrated_mean_cell() n_d=0 path)", {
   set.seed(602)
   df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, 20L)
   result <- get_means(sc, y, variance = "se")
   expect_true(is.na(result$mean[[1L]]))
@@ -1171,7 +1171,7 @@ test_that("get_means() calibrated empty domain returns NA (covers .calibrated_me
 test_that("get_means() calibrated single-row domain returns mean with NA se (covers n_d=1 path)", {
   set.seed(603)
   df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(20L) == 1L
   result <- get_means(sc, y, variance = "se")
   expect_true(is.finite(result$mean[[1L]]))

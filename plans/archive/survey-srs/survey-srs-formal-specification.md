@@ -61,7 +61,7 @@ where `s²` is the unweighted sample variance, `n` is the sample size, and
 `f = n/N` is the sampling fraction (0 when population size is unknown).
 
 This is conceptually and computationally distinct from `survey_taylor` (which
-requires PSU/stratum structure) and `survey_calibrated` (which represents
+requires PSU/stratum structure) and `survey_nonprob` (which represents
 non-probability or post-hoc-adjusted weights). Giving SRS its own class:
 
 1. Makes the design declaration explicit and self-documenting
@@ -522,7 +522,7 @@ result <- if (S7::S7_inherits(design, survey_replicate)) {
 }
 ```
 
-`survey_calibrated` continues to fall through to `.taylor_mean()` (the SRS-
+`survey_nonprob` continues to fall through to `.taylor_mean()` (the SRS-
 approximation path for non-probability samples).
 
 ### Edge cases

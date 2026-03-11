@@ -25,7 +25,7 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 
 ## Class Naming Conventions
 
-- S7 classes: `survey_base`, `survey_srs`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_calibrated`
+- S7 classes: `survey_base`, `survey_srs`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_nonprob`
 - GLM fit class: `survey_glm_fit` (constructor function is `survey_glm()`)
 - Result classes: `survey_mean`, `survey_total`, `survey_freq`, etc. (S3 built on tibble)
 

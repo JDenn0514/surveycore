@@ -8,7 +8,7 @@
 
 - Add `vignettes/creating-survey-objects.qmd`: a full worked-example vignette
   covering all five constructors (`as_survey()`, `as_survey_replicate()`,
-  `as_survey_srs()`, `as_survey_calibrated()`, `as_survey_twophase()`)
+  `as_survey_srs()`, `as_survey_nonprob()`, `as_survey_twophase()`)
   with a decision guide, codebook variable reference tables (with Function
   Argument column), and worked examples for NHANES, ANES, GSS, Pew NPORS,
   ACS PUMS, Pew Jewish Americans, the school district SRS case, the
@@ -18,13 +18,13 @@
   Fay (1989), Judkins (1990), Baker et al. (2013), Elliott & Valliant (2017),
   Mercer et al. (2018), McPhee et al. (2023), and Census Bureau (2022)
 - Include decision table mapping design type to constructor, reordered so
-  `as_survey_srs()` precedes `as_survey_calibrated()` and
+  `as_survey_srs()` precedes `as_survey_nonprob()` and
   `as_survey_twophase()` is last (rarest use case)
 - Add per-dataset variable reference tables with Variable, Role, and
   Function Argument columns for all six bundled datasets
 - Add Section 5.3 clarification: unit of analysis is the school (not the
   student) and why the weight is constant in SRS
-- Add Section 6.2 expansion: `as_survey_calibrated()` covers raking,
+- Add Section 6.2 expansion: `as_survey_nonprob()` covers raking,
   post-stratification, propensity score weighting, and matching-based weights
 - Add Section 6.6 worked example: university voluntary response survey,
   with guidance for both the calibrated-weights and weights = 1 paths

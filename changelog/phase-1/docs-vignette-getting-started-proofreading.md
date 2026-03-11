@@ -13,7 +13,7 @@
 - Fix inaccurate code comment "# remove NAs" → "# remove 'Not sure' responses (coded 999)" and typos in new code comments ("abotu" → "about", "rato" → "ratio")
 - Remove orphaned commented-out code referencing undefined `svy` object
 - Fix sentence fragment "Next, looking at" → "Next, let's look at"
-- Replace `group-means` chunk example with `get_freqs(consider_trump, group = pid3)` — workaround for the same NA-domain bug fixed in `get_freqs()` by #30 that still affects `get_means()` with grouped `survey_calibrated` designs
+- Replace `group-means` chunk example with `get_freqs(consider_trump, group = pid3)` — workaround for the same NA-domain bug fixed in `get_freqs()` by #30 that still affects `get_means()` with grouped `survey_nonprob` designs
 - Add `eval=FALSE` to the `pak::pak("jacobdennen/surveytidy")` installation chunk so it does not execute during `devtools::check()`
 
 ## Files Modified

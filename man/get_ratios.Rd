@@ -22,7 +22,7 @@ get_ratios(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_calibrated}.}
+\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
 
 \item{numerator}{<\code{\link[tidyselect:language]{tidy-select}}> A single unquoted
 numeric variable name for the numerator. Must resolve to exactly one

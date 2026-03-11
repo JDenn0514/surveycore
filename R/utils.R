@@ -254,7 +254,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       p2_cols,
       design@variables$subset
     ))
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     unique(c(design@variables$weights))
   } else if (S7::S7_inherits(design, survey_srs)) {
     unique(c(design@variables$weights, design@variables$fpc))
@@ -303,7 +303,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       subset = design@variables$subset
     )
     Filter(Negate(is.null), raw)
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     Filter(
       Negate(is.null),
       list(weights = design@variables$weights)

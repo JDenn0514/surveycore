@@ -7,20 +7,20 @@
 # R/02-validators.R and are tested in test-validators.R.
 #
 # Test structure:
-#   1. survey_data() — happy path (all three design types + survey_calibrated)
+#   1. survey_data() — happy path (all three design types + survey_nonprob)
 #   2. survey_data() — rejects non-survey input
 #   3. .get_design_vars_flat() — survey_taylor
 #   4. .get_design_vars_flat() — survey_replicate
 #   5. .get_design_vars_flat() — survey_twophase (no p2 info)
 #   6. .get_design_vars_flat() — NULL design variables dropped
 #   7. .get_design_vars_flat() — survey_twophase with p2 design info
-#   8. .get_design_vars_flat() — survey_calibrated returns weights column
+#   8. .get_design_vars_flat() — survey_nonprob returns weights column
 #   9. .get_design_vars_flat() — survey_srs returns weights (and fpc when set)
 #  10. .get_design_vars() — survey_taylor named list
 #  11. .get_design_vars() — survey_replicate named list
 #  12. .get_design_vars() — survey_twophase named list (no p2 info)
 #  13. .get_design_vars() — survey_twophase with p2 design info
-#  14. .get_design_vars() — survey_calibrated returns weights entry
+#  14. .get_design_vars() — survey_nonprob returns weights entry
 #  15. .get_design_vars() — survey_srs returns weights (and fpc when set)
 #  16. .resolve_tidy_select() — NULL quosure → NULL
 #  17. .resolve_tidy_select() — bare name → character vector
@@ -108,7 +108,7 @@ make_twophase_with_p2 <- function(seed = 42L) {
 
 make_calibrated <- function() {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  as_survey_calibrated(df, weights = w)
+  as_survey_nonprob(df, weights = w)
 }
 
 make_srs <- function(seed = 42L) {
@@ -150,7 +150,7 @@ test_that("survey_data() returns @data for survey_twophase", {
   expect_identical(survey_data(d), d@data)
 })
 
-test_that("survey_data() returns @data for survey_calibrated", {
+test_that("survey_data() returns @data for survey_nonprob", {
   d <- make_calibrated()
   result <- survey_data(d)
   expect_true(is.data.frame(result))
@@ -254,9 +254,9 @@ test_that(".get_design_vars_flat() returns unique names for twophase with p2 inf
 })
 
 
-# ── 8. .get_design_vars_flat() — survey_calibrated returns weights column ─────
+# ── 8. .get_design_vars_flat() — survey_nonprob returns weights column ─────
 
-test_that(".get_design_vars_flat() returns weights column name for survey_calibrated", {
+test_that(".get_design_vars_flat() returns weights column name for survey_nonprob", {
   d <- make_calibrated()
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_identical(flat, d@variables$weights)
@@ -374,9 +374,9 @@ test_that(".get_design_vars() strata2/probs2 slots hold correct column names", {
 })
 
 
-# ── 14. .get_design_vars() — survey_calibrated returns weights entry ──────────
+# ── 14. .get_design_vars() — survey_nonprob returns weights entry ──────────
 
-test_that(".get_design_vars() returns a list with weights entry for survey_calibrated", {
+test_that(".get_design_vars() returns a list with weights entry for survey_nonprob", {
   d <- make_calibrated()
   vars <- surveycore:::.get_design_vars(d)
   expect_true(is.list(vars))

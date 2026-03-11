@@ -37,7 +37,7 @@ without updating this document.
 - Changes to any analysis function output
 - Changes to `@data` structure or `SURVEYCORE_DOMAIN_COL` definition (already defined in `R/utils.R`)
 - New exported functions or S7 classes
-- Changes to `survey_calibrated` `summary()` method
+- Changes to `survey_nonprob` `summary()` method
 
 ### Design type support matrix
 
@@ -47,7 +47,7 @@ without updating this document.
 | `survey_srs` | Yes | No |
 | `survey_replicate` | Yes | No |
 | `survey_twophase` | Yes | No |
-| `survey_calibrated` | Yes | No |
+| `survey_nonprob` | Yes | No |
 
 ---
 
@@ -66,7 +66,7 @@ R/methods-print.R
   ├── S7::method(print, survey_srs)        ← add call after sample size line
   ├── S7::method(print, survey_replicate)  ← add call after sample size line
   ├── S7::method(print, survey_twophase)   ← add call after BOTH phase size lines
-  └── S7::method(print, survey_calibrated) ← add call after sample size line
+  └── S7::method(print, survey_nonprob) ← add call after sample size line
 
 tests/testthat/test-methods-print.R       ← new test blocks; snapshot updates
 tests/testthat/_snaps/methods-print.md    ← updated by snapshot_review()
@@ -163,7 +163,7 @@ Domain: <n_domain_ph2> of <n_phase2> Phase 2 rows        ← inserted after BOTH
 Groups: <groups>                                          ← existing (conditional)
 ```
 
-**`survey_calibrated` header block:**
+**`survey_nonprob` header block:**
 ```
 Sample size: <N>
 Domain: <n_domain> of <n_total> rows    ← inserted here
@@ -304,17 +304,17 @@ test_that("print.survey_srs() shows domain line when domain column is present", 
 Do **not** use `make_srs_design()` for the `survey_srs` domain test — it would
 silently test the wrong class.
 
-### `survey_calibrated` — net-new blocks required
+### `survey_nonprob` — net-new blocks required
 
-There are currently **zero** snapshot tests for `print.survey_calibrated` in
-`test-methods-print.R` (the file ends at test #27). For `survey_calibrated`,
+There are currently **zero** snapshot tests for `print.survey_nonprob` in
+`test-methods-print.R` (the file ends at test #27). For `survey_nonprob`,
 the implementer must create **both** a domain-absent baseline block AND a
 domain-present Block 1 — these are net-new tests, not updates to existing ones.
 
 Suggested inline fixture (no `make_calibrated_design()` exists):
 
 ```r
-# survey_calibrated inline fixture
+# survey_nonprob inline fixture
 d_cal <- {
   d <- make_taylor_design()
   pop_totals <- c(`(Intercept)` = nrow(d@data))
@@ -326,11 +326,11 @@ d_cal <- {
 }
 ```
 
-Two blocks required for `survey_calibrated`:
+Two blocks required for `survey_nonprob`:
 
 ```r
 # Block 1 — domain-absent baseline (net-new, not an update)
-test_that("print.survey_calibrated() default output", {
+test_that("print.survey_nonprob() default output", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- d_cal  # inline fixture above
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
@@ -338,7 +338,7 @@ test_that("print.survey_calibrated() default output", {
 })
 
 # Block 1 domain — domain line present (snapshot)
-test_that("print.survey_calibrated() shows domain line when domain column is present", {
+test_that("print.survey_nonprob() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- d_cal
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
@@ -391,7 +391,7 @@ test_that(".print_domain_info() domain line appears before groups line", {
 | `survey_srs` | inline `as_survey_srs()` — see `survey_srs` note above |
 | `survey_replicate` | `make_rep_design()` (**not** `make_replicate_design()`) |
 | `survey_twophase` | `make_twophase_design()` |
-| `survey_calibrated` | inline — see `survey_calibrated` subsection above |
+| `survey_nonprob` | inline — see `survey_nonprob` subsection above |
 
 ### Test file section additions
 
@@ -405,13 +405,13 @@ Add under a new section comment in `test-methods-print.R`:
 # 31. print.survey_srs — domain line present (snapshot)
 # 32. print.survey_replicate — domain line present (snapshot)
 # 33. print.survey_twophase — domain line present (snapshot)
-# 34. print.survey_calibrated — default output (snapshot; net-new baseline)
-# 35. print.survey_calibrated — domain line present (snapshot)
+# 34. print.survey_nonprob — default output (snapshot; net-new baseline)
+# 35. print.survey_nonprob — domain line present (snapshot)
 ```
 
 Block 2 ("no domain line") is validated by reinforcing existing default-output
 snapshot tests with an `expect_false()` assertion — no new snapshot block
-needed (except for `survey_calibrated`, which requires the net-new baseline
+needed (except for `survey_nonprob`, which requires the net-new baseline
 block #33 above).
 
 ### Coverage requirement

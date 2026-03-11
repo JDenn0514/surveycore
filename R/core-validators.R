@@ -31,7 +31,7 @@ NULL
 # ── .validate_data_frame ──────────────────────────────────────────────────────
 
 # Validates the `data` argument shared by as_survey(), as_survey_replicate(), and
-# as_survey_calibrated() (Layer 3, errors 1–4 from error-messages.md).
+# as_survey_nonprob() (Layer 3, errors 1–4 from error-messages.md).
 # Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
 #' @noRd
 .validate_data_frame <- function(data, call = rlang::caller_call()) {

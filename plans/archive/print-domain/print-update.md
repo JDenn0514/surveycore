@@ -53,7 +53,7 @@ if (!is.na(n_phase2)) {
 if (length(x@groups) > 0L) {
 ```
 
-**`survey_calibrated` (~line 564):**
+**`survey_nonprob` (~line 564):**
 ```r
 cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 .print_domain_info(x)    # ← add here

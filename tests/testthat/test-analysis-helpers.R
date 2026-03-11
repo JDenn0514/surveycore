@@ -369,7 +369,7 @@ test_that(".build_meta() returns design_type = 'srs' for survey_srs", {
   expect_identical(meta$design_type, "srs")
 })
 
-test_that(".build_meta() returns design_type = 'calibrated' for survey_calibrated", {
+test_that(".build_meta() returns design_type = 'calibrated' for survey_nonprob", {
   designs <- make_all_designs(seed = 42L)
   meta <- .build_meta(designs$calibrated, list(conf_level = 0.95))
   expect_identical(meta$design_type, "calibrated")
@@ -713,10 +713,10 @@ test_that(".degf() returns design-based finite df for survey_srs", {
   expect_equal(.degf(d), nrow(df) - 1L)
 })
 
-test_that(".degf() returns design-based finite df for survey_calibrated", {
+test_that(".degf() returns design-based finite df for survey_nonprob", {
   # Calibrated with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 14L)
-  d <- as_survey_calibrated(df, weights = wt)
+  d <- as_survey_nonprob(df, weights = wt)
   test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)

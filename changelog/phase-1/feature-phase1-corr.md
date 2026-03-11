@@ -8,7 +8,7 @@
 
 Implements `get_corr()` — survey-weighted Pearson correlation for all five
 design classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
-`survey_calibrated`, `survey_twophase`).
+`survey_nonprob`, `survey_twophase`).
 
 ## Files Added
 

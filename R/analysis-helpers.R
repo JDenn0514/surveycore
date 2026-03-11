@@ -349,7 +349,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
     else if (S7::S7_inherits(design, survey_replicate))  "replicate"
     else if (S7::S7_inherits(design, survey_twophase))   "twophase"
     else if (S7::S7_inherits(design, survey_srs))        "srs"
-    else if (S7::S7_inherits(design, survey_calibrated)) "calibrated"
+    else if (S7::S7_inherits(design, survey_nonprob)) "calibrated"
     else cli::cli_abort(
       c("x" = "Unrecognized design class {.cls {class(design)[1L]}}."),
       class = "surveycore_error_unsupported_class"
@@ -720,7 +720,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
   } else {
-    # survey_srs, survey_calibrated, unknown
+    # survey_srs, survey_nonprob, unknown
     max(1L, nrow(design@data) - 1L)
   }
 }

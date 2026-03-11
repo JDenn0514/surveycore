@@ -100,7 +100,7 @@ Section 2.2 says `.build_meta()` derives `design_type` "from the S7 class of `de
 - `survey_replicate` → `"replicate"` ?
 - `survey_twophase` → `"twophase"` ?
 - `survey_srs` → `"srs"` ?
-- `survey_calibrated` → `"calibrated"` ?
+- `survey_nonprob` → `"calibrated"` ?
 
 The mapping is obvious by inspection, but an implementer could produce `"survey_taylor"` via `class(design)[1]` string manipulation, or `"SurveyTaylor"`, or anything else. If downstream code (e.g., in surveytidy) branches on `meta(result)$design_type == "taylor"`, a different string breaks it silently.
 
@@ -114,7 +114,7 @@ Options:
     S7::S7_inherits(design, survey_replicate) ~ "replicate",
     S7::S7_inherits(design, survey_twophase)  ~ "twophase",
     S7::S7_inherits(design, survey_srs)       ~ "srs",
-    S7::S7_inherits(design, survey_calibrated)~ "calibrated"
+    S7::S7_inherits(design, survey_nonprob)~ "calibrated"
   )
   ```
   Or equivalent if-else chain. Effort: low, Risk: low, Impact: canonical string values enforced.

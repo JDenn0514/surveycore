@@ -14,7 +14,7 @@
 #' intervals. Returns results in long or wide format.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_calibrated`.
+#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
 #'   numeric variable names. Non-numeric variables are dropped with a warning.
 #'   At least two numeric variables must remain.

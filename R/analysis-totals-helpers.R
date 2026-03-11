@@ -17,7 +17,7 @@
 #
 # Domain estimation of a weighted total using Taylor linearization.
 #
-# @param design  A survey_taylor or survey_calibrated object.
+# @param design  A survey_taylor or survey_nonprob object.
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
 # @return Named list: total, se, se_srs, n, n_weighted.
@@ -367,7 +367,7 @@
 #   Var(T_hat) = n/(n-1) * sum((z_i - T_hat/n)^2)
 #
 #
-# @param design  A survey_calibrated object.
+# @param design  A survey_nonprob object.
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
 # @return Named list: total, se, se_srs, n, n_weighted.
@@ -451,7 +451,7 @@
     .twophase_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_srs)) {
     .srs_total_cell(design, y_col, domain)
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     .calibrated_total_cell(design, y_col, domain)
   } else {
     cli::cli_abort(

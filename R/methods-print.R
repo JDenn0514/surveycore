@@ -554,11 +554,11 @@ S7::method(print, survey_twophase) <- function(
 }
 
 
-# ── print.survey_calibrated ───────────────────────────────────────────────
+# ── print.survey_nonprob ───────────────────────────────────────────────
 
 # Print a Calibrated / Non-Probability Survey Design
 #
-# @param x A survey_calibrated object.
+# @param x A survey_nonprob object.
 # @param n Maximum number of data rows to print. Default 10L.
 # @param design_info Show design specification section?
 # @param weights_info Show weight distribution statistics?
@@ -567,7 +567,7 @@ S7::method(print, survey_twophase) <- function(
 # @param ... Passed to tibble print.
 # @return x, invisibly.
 # Class defined in R/00-s7-classes.R
-S7::method(print, survey_calibrated) <- function(
+S7::method(print, survey_nonprob) <- function(
   x,
   n             = 10L,
   design_info   = FALSE,
@@ -586,7 +586,7 @@ S7::method(print, survey_calibrated) <- function(
 
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
-  cli::cli_text("{.cls survey_calibrated} (calibrated / non-probability) [experimental]")
+  cli::cli_text("{.cls survey_nonprob} (calibrated / non-probability) [experimental]")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
 
@@ -639,13 +639,13 @@ S7::method(print, survey_calibrated) <- function(
 }
 
 
-# ── summary.survey_calibrated ─────────────────────────────────────────────
+# ── summary.survey_nonprob ─────────────────────────────────────────────
 
 # Summarise a Calibrated / Non-Probability Survey Design
-# @param object A survey_calibrated object.
+# @param object A survey_nonprob object.
 # @return object, invisibly.
 # Class defined in R/00-s7-classes.R
-S7::method(summary, survey_calibrated) <- function(object, ...) {
+S7::method(summary, survey_nonprob) <- function(object, ...) {
   x <- object
 
   cli::cli_h1("Survey Design Summary")

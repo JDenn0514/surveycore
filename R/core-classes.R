@@ -9,7 +9,7 @@
 #   survey_replicate  — replicate weights design
 #   survey_twophase   — two-phase sampling design
 #   survey_srs        — simple random sample design
-#   survey_calibrated — calibrated/non-probability design (Phase 2.5 skeleton)
+#   survey_nonprob — calibrated/non-probability design (Phase 2.5 skeleton)
 #
 # Validators implement Layer 1 structural invariants only (per 3-layer
 # validator architecture in phase-0-implementation-plan-v2.md). User-input
@@ -86,10 +86,10 @@ survey_metadata <- S7::new_class(
 #' Abstract Base Survey Design Class
 #'
 #' All survey design objects (`survey_srs`, `survey_taylor`,
-#' `survey_replicate`, `survey_twophase`, `survey_calibrated`) inherit from
+#' `survey_replicate`, `survey_twophase`, `survey_nonprob`) inherit from
 #' `survey_base`. This class is abstract and cannot be instantiated directly —
 #' use [as_survey()], [as_survey_replicate()], [as_survey_twophase()], or
-#' [as_survey_calibrated()] instead.
+#' [as_survey_nonprob()] instead.
 #'
 #' @section Properties:
 #' \describe{
@@ -584,7 +584,7 @@ survey_twophase <- S7::new_class(
 #'   `f = n/N` is the sampling fraction (0 when population size is unknown)
 #'
 #' For non-probability samples or post-hoc calibrated weights (raking,
-#' post-stratification, propensity matching), use [as_survey_calibrated()]
+#' post-stratification, propensity matching), use [as_survey_nonprob()]
 #' instead.
 #'
 #' For complex probability samples with known design structure (PSUs, strata),
@@ -693,17 +693,17 @@ survey_srs <- S7::new_class(
 )
 
 
-# ── survey_calibrated ──────────────────────────────────────────────────────────
+# ── survey_nonprob ──────────────────────────────────────────────────────────
 
 #' Calibrated / Non-Probability Survey Design
 #'
 #' A survey design object for non-probability samples and post-hoc calibrated
 #' designs (e.g., raked online panels, post-stratified samples). Create with
-#' [as_survey_calibrated()].
+#' [as_survey_nonprob()].
 #'
 #' @section Phase 2.5 skeleton:
 #' This class is a **skeleton** added in Phase 0 to reserve its place in the
-#' class hierarchy. The constructor [as_survey_calibrated()] accepts
+#' class hierarchy. The constructor [as_survey_nonprob()] accepts
 #' pre-computed calibration weights and stores calibration provenance from
 #' \pkg{surveywts} output.
 #'
@@ -715,18 +715,18 @@ survey_srs <- S7::new_class(
 #' @section Non-probability samples:
 #' Unlike [as_survey()], [as_survey_replicate()], and [as_survey_twophase()], this
 #' class does **not** assume a probability sampling design. Standard errors
-#' produced from a `survey_calibrated` object rest on a model-assisted SRS
+#' produced from a `survey_nonprob` object rest on a model-assisted SRS
 #' assumption, which is consistent with common practice for calibrated
 #' non-probability samples (e.g., raked online panels). See
 #' `vignette("creating-survey-objects")` for guidance on when this is
 #' appropriate and what the limitations are.
 #'
 #' @param data A `data.frame` containing the survey data. Prefer
-#'   [as_survey_calibrated()] over calling this constructor directly.
+#'   [as_survey_nonprob()] over calling this constructor directly.
 #' @param metadata A [survey_metadata] object. Created automatically by
-#'   [as_survey_calibrated()].
+#'   [as_survey_nonprob()].
 #' @param variables A named list of design specification (`weights`,
-#'   `probs_provided`). Set automatically by [as_survey_calibrated()].
+#'   `probs_provided`). Set automatically by [as_survey_nonprob()].
 #' @param calibration The calibration provenance object returned by a
 #'   \pkg{surveywts} calibration function (e.g., `surveywts::rake()`),
 #'   or `NULL` if calibration was performed externally. Stores the
@@ -748,8 +748,8 @@ survey_srs <- S7::new_class(
 #' trimming cap, effective sample size before and after, and design effect.
 #' `NULL` when calibration was performed externally (e.g., via `anesrake`).
 #'
-#' @return A `survey_calibrated` object.
-#' @usage survey_calibrated(
+#' @return A `survey_nonprob` object.
+#' @usage survey_nonprob(
 #'   data = data.frame(),
 #'   metadata = survey_metadata(),
 #'   variables = list(),
@@ -757,12 +757,12 @@ survey_srs <- S7::new_class(
 #'   call = NULL,
 #'   calibration = NULL
 #' )
-#' @seealso [as_survey_calibrated()] to create a `survey_calibrated` object.
+#' @seealso [as_survey_nonprob()] to create a `survey_nonprob` object.
 #' @family constructors
 #' @keywords internal
 #' @export
-survey_calibrated <- S7::new_class(
-  "survey_calibrated",
+survey_nonprob <- S7::new_class(
+  "survey_nonprob",
   parent = survey_base,
   properties = list(
     # Stores calibration provenance from surveywts output.
@@ -778,8 +778,8 @@ survey_calibrated <- S7::new_class(
       cli::cli_abort(
         c(
           "x" = "Weight column {.field {weights_var}} not found in {.arg data}.",
-          "i" = "This is an internal consistency error in the {.cls survey_calibrated} object.",
-          "v" = "Use {.fn as_survey_calibrated} instead of calling the constructor directly."
+          "i" = "This is an internal consistency error in the {.cls survey_nonprob} object.",
+          "v" = "Use {.fn as_survey_nonprob} instead of calling the constructor directly."
         ),
         class = "surveycore_error_design_var_missing"
       )
@@ -794,7 +794,7 @@ survey_calibrated <- S7::new_class(
           c(
             "x" = "Weight column {.field {weights_var}} must be numeric.",
             "i" = "Got {.cls {class(wt_col)}}.",
-            "v" = "Convert with {.code as.numeric({.field {weights_var}})} before calling {.fn as_survey_calibrated}."
+            "v" = "Convert with {.code as.numeric({.field {weights_var}})} before calling {.fn as_survey_nonprob}."
           ),
           class = "surveycore_error_weights_not_numeric"
         )
@@ -806,7 +806,7 @@ survey_calibrated <- S7::new_class(
           c(
             "x" = "Weight column {.field {weights_var}} has no non-NA values.",
             "i" = "All weights are {.val NA} \u2014 no valid weights for estimation.",
-            "v" = "Check {.field {weights_var}} for missing data before calling {.fn as_survey_calibrated}."
+            "v" = "Check {.field {weights_var}} for missing data before calling {.fn as_survey_nonprob}."
           ),
           class = "surveycore_error_weights_all_zero"
         )

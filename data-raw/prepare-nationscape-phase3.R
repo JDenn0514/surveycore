@@ -11,7 +11,7 @@
 ## Mode: Online (Lucid respondent exchange platform)
 ## Design: Non-probability quota sample with raking weights
 ##   Weight variable: weight (calibrated to ACS + 2016 vote targets)
-##   No cluster or strata variables — use as_survey_calibrated()
+##   No cluster or strata variables — use as_survey_nonprob()
 ##
 ## Phase 3 content changes vs. Phase 2:
 ##   - BLM added to group favorability (group_favorability_blm)
@@ -397,7 +397,7 @@ ns_phase3 <- load_phase_waves(PHASE3_DIR, BATTERIES_PHASE3, "Phase 3")
 ## ---- Usage notes ----
 ##
 ##   wave51 <- ns_phase3[["ns20200702"]]
-##   d <- as_survey_calibrated(wave51, weights = weight)
+##   d <- as_survey_nonprob(wave51, weights = weight)
 ##   get_freqs(d, vote_2020)
 ##
 ## Save locally: saveRDS(ns_phase3, "data-raw/nationscape/ns_phase3.rds")

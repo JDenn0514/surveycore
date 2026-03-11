@@ -151,15 +151,15 @@ Options:
 
 ---
 
-**Issue 7: `survey_calibrated` has no existing print snapshot — Block 2 directive has no target**
+**Issue 7: `survey_nonprob` has no existing print snapshot — Block 2 directive has no target**
 Severity: REQUIRED
 Blocks implementation — the spec says to "add the `expect_false()` assertion
 to the existing block" but no default-output snapshot block exists for
-`print.survey_calibrated`.
+`print.survey_nonprob`.
 
 The test file (`test-methods-print.R`) ends at test #27 (`print.survey_srs —
 probs_provided label`). There are zero existing snapshot tests for
-`print.survey_calibrated`. The spec's snapshot update protocol states:
+`print.survey_nonprob`. The spec's snapshot update protocol states:
 "Add the `expect_false()` assertion to the existing block rather than
 duplicating it." For calibrated, there is no existing block to add to.
 
@@ -169,8 +169,8 @@ test file. The implementer must create both the fixture and the baseline
 this nor provides a fixture pattern.
 
 Options:
-- **[A]** Add a subsection to §V for `survey_calibrated` specifically: define a `make_calibrated_design()` fixture (or inline construction pattern), state that both a domain-absent AND domain-present snapshot block must be created (not just the domain-present one), and note that these are net-new, not updates — Effort: low, Risk: low, Impact: fully specifies what the implementer must do.
-- **[B]** Remove `survey_calibrated` from scope until its baseline print tests exist — Effort: low, Risk: low, Impact: reduces scope of this PR; follow-up PR handles calibrated.
+- **[A]** Add a subsection to §V for `survey_nonprob` specifically: define a `make_calibrated_design()` fixture (or inline construction pattern), state that both a domain-absent AND domain-present snapshot block must be created (not just the domain-present one), and note that these are net-new, not updates — Effort: low, Risk: low, Impact: fully specifies what the implementer must do.
+- **[B]** Remove `survey_nonprob` from scope until its baseline print tests exist — Effort: low, Risk: low, Impact: reduces scope of this PR; follow-up PR handles calibrated.
 - **[C] Do nothing** — Implementer discovers the gap at implementation time.
 
 **Recommendation: A** — The gap is small; specifying a fixture pattern and acknowledging the new-not-updated nature of calibrated snapshots is a one-paragraph addition.
@@ -255,4 +255,4 @@ Options:
 
 **Total issues:** 10
 
-**Overall assessment:** The spec is coherent and implementable for three of the five design types (`survey_taylor`, `survey_replicate`, `survey_twophase`). Two required gaps — the missing `survey_srs` fixture guidance and the absent `survey_calibrated` baseline snapshot context — will cause implementer confusion or silent errors. The missing `withr::local_options()` in new test blocks will break snapshot CI. Resolving these three required issues makes the spec fully implementable. The seven suggestions are genuine quality improvements but none are implementation blockers.
+**Overall assessment:** The spec is coherent and implementable for three of the five design types (`survey_taylor`, `survey_replicate`, `survey_twophase`). Two required gaps — the missing `survey_srs` fixture guidance and the absent `survey_nonprob` baseline snapshot context — will cause implementer confusion or silent errors. The missing `withr::local_options()` in new test blocks will break snapshot CI. Resolving these three required issues makes the spec fully implementable. The seven suggestions are genuine quality improvements but none are implementation blockers.

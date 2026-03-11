@@ -516,8 +516,8 @@ test_that("print.survey_srs shows '(from sampling probabilities)' when probs_pro
 # 31. print.survey_srs — domain line present (snapshot)
 # 32. print.survey_replicate — domain line present (snapshot)
 # 33. print.survey_twophase — domain line present (snapshot)
-# 34. print.survey_calibrated — default output (snapshot; net-new baseline)
-# 35. print.survey_calibrated — domain line present (snapshot)
+# 34. print.survey_nonprob — default output (snapshot; net-new baseline)
+# 35. print.survey_nonprob — domain line present (snapshot)
 # 36. print.survey_taylor — zero rows in domain (snapshot)
 
 # ── 28. print.survey_taylor — domain line present ────────────────────────────
@@ -591,31 +591,31 @@ test_that("print.survey_twophase() shows domain line when domain column is prese
 })
 
 
-# ── 34. print.survey_calibrated — default output (net-new baseline) ──────────
+# ── 34. print.survey_nonprob — default output (net-new baseline) ──────────
 
-test_that("print.survey_calibrated() default output", {
+test_that("print.survey_nonprob() default output", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
   set.seed(123L)
   df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
-  d <- as_survey_calibrated(df, weights = cal_wt)
+  d <- as_survey_nonprob(df, weights = cal_wt)
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   expect_snapshot(print(d))
 })
 
 
-# ── 35. print.survey_calibrated — domain line present ────────────────────────
+# ── 35. print.survey_nonprob — domain line present ────────────────────────
 
-test_that("print.survey_calibrated() shows domain line when domain column is present", {
+test_that("print.survey_nonprob() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
   set.seed(123L)
   df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
-  d <- as_survey_calibrated(df, weights = cal_wt)
+  d <- as_survey_nonprob(df, weights = cal_wt)
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
 })
@@ -742,13 +742,13 @@ test_that("summary.survey_twophase() shows Phase 2 IDs and strata when present",
 # twophase print with Phase 2 ids/strata
 # ---------------------------------------------------------------------------
 
-test_that("print.survey_calibrated() runs without error and produces output", {
+test_that("print.survey_nonprob() runs without error and produces output", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   set.seed(901)
   df <- data.frame(y = rnorm(30), w = runif(30, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   out <- capture.output(print(sc), type = "message")
-  expect_true(any(grepl("survey_calibrated", out)))
+  expect_true(any(grepl("survey_nonprob", out)))
 })
 
 test_that("summary.survey_replicate() with FPC covers the FPC line", {

@@ -25,13 +25,13 @@ head(survey_data(d))
 \seealso{
 Other constructors: 
 \code{\link{as_survey}()},
-\code{\link{as_survey_calibrated}()},
+\code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_calibrated}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
+\code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},

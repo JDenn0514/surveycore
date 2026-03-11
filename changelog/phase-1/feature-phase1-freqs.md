@@ -8,7 +8,7 @@ Implement `get_freqs()` — weighted frequency tables for categorical survey var
 
 - `get_freqs()` — compute weighted proportions (percentages) for one or more
   categorical variables across all five survey design types (`survey_taylor`,
-  `survey_replicate`, `survey_srs`, `survey_twophase`, `survey_calibrated`).
+  `survey_replicate`, `survey_srs`, `survey_twophase`, `survey_nonprob`).
 
 ## Features
 
@@ -33,7 +33,7 @@ Implement `get_freqs()` — weighted frequency tables for categorical survey var
 - `.get_levels()` — ordered unique levels (factor-order or ascending sort);
   NA appended last when `na.rm=FALSE`.
 - `.taylor_freq_cell()` — ratio linearization for `survey_taylor` and
-  `survey_calibrated`.
+  `survey_nonprob`.
 - `.replicate_freq_cell()` — per-replicate proportion via `.svy_rep_var()`.
 - `.srs_freq_cell()` — classical SRS proportion variance.
 - `.twophase_freq_cell()` — calibrated-weight ratio with `.twophasevar()`.

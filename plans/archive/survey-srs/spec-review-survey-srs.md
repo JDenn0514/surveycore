@@ -16,7 +16,7 @@ invariant that `fpc_type` is always present in `@variables`.]
 
 `test_invariants()` in `helper-test-data.R` checks six keys: `ids`, `weights`,
 `strata`, `fpc`, `nest`, `probs_provided`. `survey_srs` adds a seventh:
-`fpc_type`. The function has explicit branches for `survey_calibrated` and
+`fpc_type`. The function has explicit branches for `survey_nonprob` and
 `survey_twophase` but nothing for `survey_srs`. Without a branch, a `survey_srs`
 object missing `fpc_type` from `@variables` passes `test_invariants()` silently;
 the `fpc_type` check only exists in `test-s7-classes.R` test #5 and is not
@@ -31,7 +31,7 @@ Options:
 - **[C] Do nothing** — `fpc_type` gap only caught in `test-s7-classes.R`;
   a constructor that omits it passes all constructor tests.
 
-**Recommendation: A** — mirrors the existing `survey_calibrated` branch
+**Recommendation: A** — mirrors the existing `survey_nonprob` branch
 pattern; one new `if (S7::S7_inherits(design, survey_srs))` block.
 
 ---

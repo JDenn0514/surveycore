@@ -818,13 +818,13 @@ test_that("survey_replicate validator rejects list-column design variable", {
   )
 })
 
-# ── survey_calibrated validator: non-numeric weight column ───────────────────
+# ── survey_nonprob validator: non-numeric weight column ───────────────────
 
-test_that("survey_calibrated validator rejects non-numeric weight column", {
+test_that("survey_nonprob validator rejects non-numeric weight column", {
   df <- data.frame(y = 1:5, wt = c("a", "b", "c", "d", "e"))
 
   expect_error(
-    survey_calibrated(
+    survey_nonprob(
       data      = df,
       variables = list(
         weights        = "wt",

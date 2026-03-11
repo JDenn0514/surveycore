@@ -188,7 +188,7 @@ make_survey_data <- function(
 #' a survey object. Checks all invariants from formal spec Section I.
 #'
 #' @param design A survey_taylor, survey_replicate, survey_twophase, or
-#'   survey_calibrated object.
+#'   survey_nonprob object.
 #' @return Returns design invisibly on success. Throws testthat failure on any
 #'   violated invariant.
 #' @keywords internal
@@ -201,15 +201,15 @@ test_invariants <- function(design) {
 
   # All design types must have visible_vars in @variables (may be NULL).
   # Required for surveytidy's select() compatibility.
-  if (!S7::S7_inherits(design, survey_calibrated)) {
+  if (!S7::S7_inherits(design, survey_nonprob)) {
     testthat::expect_true(
       "visible_vars" %in% names(design@variables),
       label = "@variables has 'visible_vars' key"
     )
   }
 
-  # survey_calibrated has a different @variables structure — handle separately
-  if (S7::S7_inherits(design, survey_calibrated)) {
+  # survey_nonprob has a different @variables structure — handle separately
+  if (S7::S7_inherits(design, survey_nonprob)) {
     testthat::expect_true(is.data.frame(design@data))
     testthat::expect_false(is.null(design@data))
     testthat::expect_gte(nrow(design@data), 1L)
@@ -485,7 +485,7 @@ make_all_designs <- function(seed = 42L) {
     design = "taylor",
     seed = seed
   )
-  calibrated <- as_survey_calibrated(df_c, weights = wt)
+  calibrated <- as_survey_nonprob(df_c, weights = wt)
 
   # Simple random sample design
   df_s <- make_survey_data(

@@ -1552,153 +1552,153 @@ test_that("as_survey_replicate() validates fpc column for NAs", {
 
 
 # ==============================================================================
-# as_survey_calibrated() tests
+# as_survey_nonprob() tests
 # ==============================================================================
 
 # ── Happy paths ────────────────────────────────────────────────────────────────
 
-test_that("as_survey_calibrated() creates a survey_calibrated object", {
+test_that("as_survey_nonprob() creates a survey_nonprob object", {
   df <- data.frame(y = rnorm(100), cal_wt = runif(100, 0.5, 2))
-  d <- as_survey_calibrated(df, weights = cal_wt)
+  d <- as_survey_nonprob(df, weights = cal_wt)
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
   expect_equal(d@variables$weights, "cal_wt")
 })
 
-test_that("as_survey_calibrated() stores calibration provenance object", {
+test_that("as_survey_nonprob() stores calibration provenance object", {
   df <- data.frame(y = rnorm(50), w = runif(50, 1, 3))
   cal <- list(targets = list(age = c(0.3, 0.4, 0.3)), method = "raking")
-  d <- as_survey_calibrated(df, weights = w, calibration = cal)
+  d <- as_survey_nonprob(df, weights = w, calibration = cal)
   test_invariants(d)
   expect_identical(d@calibration, cal)
 })
 
-test_that("as_survey_calibrated() calibration is NULL when not supplied", {
+test_that("as_survey_nonprob() calibration is NULL when not supplied", {
   df <- data.frame(y = 1:20, w = rep(1, 20))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   test_invariants(d)
   expect_null(d@calibration)
 })
 
-test_that("as_survey_calibrated() extracts haven variable labels", {
+test_that("as_survey_nonprob() extracts haven variable labels", {
   df <- data.frame(y = 1:50, w = rep(1, 50))
   attr(df$y, "label") <- "Outcome variable"
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   test_invariants(d)
   expect_equal(d@metadata@variable_labels[["y"]], "Outcome variable")
 })
 
-test_that("as_survey_calibrated() is a subclass of survey_base", {
+test_that("as_survey_nonprob() is a subclass of survey_base", {
   df <- data.frame(y = 1:30, w = rep(1.5, 30))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_base))
 })
 
 # ── @variables structure ───────────────────────────────────────────────────────
 
-test_that("as_survey_calibrated() @variables has weights and probs_provided keys", {
+test_that("as_survey_nonprob() @variables has weights and probs_provided keys", {
   df <- data.frame(y = 1:10, w = rep(2, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_true("weights" %in% names(d@variables))
   expect_true("probs_provided" %in% names(d@variables))
 })
 
-test_that("as_survey_calibrated() @variables$probs_provided is always FALSE", {
+test_that("as_survey_nonprob() @variables$probs_provided is always FALSE", {
   df <- data.frame(y = 1:10, w = rep(2, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_false(d@variables$probs_provided)
 })
 
 # ── Error paths ────────────────────────────────────────────────────────────────
 
-test_that("as_survey_calibrated() rejects non-data-frame input", {
+test_that("as_survey_nonprob() rejects non-data-frame input", {
   expect_error(
-    as_survey_calibrated(list(y = 1:10, w = rep(1, 10)), weights = w),
+    as_survey_nonprob(list(y = 1:10, w = rep(1, 10)), weights = w),
     class = "surveycore_error_not_data_frame"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(list(y = 1:10, w = rep(1, 10)), weights = w)
+    as_survey_nonprob(list(y = 1:10, w = rep(1, 10)), weights = w)
   )
 })
 
-test_that("as_survey_calibrated() rejects empty data", {
+test_that("as_survey_nonprob() rejects empty data", {
   empty <- data.frame(y = numeric(0), w = numeric(0))
   expect_error(
-    as_survey_calibrated(empty, weights = w),
+    as_survey_nonprob(empty, weights = w),
     class = "surveycore_error_empty_data"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(empty, weights = w)
+    as_survey_nonprob(empty, weights = w)
   )
 })
 
-test_that("as_survey_calibrated() rejects duplicate column names", {
+test_that("as_survey_nonprob() rejects duplicate column names", {
   df <- data.frame(y = 1:5, w = rep(1, 5), w = rep(2, 5), check.names = FALSE)
   expect_error(
-    as_survey_calibrated(df, weights = w),
+    as_survey_nonprob(df, weights = w),
     class = "surveycore_error_duplicate_names"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(df, weights = w)
+    as_survey_nonprob(df, weights = w)
   )
 })
 
-test_that("as_survey_calibrated() rejects missing weights argument", {
+test_that("as_survey_nonprob() rejects missing weights argument", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
   expect_error(
-    as_survey_calibrated(df),
+    as_survey_nonprob(df),
     class = "surveycore_error_weights_missing"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(df)
+    as_survey_nonprob(df)
   )
 })
 
-test_that("as_survey_calibrated() rejects weights selecting multiple columns", {
+test_that("as_survey_nonprob() rejects weights selecting multiple columns", {
   df <- data.frame(y = 1:10, w1 = rep(1, 10), w2 = rep(1, 10))
   expect_error(
-    as_survey_calibrated(df, weights = c(w1, w2)),
+    as_survey_nonprob(df, weights = c(w1, w2)),
     class = "surveycore_error_weights_multiple"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(df, weights = c(w1, w2))
+    as_survey_nonprob(df, weights = c(w1, w2))
   )
 })
 
-test_that("as_survey_calibrated() rejects non-positive weights", {
+test_that("as_survey_nonprob() rejects non-positive weights", {
   df <- data.frame(y = 1:5, w = c(1, 0, 1, 1, 1))
   expect_error(
-    as_survey_calibrated(df, weights = w),
+    as_survey_nonprob(df, weights = w),
     class = "surveycore_error_weights_nonpositive"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(df, weights = w)
+    as_survey_nonprob(df, weights = w)
   )
 })
 
 # ── Warning paths ──────────────────────────────────────────────────────────────
 
-test_that("as_survey_calibrated() warns for single-row data", {
+test_that("as_survey_nonprob() warns for single-row data", {
   df <- data.frame(y = 1, w = 1)
   expect_warning(
-    result <- as_survey_calibrated(df, weights = w),
+    result <- as_survey_nonprob(df, weights = w),
     class = "surveycore_warning_single_row"
   )
-  expect_true(S7::S7_inherits(result, survey_calibrated))
+  expect_true(S7::S7_inherits(result, survey_nonprob))
 })
 
 # ── Estimation ─────────────────────────────────────────────────────────────────
 
-test_that("get_means() returns SRS-based estimate for survey_calibrated", {
+test_that("get_means() returns SRS-based estimate for survey_nonprob", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   result <- get_means(d, y, variance = "se")
   test_result_invariants(result, "survey_means")
   expect_identical(names(meta(result)$x), "y")
@@ -1707,9 +1707,9 @@ test_that("get_means() returns SRS-based estimate for survey_calibrated", {
   expect_gte(result$se[[1L]], 0)
 })
 
-test_that("get_totals() returns SRS-based estimate for survey_calibrated", {
+test_that("get_totals() returns SRS-based estimate for survey_nonprob", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   result <- get_totals(d, y, variance = "se")
   test_result_invariants(result, "survey_totals")
   expect_identical(names(meta(result)$x), "y")
@@ -1720,68 +1720,68 @@ test_that("get_totals() returns SRS-based estimate for survey_calibrated", {
 
 # ── Print ──────────────────────────────────────────────────────────────────────
 
-test_that("print() works for survey_calibrated and returns x invisibly", {
+test_that("print() works for survey_nonprob and returns x invisibly", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   out <- withVisible(print(d))
   expect_false(out$visible)
-  expect_true(S7::S7_inherits(out$value, survey_calibrated))
+  expect_true(S7::S7_inherits(out$value, survey_nonprob))
 })
 
-test_that("summary() works for survey_calibrated and returns x invisibly", {
+test_that("summary() works for survey_nonprob and returns x invisibly", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   out <- withVisible(summary(d))
   expect_false(out$visible)
-  expect_true(S7::S7_inherits(out$value, survey_calibrated))
+  expect_true(S7::S7_inherits(out$value, survey_nonprob))
 })
 
 # ── Snapshot tests: print() and summary() output ───────────────────────────────
 
-test_that("print() produces correct output for survey_calibrated (default)", {
+test_that("print() produces correct output for survey_nonprob (default)", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(print(d))
 })
 
-test_that("print(d, full = TRUE) produces correct output for survey_calibrated", {
+test_that("print(d, full = TRUE) produces correct output for survey_nonprob", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(print(d, full = TRUE))
 })
 
-test_that("print(d, design_info = TRUE) produces correct output for survey_calibrated", {
+test_that("print(d, design_info = TRUE) produces correct output for survey_nonprob", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(print(d, design_info = TRUE))
 })
 
-test_that("print(d, weights_info = TRUE) produces correct output for survey_calibrated", {
+test_that("print(d, weights_info = TRUE) produces correct output for survey_nonprob", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(print(d, weights_info = TRUE))
 })
 
-test_that("print(d, metadata_info = TRUE) produces correct output for survey_calibrated", {
+test_that("print(d, metadata_info = TRUE) produces correct output for survey_nonprob", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
   attr(df$y, "label") <- "Outcome variable"
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(print(d, metadata_info = TRUE))
 })
 
-test_that("summary() produces correct output for survey_calibrated", {
+test_that("summary() produces correct output for survey_nonprob", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   expect_snapshot(summary(d))
 })
 
 # ── Layer 1 (S7 validator) tests ───────────────────────────────────────────────
-# These bypass the constructor and call survey_calibrated() directly to test
+# These bypass the constructor and call survey_nonprob() directly to test
 # the S7 class validator in isolation.
 
-test_that("survey_calibrated validator rejects missing weight column in @data", {
+test_that("survey_nonprob validator rejects missing weight column in @data", {
   expect_error(
-    survey_calibrated(
+    survey_nonprob(
       data = data.frame(y = 1:5),
       variables = list(
         weights = "nonexistent_col",
@@ -1797,10 +1797,10 @@ test_that("survey_calibrated validator rejects missing weight column in @data", 
   )
 })
 
-test_that("survey_calibrated validator rejects non-numeric weight column", {
+test_that("survey_nonprob validator rejects non-numeric weight column", {
   df <- data.frame(y = 1:5, w = letters[1:5])
   expect_error(
-    survey_calibrated(
+    survey_nonprob(
       data = df,
       variables = list(
         weights = "w",
@@ -1816,10 +1816,10 @@ test_that("survey_calibrated validator rejects non-numeric weight column", {
   )
 })
 
-test_that("survey_calibrated validator rejects all-NA weight column", {
+test_that("survey_nonprob validator rejects all-NA weight column", {
   df <- data.frame(y = 1:5, w = NA_real_)
   expect_error(
-    survey_calibrated(
+    survey_nonprob(
       data = df,
       variables = list(
         weights = "w",
@@ -1835,10 +1835,10 @@ test_that("survey_calibrated validator rejects all-NA weight column", {
   )
 })
 
-test_that("survey_calibrated validator rejects non-positive weight column", {
+test_that("survey_nonprob validator rejects non-positive weight column", {
   df <- data.frame(y = 1:5, w = c(1, -1, 1, 1, 1))
   expect_error(
-    survey_calibrated(
+    survey_nonprob(
       data = df,
       variables = list(
         weights = "w",
@@ -1856,9 +1856,9 @@ test_that("survey_calibrated validator rejects non-positive weight column", {
 
 # ── Numerical correctness tests ────────────────────────────────────────────────
 
-test_that("get_means() returns analytically correct weighted mean and SRS SE for survey_calibrated", {
+test_that("get_means() returns analytically correct weighted mean and SRS SE for survey_nonprob", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
 
   # Weighted mean: sum(y * w) / sum(w)
   expected_mean <- sum(df$y * df$w) / sum(df$w)
@@ -1875,9 +1875,9 @@ test_that("get_means() returns analytically correct weighted mean and SRS SE for
   expect_equal(result$se[[1L]], expected_se, tolerance = 1e-8)
 })
 
-test_that("get_totals() returns analytically correct weighted total and SRS SE for survey_calibrated", {
+test_that("get_totals() returns analytically correct weighted total and SRS SE for survey_nonprob", {
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
 
   # Weighted total: sum(y * w)
   expected_total <- sum(df$y * df$w)
@@ -1894,13 +1894,13 @@ test_that("get_totals() returns analytically correct weighted total and SRS SE f
   expect_equal(result$se[[1L]], expected_se, tolerance = 1e-8)
 })
 
-test_that("get_means() matches survey::svymean() for survey_calibrated [numerical]", {
+test_that("get_means() matches survey::svymean() for survey_nonprob [numerical]", {
   skip_if_not_installed("survey")
 
   set.seed(42)
   df <- data.frame(y = rnorm(200), w = runif(200, 0.5, 2.5))
 
-  d_sc <- as_survey_calibrated(df, weights = w)
+  d_sc <- as_survey_nonprob(df, weights = w)
   d_sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
 
   sc_est <- get_means(d_sc, y, variance = c("se", "ci"))
@@ -1914,13 +1914,13 @@ test_that("get_means() matches survey::svymean() for survey_calibrated [numerica
   )
 })
 
-test_that("get_totals() matches survey::svytotal() for survey_calibrated [numerical]", {
+test_that("get_totals() matches survey::svytotal() for survey_nonprob [numerical]", {
   skip_if_not_installed("survey")
 
   set.seed(42)
   df <- data.frame(y = rnorm(200), w = runif(200, 0.5, 2.5))
 
-  d_sc <- as_survey_calibrated(df, weights = w)
+  d_sc <- as_survey_nonprob(df, weights = w)
   d_sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
 
   sc_est <- get_totals(d_sc, y, variance = c("se", "ci"))
@@ -1936,32 +1936,32 @@ test_that("get_totals() matches survey::svytotal() for survey_calibrated [numeri
 
 # ── Edge cases ─────────────────────────────────────────────────────────────────
 
-test_that("as_survey_calibrated() rejects non-numeric weight column", {
+test_that("as_survey_nonprob() rejects non-numeric weight column", {
   df <- data.frame(y = 1:5, w = letters[1:5])
   expect_error(
-    as_survey_calibrated(df, weights = w),
+    as_survey_nonprob(df, weights = w),
     class = "surveycore_error_weights_not_numeric"
   )
   expect_snapshot(
     error = TRUE,
-    as_survey_calibrated(df, weights = w)
+    as_survey_nonprob(df, weights = w)
   )
 })
 
-test_that("get_means() with na.rm = FALSE propagates NA for survey_calibrated", {
+test_that("get_means() with na.rm = FALSE propagates NA for survey_nonprob", {
   df <- data.frame(y = c(1, NA, 3, 4, 5), w = c(2, 1, 2, 1, 2))
-  d <- as_survey_calibrated(df, weights = w)
+  d <- as_survey_nonprob(df, weights = w)
   result <- get_means(d, y, variance = "se", na.rm = FALSE)
   expect_true(is.na(result$mean[[1L]]))
   expect_true(is.na(result$se[[1L]]))
 })
 
-test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_calibrated", {
+test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_nonprob", {
   df_full <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, 1, 2, 1, 2))
   df_missing <- data.frame(y = c(1, NA, 3, 4, 5), w = c(2, 1, 2, 1, 2))
 
-  d_full <- as_survey_calibrated(df_full, weights = w)
-  d_missing <- as_survey_calibrated(df_missing, weights = w)
+  d_full <- as_survey_nonprob(df_full, weights = w)
+  d_missing <- as_survey_nonprob(df_missing, weights = w)
 
   result_full <- get_means(d_full, y, variance = NULL, na.rm = TRUE)
   result_missing <- get_means(d_missing, y, variance = NULL, na.rm = TRUE)
@@ -1978,7 +1978,7 @@ test_that("get_means() with na.rm = TRUE correctly excludes NA rows for survey_c
   )))
 })
 
-test_that("get_means() handles partial-NA weight column for survey_calibrated", {
+test_that("get_means() handles partial-NA weight column for survey_nonprob", {
   # Raked panels sometimes produce NA weights for excluded units;
   # these rows should be excluded from estimation without error when na.rm = TRUE
   df <- data.frame(y = c(1, 2, 3, 4, 5), w = c(2, NA, 2, 1, 2))
@@ -1986,9 +1986,9 @@ test_that("get_means() handles partial-NA weight column for survey_calibrated", 
   # not NA w — weight NAs propagate to the weighted calculation.
   # The object should construct without error (validator allows partial NA w).
   expect_no_error(
-    d <- as_survey_calibrated(df, weights = w)
+    d <- as_survey_nonprob(df, weights = w)
   )
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
 })
 
 

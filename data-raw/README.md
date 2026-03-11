@@ -725,14 +725,14 @@ the full dataset locally.
 
 #### Survey design
 
-**Type:** Calibrated non-probability sample — use [as_survey_calibrated()].
+**Type:** Calibrated non-probability sample — use [as_survey_nonprob()].
 
 ```r
-svy <- as_survey_calibrated(ns_wave1, weights = weight)
+svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
 ```
 
-`as_survey_calibrated()` is designed for exactly this use case: a non-probability
+`as_survey_nonprob()` is designed for exactly this use case: a non-probability
 quota sample with pre-computed raking weights and no PSU/strata structure.
 Current variance estimation uses a conservative SRS approximation (consistent
 with Rivers & Bailey 2009); bootstrap re-calibration variance (Deville &
@@ -769,11 +769,11 @@ source("data-raw/prepare-nationscape-phase2.R")  # produces ns_phase2 (list)
 source("data-raw/prepare-nationscape-phase3.R")  # produces ns_phase3 (list)
 
 # Single-wave analysis
-d1 <- as_survey_calibrated(ns_phase1[["ns20190718"]], weights = weight)
+d1 <- as_survey_nonprob(ns_phase1[["ns20190718"]], weights = weight)
 
 # Cross-wave analysis within a phase
 phase1_combined <- dplyr::bind_rows(ns_phase1)
-d_all <- as_survey_calibrated(phase1_combined, weights = weight)
+d_all <- as_survey_nonprob(phase1_combined, weights = weight)
 
 # NOTE: When combining phases, variables not in both phases are NA.
 # Use data-raw/nationscape/Nationscape-Variables-2021Dec.csv to identify
@@ -891,6 +891,6 @@ the processed `.rda` files in `data/` are version-controlled.
 | Design type | Dataset(s) | surveycore constructor |
 |-------------|-----------|----------------------|
 | Stratified multi-stage cluster (Taylor) | `nhanes_2017`, `anes_2024`, `gss_2024`, `pew_npors_2025` | `as_survey()` |
-| Calibrated non-probability | `ns_wave1` | `as_survey_calibrated(..., weights = weight)` |
+| Calibrated non-probability | `ns_wave1` | `as_survey_nonprob(..., weights = weight)` |
 | Successive difference replication | `acs_pums_wy` | `as_survey_rep(..., type = "successive-difference")` |
 | Jackknife replication | `pew_jewish_2020` | `as_survey_rep(..., type = "JK1")` |

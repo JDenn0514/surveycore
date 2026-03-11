@@ -5,13 +5,18 @@
 * `as_survey_repweights()` has been renamed to `as_survey_replicate()` to
   match the underlying `survey_replicate` class name.
 
+* `as_survey_calibrated()` and the `survey_calibrated` class have been renamed
+  to `as_survey_nonprob()` and `survey_nonprob`. The old name was misleading —
+  "calibrated" implies a post-processing step on a probability sample, not a
+  non-probability design type.
+
 # surveycore 0.4.0
 
 ## New features
 
 * `survey_glm()` fits survey-weighted generalized linear models for all five
   design classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
-  `survey_twophase`, `survey_calibrated`); returns a `survey_glm_fit` object
+  `survey_twophase`, `survey_nonprob`); returns a `survey_glm_fit` object
   with design-based (Binder 1983 sandwich) standard errors and degrees of
   freedom.
 
@@ -47,7 +52,7 @@
 ## New features
 
 * `print()` methods for all five survey design classes (`survey_taylor`,
-  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_calibrated`)
+  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_nonprob`)
   now display a `Domain: <n> of <N> rows` line when `surveytidy::filter()`
   has been applied. The line appears after the sample size line and before
   the `Groups:` line. For two-phase designs, domain counts reflect Phase 2

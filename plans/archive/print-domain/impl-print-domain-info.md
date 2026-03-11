@@ -108,7 +108,7 @@ in each method. The five insertions are:
 | `survey_srs` | `cli_text("Sample size: ...")` (line ~231) | `if (length(x@groups) > 0L)` (line ~233) |
 | `survey_replicate` | `cli_text("Sample size: ...")` (line ~348) | `if (length(x@groups) > 0L)` (line ~350) |
 | `survey_twophase` | `if (!is.na(n_phase2)) { ... }` block (line ~455) | `if (length(x@groups) > 0L)` (line ~458) |
-| `survey_calibrated` | `cli_text("Sample size: ...")` (line ~564) | `if (length(x@groups) > 0L)` (line ~566) |
+| `survey_nonprob` | `cli_text("Sample size: ...")` (line ~564) | `if (length(x@groups) > 0L)` (line ~566) |
 
 For `survey_twophase`, the call must come after the closing `}` of the
 `if (!is.na(n_phase2))` block (both phase size lines printed), not just after
@@ -126,8 +126,8 @@ Add a new section comment at the end of `test-methods-print.R`:
 # 31. print.survey_srs — domain line present (snapshot)
 # 32. print.survey_replicate — domain line present (snapshot)
 # 33. print.survey_twophase — domain line present (snapshot)
-# 34. print.survey_calibrated — default output (snapshot; net-new baseline)
-# 35. print.survey_calibrated — domain line present (snapshot)
+# 34. print.survey_nonprob — default output (snapshot; net-new baseline)
+# 35. print.survey_nonprob — domain line present (snapshot)
 # 36. print.survey_taylor — zero rows in domain (snapshot)
 ```
 
@@ -208,15 +208,15 @@ test_that("print.survey_twophase() shows domain line when domain column is prese
 })
 ```
 
-**Tests 34 & 35 — survey_calibrated (net-new; no existing baseline):**
+**Tests 34 & 35 — survey_nonprob (net-new; no existing baseline):**
 
-A `survey_calibrated` inline fixture must be created. There is no
+A `survey_nonprob` inline fixture must be created. There is no
 `make_calibrated_design()` helper in the test file. Use inline construction
 from the spec's §V pattern. Note: `survey` package is required; use
 `skip_if_not_installed("survey")` at block level.
 
 ```r
-test_that("print.survey_calibrated() default output", {
+test_that("print.survey_nonprob() default output", {
   skip_if_not_installed("survey")
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- {
@@ -233,7 +233,7 @@ test_that("print.survey_calibrated() default output", {
   expect_snapshot(print(d))
 })
 
-test_that("print.survey_calibrated() shows domain line when domain column is present", {
+test_that("print.survey_nonprob() shows domain line when domain column is present", {
   skip_if_not_installed("survey")
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- {
@@ -303,4 +303,4 @@ during `snapshot_review()`.
 | `survey_srs` | inline `as_survey_srs(make_survey_data(n=30L, n_psu=6L, n_strata=2L, seed=42L), weights=wt)` — NOT `make_srs_design()` |
 | `survey_replicate` | `make_rep_design()` — NOT `make_replicate_design()` |
 | `survey_twophase` | `make_twophase_design()` |
-| `survey_calibrated` | inline — see tests 34 & 35 above |
+| `survey_nonprob` | inline — see tests 34 & 35 above |
