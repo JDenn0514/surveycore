@@ -22,7 +22,7 @@ thin `lifecycle::deprecate_soft()` wrappers. All changes land in two existing fi
 ## PR Map
 
 - [x] PR 1: `feature/metadata-s7-classes` — Add `universe`/`missing_codes` to `survey_metadata`; update error catalog
-- [ ] PR 2: `feature/metadata-helpers` — New internal helper infrastructure (`core-metadata.R` top section)
+- [x] PR 2: `feature/metadata-helpers` — New internal helper infrastructure (`core-metadata.R` top section)
 - [ ] PR 3: `feature/metadata-setters` — Unified setter API + deprecations + `.extract_haven_metadata()` update
 - [ ] PR 4: `feature/metadata-extractors` — Updated extractors + `extract_universe()`, `extract_missing_codes()`, `extract_metadata()`
 

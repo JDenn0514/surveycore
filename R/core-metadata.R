@@ -29,6 +29,311 @@
 #     .validate_val_labels()     — check label completeness
 #     .extract_haven_metadata()  — read haven-style attrs from a data.frame
 
+# ── PR 2 internal helper infrastructure ──────────────────────────────────────
+
+# .check_is_survey_or_df(x, call)
+# Type guard accepting survey objects and plain data frames; replaces
+# .check_is_survey() for all functions that gain data frame support.
+.check_is_survey_or_df <- function(x, call = rlang::caller_env()) {
+  if (!S7::S7_inherits(x, survey_base) && !is.data.frame(x)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg x} must be a survey design object or a data frame,",
+          " not {.cls {class(x)[[1L]]}}."
+        ),
+        "v" = paste0(
+          "Create a survey object with {.fn as_survey},",
+          " {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        )
+      ),
+      class = "surveycore_error_not_survey_or_df",
+      call  = call
+    )
+  }
+  invisible(NULL)
+}
+
+# .get_data_cols(x)
+# Returns the names of all data columns: names(x) for data frames,
+# names(x@data) for survey objects.
+.get_data_cols <- function(x) {
+  if (is.data.frame(x)) names(x) else names(x@data)
+}
+
+# .get_metadata(x)
+# Returns x@metadata for survey objects, NULL for data frames.
+.get_metadata <- function(x) {
+  if (S7::S7_inherits(x, survey_base)) x@metadata else NULL
+}
+
+# .parse_setter_input(dots, variable, content, content_arg_name,
+#                     content_type, fn_name, call)
+# Shared convention detection for all unified setters. Receives `dots` as an
+# evaluated list (rlang::list2(...) at the caller). Returns a named list
+# mapping variable names to content values; NULL values signal deletion.
+#
+# content_type:
+#   "scalar" — Convention 2 expects a named character vector in ...
+#   "vector" — Convention 2 expects a named list in ...
+.parse_setter_input <- function(
+  dots,
+  variable,
+  content,
+  content_arg_name,
+  content_type = c("scalar", "vector"),
+  fn_name,
+  call = rlang::caller_env()
+) {
+  content_type <- match.arg(content_type)
+  dots_len <- length(dots)
+  var_provided <- !is.null(variable)
+
+  # Ambiguity: both ... and variable provided
+  if (dots_len > 0L && var_provided) {
+    cli::cli_abort(
+      c(
+        "x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.",
+        "i" = paste0(
+          "Use named {.arg ...} args, a named vector in {.arg ...}, or",
+          " {.arg variable} + {.arg {content_arg_name}} \u2014 not a mix."
+        )
+      ),
+      class = "surveycore_error_setter_ambiguous",
+      call = call
+    )
+  }
+
+  # Empty: neither provided
+  if (dots_len == 0L && !var_provided) {
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} requires at least one variable-label pair.",
+        "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."
+      ),
+      class = "surveycore_error_setter_empty",
+      call = call
+    )
+  }
+
+  # Convention 3: explicit variable + content arg
+  if (var_provided && dots_len == 0L) {
+    if (length(variable) == 0L) {
+      cli::cli_warn(
+        c(
+          "!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.",
+          "i" = "No metadata was set. Did you accidentally filter all variable names out?"
+        ),
+        class = "surveycore_warning_setter_empty_variables",
+        call = call
+      )
+      return(list())
+    }
+    if (!is.null(content) && length(variable) != length(content)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg variable} has {length(variable)} element{?s} but",
+            " {.arg {content_arg_name}} has {length(content)} element{?s}."
+          ),
+          "i" = "They must be the same length (one content value per variable name)."
+        ),
+        class = "surveycore_error_setter_mismatched_lengths",
+        call = call
+      )
+    }
+    if (is.null(content)) {
+      return(stats::setNames(vector("list", length(variable)), variable))
+    }
+    return(stats::setNames(as.list(content), variable))
+  }
+
+  # From here: dots_len > 0 and variable is NULL
+  dot_names <- names(dots)
+  has_unnamed <- is.null(dot_names) || any(!nzchar(dot_names))
+
+  if (has_unnamed) {
+    # Check Convention 2: single unnamed element that is itself a named
+    # character vector (scalar) or named list (vector)
+    if (dots_len == 1L) {
+      elem <- dots[[1L]]
+      is_named_char_vec <- (
+        is.character(elem) &&
+          !is.null(names(elem)) &&
+          length(elem) > 0L &&
+          all(nzchar(names(elem)))
+      )
+      is_named_list <- (
+        is.list(elem) &&
+          !is.null(names(elem)) &&
+          length(elem) > 0L &&
+          all(nzchar(names(elem)))
+      )
+      if (content_type == "scalar" && is_named_char_vec) {
+        return(as.list(elem))
+      }
+      if (content_type == "vector" && is_named_list) {
+        return(elem)
+      }
+    }
+    # Not Convention 2 — mixed or fully unnamed ... elements
+    n_named <- if (!is.null(dot_names)) sum(nzchar(dot_names)) else 0L
+    n_unnamed <- dots_len - n_named
+    cli::cli_abort(
+      c(
+        "x" = "All {.arg ...} arguments must be named when using Convention 1.",
+        "i" = "Got {n_named} named and {n_unnamed} unnamed element{?s}.",
+        "v" = paste0(
+          "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')}",
+          " or a fully named vector."
+        )
+      ),
+      class = "surveycore_error_setter_mixed_dots",
+      call = call
+    )
+  }
+
+  # Convention 1: all elements are named
+  dots
+}
+
+# .resolve_vars(x, var_exprs, call)
+# Resolves the `...` quosures for extractor functions. If var_exprs is empty,
+# returns all column names. Otherwise evaluates bare symbols and character
+# expressions; warns and skips variables not found.
+.resolve_vars <- function(
+  x,
+  var_exprs,
+  call = rlang::caller_env()
+) {
+  all_cols <- .get_data_cols(x)
+
+  if (length(var_exprs) == 0L) {
+    return(all_cols)
+  }
+
+  requested <- unlist(lapply(var_exprs, function(q) {
+    if (rlang::quo_is_symbol(q)) {
+      rlang::as_name(q)
+    } else {
+      rlang::eval_tidy(q)
+    }
+  }), use.names = FALSE)
+
+  missing <- setdiff(requested, all_cols)
+  if (length(missing) > 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{length(missing)} variable{?s} not found in {.arg x}",
+          " and {?was/were} skipped: {.field {missing}}."
+        )
+      ),
+      class = "surveycore_warning_var_not_found",
+      call = call
+    )
+  }
+
+  intersect(requested, all_cols)
+}
+
+# .format_scalar_result(result_list, format, col_name, empty_value)
+# Converts a named list of character scalars to the requested output format.
+# empty_value = NULL omits NULL entries; empty_value = NA_character_ replaces
+# NULL entries with NA.
+.format_scalar_result <- function(
+  result_list,
+  format,
+  col_name,
+  empty_value
+) {
+  if (is.null(empty_value)) {
+    result_list <- result_list[!vapply(result_list, is.null, logical(1L))]
+  } else {
+    result_list <- lapply(
+      result_list,
+      function(v) if (is.null(v)) empty_value else v
+    )
+  }
+
+  var_names <- names(result_list)
+
+  switch(format,
+    "named_vector" = {
+      values <- unlist(result_list, use.names = FALSE)
+      stats::setNames(values, var_names)
+    },
+    "list" = result_list,
+    "data_frame" = {
+      values <- unname(vapply(
+        result_list,
+        function(v) if (is.null(v)) NA_character_ else v,
+        character(1L)
+      ))
+      result <- tibble::tibble(variable = var_names)
+      result[[col_name]] <- values
+      result
+    }
+  )
+}
+
+# .format_list_result(result_list, format, fn_name)
+# Converts a named list of vectors to "list" or "data_frame" format.
+# "named_vector" is rejected with surveycore_error_format_invalid since vector
+# content cannot be collapsed into a flat named vector.
+.format_list_result <- function(
+  result_list,
+  format,
+  fn_name
+) {
+  valid_formats <- c("list", "data_frame")
+  if (!format %in% valid_formats) {
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.",
+        "i" = "{.arg format} must be one of {.val {valid_formats}}."
+      ),
+      class = "surveycore_error_format_invalid"
+    )
+  }
+
+  if (format == "list") {
+    return(result_list)
+  }
+
+  # data_frame: one row per (variable, code) pair
+  empty_out <- tibble::tibble(
+    variable = character(0L),
+    label    = character(0L),
+    value    = character(0L)
+  )
+
+  if (length(result_list) == 0L) {
+    return(empty_out)
+  }
+
+  rows <- lapply(names(result_list), function(var_name) {
+    vec <- result_list[[var_name]]
+    if (is.null(vec) || length(vec) == 0L) {
+      return(NULL)
+    }
+    lbl <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    tibble::tibble(
+      variable = var_name,
+      label    = lbl,
+      value    = as.character(vec)
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1L))]
+
+  if (length(rows) == 0L) {
+    return(empty_out)
+  }
+
+  dplyr::bind_rows(rows)
+}
+
+
 # ── Input check helper ────────────────────────────────────────────────────────
 
 # Used by all exported functions to produce a consistent error when x is not
