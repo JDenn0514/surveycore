@@ -560,3 +560,375 @@ test_that("survey_weighting_history() returns the history list when set", {
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   expect_identical(survey_weighting_history(d), history)
 })
+
+
+# ── .check_is_survey_or_df() ─────────────────────────────────────────────────
+
+test_that(".check_is_survey_or_df() returns invisibly NULL for a survey_taylor object", {
+  d <- make_design()
+  result <- withVisible(surveycore:::.check_is_survey_or_df(d))
+  expect_null(result$value)
+  expect_false(result$visible)
+})
+
+test_that(".check_is_survey_or_df() returns invisibly NULL for a plain data.frame", {
+  df <- data.frame(x = 1:3)
+  result <- withVisible(surveycore:::.check_is_survey_or_df(df))
+  expect_null(result$value)
+  expect_false(result$visible)
+})
+
+test_that(".check_is_survey_or_df() errors with surveycore_error_not_survey_or_df for list input", {
+  expect_error(
+    surveycore:::.check_is_survey_or_df(list(x = 1)),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that(".check_is_survey_or_df() errors with surveycore_error_not_survey_or_df for character input", {
+  expect_error(
+    surveycore:::.check_is_survey_or_df("not a survey"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("snapshot: .check_is_survey_or_df() surveycore_error_not_survey_or_df for list input", {
+  expect_snapshot(error = TRUE, surveycore:::.check_is_survey_or_df(list(x = 1)))
+})
+
+
+# ── .parse_setter_input() ────────────────────────────────────────────────────
+
+test_that(".parse_setter_input() convention 1 (named ...) returns correct named list", {
+  result <- surveycore:::.parse_setter_input(
+    dots             = list(age = "Age in years", income = "Annual income"),
+    variable         = NULL,
+    content          = NULL,
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label"
+  )
+  expect_identical(result, list(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".parse_setter_input() convention 1 with !!! splicing returns correct named list", {
+  lbls <- list(age = "Age in years", income = "Annual income")
+  dots <- rlang::list2(!!!lbls)
+  result <- surveycore:::.parse_setter_input(
+    dots             = dots,
+    variable         = NULL,
+    content          = NULL,
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label"
+  )
+  expect_identical(result, list(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".parse_setter_input() convention 2 scalar (single named char vector) returns correct named list", {
+  # Simulates: set_var_label(svy, c(age = "Age", income = "Annual income"))
+  dots <- list(c(age = "Age in years", income = "Annual income"))
+  result <- surveycore:::.parse_setter_input(
+    dots             = dots,
+    variable         = NULL,
+    content          = NULL,
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label"
+  )
+  expect_identical(result, list(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".parse_setter_input() convention 2 vector (single named list) returns correct named list", {
+  # Simulates: set_val_labels(svy, list(sex = c(Male=1L), region = c(N=1L)))
+  dots <- list(list(sex = c(Male = 1L, Female = 2L), region = c(N = 1L, S = 2L)))
+  result <- surveycore:::.parse_setter_input(
+    dots             = dots,
+    variable         = NULL,
+    content          = NULL,
+    content_arg_name = "labels",
+    content_type     = "vector",
+    fn_name          = "set_val_labels"
+  )
+  expect_identical(
+    result,
+    list(sex = c(Male = 1L, Female = 2L), region = c(N = 1L, S = 2L))
+  )
+})
+
+test_that(".parse_setter_input() convention 3 (variable + content) returns correct named list", {
+  result <- surveycore:::.parse_setter_input(
+    dots             = list(),
+    variable         = c("age", "income"),
+    content          = c("Age in years", "Annual income"),
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label"
+  )
+  expect_identical(result, list(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".parse_setter_input() convention 3 length mismatch errors with surveycore_error_setter_mismatched_lengths", {
+  expect_error(
+    surveycore:::.parse_setter_input(
+      dots             = list(),
+      variable         = c("age", "income"),
+      content          = c("Age in years"),
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    ),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that(".parse_setter_input() both ... and variable errors with surveycore_error_setter_ambiguous", {
+  expect_error(
+    surveycore:::.parse_setter_input(
+      dots             = list(age = "Age"),
+      variable         = "income",
+      content          = "Annual income",
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    ),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that(".parse_setter_input() neither ... nor variable errors with surveycore_error_setter_empty", {
+  expect_error(
+    surveycore:::.parse_setter_input(
+      dots             = list(),
+      variable         = NULL,
+      content          = NULL,
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    ),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that(".parse_setter_input() unnamed ... elements errors with surveycore_error_setter_mixed_dots", {
+  # Unnamed character vector (not a named vector) in ...
+  dots <- list(c("Age in years", "Annual income"))
+  expect_error(
+    surveycore:::.parse_setter_input(
+      dots             = dots,
+      variable         = NULL,
+      content          = NULL,
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    ),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+test_that(".parse_setter_input() NULL values pass through in returned list", {
+  result <- surveycore:::.parse_setter_input(
+    dots             = list(age = NULL, income = "Annual income"),
+    variable         = NULL,
+    content          = NULL,
+    content_arg_name = "label",
+    content_type     = "scalar",
+    fn_name          = "set_var_label"
+  )
+  expect_null(result[["age"]])
+  expect_identical(result[["income"]], "Annual income")
+})
+
+test_that("snapshot: surveycore_error_setter_mismatched_lengths message", {
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.parse_setter_input(
+      dots             = list(),
+      variable         = c("age", "income"),
+      content          = c("Age in years"),
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    )
+  )
+})
+
+test_that("snapshot: surveycore_error_setter_ambiguous message", {
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.parse_setter_input(
+      dots             = list(age = "Age"),
+      variable         = "income",
+      content          = "Annual income",
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    )
+  )
+})
+
+test_that("snapshot: surveycore_error_setter_empty message", {
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.parse_setter_input(
+      dots             = list(),
+      variable         = NULL,
+      content          = NULL,
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    )
+  )
+})
+
+test_that("snapshot: surveycore_error_setter_mixed_dots message", {
+  dots <- list(c("Age in years", "Annual income"))
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.parse_setter_input(
+      dots             = dots,
+      variable         = NULL,
+      content          = NULL,
+      content_arg_name = "label",
+      content_type     = "scalar",
+      fn_name          = "set_var_label"
+    )
+  )
+})
+
+
+# ── .resolve_vars() ───────────────────────────────────────────────────────────
+
+test_that(".resolve_vars() with empty var_exprs returns all column names", {
+  d <- make_design()
+  result <- surveycore:::.resolve_vars(d, var_exprs = list())
+  expect_identical(result, names(d@data))
+})
+
+test_that(".resolve_vars() with specified names returns just those names", {
+  d <- make_design()
+  var_exprs <- rlang::quos(age, income)
+  result <- surveycore:::.resolve_vars(d, var_exprs = var_exprs)
+  expect_identical(result, c("age", "income"))
+})
+
+test_that(".resolve_vars() warns with surveycore_warning_var_not_found for missing var", {
+  d <- make_design()
+  var_exprs <- rlang::quos(age, zzz_missing)
+  expect_warning(
+    surveycore:::.resolve_vars(d, var_exprs = var_exprs),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that(".resolve_vars() returns only valid names after warning", {
+  d <- make_design()
+  var_exprs <- rlang::quos(age, zzz_missing)
+  result <- suppressWarnings(
+    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
+  )
+  expect_identical(result, "age")
+})
+
+test_that("snapshot: .resolve_vars() surveycore_warning_var_not_found message", {
+  d <- make_design()
+  var_exprs <- rlang::quos(zzz_missing)
+  expect_snapshot(
+    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
+  )
+})
+
+
+# ── .format_scalar_result() ───────────────────────────────────────────────────
+
+test_that(".format_scalar_result() format = 'named_vector' returns named character vector", {
+  result_list <- list(age = "Age in years", income = "Annual income")
+  result <- surveycore:::.format_scalar_result(
+    result_list, format = "named_vector", col_name = "label", empty_value = NULL
+  )
+  expect_identical(result, c(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".format_scalar_result() format = 'list' returns named list", {
+  result_list <- list(age = "Age in years", income = "Annual income")
+  result <- surveycore:::.format_scalar_result(
+    result_list, format = "list", col_name = "label", empty_value = NULL
+  )
+  expect_identical(result, list(age = "Age in years", income = "Annual income"))
+})
+
+test_that(".format_scalar_result() format = 'data_frame' returns tibble with variable/label columns", {
+  result_list <- list(age = "Age in years", income = "Annual income")
+  result <- surveycore:::.format_scalar_result(
+    result_list, format = "data_frame", col_name = "label", empty_value = NULL
+  )
+  expect_s3_class(result, "tbl_df")
+  expect_identical(names(result), c("variable", "label"))
+  expect_identical(result$variable, c("age", "income"))
+  expect_identical(result$label, c("Age in years", "Annual income"))
+})
+
+test_that(".format_scalar_result() fill = NULL omits entries with NULL values", {
+  result_list <- list(age = "Age in years", income = NULL)
+  result <- surveycore:::.format_scalar_result(
+    result_list, format = "named_vector", col_name = "label", empty_value = NULL
+  )
+  expect_identical(result, c(age = "Age in years"))
+  expect_false("income" %in% names(result))
+})
+
+test_that(".format_scalar_result() fill = NA_character_ includes entries with NA", {
+  result_list <- list(age = "Age in years", income = NULL)
+  result <- surveycore:::.format_scalar_result(
+    result_list, format = "named_vector", col_name = "label",
+    empty_value = NA_character_
+  )
+  expect_identical(result, c(age = "Age in years", income = NA_character_))
+})
+
+
+# ── .format_list_result() ─────────────────────────────────────────────────────
+
+test_that(".format_list_result() format = 'list' returns named list", {
+  result_list <- list(
+    sex    = c(Male = 1L, Female = 2L),
+    region = c(N = 1L, S = 2L)
+  )
+  result <- surveycore:::.format_list_result(
+    result_list, format = "list", fn_name = "extract_val_labels"
+  )
+  expect_identical(result, result_list)
+})
+
+test_that(".format_list_result() format = 'data_frame' returns long tibble", {
+  result_list <- list(sex = c(Male = 1L, Female = 2L))
+  result <- surveycore:::.format_list_result(
+    result_list, format = "data_frame", fn_name = "extract_val_labels"
+  )
+  expect_s3_class(result, "tbl_df")
+  expect_identical(names(result), c("variable", "label", "value"))
+  expect_equal(nrow(result), 2L)
+  expect_identical(result$variable, c("sex", "sex"))
+  expect_identical(result$label, c("Male", "Female"))
+  expect_identical(result$value, c("1", "2"))
+})
+
+test_that(".format_list_result() format = 'named_vector' errors with surveycore_error_format_invalid", {
+  result_list <- list(sex = c(Male = 1L, Female = 2L))
+  expect_error(
+    surveycore:::.format_list_result(
+      result_list, format = "named_vector", fn_name = "extract_val_labels"
+    ),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("snapshot: .format_list_result() surveycore_error_format_invalid message", {
+  result_list <- list(sex = c(Male = 1L, Female = 2L))
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.format_list_result(
+      result_list, format = "named_vector", fn_name = "extract_val_labels"
+    )
+  )
+})
