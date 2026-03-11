@@ -117,7 +117,7 @@ d_sub <- as_survey_replicate(
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for Taylor series designs,
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,
-\code{\link[=set_var_label]{set_var_label()}}, \code{\link[=set_variable_labels]{set_variable_labels()}} to add variable metadata
+\code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
 Other constructors: 
 \code{\link{as_survey}()},

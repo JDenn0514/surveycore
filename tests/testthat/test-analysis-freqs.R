@@ -759,8 +759,8 @@ test_that("get_freqs() warns surveycore_warning_mixed_prefaces for multi-var wit
     nest = TRUE
   )
   # Set different non-NULL question prefaces
-  d <- set_question_preface(d, group, "First section preface")
-  d <- set_question_preface(d, y3, "Second section preface")
+  d <- set_question_preface(d, group = "First section preface")
+  d <- set_question_preface(d, y3 = "Second section preface")
 
   expect_warning(
     get_freqs(d, c(group, y3), names_to = "item", values_to = "resp"),

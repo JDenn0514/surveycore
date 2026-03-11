@@ -241,7 +241,7 @@ test_that("infer_question_prefaces() on data frame: as_survey() picks up preface
 
 test_that("infer_question_prefaces() skips vars with existing prefaces when overwrite = FALSE", {
   d <- make_battery_survey()
-  d <- set_question_preface(d, discrim_a, "Existing preface")
+  d <- set_question_preface(d, discrim_a = "Existing preface")
 
   expect_warning(
     result <- infer_question_prefaces(d, overwrite = FALSE, verbose = FALSE),
@@ -268,7 +268,7 @@ test_that("infer_question_prefaces() skips vars with existing prefaces when over
 
 test_that("infer_question_prefaces() replaces existing prefaces when overwrite = TRUE", {
   d <- make_battery_survey()
-  d <- set_question_preface(d, discrim_a, "Old preface")
+  d <- set_question_preface(d, discrim_a = "Old preface")
 
   expect_no_warning(
     result <- infer_question_prefaces(d, overwrite = TRUE, verbose = FALSE)

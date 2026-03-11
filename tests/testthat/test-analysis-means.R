@@ -572,7 +572,7 @@ test_that("get_means() meta$group stores value_labels regardless of label_values
 test_that("get_means() group column name is always raw variable name (not label)", {
   df <- data.frame(y = rnorm(50), grp = rep(1:2, 25), w = rep(1, 50))
   d <- as_survey_srs(df, weights = w)
-  d <- set_var_label(d, grp, "Group variable")
+  d <- set_var_label(d, grp = "Group variable")
 
   result <- get_means(d, y, group = grp, variance = NULL, label_vars = TRUE)
   # Column is named "grp", not "Group variable"
@@ -583,7 +583,7 @@ test_that("get_means() group column name is always raw variable name (not label)
 test_that("get_means() meta$x has correct nested structure", {
   df <- data.frame(y = rnorm(50), w = rep(1, 50))
   d <- as_survey_srs(df, weights = w)
-  d <- set_var_label(d, y, "Outcome variable")
+  d <- set_var_label(d, y = "Outcome variable")
 
   result <- get_means(d, y, variance = NULL)
   m <- meta(result)

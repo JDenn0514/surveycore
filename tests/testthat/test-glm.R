@@ -645,11 +645,11 @@ test_that("survey_glm() handles in-formula response transformation log(y) ~ x", 
 
 .glm_with_labels <- function(seed = 10L) {
   d <- .glm_taylor_with_factor(seed = seed)
-  d <- set_var_label(d, age, "Age in years")
-  d <- set_var_label(d, sex, "Respondent sex")
+  d <- set_var_label(d, age = "Age in years")
+  d <- set_var_label(d, sex = "Respondent sex")
   # val_labels: character codes matching factor level names to avoid
   # surveycore_warning_missing_labels. Names = display labels, values = codes.
-  d <- set_val_labels(d, sex, c("Female" = "Female", "Male" = "Male"))
+  d <- set_val_labels(d, sex = c("Female" = "Female", "Male" = "Male"))
   d
 }
 

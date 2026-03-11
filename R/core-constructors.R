@@ -317,7 +317,7 @@ as_survey_srs <- function(
 #' @seealso
 #'   [as_survey_replicate()] for replicate-weight designs,
 #'   [as_survey_twophase()] for two-phase designs,
-#'   [set_var_label()], [set_variable_labels()] to add variable metadata
+#'   [set_var_label()] to add variable labels
 #'
 #' @family constructors
 #' @export
@@ -628,7 +628,7 @@ as_survey <- function(
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
 #'   [as_survey_twophase()] for two-phase designs,
-#'   [set_var_label()], [set_variable_labels()] to add variable metadata
+#'   [set_var_label()] to add variable labels
 #'
 #' @family constructors
 #' @export

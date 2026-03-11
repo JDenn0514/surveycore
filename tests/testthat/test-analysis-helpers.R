@@ -788,7 +788,7 @@ test_that(".extract_var_meta() returns all-NULL list for plain numeric column", 
 test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 21L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, y1, "Annual household income")
+  d <- set_var_label(d, y1 = "Annual household income")
 
   result <- .extract_var_meta(d, "y1")
   expect_identical(result$variable_label, "Annual household income")
@@ -807,7 +807,7 @@ test_that(".extract_var_meta() falls back to attr(col, 'label') when @metadata h
 test_that(".extract_var_meta() returns question_preface from @metadata@question_prefaces", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 23L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_question_preface(d, y1, "How would you rate...")
+  d <- set_question_preface(d, y1 = "How would you rate...")
 
   result <- .extract_var_meta(d, "y1")
   expect_identical(result$question_preface, "How would you rate...")
@@ -817,7 +817,7 @@ test_that(".extract_var_meta() returns value_labels from @metadata@value_labels"
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 24L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   lbs <- c("No" = 0L, "Yes" = 1L)
-  d <- set_val_labels(d, y3, lbs)
+  d <- set_val_labels(d, y3 = lbs)
 
   result <- .extract_var_meta(d, "y3")
   expect_identical(result$value_labels, lbs)
@@ -853,7 +853,7 @@ test_that(".extract_var_meta() @metadata takes precedence over haven column attr
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 27L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # Set label in @metadata
-  d <- set_var_label(d, y1, "Metadata label")
+  d <- set_var_label(d, y1 = "Metadata label")
   # Also attach haven attr directly to the column
   attr(d@data[["y1"]], "label") <- "Haven attr label"
 
@@ -865,7 +865,7 @@ test_that(".extract_var_meta() @metadata value_labels take precedence over haven
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 28L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   meta_lbs <- c("No" = 0L, "Yes" = 1L)
-  d <- set_val_labels(d, y3, meta_lbs)
+  d <- set_val_labels(d, y3 = meta_lbs)
   # Also attach different haven attrs directly to the column
   attr(d@data[["y3"]], "labels") <- c("Nein" = 0L, "Ja" = 1L)
 
@@ -907,7 +907,7 @@ test_that(".build_group_meta() returns named list of length N for N group vars",
 test_that(".build_group_meta() each entry has the three required sub-keys", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 33L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, group, "Survey group")
+  d <- set_var_label(d, group = "Survey group")
 
   result <- .build_group_meta(d, "group")
   entry <- result[["group"]]
@@ -920,7 +920,7 @@ test_that(".build_group_meta() each entry has the three required sub-keys", {
 test_that(".build_group_meta() captures variable_label for labelled group var", {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 34L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, group, "Demographic group")
+  d <- set_var_label(d, group = "Demographic group")
 
   result <- .build_group_meta(d, "group")
   expect_identical(result$group$variable_label, "Demographic group")
@@ -944,7 +944,7 @@ test_that(".apply_group_labels() converts haven-labelled integer codes to factor
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 41L)
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  d <- set_val_labels(d, gender = c("Male" = 1L, "Female" = 2L))
 
   combos <- data.frame(gender = c(1L, 2L))
   result <- .apply_group_labels(combos, "gender", d, label_values = TRUE)
@@ -959,7 +959,7 @@ test_that(".apply_group_labels() factor levels ordered by code value for haven l
   df$cat <- sample(c(3L, 1L, 2L), nrow(df), replace = TRUE)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   # labels declared in non-numeric order
-  d <- set_val_labels(d, cat, c("Low" = 1L, "Mid" = 2L, "High" = 3L))
+  d <- set_val_labels(d, cat = c("Low" = 1L, "Mid" = 2L, "High" = 3L))
 
   combos <- data.frame(cat = c(1L, 2L, 3L))
   result <- .apply_group_labels(combos, "cat", d, label_values = TRUE)
@@ -989,7 +989,7 @@ test_that(".apply_group_labels() with label_values = FALSE returns group_combos 
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 44L)
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  d <- set_val_labels(d, gender = c("Male" = 1L, "Female" = 2L))
 
   combos <- data.frame(gender = c(1L, 2L))
   result <- .apply_group_labels(combos, "gender", d, label_values = FALSE)
@@ -1003,7 +1003,7 @@ test_that(".apply_group_labels() only converts labelled columns in multi-group c
   df$gender <- sample(1L:2L, nrow(df), replace = TRUE)
   df$region <- sample(1L:3L, nrow(df), replace = TRUE) # no labels
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_val_labels(d, gender, c("Male" = 1L, "Female" = 2L))
+  d <- set_val_labels(d, gender = c("Male" = 1L, "Female" = 2L))
 
   combos <- data.frame(
     gender = c(1L, 2L, 1L, 2L, 1L, 2L),

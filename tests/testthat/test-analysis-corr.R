@@ -665,8 +665,8 @@ test_that("get_corr() label_vars = TRUE shows variable labels in var1/var2", {
     seed = 24L
   )
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, y1, "Outcome Y1")
-  d <- set_var_label(d, y2, "Outcome Y2")
+  d <- set_var_label(d, y1 = "Outcome Y1")
+  d <- set_var_label(d, y2 = "Outcome Y2")
 
   result_lbl <- get_corr(d, x = c(y1, y2), label_vars = TRUE)
   result_raw <- get_corr(d, x = c(y1, y2), label_vars = FALSE)
@@ -977,7 +977,7 @@ test_that("get_corr() meta$group is always a list (empty when no @groups set)", 
 test_that("get_corr() meta$x has nested structure for each variable", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 62L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  d <- set_var_label(d, y1, "Variable One")
+  d <- set_var_label(d, y1 = "Variable One")
 
   result <- get_corr(d, x = c(y1, y2))
   m <- meta(result)

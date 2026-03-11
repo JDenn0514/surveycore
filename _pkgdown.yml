@@ -74,17 +74,16 @@ reference:
 
   - title: "Metadata — setters"
     desc: >
-      Assign variable labels, value labels, question prefaces, and notes.
-      Single-variable setters accept bare names; plural setters accept named lists.
+      Assign variable labels, value labels, question prefaces, notes, universe
+      strings, and missing codes. All setters accept the three-convention API:
+      named `...`, a single named vector/list, or `variable` + content argument.
     contents:
       - set_var_label
-      - set_variable_labels
       - set_val_labels
-      - set_value_labels
       - set_question_preface
-      - set_question_prefaces
       - set_var_note
-      - set_variable_notes
+      - set_universe
+      - set_missing_codes
       - infer_question_prefaces
 
   - title: "Metadata — extractors"

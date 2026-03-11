@@ -238,8 +238,8 @@
 #' The ACS PUMS source is a plain CSV with no embedded labels. Columns in
 #' `acs_pums_wy` carry no `"label"`, `"labels"`, or `"question_preface"`
 #' attributes. Variable descriptions are documented here in `?acs_pums_wy` and
-#' in `data-raw/README.md`. Use `set_variable_labels()` and
-#' `set_value_labels()` to attach labels manually before analysis if needed.
+#' in `data-raw/README.md`. Use `set_var_label()` and
+#' `set_val_labels()` to attach labels manually before analysis if needed.
 #'
 #' @source
 #' U.S. Census Bureau. 2022 ACS 1-Year PUMS.
