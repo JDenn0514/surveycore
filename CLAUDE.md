@@ -90,8 +90,9 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/spec-phase-2.md` — authoritative Phase 2 spec (regression)
-- `plans/decisions-phase-2.md` — pre-implementation review decisions for Phase 2
+- `plans/archive/phase-2/spec-phase-2.md` — authoritative Phase 2 spec (regression)
+- `plans/archive/phase-2/decisions-phase-2.md` — pre-implementation review decisions for Phase 2
+- `plans/archive/phase-2/impl-phase-2.md` — Phase 2 implementation plan
 - `plans/archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)
 - `plans/archive/survey-srs/survey-srs-formal-specification.md` — authoritative spec for `survey_srs` class + `as_survey_srs()` + SRS variance
 - `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context)

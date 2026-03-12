@@ -355,7 +355,7 @@ meat <- N^2 * (1 - f) / n * (t(U_centered) %*% U_centered) / (n - 1)
 
 where `N` and `f` follow the existing rule (from `design@variables$fpc` if available, else `N = sum(weights)`).
 
-The `survey_nonprob` path uses the same formula. Add an explicit oracle test for the SRS path with ≥ 2 predictors (e.g., `y ~ x1 + x2` on synthetic SRS data) verifying that `sqrt(diag(vcov(fit_sc)))` matches `SE(fit_sv)` within 1e-8.
+The `survey_calibrated` path uses the same formula. Add an explicit oracle test for the SRS path with ≥ 2 predictors (e.g., `y ~ x1 + x2` on synthetic SRS data) verifying that `sqrt(diag(vcov(fit_sc)))` matches `SE(fit_sv)` within 1e-8.
 
 Source: Binder (1983), JASA 78(382):626–631 — the full meat matrix `Var_design(T)` is the design-based covariance matrix of the total score *vector*, not the diagonal matrix of marginal score variances.
 
@@ -398,15 +398,15 @@ No new issues found. Section 4.5 correctly specifies zero-score masking for Tayl
 
 #### Lens 5 — Established Practice
 
-**Issue 19: `survey_nonprob` N determination not explicitly confirmed for SRS formula**
+**Issue 19: `survey_calibrated` N determination not explicitly confirmed for SRS formula**
 Severity: ADVISORY
 Resolution type: UNAMBIGUOUS
 
-Section 8.4 states: "N is the population size (from `design@variables$fpc` if available, otherwise `n/f` from the weight sum)." Section 8.1 confirms that `survey_nonprob` uses the SRS sandwich path. However, the spec does not explicitly confirm which weights' sum to use for N when `survey_nonprob` has no fpc: the pre-calibration weights, the post-calibration weights, or some design-level quantity.
+Section 8.4 states: "N is the population size (from `design@variables$fpc` if available, otherwise `n/f` from the weight sum)." Section 8.1 confirms that `survey_calibrated` uses the SRS sandwich path. However, the spec does not explicitly confirm which weights' sum to use for N when `survey_calibrated` has no fpc: the pre-calibration weights, the post-calibration weights, or some design-level quantity.
 
 In practice, N = `sum(design@variables$weights)` (the calibrated weights, which are the current `@variables$weights`) is the correct choice — calibrated weights approximately sum to the population total. But this is left implicit. If an implementer mistakenly uses pre-calibration weights (from some other slot) or the raw row count, the SRS variance would be wrong for calibrated designs.
 
-**Resolution:** Add one sentence to Section 8.4 (or Section I): "For `survey_nonprob` designs, N is approximated as `sum(design@variables$weights)` (the calibrated survey weights, which sum to approximately the population size)."
+**Resolution:** Add one sentence to Section 8.4 (or Section I): "For `survey_calibrated` designs, N is approximated as `sum(design@variables$weights)` (the calibrated survey weights, which sum to approximately the population size)."
 
 **Issue 20: NA-removed rows' score contribution to variance not explicitly specified**
 Severity: ADVISORY
@@ -424,7 +424,7 @@ Section 4.4 Step 3 states: "Rows removed by `na.action` are excluded from fittin
 |---|---|---|---|
 | 17 | SRS meat matrix diagonal-only — off-diagonal covariance terms absent | BLOCKING | ✅ Resolved — Section 8.4 now specifies full `p × p` sample covariance via `var(score_matrix)`; oracle test for SRS with ≥ 2 predictors added |
 | 18 | `df_residual` mislabeled as "design-based" in Section 5.2.1 and 5.14 | REQUIRED | ✅ Resolved — both sections now read "Classical residual df (`n - p`)" with a note that design-based df is computed inline |
-| 19 | `survey_nonprob` N determination not explicit | ADVISORY | ✅ Resolved — Section 8.4 now states N = `sum(design@variables$weights)` for calibrated designs |
+| 19 | `survey_calibrated` N determination not explicit | ADVISORY | ✅ Resolved — Section 8.4 now states N = `sum(design@variables$weights)` for calibrated designs |
 | 20 | NA-removed rows' zero score contribution not explicit | ADVISORY | ✅ Resolved — Step 5 of Section 4.4 now states `u_i = 0` for NA-excluded rows; full `n × p` matrix passed to `.taylor_var_score_matrix()` |
 
 All 4 Pass 2 issues resolved. Spec promoted to **v1.0 — methodology-locked**.
