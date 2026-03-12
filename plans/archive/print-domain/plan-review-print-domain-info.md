@@ -119,7 +119,7 @@ Severity: REQUIRED
 `testing-surveycore.md` states:
 
 > "`test_invariants()` required as **first** assertion in every constructor test block"
-> "Every `test_that()` block that creates a survey object via `as_survey()`, `as_survey_repweights()`,
+> "Every `test_that()` block that creates a survey object via `as_survey()`, `as_survey_replicate()`,
 > or `as_survey_twophase()` must call `test_invariants(design)` as its **first** assertion."
 
 All eight new test blocks (28–35) create survey objects through fixture helpers
@@ -187,7 +187,7 @@ the gap.
 **Total issues:** 5
 
 **Overall assessment:** The plan is structurally sound and covers the spec well — one PR,
-correct call-site table, correct test numbering, and the `survey_calibrated` net-new baseline
+correct call-site table, correct test numbering, and the `survey_nonprob` net-new baseline
 requirement is properly handled. Four required fixes are needed before coding starts: the
 `{row_label}` vs. `row{?s}` code block inconsistency will cause subtle output corruption if
 the implementer follows the code block; the `make_survey_data(n = 30L)` call will crash at

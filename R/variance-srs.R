@@ -162,7 +162,7 @@
 
 # ===========================================================================
 # Section 4: Variance-covariance pair estimation for survey_srs and
-#            survey_calibrated (used by get_corr())
+#            survey_nonprob (used by get_corr())
 # ===========================================================================
 
 # Compute variance-covariance pair estimates and the 3x3 meta-vcov of
@@ -259,7 +259,7 @@
 #   infl_j_i = w_i * g_j_i / W_d
 # Meta-vcov: n_d / (n_d - 1) * t(infl_mat) %*% infl_mat
 #
-# @param design  A survey_calibrated object.
+# @param design  A survey_nonprob object.
 # @param x_col  Character. Name of the first numeric variable.
 # @param y_col  Character. Name of the second numeric variable.
 # @param domain Numeric 0/1 vector (full length). Domain membership mask.

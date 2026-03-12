@@ -54,10 +54,10 @@ All functions in Phase 2 support these design classes:
 | `survey_replicate` | Refit GLM per replicate; weighted sum of squared coefficient deviations |
 | `survey_srs` | Score-based sandwich estimator (SRS variance of score total) |
 | `survey_twophase` | Two-phase linearization of score (requires Phase 0.75 complete) |
-| `survey_calibrated` | Weighted SRS approximation (conservative) |
+| `survey_nonprob` | Weighted SRS approximation (conservative) |
 
-**`survey_calibrated` contract:** `survey_glm()` uses the same SRS sandwich
-formula for `survey_calibrated` designs as it does for `survey_srs` designs.
+**`survey_nonprob` contract:** `survey_glm()` uses the same SRS sandwich
+formula for `survey_nonprob` designs as it does for `survey_srs` designs.
 No calibration adjustment is made to the GLM variance — this is the
 conservative approach used consistently in Phase 1 (see
 `plans/phase-1-formal-specification.md` Section I). This matches
@@ -1287,7 +1287,7 @@ them to the existing Phase 0 variance machinery:
 | `survey_replicate` | Refit GLM per replicate → weighted sum of squared coefficient deviations |
 | `survey_srs` | `.glm_score()` → SRS variance of score total → `bread · meat · bread` |
 | `survey_twophase` | `.glm_score()` → existing two-phase variance function in `R/06-variance-twophase.R` |
-| `survey_calibrated` | Falls back to SRS sandwich (conservative) |
+| `survey_nonprob` | Falls back to SRS sandwich (conservative) |
 
 This is an architecture decision: the Binder (1983) sandwich estimator
 decomposes cleanly into (a) score computation and (b) design-based variance
@@ -1378,8 +1378,8 @@ This unified path produces correct SEs for all families. The former analytic
 formula `σ̂² (X'WX)⁻¹` is equivalent only for Gaussian/identity and is
 **not** used.
 
-The `survey_calibrated` path uses the same formula (conservative approximation
-— see Section I). For `survey_calibrated` designs, N is approximated as
+The `survey_nonprob` path uses the same formula (conservative approximation
+— see Section I). For `survey_nonprob` designs, N is approximated as
 `sum(design@variables$weights)` (the calibrated survey weights, which sum to
 approximately the population size).
 
@@ -1393,7 +1393,7 @@ approximately the population size).
 | `survey_replicate` | Derived from replicate type (see `survey::degf()` for reference) |
 | `survey_srs` | `nrow(design@data) − 1` |
 | `survey_twophase` | Phase-1 design degrees of freedom |
-| `survey_calibrated` | Same as `survey_srs` |
+| `survey_nonprob` | Same as `survey_srs` |
 
 `.degf()` always uses the full design (all rows), not the in-domain subset.
 This is consistent with the domain estimation contract in Section 4.5:
@@ -1447,7 +1447,7 @@ Numerical oracle tests live in `test-glm-numerical.R` and always call
 | `survey_replicate` | `acs_pums_wy` |
 | `survey_srs` | Synthetic from `make_survey_data(design = "srs", seed = 42)` |
 | `survey_twophase` | Synthetic from `make_survey_data(design = "twophase", seed = 42)` |
-| `survey_calibrated` | Synthetic from `make_survey_data(seed = 42)`, calibrated via `survey::calibrate()` then converted with `from_svydesign()` |
+| `survey_nonprob` | Synthetic from `make_survey_data(seed = 42)`, calibrated via `survey::calibrate()` then converted with `from_svydesign()` |
 
 **Oracle test structure for each design class:**
 

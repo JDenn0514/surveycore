@@ -49,7 +49,7 @@ to be selected)
 }
 
 For non-probability samples or post-hoc calibrated weights (raking,
-post-stratification, propensity matching), use \code{\link[=as_survey_calibrated]{as_survey_calibrated()}}
+post-stratification, propensity matching), use \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}
 instead.
 
 For complex probability samples with known design structure (PSUs, strata),
@@ -82,14 +82,14 @@ specified.}
 
 Other constructors: 
 \code{\link{as_survey}()},
-\code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_nonprob}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
+\code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}

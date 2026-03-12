@@ -21,7 +21,7 @@ get_totals(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_calibrated}.}
+\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
 numeric variable name. When \code{NULL} (default), estimates the population
@@ -78,7 +78,7 @@ Supports optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
 \examples{
-d <- as_survey_repweights(acs_pums_wy, weights = pwgtp,
+d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
                    repweights = pwgtp1:pwgtp80,
                    type = "successive-difference")
 

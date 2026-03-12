@@ -9,6 +9,8 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
+  universe = list(),
+  missing_codes = list(),
   transformations = list(),
   weighting_history = list()
 )
@@ -24,6 +26,14 @@ of value labels (e.g., \code{list(sex = c(Male = 1L, Female = 2L))}).}
 question battery preface text.}
 
 \item{notes}{A named list mapping variable names to analyst notes.}
+
+\item{universe}{A named list mapping variable names to universe
+descriptions (e.g., \code{list(age = "Adults 18+")}). Describes the
+population to which a variable applies.}
+
+\item{missing_codes}{A named list mapping variable names to atomic
+vectors of missing-value codes
+(e.g., \code{list(age = c(Refused = 99L, DK = 98L))}).}
 
 \item{transformations}{A named list tracking variable transformation
 history (populated automatically during operations).}
@@ -46,19 +56,20 @@ Automatically populated from haven-style attributes when
 }
 \seealso{
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_weighting_history}()}
 }
 \concept{metadata}

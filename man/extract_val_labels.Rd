@@ -2,46 +2,58 @@
 % Please edit documentation in R/core-metadata.R
 \name{extract_val_labels}
 \alias{extract_val_labels}
-\title{Extract Value Labels for a Variable}
+\title{Extract Value Labels}
 \usage{
-extract_val_labels(x, var)
+extract_val_labels(x, ..., format = "list", fill = NULL)
 }
 \arguments{
-\item{x}{A survey design object.}
+\item{x}{A survey design object or \code{data.frame}.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable name
-(bare, unquoted).}
+\item{...}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable names
+(bare, unquoted). If empty, metadata for all variables is returned.}
+
+\item{format}{\code{character(1)}. Output format: \code{"list"} (default) or
+\code{"data_frame"}. \code{"named_vector"} is not valid for this function.}
+
+\item{fill}{Scalar or \code{NULL}. How to handle variables with no labels:
+\code{NULL} (default) omits them; \code{NA_character_} includes them as \code{NULL}
+entries in \code{"list"} format.}
 }
 \value{
-A named vector (e.g., \code{c(Male = 1L, Female = 2L)}), or \code{NULL}.
+\itemize{
+\item \code{"list"} (default): named list of named vectors. Empty: \code{list()}.
+\item \code{"data_frame"}: long-format tibble with columns \code{variable}, \code{label},
+\code{value} (codes coerced to character). Empty: zero-row tibble.
+}
 }
 \description{
-Returns the named value-label vector for a single variable in a survey
-design object, or \code{NULL} if no value labels have been set.
+Returns value labels for one or more variables in a survey design object
+or data frame.
 }
 \examples{
-# nhanes_2017 carries haven-style value labels auto-extracted by as_survey()
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
-extract_val_labels(d, riagendr)   # c(Male = 1, Female = 2)
+extract_val_labels(d, riagendr)
+extract_val_labels(d, riagendr, format = "data_frame")
 
 }
 \seealso{
 \code{\link[=set_val_labels]{set_val_labels()}} to set value labels
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }

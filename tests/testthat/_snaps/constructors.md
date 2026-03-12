@@ -97,36 +97,36 @@
       Error in `as_survey()`:
       x `nest = TRUE` requires `strata` to be specified
 
-# as_survey_repweights() errors when data is not a data frame [row 1]
+# as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code
-      as_survey_repweights(list(x = 1:5), weights = x, repweights = starts_with("r"),
+      as_survey_replicate(list(x = 1:5), weights = x, repweights = starts_with("r"),
       type = "JK1")
     Condition
-      Error in `as_survey_repweights()`:
+      Error in `as_survey_replicate()`:
       x `data` must be a data frame, not <list>
 
-# as_survey_repweights() errors when data has 0 rows [row 2]
+# as_survey_replicate() errors when data has 0 rows [row 2]
 
     Code
-      as_survey_repweights(empty_df, weights = w, repweights = r1, type = "JK1")
+      as_survey_replicate(empty_df, weights = w, repweights = r1, type = "JK1")
     Condition
-      Error in `as_survey_repweights()`:
+      Error in `as_survey_replicate()`:
       x `data` must have at least one row
 
-# as_survey_repweights() errors when repweights matches no columns [row 16]
+# as_survey_replicate() errors when repweights matches no columns [row 16]
 
     Code
-      as_survey_repweights(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
+      as_survey_replicate(df, weights = wt, repweights = starts_with("zzz"), type = "JK1")
     Condition
-      Error in `as_survey_repweights()`:
+      Error in `as_survey_replicate()`:
       x `repweights` must select at least one column
 
-# as_survey_repweights() errors when rscales length doesn't match n_rep [row 17]
+# as_survey_replicate() errors when rscales length doesn't match n_rep [row 17]
 
     Code
-      as_survey_repweights(df, weights = wt, repweights = starts_with("repwt_"),
-      type = "BRR", rscales = c(1, 2))
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
+      rscales = c(1, 2))
     Condition
       Error in `.validate_rscales()`:
       x Length of `rscales` (2) must equal number of replicate weights (10).
@@ -213,65 +213,65 @@
       i The phase 2 membership indicator must be fully observed for all phase 1 units.
       v Remove rows with missing `subset` values before calling `as_survey_twophase()`.
 
-# as_survey_calibrated() rejects non-data-frame input
+# as_survey_nonprob() rejects non-data-frame input
 
     Code
-      as_survey_calibrated(list(y = 1:10, w = rep(1, 10)), weights = w)
+      as_survey_nonprob(list(y = 1:10, w = rep(1, 10)), weights = w)
     Condition
-      Error in `as_survey_calibrated()`:
+      Error in `as_survey_nonprob()`:
       x `data` must be a data frame, not <list>
 
-# as_survey_calibrated() rejects empty data
+# as_survey_nonprob() rejects empty data
 
     Code
-      as_survey_calibrated(empty, weights = w)
+      as_survey_nonprob(empty, weights = w)
     Condition
-      Error in `as_survey_calibrated()`:
+      Error in `as_survey_nonprob()`:
       x `data` must have at least one row
 
-# as_survey_calibrated() rejects duplicate column names
+# as_survey_nonprob() rejects duplicate column names
 
     Code
-      as_survey_calibrated(df, weights = w)
+      as_survey_nonprob(df, weights = w)
     Condition
-      Error in `as_survey_calibrated()`:
+      Error in `as_survey_nonprob()`:
       x Column names in `data` must be unique. Duplicates: w
 
-# as_survey_calibrated() rejects missing weights argument
+# as_survey_nonprob() rejects missing weights argument
 
     Code
-      as_survey_calibrated(df)
+      as_survey_nonprob(df)
     Condition
-      Error in `as_survey_calibrated()`:
-      x `weights` is required for `as_survey_calibrated()`.
+      Error in `as_survey_nonprob()`:
+      x `weights` is required for `as_survey_nonprob()`.
       i Supply the column name of your calibration weight variable (e.g., `weights = cal_wt`).
 
-# as_survey_calibrated() rejects weights selecting multiple columns
+# as_survey_nonprob() rejects weights selecting multiple columns
 
     Code
-      as_survey_calibrated(df, weights = c(w1, w2))
+      as_survey_nonprob(df, weights = c(w1, w2))
     Condition
-      Error in `as_survey_calibrated()`:
+      Error in `as_survey_nonprob()`:
       x `weights` must select exactly one column, not 2
 
-# as_survey_calibrated() rejects non-positive weights
+# as_survey_nonprob() rejects non-positive weights
 
     Code
-      as_survey_calibrated(df, weights = w)
+      as_survey_nonprob(df, weights = w)
     Condition
       Error in `.validate_weights()`:
       x Weight column w has 1 non-positive value(s).
       i All non-NA weights must be strictly greater than 0.
       v Remove or replace rows where w is 0 or negative.
 
-# print() produces correct output for survey_calibrated (default)
+# print() produces correct output for survey_nonprob (default)
 
     Code
       print(d)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 10
       
     Output
@@ -289,14 +289,14 @@
        9     9     1
       10    10     1
 
-# print(d, full = TRUE) produces correct output for survey_calibrated
+# print(d, full = TRUE) produces correct output for survey_nonprob
 
     Code
       print(d, full = TRUE)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -335,14 +335,14 @@
        9     9     1
       10    10     1
 
-# print(d, design_info = TRUE) produces correct output for survey_calibrated
+# print(d, design_info = TRUE) produces correct output for survey_nonprob
 
     Code
       print(d, design_info = TRUE)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 10
       
       
@@ -368,14 +368,14 @@
        9     9     1
       10    10     1
 
-# print(d, weights_info = TRUE) produces correct output for survey_calibrated
+# print(d, weights_info = TRUE) produces correct output for survey_nonprob
 
     Code
       print(d, weights_info = TRUE)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -401,14 +401,14 @@
        9     9     1
       10    10     1
 
-# print(d, metadata_info = TRUE) produces correct output for survey_calibrated
+# print(d, metadata_info = TRUE) produces correct output for survey_nonprob
 
     Code
       print(d, metadata_info = TRUE)
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_calibrated> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (calibrated / non-probability) [experimental]
       Sample size: 10
       
       
@@ -431,7 +431,7 @@
        9     9     1
       10    10     1
 
-# summary() produces correct output for survey_calibrated
+# summary() produces correct output for survey_nonprob
 
     Code
       summary(d)
@@ -453,10 +453,10 @@
       
       Metadata: 0 of 2 variable(s) labeled
 
-# as_survey_calibrated() rejects non-numeric weight column
+# as_survey_nonprob() rejects non-numeric weight column
 
     Code
-      as_survey_calibrated(df, weights = w)
+      as_survey_nonprob(df, weights = w)
     Condition
       Error in `.validate_weights()`:
       x Weight column w must be numeric.

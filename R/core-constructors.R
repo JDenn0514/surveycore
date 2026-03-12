@@ -5,9 +5,9 @@
 # Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
 #   as_survey_srs()         — creates a survey_srs object (equal-probability SRS)
 #   as_survey()             — creates a survey_taylor object (Taylor series design)
-#   as_survey_repweights()         — creates a survey_replicate object (replicate weights)
+#   as_survey_replicate()         — creates a survey_replicate object (replicate weights)
 #   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
-#   as_survey_calibrated()  — creates a survey_calibrated object (Phase 2.5 skeleton)
+#   as_survey_nonprob()  — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
@@ -16,7 +16,6 @@
 #
 # Error classes match plans/error-messages.md exactly (rows 1–25, 56–61).
 # All cli_abort()/cli_warn() calls include a class= argument.
-
 
 # ── as_survey_srs ──────────────────────────────────────────────────────────────
 
@@ -53,15 +52,15 @@
 #' d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
 #'
 #' @seealso [as_survey()] for designs with cluster or stratification structure,
-#'   [as_survey_repweights()] for replicate-weight designs
+#'   [as_survey_replicate()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export
 as_survey_srs <- function(
   data,
   weights = NULL,
-  probs   = NULL,
-  fpc     = NULL
+  probs = NULL,
+  fpc = NULL
 ) {
   call <- match.call()
 
@@ -70,11 +69,11 @@ as_survey_srs <- function(
 
   # ── Capture quosures ────────────────────────────────────────────────────────
   weights_quo <- rlang::enquo(weights)
-  probs_quo   <- rlang::enquo(probs)
-  fpc_quo     <- rlang::enquo(fpc)
+  probs_quo <- rlang::enquo(probs)
+  fpc_quo <- rlang::enquo(fpc)
 
   weights_is_null <- rlang::quo_is_null(weights_quo)
-  probs_is_null   <- rlang::quo_is_null(probs_quo)
+  probs_is_null <- rlang::quo_is_null(probs_quo)
 
   # ── Error 56: both weights and probs supplied ───────────────────────────────
   if (!weights_is_null && !probs_is_null) {
@@ -96,23 +95,27 @@ as_survey_srs <- function(
   if (!probs_is_null) {
     # Resolve probs column, compute 1/probs, store as internal weight column
     probs_var <- .resolve_single_col(
-      probs_quo, data, "probs",
-      class_none  = "surveycore_error_weights_not_found",
+      probs_quo,
+      data,
+      "probs",
+      class_none = "surveycore_error_weights_not_found",
       class_multi = "surveycore_error_weights_multiple"
     )
-    weights_var         <- .SURVEYCORE_WT_COL
+    weights_var <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- 1 / data[[probs_var]]
-    probs_provided      <- TRUE
+    probs_provided <- TRUE
   } else if (!weights_is_null) {
     # Weights path: resolve column via tidy-select
     weights_var <- .resolve_single_col(
-      weights_quo, data, "weights",
-      class_none  = "surveycore_error_weights_not_found",
+      weights_quo,
+      data,
+      "weights",
+      class_none = "surveycore_error_weights_not_found",
       class_multi = "surveycore_error_weights_multiple"
     )
   } else {
     # No-weights fallback: auto-assign uniform weights (row 61)
-    weights_var         <- .SURVEYCORE_WT_COL
+    weights_var <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- rep(1L, nrow(data))
     cli::cli_warn(
       c(
@@ -134,13 +137,15 @@ as_survey_srs <- function(
 
   # ── FPC checks (only when fpc is non-NULL) ──────────────────────────────────
   fpc_is_null <- rlang::quo_is_null(fpc_quo)
-  fpc_type    <- NULL
+  fpc_type <- NULL
 
   if (!fpc_is_null) {
     # Resolve FPC column
     fpc_var <- .resolve_single_col(
-      fpc_quo, data, "fpc",
-      class_none  = "surveycore_error_fpc_not_found",
+      fpc_quo,
+      data,
+      "fpc",
+      class_none = "surveycore_error_fpc_not_found",
       class_multi = "surveycore_error_fpc_multiple"
     )
 
@@ -148,7 +153,7 @@ as_survey_srs <- function(
     .validate_fpc(fpc_var, data)
 
     fpc_col <- data[[fpc_var]]
-    n       <- nrow(data)
+    n <- nrow(data)
 
     # FPC check 2: non-positive values (row 57)
     n_bad <- sum(fpc_col <= 0, na.rm = TRUE)
@@ -170,7 +175,7 @@ as_survey_srs <- function(
 
     # FPC check 3: ambiguous — mixes values > 1 and ≤ 1 (row 58)
     has_above_one <- any(fpc_col > 1, na.rm = TRUE)
-    has_le_one    <- any(fpc_col <= 1, na.rm = TRUE)
+    has_le_one <- any(fpc_col <= 1, na.rm = TRUE)
     if (has_above_one && has_le_one) {
       cli::cli_abort(
         c(
@@ -212,7 +217,6 @@ as_survey_srs <- function(
 
     # Detect fpc_type after all checks pass
     fpc_type <- if (has_above_one) "population" else "fraction"
-
   } else {
     fpc_var <- NULL
   }
@@ -223,22 +227,22 @@ as_survey_srs <- function(
 
   # ── Build @variables list (all 8 keys always present) ──────────────────────
   variables <- list(
-    weights        = weights_var,
-    fpc            = fpc_var,
-    fpc_type       = fpc_type,
+    weights = weights_var,
+    fpc = fpc_var,
+    fpc_type = fpc_type,
     probs_provided = probs_provided,
-    ids            = NULL,
-    strata         = NULL,
-    nest           = FALSE,
-    visible_vars   = NULL
+    ids = NULL,
+    strata = NULL,
+    nest = FALSE,
+    visible_vars = NULL
   )
 
   # ── Construct and return survey_srs object ──────────────────────────────────
   survey_srs(
-    data      = data,
-    metadata  = metadata,
+    data = data,
+    metadata = metadata,
     variables = variables,
-    call      = call
+    call = call
   )
 }
 
@@ -311,20 +315,20 @@ as_survey_srs <- function(
 #'                   strata = sdmvstra, nest = TRUE)
 #'
 #' @seealso
-#'   [as_survey_repweights()] for replicate-weight designs,
+#'   [as_survey_replicate()] for replicate-weight designs,
 #'   [as_survey_twophase()] for two-phase designs,
-#'   [set_var_label()], [set_variable_labels()] to add variable metadata
+#'   [set_var_label()] to add variable labels
 #'
 #' @family constructors
 #' @export
 as_survey <- function(
   data,
-  ids     = NULL,
-  probs   = NULL,
+  ids = NULL,
+  probs = NULL,
   weights = NULL,
-  strata  = NULL,
-  fpc     = NULL,
-  nest    = FALSE
+  strata = NULL,
+  fpc = NULL,
+  nest = FALSE
 ) {
   call <- match.call()
 
@@ -332,15 +336,15 @@ as_survey <- function(
   .validate_data_frame(data)
 
   # ── Capture all quosures at top (before any resolution) ────────────────────
-  ids_quo     <- rlang::enquo(ids)
-  probs_quo   <- rlang::enquo(probs)
+  ids_quo <- rlang::enquo(ids)
+  probs_quo <- rlang::enquo(probs)
   weights_quo <- rlang::enquo(weights)
-  strata_quo  <- rlang::enquo(strata)
-  fpc_quo     <- rlang::enquo(fpc)
+  strata_quo <- rlang::enquo(strata)
+  fpc_quo <- rlang::enquo(fpc)
 
   # ── SRS dispatch: when ids and strata are both NULL ─────────────────────────
   # Forward to as_survey_srs() via rlang::inject() to preserve tidy-select NSE.
-  ids_is_null    <- rlang::quo_is_null(ids_quo)
+  ids_is_null <- rlang::quo_is_null(ids_quo)
   strata_is_null <- rlang::quo_is_null(strata_quo)
 
   if (ids_is_null && strata_is_null) {
@@ -357,8 +361,8 @@ as_survey <- function(
     return(rlang::inject(as_survey_srs(
       data,
       weights = !!weights_quo,
-      probs   = !!probs_quo,
-      fpc     = !!fpc_quo
+      probs = !!probs_quo,
+      fpc = !!fpc_quo
     )))
   }
 
@@ -372,24 +376,32 @@ as_survey <- function(
     ids_vars <- names(ids_cols)
   }
 
-  probs_var   <- .resolve_single_col(
-    probs_quo, data, "probs",
-    class_none  = "surveycore_error_weights_not_found",
+  probs_var <- .resolve_single_col(
+    probs_quo,
+    data,
+    "probs",
+    class_none = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )
   weights_var <- .resolve_single_col(
-    weights_quo, data, "weights",
-    class_none  = "surveycore_error_weights_not_found",
+    weights_quo,
+    data,
+    "weights",
+    class_none = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )
-  strata_var  <- .resolve_single_col(
-    strata_quo, data, "strata",
-    class_none  = "surveycore_error_strata_not_found",
+  strata_var <- .resolve_single_col(
+    strata_quo,
+    data,
+    "strata",
+    class_none = "surveycore_error_strata_not_found",
     class_multi = "surveycore_error_strata_multiple"
   )
-  fpc_var     <- .resolve_single_col(
-    fpc_quo, data, "fpc",
-    class_none  = "surveycore_error_fpc_not_found",
+  fpc_var <- .resolve_single_col(
+    fpc_quo,
+    data,
+    "fpc",
+    class_none = "surveycore_error_fpc_not_found",
     class_multi = "surveycore_error_fpc_multiple"
   )
 
@@ -399,8 +411,8 @@ as_survey <- function(
 
   if (!is.null(probs_var) && !is.null(weights_var)) {
     # Both specified — check for consistency
-    computed_wt  <- 1 / data[[probs_var]]
-    provided_wt  <- data[[weights_var]]
+    computed_wt <- 1 / data[[probs_var]]
+    provided_wt <- data[[weights_var]]
     if (!isTRUE(all.equal(computed_wt, provided_wt, tolerance = 1e-6))) {
       cli::cli_abort(
         c(
@@ -424,15 +436,15 @@ as_survey <- function(
     probs_provided <- TRUE
   } else if (!is.null(probs_var) && is.null(weights_var)) {
     # Only probs provided — convert to weights
-    weights_var         <- .SURVEYCORE_WT_COL
+    weights_var <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- 1 / data[[probs_var]]
     probs_provided <- TRUE
   } else if (is.null(probs_var) && is.null(weights_var)) {
     # Neither probs nor weights — SRS fallback
     # Warning 7: no weights or probs (SRS fallback); text varies by ids presence
-    weights_var         <- .SURVEYCORE_WT_COL
+    weights_var <- .SURVEYCORE_WT_COL
     data[[weights_var]] <- rep(1L, nrow(data))
-    probs_provided      <- FALSE
+    probs_provided <- FALSE
 
     if (!is.null(ids_vars)) {
       cli::cli_warn(
@@ -505,13 +517,13 @@ as_survey <- function(
   # ── Build @variables list ───────────────────────────────────────────────────
 
   variables <- list(
-    ids            = ids_vars,
-    weights        = weights_var,
-    strata         = strata_var,
-    fpc            = fpc_var,
-    nest           = isTRUE(nest),
+    ids = ids_vars,
+    weights = weights_var,
+    strata = strata_var,
+    fpc = fpc_var,
+    nest = isTRUE(nest),
     probs_provided = probs_provided,
-    visible_vars   = NULL
+    visible_vars = NULL
   )
 
   # ── Extract haven-style metadata ────────────────────────────────────────────
@@ -522,15 +534,15 @@ as_survey <- function(
   # ── Construct and return survey_taylor object ───────────────────────────────
 
   survey_taylor(
-    data      = data,
-    metadata  = metadata,
+    data = data,
+    metadata = metadata,
     variables = variables,
-    call      = call
+    call = call
   )
 }
 
 
-# ── as_survey_repweights ──────────────────────────────────────────────────────────────
+# ── as_survey_replicate ──────────────────────────────────────────────────────────────
 
 #' Create a Replicate Weights Survey Design
 #'
@@ -577,9 +589,9 @@ as_survey <- function(
 #' Both `weights` and `repweights` support tidy-select syntax:
 #' ```r
 #' # Bare name for weights
-#' as_survey_repweights(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+#' as_survey_replicate(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
 #' # c() for explicit replicate columns
-#' as_survey_repweights(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+#' as_survey_replicate(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
 #' ```
 #'
 #' @section Replicate weight matrix:
@@ -598,7 +610,7 @@ as_survey <- function(
 #'
 #' @examples
 #' # ACS PUMS Wyoming: 80 successive-difference replicate weights
-#' d_acs <- as_survey_repweights(
+#' d_acs <- as_survey_replicate(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = pwgtp1:pwgtp80,
@@ -606,7 +618,7 @@ as_survey <- function(
 #' )
 #'
 #' # Explicit replicate columns using c()
-#' d_sub <- as_survey_repweights(
+#' d_sub <- as_survey_replicate(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
@@ -616,26 +628,33 @@ as_survey <- function(
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
 #'   [as_survey_twophase()] for two-phase designs,
-#'   [set_var_label()], [set_variable_labels()] to add variable metadata
+#'   [set_var_label()] to add variable labels
 #'
 #' @family constructors
 #' @export
-as_survey_repweights <- function(
+as_survey_replicate <- function(
   data,
   weights,
   repweights,
   type = c(
-    "JK1", "JK2", "JKn", "BRR", "Fay",
-    "bootstrap", "ACS", "successive-difference", "other"
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
   ),
-  scale   = NULL,
+  scale = NULL,
   rscales = NULL,
-  fpc     = NULL,
+  fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse     = TRUE
+  mse = TRUE
 ) {
-  call    <- match.call()
-  type    <- match.arg(type)
+  call <- match.call()
+  type <- match.arg(type)
   fpctype <- match.arg(fpctype)
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
@@ -646,13 +665,15 @@ as_survey_repweights <- function(
   # weights (must select exactly one column; R function signature already
   # requires it — no default, so missing arg is caught by R before we run)
   weights_var <- .resolve_single_col(
-    rlang::enquo(weights), data, "weights",
-    class_none  = "surveycore_error_weights_not_found",
+    rlang::enquo(weights),
+    data,
+    "weights",
+    class_none = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )
 
   # repweights (must select at least one column)
-  repweights_quo  <- rlang::enquo(repweights)
+  repweights_quo <- rlang::enquo(repweights)
   repweights_cols <- tidyselect::eval_select(repweights_quo, data)
   if (length(repweights_cols) == 0L) {
     cli::cli_abort(
@@ -661,11 +682,13 @@ as_survey_repweights <- function(
     )
   }
   repweights_vars <- names(repweights_cols)
-  n_rep           <- length(repweights_vars)
+  n_rep <- length(repweights_vars)
 
   fpc_var <- .resolve_single_col(
-    rlang::enquo(fpc), data, "fpc",
-    class_none  = "surveycore_error_fpc_not_found",
+    rlang::enquo(fpc),
+    data,
+    "fpc",
+    class_none = "surveycore_error_fpc_not_found",
     class_multi = "surveycore_error_fpc_multiple"
   )
 
@@ -686,33 +709,34 @@ as_survey_repweights <- function(
   # ── Compute default scale based on type and n_rep ───────────────────────────
 
   if (is.null(scale)) {
-    scale <- switch(type,
-      JK1                     = (n_rep - 1L) / n_rep,
-      JK2                     = (n_rep - 1L) / n_rep,
-      JKn                     = (n_rep - 1L) / n_rep,
+    scale <- switch(
+      type,
+      JK1 = (n_rep - 1L) / n_rep,
+      JK2 = (n_rep - 1L) / n_rep,
+      JKn = (n_rep - 1L) / n_rep,
       # BRR variance formula: (1/R) * sum((theta_r - theta)^2). The survey
       # package hardcodes this same formula internally (scale= is ignored for
       # BRR). Oracle test in test-variance-replicate.R verifies agreement.
-      BRR                     = 1 / n_rep,
-      Fay                     = 1 / n_rep,
-      bootstrap               = 1 / n_rep,
-      ACS                     = 1 / n_rep,
+      BRR = 1 / n_rep,
+      Fay = 1 / n_rep,
+      bootstrap = 1 / n_rep,
+      ACS = 1 / n_rep,
       `successive-difference` = 2 / n_rep,
-      other                   = 1
+      other = 1
     )
   }
 
   # ── Build @variables list ───────────────────────────────────────────────────
 
   variables <- list(
-    weights      = weights_var,
-    repweights   = repweights_vars,
-    type         = type,
-    scale        = scale,
-    rscales      = rscales,
-    fpc          = fpc_var,
-    fpctype      = fpctype,
-    mse          = isTRUE(mse),
+    weights = weights_var,
+    repweights = repweights_vars,
+    type = type,
+    scale = scale,
+    rscales = rscales,
+    fpc = fpc_var,
+    fpctype = fpctype,
+    mse = isTRUE(mse),
     visible_vars = NULL
   )
 
@@ -724,10 +748,10 @@ as_survey_repweights <- function(
   # ── Construct and return survey_replicate object ────────────────────────────
 
   survey_replicate(
-    data      = data,
-    metadata  = metadata,
+    data = data,
+    metadata = metadata,
     variables = variables,
-    call      = call
+    call = call
   )
 }
 
@@ -813,20 +837,20 @@ as_survey_repweights <- function(
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
-#'   [as_survey_repweights()] for replicate-weight designs
+#'   [as_survey_replicate()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export
 as_survey_twophase <- function(
   phase1,
-  ids2    = NULL,
+  ids2 = NULL,
   strata2 = NULL,
-  probs2  = NULL,
-  fpc2    = NULL,
+  probs2 = NULL,
+  fpc2 = NULL,
   subset,
-  method  = c("full", "approx", "simple")
+  method = c("full", "approx", "simple")
 ) {
-  call   <- match.call()
+  call <- match.call()
   method <- match.arg(method)
 
   # ── Error 19: phase1 must be a survey_taylor object ─────────────────────────
@@ -924,7 +948,7 @@ as_survey_twophase <- function(
     )
   }
 
-  n_true  <- sum(subset_vals, na.rm = TRUE)
+  n_true <- sum(subset_vals, na.rm = TRUE)
   n_false <- sum(!subset_vals, na.rm = TRUE)
   if (n_true == 0L || n_false == 0L) {
     cli::cli_abort(
@@ -951,18 +975,24 @@ as_survey_twophase <- function(
   }
 
   strata2_var <- .resolve_single_col(
-    rlang::enquo(strata2), data, "strata2",
-    class_none  = "surveycore_error_strata_not_found",
+    rlang::enquo(strata2),
+    data,
+    "strata2",
+    class_none = "surveycore_error_strata_not_found",
     class_multi = "surveycore_error_strata_multiple"
   )
-  probs2_var  <- .resolve_single_col(
-    rlang::enquo(probs2), data, "probs2",
-    class_none  = "surveycore_error_weights_not_found",
+  probs2_var <- .resolve_single_col(
+    rlang::enquo(probs2),
+    data,
+    "probs2",
+    class_none = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )
-  fpc2_var    <- .resolve_single_col(
-    rlang::enquo(fpc2), data, "fpc2",
-    class_none  = "surveycore_error_fpc_not_found",
+  fpc2_var <- .resolve_single_col(
+    rlang::enquo(fpc2),
+    data,
+    "fpc2",
+    class_none = "surveycore_error_fpc_not_found",
     class_multi = "surveycore_error_fpc_multiple"
   )
 
@@ -985,17 +1015,17 @@ as_survey_twophase <- function(
   # ── Build @variables list ────────────────────────────────────────────────────
 
   phase2_vars <- list(
-    ids    = ids2_vars,
+    ids = ids2_vars,
     strata = strata2_var,
-    probs  = probs2_var,
-    fpc    = fpc2_var
+    probs = probs2_var,
+    fpc = fpc2_var
   )
 
   variables <- list(
-    phase1       = phase1@variables,
-    phase2       = phase2_vars,
-    subset       = subset_var,
-    method       = method,
+    phase1 = phase1@variables,
+    phase2 = phase2_vars,
+    subset = subset_var,
+    method = method,
     visible_vars = NULL
   )
 
@@ -1006,15 +1036,15 @@ as_survey_twophase <- function(
   # ── Construct and return survey_twophase object ──────────────────────────────
 
   survey_twophase(
-    data      = data,
-    metadata  = metadata,
+    data = data,
+    metadata = metadata,
     variables = variables,
-    call      = call
+    call = call
   )
 }
 
 
-# ── as_survey_calibrated ───────────────────────────────────────────────────────
+# ── as_survey_nonprob ───────────────────────────────────────────────────────
 
 #' Create a Calibrated / Non-Probability Survey Design
 #'
@@ -1026,14 +1056,14 @@ as_survey_twophase <- function(
 #' provenance from \pkg{surveywts} output for reproducibility.
 #'
 #' @section Phase 2.5 skeleton:
-#' This constructor is a **skeleton**. The resulting `survey_calibrated` object
+#' This constructor is a **skeleton**. The resulting `survey_nonprob` object
 #' supports estimation via a model-assisted SRS variance assumption — the same
 #' as calling [as_survey()] with weights only. Full bootstrap re-calibration
 #' variance (which re-applies the raking procedure on each replicate) will be
 #' implemented in Phase 2.5 alongside the \pkg{surveywts} package.
 #'
 #' @section When to use:
-#' Use `as_survey_calibrated()` instead of [as_survey()] when:
+#' Use `as_survey_nonprob()` instead of [as_survey()] when:
 #' \itemize{
 #'   \item Your data comes from a non-probability sample (online panel, quota
 #'     sample, MTurk/Prolific, etc.)
@@ -1044,10 +1074,10 @@ as_survey_twophase <- function(
 #' }
 #'
 #' If your data comes from a probability sample with known design structure,
-#' use [as_survey()], [as_survey_repweights()], or [as_survey_twophase()] instead.
+#' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()] instead.
 #'
 #' @section Variance estimation note:
-#' Standard errors from a `survey_calibrated` object assume simple random
+#' Standard errors from a `survey_nonprob` object assume simple random
 #' sampling within the calibrated weights. This is consistent with common
 #' applied practice for raked non-probability samples, but is technically
 #' a model-assisted approximation rather than design-based variance. See
@@ -1067,7 +1097,7 @@ as_survey_twophase <- function(
 #'   available. The object's structure is defined by \pkg{surveywts} and will
 #'   be formally specified in Phase 2.5.
 #'
-#' @return A `survey_calibrated` object.
+#' @return A `survey_nonprob` object.
 #'
 #' @examples
 #' # Minimal: pre-computed calibration weights from an external tool
@@ -1076,15 +1106,15 @@ as_survey_twophase <- function(
 #'   age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
 #'   cal_wt = runif(200, 0.5, 2.5)
 #' )
-#' d <- as_survey_calibrated(df, weights = cal_wt)
+#' d <- as_survey_nonprob(df, weights = cal_wt)
 #'
 #' @seealso
 #'   [as_survey()] for probability designs with Taylor variance,
-#'   [as_survey_repweights()] for replicate-weight designs
+#'   [as_survey_replicate()] for replicate-weight designs
 #'
 #' @family constructors
 #' @export
-as_survey_calibrated <- function(
+as_survey_nonprob <- function(
   data,
   weights,
   calibration = NULL
@@ -1101,7 +1131,7 @@ as_survey_calibrated <- function(
   if (rlang::quo_is_missing(weights_quo)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg weights} is required for {.fn as_survey_calibrated}.",
+        "x" = "{.arg weights} is required for {.fn as_survey_nonprob}.",
         "i" = paste0(
           "Supply the column name of your calibration weight variable ",
           "(e.g., {.code weights = cal_wt})."
@@ -1112,8 +1142,10 @@ as_survey_calibrated <- function(
   }
 
   weights_var <- .resolve_single_col(
-    weights_quo, data, "weights",
-    class_none  = "surveycore_error_weights_not_found",
+    weights_quo,
+    data,
+    "weights",
+    class_none = "surveycore_error_weights_not_found",
     class_multi = "surveycore_error_weights_multiple"
   )
 
@@ -1128,22 +1160,22 @@ as_survey_calibrated <- function(
   # ── Build @variables ────────────────────────────────────────────────────────
 
   variables <- list(
-    weights        = weights_var,
+    weights = weights_var,
     probs_provided = FALSE,
-    ids            = NULL,
-    strata         = NULL,
-    fpc            = NULL,
-    nest           = FALSE,
-    visible_vars   = NULL
+    ids = NULL,
+    strata = NULL,
+    fpc = NULL,
+    nest = FALSE,
+    visible_vars = NULL
   )
 
-  # ── Construct and return survey_calibrated object ───────────────────────────
+  # ── Construct and return survey_nonprob object ───────────────────────────
 
-  survey_calibrated(
-    data        = data,
-    metadata    = metadata,
-    variables   = variables,
+  survey_nonprob(
+    data = data,
+    metadata = metadata,
+    variables = variables,
     calibration = calibration,
-    call        = call
+    call = call
   )
 }

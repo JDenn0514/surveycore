@@ -3,7 +3,6 @@
 # update_design(): update design variables on an existing survey object.
 # Covers error-messages.md row 36 (cli_inform on update).
 
-
 # ── Internal helper ────────────────────────────────────────────────────────────
 
 # Resolve a tidy-select argument for update_design().
@@ -12,7 +11,9 @@
 # Otherwise returns all resolved column names.
 #' @noRd
 .resolve_update_arg <- function(quo, data, arg_name, max_cols = 1L) {
-  if (rlang::quo_is_null(quo)) return(NULL)
+  if (rlang::quo_is_null(quo)) {
+    return(NULL)
+  }
   cols <- tidyselect::eval_select(quo, data)
   if (max_cols == 1L && length(cols) != 1L) {
     cli::cli_abort(
@@ -73,37 +74,46 @@
 #'
 #' @seealso
 #'   [as_survey()] to create a `survey_taylor` object,
-#'   [as_survey_repweights()] to create a `survey_replicate` object
+#'   [as_survey_replicate()] to create a `survey_replicate` object
 #'
 #' @family update
 #' @export
 update_design <- function(
   x,
-  ids        = NULL,
-  weights    = NULL,
-  strata     = NULL,
-  fpc        = NULL,
+  ids = NULL,
+  weights = NULL,
+  strata = NULL,
+  fpc = NULL,
   repweights = NULL,
-  validate   = TRUE
+  validate = TRUE
 ) {
   # Capture tidy-select arguments before dispatch
-  ids_quo        <- rlang::enquo(ids)
-  weights_quo    <- rlang::enquo(weights)
-  strata_quo     <- rlang::enquo(strata)
-  fpc_quo        <- rlang::enquo(fpc)
+  ids_quo <- rlang::enquo(ids)
+  weights_quo <- rlang::enquo(weights)
+  strata_quo <- rlang::enquo(strata)
+  fpc_quo <- rlang::enquo(fpc)
   repweights_quo <- rlang::enquo(repweights)
 
   # ── Dispatch by class ────────────────────────────────────────────────────────
 
   if (S7::S7_inherits(x, survey_taylor)) {
-
-    changed_vars  <- character(0L)
+    changed_vars <- character(0L)
     new_variables <- x@variables
 
-    new_ids     <- .resolve_update_arg(ids_quo,     x@data, "ids",     max_cols = Inf)
-    new_weights <- .resolve_update_arg(weights_quo, x@data, "weights", max_cols = 1L)
-    new_strata  <- .resolve_update_arg(strata_quo,  x@data, "strata",  max_cols = 1L)
-    new_fpc     <- .resolve_update_arg(fpc_quo,     x@data, "fpc",     max_cols = 1L)
+    new_ids <- .resolve_update_arg(ids_quo, x@data, "ids", max_cols = Inf)
+    new_weights <- .resolve_update_arg(
+      weights_quo,
+      x@data,
+      "weights",
+      max_cols = 1L
+    )
+    new_strata <- .resolve_update_arg(
+      strata_quo,
+      x@data,
+      "strata",
+      max_cols = 1L
+    )
+    new_fpc <- .resolve_update_arg(fpc_quo, x@data, "fpc", max_cols = 1L)
 
     if (!is.null(new_ids)) {
       new_variables$ids <- new_ids
@@ -123,21 +133,27 @@ update_design <- function(
     }
 
     if (length(changed_vars) > 0L) {
-      if (!isTRUE(validate)) attr(x, ".should_validate") <- FALSE
+      if (!isTRUE(validate)) {
+        attr(x, ".should_validate") <- FALSE
+      }
       x@variables <- new_variables
       if (!isTRUE(validate)) attr(x, ".should_validate") <- NULL
     }
-
   } else if (S7::S7_inherits(x, survey_replicate)) {
-
-    changed_vars  <- character(0L)
+    changed_vars <- character(0L)
     new_variables <- x@variables
 
-    new_weights    <- .resolve_update_arg(
-      weights_quo, x@data, "weights", max_cols = 1L
+    new_weights <- .resolve_update_arg(
+      weights_quo,
+      x@data,
+      "weights",
+      max_cols = 1L
     )
     new_repweights <- .resolve_update_arg(
-      repweights_quo, x@data, "repweights", max_cols = Inf
+      repweights_quo,
+      x@data,
+      "repweights",
+      max_cols = Inf
     )
 
     if (!is.null(new_weights)) {
@@ -150,13 +166,13 @@ update_design <- function(
     }
 
     if (length(changed_vars) > 0L) {
-      if (!isTRUE(validate)) attr(x, ".should_validate") <- FALSE
+      if (!isTRUE(validate)) {
+        attr(x, ".should_validate") <- FALSE
+      }
       x@variables <- new_variables
       if (!isTRUE(validate)) attr(x, ".should_validate") <- NULL
     }
-
   } else if (S7::S7_inherits(x, survey_twophase)) {
-
     cli::cli_abort(
       c(
         "x" = paste0(
@@ -167,9 +183,7 @@ update_design <- function(
       ),
       class = "surveycore_error_unsupported_class"
     )
-
   } else {
-
     cli::cli_abort(
       c(
         "x" = paste0(
@@ -180,7 +194,6 @@ update_design <- function(
       ),
       class = "surveycore_error_unsupported_class"
     )
-
   }
 
   # ── Inform message when variables changed (error-messages.md row 36) ─────────

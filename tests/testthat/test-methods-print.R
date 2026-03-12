@@ -37,13 +37,19 @@
 # Tibble data output goes to stdout; use capture.output() (default).
 # expect_snapshot() captures both stdout and message automatically.
 
-
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
 # taylor design with ids, strata, fpc, weights
 make_taylor_design <- function(seed = 42L) {
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = seed)
-  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 }
 
 # Taylor design with no ids/strata and auto-weights (tests print/summary "none" branches)
@@ -54,16 +60,16 @@ make_srs_design <- function(seed = 42L) {
   wt_col <- surveycore:::.SURVEYCORE_WT_COL
   df[[wt_col]] <- rep(1L, nrow(df))
   survey_taylor(
-    data      = df,
-    metadata  = survey_metadata(),
+    data = df,
+    metadata = survey_metadata(),
     variables = list(
-      ids            = NULL,
-      weights        = wt_col,
-      strata         = NULL,
-      fpc            = NULL,
-      nest           = FALSE,
+      ids = NULL,
+      weights = wt_col,
+      strata = NULL,
+      fpc = NULL,
+      nest = FALSE,
       probs_provided = FALSE,
-      visible_vars   = NULL
+      visible_vars = NULL
     )
   )
 }
@@ -71,31 +77,38 @@ make_srs_design <- function(seed = 42L) {
 # replicate weights design (BRR)
 make_rep_design <- function(seed = 42L) {
   df <- make_survey_data(
-    n = 50L, n_psu = 10L, n_strata = 2L,
-    design = "replicate", type = "brr", seed = seed
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  as_survey_repweights(
+  as_survey_replicate(
     df,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR"
+    type = "BRR"
   )
 }
 
 # two-phase design
 make_twophase_design <- function(seed = 42L) {
   df <- make_survey_data(
-    n = 60L, n_psu = 10L, n_strata = 2L,
-    design = "twophase", seed = seed
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = seed
   )
   phase1 <- as_survey(
     df,
-    ids     = psu,
+    ids = psu,
     weights = wt,
-    strata  = strata,
-    fpc     = fpc,
-    nest    = TRUE
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   as_survey_twophase(phase1, subset = subset)
 }
@@ -146,8 +159,13 @@ test_that("print.survey_taylor weights_info=TRUE shows weight distribution and W
 })
 
 test_that("print.survey_taylor metadata_info=TRUE shows labeled count", {
-  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L,
-                         seed = 42L, with_labels = TRUE)
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    seed = 42L,
+    with_labels = TRUE
+  )
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -372,7 +390,7 @@ test_that("print.survey_srs default output matches snapshot", {
 
 test_that("print.survey_srs design_info=TRUE with population FPC matches snapshot", {
   df <- data.frame(y = 1:5, wt = rep(2, 5), pop = rep(100L, 5))
-  d  <- as_survey_srs(df, weights = wt, fpc = pop)
+  d <- as_survey_srs(df, weights = wt, fpc = pop)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d, design_info = TRUE))
@@ -383,7 +401,7 @@ test_that("print.survey_srs design_info=TRUE with population FPC matches snapsho
 
 test_that("print.survey_srs design_info=TRUE with fraction FPC matches snapshot", {
   df <- data.frame(y = 1:5, wt = rep(2, 5), frac = rep(0.1, 5))
-  d  <- as_survey_srs(df, weights = wt, fpc = frac)
+  d <- as_survey_srs(df, weights = wt, fpc = frac)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d, design_info = TRUE))
@@ -417,7 +435,7 @@ test_that("print.survey_srs shows 'uniform (auto-assigned)' for no-weights desig
 # ── 23. print.survey_srs — invisible return ───────────────────────────────────
 
 test_that("print.survey_srs returns object invisibly", {
-  d      <- as_survey_srs(data.frame(y = 1:5, wt = rep(1, 5)), weights = wt)
+  d <- as_survey_srs(data.frame(y = 1:5, wt = rep(1, 5)), weights = wt)
   result <- withVisible(suppressMessages(print(d)))
   expect_false(result$visible)
   expect_true(S7::S7_inherits(result$value, survey_srs))
@@ -450,7 +468,7 @@ test_that("summary.survey_srs returns object invisibly", {
 
 test_that("summary.survey_srs reflects population FPC in output", {
   df <- data.frame(y = 1:5, wt = rep(1, 5), pop = rep(100L, 5))
-  d  <- as_survey_srs(df, weights = wt, fpc = pop)
+  d <- as_survey_srs(df, weights = wt, fpc = pop)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(summary(d), type = "message")
@@ -460,7 +478,7 @@ test_that("summary.survey_srs reflects population FPC in output", {
 
 test_that("summary.survey_srs reflects fraction FPC in output", {
   df <- data.frame(y = 1:5, wt = rep(1, 5), frac = rep(0.1, 5))
-  d  <- as_survey_srs(df, weights = wt, fpc = frac)
+  d <- as_survey_srs(df, weights = wt, fpc = frac)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(summary(d), type = "message")
@@ -483,7 +501,7 @@ test_that("summary.survey_srs output matches snapshot", {
 
 test_that("print.survey_srs shows '(from sampling probabilities)' when probs_provided", {
   df <- data.frame(y = 1:10, p = rep(0.1, 10))
-  d  <- as_survey_srs(df, probs = p)
+  d <- as_survey_srs(df, probs = p)
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, design_info = TRUE), type = "message")
@@ -498,10 +516,9 @@ test_that("print.survey_srs shows '(from sampling probabilities)' when probs_pro
 # 31. print.survey_srs — domain line present (snapshot)
 # 32. print.survey_replicate — domain line present (snapshot)
 # 33. print.survey_twophase — domain line present (snapshot)
-# 34. print.survey_calibrated — default output (snapshot; net-new baseline)
-# 35. print.survey_calibrated — domain line present (snapshot)
+# 34. print.survey_nonprob — default output (snapshot; net-new baseline)
+# 35. print.survey_nonprob — domain line present (snapshot)
 # 36. print.survey_taylor — zero rows in domain (snapshot)
-
 
 # ── 28. print.survey_taylor — domain line present ────────────────────────────
 
@@ -574,31 +591,31 @@ test_that("print.survey_twophase() shows domain line when domain column is prese
 })
 
 
-# ── 34. print.survey_calibrated — default output (net-new baseline) ──────────
+# ── 34. print.survey_nonprob — default output (net-new baseline) ──────────
 
-test_that("print.survey_calibrated() default output", {
+test_that("print.survey_nonprob() default output", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
   set.seed(123L)
   df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
-  d <- as_survey_calibrated(df, weights = cal_wt)
+  d <- as_survey_nonprob(df, weights = cal_wt)
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   expect_snapshot(print(d))
 })
 
 
-# ── 35. print.survey_calibrated — domain line present ────────────────────────
+# ── 35. print.survey_nonprob — domain line present ────────────────────────
 
-test_that("print.survey_calibrated() shows domain line when domain column is present", {
+test_that("print.survey_nonprob() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   df <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
   set.seed(123L)
   df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
-  d <- as_survey_calibrated(df, weights = cal_wt)
+  d <- as_survey_nonprob(df, weights = cal_wt)
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_calibrated))
+  expect_true(S7::S7_inherits(d, survey_nonprob))
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
 })
@@ -645,7 +662,7 @@ test_that("print.survey_replicate() with FPC covers FPC design_info block", {
   test_invariants(d)
   # Add a synthetic FPC column to trigger the FPC design_info block
   d@data$fpc_rep <- rep(500L, nrow(d@data))
-  d@variables$fpc     <- "fpc_rep"
+  d@variables$fpc <- "fpc_rep"
   d@variables$fpctype <- "population"
   out <- capture.output(print(d, design_info = TRUE), type = "message")
   expect_true(any(grepl("FPC", out)))
@@ -695,14 +712,25 @@ test_that("summary.survey_twophase() shows Phase 1 and Phase 2 sections", {
 test_that("summary.survey_twophase() shows Phase 2 IDs and strata when present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   # Build a twophase design that has Phase 2 strata and IDs
-  df <- make_survey_data(n = 80L, n_psu = 10L, n_strata = 2L,
-                         design = "twophase", seed = 99L)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata,
-                      fpc = fpc, nest = TRUE)
+  df <- make_survey_data(
+    n = 80L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 99L
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(
     phase1,
-    subset  = subset,
-    ids2    = psu,
+    subset = subset,
+    ids2 = psu,
     strata2 = strata
   )
   out <- capture.output(summary(sc), type = "message")
@@ -714,31 +742,61 @@ test_that("summary.survey_twophase() shows Phase 2 IDs and strata when present",
 # twophase print with Phase 2 ids/strata
 # ---------------------------------------------------------------------------
 
-test_that("print.survey_calibrated() runs without error and produces output", {
+test_that("print.survey_nonprob() runs without error and produces output", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   set.seed(901)
   df <- data.frame(y = rnorm(30), w = runif(30, 0.5, 2))
-  sc <- as_survey_calibrated(df, weights = w)
+  sc <- as_survey_nonprob(df, weights = w)
   out <- capture.output(print(sc), type = "message")
-  expect_true(any(grepl("survey_calibrated", out)))
+  expect_true(any(grepl("survey_nonprob", out)))
 })
 
 test_that("summary.survey_replicate() with FPC covers the FPC line", {
   withr::local_options(list(width = 80L, cli.width = 80L))
-  d <- make_survey_data(n = 60, n_psu = 10, n_strata = 2,
-                        design = "replicate", type = "brr", seed = 902)
+  d <- make_survey_data(
+    n = 60,
+    n_psu = 10,
+    n_strata = 2,
+    design = "replicate",
+    type = "brr",
+    seed = 902
+  )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  sc <- as_survey_repweights(d, weights = wt, repweights = tidyselect::all_of(repwt_cols),
-                      type = "BRR", fpc = fpc, fpctype = "fraction")
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    fpc = fpc,
+    fpctype = "fraction"
+  )
   out <- capture.output(summary(sc), type = "message")
   expect_true(any(grepl("FPC", out)))
 })
 
 test_that("print.survey_twophase() with full=TRUE shows Phase 2 ids and strata lines", {
   withr::local_options(list(width = 80L, cli.width = 80L))
-  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 903)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
-  sc <- as_survey_twophase(phase1, subset = subset, ids2 = psu, strata2 = strata)
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    n_strata = 2,
+    design = "twophase",
+    seed = 903
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  sc <- as_survey_twophase(
+    phase1,
+    subset = subset,
+    ids2 = psu,
+    strata2 = strata
+  )
   out <- capture.output(print(sc, full = TRUE), type = "message")
   expect_true(any(grepl("Phase 2", out)))
   expect_true(any(grepl("IDs|Strata|ids|strata", out)))
@@ -746,8 +804,21 @@ test_that("print.survey_twophase() with full=TRUE shows Phase 2 ids and strata l
 
 test_that("summary.survey_twophase() with Phase 1 strata covers the Strata line", {
   withr::local_options(list(width = 80L, cli.width = 80L))
-  d <- make_survey_data(n = 100, n_psu = 10, n_strata = 2, design = "twophase", seed = 904)
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE)
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    n_strata = 2,
+    design = "twophase",
+    seed = 904
+  )
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
   out <- capture.output(summary(sc), type = "message")
   expect_true(any(grepl("Strata|strata", out)))

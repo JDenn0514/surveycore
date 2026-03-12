@@ -6,7 +6,7 @@
 
 ## Changes
 
-- Implement `get_quantiles()` using the Woodruff (1952) linearization method for all five design classes (`survey_srs`, `survey_taylor`, `survey_replicate`, `survey_calibrated`, `survey_twophase`)
+- Implement `get_quantiles()` using the Woodruff (1952) linearization method for all five design classes (`survey_srs`, `survey_taylor`, `survey_replicate`, `survey_nonprob`, `survey_twophase`)
 - Vendor `.last()` and `.wtd_qs()` from `survey:::.last()` and `survey:::qs()` (GPL-3 compatible); attributed in `VENDORED.md`
 - Support multiple `probs` values in a single call; output column `quantile` uses labels like `"p25"`, `"p50"`, `"p75"`
 - Support grouped estimation (via `@groups`), domain filtering, and confidence interval methods (`mean`, `beta`, `xlogit`, `asin`, `score`)

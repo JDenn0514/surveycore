@@ -58,11 +58,11 @@ the survey design.
 
 1. `as_survey()`
 
-2. `as_survey_repweights()`
+2. `as_survey_replicate()`
 
 3. `as_survey_srs()`
 
-4. `as_survey_calibrated()`
+4. `as_survey_nonprob()`
 
 5. `as_survey_twophase()`
 
@@ -88,7 +88,7 @@ gss_svy
 ```
 
 
-### `as_survey_repweights()`
+### `as_survey_replicate()`
 
 Use this when the data you have comes with pre-built replicate weight columns 
 like `repwt_1`, `repwt_2`. For example, Pew's Jewish American study from 2020
@@ -96,7 +96,7 @@ uses replicate weights.
 
 
 ```{r replicate}
-pew_jewish_svy <- as_survey_repweights(
+pew_jewish_svy <- as_survey_replicate(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,
@@ -138,7 +138,7 @@ school_svy <- as_survey_srs(
 school_svy
 ```
 
-### `as_survey_calibrated()`
+### `as_survey_nonprob()`
 
 Use this when you used a non-probability panel (e.g., Qualtrics Panels,
 Cint/Lucid, Dynata, YouGov, etc.) and have created weights designed to 
@@ -146,7 +146,7 @@ ensure the sample is representative of the population you are interested
 in.
 
 ```{r calibrated}
-ns_wave1_svy <- as_survey_calibrated(ns_wave1, weights = weight)
+ns_wave1_svy <- as_survey_nonprob(ns_wave1, weights = weight)
 
 ns_wave1_svy
 ```
@@ -612,6 +612,6 @@ All functions:
 - Accept a `group` argument for subgroup estimates
 - Accept a `variance` argument to control which uncertainty columns appear
 - Handle all five survey design classes: `survey_taylor`, `survey_replicate`,
-  `survey_srs`, `survey_twophase`, and `survey_calibrated`
+  `survey_srs`, `survey_twophase`, and `survey_nonprob`
 
 

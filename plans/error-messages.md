@@ -40,13 +40,13 @@ against the messages defined here.
 | 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
 | 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
-| 13 | `as_survey()` / `as_survey_repweights()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
-| 13b | `as_survey()` / `as_survey_repweights()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
+| 13 | `as_survey()` / `as_survey_replicate()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
+| 13b | `as_survey()` / `as_survey_replicate()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
 | 14 | `as_survey()` | `fpc` column contains `NA` | ERROR | `surveycore_error_fpc_na` | `"{.arg fpc} column {.field {fpc_var}} contains {sum(is.na(fpc_col))} NA value(s). FPC must be fully observed."` |
 | 15 | `as_survey()` | `nest = TRUE` with no `strata` | ERROR | `surveycore_error_nest_without_strata` | `"{.arg nest = TRUE} requires {.arg strata} to be specified"` |
-| 16 | `as_survey_repweights()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
-| 17 | `as_survey_repweights()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
-| 18 | `as_survey_repweights()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
+| 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
+| 17 | `as_survey_replicate()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
+| 18 | `as_survey_replicate()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
 | 19 | `as_survey_twophase()` | `phase1` is not a `survey_taylor` | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a {.cls survey_taylor} object, not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
@@ -118,6 +118,17 @@ against the messages defined here.
 | 79 | `infer_question_prefaces()` | Variable already has `question_preface` and `overwrite = FALSE` | WARN | `surveycore_warning_preface_not_overwritten` | `"{length(skipped)} variable{?s} already {?has/have} a question preface and {?was/were} skipped. Set {.arg overwrite = TRUE} to replace them."` |
 | 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
 | 81 | all `get_*()` (via `.validate_shared_args()`) | `na.rm` is not `TRUE` or `FALSE` (e.g., `NA`, `1`, `"yes"`) | ERROR | `surveycore_error_na_rm_not_logical` | `"x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {na.rm}}."` |
+| M-2/M-7 | all extractors (M-2), all setters (M-7) | A variable specified in `...` / input is not found in `x@data` / `names(x)` | WARN | `surveycore_warning_var_not_found` | Extractor (M-2): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}."` / Setter (M-7): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}.", "i" = "Check spelling. Available columns: {.field {head(all_cols, 10)}}{?.}"` |
+| M-3 | all setters | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` |
+| M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` |
+| M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` |
+| M-6 | all extractors | `format` argument has an invalid value | ERROR | `surveycore_error_format_invalid` | `"x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.", "i" = "{.arg format} must be one of {.val {valid_formats}}."` |
+| M-10 | `set_missing_codes()` | A `codes` entry is not an atomic vector | ERROR | `surveycore_error_missing_codes_not_vector` | `"x" = "Missing codes for {.field {var_name}} must be an atomic vector, not {.cls {class(codes_entry)[[1L]]}}.", "i" = "Use a numeric, integer, or character vector (e.g., {.code c(Refused = 99L, {\"Don't know\"} = 98L)})."` |
+| M-11 | `set_var_label()` | Old positional NSE form detected | ERROR | `surveycore_error_old_positional_setter` | `"x" = "The old positional calling form {.code {fn_name}(x, var, content)} is no longer supported.", "i" = "The new unified setter uses named arguments.", "v" = "Use {.code {fn_name}(x, {var_name} = {.val {content_val}})} instead."` |
+| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` |
+| M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
+| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
+| M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
 
 ---
 
@@ -158,7 +169,7 @@ Which test files cover which error table rows:
 | `test-constructors.R` | 1–24, 23b, 56–61 |
 | `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
-| `test-metadata-system.R` | 27–30 |
+| `test-metadata-system.R` | 27–30, M-2/M-7, M-3–M-15 |
 | `test-s7-classes.R` | 31–35, 37–39 |
 | `test-update-design.R` | 36 |
 | `test-analysis-helpers.R` | 45, 45a, 45b, 46 (direct unit tests on `.validate_shared_args()` and `.apply_decimals()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |

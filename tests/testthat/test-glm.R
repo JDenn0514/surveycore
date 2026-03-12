@@ -33,11 +33,16 @@ library(surveycore)
 
 .glm_replicate <- function(seed = 1L) {
   df <- make_survey_data(
-    n = 200L, n_psu = 20L, n_strata = 4L,
-    design = "replicate", type = "brr", seed = seed
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
   )
-  as_survey_repweights(
-    df, weights = wt,
+  as_survey_replicate(
+    df,
+    weights = wt,
     repweights = starts_with("repwt"),
     type = "BRR"
   )
@@ -48,7 +53,7 @@ library(surveycore)
 # ---------------------------------------------------------------------------
 
 test_that("survey_glm() produces valid survey_glm_fit for Taylor design", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   test_glm_fit_invariants(fit)
   expect_equal(length(fit@coefficients), 2L)
@@ -60,35 +65,35 @@ test_that("survey_glm() produces valid survey_glm_fit for Taylor design", {
 })
 
 test_that("survey_glm() produces valid survey_glm_fit for SRS design", {
-  d   <- .glm_srs()
+  d <- .glm_srs()
   fit <- survey_glm(d, y1 ~ y2)
   test_glm_fit_invariants(fit)
   expect_true(is.finite(fit@degf))
 })
 
 test_that("survey_glm() produces valid survey_glm_fit for replicate design", {
-  d   <- .glm_replicate()
+  d <- .glm_replicate()
   fit <- survey_glm(d, y1 ~ y2)
   test_glm_fit_invariants(fit)
   expect_true(is.finite(fit@degf))
 })
 
 test_that("survey_glm() vcov row/col names match coefficient names", {
-  d    <- .glm_taylor()
-  fit  <- survey_glm(d, y1 ~ y2 + y3)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2 + y3)
   coef_names <- names(fit@coefficients)
   expect_identical(rownames(fit@vcov), coef_names)
   expect_identical(colnames(fit@vcov), coef_names)
 })
 
 test_that("survey_glm() stores the raw glm fit in fit_", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   expect_true(inherits(fit@fit_, "glm"))
 })
 
 test_that("survey_glm() degf equals .degf(design) for Taylor design", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   expect_equal(fit@degf, .degf(d))
 })
@@ -98,16 +103,20 @@ test_that("survey_glm() degf equals .degf(design) for Taylor design", {
 # ---------------------------------------------------------------------------
 
 test_that("survey_glm() programmatic interface: response + predictors matches formula", {
-  d             <- .glm_taylor()
-  fit_formula   <- survey_glm(d, y1 ~ y2 + y3)
-  fit_prog      <- survey_glm(d, response = "y1", predictors = c("y2", "y3"))
+  d <- .glm_taylor()
+  fit_formula <- survey_glm(d, y1 ~ y2 + y3)
+  fit_prog <- survey_glm(d, response = "y1", predictors = c("y2", "y3"))
 
-  expect_equal(fit_formula@coefficients, fit_prog@coefficients, tolerance = 1e-15)
+  expect_equal(
+    fit_formula@coefficients,
+    fit_prog@coefficients,
+    tolerance = 1e-15
+  )
   expect_equal(fit_formula@vcov, fit_prog@vcov, tolerance = 1e-15)
 })
 
 test_that("survey_glm() programmatic interface: response only gives intercept-only model", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, response = "y1")
 
   test_glm_fit_invariants(fit)
@@ -126,7 +135,7 @@ test_that("survey_glm() programmatic interface: predictors without response erro
 })
 
 test_that("survey_glm() programmatic: constructed formula stored in @formula", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, response = "y1", predictors = c("y2", "y3"))
 
   expect_true(inherits(fit@formula, "formula"))
@@ -238,9 +247,9 @@ test_that("survey_glm() errors when predictor absent from design@data (P2-5)", {
 
 # Row 9 (P2-9): singular model matrix (perfect collinearity)
 test_that("survey_glm() errors for singular model matrix (P2-9)", {
-  df      <- make_survey_data(n = 100L, seed = 1L)
-  df$y2b  <- 2 * df$y2   # perfect collinearity
-  d       <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 100L, seed = 1L)
+  df$y2b <- 2 * df$y2 # perfect collinearity
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   expect_error(
     survey_glm(d, y1 ~ y2 + y2b),
     class = "surveycore_error_singular_model_matrix"
@@ -250,9 +259,9 @@ test_that("survey_glm() errors for singular model matrix (P2-9)", {
 
 # Row 11 (P2-11): NA weights
 test_that("survey_glm() errors when weight column has NA (P2-11)", {
-  df       <- make_survey_data(n = 100L, seed = 1L)
+  df <- make_survey_data(n = 100L, seed = 1L)
   df$wt[1] <- NA_real_
-  d        <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   expect_error(
     survey_glm(d, y1 ~ y2),
     class = "surveycore_error_na_weights"
@@ -281,10 +290,10 @@ test_that("survey_glm() warns when response variable is a design variable (P2-7)
 
 # Row 8 (P2-8): perfect separation — WARNING only
 test_that("survey_glm() warns for perfect separation in binomial model (P2-8)", {
-  df          <- make_survey_data(n = 200L, seed = 1L)
-  df$y_sep    <- as.integer(df$y1 > 50)  # binary outcome
-  df$x_sep    <- df$y1                    # perfect predictor
-  d           <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 200L, seed = 1L)
+  df$y_sep <- as.integer(df$y1 > 50) # binary outcome
+  df$x_sep <- df$y1 # perfect predictor
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   expect_warning(
     survey_glm(d, y_sep ~ x_sep, family = binomial()),
     class = "surveycore_warning_perfect_separation"
@@ -314,26 +323,26 @@ test_that("survey_glm() errors for empty active domain (P2-17)", {
 
 # P2-21: na.action = na.fail with NA in response
 test_that("survey_glm() errors with na.action = na.fail and NA in response (P2-21)", {
-  df         <- make_survey_data(n = 100L, seed = 1L)
-  df$y1[5L]  <- NA_real_
-  d          <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 100L, seed = 1L)
+  df$y1[5L] <- NA_real_
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   expect_error(
     survey_glm(d, y1 ~ y2, na.action = na.fail),
     class = "surveycore_error_na_in_data"
   )
   expect_snapshot(error = TRUE, {
-    df2        <- make_survey_data(n = 100L, seed = 1L)
+    df2 <- make_survey_data(n = 100L, seed = 1L)
     df2$y1[5L] <- NA_real_
-    d2         <- as_survey(df2, ids = psu, weights = wt, strata = strata, nest = TRUE)
+    d2 <- as_survey(df2, ids = psu, weights = wt, strata = strata, nest = TRUE)
     survey_glm(d2, y1 ~ y2, na.action = na.fail)
   })
 })
 
 # P2-21: na.action = na.fail with NA in predictor
 test_that("survey_glm() errors with na.action = na.fail and NA in predictor (P2-21)", {
-  df         <- make_survey_data(n = 100L, seed = 1L)
-  df$y2[5L]  <- NA_real_
-  d          <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df <- make_survey_data(n = 100L, seed = 1L)
+  df$y2[5L] <- NA_real_
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   expect_error(
     survey_glm(d, y1 ~ y2, na.action = na.fail),
     class = "surveycore_error_na_in_data"
@@ -361,8 +370,8 @@ test_that("survey_glm() warns on GLM non-convergence and still returns fit (P2-6
 # ---------------------------------------------------------------------------
 
 test_that("survey_glm() warns when design has @groups set (P2-10)", {
-  d          <- .glm_taylor()
-  d@groups   <- "group"    # simulate a group_by() design
+  d <- .glm_taylor()
+  d@groups <- "group" # simulate a group_by() design
   expect_warning(
     survey_glm(d, y1 ~ y2),
     class = "surveycore_warning_groups_ignored_in_glm"
@@ -382,18 +391,26 @@ test_that("survey_glm() domain: surveytidy::filter() domain matches svyglm subse
 
   d_sc <- as_survey(
     nhanes_mec,
-    ids = sdmvpsu, weights = wtmec2yr, strata = sdmvstra, nest = TRUE
+    ids = sdmvpsu,
+    weights = wtmec2yr,
+    strata = sdmvstra,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~sdmvpsu, weights = ~wtmec2yr, strata = ~sdmvstra,
-    data = nhanes_mec, nest = TRUE
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_mec,
+    nest = TRUE
   )
 
   # Domain: adults aged 40+
-  d_dom  <- surveytidy::filter(d_sc, ridageyr >= 40)
+  d_dom <- surveytidy::filter(d_sc, ridageyr >= 40)
   fit_sc <- survey_glm(d_dom, bpxsy1 ~ ridageyr + riagendr)
 
-  domain_flag <- as.integer(nhanes_mec$ridageyr >= 40 & !is.na(nhanes_mec$ridageyr))
+  domain_flag <- as.integer(
+    nhanes_mec$ridageyr >= 40 & !is.na(nhanes_mec$ridageyr)
+  )
   fit_sv <- survey::svyglm(
     bpxsy1 ~ ridageyr + riagendr,
     design = d_sv,
@@ -415,77 +432,79 @@ test_that("survey_glm() domain: surveytidy::filter() domain matches svyglm subse
 
 # Build a minimal valid survey_glm_fit for mutation tests
 .minimal_fit_args <- function(d) {
-  n  <- nrow(d@data)
-  p  <- 2L
+  n <- nrow(d@data)
+  p <- 2L
   list(
-    coefficients  = c("(Intercept)" = 1.0, "y2" = 0.5),
-    vcov          = matrix(c(0.1, 0.01, 0.01, 0.05), nrow = 2L,
-                           dimnames = list(c("(Intercept)", "y2"),
-                                          c("(Intercept)", "y2"))),
+    coefficients = c("(Intercept)" = 1.0, "y2" = 0.5),
+    vcov = matrix(
+      c(0.1, 0.01, 0.01, 0.05),
+      nrow = 2L,
+      dimnames = list(c("(Intercept)", "y2"), c("(Intercept)", "y2"))
+    ),
     fitted_values = rep(1.0, n),
-    residuals     = rep(0.1, n),
-    weights       = rep(1.0, n),
-    design        = d,
-    degf          = 5.0,
-    family        = gaussian(),
-    formula       = y1 ~ y2,
+    residuals = rep(0.1, n),
+    weights = rep(1.0, n),
+    design = d,
+    degf = 5.0,
+    family = gaussian(),
+    formula = y1 ~ y2,
     null_deviance = 10.0,
-    deviance      = 5.0,
-    df_null       = as.numeric(n - 1L),
-    df_residual   = as.numeric(n - p),
-    converged     = TRUE
+    deviance = 5.0,
+    df_null = as.numeric(n - 1L),
+    df_residual = as.numeric(n - p),
+    converged = TRUE
   )
 }
 
 test_that("survey_glm_fit validator: rejects empty coefficients (condition 1)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
   args$coefficients <- numeric(0)
-  args$vcov         <- matrix(numeric(0), 0L, 0L)
+  args$vcov <- matrix(numeric(0), 0L, 0L)
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects wrong vcov dimensions (condition 2)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
-  args$vcov <- matrix(1.0, 3L, 3L)   # p=2 but vcov is 3x3
+  args$vcov <- matrix(1.0, 3L, 3L) # p=2 but vcov is 3x3
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects empty fitted_values (condition 3)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
   args$fitted_values <- numeric(0)
-  args$residuals     <- numeric(0)
-  args$weights       <- numeric(0)
+  args$residuals <- numeric(0)
+  args$weights <- numeric(0)
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects residuals length mismatch (condition 4)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
   args$residuals <- rep(0.1, nrow(d@data) + 1L)
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects weights length mismatch (condition 5)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
   args$weights <- rep(1.0, nrow(d@data) + 1L)
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects non-positive degf (condition 6)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
   args$degf <- 0
   expect_error(do.call(survey_glm_fit, args))
 })
 
 test_that("survey_glm_fit validator: rejects non-formula in formula slot (condition 7)", {
-  d    <- .glm_taylor()
+  d <- .glm_taylor()
   args <- .minimal_fit_args(d)
-  args$formula <- "y1 ~ y2"   # character string, not a formula
+  args$formula <- "y1 ~ y2" # character string, not a formula
   expect_error(do.call(survey_glm_fit, args))
 })
 
@@ -494,7 +513,7 @@ test_that("survey_glm_fit validator: rejects non-formula in formula slot (condit
 # ---------------------------------------------------------------------------
 
 test_that("survey_glm() intercept-only model (y ~ 1)", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ 1)
 
   test_glm_fit_invariants(fit)
@@ -503,22 +522,22 @@ test_that("survey_glm() intercept-only model (y ~ 1)", {
 })
 
 test_that("survey_glm() with factor predictor excludes reference level from coef", {
-  df           <- make_survey_data(n = 300L, seed = 2L)
-  df$group     <- factor(df$group)
-  d            <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  fit          <- survey_glm(d, y1 ~ group)
+  df <- make_survey_data(n = 300L, seed = 2L)
+  df$group <- factor(df$group)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, y1 ~ group)
 
   test_glm_fit_invariants(fit)
-  n_levels     <- nlevels(df$group)
+  n_levels <- nlevels(df$group)
   # coefficients = intercept + (n_levels - 1) non-reference levels
   expect_equal(length(fit@coefficients), n_levels)
   # Reference level name not in coef names
-  ref_level    <- levels(df$group)[[1L]]
+  ref_level <- levels(df$group)[[1L]]
   expect_false(any(names(fit@coefficients) == ref_level))
 })
 
 test_that("survey_glm() with interaction terms", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 * y3)
 
   test_glm_fit_invariants(fit)
@@ -528,10 +547,10 @@ test_that("survey_glm() with interaction terms", {
 })
 
 test_that("survey_glm() na.action = na.omit silently drops NA rows", {
-  df         <- make_survey_data(n = 200L, seed = 1L)
+  df <- make_survey_data(n = 200L, seed = 1L)
   df$y1[1:5] <- NA_real_
-  d          <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  fit        <- survey_glm(d, y1 ~ y2, na.action = na.omit)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, y1 ~ y2, na.action = na.omit)
 
   test_glm_fit_invariants(fit)
   # n_obs after na.omit is less than full data
@@ -540,7 +559,7 @@ test_that("survey_glm() na.action = na.omit silently drops NA rows", {
 })
 
 test_that("survey_glm() binomial family produces valid fit", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y3 ~ y2, family = binomial())
 
   test_glm_fit_invariants(fit)
@@ -549,10 +568,10 @@ test_that("survey_glm() binomial family produces valid fit", {
 })
 
 test_that("survey_glm() Poisson family produces valid fit", {
-  df         <- make_survey_data(n = 200L, seed = 1L)
+  df <- make_survey_data(n = 200L, seed = 1L)
   df$y_count <- rpois(nrow(df), lambda = exp(0.3 * df$y1 / 50 + 0.5))
-  d          <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  fit        <- survey_glm(d, y_count ~ y2, family = poisson())
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, y_count ~ y2, family = poisson())
 
   test_glm_fit_invariants(fit)
   # Fitted values on count scale (positive)
@@ -566,16 +585,20 @@ test_that("survey_glm() warns for insufficient design df and clamps to 1 (P2-15)
   # Each stratum has 2 PSUs so no lonely-PSU error.
   set.seed(42L)
   tiny_df <- data.frame(
-    psu    = c("p1", "p1", "p2", "p2", "p3", "p3", "p4", "p4"),
+    psu = c("p1", "p1", "p2", "p2", "p3", "p3", "p4", "p4"),
     strata = c("s1", "s1", "s1", "s1", "s2", "s2", "s2", "s2"),
-    wt     = rep(10.0, 8L),
-    y      = rnorm(8L),
-    x1     = rnorm(8L),
-    x2     = rnorm(8L),
-    x3     = rnorm(8L)
+    wt = rep(10.0, 8L),
+    y = rnorm(8L),
+    x1 = rnorm(8L),
+    x2 = rnorm(8L),
+    x3 = rnorm(8L)
   )
   d_tiny <- as_survey(
-    tiny_df, ids = psu, strata = strata, weights = wt, nest = TRUE
+    tiny_df,
+    ids = psu,
+    strata = strata,
+    weights = wt,
+    nest = TRUE
   )
   expect_warning(
     fit <- survey_glm(d_tiny, y ~ x1 + x2 + x3),
@@ -584,19 +607,19 @@ test_that("survey_glm() warns for insufficient design df and clamps to 1 (P2-15)
   test_glm_fit_invariants(fit)
   # CI bounds must be finite (clamped to df=1, not NaN)
   # Use @vcov directly — vcov() S3 method is PR 3.
-  se      <- sqrt(diag(fit@vcov))
-  p       <- length(fit@coefficients)
+  se <- sqrt(diag(fit@vcov))
+  p <- length(fit@coefficients)
   df_used <- max(1, fit@degf - (p - 1L))
-  bounds  <- fit@coefficients + outer(se, c(-1, 1) * qt(0.975, df = df_used))
+  bounds <- fit@coefficients + outer(se, c(-1, 1) * qt(0.975, df = df_used))
   expect_true(all(is.finite(bounds)))
 })
 
 # in-formula transformation in response: log(y) ~ x
 test_that("survey_glm() handles in-formula response transformation log(y) ~ x", {
-  df         <- make_survey_data(n = 200L, seed = 3L)
-  df$y1_pos  <- abs(df$y1) + 1   # ensure positive for log()
-  d          <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  fit        <- survey_glm(d, log(y1_pos) ~ y2)
+  df <- make_survey_data(n = 200L, seed = 3L)
+  df$y1_pos <- abs(df$y1) + 1 # ensure positive for log()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, log(y1_pos) ~ y2)
 
   test_glm_fit_invariants(fit)
   expect_equal(length(fit@coefficients), 2L)
@@ -610,23 +633,23 @@ test_that("survey_glm() handles in-formula response transformation log(y) ~ x", 
 # ── Shared fixtures for clean() tests ─────────────────────────────────────────
 
 .glm_taylor_with_factor <- function(seed = 10L) {
-  df        <- make_survey_data(n = 300L, n_psu = 20L, n_strata = 4L, seed = seed)
-  df$sex    <- factor(
+  df <- make_survey_data(n = 300L, n_psu = 20L, n_strata = 4L, seed = seed)
+  df$sex <- factor(
     sample(c("Female", "Male"), nrow(df), replace = TRUE, prob = c(0.5, 0.5)),
     levels = c("Female", "Male")
   )
-  df$age    <- df$y1
+  df$age <- df$y1
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   d
 }
 
 .glm_with_labels <- function(seed = 10L) {
   d <- .glm_taylor_with_factor(seed = seed)
-  d <- set_var_label(d, age, "Age in years")
-  d <- set_var_label(d, sex, "Respondent sex")
+  d <- set_var_label(d, age = "Age in years")
+  d <- set_var_label(d, sex = "Respondent sex")
   # val_labels: character codes matching factor level names to avoid
   # surveycore_warning_missing_labels. Names = display labels, values = codes.
-  d <- set_val_labels(d, sex, c("Female" = "Female", "Male" = "Male"))
+  d <- set_val_labels(d, sex = c("Female" = "Female", "Male" = "Male"))
   d
 }
 
@@ -635,27 +658,29 @@ test_that("survey_glm() handles in-formula response transformation log(y) ~ x", 
 # ---------------------------------------------------------------------------
 
 test_that("clean() produces valid survey_glm_tidy with correct class hierarchy", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   test_glm_tidy_invariants(result)
-  expect_identical(class(result), c("survey_glm_tidy", "survey_result",
-                                    "tbl_df", "tbl", "data.frame"))
-  expect_true("term"          %in% names(result))
-  expect_true("variable"      %in% names(result))
-  expect_true("var_label"     %in% names(result))
-  expect_true("label"         %in% names(result))
+  expect_identical(
+    class(result),
+    c("survey_glm_tidy", "survey_result", "tbl_df", "tbl", "data.frame")
+  )
+  expect_true("term" %in% names(result))
+  expect_true("variable" %in% names(result))
+  expect_true("var_label" %in% names(result))
+  expect_true("label" %in% names(result))
   expect_true("reference_row" %in% names(result))
-  expect_true("estimate"      %in% names(result))
-  expect_true("std_error"     %in% names(result))
-  expect_true("p_value"       %in% names(result))
-  expect_true("conf_low"      %in% names(result))
-  expect_true("conf_high"     %in% names(result))
+  expect_true("estimate" %in% names(result))
+  expect_true("std_error" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true("conf_low" %in% names(result))
+  expect_true("conf_high" %in% names(result))
 })
 
 test_that("clean() reference_row is all FALSE when no factor predictors", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2 + y3)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2 + y3)
   result <- clean(fit)
   test_glm_tidy_invariants(result)
   expect_true(all(result$reference_row == FALSE))
@@ -663,8 +688,8 @@ test_that("clean() reference_row is all FALSE when no factor predictors", {
 })
 
 test_that("clean() label column is never NA", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   expect_false(anyNA(result$label))
   expect_type(result$label, "character")
@@ -675,7 +700,7 @@ test_that("clean() label column is never NA", {
 # ---------------------------------------------------------------------------
 
 test_that("clean() with include_reference = TRUE adds reference row for factor predictor", {
-  d   <- .glm_taylor_with_factor()
+  d <- .glm_taylor_with_factor()
   fit <- survey_glm(d, y2 ~ sex)
   result <- clean(fit, include_reference = TRUE)
   test_glm_tidy_invariants(result)
@@ -691,8 +716,8 @@ test_that("clean() with include_reference = TRUE adds reference row for factor p
 })
 
 test_that("clean() with include_reference = FALSE has no reference rows", {
-  d      <- .glm_taylor_with_factor()
-  fit    <- survey_glm(d, y2 ~ sex)
+  d <- .glm_taylor_with_factor()
+  fit <- survey_glm(d, y2 ~ sex)
   result <- clean(fit, include_reference = FALSE)
   test_glm_tidy_invariants(result)
   expect_false(any(result$reference_row))
@@ -705,15 +730,26 @@ test_that("clean() with include_reference = FALSE has no reference rows", {
 # ---------------------------------------------------------------------------
 
 test_that("clean() .meta has all 15 required top-level keys", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   m <- meta(result)
   required_keys <- c(
-    "formula", "family", "link", "design_type", "conf_level",
-    "call", "group_names", "group_labels", "n_observations",
-    "n_weighted", "degf", "exponentiate", "include_reference",
-    "converged", "variables"
+    "formula",
+    "family",
+    "link",
+    "design_type",
+    "conf_level",
+    "call",
+    "group_names",
+    "group_labels",
+    "n_observations",
+    "n_weighted",
+    "degf",
+    "exponentiate",
+    "include_reference",
+    "converged",
+    "variables"
   )
   expect_true(all(required_keys %in% names(m)))
   expect_identical(m$group_names, character(0))
@@ -727,14 +763,21 @@ test_that("clean() .meta has all 15 required top-level keys", {
 })
 
 test_that("clean() .meta $variables has one entry per predictor with 7 sub-keys", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
   result <- clean(fit)
   m <- meta(result)
   # Should have entries for y2 and y3 (not (Intercept))
   expect_identical(sort(names(m$variables)), c("y2", "y3"))
-  sub_keys <- c("var_label", "var_class", "var_type", "var_nlevels",
-                "contrasts", "reference_level", "value_labels")
+  sub_keys <- c(
+    "var_label",
+    "var_class",
+    "var_type",
+    "var_nlevels",
+    "contrasts",
+    "reference_level",
+    "value_labels"
+  )
   for (v in m$variables) {
     expect_true(all(sub_keys %in% names(v)))
     expect_false(is.null(v$var_label))
@@ -743,7 +786,7 @@ test_that("clean() .meta $variables has one entry per predictor with 7 sub-keys"
 })
 
 test_that("clean() .meta n_observations equals model.matrix row count", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   m <- meta(result)
@@ -753,7 +796,7 @@ test_that("clean() .meta n_observations equals model.matrix row count", {
 })
 
 test_that("clean() .meta n_weighted is positive numeric", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   m <- meta(result)
@@ -766,7 +809,7 @@ test_that("clean() .meta n_weighted is positive numeric", {
 # ---------------------------------------------------------------------------
 
 test_that("clean() var_label column uses variable labels from design metadata", {
-  d   <- .glm_with_labels()
+  d <- .glm_with_labels()
   # y2 is response; age and sex are predictors — both have variable labels set
   fit <- survey_glm(d, y2 ~ age + sex)
   result <- clean(fit, include_reference = TRUE)
@@ -783,7 +826,7 @@ test_that("clean() var_label column uses variable labels from design metadata", 
 })
 
 test_that("clean() label column uses value labels for factor levels when set", {
-  d   <- .glm_with_labels()
+  d <- .glm_with_labels()
   fit <- survey_glm(d, y2 ~ sex)
   result <- clean(fit, include_reference = TRUE)
   # Both levels should appear — reference (Female) and estimated (Male)
@@ -794,7 +837,7 @@ test_that("clean() label column uses value labels for factor levels when set", {
 })
 
 test_that("clean() .meta $variables carries value_labels for factor predictor", {
-  d   <- .glm_with_labels()
+  d <- .glm_with_labels()
   fit <- survey_glm(d, y2 ~ sex)
   result <- clean(fit, include_reference = TRUE)
   m <- meta(result)
@@ -807,8 +850,8 @@ test_that("clean() .meta $variables carries value_labels for factor predictor", 
 # ---------------------------------------------------------------------------
 
 test_that("clean(fit, n = TRUE) adds n_obs column", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, n = TRUE)
   test_glm_tidy_invariants(result)
   expect_true("n_obs" %in% names(result))
@@ -817,8 +860,8 @@ test_that("clean(fit, n = TRUE) adds n_obs column", {
 })
 
 test_that("clean(fit, n = FALSE) does not add n_obs column (default)", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   expect_false("n_obs" %in% names(result))
 })
@@ -828,16 +871,16 @@ test_that("clean(fit, n = FALSE) does not add n_obs column (default)", {
 # ---------------------------------------------------------------------------
 
 test_that("clean(fit, statistic = TRUE) includes statistic column (default)", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, statistic = TRUE)
   expect_true("statistic" %in% names(result))
   expect_type(result$statistic, "double")
 })
 
 test_that("clean(fit, statistic = FALSE) drops statistic column", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, statistic = FALSE)
   expect_false("statistic" %in% names(result))
 })
@@ -857,12 +900,16 @@ test_that("clean(fit, exponentiate = TRUE) on logistic fit exponentiates estimat
   # std_error unchanged (log scale per broom convention)
   expect_equal(result_exp$std_error, result_raw$std_error, tolerance = 1e-15)
   # CI bounds exponentiated
-  expect_equal(result_exp$conf_low,  exp(result_raw$conf_low),  tolerance = 1e-10)
-  expect_equal(result_exp$conf_high, exp(result_raw$conf_high), tolerance = 1e-10)
+  expect_equal(result_exp$conf_low, exp(result_raw$conf_low), tolerance = 1e-10)
+  expect_equal(
+    result_exp$conf_high,
+    exp(result_raw$conf_high),
+    tolerance = 1e-10
+  )
 })
 
 test_that("clean(fit, exponentiate = TRUE) on Gaussian identity fires warning", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2, family = gaussian(link = "identity"))
   expect_warning(
     clean(fit, exponentiate = TRUE),
@@ -878,12 +925,12 @@ test_that("clean() with interaction term uses interaction_sep in label", {
   d <- .glm_taylor_with_factor()
   fit <- survey_glm(d, age ~ y2 + sex + y2:sex)
   result_default <- clean(fit, include_reference = FALSE)
-  result_sep     <- clean(fit, interaction_sep = " × ", include_reference = FALSE)
+  result_sep <- clean(fit, interaction_sep = " × ", include_reference = FALSE)
   # interaction term row should have different labels based on sep
   int_rows_def <- result_default[grepl(":", result_default$term), ]
   int_rows_sep <- result_sep[grepl(":", result_sep$term), ]
   if (nrow(int_rows_def) > 0L) {
-    expect_true(any(grepl(" \\* ",  int_rows_def$label)))
+    expect_true(any(grepl(" \\* ", int_rows_def$label)))
     expect_true(any(grepl(" × ", int_rows_sep$label)))
   }
 })
@@ -894,13 +941,17 @@ test_that("clean() with interaction term uses interaction_sep in label", {
 
 test_that("broom::tidy(fit) returns same object as clean(fit)", {
   skip_if_not_installed("broom")
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result_clean <- clean(fit)
   result_broom <- broom::tidy(fit)
   expect_identical(class(result_clean), class(result_broom))
   expect_equal(result_clean$estimate, result_broom$estimate, tolerance = 1e-15)
-  expect_equal(result_clean$std_error, result_broom$std_error, tolerance = 1e-15)
+  expect_equal(
+    result_clean$std_error,
+    result_broom$std_error,
+    tolerance = 1e-15
+  )
   expect_identical(result_clean$term, result_broom$term)
 })
 
@@ -917,7 +968,7 @@ test_that("clean() rejects non-survey_glm_fit input with typed error", {
 })
 
 test_that("clean() rejects invalid conf_level with typed error", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   expect_error(
     clean(fit, conf_level = 1.5),
@@ -931,15 +982,15 @@ test_that("clean() rejects invalid conf_level with typed error", {
 # ---------------------------------------------------------------------------
 
 test_that("clean() with no factor predictors: include_reference accepted, all FALSE", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, include_reference = TRUE)
   test_glm_tidy_invariants(result)
   expect_true(all(result$reference_row == FALSE))
 })
 
 test_that("clean() with no variable labels: var_label falls back to variable name", {
-  d   <- .glm_taylor()  # no labels set
+  d <- .glm_taylor() # no labels set
   fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   m <- meta(result)
@@ -951,7 +1002,7 @@ test_that("clean() with no variable labels: var_label falls back to variable nam
 })
 
 test_that("clean() with all variable labels set: var_label column shows labels", {
-  d   <- .glm_with_labels()
+  d <- .glm_with_labels()
   # y2 is response; age and sex are predictors with labels set
   fit <- survey_glm(d, y2 ~ age + sex)
   result <- clean(fit, include_reference = TRUE)
@@ -961,7 +1012,7 @@ test_that("clean() with all variable labels set: var_label column shows labels",
 })
 
 test_that("clean() factor predictor with value labels: label column shows value labels", {
-  d   <- .glm_with_labels()
+  d <- .glm_with_labels()
   fit <- survey_glm(d, y2 ~ sex)
   result <- clean(fit, include_reference = TRUE)
   sex_rows <- result[result$variable == "sex", ]
@@ -973,8 +1024,8 @@ test_that("clean() factor predictor with value labels: label column shows value 
 })
 
 test_that("clean(fit, n = TRUE): n_obs column has positive integers", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, n = TRUE)
   expect_true("n_obs" %in% names(result))
   # Each row's n_obs is bounded by n_observations (per-term count)
@@ -983,15 +1034,15 @@ test_that("clean(fit, n = TRUE): n_obs column has positive integers", {
 })
 
 test_that("clean(fit, statistic = FALSE): statistic column absent", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit, statistic = FALSE)
   expect_false("statistic" %in% names(result))
 })
 
 test_that("clean(fit, exponentiate = TRUE) on logistic: conf_low = exp(ci_lower)", {
-  d      <- .glm_taylor_with_factor()
-  fit    <- survey_glm(d, y3 ~ age, family = binomial(link = "logit"))
+  d <- .glm_taylor_with_factor()
+  fit <- survey_glm(d, y3 ~ age, family = binomial(link = "logit"))
   result <- clean(fit, exponentiate = TRUE)
   test_glm_tidy_invariants(result)
   # estimate must be positive (odds ratios)
@@ -999,7 +1050,7 @@ test_that("clean(fit, exponentiate = TRUE) on logistic: conf_low = exp(ci_lower)
 })
 
 test_that("clean(fit, exponentiate = TRUE) on Gaussian identity fit fires warning", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2)
   expect_warning(
     result <- clean(fit, exponentiate = TRUE),
@@ -1010,26 +1061,30 @@ test_that("clean(fit, exponentiate = TRUE) on Gaussian identity fit fires warnin
 })
 
 test_that("clean() NA in response with na.action = na.omit: n_observations reflects post-NA count", {
-  df       <- make_survey_data(n = 200L, seed = 5L)
+  df <- make_survey_data(n = 200L, seed = 5L)
   df$y1[1:10] <- NA_real_
-  d        <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  fit      <- survey_glm(d, y1 ~ y2, na.action = na.omit)
-  result   <- clean(fit)
-  m        <- meta(result)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, y1 ~ y2, na.action = na.omit)
+  result <- clean(fit)
+  m <- meta(result)
   # Should be 190 rows (200 - 10 NA), not 200
   expect_equal(m$n_observations, 190L)
 })
 
 test_that("clean() CIs are numerically identical to confint(fit)", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
   result <- clean(fit)
   ci_confint <- confint(fit)
   # confint() has rownames; clean() produces unnamed vectors — compare values only
-  expect_equal(result$conf_low[!result$reference_row],
-               unname(ci_confint[, "2.5 %"]),
-               tolerance = 1e-12)
-  expect_equal(result$conf_high[!result$reference_row],
-               unname(ci_confint[, "97.5 %"]),
-               tolerance = 1e-12)
+  expect_equal(
+    result$conf_low[!result$reference_row],
+    unname(ci_confint[, "2.5 %"]),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    result$conf_high[!result$reference_row],
+    unname(ci_confint[, "97.5 %"]),
+    tolerance = 1e-12
+  )
 })

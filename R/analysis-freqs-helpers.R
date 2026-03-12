@@ -51,9 +51,9 @@
 #
 # Compute a weighted proportion and its Taylor-linearized standard error for
 # one cell using the ratio (domain estimation) approach. Works for both
-# survey_taylor and survey_calibrated (same linearization path).
+# survey_taylor and survey_nonprob (same linearization path).
 #
-# @param design  A survey_taylor or survey_calibrated object.
+# @param design  A survey_taylor or survey_nonprob object.
 # @param num     Numeric vector (0/1): rows in the cell (level AND domain/group).
 # @param denom   Numeric vector (0/1): rows in the group/domain (denominator).
 #
@@ -342,7 +342,7 @@
 # ── .freq_cell() ──────────────────────────────────────────────────────────────
 #
 # Dispatch to the correct per-cell proportion estimator by design class.
-# survey_calibrated falls through to the Taylor path (conservative SEs).
+# survey_nonprob falls through to the Taylor path (conservative SEs).
 #
 # @param design  Any survey design object.
 # @param num     Numeric 0/1 vector: cell membership (full length).
@@ -352,7 +352,7 @@
 .freq_cell <- function(design, num, denom) {
   if (
     S7::S7_inherits(design, survey_taylor) ||
-      S7::S7_inherits(design, survey_calibrated)
+      S7::S7_inherits(design, survey_nonprob)
   ) {
     .taylor_freq_cell(design, num, denom)
   } else if (S7::S7_inherits(design, survey_replicate)) {

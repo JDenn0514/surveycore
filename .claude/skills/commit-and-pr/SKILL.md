@@ -5,7 +5,8 @@ description: >
   for surveycore feature branches. Read-only commit workflow — does not write or
   edit R source files or test files; use r-implement for code changes first.
   Trigger when the user says "commit", "make a PR", "open PR", "submit this
-  work", "PR time", or "commit and PR".
+  work", "PR time", "commit and PR", "commit and merge", "commit, PR, and merge",
+  "ship it", or "land it".
 ---
 
 # Commit and PR Skill
@@ -60,6 +61,12 @@ git status
 **If on `main` or `develop`: STOP.** Inform the user that implementation work
 must be on a feature branch cut from `develop`. Do not proceed.
 
+**Detect merge intent:** Check whether the user's invocation included any of
+these phrases: "commit and merge", "commit, PR, and merge", "ship it",
+"land it". If yes:
+- Announce: "Merge after CI will be performed."
+- Set the flag in task metadata (see TaskCreate below).
+
 Create the main tracking task:
 
 ```
@@ -70,6 +77,7 @@ TaskCreate:
 
 TaskUpdate:
   status: in_progress
+  metadata: { mergeAfterCI: true }   ← only if merge intent detected; omit otherwise
 ```
 
 ---
@@ -212,7 +220,7 @@ procedure. Return here for Step 10 when CI passes.
 
 ---
 
-## Step 10: Done
+## Step 10: CI Passed — Merge Check
 
 When CI passes:
 
@@ -221,7 +229,17 @@ TaskUpdate (CI task):
   subject: "CI Run #N: passed"
   status:  completed
   metadata: { status: "passed" }
+```
 
+Check task metadata for `mergeAfterCI`:
+
+- **`mergeAfterCI == true`:** Proceed to Step 11.
+- **`mergeAfterCI` absent or false:** Mark PR task complete and stop (see
+  "Done without merge" below).
+
+**Done without merge:**
+
+```
 TaskUpdate (PR task):
   status: completed
 ```
@@ -233,7 +251,42 @@ TaskUpdate (PR task):
    > "Next section: `branch-name` — [description]. Start a new session with
    > `/r-implement` to continue."
 
-**Do NOT merge the PR.** Merging is the user's decision.
+---
+
+## Step 11: Optional Merge (only when `mergeAfterCI == true`)
+
+**Confirmation gate** — show and wait for explicit user approval:
+
+> "CI passed. PR #N (`feature/foo` → `develop`): *{prTitle}*
+>
+> Squash-merge this PR?"
+
+Do NOT proceed until the user says yes. If no or cancel:
+
+> "Merge cancelled. PR #N is open and CI-green — merge manually when ready."
+
+Stop.
+
+**On approval:**
+
+```bash
+gh pr merge <prNumber> --squash --delete-branch
+```
+
+```
+TaskUpdate (PR task):
+  status: completed
+```
+
+Report: "Merged: {prUrl}"
+
+Then read the implementation plan and report the first remaining `- [ ]`
+section as the next action (same as the "Done without merge" step above).
+
+---
+
+**Do NOT merge the PR unless the user explicitly requested merge at invocation
+time (`mergeAfterCI` flag). When in doubt, stop after CI.**
 
 ---
 
@@ -249,9 +302,10 @@ TaskUpdate (PR task):
 | Create the PR | Yes |
 | Monitor CI | Yes |
 | Produce CI failure handoff block for r-implement | Yes |
+| Merge the PR (when explicitly requested at invocation) | Yes |
 | Write or edit `.R` source files | **NO** |
 | Write or edit `.R` test files | **NO** |
 | Fix failing tests | **NO** |
 | Fix R CMD check errors | **NO** |
 | Amend commits | **NO** |
-| Merge the PR | **NO** |
+| Merge the PR (when NOT requested at invocation) | **NO** |

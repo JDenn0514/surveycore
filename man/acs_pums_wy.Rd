@@ -140,9 +140,9 @@ file — ideal for fast tests and examples.
 }
 \details{
 \strong{Survey design:} Successive difference replication (SDR). Use
-\code{as_survey_repweights()} with all 80 replicate weights:
+\code{as_survey_replicate()} with all 80 replicate weights:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_repweights(
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_replicate(
   acs_pums_wy,
   weights    = pwgtp,
   repweights = pwgtp1:pwgtp80,
@@ -158,8 +158,8 @@ dollars before comparing across ACS years.
 The ACS PUMS source is a plain CSV with no embedded labels. Columns in
 \code{acs_pums_wy} carry no \code{"label"}, \code{"labels"}, or \code{"question_preface"}
 attributes. Variable descriptions are documented here in \code{?acs_pums_wy} and
-in \code{data-raw/README.md}. Use \code{set_variable_labels()} and
-\code{set_value_labels()} to attach labels manually before analysis if needed.
+in \code{data-raw/README.md}. Use \code{set_var_label()} and
+\code{set_val_labels()} to attach labels manually before analysis if needed.
 }
 \examples{
 # Wyoming population represented

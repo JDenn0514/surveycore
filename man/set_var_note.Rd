@@ -2,43 +2,49 @@
 % Please edit documentation in R/core-metadata.R
 \name{set_var_note}
 \alias{set_var_note}
-\title{Set an Analyst Note}
+\title{Set Analyst Note(s)}
 \usage{
-set_var_note(x, var, note)
+set_var_note(x, ..., variable = NULL, note = NULL)
 }
 \arguments{
-\item{x}{A survey design object.}
+\item{x}{A survey design object or a data frame.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable name
-(bare, unquoted).}
+\item{...}{Named arguments where the name is the variable and the value is
+the note string. Supports \verb{!!!} list splicing.}
 
-\item{note}{A character string. The analyst note to attach.}
+\item{variable}{A character vector of variable names. Use with \code{note}.}
+
+\item{note}{A character vector of note strings, one per element of
+\code{variable}.}
 }
 \value{
-The modified survey object, invisibly.
+The modified object, invisibly.
 }
 \description{
-Sets an analyst note for a single variable in a survey design object. Notes
-are free-text annotations for documenting processing decisions, data quality
-concerns, or other context.
+Sets an analyst note for one or more variables. Notes are free-text
+annotations for documenting processing decisions, data quality concerns,
+or other context.
+}
+\details{
+Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_label()}} for details.
 }
 \seealso{
-\code{\link[=set_variable_notes]{set_variable_notes()}} for setting notes for multiple variables,
 \code{\link[=extract_var_note]{extract_var_note()}} to retrieve a note
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }

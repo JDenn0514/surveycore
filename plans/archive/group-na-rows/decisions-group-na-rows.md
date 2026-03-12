@@ -120,7 +120,7 @@ behavior, and DRY violation from per-file fixture construction.
 - Options considered:
   - **[C] Require numerical oracle test for each design class:** 5 classes × 6 functions = 30 targeted oracle comparisons. Targeted, practical.
   - **[A] Add a 7th test block per class:** Too many blocks.
-- **Decision:** C — numerical oracle section updated to require repetition for all 5 design classes (`survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_srs`, `survey_calibrated`).
+- **Decision:** C — numerical oracle section updated to require repetition for all 5 design classes (`survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_srs`, `survey_nonprob`).
 - **Rationale:** Oracle tests cover the variance path — the most likely source of per-class bugs — without multiplying all 7 test blocks by 5.
 
 **Q: Issue 11 — Should the `label_values = TRUE` + NA group rows contract be extended for haven-labeled NAs?**
@@ -151,7 +151,7 @@ both cases; shared fixtures specified in §VI and added to Quality Gates.
 ### Context
 
 Final batch of the Stage 2 adversarial review. Resolving: missing `group_by()`
-integration test, `survey_calibrated` absent from the scope matrix, Test Block 6
+integration test, `survey_nonprob` absent from the scope matrix, Test Block 6
 fixture reference, and a wrong `code-style.md` citation.
 
 ### Questions & Decisions
@@ -163,11 +163,11 @@ fixture reference, and a wrong `code-style.md` citation.
 - **Decision:** A — test block 8 added.
 - **Rationale:** §VIII makes a behavioral assertion about a distinct code path. A test is needed to verify that path works. Per engineering-preferences.md §2 (more tests is better) and testing-standards.md §3 (one behavior per block).
 
-**Q: Issue 14 — Should `survey_calibrated` be added to the §I support matrix?**
+**Q: Issue 14 — Should `survey_nonprob` be added to the §I support matrix?**
 - Options considered:
   - **[A] Add as 5th column:** Accurate — the class is already implemented and dispatched.
   - **[B] Explicitly exclude:** Misleading since it already exists.
-- **Decision:** A — `survey_calibrated` added to the support matrix (now 5 design classes).
+- **Decision:** A — `survey_nonprob` added to the support matrix (now 5 design classes).
 - **Rationale:** Scope statements must match reality. Omitting a dispatched class misleads reviewers into accepting code that breaks it.
 
 **Q: Issue 15 — Should Test Block 6 reference `make_all_na_group_design()`?**
@@ -188,7 +188,7 @@ fixture reference, and a wrong `code-style.md` citation.
 
 All 16 issues from the Stage 2 adversarial review are resolved. The spec now has:
 10 required test blocks per function (8 numbered + helper unit tests + oracle),
-oracle tests required for all 5 design classes, `survey_calibrated` in the scope
+oracle tests required for all 5 design classes, `survey_nonprob` in the scope
 matrix, correct helper placement guidance, and self-contained Test Block 6.
 
 ---

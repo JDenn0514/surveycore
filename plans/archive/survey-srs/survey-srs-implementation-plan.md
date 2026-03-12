@@ -86,7 +86,7 @@ step must not break any existing tests.
      expect_true("fpc_type" %in% names(design@variables))
    }
    ```
-   Insert this branch before the existing `survey_calibrated` branch. The
+   Insert this branch before the existing `survey_nonprob` branch. The
    `make_all_designs()` srs entry update is deferred to Step 2 (requires
    `as_survey_srs()` to exist).
 
@@ -286,7 +286,7 @@ committed (`tests/testthat/_snaps/test-methods-print.md`).
      .srs_mean(design, var_name, na.rm = na.rm)
    ```
    Insert between the `survey_replicate` branch and the `survey_taylor`
-   fallthrough. `survey_calibrated` continues to fall through to
+   fallthrough. `survey_nonprob` continues to fall through to
    `.taylor_mean()`.
 
 4. **`tests/testthat/test-variance-estimation.R`** — new blocks (spec §X):

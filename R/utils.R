@@ -8,7 +8,6 @@
 # R/02-validators.R because they were first needed by the validator test
 # infrastructure and are co-located with their associated validation logic.
 
-
 # ── .glm_confint() ────────────────────────────────────────────────────────────
 #
 # Shared CI helper for survey_glm_fit. Called by both confint.survey_glm_fit()
@@ -25,18 +24,24 @@
 # @param parm        Character or integer index to subset; NULL = all.
 # @return Two-column numeric matrix with columns "lower" and "upper".
 #' @noRd
-.glm_confint <- function(estimates, se, degf_design, n_coef, level,
-                          parm = NULL) {
+.glm_confint <- function(
+  estimates,
+  se,
+  degf_design,
+  n_coef,
+  level,
+  parm = NULL
+) {
   if (!is.null(parm)) {
     estimates <- estimates[parm]
-    se        <- se[parm]
+    se <- se[parm]
   }
   df_res <- max(1, degf_design - (n_coef - 1L))
   half_w <- stats::qt((1 + level) / 2, df = df_res) * se
   matrix(
     c(estimates - half_w, estimates + half_w),
-    ncol      = 2L,
-    dimnames  = list(names(estimates), c("lower", "upper"))
+    ncol = 2L,
+    dimnames = list(names(estimates), c("lower", "upper"))
   )
 }
 
@@ -137,7 +142,9 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # @return Character vector of column names, or NULL.
 #' @noRd
 .resolve_tidy_select <- function(expr, data) {
-  if (rlang::quo_is_null(expr)) return(NULL)
+  if (rlang::quo_is_null(expr)) {
+    return(NULL)
+  }
   names(tidyselect::eval_select(expr, data))
 }
 
@@ -162,17 +169,17 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   expr,
   data,
   arg_nm,
-  required    = FALSE,
-  class_none  = "surveycore_error_design_var_missing",
+  required = FALSE,
+  class_none = "surveycore_error_design_var_missing",
   class_multi = "surveycore_error_design_var_missing",
-  call        = rlang::caller_call()
+  call = rlang::caller_call()
 ) {
   if (rlang::quo_is_null(expr)) {
     if (required) {
       cli::cli_abort(
         c("x" = "{.arg {arg_nm}} is required but was not provided."),
         class = class_none,
-        call  = call
+        call = call
       )
     }
     return(NULL)
@@ -184,7 +191,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     cli::cli_abort(
       c("x" = "{.arg {arg_nm}} matched no columns in {.arg data}"),
       class = class_none,
-      call  = call
+      call = call
     )
   }
 
@@ -197,7 +204,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
         )
       ),
       class = class_multi,
-      call  = call
+      call = call
     )
   }
 
@@ -232,19 +239,22 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       design@variables$repweights
     ))
   } else if (S7::S7_inherits(design, survey_twophase)) {
-    p1      <- design@variables$phase1
-    p2      <- design@variables$phase2
+    p1 <- design@variables$phase1
+    p2 <- design@variables$phase2
     p2_cols <- if (!is.null(p2)) {
       unlist(p2[!vapply(p2, is.null, logical(1L))], use.names = FALSE)
     } else {
       character(0L) # nocov — p2 is always a list (as_survey_twophase() and .from_svydesign_twophase() both initialize it)
     }
     unique(c(
-      p1$ids, p1$weights, p1$strata, p1$fpc,
+      p1$ids,
+      p1$weights,
+      p1$strata,
+      p1$fpc,
       p2_cols,
       design@variables$subset
     ))
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     unique(c(design@variables$weights))
   } else if (S7::S7_inherits(design, survey_srs)) {
     unique(c(design@variables$weights, design@variables$fpc))
@@ -264,36 +274,36 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     Filter(
       Negate(is.null),
       list(
-        ids     = design@variables$ids,
+        ids = design@variables$ids,
         weights = design@variables$weights,
-        strata  = design@variables$strata,
-        fpc     = design@variables$fpc
+        strata = design@variables$strata,
+        fpc = design@variables$fpc
       )
     )
   } else if (S7::S7_inherits(design, survey_replicate)) {
     Filter(
       Negate(is.null),
       list(
-        weights    = design@variables$weights,
+        weights = design@variables$weights,
         repweights = design@variables$repweights
       )
     )
   } else if (S7::S7_inherits(design, survey_twophase)) {
-    p1  <- design@variables$phase1
-    p2  <- design@variables$phase2
+    p1 <- design@variables$phase1
+    p2 <- design@variables$phase2
     raw <- list(
-      ids     = p1$ids,
+      ids = p1$ids,
       weights = p1$weights,
-      strata  = p1$strata,
-      fpc     = p1$fpc,
-      ids2    = if (!is.null(p2)) p2$ids    else NULL,
+      strata = p1$strata,
+      fpc = p1$fpc,
+      ids2 = if (!is.null(p2)) p2$ids else NULL,
       strata2 = if (!is.null(p2)) p2$strata else NULL,
-      probs2  = if (!is.null(p2)) p2$probs  else NULL,
-      fpc2    = if (!is.null(p2)) p2$fpc    else NULL,
-      subset  = design@variables$subset
+      probs2 = if (!is.null(p2)) p2$probs else NULL,
+      fpc2 = if (!is.null(p2)) p2$fpc else NULL,
+      subset = design@variables$subset
     )
     Filter(Negate(is.null), raw)
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     Filter(
       Negate(is.null),
       list(weights = design@variables$weights)
@@ -303,7 +313,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       Negate(is.null),
       list(
         weights = design@variables$weights,
-        fpc     = design@variables$fpc
+        fpc = design@variables$fpc
       )
     )
   } else {
@@ -316,7 +326,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey_srs,
-# as_survey, as_survey_repweights). Returns the metadata object unchanged when the
+# as_survey, as_survey_replicate). Returns the metadata object unchanged when the
 # attribute is absent or is not a non-empty list.
 #
 # @param data     A data.frame (may or may not have "weighting_history" attr).

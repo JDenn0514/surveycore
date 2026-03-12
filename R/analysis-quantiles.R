@@ -15,7 +15,7 @@
 #' classes.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_calibrated`.
+#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> A single unquoted numeric
 #'   variable name. Must resolve to exactly one numeric column.
 #' @param probs Numeric vector of probabilities in (0, 1). Default

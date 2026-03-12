@@ -64,6 +64,6 @@ d_updated <- update_design(d, weights = wtint2yr)
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object,
-\code{\link[=as_survey_repweights]{as_survey_repweights()}} to create a \code{survey_replicate} object
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object
 }
 \concept{update}

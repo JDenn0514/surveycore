@@ -99,18 +99,19 @@ attr(df$discrim_a, "question_preface") # "Please rate discrimination"
 }
 \seealso{
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }

@@ -1,10 +1,60 @@
+# surveycore 0.5.0
+
+## Breaking changes
+
+* `as_survey_replicate()` replaces `as_survey_repweights()`. The constructor
+  name now matches the underlying `survey_replicate` class.
+
+* `survey_nonprob` and `as_survey_nonprob()` replace `survey_calibrated` and
+  `as_survey_calibrated()`. "Calibrated" implies a post-processing step on a
+  probability sample; `nonprob` accurately reflects the design type.
+
+* The positional setter form `set_var_label(svy, age, "label")` has been
+  removed. Use the named form `set_var_label(svy, age = "label")` instead.
+
+* `extract_var_label()`, `extract_question_preface()`, and `extract_var_note()`
+  now return a named character vector. `extract_var_label(svy, age)` now
+  returns `c(age = "Age in years")` rather than `"Age in years"`.
+
+* `extract_val_labels()` now returns a named list. `extract_val_labels(svy, sex)`
+  now returns `list(sex = c(Male = 1L, Female = 2L))` rather than
+  `c(Male = 1L, Female = 2L)`.
+
+* `set_variable_labels()`, `set_value_labels()`, `set_question_prefaces()`, and
+  `set_variable_notes()` have been removed. Use `set_var_label()`,
+  `set_val_labels()`, `set_question_preface()`, and `set_var_note()`
+  respectively — all four now accept multiple variables via named `...`.
+
+## New features
+
+* `set_universe()` and `extract_universe()` set and retrieve universe
+  (eligibility) annotations for survey variables.
+
+* `set_missing_codes()` and `extract_missing_codes()` set and retrieve missing
+  value code vectors for survey variables.
+
+* `extract_metadata()` returns all metadata fields (`variable_label`,
+  `value_labels`, `question_preface`, `note`, `universe`, `missing_codes`,
+  `transformations`) for one or more variables as a named list.
+
+## Enhancements
+
+* All setter functions now support three call conventions: named `...`
+  (e.g., `set_var_label(svy, age = "Age in years")`), a single named
+  vector/list in `...`, or explicit `variable =` / content-argument pairs.
+  All setters also now work on plain `data.frame`s.
+
+* All extractor functions accept multiple variables via `...`, support three
+  output formats (`"named_vector"`, `"list"`, `"data_frame"`), and accept a
+  `fill` argument to include variables with no metadata in the output.
+
 # surveycore 0.4.0
 
 ## New features
 
 * `survey_glm()` fits survey-weighted generalized linear models for all five
   design classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
-  `survey_twophase`, `survey_calibrated`); returns a `survey_glm_fit` object
+  `survey_twophase`, `survey_nonprob`); returns a `survey_glm_fit` object
   with design-based (Binder 1983 sandwich) standard errors and degrees of
   freedom.
 
@@ -25,7 +75,7 @@
 * `broom::tidy()` is supported for `survey_glm_fit` objects via a shim that
   delegates to `clean()`.
 
-* `as_survey_rep()` has been renamed to `as_survey_repweights()` to avoid a
+* `as_survey_rep()` has been renamed to `as_survey_replicate()` to avoid a
   namespace clash with the `srvyr` package.
 
 ## Bug fixes
@@ -40,7 +90,7 @@
 ## New features
 
 * `print()` methods for all five survey design classes (`survey_taylor`,
-  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_calibrated`)
+  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_nonprob`)
   now display a `Domain: <n> of <N> rows` line when `surveytidy::filter()`
   has been applied. The line appears after the sample size line and before
   the `Groups:` line. For two-phase designs, domain counts reflect Phase 2
@@ -92,7 +142,7 @@
   variable labels using separator-based and longest-common-prefix detection.
 
 * `survey_weighting_history()` returns the weighting history stored in a
-  survey design object's metadata; `as_survey()`, `as_survey_repweights()`, and
+  survey design object's metadata; `as_survey()`, `as_survey_replicate()`, and
   `as_survey_srs()` now promote `"weighting_history"` attributes from the
   input data frame automatically.
 
@@ -116,7 +166,7 @@
   (`ids`, `weights`, `strata`, `fpc`, `probs`); supports Taylor linearization
   for stratified, clustered, and SRS designs.
 
-* `as_survey_repweights()` creates `survey_replicate` objects; supports BRR, Fay BRR,
+* `as_survey_replicate()` creates `survey_replicate` objects; supports BRR, Fay BRR,
   JK1, JK2, JKn, bootstrap, ACS, and successive-difference replicate schemes.
 
 * `as_survey_twophase()` creates `survey_twophase` objects; supports "full",

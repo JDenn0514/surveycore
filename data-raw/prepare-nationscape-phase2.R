@@ -11,7 +11,7 @@
 ## Mode: Online (Lucid respondent exchange platform)
 ## Design: Non-probability quota sample with raking weights
 ##   Weight variable: weight (calibrated to ACS + 2016 vote targets)
-##   No cluster or strata variables — use as_survey_calibrated()
+##   No cluster or strata variables — use as_survey_nonprob()
 ##
 ## Phase 2 content changes vs. Phase 1:
 ##   - Some Phase 1 matchup candidates removed (Booker, Castro, Gabbard, etc.)
@@ -440,7 +440,7 @@ ns_phase2 <- load_phase_waves(PHASE2_DIR, BATTERIES_PHASE2, "Phase 2")
 ## ---- Usage notes ----
 ##
 ##   wave25 <- ns_phase2[["ns20200102"]]
-##   d <- as_survey_calibrated(wave25, weights = weight)
+##   d <- as_survey_nonprob(wave25, weights = weight)
 ##   get_freqs(d, pres_approval)
 ##
 ## Save locally: saveRDS(ns_phase2, "data-raw/nationscape/ns_phase2.rds")

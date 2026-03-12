@@ -81,7 +81,7 @@
   provides its own.
 - Two-phase quantile variance (Woodruff's method for two-phase) — deferred to Phase 1's
   `get_quantiles()` PR, which specifies and implements it alongside the function itself.
-- `survey_calibrated` two-phase variance — deferred to Phase 2.5.
+- `survey_nonprob` two-phase variance — deferred to Phase 2.5.
 - Changes to `update_design()` — users change `method` by reconstructing with
   `as_survey_twophase(..., method = "approx")`.
 
@@ -646,9 +646,9 @@ Both `get_means()` and `get_totals()` require updates in two places:
 ```r
 #' @param design A survey design object. Supported classes: [survey_taylor]
 #'   (created by [as_survey()]), [survey_replicate] (created by
-#'   [as_survey_repweights()]), [survey_srs] (created by [as_survey_srs()] or
+#'   [as_survey_replicate()]), [survey_srs] (created by [as_survey_srs()] or
 #'   [as_survey()]), [survey_twophase] (created by [as_survey_twophase()]),
-#'   and [survey_calibrated] (created by [as_survey_calibrated()]).
+#'   and [survey_nonprob] (created by [as_survey_nonprob()]).
 ```
 
 **`@section Variance estimation by design type:` — add `survey_twophase` entry:**

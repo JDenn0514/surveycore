@@ -20,7 +20,7 @@ appears after the sample size line and before the `Groups:` line.
   to match what analysis functions estimate.
 - Added `.print_domain_info(x)` call site in all five print methods:
   `survey_taylor`, `survey_srs`, `survey_replicate`, `survey_twophase`,
-  `survey_calibrated`.
+  `survey_nonprob`.
 
 ### `tests/testthat/test-methods-print.R`
 
@@ -34,6 +34,6 @@ appears after the sample size line and before the `Groups:` line.
   - 31: `survey_srs` domain line present (snapshot)
   - 32: `survey_replicate` domain line present (snapshot)
   - 33: `survey_twophase` domain line present — Phase 2 counts (snapshot)
-  - 34: `survey_calibrated` default output — net-new baseline (snapshot)
-  - 35: `survey_calibrated` domain line present (snapshot)
+  - 34: `survey_nonprob` default output — net-new baseline (snapshot)
+  - 35: `survey_nonprob` domain line present (snapshot)
   - 36: `survey_taylor` zero rows in domain (snapshot)

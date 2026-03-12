@@ -15,7 +15,7 @@ This review applies all five lenses to the updated plan.
 
 Before writing any issue, confirmed:
 
-- `survey_calibrated` S7 class and `as_survey_calibrated()` constructor:
+- `survey_nonprob` S7 class and `as_survey_nonprob()` constructor:
   **already implemented** (`R/00-s7-classes.R:768`, `R/03-constructors.R:1084`).
   NOT a blocker.
 - `.resolve_tidy_select()`: **already implemented** in `R/07-utils.R:77`.
@@ -224,7 +224,7 @@ replicate, twophase, srs, calibrated) and no final `else`:
     ...
   } else if (S7::S7_inherits(design, survey_srs)) {
     ...
-  } else if (S7::S7_inherits(design, survey_calibrated)) {
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
     nrow(design@data) - 1L
   }
   # ← No else clause: returns NULL silently for any other class

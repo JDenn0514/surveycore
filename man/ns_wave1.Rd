@@ -296,11 +296,11 @@ prepare scripts in \verb{data-raw/} (see the Source section).
 
 \strong{Survey design:}
 The Nationscape is a calibrated non-probability sample (quota design with
-raking weights). Use \code{\link[=as_survey_calibrated]{as_survey_calibrated()}} — it is designed specifically
+raking weights). Use \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} — it is designed specifically
 for this use case and will gain bootstrap re-calibration variance in Phase
 2.5:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_calibrated(ns_wave1, weights = weight)
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_nonprob(ns_wave1, weights = weight)
 }\if{html}{\out{</div>}}
 
 \strong{Metadata:}
@@ -350,7 +350,7 @@ attr(ns_wave1$group_favorability_blacks, "question_preface")
 attr(ns_wave1$news_sources_cnn, "labels")
 
 # Create a calibrated survey design (correct approach for raked non-prob samples)
-svy <- as_survey_calibrated(ns_wave1, weights = weight)
+svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
 
 # Party identification distribution

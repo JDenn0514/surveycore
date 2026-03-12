@@ -114,7 +114,7 @@ semantically confusing for a plain equal-probability sample.**
 | `survey_taylor` | Complex probability sample with known design | Design weights | Taylor linearization |
 | `survey_replicate` | Complex sample with pre-computed replicate weights | Base + replicate weights | Replicate formula |
 | `survey_twophase` | Two-phase probability sample | Phase 1 + 2 probabilities | Two-phase linearization (requires Phase 0.75) |
-| `survey_calibrated` | Non-probability or post-hoc calibrated sample | Calibrated weights (raking, matching, propensity) | Weighted SRS approximation (conservative) |
+| `survey_nonprob` | Non-probability or post-hoc calibrated sample | Calibrated weights (raking, matching, propensity) | Weighted SRS approximation (conservative) |
 
 **Constructor paths confirmed:**
 
@@ -123,15 +123,15 @@ semantically confusing for a plain equal-probability sample.**
 | `as_survey(df)` | `survey_srs` |
 | `as_survey(df, weights = w)` | `survey_taylor` |
 | `as_survey(df, ids = psu, weights = w, strata = s)` | `survey_taylor` |
-| `as_survey_repweights(df, weights = w, repweights = rw)` | `survey_replicate` |
+| `as_survey_replicate(df, weights = w, repweights = rw)` | `survey_replicate` |
 | `as_survey_twophase(phase1, subset = s2)` | `survey_twophase` |
-| `as_survey_calibrated(df, weights = w)` | `survey_calibrated` |
+| `as_survey_nonprob(df, weights = w)` | `survey_nonprob` |
 
 ---
 
-**Q: Should `survey_calibrated` be supported by Phase 1 analysis functions?
+**Q: Should `survey_nonprob` be supported by Phase 1 analysis functions?
 The MEMORY.md notes "Variance: SRS-based until Phase 2.5 (bootstrap
-re-calibration deferred)." `survey_calibrated` does not store the original
+re-calibration deferred)." `survey_nonprob` does not store the original
 sampling design structure (no PSUs, strata, FPC in `@variables`).**
 
 - Options considered:
@@ -143,7 +143,7 @@ sampling design structure (no PSUs, strata, FPC in `@variables`).**
   - **Defer to Phase 2.5:** Keep throwing `surveycore_error_unsupported_class`
     until proper calibration variance (bootstrap re-calibration) is
     implemented.
-- **Decision:** Support `survey_calibrated` in Phase 1 with weighted SRS
+- **Decision:** Support `survey_nonprob` in Phase 1 with weighted SRS
   approximation. Document that SEs are conservative until Phase 2.5.
 - **Rationale:** Users with externally calibrated weights (post-stratified
   online panels, anesrake-weighted data, etc.) should be able to use Phase 1
@@ -281,7 +281,7 @@ changes are required:
    vendoring two-phase variance code and adding `survey_twophase` support
    before Phase 1 analysis functions.
 4. Update `plans/phase-1-formal-specification.md` to add `survey_srs` and
-   `survey_calibrated` to the supported class list for all 6 functions.
+   `survey_nonprob` to the supported class list for all 6 functions.
 5. Create `survey_srs` S7 class as a Phase 0 gap fix (new subclass of
    `survey_base`; `as_survey(df)` with no design args creates it).
 6. Update `plans/phase-1-formal-specification.md` Section 2.2 to replace
@@ -695,7 +695,7 @@ before implementation begins.
 
 **Q: `survey_srs` is a Phase 0 gap (a missing S7 class that should have
 shipped alongside `survey_taylor`, `survey_replicate`, `survey_twophase`, and
-`survey_calibrated`). Should it be added to the Phase 0 spec docs or treated
+`survey_nonprob`). Should it be added to the Phase 0 spec docs or treated
 as a Phase 0.75 item?**
 
 - Options considered:

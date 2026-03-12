@@ -219,10 +219,10 @@
 #'
 #' @details
 #' **Survey design:** Successive difference replication (SDR). Use
-#' `as_survey_repweights()` with all 80 replicate weights:
+#' `as_survey_replicate()` with all 80 replicate weights:
 #'
 #' ```r
-#' svy <- as_survey_repweights(
+#' svy <- as_survey_replicate(
 #'   acs_pums_wy,
 #'   weights    = pwgtp,
 #'   repweights = pwgtp1:pwgtp80,
@@ -238,8 +238,8 @@
 #' The ACS PUMS source is a plain CSV with no embedded labels. Columns in
 #' `acs_pums_wy` carry no `"label"`, `"labels"`, or `"question_preface"`
 #' attributes. Variable descriptions are documented here in `?acs_pums_wy` and
-#' in `data-raw/README.md`. Use `set_variable_labels()` and
-#' `set_value_labels()` to attach labels manually before analysis if needed.
+#' in `data-raw/README.md`. Use `set_var_label()` and
+#' `set_val_labels()` to attach labels manually before analysis if needed.
 #'
 #' @source
 #' U.S. Census Bureau. 2022 ACS 1-Year PUMS.
@@ -820,11 +820,11 @@
 #' }
 #'
 #' @details
-#' **Survey design:** Jackknife replication — use `as_survey_repweights()` with all
+#' **Survey design:** Jackknife replication — use `as_survey_replicate()` with all
 #' 100 replicate weights:
 #'
 #' ```r
-#' svy <- as_survey_repweights(
+#' svy <- as_survey_replicate(
 #'   pew_jewish_2020,
 #'   weights    = extweight,
 #'   repweights = extweight1:extweight100,
@@ -860,7 +860,7 @@
 #' original Stata file. The three battery variable groups additionally carry a
 #' `"question_preface"` attribute with the shared question stem. All three
 #' attribute types are automatically extracted into surveycore's metadata
-#' system when you call `as_survey_repweights()`.
+#' system when you call `as_survey_replicate()`.
 #'
 #' - **Variable labels** (`"label"` attribute): A human-readable description of
 #'   each column — for battery items this is the unique item text (e.g.,
@@ -925,12 +925,12 @@
 #'
 #' **Survey design:**
 #' The Nationscape is a calibrated non-probability sample (quota design with
-#' raking weights). Use [as_survey_calibrated()] — it is designed specifically
+#' raking weights). Use [as_survey_nonprob()] — it is designed specifically
 #' for this use case and will gain bootstrap re-calibration variance in Phase
 #' 2.5:
 #'
 #' ```r
-#' svy <- as_survey_calibrated(ns_wave1, weights = weight)
+#' svy <- as_survey_nonprob(ns_wave1, weights = weight)
 #' ```
 #'
 #' **Metadata:**
@@ -1254,7 +1254,7 @@
 #' attr(ns_wave1$news_sources_cnn, "labels")
 #'
 #' # Create a calibrated survey design (correct approach for raked non-prob samples)
-#' svy <- as_survey_calibrated(ns_wave1, weights = weight)
+#' svy <- as_survey_nonprob(ns_wave1, weights = weight)
 #' get_freqs(svy, pres_approval)
 #'
 #' # Party identification distribution

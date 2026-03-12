@@ -17,19 +17,27 @@
 
 test_that("Gaussian oracle: Taylor design (gss_2024) — coef and SE match survey::svyglm", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, age ~ educ + sex)
   fit_sv <- survey::svyglm(age ~ educ + sex, design = d_sv)
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -39,26 +47,27 @@ test_that("Gaussian oracle: Replicate BRR design (mse=FALSE) — coef and SE mat
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
 
-  d_sc <- as_survey_repweights(
+  d_sc <- as_survey_replicate(
     df_rep,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR",
-    mse        = FALSE
+    type = "BRR",
+    mse = FALSE
   )
   # survey::svrepdesign() defaults to mse = FALSE — matches our d_sc
   d_sv <- survey::svrepdesign(
-    data       = df_rep,
-    weights    = ~wt,
+    data = df_rep,
+    weights = ~wt,
     repweights = df_rep[, repwt_cols],
-    type       = "BRR"
+    type = "BRR"
   )
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
   fit_sv <- survey::svyglm(y1 ~ y2 + y3, design = d_sv)
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -75,7 +84,8 @@ test_that("Gaussian oracle: SRS design (no FPC) — coef and SE match survey::sv
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -85,8 +95,13 @@ test_that("Gaussian oracle: Twophase design — runs without error and SEs are p
   # tracked in plans/investigation-twophase-variance.md
   skip_if_not_installed("survey")
   df_p <- make_survey_data(design = "twophase", seed = 42)
-  ph1 <- as_survey(df_p,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  ph1 <- as_survey(
+    df_p,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   d_sc <- as_survey_twophase(ph1, subset = subset, method = "approx")
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
@@ -101,7 +116,7 @@ test_that("Gaussian oracle: Calibrated design — runs without error and SEs are
   # Conservative SRS approximation; exact SE match not expected.
   skip_if_not_installed("survey")
   df_cal <- make_survey_data(seed = 42)
-  d_sc <- as_survey_calibrated(df_cal, weights = wt)
+  d_sc <- as_survey_nonprob(df_cal, weights = wt)
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
 
   se_sc <- sqrt(diag(vcov(fit_sc)))
@@ -115,19 +130,27 @@ test_that("Gaussian oracle: Calibrated design — runs without error and SEs are
 
 test_that("Family oracle: gaussian(identity) on age ~ educ + sex — coef and SE match", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, age ~ educ + sex, family = gaussian())
   fit_sv <- survey::svyglm(age ~ educ + sex, design = d_sv, family = gaussian())
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -136,113 +159,171 @@ test_that("Family oracle: binomial(logit) on I(happy==1) — coef and SE match q
   # surveycore: binomial(); survey: quasibinomial() — coef and SE are identical
   # since the Binder sandwich does not depend on the dispersion parameter.
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, I(happy == 1) ~ educ + sex, family = binomial())
   fit_sv <- survey::svyglm(
-    I(happy == 1) ~ educ + sex, design = d_sv, family = quasibinomial()
+    I(happy == 1) ~ educ + sex,
+    design = d_sv,
+    family = quasibinomial()
   )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
 
 test_that("Family oracle: Gamma(inverse) on age ~ educ + sex — coef and SE match", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, age ~ educ + sex, family = Gamma(link = "inverse"))
   fit_sv <- survey::svyglm(
-    age ~ educ + sex, design = d_sv, family = Gamma(link = "inverse")
+    age ~ educ + sex,
+    design = d_sv,
+    family = Gamma(link = "inverse")
   )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
 
 test_that("Family oracle: inverse.gaussian(1/mu^2) on age ~ educ + sex — coef and SE match", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- suppressWarnings(
-    survey_glm(d_sc, age ~ educ + sex, family = inverse.gaussian(link = "1/mu^2"))
+    survey_glm(
+      d_sc,
+      age ~ educ + sex,
+      family = inverse.gaussian(link = "1/mu^2")
+    )
   )
   fit_sv <- suppressWarnings(
     survey::svyglm(
-      age ~ educ + sex, design = d_sv, family = inverse.gaussian(link = "1/mu^2")
+      age ~ educ + sex,
+      design = d_sv,
+      family = inverse.gaussian(link = "1/mu^2")
     )
   )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
 
 test_that("Family oracle: quasi(identity, constant) on age ~ educ + sex — coef and SE match", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
-  fit_sc <- survey_glm(d_sc, age ~ educ + sex,
+  fit_sc <- survey_glm(
+    d_sc,
+    age ~ educ + sex,
     family = quasi(link = "identity", variance = "constant")
   )
-  fit_sv <- survey::svyglm(age ~ educ + sex, design = d_sv,
+  fit_sv <- survey::svyglm(
+    age ~ educ + sex,
+    design = d_sv,
     family = quasi(link = "identity", variance = "constant")
   )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
 
 test_that("Family oracle: quasibinomial(logit) on I(happy==1) — coef and SE match", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
-  fit_sc <- survey_glm(d_sc, I(happy == 1) ~ educ + sex,
+  fit_sc <- survey_glm(
+    d_sc,
+    I(happy == 1) ~ educ + sex,
     family = quasibinomial()
   )
   fit_sv <- survey::svyglm(
-    I(happy == 1) ~ educ + sex, design = d_sv, family = quasibinomial()
+    I(happy == 1) ~ educ + sex,
+    design = d_sv,
+    family = quasibinomial()
   )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -254,19 +335,33 @@ test_that("Family oracle: poisson(log) on count response — coef and SE match",
   set.seed(42)
   df$y_count <- rpois(nrow(df), lambda = exp(0.3 * df$y2 + 0.5))
 
-  d_sc <- as_survey(df,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  d_sc <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
-    data = df, nest = TRUE
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    fpc = ~fpc,
+    data = df,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, y_count ~ y2 + y3, family = poisson())
-  fit_sv <- survey::svyglm(y_count ~ y2 + y3, design = d_sv, family = quasipoisson())
+  fit_sv <- survey::svyglm(
+    y_count ~ y2 + y3,
+    design = d_sv,
+    family = quasipoisson()
+  )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -277,19 +372,33 @@ test_that("Family oracle: quasipoisson(log) on count response — coef and SE ma
   set.seed(42)
   df$y_count <- rpois(nrow(df), lambda = exp(0.3 * df$y2 + 0.5))
 
-  d_sc <- as_survey(df,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  d_sc <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
-    data = df, nest = TRUE
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    fpc = ~fpc,
+    data = df,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, y_count ~ y2 + y3, family = quasipoisson())
-  fit_sv <- survey::svyglm(y_count ~ y2 + y3, design = d_sv, family = quasipoisson())
+  fit_sv <- survey::svyglm(
+    y_count ~ y2 + y3,
+    design = d_sv,
+    family = quasipoisson()
+  )
 
   expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
   expect_equal(
-    unname(sqrt(diag(vcov(fit_sc)))), as.numeric(survey::SE(fit_sv)),
+    unname(sqrt(diag(vcov(fit_sc)))),
+    as.numeric(survey::SE(fit_sv)),
     tolerance = 1e-8
   )
 })
@@ -299,14 +408,22 @@ test_that("Family oracle: quasipoisson(log) on count response — coef and SE ma
 # ===========================================================================
 
 test_that("Programmatic interface: response/predictors produces identical coef and vcov to formula", {
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
-  fit_formula      <- survey_glm(d_sc, age ~ educ + sex)
-  fit_programmatic <- survey_glm(d_sc, response = "age", predictors = c("educ", "sex"))
+  fit_formula <- survey_glm(d_sc, age ~ educ + sex)
+  fit_programmatic <- survey_glm(
+    d_sc,
+    response = "age",
+    predictors = c("educ", "sex")
+  )
 
-  expect_equal(coef(fit_formula), coef(fit_programmatic),      tolerance = 1e-15)
-  expect_equal(vcov(fit_formula), vcov(fit_programmatic),      tolerance = 1e-15)
+  expect_equal(coef(fit_formula), coef(fit_programmatic), tolerance = 1e-15)
+  expect_equal(vcov(fit_formula), vcov(fit_programmatic), tolerance = 1e-15)
 })
 
 # ===========================================================================
@@ -315,12 +432,19 @@ test_that("Programmatic interface: response/predictors produces identical coef a
 
 test_that(".degf() oracle: Taylor design matches survey::degf()", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)
 })
@@ -329,18 +453,18 @@ test_that(".degf() oracle: Replicate BRR design matches survey::degf()", {
   skip_if_not_installed("survey")
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
-  d_sc <- as_survey_repweights(
+  d_sc <- as_survey_replicate(
     df_rep,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR",
-    mse        = FALSE
+    type = "BRR",
+    mse = FALSE
   )
   d_sv <- survey::svrepdesign(
-    data       = df_rep,
-    weights    = ~wt,
+    data = df_rep,
+    weights = ~wt,
     repweights = df_rep[, repwt_cols],
-    type       = "BRR"
+    type = "BRR"
   )
   expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)
 })
@@ -358,8 +482,13 @@ test_that(".degf() oracle: Twophase design returns positive value [RELAXED — k
   # survey::degf() for twophase returns full-sample PSU count. These differ.
   # Relaxed test: just verify .degf() returns a positive integer.
   df_p <- make_survey_data(design = "twophase", seed = 42)
-  ph1 <- as_survey(df_p,
-    ids = psu, weights = wt, strata = strata, fpc = fpc, nest = TRUE
+  ph1 <- as_survey(
+    df_p,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
   )
   d_sc <- as_survey_twophase(ph1, subset = subset, method = "approx")
   expect_gt(.degf(d_sc), 0)
@@ -368,7 +497,7 @@ test_that(".degf() oracle: Twophase design returns positive value [RELAXED — k
 test_that(".degf() oracle: Calibrated design matches survey::degf() for plain weighted design", {
   skip_if_not_installed("survey")
   df <- make_survey_data(seed = 42)
-  d_sc <- as_survey_calibrated(df, weights = wt)
+  d_sc <- as_survey_nonprob(df, weights = wt)
   # Reference: survey::svydesign with ids=~1 gives degf = n - 1, same as our formula
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
   expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)
@@ -379,8 +508,12 @@ test_that(".degf() oracle: Calibrated design matches survey::degf() for plain we
 # ===========================================================================
 
 test_that("PSD check: Taylor vcov is positive semi-definite", {
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, age ~ educ + sex)
   ev <- eigen(vcov(fit_sc))$values
@@ -398,12 +531,12 @@ test_that("PSD check: SRS vcov is positive semi-definite", {
 test_that("PSD check: Replicate BRR vcov is positive semi-definite", {
   df_rep <- make_survey_data(design = "replicate", type = "BRR", seed = 42)
   repwt_cols <- grep("^repwt_", names(df_rep), value = TRUE)
-  d_sc <- as_survey_repweights(
+  d_sc <- as_survey_replicate(
     df_rep,
-    weights    = wt,
+    weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type       = "BRR",
-    mse        = FALSE
+    type = "BRR",
+    mse = FALSE
   )
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
   ev <- eigen(vcov(fit_sc))$values
@@ -416,12 +549,19 @@ test_that("PSD check: Replicate BRR vcov is positive semi-definite", {
 
 test_that("CI oracle: confint() bounds match survey::svyglm confint() within 1e-6", {
   skip_if_not_installed("survey")
-  d_sc <- as_survey(gss_2024,
-    ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE
+  d_sc <- as_survey(
+    gss_2024,
+    ids = vpsu,
+    weights = wtssps,
+    strata = vstrat,
+    nest = TRUE
   )
   d_sv <- survey::svydesign(
-    ids = ~vpsu, weights = ~wtssps, strata = ~vstrat,
-    data = gss_2024, nest = TRUE
+    ids = ~vpsu,
+    weights = ~wtssps,
+    strata = ~vstrat,
+    data = gss_2024,
+    nest = TRUE
   )
   fit_sc <- survey_glm(d_sc, age ~ educ + sex)
   fit_sv <- survey::svyglm(age ~ educ + sex, design = d_sv)

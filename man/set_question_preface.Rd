@@ -2,43 +2,48 @@
 % Please edit documentation in R/core-metadata.R
 \name{set_question_preface}
 \alias{set_question_preface}
-\title{Set a Question Preface}
+\title{Set Question Preface(s)}
 \usage{
-set_question_preface(x, var, preface)
+set_question_preface(x, ..., variable = NULL, preface = NULL)
 }
 \arguments{
-\item{x}{A survey design object.}
+\item{x}{A survey design object or a data frame.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable name
-(bare, unquoted).}
+\item{...}{Named arguments where the name is the variable and the value is
+the preface string. Supports \verb{!!!} list splicing.}
 
-\item{preface}{A character string. The question preface text.}
+\item{variable}{A character vector of variable names. Use with \code{preface}.}
+
+\item{preface}{A character vector of preface strings, one per element of
+\code{variable}.}
 }
 \value{
-The modified survey object, invisibly.
+The modified object, invisibly.
 }
 \description{
-Sets the question preface string for a single variable in a survey design
-object. Question prefaces are the shared introductory text for a battery of
-related questions.
+Sets the question preface string for one or more variables. Question prefaces
+are the shared introductory text for a battery of related questions.
+}
+\details{
+Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_label()}} for details.
 }
 \seealso{
-\code{\link[=set_question_prefaces]{set_question_prefaces()}} for setting prefaces for multiple
-variables, \code{\link[=extract_question_preface]{extract_question_preface()}} to retrieve a preface
+\code{\link[=extract_question_preface]{extract_question_preface()}} to retrieve a preface
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_missing_codes}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }

@@ -14,14 +14,14 @@ survey_replicate(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey data. Prefer
-\code{\link[=as_survey_repweights]{as_survey_repweights()}} over calling this constructor directly.}
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} over calling this constructor directly.}
 
 \item{metadata}{A \link{survey_metadata} object. Created automatically by
-\code{\link[=as_survey_repweights]{as_survey_repweights()}}.}
+\code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{variables}{A named list of design specification (weights,
 repweights, type, scale, rscales, fpc, fpctype, mse). Set
-automatically by \code{\link[=as_survey_repweights]{as_survey_repweights()}}.}
+automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
 standalone surveycore use.}
@@ -33,7 +33,7 @@ A \code{survey_replicate} object.
 }
 \description{
 A survey design object using replicate weights for variance estimation.
-Create with \code{\link[=as_survey_repweights]{as_survey_repweights()}}.
+Create with \code{\link[=as_survey_replicate]{as_survey_replicate()}}.
 }
 \section{Design variables (\verb{@variables})}{
 
@@ -56,18 +56,18 @@ a property.}
 }
 
 \seealso{
-\code{\link[=as_survey_repweights]{as_survey_repweights()}} to create a \code{survey_replicate} object.
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object.
 
 Other constructors: 
 \code{\link{as_survey}()},
-\code{\link{as_survey_calibrated}()},
-\code{\link{as_survey_repweights}()},
+\code{\link{as_survey_nonprob}()},
+\code{\link{as_survey_replicate}()},
 \code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_calibrated}()},
 \code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
+\code{\link{survey_nonprob}()},
 \code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}

@@ -2,39 +2,51 @@
 % Please edit documentation in R/core-metadata.R
 \name{extract_var_note}
 \alias{extract_var_note}
-\title{Extract an Analyst Note}
+\title{Extract Analyst Notes}
 \usage{
-extract_var_note(x, var)
+extract_var_note(x, ..., format = "named_vector", fill = NULL)
 }
 \arguments{
-\item{x}{A survey design object.}
+\item{x}{A survey design object or \code{data.frame}.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable name
-(bare, unquoted).}
+\item{...}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable names
+(bare, unquoted). If empty, metadata for all variables is returned.}
+
+\item{format}{\code{character(1)}. Output format: \code{"named_vector"} (default),
+\code{"list"}, or \code{"data_frame"}.}
+
+\item{fill}{Scalar or \code{NULL}. How to handle variables with no note:
+\code{NULL} (default) omits them; \code{NA_character_} includes them with \code{NA}.}
 }
 \value{
-A character string, or \code{NULL}.
+\itemize{
+\item \code{"named_vector"} (default): named character vector. Empty: \code{character(0)}.
+\item \code{"list"}: named list of character scalars. Empty: \code{list()}.
+\item \code{"data_frame"}: tibble with columns \code{variable} and \code{note}. Empty:
+zero-row tibble.
+}
 }
 \description{
-Returns the analyst note for a single variable, or \code{NULL} if none has been
-set.
+Returns analyst notes for one or more variables in a survey design object
+or data frame.
 }
 \seealso{
 \code{\link[=set_var_note]{set_var_note()}} to set a note
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
-\code{\link{set_question_prefaces}()},
+\code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
-\code{\link{set_value_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},
-\code{\link{set_variable_labels}()},
-\code{\link{set_variable_notes}()},
 \code{\link{survey_metadata}()},
 \code{\link{survey_weighting_history}()}
 }
