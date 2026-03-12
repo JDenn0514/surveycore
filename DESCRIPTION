@@ -39,6 +39,7 @@ Suggests:
     broom (>= 1.0.0),
     marginaleffects (>= 0.18.0),
     covr,
+    surveytidy,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
