@@ -36,11 +36,10 @@
 
     Code
       as_survey(df, weights = starts_with("zzz"))
+    Message
+      i No `ids` or `strata` specified; creating a <survey_srs> design.
+      i Use `as_survey_srs()` to avoid this message.
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `as_survey_srs()`:
       x `weights` matched no columns in `data`
 
@@ -48,11 +47,10 @@
 
     Code
       as_survey(df, weights = starts_with("wt"))
+    Message
+      i No `ids` or `strata` specified; creating a <survey_srs> design.
+      i Use `as_survey_srs()` to avoid this message.
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `as_survey_srs()`:
       x `weights` must select exactly one column, not 2
 
@@ -68,11 +66,10 @@
 
     Code
       as_survey(df, weights = wt, fpc = starts_with("fpc"))
+    Message
+      i No `ids` or `strata` specified; creating a <survey_srs> design.
+      i Use `as_survey_srs()` to avoid this message.
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `as_survey_srs()`:
       x `fpc` must select exactly one column, not 2
 
@@ -80,11 +77,10 @@
 
     Code
       as_survey(df, weights = wt, fpc = fpc)
+    Message
+      i No `ids` or `strata` specified; creating a <survey_srs> design.
+      i Use `as_survey_srs()` to avoid this message.
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `.validate_fpc()`:
       x `fpc` column fpc contains 1 NA value(s). FPC must be fully observed.
       v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
@@ -542,16 +538,13 @@
       x `fpc` column fpc_col contains 1 NA value(s). FPC must be fully observed.
       v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
 
-# as_survey() fallback warning snapshot matches expected message
+# as_survey() fallback message snapshot matches expected output
 
     Code
       as_survey(df, weights = wt)
-    Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
     Message
+      i No `ids` or `strata` specified; creating a <survey_srs> design.
+      i Use `as_survey_srs()` to avoid this message.
       
       -- Survey Design ---------------------------------------------------------------
       <survey_srs> (simple random sample)

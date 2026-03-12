@@ -348,15 +348,15 @@ as_survey <- function(
   strata_is_null <- rlang::quo_is_null(strata_quo)
 
   if (ids_is_null && strata_is_null) {
-    cli::cli_warn(
+    cli::cli_inform(
       c(
-        "!" = "No {.arg ids} or {.arg strata} specified.",
-        "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).",
-        "v" = paste0(
-          "Use {.fn as_survey_srs} to create SRS designs without this warning."
-        )
+        "i" = paste0(
+          "No {.arg ids} or {.arg strata} specified; ",
+          "creating a {.cls survey_srs} design."
+        ),
+        "i" = "Use {.fn as_survey_srs} to avoid this message."
       ),
-      class = "surveycore_warning_as_survey_srs_fallback"
+      class = "surveycore_message_as_survey_srs_fallback"
     )
     return(rlang::inject(as_survey_srs(
       data,

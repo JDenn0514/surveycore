@@ -20,9 +20,9 @@
 test_that("as_survey() dispatches to survey_srs for SRS (no ids or strata)", {
   df <- make_survey_data(n = 100, seed = 1L)
   suppressWarnings(
-    expect_warning(
+    expect_message(
       d <- as_survey(df),
-      class = "surveycore_warning_as_survey_srs_fallback"
+      class = "surveycore_message_as_survey_srs_fallback"
     )
   )
   test_invariants(d)
@@ -34,9 +34,9 @@ test_that("as_survey() dispatches to survey_srs for SRS (no ids or strata)", {
 
 test_that("as_survey() dispatches to survey_srs for weighted SRS (weights only)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  expect_warning(
+  expect_message(
     d <- as_survey(df, weights = wt),
-    class = "surveycore_warning_as_survey_srs_fallback"
+    class = "surveycore_message_as_survey_srs_fallback"
   )
   test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_srs))
@@ -2070,12 +2070,12 @@ test_that("as_survey_srs() stores fpc_type = NULL when no FPC provided", {
   expect_null(d@variables$fpc)
 })
 
-# Row 9: as_survey() with no ids/strata creates survey_srs (fallback warning)
-test_that("as_survey() fallback to survey_srs fires surveycore_warning_as_survey_srs_fallback", {
+# Row 9: as_survey() with no ids/strata creates survey_srs (fallback message)
+test_that("as_survey() fallback to survey_srs fires surveycore_message_as_survey_srs_fallback", {
   df <- data.frame(y = 1:10, wt = rep(1, 10))
-  expect_warning(
+  expect_message(
     d <- as_survey(df, weights = wt),
-    class = "surveycore_warning_as_survey_srs_fallback"
+    class = "surveycore_message_as_survey_srs_fallback"
   )
   test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_srs))
@@ -2235,28 +2235,34 @@ test_that("as_survey_srs() fires srs_no_weights warning and still returns object
   expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
 })
 
-# Row 60: as_survey() fallback warning — both warnings fire in order when no weights
-test_that("as_survey() fallback fires srs_fallback then srs_no_weights warnings", {
+# Row 60: as_survey() fallback — message fires then srs_no_weights warning fires
+test_that("as_survey() fallback fires srs_fallback message then srs_no_weights warning", {
   df <- data.frame(y = 1:5)
-  # Both warnings fire: first fallback (row 60), then srs_no_weights (row 61)
-  warns <- list()
+  seen_message <- FALSE
+  seen_warning <- NULL
   withCallingHandlers(
     {
       d <- as_survey(df)
     },
+    message = function(m) {
+      if (inherits(m, "surveycore_message_as_survey_srs_fallback")) {
+        seen_message <<- TRUE
+      }
+      invokeRestart("muffleMessage")
+    },
     warning = function(w) {
-      warns[[length(warns) + 1L]] <<- class(w)[[1L]]
+      seen_warning <<- class(w)[[1L]]
       invokeRestart("muffleWarning")
     }
   )
-  expect_identical(warns[[1L]], "surveycore_warning_as_survey_srs_fallback")
-  expect_identical(warns[[2L]], "surveycore_warning_srs_no_weights")
+  expect_true(seen_message)
+  expect_identical(seen_warning, "surveycore_warning_srs_no_weights")
 })
 
 
 # ── as_survey_srs() — snapshot for fallback warning ──────────────────────────
 
-test_that("as_survey() fallback warning snapshot matches expected message", {
+test_that("as_survey() fallback message snapshot matches expected output", {
   df <- data.frame(y = 1:5, wt = rep(1, 5))
   expect_snapshot(
     as_survey(df, weights = wt)
