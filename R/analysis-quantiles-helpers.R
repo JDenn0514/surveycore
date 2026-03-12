@@ -210,7 +210,10 @@
     se         = se_q,
     ci_low     = ci_low,
     ci_high    = ci_high,
-    se_srs     = NA_real_,  # No closed-form SRS SE for quantiles
+    se_srs     = NA_real_,  # DEFF for quantiles requires a kernel density
+                            # estimate at the quantile point (Woodruff SRS
+                            # approximation; see survey::svyquantile(deff=TRUE)).
+                            # Not implemented — deff is always NA.
     n          = n_d,
     n_weighted = N_d
   )

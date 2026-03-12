@@ -79,7 +79,10 @@ A \code{survey_quantiles} tibble (also inheriting \code{survey_result}).
 \item \code{estimate} — weighted quantile estimate.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}. CIs are Woodruff
-intervals and are generally asymmetric around \code{estimate}.
+intervals and are generally asymmetric around \code{estimate}. \code{deff} is
+always \code{NA} for quantile estimates: computing it requires a kernel
+density estimate at the quantile point (the Woodruff SRS approximation
+used by \code{survey::svyquantile(deff = TRUE)}), which is not implemented.
 \item \code{n} — unweighted count of non-NA observations used in the estimate.
 \item \code{n_weighted} — sum of weights (only when requested).
 }
