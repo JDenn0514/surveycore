@@ -296,6 +296,24 @@ as_survey_srs <- function(
 #' is assumed. A warning is issued because population totals cannot be
 #' estimated without weights or population size.
 #'
+#' @section Known limitations:
+#' `as_survey()` does not support probability-proportional-to-size (PPS)
+#' variance estimation. Taylor series linearization treats all designs as
+#' with-replacement, which overestimates (is conservative for) variance in
+#' PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
+#' estimators available in [survey::svydesign()] via its `pps` and `variance`
+#' arguments are not yet implemented.
+#'
+#' If your design requires PPS-specific variance estimation, create the design
+#' with [survey::svydesign()] and convert it with [from_svydesign()]:
+#' ```r
+#' d_survey <- survey::svydesign(
+#'   ids = ~psu, weights = ~wt, strata = ~stratum,
+#'   pps = "brewer", data = mydata
+#' )
+#' d <- from_svydesign(d_survey)
+#' ```
+#'
 #' @examples
 #' # Full NHANES design: stratified cluster with PSU IDs nested within strata
 #' d <- as_survey(
