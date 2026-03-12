@@ -257,6 +257,7 @@
 
   switch(format,
     "named_vector" = {
+      if (length(var_names) == 0L) return(character(0L))
       values <- unlist(result_list, use.names = FALSE)
       stats::setNames(values, var_names)
     },
@@ -353,101 +354,462 @@
 
 # ── Extractors ────────────────────────────────────────────────────────────────
 
-#' Extract a Variable Label
+# Shared fill validator for individual extractors (accepts NULL or NA_character_).
+.check_extractor_fill <- function(fill, fn_name, call) {
+  if (!is.null(fill) && !identical(fill, NA_character_)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.",
+        "i" = paste0(
+          "Valid values for {.fn {fn_name}}: ",
+          "{.val NULL} (omit) or {.code NA_character_} (include with NA)."
+        )
+      ),
+      class = "surveycore_error_fill_invalid",
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
+# Shared format validator. valid_formats must match the function's contract.
+.check_extractor_format <- function(format, fn_name, valid_formats, call) {
+  if (!format %in% valid_formats) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.fn {fn_name}} received an invalid {.arg format} value ",
+          "{.val {format}}."
+        ),
+        "i" = "{.arg format} must be one of {.val {valid_formats}}."
+      ),
+      class = "surveycore_error_format_invalid",
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
+
+
+#' Extract Variable Labels
 #'
-#' Returns the variable label for a single variable in a survey design object,
-#' or `NULL` if no label has been set.
+#' Returns variable labels for one or more variables in a survey design object
+#' or data frame.
 #'
-#' @param x A survey design object (`survey_taylor`, `survey_replicate`, or
-#'   `survey_twophase`).
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill Scalar or `NULL`. How to handle variables with no label:
+#'   `NULL` (default) omits them; `NA_character_` includes them with `NA`.
 #'
-#' @return A character string, or `NULL` if no label has been set.
+#' @return
+#' - `"named_vector"` (default): named character vector. Empty: `character(0)`.
+#' - `"list"`: named list of character scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` and `label`. Empty:
+#'   zero-row tibble.
 #'
 #' @examples
-#' # nhanes_2017 carries haven-style labels auto-extracted by as_survey()
 #' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
 #'                strata = sdmvstra, nest = TRUE)
-#' extract_var_label(d, riagendr)   # "Gender"
-#' extract_var_label(d, ridageyr)   # "Age in years at screening"
+#' extract_var_label(d)
+#' extract_var_label(d, riagendr, ridageyr)
+#' extract_var_label(d, format = "data_frame")
+#' extract_var_label(d, fill = NA_character_)
 #'
 #' @seealso [set_var_label()] to set a variable label
 #' @family metadata
 #' @export
-extract_var_label <- function(x, var) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  x@metadata@variable_labels[[var_name]]
+extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_var_label"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(
+    format, fn_name, c("named_vector", "list", "data_frame"), call
+  )
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@variable_labels[[v]]
+      } else {
+        attr(x[[v]], "label", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  .format_scalar_result(result_list, format, "label", fill)
 }
 
 
-#' Extract Value Labels for a Variable
+#' Extract Value Labels
 #'
-#' Returns the named value-label vector for a single variable in a survey
-#' design object, or `NULL` if no value labels have been set.
+#' Returns value labels for one or more variables in a survey design object
+#' or data frame.
 #'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"list"` (default) or
+#'   `"data_frame"`. `"named_vector"` is not valid for this function.
+#' @param fill Scalar or `NULL`. How to handle variables with no labels:
+#'   `NULL` (default) omits them; `NA_character_` includes them as `NULL`
+#'   entries in `"list"` format.
 #'
-#' @return A named vector (e.g., `c(Male = 1L, Female = 2L)`), or `NULL`.
+#' @return
+#' - `"list"` (default): named list of named vectors. Empty: `list()`.
+#' - `"data_frame"`: long-format tibble with columns `variable`, `label`,
+#'   `value` (codes coerced to character). Empty: zero-row tibble.
 #'
 #' @examples
-#' # nhanes_2017 carries haven-style value labels auto-extracted by as_survey()
 #' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
 #'                strata = sdmvstra, nest = TRUE)
-#' extract_val_labels(d, riagendr)   # c(Male = 1, Female = 2)
+#' extract_val_labels(d, riagendr)
+#' extract_val_labels(d, riagendr, format = "data_frame")
 #'
 #' @seealso [set_val_labels()] to set value labels
 #' @family metadata
 #' @export
-extract_val_labels <- function(x, var) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  x@metadata@value_labels[[var_name]]
+extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_val_labels"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@value_labels[[v]]
+      } else {
+        attr(x[[v]], "labels", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  if (is.null(fill)) {
+    result_list <- result_list[!vapply(result_list, is.null, logical(1L))]
+  }
+  .format_list_result(result_list, format, fn_name)
 }
 
 
-#' Extract a Question Preface
+#' Extract Question Prefaces
 #'
-#' Returns the question preface string for a single variable, or `NULL` if
-#' none has been set.
+#' Returns question preface text for one or more variables in a survey design
+#' object or data frame.
 #'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill Scalar or `NULL`. How to handle variables with no preface:
+#'   `NULL` (default) omits them; `NA_character_` includes them with `NA`.
 #'
-#' @return A character string, or `NULL`.
+#' @return
+#' - `"named_vector"` (default): named character vector. Empty: `character(0)`.
+#' - `"list"`: named list of character scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` and `preface`. Empty:
+#'   zero-row tibble.
 #'
 #' @seealso [set_question_preface()] to set a question preface
 #' @family metadata
 #' @export
-extract_question_preface <- function(x, var) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  x@metadata@question_prefaces[[var_name]]
+extract_question_preface <- function(
+  x,
+  ...,
+  format = "named_vector",
+  fill = NULL
+) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_question_preface"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(
+    format, fn_name, c("named_vector", "list", "data_frame"), call
+  )
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@question_prefaces[[v]]
+      } else {
+        attr(x[[v]], "question_preface", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  .format_scalar_result(result_list, format, "preface", fill)
 }
 
 
-#' Extract an Analyst Note
+#' Extract Analyst Notes
 #'
-#' Returns the analyst note for a single variable, or `NULL` if none has been
-#' set.
+#' Returns analyst notes for one or more variables in a survey design object
+#' or data frame.
 #'
-#' @param x A survey design object.
-#' @param var <[`data-masked`][rlang::args_data_masking]> Variable name
-#'   (bare, unquoted).
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill Scalar or `NULL`. How to handle variables with no note:
+#'   `NULL` (default) omits them; `NA_character_` includes them with `NA`.
 #'
-#' @return A character string, or `NULL`.
+#' @return
+#' - `"named_vector"` (default): named character vector. Empty: `character(0)`.
+#' - `"list"`: named list of character scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` and `note`. Empty:
+#'   zero-row tibble.
 #'
 #' @seealso [set_var_note()] to set a note
 #' @family metadata
 #' @export
-extract_var_note <- function(x, var) {
-  .check_is_survey(x)
-  var_name <- rlang::as_name(rlang::enquo(var))
-  x@metadata@notes[[var_name]]
+extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_var_note"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(
+    format, fn_name, c("named_vector", "list", "data_frame"), call
+  )
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@notes[[v]]
+      } else {
+        attr(x[[v]], "note", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  .format_scalar_result(result_list, format, "note", fill)
+}
+
+
+#' Extract Universe Descriptions
+#'
+#' Returns universe (eligibility) descriptions for one or more variables in a
+#' survey design object or data frame.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill Scalar or `NULL`. How to handle variables with no universe:
+#'   `NULL` (default) omits them; `NA_character_` includes them with `NA`.
+#'
+#' @return
+#' - `"named_vector"` (default): named character vector. Empty: `character(0)`.
+#' - `"list"`: named list of character scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` and `universe`. Empty:
+#'   zero-row tibble.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_universe(d, ridageyr = "All participants 0+")
+#' extract_universe(d)
+#' extract_universe(d, ridageyr, format = "data_frame")
+#'
+#' @seealso [set_universe()] to set a universe description
+#' @family metadata
+#' @export
+extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_universe"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(
+    format, fn_name, c("named_vector", "list", "data_frame"), call
+  )
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@universe[[v]]
+      } else {
+        attr(x[[v]], "universe", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  .format_scalar_result(result_list, format, "universe", fill)
+}
+
+
+#' Extract Missing Value Codes
+#'
+#' Returns missing value sentinel codes for one or more variables in a survey
+#' design object or data frame.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param format `character(1)`. Output format: `"list"` (default) or
+#'   `"data_frame"`. `"named_vector"` is not valid for this function.
+#' @param fill Scalar or `NULL`. How to handle variables with no codes:
+#'   `NULL` (default) omits them; `NA_character_` includes them as `NULL`
+#'   entries in `"list"` format.
+#'
+#' @return
+#' - `"list"` (default): named list of atomic vectors. Empty: `list()`.
+#' - `"data_frame"`: long-format tibble with columns `variable`, `description`
+#'   (`NA` if codes vector is unnamed), `code` (coerced to character). Empty:
+#'   zero-row tibble.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_missing_codes(d, ridageyr = c("Not applicable" = 999L))
+#' extract_missing_codes(d, ridageyr)
+#' extract_missing_codes(d, ridageyr, format = "data_frame")
+#'
+#' @seealso [set_missing_codes()] to set missing value codes
+#' @family metadata
+#' @export
+extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_missing_codes"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@missing_codes[[v]]
+      } else {
+        attr(x[[v]], "missing_codes", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+  if (is.null(fill)) {
+    result_list <- result_list[!vapply(result_list, is.null, logical(1L))]
+  }
+  if (format == "list") {
+    return(result_list)
+  }
+  # data_frame: long format with variable / description / code columns
+  # (different column names from extract_val_labels data_frame)
+  result_list_nonnull <- result_list[
+    !vapply(result_list, is.null, logical(1L))
+  ]
+  empty_out <- tibble::tibble(
+    variable    = character(0L),
+    description = character(0L),
+    code        = character(0L)
+  )
+  if (length(result_list_nonnull) == 0L) {
+    return(empty_out)
+  }
+  rows <- lapply(names(result_list_nonnull), function(var_name) {
+    vec <- result_list_nonnull[[var_name]]
+    if (is.null(vec) || length(vec) == 0L) return(NULL)
+    desc <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    tibble::tibble(
+      variable    = var_name,
+      description = desc,
+      code        = as.character(vec)
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1L))]
+  if (length(rows) == 0L) return(empty_out)
+  dplyr::bind_rows(rows)
+}
+
+
+#' Extract All Metadata for Variables
+#'
+#' Returns a summary of all metadata fields for one or more variables in a
+#' survey design object or data frame. Useful for auditing metadata state or
+#' building codebooks.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
+#'   (bare, unquoted). If empty, all variables are included.
+#' @param fill `NULL` (default) or `"include"`. `NULL` omits variables that
+#'   have no metadata in any field; `"include"` returns all variables
+#'   regardless.
+#'
+#' @return A named list. Each entry is a named list with keys:
+#'   `variable_label`, `value_labels`, `question_preface`, `note`,
+#'   `universe`, `missing_codes`, `transformations`.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_universe(d, ridageyr = "All participants 0+")
+#' extract_metadata(d, ridageyr)
+#' extract_metadata(d, fill = "include")
+#'
+#' @family metadata
+#' @export
+extract_metadata <- function(x, ..., fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_metadata"
+  if (!is.null(fill) && !identical(fill, "include")) {
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.",
+        "i" = paste0(
+          "Valid values for {.fn {fn_name}}: ",
+          "{.val NULL} (omit empty) or {.val \"include\"} (return all)."
+        )
+      ),
+      class = "surveycore_error_fill_invalid",
+      call = call
+    )
+  }
+  .check_is_survey_or_df(x, call = call)
+  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  result <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        t <- x@metadata@transformations[[v]]
+        list(
+          variable_label   = x@metadata@variable_labels[[v]],
+          value_labels     = x@metadata@value_labels[[v]],
+          question_preface = x@metadata@question_prefaces[[v]],
+          note             = x@metadata@notes[[v]],
+          universe         = x@metadata@universe[[v]],
+          missing_codes    = x@metadata@missing_codes[[v]],
+          transformations  = if (is.null(t)) list() else t
+        )
+      } else {
+        list(
+          variable_label   = attr(x[[v]], "label",            exact = TRUE),
+          value_labels     = attr(x[[v]], "labels",           exact = TRUE),
+          question_preface = attr(x[[v]], "question_preface", exact = TRUE),
+          note             = attr(x[[v]], "note",             exact = TRUE),
+          universe         = attr(x[[v]], "universe",         exact = TRUE),
+          missing_codes    = attr(x[[v]], "missing_codes",    exact = TRUE),
+          transformations  = list()
+        )
+      }
+    }),
+    var_names
+  )
+  if (is.null(fill)) {
+    content_fields <- c(
+      "variable_label", "value_labels", "question_preface",
+      "note", "universe", "missing_codes"
+    )
+    has_meta <- vapply(result, function(entry) {
+      any(!vapply(content_fields, function(f) is.null(entry[[f]]), logical(1L))) ||
+        length(entry$transformations) > 0L
+    }, logical(1L))
+    result <- result[has_meta]
+    if (length(result) == 0L) return(list())
+  }
+  result
 }
 
 

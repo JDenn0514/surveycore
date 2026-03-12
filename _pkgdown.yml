@@ -88,12 +88,15 @@ reference:
 
   - title: "Metadata — extractors"
     desc: >
-      Retrieve metadata for a single variable.
+      Retrieve metadata for one or more variables.
     contents:
       - extract_var_label
       - extract_val_labels
       - extract_question_preface
       - extract_var_note
+      - extract_universe
+      - extract_missing_codes
+      - extract_metadata
       - survey_weighting_history
 
   - title: "Conversion"
