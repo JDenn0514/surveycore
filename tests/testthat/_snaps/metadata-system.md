@@ -1,3 +1,23 @@
+# snapshot: extract_var_label() surveycore_error_format_invalid
+
+    Code
+      extract_var_label(d, format = "tibble")
+    Condition
+      Error:
+      x `extract_var_label()` received an invalid `format` value "tibble".
+      i `format` must be one of "named_vector", "list", and "data_frame".
+
+# snapshot: extract_var_label() surveycore_warning_var_not_found
+
+    Code
+      extract_var_label(d, y1, nonexistent)
+    Condition
+      Warning:
+      ! 1 variable not found in `x` and was skipped: nonexistent.
+    Output
+               y1 
+      "Outcome 1" 
+
 # snapshot: set_var_label() surveycore_error_not_survey_or_df
 
     Code
@@ -461,4 +481,22 @@
       Error in `surveycore:::.format_list_result()`:
       x `extract_val_labels()` received an invalid `format` value "named_vector".
       i `format` must be one of "list" and "data_frame".
+
+# snapshot: extract_metadata() surveycore_error_not_survey_or_df
+
+    Code
+      extract_metadata(list(a = 1), a)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# snapshot: extract_metadata() surveycore_error_fill_invalid
+
+    Code
+      extract_metadata(d, fill = NA_character_)
+    Condition
+      Error:
+      x `extract_metadata()` does not accept `fill = NA`.
+      i Valid values for `extract_metadata()`: "NULL" (omit empty) or "\"include\"" (return all).
 

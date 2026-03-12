@@ -31,7 +31,10 @@ Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_lab
 \code{\link[=extract_question_preface]{extract_question_preface()}} to retrieve a preface
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},

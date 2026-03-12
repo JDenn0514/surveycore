@@ -1,3 +1,51 @@
+# surveycore 0.4.1.9002
+
+### Breaking Changes
+
+* The old positional setter form `set_var_label(svy, age, "label")` is removed.
+  Use `set_var_label(svy, age = "label")` instead.
+
+* `extract_var_label()`, `extract_question_preface()`, and `extract_var_note()`
+  now return a named character vector (not a plain scalar) for single-variable
+  calls. `extract_var_label(svy, age)` now returns `c(age = "Age in years")`
+  rather than `"Age in years"`.
+
+* `extract_val_labels()` now returns a named list (not a bare named vector).
+  `extract_val_labels(svy, sex)` now returns `list(sex = c(Male = 1L, Female = 2L))`
+  rather than `c(Male = 1L, Female = 2L)`.
+
+* `set_variable_labels()`, `set_value_labels()`, `set_question_prefaces()`, and
+  `set_variable_notes()` have been removed. Use `set_var_label()`,
+  `set_val_labels()`, `set_question_preface()`, and `set_var_note()`
+  respectively.
+
+### New Functions
+
+* `set_universe()` — set universe (eligibility) annotations for survey variables.
+
+* `set_missing_codes()` — set missing value code vectors for survey variables.
+
+* `extract_universe()` — extract universe annotations for one or more variables.
+
+* `extract_missing_codes()` — extract missing value code vectors for one or more
+  variables.
+
+* `extract_metadata()` — summary function returning all metadata fields
+  (`variable_label`, `value_labels`, `question_preface`, `note`, `universe`,
+  `missing_codes`, `transformations`) for one or more variables as a named list.
+
+### Enhancements
+
+* All extractors now accept multiple variables via `...` and support three output
+  formats: `"named_vector"` (default for scalar-content functions), `"list"`, and
+  `"data_frame"` (a tidy tibble). Omit `...` to get metadata for all variables.
+
+* All extractors now work on both survey design objects and plain `data.frame`s
+  (reading/writing standard column attributes).
+
+* All extractors support a `fill` argument: `fill = NULL` (default) omits
+  variables with no metadata; `fill = NA_character_` includes them.
+
 # surveycore 0.4.1.9001
 
 ## Renaming

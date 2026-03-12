@@ -38,10 +38,7 @@ make_labeled_design <- function(seed = 42) {
   df  <- make_survey_data(n = 100, seed = seed)
   svy <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   svy <- set_var_label(svy, y1 = "Outcome 1", y2 = "Outcome 2")
-  svy <- set_val_labels(
-    svy,
-    strata = setNames(seq_len(5L), paste0("Stratum ", seq_len(5L)))
-  )
+  svy <- set_val_labels(svy, y3 = c(No = 0L, Yes = 1L))
   svy <- set_universe(svy, y1 = "All respondents")
   svy <- set_missing_codes(svy, y1 = c("Missing" = -1L))
   svy
@@ -50,70 +47,507 @@ make_labeled_design <- function(seed = 42) {
 
 # ── extract_var_label() ───────────────────────────────────────────────────────
 
-test_that("extract_var_label() returns NULL when no label set", {
-  d <- make_design()
-  expect_null(extract_var_label(d, age))
+test_that("extract_var_label() single variable returns named character vector (not scalar)", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1)
+  expect_identical(result, c(y1 = "Outcome 1"))
 })
 
-test_that("extract_var_label() returns the label after set_var_label()", {
-  d <- make_design()
-  d <- set_var_label(d, age = "Age in years")
-  expect_identical(extract_var_label(d, age), "Age in years")
+test_that("extract_var_label() multiple variables returns named char vector with all names", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y2)
+  expect_identical(result, c(y1 = "Outcome 1", y2 = "Outcome 2"))
 })
 
-test_that("extract_var_label() does not error on non-existent variable", {
+test_that("extract_var_label() no var arg returns metadata for all variables", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d)
+  expect_true("y1" %in% names(result))
+  expect_true("y2" %in% names(result))
+  expect_identical(result[["y1"]], "Outcome 1")
+  expect_identical(result[["y2"]], "Outcome 2")
+})
+
+test_that("extract_var_label() no var arg returns empty char(0) when no labels set", {
   d <- make_design()
-  # Non-existent var — returns NULL, no error
-  expect_null(extract_var_label(d, nonexistent))
+  result <- extract_var_label(d)
+  expect_identical(result, character(0))
+})
+
+test_that("extract_var_label() format = 'named_vector' (default) returns named char vector", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, format = "named_vector")
+  expect_identical(result, c(y1 = "Outcome 1"))
+  expect_true(is.character(result))
+})
+
+test_that("extract_var_label() format = 'list' returns named list", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, format = "list")
+  expect_identical(result, list(y1 = "Outcome 1"))
+})
+
+test_that("extract_var_label() format = 'data_frame' returns tibble with variable/label columns", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y2, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "label"))
+  expect_identical(result$variable, c("y1", "y2"))
+  expect_identical(result$label, c("Outcome 1", "Outcome 2"))
+})
+
+test_that("extract_var_label() format = 'data_frame' empty result: zero-row tibble with correct types", {
+  d <- make_design()
+  result <- extract_var_label(d, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "label"))
+  expect_equal(nrow(result), 0L)
+  expect_true(is.character(result$variable))
+  expect_true(is.character(result$label))
+})
+
+test_that("extract_var_label() fill = NULL (default): unlabeled variables omitted", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y3)
+  expect_named(result, "y1")
+  expect_false("y3" %in% names(result))
+})
+
+test_that("extract_var_label() fill = NA_character_: unlabeled variables included with NA", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y3, fill = NA_character_)
+  expect_named(result, c("y1", "y3"))
+  expect_identical(result[["y1"]], "Outcome 1")
+  expect_identical(result[["y3"]], NA_character_)
+})
+
+test_that("extract_var_label() fill = NA_character_ in 'list' format: NA_character_ list entry", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y3, format = "list", fill = NA_character_)
+  expect_identical(result, list(y1 = "Outcome 1", y3 = NA_character_))
+})
+
+test_that("extract_var_label() mix: some labeled, some not — fill = NULL omits unset", {
+  d <- make_labeled_design()
+  result <- extract_var_label(d, y1, y2, y3)
+  expect_named(result, c("y1", "y2"))
+})
+
+test_that("extract_var_label() data frame: reads attr(df[[var]], 'label')", {
+  df <- data.frame(age = 1:5, sex = c(1L, 2L, 1L, 2L, 1L))
+  attr(df$age, "label") <- "Age in years"
+  result <- extract_var_label(df, age)
+  expect_identical(result, c(age = "Age in years"))
+})
+
+test_that("extract_var_label() data frame: returns same structure as for survey objects", {
+  df <- data.frame(age = 1:5, sex = c(1L, 2L, 1L, 2L, 1L))
+  attr(df$age, "label") <- "Age in years"
+  result <- extract_var_label(df, age, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "label"))
+  expect_identical(result$variable, "age")
+  expect_identical(result$label, "Age in years")
+})
+
+test_that("extract_var_label() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_var_label(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("extract_var_label() errors with surveycore_error_format_invalid for invalid format", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_var_label(d, format = "tibble"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_var_label() warns with surveycore_warning_var_not_found for missing var", {
+  d <- make_labeled_design()
+  expect_warning(
+    extract_var_label(d, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("extract_var_label() result excludes missing var after warning", {
+  d <- make_labeled_design()
+  expect_warning(
+    result <- extract_var_label(d, y1, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_named(result, "y1")
+})
+
+test_that("extract_var_label() errors with surveycore_error_fill_invalid for fill = 'include'", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_var_label(d, fill = "include"),
+    class = "surveycore_error_fill_invalid"
+  )
+})
+
+test_that("snapshot: extract_var_label() surveycore_error_format_invalid", {
+  d <- make_labeled_design()
+  expect_snapshot(error = TRUE, extract_var_label(d, format = "tibble"))
+})
+
+test_that("snapshot: extract_var_label() surveycore_warning_var_not_found", {
+  d <- make_labeled_design()
+  expect_snapshot(extract_var_label(d, y1, nonexistent))
 })
 
 
 # ── extract_val_labels() ──────────────────────────────────────────────────────
 
-test_that("extract_val_labels() returns NULL when no labels set", {
-  d <- make_design()
-  expect_null(extract_val_labels(d, sex))
+test_that("extract_val_labels() single variable returns named list (not bare named vector)", {
+  d <- make_labeled_design()
+  result <- extract_val_labels(d, y3)
+  expect_true(is.list(result))
+  expect_named(result, "y3")
+  expect_identical(result$y3, c(No = 0L, Yes = 1L))
 })
 
-test_that("extract_val_labels() returns the labels after set_val_labels()", {
-  d <- make_design()
-  d <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
-  result <- extract_val_labels(d, sex)
-  expect_identical(result, c(Male = 1L, Female = 2L))
+test_that("extract_val_labels() format = 'list' (default) returns named list", {
+  d <- make_labeled_design()
+  result <- extract_val_labels(d, y3, format = "list")
+  expect_true(is.list(result))
+  expect_named(result, "y3")
+})
+
+test_that("extract_val_labels() format = 'data_frame' returns long tibble with variable/label/value cols", {
+  d <- make_labeled_design()
+  result <- extract_val_labels(d, y3, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "label", "value"))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that("extract_val_labels() format = 'data_frame' coerces codes to character", {
+  d <- make_labeled_design()
+  result <- extract_val_labels(d, y3, format = "data_frame")
+  expect_true(is.character(result$value))
+})
+
+test_that("extract_val_labels() format = 'named_vector' errors with surveycore_error_format_invalid", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_val_labels(d, format = "named_vector"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_val_labels() fill = NA_character_ in 'list' format: NULL entries (not NA)", {
+  d <- make_labeled_design()
+  result <- extract_val_labels(d, y1, fill = NA_character_)
+  expect_true(is.list(result))
+  expect_named(result, "y1")
+  expect_null(result$y1)
+})
+
+test_that("extract_val_labels() data frame: reads attr(df[[var]], 'labels')", {
+  df <- data.frame(sex = c(1L, 2L, 1L))
+  attr(df$sex, "labels") <- c(Male = 1L, Female = 2L)
+  result <- extract_val_labels(df, sex)
+  expect_true(is.list(result))
+  expect_named(result, "sex")
+  expect_identical(result$sex, c(Male = 1L, Female = 2L))
 })
 
 
 # ── extract_question_preface() ────────────────────────────────────────────────
 
-test_that("extract_question_preface() returns NULL when no preface set", {
+test_that("extract_question_preface() single variable returns named character vector", {
   d <- make_design()
-  expect_null(extract_question_preface(d, age))
+  d <- set_question_preface(d, age = "How old are you?")
+  result <- extract_question_preface(d, age)
+  expect_identical(result, c(age = "How old are you?"))
 })
 
-test_that("extract_question_preface() returns preface after set_question_preface()", {
+test_that("extract_question_preface() no var arg returns only set variables (fill = NULL)", {
   d <- make_design()
-  d <- set_question_preface(d, age = "In the past 12 months, how old were you?")
-  expect_identical(
-    extract_question_preface(d, age),
-    "In the past 12 months, how old were you?"
+  d <- set_question_preface(d, age = "How old are you?")
+  result <- extract_question_preface(d)
+  expect_named(result, "age")
+})
+
+test_that("extract_question_preface() format = 'data_frame' returns tibble with variable/preface cols", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "How old are you?")
+  result <- extract_question_preface(d, age, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "preface"))
+  expect_identical(result$variable, "age")
+  expect_identical(result$preface, "How old are you?")
+})
+
+test_that("extract_question_preface() format = 'list' returns named list", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "How old are you?")
+  result <- extract_question_preface(d, age, format = "list")
+  expect_identical(result, list(age = "How old are you?"))
+})
+
+test_that("extract_question_preface() fill = NA_character_ includes unlabeled variables", {
+  d <- make_design()
+  d <- set_question_preface(d, age = "How old are you?")
+  result <- extract_question_preface(d, age, income, fill = NA_character_)
+  expect_named(result, c("age", "income"))
+  expect_identical(result[["income"]], NA_character_)
+})
+
+test_that("extract_question_preface() data frame: reads attr(df[[var]], 'question_preface')", {
+  df <- data.frame(q1 = c(1, 2, 3))
+  attr(df$q1, "question_preface") <- "How do you feel?"
+  result <- extract_question_preface(df, q1)
+  expect_identical(result, c(q1 = "How do you feel?"))
+})
+
+test_that("extract_question_preface() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_question_preface(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("extract_question_preface() errors with surveycore_error_format_invalid for invalid format", {
+  d <- make_design()
+  expect_error(
+    extract_question_preface(d, format = "tibble"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_question_preface() warns with surveycore_warning_var_not_found for missing var", {
+  d <- make_design()
+  expect_warning(
+    extract_question_preface(d, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("extract_question_preface() errors with surveycore_error_fill_invalid for fill = 'include'", {
+  d <- make_design()
+  expect_error(
+    extract_question_preface(d, fill = "include"),
+    class = "surveycore_error_fill_invalid"
   )
 })
 
 
 # ── extract_var_note() ────────────────────────────────────────────────────────
 
-test_that("extract_var_note() returns NULL when no note set", {
+test_that("extract_var_note() single variable returns named character vector", {
   d <- make_design()
-  expect_null(extract_var_note(d, income))
+  d <- set_var_note(d, age = "Imputed.")
+  result <- extract_var_note(d, age)
+  expect_identical(result, c(age = "Imputed."))
 })
 
-test_that("extract_var_note() returns the note after set_var_note()", {
+test_that("extract_var_note() no var arg returns only set variables (fill = NULL)", {
   d <- make_design()
-  d <- set_var_note(d, income = "Imputed for 3% of respondents.")
-  expect_identical(
-    extract_var_note(d, income),
-    "Imputed for 3% of respondents."
+  d <- set_var_note(d, age = "Imputed.")
+  result <- extract_var_note(d)
+  expect_named(result, "age")
+})
+
+test_that("extract_var_note() format = 'data_frame' returns tibble with variable/note cols", {
+  d <- make_design()
+  d <- set_var_note(d, age = "Imputed.")
+  result <- extract_var_note(d, age, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "note"))
+  expect_identical(result$variable, "age")
+  expect_identical(result$note, "Imputed.")
+})
+
+test_that("extract_var_note() format = 'list' returns named list", {
+  d <- make_design()
+  d <- set_var_note(d, age = "Imputed.")
+  result <- extract_var_note(d, age, format = "list")
+  expect_identical(result, list(age = "Imputed."))
+})
+
+test_that("extract_var_note() fill = NA_character_ includes unlabeled variables", {
+  d <- make_design()
+  d <- set_var_note(d, age = "Imputed.")
+  result <- extract_var_note(d, age, income, fill = NA_character_)
+  expect_named(result, c("age", "income"))
+  expect_identical(result[["income"]], NA_character_)
+})
+
+test_that("extract_var_note() data frame: reads attr(df[[var]], 'note')", {
+  df <- data.frame(y = c(1, 2, 3))
+  attr(df$y, "note") <- "Top-coded at 200."
+  result <- extract_var_note(df, y)
+  expect_identical(result, c(y = "Top-coded at 200."))
+})
+
+test_that("extract_var_note() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_var_note(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
   )
+})
+
+test_that("extract_var_note() errors with surveycore_error_format_invalid for invalid format", {
+  d <- make_design()
+  expect_error(
+    extract_var_note(d, format = "tibble"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_var_note() warns with surveycore_warning_var_not_found for missing var", {
+  d <- make_design()
+  expect_warning(
+    extract_var_note(d, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("extract_var_note() errors with surveycore_error_fill_invalid for fill = 'include'", {
+  d <- make_design()
+  expect_error(
+    extract_var_note(d, fill = "include"),
+    class = "surveycore_error_fill_invalid"
+  )
+})
+
+
+# ── extract_universe() ────────────────────────────────────────────────────────
+
+test_that("extract_universe() single variable returns named character vector", {
+  d <- make_labeled_design()
+  result <- extract_universe(d, y1)
+  expect_identical(result, c(y1 = "All respondents"))
+})
+
+test_that("extract_universe() no var arg returns only variables with universe set", {
+  d <- make_labeled_design()
+  result <- extract_universe(d)
+  expect_named(result, "y1")
+})
+
+test_that("extract_universe() format = 'data_frame' returns tibble with variable/universe cols", {
+  d <- make_labeled_design()
+  result <- extract_universe(d, y1, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "universe"))
+  expect_identical(result$variable, "y1")
+  expect_identical(result$universe, "All respondents")
+})
+
+test_that("extract_universe() format = 'list' returns named list", {
+  d <- make_labeled_design()
+  result <- extract_universe(d, y1, format = "list")
+  expect_identical(result, list(y1 = "All respondents"))
+})
+
+test_that("extract_universe() fill = NA_character_ includes variables without universe", {
+  d <- make_labeled_design()
+  result <- extract_universe(d, y1, y2, fill = NA_character_)
+  expect_named(result, c("y1", "y2"))
+  expect_identical(result[["y2"]], NA_character_)
+})
+
+test_that("extract_universe() data frame: reads attr(df[[var]], 'universe')", {
+  df <- data.frame(vote = c(1L, 2L, 3L))
+  attr(df$vote, "universe") <- "Registered voters only"
+  result <- extract_universe(df, vote)
+  expect_identical(result, c(vote = "Registered voters only"))
+})
+
+test_that("extract_universe() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_universe(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("extract_universe() errors with surveycore_error_format_invalid for invalid format", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_universe(d, format = "tibble"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_universe() warns with surveycore_warning_var_not_found for missing var", {
+  d <- make_labeled_design()
+  expect_warning(
+    extract_universe(d, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+test_that("extract_universe() errors with surveycore_error_fill_invalid for fill = 'include'", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_universe(d, fill = "include"),
+    class = "surveycore_error_fill_invalid"
+  )
+})
+
+
+# ── extract_missing_codes() ───────────────────────────────────────────────────
+
+test_that("extract_missing_codes() single variable returns named list", {
+  d <- make_labeled_design()
+  result <- extract_missing_codes(d, y1)
+  expect_true(is.list(result))
+  expect_named(result, "y1")
+  expect_identical(result$y1, c("Missing" = -1L))
+})
+
+test_that("extract_missing_codes() format = 'list' (default): named list with named codes preserved", {
+  d <- make_labeled_design()
+  result <- extract_missing_codes(d, y1, format = "list")
+  expect_identical(result, list(y1 = c("Missing" = -1L)))
+})
+
+test_that("extract_missing_codes() format = 'data_frame': long tibble with variable/description/code cols", {
+  d <- make_labeled_design()
+  result <- extract_missing_codes(d, y1, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "description", "code"))
+  expect_identical(result$variable, "y1")
+  expect_identical(result$description, "Missing")
+  expect_identical(result$code, "-1")
+})
+
+test_that("extract_missing_codes() format = 'data_frame': description = NA when codes vector is unnamed", {
+  d <- make_design()
+  d <- set_missing_codes(d, age = c(-1L, -2L))
+  result <- extract_missing_codes(d, age, format = "data_frame")
+  expect_true(all(is.na(result$description)))
+  expect_identical(result$code, c("-1", "-2"))
+})
+
+test_that("extract_missing_codes() format = 'named_vector' errors with surveycore_error_format_invalid", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_missing_codes(d, format = "named_vector"),
+    class = "surveycore_error_format_invalid"
+  )
+})
+
+test_that("extract_missing_codes() fill = NA_character_ in 'list' format: NULL entries", {
+  d <- make_labeled_design()
+  result <- extract_missing_codes(d, y1, y2, fill = NA_character_)
+  expect_named(result, c("y1", "y2"))
+  expect_null(result$y2)
+  expect_identical(result$y1, c("Missing" = -1L))
+})
+
+test_that("extract_missing_codes() data frame: reads attr(df[[var]], 'missing_codes')", {
+  df <- data.frame(q5 = c(1L, 99L, 98L))
+  attr(df$q5, "missing_codes") <- c("Refused" = 99L, "DK" = 98L)
+  result <- extract_missing_codes(df, q5)
+  expect_identical(result, list(q5 = c("Refused" = 99L, "DK" = 98L)))
 })
 
 
@@ -1321,7 +1755,7 @@ test_that("set_val_labels() does not warn for character value labels", {
 test_that("set_var_label() and extract_var_label() roundtrip for design col (wt)", {
   d <- make_design()
   d <- set_var_label(d, wt = "Survey weight")
-  expect_identical(extract_var_label(d, wt), "Survey weight")
+  expect_identical(extract_var_label(d, wt), c(wt = "Survey weight"))
 })
 
 
@@ -1722,4 +2156,228 @@ test_that("snapshot: .format_list_result() surveycore_error_format_invalid messa
       result_list, format = "named_vector", fn_name = "extract_val_labels"
     )
   )
+})
+
+
+# ── Round-trip: data frame → as_survey() → extractor ─────────────────────────
+
+test_that("round-trip: set_var_label() on df -> as_survey() -> extract_var_label() matches", {
+  df <- make_survey_data(n = 50L, seed = 1L)
+  df <- set_var_label(df, y1 = "Outcome A")
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_var_label(d, y1)
+  expect_identical(result, c(y1 = "Outcome A"))
+})
+
+test_that("round-trip: set_val_labels() on df -> as_survey() -> extract_val_labels() matches", {
+  df <- make_survey_data(n = 50L, seed = 2L)
+  df <- set_val_labels(df, y3 = c(No = 0L, Yes = 1L))
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_val_labels(d, y3)
+  expect_identical(result, list(y3 = c(No = 0L, Yes = 1L)))
+})
+
+test_that("round-trip: set_question_preface() on df -> as_survey() -> extract_question_preface() matches", {
+  df <- make_survey_data(n = 50L, seed = 3L)
+  df <- set_question_preface(df, y1 = "Please indicate...")
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_question_preface(d, y1)
+  expect_identical(result, c(y1 = "Please indicate..."))
+})
+
+test_that("round-trip: set_var_note() on df -> as_survey() -> extract_var_note() matches", {
+  df <- make_survey_data(n = 50L, seed = 4L)
+  df <- set_var_note(df, y1 = "Top-coded at 100.")
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_var_note(d, y1)
+  expect_identical(result, c(y1 = "Top-coded at 100."))
+})
+
+test_that("round-trip: set_universe() on df -> as_survey() -> extract_universe() matches", {
+  df <- make_survey_data(n = 50L, seed = 5L)
+  df <- set_universe(df, y1 = "Adults 18+")
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_universe(d, y1)
+  expect_identical(result, c(y1 = "Adults 18+"))
+})
+
+test_that("round-trip: set_missing_codes() on df -> as_survey() -> extract_missing_codes() matches", {
+  df <- make_survey_data(n = 50L, seed = 6L)
+  df <- set_missing_codes(df, y1 = c("Refused" = -1L))
+  d  <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  result <- extract_missing_codes(d, y1)
+  expect_identical(result, list(y1 = c("Refused" = -1L)))
+})
+
+
+# ── extract_metadata() ────────────────────────────────────────────────────────
+
+test_that("extract_metadata() single variable with all fields returns 7-key list", {
+  d <- make_labeled_design()
+  d <- set_question_preface(d, y1 = "Please rate...")
+  d <- set_var_note(d, y1 = "Imputed for 2% of cases.")
+  result <- extract_metadata(d, y1)
+  expect_named(result, "y1")
+  expect_named(
+    result$y1,
+    c("variable_label", "value_labels", "question_preface", "note",
+      "universe", "missing_codes", "transformations")
+  )
+})
+
+test_that("extract_metadata() result keys are in spec order", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, y1)
+  expect_identical(
+    names(result$y1),
+    c("variable_label", "value_labels", "question_preface", "note",
+      "universe", "missing_codes", "transformations")
+  )
+})
+
+test_that("extract_metadata() does NOT include weighting_history in any entry", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, fill = "include")
+  for (entry in result) {
+    expect_false("weighting_history" %in% names(entry))
+  }
+})
+
+test_that("extract_metadata() transformations is always list(), never NULL", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, fill = "include")
+  for (entry in result) {
+    expect_true(is.list(entry$transformations))
+  }
+})
+
+test_that("extract_metadata() fill = NULL (default): variable with at least one field included", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d)
+  expect_true("y1" %in% names(result))
+})
+
+test_that("extract_metadata() fill = NULL: variable with no fields omitted", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d)
+  expect_false("wt" %in% names(result))
+})
+
+test_that("extract_metadata() fill = 'include': variable with no fields included with all-NULL values", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, fill = "include")
+  expect_true("wt" %in% names(result))
+  expect_null(result$wt$variable_label)
+  expect_null(result$wt$value_labels)
+  expect_null(result$wt$question_preface)
+  expect_null(result$wt$note)
+  expect_null(result$wt$universe)
+  expect_null(result$wt$missing_codes)
+  expect_identical(result$wt$transformations, list())
+})
+
+test_that("extract_metadata() multiple variables, mixed metadata: fill = NULL returns only annotated", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, y1, y2, wt)
+  expect_true("y1" %in% names(result))
+  expect_true("y2" %in% names(result))
+  expect_false("wt" %in% names(result))
+})
+
+test_that("extract_metadata() multiple variables: fill = 'include' returns all", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, y1, y2, wt, fill = "include")
+  expect_named(result, c("y1", "y2", "wt"))
+})
+
+test_that("extract_metadata() no var arg: fill = NULL returns only annotated variables", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d)
+  for (col in c("y1", "y2", "y3")) {
+    expect_true(col %in% names(result))
+  }
+  expect_false("psu" %in% names(result))
+})
+
+test_that("extract_metadata() no var arg: fill = 'include' returns all columns", {
+  d <- make_labeled_design()
+  result <- extract_metadata(d, fill = "include")
+  expect_equal(length(result), ncol(d@data))
+})
+
+test_that("extract_metadata() all variables with no metadata + fill = NULL: returns list()", {
+  d <- make_design()
+  result <- extract_metadata(d)
+  expect_identical(result, list())
+})
+
+test_that("extract_metadata() all variables with no metadata + fill = 'include': returns full-length list", {
+  d <- make_design()
+  result <- extract_metadata(d, fill = "include")
+  expect_equal(length(result), ncol(d@data))
+  for (entry in result) {
+    expect_null(entry$variable_label)
+    expect_identical(entry$transformations, list())
+  }
+})
+
+test_that("extract_metadata() single-column data frame with fill = 'include'", {
+  df <- data.frame(x = 1:3)
+  result <- extract_metadata(df, fill = "include")
+  expect_named(result, "x")
+  expect_null(result$x$variable_label)
+  expect_identical(result$x$transformations, list())
+})
+
+test_that("extract_metadata() data frame: reads column attributes correctly", {
+  df <- data.frame(age = 1:5, sex = c(1L, 2L, 1L, 2L, 1L))
+  attr(df$age, "label") <- "Age in years"
+  attr(df$sex, "labels") <- c(Male = 1L, Female = 2L)
+  result <- extract_metadata(df, fill = "include")
+  expect_identical(result$age$variable_label, "Age in years")
+  expect_identical(result$sex$value_labels, c(Male = 1L, Female = 2L))
+  expect_null(result$age$value_labels)
+  expect_null(result$sex$variable_label)
+})
+
+test_that("extract_metadata() data frame: transformations = list() for all variables", {
+  df <- data.frame(x = 1:3, y = 4:6)
+  attr(df$x, "label") <- "Variable X"
+  result <- extract_metadata(df, fill = "include")
+  expect_identical(result$x$transformations, list())
+  expect_identical(result$y$transformations, list())
+})
+
+test_that("extract_metadata() errors with surveycore_error_not_survey_or_df for list x", {
+  expect_error(
+    extract_metadata(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("extract_metadata() warns with surveycore_warning_var_not_found; result skips missing var", {
+  d <- make_labeled_design()
+  expect_warning(
+    result <- extract_metadata(d, y1, nonexistent),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_true("y1" %in% names(result))
+  expect_false("nonexistent" %in% names(result))
+})
+
+test_that("extract_metadata() errors with surveycore_error_fill_invalid for fill = NA_character_", {
+  d <- make_labeled_design()
+  expect_error(
+    extract_metadata(d, fill = NA_character_),
+    class = "surveycore_error_fill_invalid"
+  )
+})
+
+test_that("snapshot: extract_metadata() surveycore_error_not_survey_or_df", {
+  expect_snapshot(error = TRUE, extract_metadata(list(a = 1), a))
+})
+
+test_that("snapshot: extract_metadata() surveycore_error_fill_invalid", {
+  d <- make_labeled_design()
+  expect_snapshot(error = TRUE, extract_metadata(d, fill = NA_character_))
 })

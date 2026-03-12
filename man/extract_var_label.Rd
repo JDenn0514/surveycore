@@ -2,37 +2,51 @@
 % Please edit documentation in R/core-metadata.R
 \name{extract_var_label}
 \alias{extract_var_label}
-\title{Extract a Variable Label}
+\title{Extract Variable Labels}
 \usage{
-extract_var_label(x, var)
+extract_var_label(x, ..., format = "named_vector", fill = NULL)
 }
 \arguments{
-\item{x}{A survey design object (\code{survey_taylor}, \code{survey_replicate}, or
-\code{survey_twophase}).}
+\item{x}{A survey design object or \code{data.frame}.}
 
-\item{var}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable name
-(bare, unquoted).}
+\item{...}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable names
+(bare, unquoted). If empty, metadata for all variables is returned.}
+
+\item{format}{\code{character(1)}. Output format: \code{"named_vector"} (default),
+\code{"list"}, or \code{"data_frame"}.}
+
+\item{fill}{Scalar or \code{NULL}. How to handle variables with no label:
+\code{NULL} (default) omits them; \code{NA_character_} includes them with \code{NA}.}
 }
 \value{
-A character string, or \code{NULL} if no label has been set.
+\itemize{
+\item \code{"named_vector"} (default): named character vector. Empty: \code{character(0)}.
+\item \code{"list"}: named list of character scalars. Empty: \code{list()}.
+\item \code{"data_frame"}: tibble with columns \code{variable} and \code{label}. Empty:
+zero-row tibble.
+}
 }
 \description{
-Returns the variable label for a single variable in a survey design object,
-or \code{NULL} if no label has been set.
+Returns variable labels for one or more variables in a survey design object
+or data frame.
 }
 \examples{
-# nhanes_2017 carries haven-style labels auto-extracted by as_survey()
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
-extract_var_label(d, riagendr)   # "Gender"
-extract_var_label(d, ridageyr)   # "Age in years at screening"
+extract_var_label(d)
+extract_var_label(d, riagendr, ridageyr)
+extract_var_label(d, format = "data_frame")
+extract_var_label(d, fill = NA_character_)
 
 }
 \seealso{
 \code{\link[=set_var_label]{set_var_label()}} to set a variable label
 
 Other metadata: 
+\code{\link{extract_metadata}()},
+\code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
