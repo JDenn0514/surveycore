@@ -1,62 +1,52 @@
-# surveycore 0.4.1.9002
+# surveycore 0.5.0
 
-### Breaking Changes
+## Breaking changes
 
-* The old positional setter form `set_var_label(svy, age, "label")` is removed.
-  Use `set_var_label(svy, age = "label")` instead.
+* `as_survey_replicate()` replaces `as_survey_repweights()`. The constructor
+  name now matches the underlying `survey_replicate` class.
+
+* `survey_nonprob` and `as_survey_nonprob()` replace `survey_calibrated` and
+  `as_survey_calibrated()`. "Calibrated" implies a post-processing step on a
+  probability sample; `nonprob` accurately reflects the design type.
+
+* The positional setter form `set_var_label(svy, age, "label")` has been
+  removed. Use the named form `set_var_label(svy, age = "label")` instead.
 
 * `extract_var_label()`, `extract_question_preface()`, and `extract_var_note()`
-  now return a named character vector (not a plain scalar) for single-variable
-  calls. `extract_var_label(svy, age)` now returns `c(age = "Age in years")`
-  rather than `"Age in years"`.
+  now return a named character vector. `extract_var_label(svy, age)` now
+  returns `c(age = "Age in years")` rather than `"Age in years"`.
 
-* `extract_val_labels()` now returns a named list (not a bare named vector).
-  `extract_val_labels(svy, sex)` now returns `list(sex = c(Male = 1L, Female = 2L))`
-  rather than `c(Male = 1L, Female = 2L)`.
+* `extract_val_labels()` now returns a named list. `extract_val_labels(svy, sex)`
+  now returns `list(sex = c(Male = 1L, Female = 2L))` rather than
+  `c(Male = 1L, Female = 2L)`.
 
 * `set_variable_labels()`, `set_value_labels()`, `set_question_prefaces()`, and
   `set_variable_notes()` have been removed. Use `set_var_label()`,
   `set_val_labels()`, `set_question_preface()`, and `set_var_note()`
-  respectively.
+  respectively — all four now accept multiple variables via named `...`.
 
-### New Functions
+## New features
 
-* `set_universe()` — set universe (eligibility) annotations for survey variables.
+* `set_universe()` and `extract_universe()` set and retrieve universe
+  (eligibility) annotations for survey variables.
 
-* `set_missing_codes()` — set missing value code vectors for survey variables.
+* `set_missing_codes()` and `extract_missing_codes()` set and retrieve missing
+  value code vectors for survey variables.
 
-* `extract_universe()` — extract universe annotations for one or more variables.
+* `extract_metadata()` returns all metadata fields (`variable_label`,
+  `value_labels`, `question_preface`, `note`, `universe`, `missing_codes`,
+  `transformations`) for one or more variables as a named list.
 
-* `extract_missing_codes()` — extract missing value code vectors for one or more
-  variables.
+## Enhancements
 
-* `extract_metadata()` — summary function returning all metadata fields
-  (`variable_label`, `value_labels`, `question_preface`, `note`, `universe`,
-  `missing_codes`, `transformations`) for one or more variables as a named list.
+* All setter functions now support three call conventions: named `...`
+  (e.g., `set_var_label(svy, age = "Age in years")`), a single named
+  vector/list in `...`, or explicit `variable =` / content-argument pairs.
+  All setters also now work on plain `data.frame`s.
 
-### Enhancements
-
-* All extractors now accept multiple variables via `...` and support three output
-  formats: `"named_vector"` (default for scalar-content functions), `"list"`, and
-  `"data_frame"` (a tidy tibble). Omit `...` to get metadata for all variables.
-
-* All extractors now work on both survey design objects and plain `data.frame`s
-  (reading/writing standard column attributes).
-
-* All extractors support a `fill` argument: `fill = NULL` (default) omits
-  variables with no metadata; `fill = NA_character_` includes them.
-
-# surveycore 0.4.1.9001
-
-## Renaming
-
-* `as_survey_repweights()` has been renamed to `as_survey_replicate()` to
-  match the underlying `survey_replicate` class name.
-
-* `as_survey_calibrated()` and the `survey_calibrated` class have been renamed
-  to `as_survey_nonprob()` and `survey_nonprob`. The old name was misleading —
-  "calibrated" implies a post-processing step on a probability sample, not a
-  non-probability design type.
+* All extractor functions accept multiple variables via `...`, support three
+  output formats (`"named_vector"`, `"list"`, `"data_frame"`), and accept a
+  `fill` argument to include variables with no metadata in the output.
 
 # surveycore 0.4.0
 
