@@ -119,7 +119,7 @@ d_sub <- as_survey_replicate(
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
-Other constructors:
+Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_srs}()},
