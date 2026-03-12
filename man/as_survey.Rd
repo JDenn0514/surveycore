@@ -79,7 +79,7 @@ variance estimation. Taylor series linearization treats all designs as
 with-replacement, which overestimates (is conservative for) variance in
 PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
 estimators available in \code{\link[survey:svydesign]{survey::svydesign()}} via its \code{pps} and \code{variance}
-arguments are not yet implemented.
+arguments are not supported.
 
 If your design requires PPS-specific variance estimation, create the design
 with \code{\link[survey:svydesign]{survey::svydesign()}} and convert it with \code{\link[=from_svydesign]{from_svydesign()}}:

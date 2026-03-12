@@ -302,7 +302,7 @@ as_survey_srs <- function(
 #' with-replacement, which overestimates (is conservative for) variance in
 #' PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
 #' estimators available in [survey::svydesign()] via its `pps` and `variance`
-#' arguments are not yet implemented.
+#' arguments are not supported.
 #'
 #' If your design requires PPS-specific variance estimation, create the design
 #' with [survey::svydesign()] and convert it with [from_svydesign()]:
