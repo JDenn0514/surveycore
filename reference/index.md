@@ -9,11 +9,11 @@ interface — bare column names, no formula syntax.
   : Create a Taylor Series Linearization Survey Design
 - [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
   : Create a Simple Random Sample Survey Design
-- [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
   : Create a Replicate Weights Survey Design
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
   : Create a Two-Phase Survey Design
-- [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+- [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
   **\[experimental\]** : Create a Calibrated / Non-Probability Survey
   Design
 - [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
@@ -52,41 +52,44 @@ variance estimation.
 
 ## Metadata — setters
 
-Assign variable labels, value labels, question prefaces, and notes.
-Single-variable setters accept bare names; plural setters accept named
-lists.
+Assign variable labels, value labels, question prefaces, notes, universe
+strings, and missing codes. All setters accept the three-convention API:
+named `...`, a single named vector/list, or `variable` + content
+argument.
 
 - [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md)
-  : Set a Variable Label
-- [`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md)
-  : Set Variable Labels for Multiple Variables
+  : Set Variable Label(s)
 - [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
-  : Set Value Labels for a Variable
-- [`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md)
-  : Set Value Labels for Multiple Variables
+  : Set Value Labels
 - [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md)
-  : Set a Question Preface
-- [`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md)
-  : Set Question Prefaces for Multiple Variables
+  : Set Question Preface(s)
 - [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md)
-  : Set an Analyst Note
-- [`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md)
-  : Set Analyst Notes for Multiple Variables
+  : Set Analyst Note(s)
+- [`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md)
+  : Set Universe Description(s)
+- [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md)
+  : Set Missing Code(s)
 - [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
   : Infer Question Prefaces from Variable Labels
 
 ## Metadata — extractors
 
-Retrieve metadata for a single variable.
+Retrieve metadata for one or more variables.
 
 - [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md)
-  : Extract a Variable Label
+  : Extract Variable Labels
 - [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md)
-  : Extract Value Labels for a Variable
+  : Extract Value Labels
 - [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md)
-  : Extract a Question Preface
+  : Extract Question Prefaces
 - [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md)
-  : Extract an Analyst Note
+  : Extract Analyst Notes
+- [`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md)
+  : Extract Universe Descriptions
+- [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
+  : Extract Missing Value Codes
+- [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
+  : Extract All Metadata for Variables
 - [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
   : Extract the Weighting History from a Survey Object
 
@@ -120,7 +123,7 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
   : Replicate Weights Survey Design
 - [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
   : Two-Phase Survey Design
-- [`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md)
+- [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md)
   : Calibrated / Non-Probability Survey Design
 - [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   : Survey Metadata Container

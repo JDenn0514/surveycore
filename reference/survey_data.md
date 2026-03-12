@@ -24,13 +24,13 @@ A `data.frame` with all variables, including design variables.
 
 Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md),
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
+[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
+[`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
 [`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),

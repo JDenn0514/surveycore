@@ -13,7 +13,7 @@ file — ideal for fast tests and examples."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ file — ideal for fast tests and examples."><meta property="og:image" content="
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>ACS PUMS 2022 1-Year: Wyoming Persons</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/R/data.R" class="external-link"><code>R/data.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>acs_pums_wy.Rd</code></div>
     </div>
 
@@ -369,8 +369,8 @@ dollars.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Survey design:</strong> Successive difference replication (SDR). Use
-<code><a href="as_survey_repweights.html">as_survey_repweights()</a></code> with all 80 replicate weights:</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
+<code><a href="as_survey_replicate.html">as_survey_replicate()</a></code> with all 80 replicate weights:</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
 <span>  <span class="va">acs_pums_wy</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span>
@@ -383,8 +383,8 @@ dollars before comparing across ACS years.</p>
 The ACS PUMS source is a plain CSV with no embedded labels. Columns in
 <code>acs_pums_wy</code> carry no <code>"label"</code>, <code>"labels"</code>, or <code>"question_preface"</code>
 attributes. Variable descriptions are documented here in <code>?acs_pums_wy</code> and
-in <code>data-raw/README.md</code>. Use <code><a href="set_variable_labels.html">set_variable_labels()</a></code> and
-<code><a href="set_value_labels.html">set_value_labels()</a></code> to attach labels manually before analysis if needed.</p>
+in <code>data-raw/README.md</code>. Use <code><a href="set_var_label.html">set_var_label()</a></code> and
+<code><a href="set_val_labels.html">set_val_labels()</a></code> to attach labels manually before analysis if needed.</p>
     </div>
 
     <div class="section level2">

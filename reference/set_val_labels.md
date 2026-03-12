@@ -1,57 +1,71 @@
-# Set Value Labels for a Variable
+# Set Value Labels
 
-Sets value labels for a single variable in a survey design object. Extra
-labels (for values not present in the data) are allowed — they document
-the full coding scheme. A warning is issued if some observed data values
-lack a label.
+Sets value labels for one or more variables using one of three
+conventions.
 
 ## Usage
 
 ``` r
-set_val_labels(x, var, labels)
+set_val_labels(x, ..., variable = NULL, labels = NULL)
 ```
 
 ## Arguments
 
 - x:
 
-  A survey design object.
+  A survey design object or a data frame.
 
-- var:
+- ...:
 
-  \<[`data-masked`](https://rlang.r-lib.org/reference/args_data_masking.html)\>
-  Variable to label (bare, unquoted).
+  Named arguments where the name is the variable and the value is a
+  fully named vector of value labels. Supports `!!!` list splicing.
+
+- variable:
+
+  A character vector of variable names.
 
 - labels:
 
-  A fully named vector where names are the display labels and values are
-  the data codes (e.g., `c(Male = 1L, Female = 2L)`). All elements must
-  be named.
+  A list of named vectors, one per element of `variable`. When
+  `variable` has length 1, a bare named vector is also accepted.
 
 ## Value
 
-The modified survey object, invisibly.
+The modified object, invisibly.
+
+## Details
+
+**Convention 1 (named `...`)** — recommended:
+
+    set_val_labels(x, sex = c(Male = 1L, Female = 2L))
+
+**Convention 2 (single named list in `...`)**:
+
+    set_val_labels(x, list(sex = c(Male = 1L, Female = 2L)))
+
+**Convention 3 (`variable` + `labels`)**:
+
+    set_val_labels(x, variable = "sex", labels = c(Male = 1L, Female = 2L))
 
 ## See also
 
-[`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md)
-for setting labels for multiple variables,
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md)
 to retrieve value labels
 
 Other metadata:
+[`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
+[`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+[`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
+[`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
-[`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md),
-[`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md),
+[`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
-[`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md),
-[`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md),
 [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
 
@@ -60,7 +74,5 @@ Other metadata:
 ``` r
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
-d <- set_val_labels(
-  d, ridstatr, c("Interview only" = 1L, "Interview + exam" = 2L)
-)
+d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
 ```

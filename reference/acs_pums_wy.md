@@ -426,10 +426,10 @@ U.S. Census Bureau. 2022 ACS 1-Year PUMS.
 ## Details
 
 **Survey design:** Successive difference replication (SDR). Use
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 with all 80 replicate weights:
 
-    svy <- as_survey_repweights(
+    svy <- as_survey_replicate(
       acs_pums_wy,
       weights    = pwgtp,
       repweights = pwgtp1:pwgtp80,
@@ -444,9 +444,9 @@ inflation-adjusted dollars before comparing across ACS years.
 labels. Columns in `acs_pums_wy` carry no `"label"`, `"labels"`, or
 `"question_preface"` attributes. Variable descriptions are documented
 here in `?acs_pums_wy` and in `data-raw/README.md`. Use
-[`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md)
+[`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md)
 and
-[`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md)
+[`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
 to attach labels manually before analysis if needed.
 
 ## Examples

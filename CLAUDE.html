@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,7 +27,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>surveycore Package Development</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
 <div id="surveycore-package-development" class="section level1">
@@ -63,7 +63,7 @@
 <hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
-<ul><li>S7 classes: <code>survey_base</code>, <code>survey_srs</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_calibrated</code>
+<ul><li>S7 classes: <code>survey_base</code>, <code>survey_srs</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_nonprob</code>
 </li>
 <li>GLM fit class: <code>survey_glm_fit</code> (constructor function is <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</li>
 <li>Result classes: <code>survey_mean</code>, <code>survey_total</code>, <code>survey_freq</code>, etc. (S3 built on tibble)</li>
@@ -76,7 +76,7 @@
 </li>
 <li>Metadata setters (single): <code><a href="reference/set_var_label.html">set_var_label()</a></code>, <code><a href="reference/set_val_labels.html">set_val_labels()</a></code>, <code><a href="reference/set_question_preface.html">set_question_preface()</a></code>, <code><a href="reference/set_var_note.html">set_var_note()</a></code>
 </li>
-<li>Metadata setters (plural): <code><a href="reference/set_variable_labels.html">set_variable_labels()</a></code>, <code><a href="reference/set_value_labels.html">set_value_labels()</a></code>, <code><a href="reference/set_question_prefaces.html">set_question_prefaces()</a></code>, <code><a href="reference/set_variable_notes.html">set_variable_notes()</a></code>
+<li>Metadata setters (plural): <code>set_variable_labels()</code>, <code>set_value_labels()</code>, <code>set_question_prefaces()</code>, <code>set_variable_notes()</code>
 </li>
 <li>Internal helpers: prefix with <code>.</code> (e.g., <code>.extract_haven_labels()</code>)</li>
 </ul></div>
@@ -97,6 +97,27 @@
 </li>
 <li>Run <code>devtools::document()</code> before committing any file with roxygen2 changes</li>
 <li>Run <code>devtools::check()</code> before opening a PR</li>
+</ul></div>
+<div class="section level2">
+<h2 id="git-workflow">Git Workflow<a class="anchor" aria-label="anchor" href="#git-workflow"></a></h2>
+<ul><li>When asked to commit and create a PR, always target the <code>develop</code> branch unless explicitly told otherwise. Never assume <code>main</code> is the target.</li>
+<li>When the user asks for a simple git push, just push. Do not invoke the full commit/PR skill workflow unless explicitly requested.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="ci--package-development">CI / Package Development<a class="anchor" aria-label="anchor" href="#ci--package-development"></a></h2>
+<ul><li>For R package CI (pkgdown, R CMD check): always guard vignette chunks that depend on optional/in-development packages with <code>eval = requireNamespace("pkg", quietly = TRUE)</code>. Test locally before pushing.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="r-package-conventions">R Package Conventions<a class="anchor" aria-label="anchor" href="#r-package-conventions"></a></h2>
+<ul><li>Use the GSS dataset (not NHANES or gss_2024) for examples and tests unless told otherwise. Use rlang patterns over deparse().</li>
+</ul></div>
+<div class="section level2">
+<h2 id="general-behavior">General Behavior<a class="anchor" aria-label="anchor" href="#general-behavior"></a></h2>
+<ul><li>Before reading many files, check if the user’s question can be answered from context already available. Prefer concise answers over exhaustive file exploration.</li>
+</ul></div>
+<div class="section level2">
+<h2 id="project-structure">Project Structure<a class="anchor" aria-label="anchor" href="#project-structure"></a></h2>
+<ul><li>Skills are located in <code>.claude/skills/</code> (e.g., <code>.claude/skills/spec-workflow/</code>). Always check there first when referencing or modifying skills.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="r-cmd-check-gotchas">R CMD Check Gotchas<a class="anchor" aria-label="anchor" href="#r-cmd-check-gotchas"></a></h2>

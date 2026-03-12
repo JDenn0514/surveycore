@@ -31,7 +31,7 @@ get_freqs(
 - design:
 
   A survey design object: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`, `survey_srs`, or `survey_calibrated`.
+  `survey_twophase`, `survey_srs`, or `survey_nonprob`.
 
 - x:
 

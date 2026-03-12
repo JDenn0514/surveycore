@@ -776,11 +776,11 @@ the prepare scripts in `data-raw/` (see the Source section).
 
 **Survey design:** The Nationscape is a calibrated non-probability
 sample (quota design with raking weights). Use
-[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 — it is designed specifically for this use case and will gain bootstrap
 re-calibration variance in Phase 2.5:
 
-    svy <- as_survey_calibrated(ns_wave1, weights = weight)
+    svy <- as_survey_nonprob(ns_wave1, weights = weight)
 
 **Metadata:** All substantive columns carry variable labels (`"label"`
 attribute) set during data preparation. Battery items additionally carry
@@ -853,7 +853,7 @@ attr(ns_wave1$news_sources_cnn, "labels")
 #>   1   2 
 
 # Create a calibrated survey design (correct approach for raked non-prob samples)
-svy <- as_survey_calibrated(ns_wave1, weights = weight)
+svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
 #> # A tibble: 5 × 3
 #>   pres_approval          pct     n

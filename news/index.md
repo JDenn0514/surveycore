@@ -1,5 +1,75 @@
 # Changelog
 
+## surveycore 0.5.0
+
+### Breaking changes
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  replaces `as_survey_repweights()`. The constructor name now matches
+  the underlying `survey_replicate` class.
+
+- `survey_nonprob` and
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  replace `survey_calibrated` and `as_survey_calibrated()`. “Calibrated”
+  implies a post-processing step on a probability sample; `nonprob`
+  accurately reflects the design type.
+
+- The positional setter form `set_var_label(svy, age, "label")` has been
+  removed. Use the named form `set_var_label(svy, age = "label")`
+  instead.
+
+- [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
+  [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+  and
+  [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md)
+  now return a named character vector. `extract_var_label(svy, age)` now
+  returns `c(age = "Age in years")` rather than `"Age in years"`.
+
+- [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md)
+  now returns a named list. `extract_val_labels(svy, sex)` now returns
+  `list(sex = c(Male = 1L, Female = 2L))` rather than
+  `c(Male = 1L, Female = 2L)`.
+
+- `set_variable_labels()`, `set_value_labels()`,
+  `set_question_prefaces()`, and `set_variable_notes()` have been
+  removed. Use
+  [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
+  [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
+  [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
+  and
+  [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md)
+  respectively — all four now accept multiple variables via named `...`.
+
+### New features
+
+- [`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md)
+  and
+  [`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md)
+  set and retrieve universe (eligibility) annotations for survey
+  variables.
+
+- [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md)
+  and
+  [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
+  set and retrieve missing value code vectors for survey variables.
+
+- [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
+  returns all metadata fields (`variable_label`, `value_labels`,
+  `question_preface`, `note`, `universe`, `missing_codes`,
+  `transformations`) for one or more variables as a named list.
+
+### Enhancements
+
+- All setter functions now support three call conventions: named `...`
+  (e.g., `set_var_label(svy, age = "Age in years")`), a single named
+  vector/list in `...`, or explicit `variable =` / content-argument
+  pairs. All setters also now work on plain `data.frame`s.
+
+- All extractor functions accept multiple variables via `...`, support
+  three output formats (`"named_vector"`, `"list"`, `"data_frame"`), and
+  accept a `fill` argument to include variables with no metadata in the
+  output.
+
 ## surveycore 0.4.0
 
 ### New features
@@ -7,7 +77,7 @@
 - [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
   fits survey-weighted generalized linear models for all five design
   classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
-  `survey_twophase`, `survey_calibrated`); returns a `survey_glm_fit`
+  `survey_twophase`, `survey_nonprob`); returns a `survey_glm_fit`
   object with design-based (Binder 1983 sandwich) standard errors and
   degrees of freedom.
 
@@ -48,7 +118,7 @@
   [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md).
 
 - `as_survey_rep()` has been renamed to
-  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
   to avoid a namespace clash with the `srvyr` package.
 
 ### Bug fixes
@@ -65,11 +135,11 @@
 
 - [`print()`](https://rdrr.io/r/base/print.html) methods for all five
   survey design classes (`survey_taylor`, `survey_srs`,
-  `survey_replicate`, `survey_twophase`, `survey_calibrated`) now
-  display a `Domain: <n> of <N> rows` line when `surveytidy::filter()`
-  has been applied. The line appears after the sample size line and
-  before the `Groups:` line. For two-phase designs, domain counts
-  reflect Phase 2 rows only.
+  `survey_replicate`, `survey_twophase`, `survey_nonprob`) now display a
+  `Domain: <n> of <N> rows` line when `surveytidy::filter()` has been
+  applied. The line appears after the sample size line and before the
+  `Groups:` line. For two-phase designs, domain counts reflect Phase 2
+  rows only.
 
 ## surveycore 0.3.0
 
@@ -128,7 +198,7 @@
   returns the weighting history stored in a survey design object’s
   metadata;
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
   and
   [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
   now promote `"weighting_history"` attributes from the input data frame
@@ -161,7 +231,7 @@
   `weights`, `strata`, `fpc`, `probs`); supports Taylor linearization
   for stratified, clustered, and SRS designs.
 
-- [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
   creates `survey_replicate` objects; supports BRR, Fay BRR, JK1, JK2,
   JKn, bootstrap, ACS, and successive-difference replicate schemes.
 
@@ -184,15 +254,14 @@
 
 - Metadata setters:
   [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
-  [`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md),
+  `set_variable_labels()`,
   [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
-  [`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md),
+  `set_value_labels()`,
   [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
-  [`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md),
+  `set_question_prefaces()`,
   [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
-  [`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md).
-  Single-variable setters automatically import haven `"label"` /
-  `"labels"` attributes from the data frame column.
+  `set_variable_notes()`. Single-variable setters automatically import
+  haven `"label"` / `"labels"` attributes from the data frame column.
 
 - Metadata extractors:
   [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),

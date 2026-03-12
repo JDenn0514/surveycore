@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Getting Started with surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
     </div>
 
@@ -99,9 +99,9 @@ variance and bias from the survey design.</p>
 constructors:</p>
 <ol style="list-style-type: decimal">
 <li><p><code><a href="../reference/as_survey.html">as_survey()</a></code></p></li>
-<li><p><code><a href="../reference/as_survey_repweights.html">as_survey_repweights()</a></code></p></li>
+<li><p><code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code></p></li>
-<li><p><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></p></li>
+<li><p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code></p></li>
 </ol>
 <p>Rather than going into detail on each constructor, I’m just going to
@@ -151,14 +151,14 @@ strata, and design weights.</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   attend &lt;dbl&gt;, relig &lt;dbl&gt;</span></span></span></code></pre>
 </div>
 <div class="section level3">
-<h3 id="as_survey_repweights">
-<code>as_survey_repweights()</code><a class="anchor" aria-label="anchor" href="#as_survey_repweights"></a>
+<h3 id="as_survey_replicate">
+<code>as_survey_replicate()</code><a class="anchor" aria-label="anchor" href="#as_survey_replicate"></a>
 </h3>
 <p>Use this when the data you have comes with pre-built replicate weight
 columns like <code>repwt_1</code>, <code>repwt_2</code>. For example,
 Pew’s Jewish American study from 2020 uses replicate weights.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
@@ -244,20 +244,20 @@ survey.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 70 more rows</span></span></span></code></pre>
 </div>
 <div class="section level3">
-<h3 id="as_survey_calibrated">
-<code>as_survey_calibrated()</code><a class="anchor" aria-label="anchor" href="#as_survey_calibrated"></a>
+<h3 id="as_survey_nonprob">
+<code>as_survey_nonprob()</code><a class="anchor" aria-label="anchor" href="#as_survey_nonprob"></a>
 </h3>
 <p>Use this when you used a non-probability panel (e.g., Qualtrics
 Panels, Cint/Lucid, Dynata, YouGov, etc.) and have created weights
 designed to ensure the sample is representative of the population you
 are interested in.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ns_wave1_svy</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_calibrated&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">6422</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6,422 × 171</span></span></span>
@@ -852,7 +852,7 @@ or display - Accept a <code>group</code> argument for subgroup estimates
 columns appear - Handle all five survey design classes:
 <code>survey_taylor</code>, <code>survey_replicate</code>,
 <code>survey_srs</code>, <code>survey_twophase</code>, and
-<code>survey_calibrated</code></p>
+<code>survey_nonprob</code></p>
 <div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
 <div id="ref-lohr2022" class="csl-entry">
 Lohr, Sharon L. 2022. <em>Sampling: Design and Analysis</em>. 3rd ed.

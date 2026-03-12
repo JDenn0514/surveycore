@@ -1,52 +1,72 @@
-# Set a Variable Label
+# Set Variable Label(s)
 
-Sets the variable label for a single variable in a survey design object.
+Sets variable labels using one of three conventions.
 
 ## Usage
 
 ``` r
-set_var_label(x, var, label)
+set_var_label(x, ..., variable = NULL, label = NULL)
 ```
 
 ## Arguments
 
 - x:
 
-  A survey design object.
+  A survey design object or a data frame.
 
-- var:
+- ...:
 
-  \<[`data-masked`](https://rlang.r-lib.org/reference/args_data_masking.html)\>
-  Variable to label (bare, unquoted).
+  Named arguments where the name is the variable and the value is the
+  label string. Supports `!!!` list splicing.
+
+- variable:
+
+  A character vector of variable names. Use with `label`.
 
 - label:
 
-  A character string. The variable label to assign.
+  A character vector of label strings, one per element of `variable`.
 
 ## Value
 
-The modified survey object, invisibly.
+The modified object, invisibly.
+
+## Details
+
+**Convention 1 (named `...`)** — recommended for interactive use:
+
+    set_var_label(x, age = "Age in years", income = "Annual income")
+    set_var_label(x, !!!labels_list)   # list splicing
+
+**Convention 2 (named vector in `...`)** — useful for programmatic use:
+
+    set_var_label(x, c(age = "Age in years", income = "Annual income"))
+
+**Convention 3 (`variable` + `label` arguments)** — for vector input:
+
+    vars <- c("age", "income")
+    lbls <- c("Age in years", "Annual income")
+    set_var_label(x, variable = vars, label = lbls)
 
 ## See also
 
-[`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md)
-for setting multiple labels at once,
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md)
 to retrieve a label
 
 Other metadata:
+[`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
+[`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+[`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
+[`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
-[`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md),
+[`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
-[`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md),
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
-[`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md),
-[`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md),
 [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
 
@@ -55,8 +75,9 @@ Other metadata:
 ``` r
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
                strata = sdmvstra, nest = TRUE)
-d <- set_var_label(d, indfmpir, "Income-to-poverty ratio")
+d <- set_var_label(d, indfmpir = "Income-to-poverty ratio")
 
-# Pipe-friendly
-d <- d |> set_var_label(bpxsy1, "Systolic BP (1st reading)")
+# Multiple variables
+d <- set_var_label(d, bpxsy1 = "Systolic BP (1st reading)",
+                      bpxdi1 = "Diastolic BP (1st reading)")
 ```

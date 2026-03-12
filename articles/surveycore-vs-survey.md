@@ -320,7 +320,7 @@ acs_srvyr
     #>     dis (int), povpip (int), wkhp (int), adjinc (int)
 
 ``` r
-acs_sc <- as_survey_repweights(
+acs_sc <- as_survey_replicate(
   acs_pums_wy,
   weights    = pwgtp,
   repweights = tidyselect::matches("^pwgtp[0-9]+$"), # tidyselect
@@ -363,7 +363,7 @@ acs_sc
 **Pew Jewish Americans 2020 — JK1 jackknife replicates**
 
 ``` r
-pew_sc <- as_survey_repweights(
+pew_sc <- as_survey_replicate(
   pew_jewish_2020,
   weights    = extweight,
   repweights = extweight1:extweight100,
@@ -421,8 +421,8 @@ ns_srvyr <- ns_wave1 |> as_survey_design(weights = weight)
 ```
 
 ``` r
-# as_survey_calibrated() makes the design type explicit
-ns_sc <- as_survey_calibrated(ns_wave1, weights = weight)
+# as_survey_nonprob() makes the design type explicit
+ns_sc <- as_survey_nonprob(ns_wave1, weights = weight)
 ns_sc
 ```
 
@@ -430,7 +430,7 @@ ns_sc
 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
 
-    #> <survey_calibrated> (calibrated / non-probability) [experimental]
+    #> <survey_nonprob> (calibrated / non-probability) [experimental]
 
     #> Sample size: 6422
 
@@ -457,7 +457,7 @@ ns_sc
     #> #   news_sources_amtalk <dbl>, news_sources_new_york_times <dbl>,
     #> #   news_sources_local_newspaper <dbl>, news_sources_other <dbl>, …
 
-[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 preserves the distinction in code, output, and documentation. Standard
 errors are approximate — they assume the calibration weights produce
 approximately correct variance estimates ([Elliott and Valliant
@@ -476,14 +476,14 @@ the Breslow-Cain variance estimator ([Breslow and Cain
 
 ### 1.7 Constructor Summary
 
-| Design         | survey                            | srvyr                                    | surveycore                                      |
-|----------------|-----------------------------------|------------------------------------------|-------------------------------------------------|
-| SRS            | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`           | `as_survey_srs(...)`                            |
-| Stratified     | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`        | `as_survey(..., strata=s)`                      |
-| Cluster        | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`           | `as_survey(..., ids=d)`                         |
-| Replicate wts  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_repweights(repweights=matches(...))` |
-| Calibrated/NPS | `svydesign(ids=~1, weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠          | `as_survey_calibrated(...)`                     |
-| Two-phase      | `twophase(...)`                   | `as_survey_twophase(...)`                | `as_survey_twophase(...)`                       |
+| Design         | survey                            | srvyr                                    | surveycore                                     |
+|----------------|-----------------------------------|------------------------------------------|------------------------------------------------|
+| SRS            | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`           | `as_survey_srs(...)`                           |
+| Stratified     | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`        | `as_survey(..., strata=s)`                     |
+| Cluster        | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`           | `as_survey(..., ids=d)`                        |
+| Replicate wts  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
+| Calibrated/NPS | `svydesign(ids=~1, weights=~w)` ⚠ | `as_survey_design(weights=w)` ⚠          | `as_survey_nonprob(...)`                       |
+| Two-phase      | `twophase(...)`                   | `as_survey_twophase(...)`                | `as_survey_twophase(...)`                      |
 
 ⚠ No dedicated non-probability constructor — design intent is not
 preserved.
@@ -785,7 +785,7 @@ ns_corr <- ns_wave1[
     !is.na(ns_wave1$cand_favorability_biden) &
     ns_wave1$cand_favorability_biden != 999,
 ]
-ns_corr_sc <- as_survey_calibrated(ns_corr, weights = weight)
+ns_corr_sc <- as_survey_nonprob(ns_corr, weights = weight)
 ```
 
 **survey** — matrix output, no confidence intervals
@@ -1267,7 +1267,7 @@ ns_wave1 |>
 **surveycore + surveytidy**
 
 ``` r
-as_survey_calibrated(ns_wave1, weights = weight) |>
+as_survey_nonprob(ns_wave1, weights = weight) |>
   filter(age < 65) |>
   get_means(discrimination_blacks, group = pid3)
 ```
@@ -1276,46 +1276,46 @@ as_survey_calibrated(ns_wave1, weights = weight) |>
 
 ## 6. Notable Differences
 
-|                            | survey                   | srvyr                                             | surveycore                                                                                           |
-|----------------------------|--------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------|
-| **Output format**          | S3 `svystat` / matrix    | Tibble with `_se`/`_low`/`_upp` suffix columns    | S3 tibble subclass with CI columns by default                                                        |
-| **Interface**              | `~formula` throughout    | Mixed: tidy constructor, formula in `summarise()` | Bare names throughout (tidy-select)                                                                  |
-| **Value labels**           | Not applied              | Not applied                                       | Applied automatically from `haven` attributes                                                        |
-| **Multiple variables**     | Loop required            | Loop required                                     | `c(x, y, z)` in one call                                                                             |
-| **Min-cell warning**       | None                     | None                                              | Default `min_cell_n = 30L`                                                                           |
-| **Weighted N**             | Separate call            | Separate call                                     | `n_weighted = TRUE`                                                                                  |
-| **Correlation CIs**        | None (`svycor()`)        | No verb                                           | Fisher-Z CIs via [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)        |
-| **Non-probability design** | No dedicated constructor | No dedicated constructor                          | [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md) |
-| **Manipulation**           | Pre/post construction    | Bundled via pipe                                  | `surveytidy` (separate package)                                                                      |
-| **Runtime `survey` dep.**  | Is `survey`              | Wraps `survey`                                    | Vendored — `survey` not required                                                                     |
+|                            | survey                   | srvyr                                             | surveycore                                                                                     |
+|----------------------------|--------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------|
+| **Output format**          | S3 `svystat` / matrix    | Tibble with `_se`/`_low`/`_upp` suffix columns    | S3 tibble subclass with CI columns by default                                                  |
+| **Interface**              | `~formula` throughout    | Mixed: tidy constructor, formula in `summarise()` | Bare names throughout (tidy-select)                                                            |
+| **Value labels**           | Not applied              | Not applied                                       | Applied automatically from `haven` attributes                                                  |
+| **Multiple variables**     | Loop required            | Loop required                                     | `c(x, y, z)` in one call                                                                       |
+| **Min-cell warning**       | None                     | None                                              | Default `min_cell_n = 30L`                                                                     |
+| **Weighted N**             | Separate call            | Separate call                                     | `n_weighted = TRUE`                                                                            |
+| **Correlation CIs**        | None (`svycor()`)        | No verb                                           | Fisher-Z CIs via [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)  |
+| **Non-probability design** | No dedicated constructor | No dedicated constructor                          | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
+| **Manipulation**           | Pre/post construction    | Bundled via pipe                                  | `surveytidy` (separate package)                                                                |
+| **Runtime `survey` dep.**  | Is `survey`              | Wraps `survey`                                    | Vendored — `survey` not required                                                               |
 
 ------------------------------------------------------------------------
 
 ## 7. Function Reference Table
 
-| Task               | survey                            | srvyr                                      | surveycore                                      |
-|--------------------|-----------------------------------|--------------------------------------------|-------------------------------------------------|
-| SRS design         | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`             | `as_survey_srs(...)`                            |
-| Stratified design  | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`          | `as_survey(..., strata=s)`                      |
-| Cluster design     | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`             | `as_survey(..., ids=d)`                         |
-| Replicate weights  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))`   | `as_survey_repweights(repweights=matches(...))` |
-| Calibrated/NPS     | `svydesign(weights=~w)` ⚠         | `as_survey_design(weights=w)` ⚠            | `as_survey_calibrated(...)`                     |
-| Two-phase          | `twophase(...)`                   | `as_survey_twophase(...)`                  | `as_survey_twophase(...)`                       |
-| Weighted mean      | `svymean(~x, d)`                  | `summarise(survey_mean(x))`                | `get_means(d, x)`                               |
-| Grouped mean       | `svyby(~x, ~g, d, svymean)`       | `group_by(g) \|> summarise(...)`           | `get_means(d, x, group=g)`                      |
-| Proportions        | `svymean(~factor(x), d)`          | `group_by(x) \|> summarise(survey_mean())` | `get_freqs(d, x)`                               |
-| Total              | `svytotal(~x, d)`                 | `summarise(survey_total(x))`               | `get_totals(d, x)`                              |
-| Population N       | `svytotal(~1, d)`                 | `summarise(survey_total(1))`               | `get_totals(d)`                                 |
-| Quantiles          | `svyquantile(~x, d, q)`           | `summarise(survey_quantile(x, q))`         | `get_quantiles(d, x, probs=q)`                  |
-| Ratio              | `svyratio(~y, ~x, d)`             | `summarise(survey_ratio(y, x))`            | `get_ratios(d, numerator=y, denominator=x)`     |
-| Correlation        | `svycor(~x+y, d)` ⚠ no CI         | ✗ no verb                                  | `get_corr(d, c(x, y))` with CI                  |
-| Multiple variables | Loop + bind                       | Loop + bind                                | `get_means(d, c(x, y, z))`                      |
-| Value labels       | Manual recode                     | Manual recode                              | `label_values = TRUE` (default)                 |
-| Min-cell warning   | ✗                                 | ✗                                          | `min_cell_n = 30L` (default)                    |
-| Weighted N         | Separate call                     | Separate call                              | `n_weighted = TRUE`                             |
-| Domain filter      | `subset(d, cond)`                 | `filter(cond)`                             | `filter(cond)` (surveytidy)                     |
-| Mutate             | Modify df, recreate               | `mutate(...)`                              | `mutate(...)` (surveytidy)                      |
-| Group by           | `svyby(...)`                      | `group_by(...)`                            | `group_by(...)` or `group=` arg                 |
+| Task               | survey                            | srvyr                                      | surveycore                                     |
+|--------------------|-----------------------------------|--------------------------------------------|------------------------------------------------|
+| SRS design         | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`             | `as_survey_srs(...)`                           |
+| Stratified design  | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`          | `as_survey(..., strata=s)`                     |
+| Cluster design     | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`             | `as_survey(..., ids=d)`                        |
+| Replicate weights  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))`   | `as_survey_replicate(repweights=matches(...))` |
+| Calibrated/NPS     | `svydesign(weights=~w)` ⚠         | `as_survey_design(weights=w)` ⚠            | `as_survey_nonprob(...)`                       |
+| Two-phase          | `twophase(...)`                   | `as_survey_twophase(...)`                  | `as_survey_twophase(...)`                      |
+| Weighted mean      | `svymean(~x, d)`                  | `summarise(survey_mean(x))`                | `get_means(d, x)`                              |
+| Grouped mean       | `svyby(~x, ~g, d, svymean)`       | `group_by(g) \|> summarise(...)`           | `get_means(d, x, group=g)`                     |
+| Proportions        | `svymean(~factor(x), d)`          | `group_by(x) \|> summarise(survey_mean())` | `get_freqs(d, x)`                              |
+| Total              | `svytotal(~x, d)`                 | `summarise(survey_total(x))`               | `get_totals(d, x)`                             |
+| Population N       | `svytotal(~1, d)`                 | `summarise(survey_total(1))`               | `get_totals(d)`                                |
+| Quantiles          | `svyquantile(~x, d, q)`           | `summarise(survey_quantile(x, q))`         | `get_quantiles(d, x, probs=q)`                 |
+| Ratio              | `svyratio(~y, ~x, d)`             | `summarise(survey_ratio(y, x))`            | `get_ratios(d, numerator=y, denominator=x)`    |
+| Correlation        | `svycor(~x+y, d)` ⚠ no CI         | ✗ no verb                                  | `get_corr(d, c(x, y))` with CI                 |
+| Multiple variables | Loop + bind                       | Loop + bind                                | `get_means(d, c(x, y, z))`                     |
+| Value labels       | Manual recode                     | Manual recode                              | `label_values = TRUE` (default)                |
+| Min-cell warning   | ✗                                 | ✗                                          | `min_cell_n = 30L` (default)                   |
+| Weighted N         | Separate call                     | Separate call                              | `n_weighted = TRUE`                            |
+| Domain filter      | `subset(d, cond)`                 | `filter(cond)`                             | `filter(cond)` (surveytidy)                    |
+| Mutate             | Modify df, recreate               | `mutate(...)`                              | `mutate(...)` (surveytidy)                     |
+| Group by           | `svyby(...)`                      | `group_by(...)`                            | `group_by(...)` or `group=` arg                |
 
 ⚠ = partial / workaround; ✗ = no equivalent
 

@@ -40,11 +40,11 @@ variance and bias from the survey design.
 
 1.  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 
-2.  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+2.  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 
 3.  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
 
-4.  [`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md)
+4.  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 
 5.  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
 
@@ -104,14 +104,14 @@ gss_svy
     #> #   happy <dbl>, health <dbl>, trust <dbl>, natfare <dbl>, abany <dbl>,
     #> #   attend <dbl>, relig <dbl>
 
-### `as_survey_repweights()`
+### `as_survey_replicate()`
 
 Use this when the data you have comes with pre-built replicate weight
 columns like `repwt_1`, `repwt_2`. For example, Pew’s Jewish American
 study from 2020 uses replicate weights.
 
 ``` r
-pew_jewish_svy <- as_survey_repweights(
+pew_jewish_svy <- as_survey_replicate(
   pew_jewish_2020,
   weights = extweight,
   repweights = extweight1:extweight100,
@@ -209,7 +209,7 @@ school_svy
     #> 10       128      71.5     0.54        656     5   400
     #> # ℹ 70 more rows
 
-### `as_survey_calibrated()`
+### `as_survey_nonprob()`
 
 Use this when you used a non-probability panel (e.g., Qualtrics Panels,
 Cint/Lucid, Dynata, YouGov, etc.) and have created weights designed to
@@ -217,7 +217,7 @@ ensure the sample is representative of the population you are interested
 in.
 
 ``` r
-ns_wave1_svy <- as_survey_calibrated(ns_wave1, weights = weight)
+ns_wave1_svy <- as_survey_nonprob(ns_wave1, weights = weight)
 
 ns_wave1_svy
 ```
@@ -226,7 +226,7 @@ ns_wave1_svy
 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
 
-    #> <survey_calibrated> (calibrated / non-probability) [experimental]
+    #> <survey_nonprob> (calibrated / non-probability) [experimental]
 
     #> Sample size: 6422
 
@@ -854,7 +854,7 @@ All functions: - Return a tibble subclass ready for further analysis or
 display - Accept a `group` argument for subgroup estimates - Accept a
 `variance` argument to control which uncertainty columns appear - Handle
 all five survey design classes: `survey_taylor`, `survey_replicate`,
-`survey_srs`, `survey_twophase`, and `survey_calibrated`
+`survey_srs`, `survey_twophase`, and `survey_nonprob`
 
 Lohr, Sharon L. 2022. *Sampling: Design and Analysis*. 3rd ed. CRC
 Press.

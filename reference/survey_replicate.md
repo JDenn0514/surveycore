@@ -2,7 +2,7 @@
 
 A survey design object using replicate weights for variance estimation.
 Create with
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md).
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 ## Usage
 
@@ -21,7 +21,7 @@ survey_replicate(
 - data:
 
   A `data.frame` containing the survey data. Prefer
-  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
   over calling this constructor directly.
 
 - metadata:
@@ -29,13 +29,13 @@ survey_replicate(
   A
   [survey_metadata](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   object. Created automatically by
-  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md).
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - variables:
 
   A named list of design specification (weights, repweights, type,
   scale, rscales, fpc, fpctype, mse). Set automatically by
-  [`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md).
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - groups:
 
@@ -91,19 +91,19 @@ A `survey_replicate` object.
 
 ## See also
 
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 to create a `survey_replicate` object.
 
 Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-[`as_survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/as_survey_calibrated.md),
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md),
+[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_calibrated()`](https://jdenn0514.github.io/surveycore/reference/survey_calibrated.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
+[`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)

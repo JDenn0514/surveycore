@@ -13,7 +13,7 @@ fpc arguments."><meta property="og:image" content="https://jdenn0514.github.io/s
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ fpc arguments."><meta property="og:image" content="https://jdenn0514.github.io/s
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Simple Random Sample Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
       <div class="d-none name"><code>survey_srs.Rd</code></div>
     </div>
 
@@ -98,7 +98,7 @@ to be selected)</p></li>
 <li><p>You want the standard SRS variance formula: <code>s²/n × (1 - f)</code> where
 <code>f = n/N</code> is the sampling fraction (0 when population size is unknown)</p></li>
 </ul><p>For non-probability samples or post-hoc calibrated weights (raking,
-post-stratification, propensity matching), use <code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>
+post-stratification, propensity matching), use <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>
 instead.</p>
 <p>For complex probability samples with known design structure (PSUs, strata),
 use <code><a href="as_survey.html">as_survey()</a></code> with <code>ids</code>, <code>strata</code>, and/or <code>fpc</code> — which creates a
@@ -143,14 +143,14 @@ specified.</p></dd>
 <code><a href="as_survey.html">as_survey()</a></code> for Taylor series designs.</p>
 <p>Other constructors:
 <code><a href="as_survey.html">as_survey()</a></code>,
-<code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>,
-<code><a href="as_survey_repweights.html">as_survey_repweights()</a></code>,
+<code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
+<code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
 <code><a href="as_survey_srs.html">as_survey_srs()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_calibrated.html">survey_calibrated()</a></code>,
 <code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
+<code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
 <code><a href="survey_replicate.html">survey_replicate()</a></code>,
 <code><a href="survey_taylor.html">survey_taylor()</a></code>,
 <code><a href="survey_twophase.html">survey_twophase()</a></code></p></div>

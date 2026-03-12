@@ -13,7 +13,7 @@ as_survey() or related constructors are called."><meta property="og:image" conte
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ as_survey() or related constructors are called."><meta property="og:image" conte
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Survey Metadata Container</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
       <div class="d-none name"><code>survey_metadata.Rd</code></div>
     </div>
 
@@ -51,6 +51,8 @@ Automatically populated from haven-style attributes when
 <span>  value_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  question_prefaces <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  notes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  universe <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  missing_codes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  transformations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  weighting_history <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -79,6 +81,18 @@ question battery preface text.</p></dd>
 <dd><p>A named list mapping variable names to analyst notes.</p></dd>
 
 
+<dt id="arg-universe">universe<a class="anchor" aria-label="anchor" href="#arg-universe"></a></dt>
+<dd><p>A named list mapping variable names to universe
+descriptions (e.g., <code>list(age = "Adults 18+")</code>). Describes the
+population to which a variable applies.</p></dd>
+
+
+<dt id="arg-missing-codes">missing_codes<a class="anchor" aria-label="anchor" href="#arg-missing-codes"></a></dt>
+<dd><p>A named list mapping variable names to atomic
+vectors of missing-value codes
+(e.g., <code>list(age = c(Refused = 99L, DK = 98L))</code>).</p></dd>
+
+
 <dt id="arg-transformations">transformations<a class="anchor" aria-label="anchor" href="#arg-transformations"></a></dt>
 <dd><p>A named list tracking variable transformation
 history (populated automatically during operations).</p></dd>
@@ -100,19 +114,20 @@ applied. Reserved for Phase 2.5.</p></dd>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other metadata:
+<code><a href="extract_metadata.html">extract_metadata()</a></code>,
+<code><a href="extract_missing_codes.html">extract_missing_codes()</a></code>,
 <code><a href="extract_question_preface.html">extract_question_preface()</a></code>,
+<code><a href="extract_universe.html">extract_universe()</a></code>,
 <code><a href="extract_val_labels.html">extract_val_labels()</a></code>,
 <code><a href="extract_var_label.html">extract_var_label()</a></code>,
 <code><a href="extract_var_note.html">extract_var_note()</a></code>,
 <code><a href="infer_question_prefaces.html">infer_question_prefaces()</a></code>,
+<code><a href="set_missing_codes.html">set_missing_codes()</a></code>,
 <code><a href="set_question_preface.html">set_question_preface()</a></code>,
-<code><a href="set_question_prefaces.html">set_question_prefaces()</a></code>,
+<code><a href="set_universe.html">set_universe()</a></code>,
 <code><a href="set_val_labels.html">set_val_labels()</a></code>,
-<code><a href="set_value_labels.html">set_value_labels()</a></code>,
 <code><a href="set_var_label.html">set_var_label()</a></code>,
 <code><a href="set_var_note.html">set_var_note()</a></code>,
-<code><a href="set_variable_labels.html">set_variable_labels()</a></code>,
-<code><a href="set_variable_notes.html">set_variable_notes()</a></code>,
 <code><a href="survey_weighting_history.html">survey_weighting_history()</a></code></p></div>
     </div>
 

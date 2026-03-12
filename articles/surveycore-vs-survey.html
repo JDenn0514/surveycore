@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>surveycore vs. survey and srvyr</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/vignettes/surveycore-vs-survey.Rmd" class="external-link"><code>vignettes/surveycore-vs-survey.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/surveycore-vs-survey.Rmd" class="external-link"><code>vignettes/surveycore-vs-survey.Rmd</code></a></small>
       <div class="d-none name"><code>surveycore-vs-survey.Rmd</code></div>
     </div>
 
@@ -336,7 +336,7 @@ replicates</strong></p>
 <span><span class="co">#&gt;     hisp (int), schl (int), esr (int), pincp (int), wagp (int), hicov (int),</span></span>
 <span><span class="co">#&gt;     dis (int), povpip (int), wkhp (int), adjinc (int)</span></span></code></pre>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">acs_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">acs_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
 <span>  <span class="va">acs_pums_wy</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">matches</a></span><span class="op">(</span><span class="st">"^pwgtp[0-9]+$"</span><span class="op">)</span>, <span class="co"># tidyselect</span></span>
@@ -371,7 +371,7 @@ replicates</strong></p>
 <p><strong>Pew Jewish Americans 2020 — JK1 jackknife
 replicates</strong></p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pew_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_repweights.html">as_survey_repweights</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">pew_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights    <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
@@ -419,12 +419,12 @@ is lost in the code:</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_srvyr</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span> <span class="fu">as_survey_design</span><span class="op">(</span>weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># as_survey_calibrated() makes the design type explicit</span></span>
-<span><span class="va">ns_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># as_survey_nonprob() makes the design type explicit</span></span>
+<span><span class="va">ns_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span><span class="va">ns_sc</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_calibrated&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> (calibrated / non-probability) [experimental]</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">6422</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6,422 × 171</span></span></span>
@@ -447,11 +447,11 @@ is lost in the code:</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   news_sources_telemundo &lt;dbl&gt;, news_sources_npr &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   news_sources_amtalk &lt;dbl&gt;, news_sources_new_york_times &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   news_sources_local_newspaper &lt;dbl&gt;, news_sources_other &lt;dbl&gt;, …</span></span></span></code></pre>
-<p><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code> preserves the distinction in
-code, output, and documentation. Standard errors are approximate — they
-assume the calibration weights produce approximately correct variance
-estimates <span class="citation">(<a href="#ref-elliott2017">Elliott and
-Valliant 2017</a>)</span>.</p>
+<p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> preserves the distinction in code,
+output, and documentation. Standard errors are approximate — they assume
+the calibration weights produce approximately correct variance estimates
+<span class="citation">(<a href="#ref-elliott2017">Elliott and Valliant
+2017</a>)</span>.</p>
 </div>
 <div class="section level3">
 <h3 id="two-phase-designs">1.6 Two-Phase Designs<a class="anchor" aria-label="anchor" href="#two-phase-designs"></a>
@@ -503,7 +503,7 @@ Valliant 2017</a>)</span>.</p>
 <td>Replicate wts</td>
 <td><code>svrepdesign(repweights="regex")</code></td>
 <td><code>as_survey_rep(repweights=matches(...))</code></td>
-<td><code>as_survey_repweights(repweights=matches(...))</code></td>
+<td><code>as_survey_replicate(repweights=matches(...))</code></td>
 </tr>
 <tr class="odd">
 <td>Calibrated/NPS</td>
@@ -511,7 +511,7 @@ Valliant 2017</a>)</span>.</p>
 <code>svydesign(ids=~1, weights=~w)</code> ⚠</td>
 <td>
 <code>as_survey_design(weights=w)</code> ⚠</td>
-<td><code>as_survey_calibrated(...)</code></td>
+<td><code>as_survey_nonprob(...)</code></td>
 </tr>
 <tr class="even">
 <td>Two-phase</td>
@@ -760,7 +760,7 @@ who haven’t heard enough — filtered below).</p>
 <span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">ns_wave1</span><span class="op">$</span><span class="va">cand_favorability_biden</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="va">ns_wave1</span><span class="op">$</span><span class="va">cand_favorability_biden</span> <span class="op">!=</span> <span class="fl">999</span>,</span>
 <span><span class="op">]</span></span>
-<span><span class="va">ns_corr_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_corr</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">ns_corr_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_corr</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <p><strong>survey</strong> — matrix output, no confidence intervals</p>
 <div class="sourceCode" id="cb91"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_corr_sv</span> <span class="op">&lt;-</span> <span class="fu">svydesign</span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">weight</span>, data <span class="op">=</span> <span class="va">ns_corr</span><span class="op">)</span></span>
@@ -1181,7 +1181,7 @@ should persist across steps.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    <span style="color: #BB0000;">NA</span>      1.17         0.814          1.53</span></span></code></pre>
 <p><strong>surveycore + surveytidy</strong></p>
 <div class="sourceCode" id="cb143"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&lt;</span> <span class="fl">65</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">discrimination_blacks</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
 <hr>
@@ -1256,7 +1256,7 @@ suffix columns</td>
 <td><strong>Non-probability design</strong></td>
 <td>No dedicated constructor</td>
 <td>No dedicated constructor</td>
-<td><code><a href="../reference/as_survey_calibrated.html">as_survey_calibrated()</a></code></td>
+<td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
 </tr>
 <tr class="odd">
 <td><strong>Manipulation</strong></td>
@@ -1316,7 +1316,7 @@ suffix columns</td>
 <td>Replicate weights</td>
 <td><code>svrepdesign(repweights="regex")</code></td>
 <td><code>as_survey_rep(repweights=matches(...))</code></td>
-<td><code>as_survey_repweights(repweights=matches(...))</code></td>
+<td><code>as_survey_replicate(repweights=matches(...))</code></td>
 </tr>
 <tr class="odd">
 <td>Calibrated/NPS</td>
@@ -1324,7 +1324,7 @@ suffix columns</td>
 <code>svydesign(weights=~w)</code> ⚠</td>
 <td>
 <code>as_survey_design(weights=w)</code> ⚠</td>
-<td><code>as_survey_calibrated(...)</code></td>
+<td><code>as_survey_nonprob(...)</code></td>
 </tr>
 <tr class="even">
 <td>Two-phase</td>

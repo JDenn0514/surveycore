@@ -565,10 +565,10 @@ Prepared by `data-raw/prepare-pew-jewish-2020.R`.
 ## Details
 
 **Survey design:** Jackknife replication — use
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 with all 100 replicate weights:
 
-    svy <- as_survey_repweights(
+    svy <- as_survey_replicate(
       pew_jewish_2020,
       weights    = extweight,
       repweights = extweight1:extweight100,
@@ -603,7 +603,7 @@ attributes from the original Stata file. The three battery variable
 groups additionally carry a `"question_preface"` attribute with the
 shared question stem. All three attribute types are automatically
 extracted into surveycore's metadata system when you call
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md).
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - **Variable labels** (`"label"` attribute): A human-readable
   description of each column — for battery items this is the unique item

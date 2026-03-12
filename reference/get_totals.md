@@ -29,7 +29,7 @@ get_totals(
 - design:
 
   A survey design object: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`, `survey_srs`, or `survey_calibrated`.
+  `survey_twophase`, `survey_srs`, or `survey_nonprob`.
 
 - x:
 
@@ -121,7 +121,7 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey_repweights(acs_pums_wy, weights = pwgtp,
+d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
                    repweights = pwgtp1:pwgtp80,
                    type = "successive-difference")
 

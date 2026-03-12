@@ -15,7 +15,7 @@ and 2016 presidential vote choice."><meta property="og:image" content="https://j
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@ and 2016 presidential vote choice."><meta property="og:image" content="https://j
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Nationscape Wave 1: July 18, 2019</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.4.0/R/data.R" class="external-link"><code>R/data.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/data.R" class="external-link"><code>R/data.R</code></a></small>
       <div class="d-none name"><code>ns_wave1.Rd</code></div>
     </div>
 
@@ -667,10 +667,10 @@ would be prohibitively large. To obtain the full dataset by phase, use the
 prepare scripts in <code>data-raw/</code> (see the Source section).</p>
 <p><strong>Survey design:</strong>
 The Nationscape is a calibrated non-probability sample (quota design with
-raking weights). Use <code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code> — it is designed specifically
+raking weights). Use <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code> — it is designed specifically
 for this use case and will gain bootstrap re-calibration variance in Phase
 2.5:</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre><p></p></div>
 <p><strong>Metadata:</strong>
 All substantive columns carry variable labels (<code>"label"</code> attribute) set
 during data preparation. Battery items additionally carry a
@@ -726,7 +726,7 @@ Meetings, Social Statistics Section.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   1   2 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Create a calibrated survey design (correct approach for raked non-prob samples)</span></span></span>
-<span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_calibrated.html">as_survey_calibrated</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">svy</span>, <span class="va">pres_approval</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 5 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   pres_approval          pct     n</span>

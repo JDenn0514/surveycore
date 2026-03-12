@@ -1,28 +1,46 @@
-# Extract an Analyst Note
+# Extract Analyst Notes
 
-Returns the analyst note for a single variable, or `NULL` if none has
-been set.
+Returns analyst notes for one or more variables in a survey design
+object or data frame.
 
 ## Usage
 
 ``` r
-extract_var_note(x, var)
+extract_var_note(x, ..., format = "named_vector", fill = NULL)
 ```
 
 ## Arguments
 
 - x:
 
-  A survey design object.
+  A survey design object or `data.frame`.
 
-- var:
+- ...:
 
   \<[`data-masked`](https://rlang.r-lib.org/reference/args_data_masking.html)\>
-  Variable name (bare, unquoted).
+  Variable names (bare, unquoted). If empty, metadata for all variables
+  is returned.
+
+- format:
+
+  `character(1)`. Output format: `"named_vector"` (default), `"list"`,
+  or `"data_frame"`.
+
+- fill:
+
+  Scalar or `NULL`. How to handle variables with no note: `NULL`
+  (default) omits them; `NA_character_` includes them with `NA`.
 
 ## Value
 
-A character string, or `NULL`.
+- `"named_vector"` (default): named character vector. Empty:
+  `character(0)`.
+
+- `"list"`: named list of character scalars. Empty:
+  [`list()`](https://rdrr.io/r/base/list.html).
+
+- `"data_frame"`: tibble with columns `variable` and `note`. Empty:
+  zero-row tibble.
 
 ## See also
 
@@ -30,17 +48,18 @@ A character string, or `NULL`.
 to set a note
 
 Other metadata:
+[`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
+[`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+[`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
+[`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
-[`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md),
+[`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
-[`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md),
 [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
-[`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md),
-[`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md),
 [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)

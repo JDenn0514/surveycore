@@ -32,7 +32,7 @@ vendored variance estimation code. License: GPL-3.
 
 - S7 classes: `survey_base`, `survey_srs`, `survey_taylor`,
   `survey_replicate`, `survey_twophase`, `survey_metadata`,
-  `survey_calibrated`
+  `survey_nonprob`
 - GLM fit class: `survey_glm_fit` (constructor function is
   [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md))
 - Result classes: `survey_mean`, `survey_total`, `survey_freq`, etc. (S3
@@ -58,11 +58,9 @@ vendored variance estimation code. License: GPL-3.
   [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
   [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
   [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md)
-- Metadata setters (plural):
-  [`set_variable_labels()`](https://jdenn0514.github.io/surveycore/reference/set_variable_labels.md),
-  [`set_value_labels()`](https://jdenn0514.github.io/surveycore/reference/set_value_labels.md),
-  [`set_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/set_question_prefaces.md),
-  [`set_variable_notes()`](https://jdenn0514.github.io/surveycore/reference/set_variable_notes.md)
+- Metadata setters (plural): `set_variable_labels()`,
+  `set_value_labels()`, `set_question_prefaces()`,
+  `set_variable_notes()`
 - Internal helpers: prefix with `.` (e.g., `.extract_haven_labels()`)
 
 ## Key Implementation Rules
@@ -94,6 +92,38 @@ columns named `.weights`).
 - Run `devtools::document()` before committing any file with roxygen2
   changes
 - Run `devtools::check()` before opening a PR
+
+## Git Workflow
+
+- When asked to commit and create a PR, always target the `develop`
+  branch unless explicitly told otherwise. Never assume `main` is the
+  target.
+- When the user asks for a simple git push, just push. Do not invoke the
+  full commit/PR skill workflow unless explicitly requested.
+
+## CI / Package Development
+
+- For R package CI (pkgdown, R CMD check): always guard vignette chunks
+  that depend on optional/in-development packages with
+  `eval = requireNamespace("pkg", quietly = TRUE)`. Test locally before
+  pushing.
+
+## R Package Conventions
+
+- Use the GSS dataset (not NHANES or gss_2024) for examples and tests
+  unless told otherwise. Use rlang patterns over deparse().
+
+## General Behavior
+
+- Before reading many files, check if the user’s question can be
+  answered from context already available. Prefer concise answers over
+  exhaustive file exploration.
+
+## Project Structure
+
+- Skills are located in `.claude/skills/` (e.g.,
+  `.claude/skills/spec-workflow/`). Always check there first when
+  referencing or modifying skills.
 
 ## R CMD Check Gotchas
 

@@ -72,7 +72,7 @@ The modified survey object, invisibly.
 
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 to create a `survey_taylor` object,
-[`as_survey_repweights()`](https://jdenn0514.github.io/surveycore/reference/as_survey_repweights.md)
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 to create a `survey_replicate` object
 
 ## Examples

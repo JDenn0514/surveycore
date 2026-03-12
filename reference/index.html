@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,7 +55,7 @@
 
         <dt>
 
-          <code><a href="as_survey_repweights.html">as_survey_repweights()</a></code>
+          <code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>
 
         </dt>
         <dd>Create a Replicate Weights Survey Design</dd>
@@ -69,7 +69,7 @@
 
         <dt>
 
-          <code><a href="as_survey_calibrated.html">as_survey_calibrated()</a></code>
+          <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Create a Calibrated / Non-Probability Survey Design</dd>
@@ -171,7 +171,7 @@
       </dl></div><div class="section level2">
       <h2 id="metadata-setters">Metadata — setters<a class="anchor" aria-label="anchor" href="#metadata-setters"></a></h2>
 
-      <div class="section-desc"><p>Assign variable labels, value labels, question prefaces, and notes. Single-variable setters accept bare names; plural setters accept named lists.</p></div>
+      <div class="section-desc"><p>Assign variable labels, value labels, question prefaces, notes, universe strings, and missing codes. All setters accept the three-convention API: named <code>...</code>, a single named vector/list, or <code>variable</code> + content argument.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -183,56 +183,42 @@
           <code><a href="set_var_label.html">set_var_label()</a></code>
 
         </dt>
-        <dd>Set a Variable Label</dd>
-
-        <dt>
-
-          <code><a href="set_variable_labels.html">set_variable_labels()</a></code>
-
-        </dt>
-        <dd>Set Variable Labels for Multiple Variables</dd>
+        <dd>Set Variable Label(s)</dd>
 
         <dt>
 
           <code><a href="set_val_labels.html">set_val_labels()</a></code>
 
         </dt>
-        <dd>Set Value Labels for a Variable</dd>
-
-        <dt>
-
-          <code><a href="set_value_labels.html">set_value_labels()</a></code>
-
-        </dt>
-        <dd>Set Value Labels for Multiple Variables</dd>
+        <dd>Set Value Labels</dd>
 
         <dt>
 
           <code><a href="set_question_preface.html">set_question_preface()</a></code>
 
         </dt>
-        <dd>Set a Question Preface</dd>
-
-        <dt>
-
-          <code><a href="set_question_prefaces.html">set_question_prefaces()</a></code>
-
-        </dt>
-        <dd>Set Question Prefaces for Multiple Variables</dd>
+        <dd>Set Question Preface(s)</dd>
 
         <dt>
 
           <code><a href="set_var_note.html">set_var_note()</a></code>
 
         </dt>
-        <dd>Set an Analyst Note</dd>
+        <dd>Set Analyst Note(s)</dd>
 
         <dt>
 
-          <code><a href="set_variable_notes.html">set_variable_notes()</a></code>
+          <code><a href="set_universe.html">set_universe()</a></code>
 
         </dt>
-        <dd>Set Analyst Notes for Multiple Variables</dd>
+        <dd>Set Universe Description(s)</dd>
+
+        <dt>
+
+          <code><a href="set_missing_codes.html">set_missing_codes()</a></code>
+
+        </dt>
+        <dd>Set Missing Code(s)</dd>
 
         <dt>
 
@@ -243,7 +229,7 @@
       </dl></div><div class="section level2">
       <h2 id="metadata-extractors">Metadata — extractors<a class="anchor" aria-label="anchor" href="#metadata-extractors"></a></h2>
 
-      <div class="section-desc"><p>Retrieve metadata for a single variable.</p></div>
+      <div class="section-desc"><p>Retrieve metadata for one or more variables.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -255,28 +241,49 @@
           <code><a href="extract_var_label.html">extract_var_label()</a></code>
 
         </dt>
-        <dd>Extract a Variable Label</dd>
+        <dd>Extract Variable Labels</dd>
 
         <dt>
 
           <code><a href="extract_val_labels.html">extract_val_labels()</a></code>
 
         </dt>
-        <dd>Extract Value Labels for a Variable</dd>
+        <dd>Extract Value Labels</dd>
 
         <dt>
 
           <code><a href="extract_question_preface.html">extract_question_preface()</a></code>
 
         </dt>
-        <dd>Extract a Question Preface</dd>
+        <dd>Extract Question Prefaces</dd>
 
         <dt>
 
           <code><a href="extract_var_note.html">extract_var_note()</a></code>
 
         </dt>
-        <dd>Extract an Analyst Note</dd>
+        <dd>Extract Analyst Notes</dd>
+
+        <dt>
+
+          <code><a href="extract_universe.html">extract_universe()</a></code>
+
+        </dt>
+        <dd>Extract Universe Descriptions</dd>
+
+        <dt>
+
+          <code><a href="extract_missing_codes.html">extract_missing_codes()</a></code>
+
+        </dt>
+        <dd>Extract Missing Value Codes</dd>
+
+        <dt>
+
+          <code><a href="extract_metadata.html">extract_metadata()</a></code>
+
+        </dt>
+        <dd>Extract All Metadata for Variables</dd>
 
         <dt>
 
@@ -368,7 +375,7 @@
 
         <dt>
 
-          <code><a href="survey_calibrated.html">survey_calibrated()</a></code>
+          <code><a href="survey_nonprob.html">survey_nonprob()</a></code>
 
         </dt>
         <dd>Calibrated / Non-Probability Survey Design</dd>
