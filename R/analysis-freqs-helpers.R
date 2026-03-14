@@ -80,52 +80,13 @@
   # Linearized influence: u_i = num_i - p * denom_i
   u <- num - p * denom
 
-  # Build cluster/strata IDs from the full dataset (no row filtering —
-  # domain estimation uses all rows; out-of-domain influence is 0).
-  strata_id <- if (!is.null(vars$strata)) {
-    data[[vars$strata]]
-  } else {
-    rep(1L, n)
-  }
-
-  psu_id <- if (!is.null(vars$ids)) {
-    raw_ids <- data[[vars$ids[[1L]]]]
-    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
-      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
-    } else {
-      raw_ids
-    }
-  } else {
-    seq_len(n)
-  }
-
-  clusters_mat <- matrix(psu_id,   ncol = 1L)
-  strata_mat   <- matrix(strata_id, ncol = 1L)
-
-  # sampsize: unique PSUs per stratum (full data)
-  psu_per_stratum <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
-  sampsize_vec    <- as.integer(psu_per_stratum[as.character(strata_id)])
-  sampsize_mat    <- matrix(sampsize_vec, ncol = 1L)
-
-  # popsize: NULL (no FPC) or per-row population sizes
-  fpc_col_full <- if (!is.null(vars$fpc)) data[[vars$fpc]] else NULL
-  popsize_mat <- if (!is.null(fpc_col_full)) {
-    fpc_vals <- fpc_col_full
-    if (any(fpc_vals > 1, na.rm = TRUE)) {
-      matrix(as.numeric(fpc_vals), ncol = 1L)
-    } else {
-      matrix(as.numeric(sampsize_vec / fpc_vals), ncol = 1L)
-    }
-  } else {
-    NULL
-  }
-
-  fpcs       <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
+  mats       <- .build_cluster_matrices(data, vars)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, "prop"))
   v        <- .svy_recvar(
-    infl_mat, clusters_mat, strata_mat, fpcs,
+    infl_mat, mats$clusters_mat, mats$strata_mat, mats$fpcs,
     lonely.psu = lonely.psu
   )
 
