@@ -2324,6 +2324,191 @@ test_that("as_survey() leaves weighting_history as list() for plain data.frame",
 })
 
 # =============================================================================
+# as_survey() multi-stage FPC
+# =============================================================================
+
+test_that("as_survey() accepts multi-column fpc and stores as character vector", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  sc <- as_survey(
+    df,
+    ids = c(psu, ssu),
+    weights = wt,
+    strata = strata,
+    fpc = c(fpc, fpc2)
+  )
+  test_invariants(sc)
+  expect_identical(sc@variables$fpc, c("fpc", "fpc2"))
+})
+
+test_that("as_survey() stores single-column fpc as character(1) [backward compat]", {
+  df <- make_survey_data(n = 200, n_psu = 20, seed = 1)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  test_invariants(sc)
+  expect_identical(sc@variables$fpc, "fpc")
+})
+
+test_that("as_survey() errors when fpc has more columns than ID stages", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  # Need a third distinct FPC column to trigger >2 columns for 2-stage ids
+  df$fpc3 <- df$fpc2 + 1L
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2, fpc3)
+    ),
+    class = "surveycore_error_fpc_too_many_stages"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2, fpc3)
+    )
+  )
+})
+
+test_that("as_survey() warns for partial FPC (stage-1 col with 2-stage ids)", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  expect_warning(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      strata = strata,
+      fpc = fpc
+    ),
+    class = "surveycore_warning_fpc_partial_stages"
+  )
+})
+
+test_that("as_survey() rejects NA in stage-2 FPC column [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- df$fpc2
+  df$fpc2_bad[1L] <- NA_integer_
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects nonpositive stage-2 FPC value [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- df$fpc2
+  df$fpc2_bad[1L] <- 0L
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects stage-2 FPC smaller than stage-2 cluster count [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- 2L # smaller than actual SSU count per PSU (5)
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_smaller_than_n"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects non-constant stage-2 FPC fraction within PSU [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  set.seed(99)
+  df$fpc2_bad <- runif(nrow(df), 0.1, 0.9)
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_not_constant"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey_replicate() still rejects multi-column fpc", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10, n_ssu = 5, design = "replicate", seed = 1
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      fpc = c(fpc, fpc2)
+    ),
+    class = "surveycore_error_fpc_multiple"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      fpc = c(fpc, fpc2)
+    )
+  )
+})
+
+
+# =============================================================================
 # make_survey_data() extension — multi-stage (n_ssu, n_unit)
 # =============================================================================
 

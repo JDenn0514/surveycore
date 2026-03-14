@@ -584,3 +584,57 @@
       4     4                 1
       5     5                 1
 
+# as_survey() errors when fpc has more columns than ID stages
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2, fpc3))
+    Condition
+      Error in `as_survey()`:
+      x `fpc` selected 3 column(s) but `ids` has only 2 stage(s).
+      i FPC columns must correspond 1-to-1 with ID stages. Supply at most 2 FPC column(s).
+
+# as_survey() rejects NA in stage-2 FPC column [dual-pattern]
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
+    Condition
+      Error in `.validate_fpc()`:
+      x `fpc` column fpc2_bad contains 1 NA value(s). FPC must be fully observed.
+      v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
+
+# as_survey() rejects nonpositive stage-2 FPC value [dual-pattern]
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
+    Condition
+      Error in `as_survey()`:
+      x `fpc` column fpc2_bad has 1 non-positive value(s). FPC values must be > 0.
+      i FPC must be either population sizes (> 1) or sampling fractions (0 < f ≤ 1).
+
+# as_survey() rejects stage-2 FPC smaller than stage-2 cluster count [dual-pattern]
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
+    Condition
+      Error in `as_survey()`:
+      x Stage-2 FPC column fpc2_bad has population sizes smaller than the observed cluster count in 20 parent group(s).
+      i Population size must be >= the number of sampled units within each parent cluster.
+
+# as_survey() rejects non-constant stage-2 FPC fraction within PSU [dual-pattern]
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
+    Condition
+      Error in `as_survey()`:
+      x Stage-2 FPC column fpc2_bad is not constant within parent clusters.
+      i FPC fractions must be the same for all units within each parent cluster.
+
+# as_survey_replicate() still rejects multi-column fpc
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", fpc = c(fpc, fpc2))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must select exactly one column, not 2
+
