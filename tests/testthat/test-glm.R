@@ -1088,3 +1088,39 @@ test_that("clean() CIs are numerically identical to confint(fit)", {
     tolerance = 1e-12
   )
 })
+
+
+# ===========================================================================
+# Multi-stage GLM tests
+# ===========================================================================
+
+test_that("survey_glm() matches survey::svyglm() for 2-stage design [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 500, n_psu = 50, n_ssu = 10, seed = 42)
+  sc <- as_survey(df, ids = c(psu, ssu), weights = wt, strata = strata)
+  test_invariants(sc)
+  test_glm_fit_invariants(survey_glm(y1 ~ y2, design = sc))
+  sv <- survey::svydesign(
+    id = ~psu + ssu, weights = ~wt, strata = ~strata,
+    data = df, nest = TRUE
+  )
+  sc_fit <- survey_glm(y1 ~ y2, design = sc)
+  sv_fit <- survey::svyglm(y1 ~ y2, design = sv)
+  expect_equal(sc_fit@coefficients, coef(sv_fit), tolerance = 1e-10)
+  expect_equal(
+    as.numeric(sqrt(diag(sc_fit@vcov))),
+    as.numeric(survey::SE(sv_fit)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("survey_glm() accepts multi-stage design without error [smoke]", {
+  df <- make_survey_data(n = 300, n_psu = 30, n_ssu = 5, seed = 1)
+  sc <- as_survey(
+    df,
+    ids = c(psu, ssu),
+    weights = wt,
+    strata = strata
+  )
+  expect_no_error(survey_glm(y1 ~ y2, design = sc))
+})
