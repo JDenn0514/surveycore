@@ -431,3 +431,27 @@ test_that("get_corr() SRS with FPC fraction covers FPC fraction branch in .vcov_
   expect_true(is.finite(result$r[[1L]]))
   expect_gte(result$se[[1L]], 0)
 })
+
+# ---------------------------------------------------------------------------
+# Regression oracle: confirms .vcov_pair_srs() output unchanged after refactor
+# ---------------------------------------------------------------------------
+
+test_that("get_means() on SRS design matches survey::svymean() after refactor [regression oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  df <- data.frame(y1 = rnorm(200), wt = rep(1, 200))
+  sc <- as_survey_srs(df, weights = wt)
+  sv <- survey::svydesign(id = ~1, weights = ~wt, data = df)
+  sc_est <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_est <- survey::svymean(~y1, sv, na.rm = TRUE)
+  expect_equal(
+    sc_est$mean,
+    coef(sv_est)[[1L]],
+    tolerance = 1e-10
+  )
+  expect_equal(
+    sc_est$se,
+    as.numeric(survey::SE(sv_est)),
+    tolerance = 1e-8
+  )
+})

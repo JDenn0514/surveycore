@@ -477,3 +477,114 @@ test_that("get_corr() taylor nest=FALSE covers raw_ids branch in .vcov_pair_tayl
   test_result_invariants(result, "survey_corr")
   expect_true(is.finite(result$r[[1L]]))
 })
+
+# ---------------------------------------------------------------------------
+# .build_cluster_matrices() unit tests
+# ---------------------------------------------------------------------------
+
+test_that(".build_cluster_matrices() returns n x 1 matrices for single-stage design [unit]", {
+  df <- make_survey_data(n = 100, n_psu = 10, seed = 1)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  test_invariants(sc)
+  mats <- surveycore:::.build_cluster_matrices(sc@data, sc@variables)
+  expect_identical(dim(mats$clusters_mat), c(100L, 1L))
+  expect_identical(dim(mats$strata_mat), c(100L, 1L))
+  expect_identical(dim(mats$fpcs$sampsize), c(100L, 1L))
+  expect_identical(dim(mats$fpcs$popsize), c(100L, 1L))
+})
+
+test_that(".build_cluster_matrices() returns n x 2 matrices for 2-stage design [unit]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  vars <- list(
+    ids = c("psu", "ssu"), weights = "wt", strata = "strata",
+    fpc = c("fpc", "fpc2"), nest = TRUE
+  )
+  mats <- surveycore:::.build_cluster_matrices(df, vars)
+  expect_identical(dim(mats$clusters_mat), c(200L, 2L))
+  expect_identical(dim(mats$strata_mat), c(200L, 2L))
+  expect_identical(dim(mats$fpcs$sampsize), c(200L, 2L))
+  expect_identical(dim(mats$fpcs$popsize), c(200L, 2L))
+})
+
+test_that(".build_cluster_matrices() returns n x 3 matrices for 3-stage design [unit]", {
+  df <- make_survey_data(
+    n = 300, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 1
+  )
+  vars <- list(
+    ids = c("psu", "ssu", "unit"), weights = "wt",
+    strata = "strata", fpc = NULL, nest = FALSE
+  )
+  mats <- surveycore:::.build_cluster_matrices(df, vars)
+  expect_identical(dim(mats$clusters_mat), c(300L, 3L))
+  expect_null(mats$fpcs$popsize)
+})
+
+test_that(".build_cluster_matrices() assigns each row its own PSU when ids is NULL [unit]", {
+  df <- make_survey_data(n = 50, seed = 1)
+  vars <- list(
+    ids = NULL, weights = "wt", strata = NULL,
+    fpc = NULL, nest = FALSE
+  )
+  mats <- surveycore:::.build_cluster_matrices(df, vars)
+  expect_identical(mats$clusters_mat[, 1L], seq_len(50L))
+})
+
+test_that(".build_cluster_matrices() applies nest adjustment only at stage 1 [unit]", {
+  # Construct data where PSU IDs are NOT globally unique across strata
+  # (same numeric IDs 1-5 appear in both strata A and B).
+  # Only nest = TRUE should disambiguate them.
+
+  df <- data.frame(
+    psu = rep(1:5, each = 10),   # IDs 1-5 repeated across strata
+    ssu = rep(1:2, 25),
+    strata = rep(c("A", "B"), each = 25),
+    wt = rep(1, 50)
+  )
+  vars_nest <- list(
+    ids = c("psu", "ssu"), weights = "wt", strata = "strata",
+    fpc = NULL, nest = TRUE
+  )
+  vars_no_nest <- list(
+    ids = c("psu", "ssu"), weights = "wt", strata = "strata",
+    fpc = NULL, nest = FALSE
+  )
+  mats_nest <- surveycore:::.build_cluster_matrices(df, vars_nest)
+  mats_no_nest <- surveycore:::.build_cluster_matrices(df, vars_no_nest)
+  # Stage 1 differs (nest interaction changes PSU IDs)
+  expect_false(
+    identical(mats_nest$clusters_mat[, 1L], mats_no_nest$clusters_mat[, 1L])
+  )
+  # nest = TRUE should produce more unique PSU IDs than nest = FALSE
+  expect_gt(
+    length(unique(mats_nest$clusters_mat[, 1L])),
+    length(unique(mats_no_nest$clusters_mat[, 1L]))
+  )
+})
+
+test_that(".build_cluster_matrices() fills Inf for stages beyond n_fpc [unit]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  vars <- list(
+    ids = c("psu", "ssu"), weights = "wt", strata = "strata",
+    fpc = "fpc", nest = FALSE # only stage-1 FPC
+  )
+  mats <- surveycore:::.build_cluster_matrices(df, vars)
+  expect_true(all(mats$fpcs$popsize[, 2L] == Inf))
+})
+
+test_that(".build_cluster_matrices() sampsize matches PSU/SSU counts [unit]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  vars <- list(
+    ids = c("psu", "ssu"), weights = "wt", strata = "strata",
+    fpc = NULL, nest = FALSE
+  )
+  mats <- surveycore:::.build_cluster_matrices(df, vars)
+  # Col 2: each row gets the number of unique SSUs in its PSU
+  psu_col <- mats$clusters_mat[, 1L]
+  ssu_col <- mats$clusters_mat[, 2L]
+  expected_ssu_n <- tapply(ssu_col, psu_col, function(x) length(unique(x)))
+  actual <- mats$fpcs$sampsize[, 2L]
+  expect_identical(
+    actual,
+    as.integer(expected_ssu_n[as.character(psu_col)])
+  )
+})
