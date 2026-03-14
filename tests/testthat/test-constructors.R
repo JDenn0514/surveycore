@@ -2322,3 +2322,81 @@ test_that("as_survey() leaves weighting_history as list() for plain data.frame",
   test_invariants(d)
   expect_identical(d@metadata@weighting_history, list())
 })
+
+# =============================================================================
+# make_survey_data() extension — multi-stage (n_ssu, n_unit)
+# =============================================================================
+
+test_that("make_survey_data() with n_ssu produces ssu and fpc2 columns", {
+  df <- make_survey_data(n = 100, n_psu = 10, n_ssu = 5, seed = 1)
+
+  # ssu column exists and is character
+
+  expect_true("ssu" %in% names(df))
+  expect_type(df$ssu, "character")
+
+  # fpc2 column exists and is integer
+
+  expect_true("fpc2" %in% names(df))
+  expect_type(df$fpc2, "integer")
+
+  # ssu IDs follow format "{psu}_s{j}"
+  expect_true(all(grepl("^psu_\\d+_s\\d+$", df$ssu)))
+
+  # ssu IDs are unique within each PSU
+  ssu_per_psu <- split(df$ssu, df$psu)
+  for (psu_ssus in ssu_per_psu) {
+    n_unique_ssu <- length(unique(psu_ssus))
+    expect_lte(n_unique_ssu, 5L)
+  }
+
+  # fpc2 is constant within each PSU and equals n_ssu * 2L
+  fpc2_per_psu <- split(df$fpc2, df$psu)
+  for (psu_fpc2 in fpc2_per_psu) {
+    expect_identical(unique(psu_fpc2), 10L) # n_ssu * 2L = 5 * 2 = 10
+  }
+})
+
+test_that("make_survey_data() with n_ssu and n_unit produces unit and fpc3", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 1
+  )
+
+  # unit column exists and is character
+  expect_true("unit" %in% names(df))
+  expect_type(df$unit, "character")
+
+  # fpc3 column exists and is integer
+  expect_true("fpc3" %in% names(df))
+  expect_type(df$fpc3, "integer")
+
+  # unit IDs follow format "{ssu}_u{j}"
+  expect_true(all(grepl("_s\\d+_u\\d+$", df$unit)))
+
+  # fpc3 is constant within each SSU and equals n_unit * 2L
+  fpc3_per_ssu <- split(df$fpc3, df$ssu)
+  for (ssu_fpc3 in fpc3_per_ssu) {
+    expect_identical(unique(ssu_fpc3), 6L) # n_unit * 2L = 3 * 2 = 6
+  }
+})
+
+test_that("make_survey_data() errors when n_unit given without n_ssu", {
+  expect_error(
+    make_survey_data(n_unit = 3),
+    regexp = "n_ssu"
+  )
+})
+
+test_that("make_survey_data() with no n_ssu/n_unit is identical to original", {
+  df_old <- make_survey_data(n = 100, n_psu = 10, seed = 42)
+  df_new <- make_survey_data(n = 100, n_psu = 10, n_ssu = NULL, seed = 42)
+
+  # Same columns — no ssu, fpc2, unit, fpc3
+  expect_false("ssu" %in% names(df_new))
+  expect_false("fpc2" %in% names(df_new))
+  expect_false("unit" %in% names(df_new))
+  expect_false("fpc3" %in% names(df_new))
+
+  # Identical output
+  expect_identical(df_old, df_new)
+})
