@@ -177,7 +177,15 @@ S7::method(print, survey_taylor) <- function(
 
     fpc_var <- x@variables$fpc
     if (!is.null(fpc_var)) {
-      cli::cli_bullets(c("*" = "FPC: {.field {fpc_var}}"))
+      if (length(fpc_var) == 1L) {
+        cli::cli_bullets(c("*" = "FPC: {.field {fpc_var}}"))
+      } else {
+        for (j in seq_along(fpc_var)) {
+          cli::cli_bullets(c(
+            "*" = "FPC (stage {j}): {.field {fpc_var[[j]]}}"
+          ))
+        }
+      }
     } else {
       cli::cli_bullets(c("*" = "FPC: not specified"))
     }
