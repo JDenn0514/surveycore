@@ -801,3 +801,642 @@ test_that(
     )
   }
 )
+
+# ---------------------------------------------------------------------------
+# Block 17: Multi-stage analysis helpers — full oracle suite (PR 5)
+# ---------------------------------------------------------------------------
+
+test_that(
+  paste(
+    "get_means() matches survey::svymean() for 2-stage,",
+    "FPC at stage 1 only [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    expect_warning(
+      sc <- as_survey(
+        df,
+        ids = c(psu, ssu), weights = wt,
+        strata = strata, fpc = fpc
+      ),
+      class = "surveycore_warning_fpc_partial_stages"
+    )
+    test_invariants(sc)
+    # survey pkg needs one FPC column per stage; use Inf for
+    # stages without FPC (= infinite population, no correction)
+    df$fpc2_inf <- Inf
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      fpc = ~fpc + fpc2_inf, data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() matches survey::svymean() for 2-stage,",
+    "FPC at both stages [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt,
+      strata = strata, fpc = c(fpc, fpc2)
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      fpc = ~fpc + fpc2, data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_freqs() matches survey::svymean() for 2-stage",
+    "binary variable [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    # y3 is numeric 0/1; create a factor for freqs
+    df$y3_fac <- factor(df$y3, levels = c(0L, 1L))
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_freqs(sc, y3_fac, variance = "se")
+    sv_result <- survey::svymean(~y3_fac, sv, na.rm = TRUE)
+    # Compare proportion for level "1" (row 2 in output)
+    sc_p1 <- sc_result$pct[2L]
+    sv_p1 <- coef(sv_result)[["y3_fac1"]]
+    expect_equal(sc_p1, sv_p1, tolerance = 1e-10)
+    sc_se1 <- sc_result$se[2L]
+    sv_se1 <- as.numeric(survey::SE(sv_result))[2L]
+    expect_equal(sc_se1, sv_se1, tolerance = 1e-8)
+  }
+)
+
+test_that(
+  paste(
+    "get_totals() matches survey::svytotal() for 2-stage",
+    "design, seed 42 [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_totals(sc, y1, variance = "se")
+    sv_result <- survey::svytotal(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$total,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_corr() matches cov2cor(survey::svyvar()) for",
+    "2-stage design [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_corr(sc, x = c(y1, y2), variance = "se")
+    sv_var <- survey::svyvar(~y1 + y2, sv, na.rm = TRUE)
+    sv_cor_mat <- cov2cor(as.matrix(sv_var))
+    expect_equal(
+      sc_result$r[[1L]],
+      sv_cor_mat["y1", "y2"],
+      tolerance = 1e-10
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_quantiles() matches survey::svyquantile() for",
+    "2-stage design [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_quantiles(sc, y1, probs = 0.5, variance = "se")
+    sv_result <- survey::svyquantile(
+      ~y1, sv, quantiles = 0.5, na.rm = TRUE
+    )
+    expect_equal(
+      sc_result$estimate[[1L]],
+      as.numeric(coef(sv_result)),
+      tolerance = 1e-6
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_ratios() matches survey::svyratio() for",
+    "2-stage design [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    # Ensure positive denominator
+    df$y2_pos <- abs(df$y2) + 1
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_ratios(
+      sc,
+      numerator = y1, denominator = y2_pos,
+      variance = "se"
+    )
+    sv_result <- survey::svyratio(~y1, ~y2_pos, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$ratio[[1L]],
+      as.numeric(coef(sv_result)),
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se[[1L]],
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() matches survey::svymean() for 3-stage,",
+    "no FPC [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu, unit), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu + unit, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() matches survey::svymean() for 3-stage,",
+    "FPC at stage 1 only [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 42
+    )
+    expect_warning(
+      sc <- as_survey(
+        df,
+        ids = c(psu, ssu, unit), weights = wt,
+        strata = strata, fpc = fpc
+      ),
+      class = "surveycore_warning_fpc_partial_stages"
+    )
+    test_invariants(sc)
+    # survey pkg needs one FPC column per stage; use Inf for
+    # stages without FPC (= infinite population, no correction)
+    df$fpc2_inf <- Inf
+    df$fpc3_inf <- Inf
+    sv <- survey::svydesign(
+      id = ~psu + ssu + unit, weights = ~wt, strata = ~strata,
+      fpc = ~fpc + fpc2_inf + fpc3_inf, data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() matches survey::svymean() for 3-stage,",
+    "FPC at all stages [oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu, unit), weights = wt,
+      strata = strata, fpc = c(fpc, fpc2, fpc3)
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu + unit, weights = ~wt, strata = ~strata,
+      fpc = ~fpc + fpc2 + fpc3, data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+# ---------------------------------------------------------------------------
+# Block 18: Multi-stage edge cases (PR 5)
+# ---------------------------------------------------------------------------
+
+test_that(
+  paste(
+    "get_means() 2-stage with nest = TRUE matches",
+    "survey [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    # PSU IDs reused across strata
+    set.seed(100)
+    df <- data.frame(
+      psu = rep(1:5, each = 20),
+      ssu = rep(1:4, 25),
+      strata = rep(c("A", "B"), each = 50),
+      wt = runif(100, 1, 3),
+      y1 = rnorm(100, 50, 10)
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt,
+      strata = strata, nest = TRUE
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() 2-stage, single SSU per PSU matches",
+    "survey [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    # Each PSU has exactly 1 SSU — lonely PSU at stage 2
+    set.seed(101)
+    n_psu <- 20L
+    df <- data.frame(
+      psu = rep(seq_len(n_psu), each = 5),
+      ssu = rep(seq_len(n_psu), each = 5), # 1 SSU per PSU
+      strata = rep(c("A", "B"), each = 50),
+      wt = runif(100, 1, 3),
+      y1 = rnorm(100, 50, 10)
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt,
+      strata = strata, nest = TRUE
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() 2-stage with na.rm = TRUE, all-NA PSU",
+    "matches survey [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 102
+    )
+    # Set all y1 values in first PSU to NA
+    first_psu <- df$psu[[1L]]
+    df$y1[df$psu == first_psu] <- NA_real_
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se", na.rm = TRUE)
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() 2-stage with domain estimation matches",
+    "survey [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    skip_if_not_installed("surveytidy")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 103
+    )
+    df$domain <- ifelse(
+      df$strata %in% unique(df$strata)[1:3], 1L, 0L
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sc_dom <- surveytidy::filter(sc, domain == 1L)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc_dom, y1, variance = "se")
+    sv_result <- survey::svymean(
+      ~y1, subset(sv, domain == 1L), na.rm = TRUE
+    )
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() 2-stage domain + na.rm = TRUE",
+    "matches survey [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    skip_if_not_installed("surveytidy")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 104
+    )
+    df$domain <- ifelse(
+      df$strata %in% unique(df$strata)[1:3], 1L, 0L
+    )
+    df$y1[c(1, 50, 100)] <- NA_real_
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sc_dom <- surveytidy::filter(sc, domain == 1L)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(
+      sc_dom, y1, variance = "se", na.rm = TRUE
+    )
+    sv_result <- survey::svymean(
+      ~y1, subset(sv, domain == 1L), na.rm = TRUE
+    )
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() 2-stage grouped estimate matches",
+    "survey::svyby() [edge case]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 500, n_psu = 50, n_ssu = 10, seed = 42
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu + ssu, weights = ~wt, strata = ~strata,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, group = strata, variance = "se")
+    sv_result <- survey::svyby(
+      ~y1, ~strata, sv, survey::svymean, na.rm = TRUE
+    )
+    # Compare each stratum
+    for (st in unique(df$strata)) {
+      sc_row <- sc_result[sc_result$strata == st, ]
+      sv_row <- sv_result[sv_result$strata == st, ]
+      expect_equal(
+        sc_row$mean, sv_row$y1,
+        tolerance = 1e-10
+      )
+      expect_equal(
+        sc_row$se, sv_row$se,
+        tolerance = 1e-8
+      )
+    }
+  }
+)
+
+test_that(
+  paste(
+    "get_means() single-stage output unchanged after",
+    "analysis helper refactor [regression]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(n = 500, seed = 1)
+    sc <- as_survey(
+      df,
+      ids = psu, weights = wt, strata = strata, fpc = fpc
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~psu, weights = ~wt, strata = ~strata, fpc = ~fpc,
+      data = df, nest = TRUE
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
