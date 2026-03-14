@@ -218,28 +218,12 @@
   infl_b <- w * pair_mask * (cx * cy - b) / W_d
   infl_c <- w * pair_mask * (cy^2 - c_val) / W_d
 
-  # SRS structure: each observation is its own PSU, all in one stratum
-  psu_id       <- seq_len(n_full)
-  strata_id    <- rep(1L, n_full)
-  sampsize_mat <- matrix(rep(n_full, n_full), ncol = 1L)
-
-  # FPC
-  fpc_var  <- vars$fpc
-  fpc_type <- vars$fpc_type
-  popsize_mat <- NULL
-  if (!is.null(fpc_var)) {
-    fpc_col <- data[[fpc_var]]
-    pop_n <- if (identical(fpc_type, "population")) {
-      mean(fpc_col, na.rm = TRUE)
-    } else {
-      n_full / mean(fpc_col, na.rm = TRUE)
-    }
-    popsize_mat <- matrix(rep(as.numeric(pop_n), n_full), ncol = 1L)
-  }
-
-  clusters_mat <- matrix(psu_id, ncol = 1L)
-  strata_mat   <- matrix(strata_id, ncol = 1L)
-  fpcs         <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  # Build cluster/strata/FPC matrices via shared helper.
+  # SRS vars have ids = NULL, strata = NULL → k = 1, each row is its own PSU.
+  mats <- .build_cluster_matrices(data, vars)
+  clusters_mat <- mats$clusters_mat
+  strata_mat   <- mats$strata_mat
+  fpcs         <- mats$fpcs
   lonely.psu   <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- cbind(infl_a, infl_b, infl_c)

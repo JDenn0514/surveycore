@@ -341,3 +341,161 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   }
   metadata
 }
+
+
+# ── .build_cluster_matrices() ───────────────────────────────────────────────
+#
+# Build the clusters, strata, and FPC matrices needed by the multi-stage
+# Taylor variance engine (.svy_recvar / .svy_multistage). Generalizes the
+# single-stage logic from .taylor_build_inputs() to k >= 1 stages.
+#
+# Used across 8+ files (variance-taylor.R, variance-srs.R, etc.); lives in
+# utils.R per code-style.md Section 4 internal helper placement rule.
+#
+# @param data A data.frame (the @data from the survey design object).
+# @param vars A list (the @variables from the survey design object).
+# @return A named list: clusters_mat (integer matrix n x k),
+#   strata_mat (integer matrix n x k), fpcs (list with sampsize and
+#   popsize matrices).
+#' @noRd
+.build_cluster_matrices <- function(data, vars) {
+  n <- nrow(data)
+
+  # Step 1: Determine number of stages
+  k <- max(1L, if (!is.null(vars$ids)) length(vars$ids) else 0L)
+
+  # Step 2: Build stage-1 stratum vector
+  strata_id <- if (!is.null(vars$strata)) {
+    data[[vars$strata]]
+  } else {
+    rep(1L, n)
+  }
+
+  # Step 3: Build clusters matrix (k columns)
+
+  # Column 1 — stage-1 PSU IDs (with nest adjustment)
+  psu_id <- if (!is.null(vars$ids)) {
+    raw_ids <- data[[vars$ids[[1L]]]]
+    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
+      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
+    } else {
+      as.integer(interaction(raw_ids, drop = TRUE))
+    }
+  } else {
+    seq_len(n) # each row is its own PSU
+  }
+
+  # Columns 2..k — sub-unit IDs (globally unique via interaction())
+  # IMPORTANT: Never use `2:k` directly. In R, `2:1` evaluates to c(2L, 1L),
+  # not an empty vector. The `if (k > 1L)` guard is mandatory.
+  extra_cols <- if (k > 1L) {
+    # Pre-allocate column 1 into a temp matrix so we can reference it
+    # during the loop
+    cols <- vector("list", k - 1L)
+    prev_col <- psu_id
+    for (j in seq(2L, k)) {
+      cur_col <- as.integer(
+        interaction(prev_col, data[[vars$ids[[j]]]], drop = TRUE)
+      )
+      cols[[j - 1L]] <- cur_col
+      prev_col <- cur_col
+    }
+    cols
+  } else {
+    list()
+  }
+
+  clusters_mat <- matrix(
+    data = c(psu_id, unlist(extra_cols)),
+    nrow = n,
+    ncol = k
+  )
+
+  # Step 4: Build strata matrix (k columns)
+  # Column 1: strata_id (integer-coded)
+  # Column j (j = 2..k): parent cluster ID = clusters_mat[, j-1]
+  strata_col1 <- as.integer(interaction(strata_id, drop = TRUE))
+  extra_strata <- if (k > 1L) {
+    lapply(seq(2L, k), function(j) clusters_mat[, j - 1L])
+  } else {
+    list()
+  }
+  strata_mat <- matrix(
+    data = c(strata_col1, unlist(extra_strata)),
+    nrow = n,
+    ncol = k
+  )
+
+  # Step 5: Build sampsize matrix (k columns)
+  sampsize_cols <- vector("list", k)
+  for (j in seq_len(k)) {
+    parent_j <- if (j == 1L) {
+      strata_col1
+    } else {
+      clusters_mat[, j - 1L]
+    }
+    cluster_j <- clusters_mat[, j]
+    units_per_parent <- tapply(
+      cluster_j, parent_j,
+      function(ids) length(unique(ids))
+    )
+    sampsize_cols[[j]] <- as.integer(
+      units_per_parent[as.character(parent_j)]
+    )
+  }
+  sampsize_mat <- matrix(
+    data = unlist(sampsize_cols),
+    nrow = n,
+    ncol = k
+  )
+
+  # Step 6: Build popsize matrix (k columns or NULL)
+  if (is.null(vars$fpc)) {
+    popsize_mat <- NULL
+  } else {
+    n_fpc <- length(vars$fpc)
+    popsize_cols <- vector("list", k)
+    for (j in seq_len(k)) {
+      if (j <= n_fpc) {
+        fpc_vals <- data[[vars$fpc[[j]]]]
+        if (any(fpc_vals > 1, na.rm = TRUE)) {
+          # values > 1 are population sizes
+          popsize_cols[[j]] <- as.numeric(fpc_vals)
+        } else {
+          # values in (0,1] are sampling fractions -> convert
+          popsize_cols[[j]] <- as.numeric(
+            sampsize_cols[[j]] / fpc_vals
+          )
+        }
+      } else {
+        # stages beyond n_fpc get Inf (infinite sub-population)
+        popsize_cols[[j]] <- rep(Inf, n)
+      }
+    }
+    popsize_mat <- matrix(
+      data = unlist(popsize_cols),
+      nrow = n,
+      ncol = k
+    )
+  }
+
+  fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+
+  # Internal consistency assertion
+  stopifnot(
+    NCOL(clusters_mat) == k,
+    NROW(clusters_mat) == n,
+    NCOL(strata_mat) == k,
+    NROW(strata_mat) == n,
+    NCOL(fpcs$sampsize) == k,
+    NROW(fpcs$sampsize) == n,
+    is.null(fpcs$popsize) ||
+      (NCOL(fpcs$popsize) == k && NROW(fpcs$popsize) == n)
+  )
+
+  list(
+    clusters_mat = clusters_mat,
+    strata_mat = strata_mat,
+    fpcs = fpcs
+  )
+}
