@@ -38,12 +38,10 @@ Suggests:
     lifecycle (>= 1.0.0),
     broom (>= 1.0.0),
     marginaleffects (>= 0.18.0),
-    surveytidy,
     covr,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-Config/Needs/check: JDenn0514/surveytidy
 Config/testthat/edition: 3
 URL: https://github.com/JDenn0514/surveycore, https://jdenn0514.github.io/surveycore/
 BugReports: https://github.com/JDenn0514/surveycore/issues

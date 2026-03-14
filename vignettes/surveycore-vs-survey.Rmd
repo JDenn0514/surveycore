@@ -19,6 +19,7 @@ knitr::opts_chunk$set(comment = "#>")
 has_survey     <- requireNamespace("survey",     quietly = TRUE)
 has_srvyr      <- requireNamespace("srvyr",      quietly = TRUE)
 has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
+if (has_surveytidy) loadNamespace("surveytidy")
 
 if (has_survey) {
   library(survey)
@@ -625,8 +626,8 @@ dependency footprint small.
 pak::pak("jacobdennen/surveytidy")
 ```
 
-```{r surveytidy-load, eval=has_surveytidy, include=FALSE}
-library(surveytidy)
+```{r surveytidy-load, eval=FALSE, include=FALSE}
+# surveytidy loaded via loadNamespace() in setup chunk
 ```
 
 ### 5.1 `mutate()` — Creating New Variables

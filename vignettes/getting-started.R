@@ -109,7 +109,6 @@ get_totals(pew_jewish_svy, group = age4cat)
 
 ## ----corr-basic, eval=has_surveytidy------------------------------------------
 
-library(surveytidy)
 
 ns_wave1_svy |>
   # drop NAs

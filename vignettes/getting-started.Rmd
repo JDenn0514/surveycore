@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
+if (has_surveytidy) loadNamespace("surveytidy")
 ```
 
 `surveycore` gives you a (mostly) complete workflow for survey data analysis.
@@ -316,7 +317,6 @@ what this package can do).
 
 ```{r corr-basic, eval=has_surveytidy}
 
-library(surveytidy)
 
 ns_wave1_svy |>
   # drop NAs
