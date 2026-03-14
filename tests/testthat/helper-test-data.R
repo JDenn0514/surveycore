@@ -30,6 +30,10 @@
 #'   - y3       : integer binary outcome (0/1, ~30% = 1)
 #'   - group    : character categorical variable ("A", "B", "C")
 #'
+#' Additional columns by n_ssu/n_unit:
+#'   - n_ssu non-NULL: ssu (character SSU IDs), fpc2 (integer, n_ssu * 2L)
+#'   - n_unit non-NULL: unit (character unit IDs), fpc3 (integer, n_unit * 2L)
+#'
 #' Additional columns by design:
 #'   - design = "replicate": repwt_1 ... repwt_R replicate weight columns
 #'   - design = "twophase":  subset (logical, ~40% TRUE), phase1_prob (numeric),
@@ -37,6 +41,12 @@
 #'
 #' @param n         Total number of rows. Default 500L.
 #' @param n_psu     Number of PSUs. Default 50L. For BRR/Fay must be even.
+#' @param n_ssu     Number of SSUs per PSU. Default NULL (no SSU column).
+#'   When non-NULL, adds `ssu` (character, format `"{psu}_s{j}"`) and `fpc2`
+#'   (integer, `n_ssu * 2L`) columns.
+#' @param n_unit    Number of units per SSU. Default NULL (no unit column).
+#'   Requires `n_ssu` to also be non-NULL. When non-NULL, adds `unit`
+#'   (character, format `"{ssu}_u{j}"`) and `fpc3` (integer, `n_unit * 2L`).
 #' @param n_strata  Number of strata. Default 5L.
 #' @param design    Survey design type: "taylor", "replicate", or "twophase".
 #' @param type      Replicate weight method (used when design = "replicate").
@@ -52,6 +62,8 @@
 make_survey_data <- function(
   n = 500L,
   n_psu = 50L,
+  n_ssu = NULL,
+  n_unit = NULL,
   n_strata = 5L,
   design = c("taylor", "replicate", "twophase"),
   type = "brr",
@@ -69,6 +81,10 @@ make_survey_data <- function(
       n_psu,
       "."
     )
+  }
+
+  if (!is.null(n_unit) && is.null(n_ssu)) {
+    stop("n_unit requires n_ssu to be specified.")
   }
 
   set.seed(seed)
@@ -130,6 +146,37 @@ make_survey_data <- function(
     group = group,
     stringsAsFactors = FALSE
   )
+
+  # --- SSU column (multi-stage) ---
+  if (!is.null(n_ssu)) {
+    # Assign SSU IDs round-robin within each PSU
+    ssu_index <- integer(n)
+    for (p in seq_len(n_psu)) {
+      rows_in_psu <- which(psu_index == p)
+      ssu_index[rows_in_psu] <- rep_len(
+        seq_len(n_ssu),
+        length(rows_in_psu)
+      )
+    }
+    df$ssu <- paste0(df$psu, "_s", ssu_index)
+    df$fpc2 <- as.integer(n_ssu) * 2L
+  }
+
+  # --- Unit column (three-stage) ---
+  if (!is.null(n_unit)) {
+    # Assign unit IDs round-robin within each SSU
+    unit_index <- integer(n)
+    unique_ssus <- unique(df$ssu)
+    for (s in unique_ssus) {
+      rows_in_ssu <- which(df$ssu == s)
+      unit_index[rows_in_ssu] <- rep_len(
+        seq_len(n_unit),
+        length(rows_in_ssu)
+      )
+    }
+    df$unit <- paste0(df$ssu, "_u", unit_index)
+    df$fpc3 <- as.integer(n_unit) * 2L
+  }
 
   # --- Replicate weights ---
   if (design == "replicate") {
