@@ -684,3 +684,42 @@
       10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     FALSE                
       # i 40 more rows
 
+# print.survey_taylor shows per-stage FPC for 2-stage design
+
+    Code
+      print(sc, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 200
+      
+      
+      -- Design specification --
+      
+      * IDs: psu and ssu (20 PSUs)
+      * Strata: strata (5 strata)
+      * Weights: wt
+      * Weights provided as: sampling weights
+      * FPC (stage 1): fpc
+      * FPC (stage 2): fpc2
+      * Nesting: FALSE
+      
+      Design variables: psu, ssu, wt, strata, fpc, and fpc2
+      
+    Output
+      # A tibble: 200 x 10
+         psu   strata      fpc    wt    y1      y2    y3 group ssu       fpc2
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <chr>    <int>
+       1 psu_1 stratum_1   365  9.09  61.7  0.606      0 A     psu_1_s1    10
+       2 psu_1 stratum_1   365 10.4   35.4  1.34       0 B     psu_1_s2    10
+       3 psu_1 stratum_1   365  8.25  51.0  0.767      0 A     psu_1_s3    10
+       4 psu_1 stratum_1   365 10.8   58.5  0.194      0 B     psu_1_s4    10
+       5 psu_1 stratum_1   365  7.70  33.8  1.14       1 C     psu_1_s5    10
+       6 psu_1 stratum_1   365  9.43  64.1  0.0139     1 B     psu_1_s1    10
+       7 psu_1 stratum_1   365 10.6   44.6 -1.11       0 C     psu_1_s2    10
+       8 psu_1 stratum_1   365 10.1   52.8 -0.0252     0 B     psu_1_s3    10
+       9 psu_1 stratum_1   365 11.6   48.1 -0.164      0 B     psu_1_s4    10
+      10 psu_1 stratum_1   365  9.75  65.8  0.370      0 C     psu_1_s5    10
+      # i 190 more rows
+

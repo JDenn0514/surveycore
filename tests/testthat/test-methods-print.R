@@ -823,3 +823,31 @@ test_that("summary.survey_twophase() with Phase 1 strata covers the Strata line"
   out <- capture.output(summary(sc), type = "message")
   expect_true(any(grepl("Strata|strata", out)))
 })
+
+
+# ── Multi-stage FPC display ──────────────────────────────────────────────────
+
+test_that("print.survey_taylor shows per-stage FPC for 2-stage design", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  sc <- as_survey(
+    df,
+    ids = c(psu, ssu),
+    weights = wt,
+    strata = strata,
+    fpc = c(fpc, fpc2)
+  )
+  test_invariants(sc)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(print(sc, design_info = TRUE))
+})
+
+test_that("print.survey_taylor shows single FPC line for 1-stage design", {
+  d <- make_taylor_design()
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  out <- capture.output(print(d, design_info = TRUE), type = "message")
+  # Should show single "FPC: fpc" line, not "FPC (stage 1):"
+
+  expect_true(any(grepl("FPC: fpc$", out)))
+  expect_false(any(grepl("FPC \\(stage", out)))
+})
