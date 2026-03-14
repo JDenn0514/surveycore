@@ -588,3 +588,216 @@ test_that(".build_cluster_matrices() sampsize matches PSU/SSU counts [unit]", {
     as.integer(expected_ssu_n[as.character(psu_col)])
   )
 })
+
+# ---------------------------------------------------------------------------
+# Block 16: Multi-stage Taylor refactor — regression oracle + shape tests
+# ---------------------------------------------------------------------------
+
+test_that(
+  paste(
+    "get_means() on single-stage NHANES matches survey::svymean()",
+    "[regression oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    d <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
+    sc <- as_survey(
+      d,
+      ids = sdmvpsu, weights = wtmec2yr,
+      strata = sdmvstra, nest = TRUE
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~sdmvpsu, weights = ~wtmec2yr, strata = ~sdmvstra,
+      data = d, nest = TRUE
+    )
+    sc_result <- get_means(sc, bpxsy1, variance = "se")
+    sv_result <- survey::svymean(~bpxsy1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["bpxsy1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    ".taylor_build_inputs() returns n x 1 matrices for",
+    "current single-stage design [shape]"
+  ),
+  {
+    df <- make_survey_data(n = 100, n_psu = 10, seed = 70)
+    sc <- as_survey(
+      df, ids = psu, weights = wt, strata = strata, fpc = fpc
+    )
+    test_invariants(sc)
+    inp <- surveycore:::.taylor_build_inputs(sc, "y1")
+    expect_identical(ncol(inp$clusters), 1L)
+    expect_identical(ncol(inp$stratas), 1L)
+    expect_identical(ncol(inp$fpcs$sampsize), 1L)
+  }
+)
+
+test_that(
+  paste(
+    ".taylor_build_inputs() returns n x 2 matrices for",
+    "2-stage design without FPC [shape]"
+  ),
+  {
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 1
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    inp <- surveycore:::.taylor_build_inputs(sc, "y1")
+    expect_identical(ncol(inp$clusters), 2L)
+    expect_identical(ncol(inp$stratas), 2L)
+    expect_identical(ncol(inp$fpcs$sampsize), 2L)
+  }
+)
+
+test_that(
+  paste(
+    ".taylor_build_inputs() computes sampsize from full dataset",
+    "before na.rm filtering [semantics]"
+  ),
+  {
+    df <- make_survey_data(n = 100, n_psu = 10, seed = 71)
+    # Add NAs to y1
+    df$y1[1:10] <- NA_real_
+    sc <- as_survey(
+      df, ids = psu, weights = wt, strata = strata, fpc = fpc
+    )
+    inp_narm <- surveycore:::.taylor_build_inputs(
+      sc, "y1", na.rm = TRUE
+    )
+    inp_full <- surveycore:::.taylor_build_inputs(
+      sc, "y1", na.rm = FALSE
+    )
+    # After na.rm, we have fewer rows, but sampsize values should
+    # reflect full-data PSU counts — matching survey package semantics.
+    n_narm <- length(inp_narm$y)
+    n_full <- length(inp_full$y)
+    expect_lt(n_narm, n_full)
+    # sampsize values in na.rm output should come from the full
+    # dataset's PSU counts
+    expect_true(
+      all(
+        unique(inp_narm$fpcs$sampsize[, 1L]) %in%
+          unique(inp_full$fpcs$sampsize[, 1L])
+      )
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() on 2-stage design (no FPC) matches",
+    "survey::svymean() [multi-stage oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 72
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~ psu + ssu, strata = ~strata,
+      weights = ~wt, data = df
+    )
+    sc_result <- get_means(sc, y1, variance = "se")
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_totals() on 2-stage design (no FPC) matches",
+    "survey::svytotal() [multi-stage oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 73
+    )
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    test_invariants(sc)
+    sv <- survey::svydesign(
+      id = ~ psu + ssu, strata = ~strata,
+      weights = ~wt, data = df
+    )
+    sc_result <- get_totals(sc, y1, variance = "se")
+    sv_result <- survey::svytotal(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$total,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
+
+test_that(
+  paste(
+    "get_means() on 2-stage design with NAs matches survey",
+    "[multi-stage na.rm oracle]"
+  ),
+  {
+    skip_if_not_installed("survey")
+    df <- make_survey_data(
+      n = 300, n_psu = 30, n_ssu = 5, seed = 74
+    )
+    # Introduce NAs
+    df$y1[c(1, 50, 100, 200)] <- NA_real_
+    sc <- as_survey(
+      df,
+      ids = c(psu, ssu), weights = wt, strata = strata
+    )
+    sv <- survey::svydesign(
+      id = ~ psu + ssu, strata = ~strata,
+      weights = ~wt, data = df
+    )
+    sc_result <- get_means(sc, y1, variance = "se", na.rm = TRUE)
+    sv_result <- survey::svymean(~y1, sv, na.rm = TRUE)
+    expect_equal(
+      sc_result$mean,
+      coef(sv_result)[["y1"]],
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_result$se,
+      as.numeric(survey::SE(sv_result)),
+      tolerance = 1e-8
+    )
+  }
+)
