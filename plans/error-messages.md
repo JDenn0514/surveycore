@@ -129,6 +129,11 @@ against the messages defined here.
 | M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
 | M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
 | M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
+| 88 | `as_survey()` | `fpc` selects more columns than `ids` stages | ERROR | `surveycore_error_fpc_too_many_stages` | `"x" = "{.arg fpc} selected {n_fpc} column(s) but {.arg ids} has only {n_ids} stage(s).", "i" = "FPC columns must correspond 1-to-1 with ID stages. Supply at most {n_ids} FPC column(s)."` |
+| 89 | `as_survey()` | `fpc` selects fewer columns than `ids` stages | WARN | `surveycore_warning_fpc_partial_stages` | `"!" = "{.arg fpc} has {n_fpc} column(s) but {.arg ids} has {n_ids} stage(s).", "i" = "Later stages assume sampling from an infinite population (no FPC)."` |
+| 90 | `as_survey()` | Stage-j FPC population size < stage-j cluster count within parent | ERROR | `surveycore_error_fpc_smaller_than_n` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} has population sizes smaller than the observed cluster count in {n_bad} parent group(s).", "i" = "Population size must be >= the number of sampled units within each parent cluster."` |
+| 91 | `as_survey()` | Stage-j FPC fraction not constant within parent cluster | ERROR | `surveycore_error_fpc_not_constant` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} is not constant within parent clusters.", "i" = "FPC fractions must be the same for all units within each parent cluster."` |
+| 13b | `as_survey()` | `fpc` selects >1 column (multi-stage: now allowed) / `as_survey_replicate()` | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` (only enforced for `as_survey_replicate()` and `as_survey_srs()`) |
 
 ---
 
@@ -166,7 +171,7 @@ Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–24, 23b, 56–61 |
+| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b |
 | `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30, M-2/M-7, M-3–M-15 |

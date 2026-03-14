@@ -270,8 +270,12 @@ as_survey_srs <- function(
 #' @param strata <[`tidy-select`][tidyselect::language]> Stratification
 #'   variable column (a single column).
 #' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). Accepts either total population size
-#'   (integer) or sampling fraction (numeric, 0–1). Cannot contain `NA`.
+#'   correction column(s). For single-stage designs, supply one column.
+#'   For multi-stage designs, supply one column per stage:
+#'   `fpc = c(fpc_stage1, fpc_stage2)`. Each column accepts either total
+#'   population size (integer, all > 1) or sampling fraction (numeric,
+#'   all in (0, 1]). Cannot contain `NA`. Cannot have more columns than
+#'   `ids` stages; fewer is allowed (later stages assume infinite population).
 #' @param nest Logical. If `TRUE`, PSU IDs are treated as nested within
 #'   strata — i.e., the same ID value in two different strata refers to two
 #'   distinct PSUs. Set `nest = TRUE` when PSU IDs are not globally unique
@@ -415,13 +419,19 @@ as_survey <- function(
     class_none = "surveycore_error_strata_not_found",
     class_multi = "surveycore_error_strata_multiple"
   )
-  fpc_var <- .resolve_single_col(
-    fpc_quo,
-    data,
-    "fpc",
-    class_none = "surveycore_error_fpc_not_found",
-    class_multi = "surveycore_error_fpc_multiple"
-  )
+  # fpc (may select multiple columns for multi-stage designs)
+  if (rlang::quo_is_null(fpc_quo)) {
+    fpc_vars <- NULL
+  } else {
+    fpc_cols <- tidyselect::eval_select(fpc_quo, data)
+    if (length(fpc_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
+        class = "surveycore_error_fpc_not_found"
+      )
+    }
+    fpc_vars <- names(fpc_cols)
+  }
 
   # ── Probs / weights reconciliation ─────────────────────────────────────────
 
@@ -513,8 +523,191 @@ as_survey <- function(
   # Validate design variable columns exist and are atomic
   .validate_design_vars(c(ids_vars, strata_var), data)
 
-  # Validate fpc column (no NAs) via Layer 2
-  .validate_fpc(fpc_var, data)
+  # ── Multi-stage FPC validation ──────────────────────────────────────────────
+
+  if (!is.null(fpc_vars)) {
+    n_fpc <- length(fpc_vars)
+    n_ids <- if (is.null(ids_vars)) 1L else length(ids_vars)
+
+    # Error 88: fpc has more columns than ID stages
+    if (n_fpc > n_ids) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg fpc} selected {n_fpc} column(s) but ",
+            "{.arg ids} has only {n_ids} stage(s)."
+          ),
+          "i" = paste0(
+            "FPC columns must correspond 1-to-1 with ID stages. ",
+            "Supply at most {n_ids} FPC column(s)."
+          )
+        ),
+        class = "surveycore_error_fpc_too_many_stages"
+      )
+    }
+
+    # Warning 89: fpc has fewer columns than ID stages
+    if (n_fpc < n_ids) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.arg fpc} has {n_fpc} column(s) but ",
+            "{.arg ids} has {n_ids} stage(s)."
+          ),
+          "i" = paste0(
+            "Later stages assume sampling from an infinite ",
+            "population (no FPC)."
+          )
+        ),
+        class = "surveycore_warning_fpc_partial_stages"
+      )
+    }
+
+    # Per-column FPC validation loop
+    for (j in seq_along(fpc_vars)) {
+      fpc_var_j <- fpc_vars[[j]]
+      fpc_col_j <- data[[fpc_var_j]]
+
+      # FPC check: NA values (reuse Layer 2 helper for each column)
+      .validate_fpc(fpc_var_j, data)
+
+      # FPC check: non-positive values (row 57)
+      n_bad <- sum(fpc_col_j <= 0, na.rm = TRUE)
+      if (n_bad > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg fpc} column {.field {fpc_var_j}} has {n_bad} ",
+              "non-positive value(s). FPC values must be > 0."
+            ),
+            "i" = paste0(
+              "FPC must be either population sizes (> 1) or ",
+              "sampling fractions (0 < f \u2264 1)."
+            )
+          ),
+          class = "surveycore_error_fpc_nonpositive"
+        )
+      }
+
+      # Determine if this column is population size or fraction
+      has_above_one <- any(fpc_col_j > 1, na.rm = TRUE)
+      has_le_one <- any(fpc_col_j <= 1, na.rm = TRUE)
+
+      # FPC check: ambiguous (mixes > 1 and <= 1) — row 58
+      if (has_above_one && has_le_one) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg fpc} column {.field {fpc_var_j}} mixes ",
+              "values > 1 (population sizes) and values ",
+              "\u2264 1 (sampling fractions). All FPC values ",
+              "must be consistently one type."
+            ),
+            "i" = paste0(
+              "Use all values > 1 for population sizes, or ",
+              "all values in (0, 1] for sampling fractions."
+            )
+          ),
+          class = "surveycore_error_fpc_ambiguous"
+        )
+      }
+
+      # Stage-j-aware checks: parent cluster grouping
+      if (has_above_one) {
+        # Population size type: check within parent clusters
+        # For stage 1: group by strata (if present) or treat as one group
+        # For stage j>1: group by the (j-1)th ID column
+        if (j == 1L) {
+          parent_col <- if (!is.null(strata_var)) {
+            data[[strata_var]]
+          } else {
+            rep(1L, nrow(data))
+          }
+        } else {
+          parent_col <- data[[ids_vars[[j - 1L]]]]
+        }
+
+        # Error 90: FPC pop size < cluster count within parent
+        parent_groups <- split(
+          seq_len(nrow(data)),
+          parent_col
+        )
+        n_bad_parents <- 0L
+        for (grp_rows in parent_groups) {
+          fpc_val <- fpc_col_j[grp_rows[[1L]]]
+          # Count clusters at this stage within this parent
+          if (j <= length(ids_vars)) {
+            n_clusters <- length(
+              unique(data[[ids_vars[[j]]]][grp_rows])
+            )
+          } else {
+            n_clusters <- length(grp_rows)
+          }
+          if (fpc_val < n_clusters) {
+            n_bad_parents <- n_bad_parents + 1L
+          }
+        }
+
+        if (n_bad_parents > 0L) {
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "Stage-{j} FPC column {.field {fpc_var_j}} has ",
+                "population sizes smaller than the observed ",
+                "cluster count in {n_bad_parents} parent ",
+                "group(s)."
+              ),
+              "i" = paste0(
+                "Population size must be >= the number of ",
+                "sampled units within each parent cluster."
+              )
+            ),
+            class = "surveycore_error_fpc_smaller_than_n"
+          )
+        }
+      } else {
+        # Fraction type: check constancy within parent clusters
+        if (j == 1L) {
+          parent_col <- if (!is.null(strata_var)) {
+            data[[strata_var]]
+          } else {
+            rep(1L, nrow(data))
+          }
+        } else {
+          parent_col <- data[[ids_vars[[j - 1L]]]]
+        }
+
+        parent_groups <- split(
+          seq_len(nrow(data)),
+          parent_col
+        )
+        any_not_constant <- FALSE
+        for (grp_rows in parent_groups) {
+          vals <- fpc_col_j[grp_rows]
+          if (length(unique(vals)) > 1L) {
+            any_not_constant <- TRUE
+            break
+          }
+        }
+
+        if (any_not_constant) {
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "Stage-{j} FPC column {.field {fpc_var_j}} is ",
+                "not constant within parent clusters."
+              ),
+              "i" = paste0(
+                "FPC fractions must be the same for all units ",
+                "within each parent cluster."
+              )
+            ),
+            class = "surveycore_error_fpc_not_constant"
+          )
+        }
+      }
+    }
+  }
 
   # Warning 12: strata has only one unique value
   if (!is.null(strata_var)) {
@@ -538,7 +731,7 @@ as_survey <- function(
     ids = ids_vars,
     weights = weights_var,
     strata = strata_var,
-    fpc = fpc_var,
+    fpc = fpc_vars,
     nest = isTRUE(nest),
     probs_provided = probs_provided,
     visible_vars = NULL

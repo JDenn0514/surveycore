@@ -34,8 +34,12 @@ column (a single column, values strictly > 0).}
 variable column (a single column).}
 
 \item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
-correction column (a single column). Accepts either total population size
-(integer) or sampling fraction (numeric, 0–1). Cannot contain \code{NA}.}
+correction column(s). For single-stage designs, supply one column.
+For multi-stage designs, supply one column per stage:
+\code{fpc = c(fpc_stage1, fpc_stage2)}. Each column accepts either total
+population size (integer, all > 1) or sampling fraction (numeric,
+all in (0, 1]). Cannot contain \code{NA}. Cannot have more columns than
+\code{ids} stages; fewer is allowed (later stages assume infinite population).}
 
 \item{nest}{Logical. If \code{TRUE}, PSU IDs are treated as nested within
 strata — i.e., the same ID value in two different strata refers to two
