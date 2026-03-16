@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
-if (has_surveytidy) loadNamespace("surveytidy")
+if (has_surveytidy) library(surveytidy)
 ```
 
 `surveycore` gives you a (mostly) complete workflow for survey data analysis.
