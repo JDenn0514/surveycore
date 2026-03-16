@@ -954,7 +954,11 @@ survey_glm <- function(
     vcov = vcov_mat,
     fitted_values = as.numeric(stats::fitted(fit)),
     residuals = as.numeric(stats::residuals(fit, type = "working")),
-    weights = as.numeric(wt_fit[seq_len(length(stats::fitted(fit)))]),
+    weights = if (!is.null(na_idx)) {
+      as.numeric(wt_fit[-na_idx])
+    } else {
+      as.numeric(wt_fit)
+    },
     design = design,
     degf = degf_val,
     family = as.list(fam),
