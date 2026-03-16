@@ -15,9 +15,12 @@ as_survey_twophase(
 )
 }
 \arguments{
-\item{phase1}{A \code{survey_taylor} object representing the Phase 1 design.
+\item{phase1}{A survey design object (inheriting from \code{survey_base})
+representing the Phase 1 design. Accepts \code{survey_taylor},
+\code{survey_srs}, or \code{survey_replicate} objects.
 Its \verb{@data} must contain ALL rows from both phases, plus a logical
-indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}.}
+indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_srs]{as_survey_srs()}}, or \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
 column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:

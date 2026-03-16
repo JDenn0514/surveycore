@@ -47,7 +47,7 @@ against the messages defined here.
 | 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
 | 17 | `as_survey_replicate()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
 | 18 | `as_survey_replicate()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
-| 19 | `as_survey_twophase()` | `phase1` is not a `survey_taylor` | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a {.cls survey_taylor} object, not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}."` |
+| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}, {.fn as_survey_srs}, or {.fn as_survey_replicate}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
 | 22 | `as_survey_twophase()` | `subset` column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"{.arg subset} column {.field {subset_var}} must be logical, not {.cls {class(data[[subset_var]])}}"` |

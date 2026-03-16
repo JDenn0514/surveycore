@@ -1173,8 +1173,8 @@ test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 
 
 # ── Error paths ───────────────────────────────────────────────────────────────
 
-# Row 19: phase1 is not a survey_taylor
-test_that("as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]", {
+# Row 19: phase1 is not a survey design object
+test_that("as_survey_twophase() errors when phase1 is a data.frame [row 19]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 19L)
   expect_error(
     as_survey_twophase(df, subset = subset),
@@ -1183,19 +1183,35 @@ test_that("as_survey_twophase() errors when phase1 is not a survey_taylor [row 1
   expect_snapshot(error = TRUE, as_survey_twophase(df, subset = subset))
 })
 
-test_that("as_survey_twophase() errors when phase1 is a survey_replicate [row 19]", {
-  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 20L)
+test_that("as_survey_twophase() errors when phase1 is a plain list [row 19]", {
+  expect_error(
+    as_survey_twophase(list(a = 1), subset = a),
+    class = "surveycore_error_phase1_class"
+  )
+})
+
+test_that("as_survey_twophase() accepts survey_srs phase-1", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- suppressWarnings(as_survey_srs(df, weights = wt))
+  tp <- as_survey_twophase(phase1, subset = subset)
+  test_invariants(tp)
+  expect_true(S7::S7_inherits(tp, survey_twophase))
+})
+
+test_that("as_survey_twophase() accepts survey_replicate phase-1", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10L, design = "replicate", seed = 20L
+  )
+  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
   phase_rep <- as_survey_replicate(
     df,
     weights = wt,
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  # phase1 class error fires before subset is resolved — bare name doesn't matter
-  expect_error(
-    as_survey_twophase(phase_rep, subset = in_phase2),
-    class = "surveycore_error_phase1_class"
-  )
+  tp <- as_survey_twophase(phase_rep, subset = in_phase2)
+  test_invariants(tp)
+  expect_true(S7::S7_inherits(tp, survey_twophase))
 })
 
 # Row 20: subset not provided
