@@ -19,7 +19,7 @@ branch from `develop`, TDD, oracle tests against the `survey` package.
 
 - [ ] PR 4: `fix/srs-weighted-variance` — Delegate to Taylor engine when SRS weights are non-proportional
 - [x] PR 5: `fix/twophase-phase1-type-restriction` — Accept `survey_srs` and `survey_replicate` as phase-1 in `as_survey_twophase()` (https://github.com/JDenn0514/surveycore/pull/74)
-- [ ] PR 6: `fix/nonprob-dispatch-consistency` — Route `survey_nonprob` through calibrated (HT) path in `get_freqs()`
+- [x] PR 6: `fix/nonprob-dispatch-consistency` — Route `survey_nonprob` through calibrated (HT) path in `get_freqs()` (https://github.com/JDenn0514/surveycore/pull/73)
 - [x] PR 7: `fix/glm-weights-na-contiguous` — Fix `@weights` indexing for non-contiguous NA rows in `survey_glm()` (https://github.com/JDenn0514/surveycore/pull/72)
 
 **Dependency graph:** None — all four are mutually independent.
