@@ -164,8 +164,10 @@
 
 # ── .srs_mean_cell() ──────────────────────────────────────────────────────────
 #
-# Domain estimation of a weighted mean for SRS designs. For SRS, physical
-# subsetting to the domain is equivalent to domain estimation. se_srs = se.
+# Domain estimation of a weighted mean for SRS designs. Uses the same Taylor
+# (HT) linearization as survey_taylor via .build_cluster_matrices() +
+# .svy_recvar(), which handles non-proportional weights correctly.
+# se_srs = se for SRS (design effect = 1).
 #
 # @param design  A survey_srs object.
 # @param y_col   Character: variable name.
@@ -203,21 +205,23 @@
     ))
   }
 
-  # FPC
-  fpc_var <- vars$fpc
-  fpc_type <- vars$fpc_type
-  f <- 0
-  if (!is.null(fpc_var)) {
-    fpc_col <- data[[fpc_var]][idx]
-    f <- if (identical(fpc_type, "population")) {
-      n_d / mean(fpc_col, na.rm = TRUE)
-    } else {
-      mean(fpc_col, na.rm = TRUE)
-    }
-  }
+  # Taylor linearization via .build_cluster_matrices() + .svy_recvar()
+  mats <- .build_cluster_matrices(data, vars)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
 
-  s2 <- sum((y_sub - ybar)^2) / (n_d - 1L)
-  se <- sqrt(max(0, (1 - f) * s2 / n_d))
+  # Full-length influence vector: w_i * domain_i * (y_i - ybar) / N_d
+  y_safe <- ifelse(idx, data[[y_col]], 0)
+  w_all  <- data[[vars$weights]]
+  infl   <- w_all * domain * (y_safe - ybar) / N_d
+
+  infl_mat <- matrix(infl, ncol = 1L, dimnames = list(NULL, y_col))
+  v <- .svy_recvar(
+    infl_mat,
+    mats$clusters_mat, mats$strata_mat, mats$fpcs,
+    lonely.psu = lonely.psu
+  )
+
+  se <- sqrt(max(0, v[[1L, 1L]]))
 
   list(mean = ybar, se = se, se_srs = se, n = n_d, n_weighted = N_d)
 }
