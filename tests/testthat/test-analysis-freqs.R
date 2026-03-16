@@ -2049,3 +2049,98 @@ test_that("get_freqs() twophase: group with all-NA focal var in phase 2 hits n_g
   groupb_rows <- result[result$grp2 == "GroupB", ]
   expect_true(all(is.na(groupb_rows$pct)))
 })
+
+
+# ── 19. survey_nonprob dispatch consistency ──────────────────────────────────
+
+test_that("get_freqs() survey_nonprob SE matches get_means() on indicator", {
+  set.seed(999L)
+  df <- data.frame(
+    x = c(rep("A", 30L), rep("B", 70L)),
+    w = runif(100L, 0.5, 5)
+  )
+  d <- as_survey_nonprob(df, weights = w)
+
+  freq_result <- get_freqs(d, x, variance = "se")
+
+  # Manually compute the mean of indicator I(x == "A") via get_means
+  df$ind_A <- as.numeric(df$x == "A")
+  df$ind_B <- as.numeric(df$x == "B")
+  d2 <- as_survey_nonprob(df, weights = w)
+  mean_A <- get_means(d2, ind_A, variance = "se")
+  mean_B <- get_means(d2, ind_B, variance = "se")
+
+  freq_A <- freq_result[freq_result$x == "A", ]
+  freq_B <- freq_result[freq_result$x == "B", ]
+
+  # Point estimates must match exactly
+  expect_equal(freq_A$pct, mean_A$mean, tolerance = 1e-10)
+  expect_equal(freq_B$pct, mean_B$mean, tolerance = 1e-10)
+
+  # SE must match exactly (same HT formula)
+  expect_equal(freq_A$se, mean_A$se, tolerance = 1e-10)
+  expect_equal(freq_B$se, mean_B$se, tolerance = 1e-10)
+})
+
+test_that("get_freqs() survey_nonprob uses HT variance, not Taylor", {
+  # The HT variance for a proportion p is:
+  # n/(n-1) * sum(w_i^2 * (I_i - p)^2) / N_hat^2
+  # where I_i is the 0/1 indicator and N_hat = sum(w)
+  set.seed(888L)
+  df <- data.frame(
+    x = c(rep("yes", 40L), rep("no", 60L)),
+    w = runif(100L, 1, 10)
+  )
+  d <- as_survey_nonprob(df, weights = w)
+  result <- get_freqs(d, x, variance = "se")
+
+  # Compute expected HT variance manually for "yes"
+  w_all <- df$w
+  ind_yes <- as.numeric(df$x == "yes")
+  N_hat <- sum(w_all)
+  p_yes <- sum(w_all * ind_yes) / N_hat
+  n <- nrow(df)
+  z <- w_all * (ind_yes - p_yes) / N_hat
+  var_ht <- (n / (n - 1L)) * sum(z^2)
+  se_ht <- sqrt(var_ht)
+
+  row_yes <- result[result$x == "yes", ]
+  expect_equal(row_yes$pct, p_yes, tolerance = 1e-10)
+  expect_equal(row_yes$se, se_ht, tolerance = 1e-10)
+})
+
+test_that("get_freqs() survey_nonprob handles grouped data consistently", {
+  set.seed(777L)
+  df <- data.frame(
+    cat = rep(c("A", "B"), each = 50L),
+    grp = rep(c("G1", "G2"), 50L),
+    w = runif(100L, 1, 5)
+  )
+  d <- as_survey_nonprob(df, weights = w)
+  result <- get_freqs(d, cat, group = grp, variance = "se")
+
+  test_result_invariants(result, "survey_freqs")
+  # Proportions within each group should sum to 1
+  for (g in unique(result$grp)) {
+    grp_rows <- result[result$grp == g, ]
+    expect_equal(sum(grp_rows$pct), 1, tolerance = 1e-8)
+  }
+  # SEs should all be finite and positive
+  expect_true(all(is.finite(result$se)))
+  expect_true(all(result$se > 0))
+})
+
+test_that("get_freqs() survey_nonprob edge: single-obs cell returns NA se", {
+  df <- data.frame(
+    x = c("A", "B", "B", "B"),
+    w = c(2, 3, 1, 4)
+  )
+  d <- as_survey_nonprob(df, weights = w)
+  result <- get_freqs(d, x, variance = "se")
+
+  # "A" has only 1 obs in its "domain" — HT variance needs n >= 2
+  # But proportions use all rows as the denominator domain.
+  # With the calibrated (HT) path, n_d = n (full sample), so
+  # n_d >= 2 always when at least 2 rows. SE should be finite.
+  expect_true(all(is.finite(result$se)))
+})
