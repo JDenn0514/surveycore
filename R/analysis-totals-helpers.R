@@ -165,7 +165,9 @@
 
 # ── .srs_total_cell() ─────────────────────────────────────────────────────────
 #
-# Domain estimation of a weighted total for SRS designs.
+# Domain estimation of a weighted total for SRS designs. Uses the same Taylor
+# (HT) linearization as survey_taylor via .build_cluster_matrices() +
+# .svy_recvar(), which handles non-proportional weights correctly.
 #
 # @param design  A survey_srs object.
 # @param y_col   Character: variable name, OR NULL for population size.
@@ -193,10 +195,10 @@
   if (is.null(y_col)) {
     # Population size mode
     T_hat <- sum(w_sub)
-    y_sub <- rep(1, n_d)
+    y_safe_col <- "..srs_total_ones.."
   } else {
-    y_sub <- data[[y_col]][idx]
-    T_hat <- sum(w_sub * y_sub)
+    T_hat <- sum(w_sub * data[[y_col]][idx])
+    y_safe_col <- y_col
   }
 
   N_d <- sum(w_sub)
@@ -211,34 +213,28 @@
     ))
   }
 
-  # FPC
-  fpc_var <- vars$fpc
-  fpc_type <- vars$fpc_type
-  f <- 0
-  N_hat <- N_d
+  # Taylor linearization via .build_cluster_matrices() + .svy_recvar()
+  # For totals, influence = w_i * domain_i * y_i
+  mats <- .build_cluster_matrices(data, vars)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
 
-  if (!is.null(fpc_var)) {
-    fpc_col <- data[[fpc_var]][idx]
-    if (identical(fpc_type, "population")) {
-      N_hat <- mean(fpc_col, na.rm = TRUE)
-      f <- n_d / N_hat
-    } else {
-      f <- mean(fpc_col, na.rm = TRUE)
-    }
-  }
-
-  ybar <- T_hat / N_d
-  s2 <- sum((y_sub - ybar)^2) / (n_d - 1L)
-
-  var_T <- if (identical(fpc_type, "population")) {
-    N_hat^2 * (1 - f) * s2 / n_d
-  } else if (identical(fpc_type, "fraction")) {
-    N_d^2 * (1 - f) * s2 / n_d
+  w_all <- data[[vars$weights]]
+  if (is.null(y_col)) {
+    # Population size mode: y = 1 for in-domain rows
+    y_safe <- as.numeric(idx)
   } else {
-    N_d^2 * s2 / n_d
+    y_safe <- ifelse(idx, data[[y_col]], 0)
   }
+  infl <- w_all * domain * y_safe
 
-  se <- sqrt(max(0, var_T))
+  infl_mat <- matrix(infl, ncol = 1L, dimnames = list(NULL, "total"))
+  v <- .svy_recvar(
+    infl_mat,
+    mats$clusters_mat, mats$strata_mat, mats$fpcs,
+    lonely.psu = lonely.psu
+  )
+
+  se <- sqrt(max(0, v[[1L, 1L]]))
 
   list(
     total = T_hat,

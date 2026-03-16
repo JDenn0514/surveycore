@@ -168,9 +168,12 @@
 
 # ── .srs_freq_cell() ──────────────────────────────────────────────────────────
 #
-# Compute a weighted proportion and its SRS standard error for one cell.
-# Formula: var(p) = (1 - f) * p * (1 - p) / (n_g - 1)
-# For survey_srs, design effect = 1 by definition, so se_srs = se.
+# Compute a weighted proportion and its standard error for one cell on an SRS
+# design. Delegates to .taylor_freq_cell() which uses .build_cluster_matrices()
+# + .svy_recvar() — the same Taylor (HT) linearization that handles any weight
+# structure correctly. For SRS, .build_cluster_matrices() treats each row as
+# its own PSU in a single stratum, matching survey::svydesign(ids = ~1).
+# se_srs = se for SRS (design effect = 1 by definition).
 #
 # @param design  A survey_srs object.
 # @param num     Numeric vector (0/1): cell membership.
@@ -178,60 +181,10 @@
 #
 # @return Named list: pct, se, se_srs, n, n_weighted.
 .srs_freq_cell <- function(design, num, denom) {
-  data <- design@data
-  vars <- design@variables
-  w    <- data[[vars$weights]]
-
-  n_g <- as.integer(sum(denom))
-
-  if (n_g == 0L) {
-    return(list(
-      pct = NA_real_, se = NA_real_, se_srs = NA_real_, n = 0L, n_weighted = 0
-    ))
-  }
-
-  N_d    <- sum(w * denom)
-  Y      <- sum(w * num)
-  p      <- if (N_d > 0) Y / N_d else NA_real_
-  n_cell <- as.integer(sum(num))
-
-  if (is.na(p) || n_g < 2L) {
-    return(list(
-      pct        = if (is.na(p)) NA_real_ else p,
-      se         = NA_real_,
-      se_srs     = NA_real_,
-      n          = n_cell,
-      n_weighted = Y
-    ))
-  }
-
-  # FPC correction
-  fpc_var  <- vars$fpc
-  fpc_type <- vars$fpc_type
-  if (!is.null(fpc_var)) {
-    fpc_all  <- data[[fpc_var]]
-    group_idx <- which(denom > 0)
-    fpc_vals  <- fpc_all[group_idx]
-    f <- if (identical(fpc_type, "population")) {
-      n_g / mean(fpc_vals, na.rm = TRUE)
-    } else {
-      mean(fpc_vals, na.rm = TRUE)
-    }
-  } else {
-    f <- 0
-  }
-
-  # Classical SRS proportion variance: (1-f) * p*(1-p) / (n_g - 1)
-  var_p <- (1 - f) * p * (1 - p) / (n_g - 1L)
-  se    <- sqrt(max(0, var_p))
-
-  list(
-    pct        = p,
-    se         = se,
-    se_srs     = se,    # se_srs = se for SRS (design effect = 1)
-    n          = n_cell,
-    n_weighted = Y
-  )
+  result <- .taylor_freq_cell(design, num, denom)
+  # Override se_srs: for SRS, design effect = 1, so se_srs = se
+  result$se_srs <- result$se
+  result
 }
 
 

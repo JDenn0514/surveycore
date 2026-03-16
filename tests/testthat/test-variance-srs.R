@@ -27,21 +27,20 @@ test_that("get_means() matches survey::svymean() for uniform-weight SRS", {
   expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
-test_that("get_means() SRS: non-uniform weights use unweighted s² (classical formula)", {
-  # The survey_srs variance is the classical SRS formula: SE = sqrt(s²/n)
-  # where s² is the unweighted sample variance.  This differs from the
-  # Horvitz-Thompson Taylor linearization (survey package) for unequal weights.
+test_that("get_means() SRS: non-uniform weights match survey::svymean() [HT linearization]", {
+  # survey_srs now uses the Taylor (HT) linearization for variance, matching
+  # survey::svydesign(ids = ~1). This is correct for any weight structure.
+  skip_if_not_installed("survey")
   set.seed(123)
   df <- data.frame(y = rnorm(100), w = runif(100, 0.5, 3))
 
   sc <- suppressWarnings(as_survey(df, weights = w))
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
   sc_mean <- get_means(sc, y, variance = "se")
+  sv_mean <- survey::svymean(~y, sv)
 
-  ybar <- sum(df$w * df$y) / sum(df$w)
-  s2   <- sum((df$y - ybar)^2) / (nrow(df) - 1L)
-
-  expect_equal(sc_mean$mean[[1L]], ybar,           tolerance = 1e-14)
-  expect_equal(sc_mean$se[[1L]],   sqrt(s2 / 100), tolerance = 1e-14)
+  expect_equal(sc_mean$mean[[1L]], as.numeric(coef(sv_mean)), tolerance = 1e-10)
+  expect_equal(sc_mean$se[[1L]], as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
 })
 
 # ---------------------------------------------------------------------------
@@ -62,18 +61,17 @@ test_that("get_means() SRS: unweighted uniform weights match survey::svymean()",
   expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
-test_that("get_means() SRS: non-uniform weights use unweighted s² (formula verification)", {
-  # survey_srs uses the classical SRS formula: SE = sqrt(s²/n) with unweighted s².
-  # This differs from the survey package's HT Taylor linearization for unequal weights.
-  # We verify directly against the formula, not against survey::svymean().
+test_that("get_means() SRS: non-uniform weights match survey::svymean() [formula verification]", {
+  # survey_srs now uses the Taylor (HT) linearization. Verify against survey.
+  skip_if_not_installed("survey")
   set.seed(77)
   df <- data.frame(y = rnorm(150), w = runif(150, 0.5, 3))
   sc <- as_survey_srs(df, weights = w)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
   sc_mean <- get_means(sc, y, variance = "se")
-  ybar <- sum(df$w * df$y) / sum(df$w)
-  s2   <- sum((df$y - ybar)^2) / (nrow(df) - 1L)
-  expect_equal(sc_mean$mean[[1L]], ybar,            tolerance = 1e-14)
-  expect_equal(sc_mean$se[[1L]],   sqrt(s2 / 150L), tolerance = 1e-14)
+  sv_mean <- survey::svymean(~y, sv)
+  expect_equal(sc_mean$mean[[1L]], as.numeric(coef(sv_mean)), tolerance = 1e-10)
+  expect_equal(sc_mean$se[[1L]], as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
 })
 
 test_that("get_means() SRS: population FPC matches survey::svymean() [proper SRS weights]", {
@@ -454,4 +452,135 @@ test_that("get_means() on SRS design matches survey::svymean() after refactor [r
     as.numeric(survey::SE(sv_est)),
     tolerance = 1e-8
   )
+})
+
+
+# ---------------------------------------------------------------------------
+# Block 22: Non-proportional weights — oracle tests
+# ---------------------------------------------------------------------------
+# These tests verify that SRS variance estimation matches the survey package
+# when weights are non-proportional (e.g., post-stratification adjustments).
+# The classical SRS s^2 formula is only correct for equal weights; the HT
+# Taylor linearization used by survey::svydesign(ids = ~1) handles any
+# weight structure correctly.
+
+test_that(".srs_mean() matches survey::svymean() with non-proportional weights [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+
+  n <- 50
+  df <- data.frame(y = rnorm(n, 50, 10), w = c(rep(1, 25), rep(5, 25)))
+  sc <- as_survey_srs(df, weights = w)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+  sc_est <- surveycore:::.srs_mean(sc, "y")
+  sv_est <- survey::svymean(~y, sv)
+  expect_equal(sc_est$mean, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that(".srs_total() matches survey::svytotal() with non-proportional weights [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(42)
+  n <- 50
+  df <- data.frame(y = rnorm(n, 50, 10), w = c(rep(1, 25), rep(5, 25)))
+  sc <- as_survey_srs(df, weights = w)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+  sc_est <- surveycore:::.srs_total(sc, "y")
+  sv_est <- survey::svytotal(~y, sv)
+  expect_equal(sc_est$total, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that(".srs_mean() matches survey with non-proportional weights + population FPC [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(43)
+  n <- 50; N <- 500
+  df <- data.frame(
+    y = rnorm(n, 50, 10),
+    w = c(rep(1, 25), rep(5, 25)),
+    pop = rep(N, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, fpc = ~pop, data = df)
+  sc_est <- surveycore:::.srs_mean(sc, "y")
+  sv_est <- survey::svymean(~y, sv)
+  expect_equal(sc_est$mean, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that(".srs_total() matches survey with non-proportional weights + population FPC [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(43)
+  n <- 50; N <- 500
+  df <- data.frame(
+    y = rnorm(n, 50, 10),
+    w = c(rep(1, 25), rep(5, 25)),
+    pop = rep(N, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, fpc = ~pop, data = df)
+  sc_est <- surveycore:::.srs_total(sc, "y")
+  sv_est <- survey::svytotal(~y, sv)
+  expect_equal(sc_est$total, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that(".srs_mean() matches survey with non-proportional weights + fraction FPC [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(44)
+  n <- 50; frac_val <- 0.1
+  df <- data.frame(
+    y = rnorm(n, 50, 10),
+    w = c(rep(1, 25), rep(5, 25)),
+    frac = rep(frac_val, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = frac)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, fpc = ~frac, data = df)
+  sc_est <- surveycore:::.srs_mean(sc, "y")
+  sv_est <- survey::svymean(~y, sv)
+  expect_equal(sc_est$mean, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that(".srs_total() matches survey with non-proportional weights + fraction FPC [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(44)
+  n <- 50; frac_val <- 0.1
+  df <- data.frame(
+    y = rnorm(n, 50, 10),
+    w = c(rep(1, 25), rep(5, 25)),
+    frac = rep(frac_val, n)
+  )
+  sc <- as_survey_srs(df, weights = w, fpc = frac)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, fpc = ~frac, data = df)
+  sc_est <- surveycore:::.srs_total(sc, "y")
+  sv_est <- survey::svytotal(~y, sv)
+  expect_equal(sc_est$total, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that("get_means() SRS integration: non-proportional weights match survey [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(45)
+  n <- 80
+  df <- data.frame(y = rnorm(n, 100, 20), w = c(rep(2, 40), rep(10, 40)))
+  sc <- as_survey_srs(df, weights = w)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+  sc_est <- get_means(sc, y, variance = c("se", "ci"))
+  sv_est <- survey::svymean(~y, sv)
+  expect_equal(sc_est$mean, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that("get_totals() SRS integration: non-proportional weights match survey [oracle]", {
+  skip_if_not_installed("survey")
+  set.seed(45)
+  n <- 80
+  df <- data.frame(y = rnorm(n, 100, 20), w = c(rep(2, 40), rep(10, 40)))
+  sc <- as_survey_srs(df, weights = w)
+  sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
+  sc_est <- get_totals(sc, y, variance = c("se", "ci"))
+  sv_est <- survey::svytotal(~y, sv)
+  expect_equal(sc_est$total, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
 })
