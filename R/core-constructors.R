@@ -976,9 +976,12 @@ as_survey_replicate <- function(
 #' strict subset indicated by a logical column. Uses a tidy-select interface
 #' for all Phase 2 design variable arguments.
 #'
-#' @param phase1 A `survey_taylor` object representing the Phase 1 design.
+#' @param phase1 A survey design object (inheriting from `survey_base`)
+#'   representing the Phase 1 design. Accepts `survey_taylor`,
+#'   `survey_srs`, or `survey_replicate` objects.
 #'   Its `@data` must contain ALL rows from both phases, plus a logical
-#'   indicator column for Phase 2 membership. Create with [as_survey()].
+#'   indicator column for Phase 2 membership. Create with [as_survey()],
+#'   [as_survey_srs()], or [as_survey_replicate()].
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
 #'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
 #'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
@@ -1064,16 +1067,19 @@ as_survey_twophase <- function(
   call <- match.call()
   method <- match.arg(method)
 
-  # ── Error 19: phase1 must be a survey_taylor object ─────────────────────────
+  # ── Error 19: phase1 must be a survey design object ─────────────────────────
 
-  if (!S7::S7_inherits(phase1, survey_taylor)) {
+  if (!S7::S7_inherits(phase1, survey_base)) {
     cli::cli_abort(
       c(
         "x" = paste0(
-          "{.arg phase1} must be a {.cls survey_taylor} object, not ",
-          "{.cls {class(phase1)[[1L]]}}."
+          "{.arg phase1} must be a survey design object ",
+          "({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}."
         ),
-        "i" = "Create it first with {.fn as_survey}."
+        "i" = paste0(
+          "Create it first with {.fn as_survey}, ",
+          "{.fn as_survey_srs}, or {.fn as_survey_replicate}."
+        )
       ),
       class = "surveycore_error_phase1_class"
     )

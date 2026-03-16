@@ -158,14 +158,14 @@
       # i 190 more rows
       # i 1 more variable: phase2_prob <dbl>
 
-# as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]
+# as_survey_twophase() errors when phase1 is a data.frame [row 19]
 
     Code
       as_survey_twophase(df, subset = subset)
     Condition
       Error in `as_survey_twophase()`:
-      x `phase1` must be a <survey_taylor> object, not <data.frame>.
-      i Create it first with `as_survey()`.
+      x `phase1` must be a survey design object (<survey_base>), not <data.frame>.
+      i Create it first with `as_survey()`, `as_survey_srs()`, or `as_survey_replicate()`.
 
 # as_survey_twophase() errors when subset is not provided [row 20]
 
