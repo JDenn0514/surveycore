@@ -2,6 +2,17 @@
 
 ## New features
 
+* `get_diffs()` estimates treatment effects (differences from a reference
+  group) via survey-weighted regression. Supports bivariate and multivariate
+  models, Gaussian and non-Gaussian families (e.g., `quasibinomial()`), and
+  optional subgroup analysis. Two estimation paths: direct coefficients
+  (clean path) for simple models, and `marginaleffects::avg_slopes()` /
+  `avg_predictions()` for covariates, non-Gaussian AMEs, or grouped designs.
+  Returns a `survey_diffs` tibble with optional `mean`, `pct_change`,
+  `n_weighted` columns, significance stars, and p-value adjustment via
+  `stats::p.adjust()`. Column-level labels are set for `gt::gt()`
+  compatibility. `marginaleffects` moved from Suggests to Imports.
+
 * Infrastructure for `get_diffs()`: `.stars_pval()` internal helper for
   significance star annotations, `DIFFS_META_KEYS` constant,
   `print.survey_diffs()` method with design/family/treatment header, and
