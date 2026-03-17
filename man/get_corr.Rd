@@ -24,7 +24,7 @@ get_corr(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
 numeric variable names. Non-numeric variables are dropped with a warning.

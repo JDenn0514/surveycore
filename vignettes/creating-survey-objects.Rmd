@@ -51,7 +51,7 @@ Read the first row that matches your data.
 |----------------------------------------------------------------------|--------------------------|--------------------------------------------------|
 | Has cluster IDs, strata, and/or design weights                       | `as_survey()`            | Taylor series linearization — the general case   |
 | Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | `as_survey_replicate()`        | Uses the agency-supplied variance replicates     |
-| Is a pure SRS — equal probability, no clustering, no strata          | `as_survey_srs()`        | Simpler estimator for equal-probability samples  |
+| Is a pure SRS — equal probability, no clustering, no strata          | `as_survey()`            | Omit `ids` and `strata`; creates an SRS design   |
 | Is a non-probability panel or opt-in sample with calibration weights | `as_survey_nonprob()` | Calibrated design; SEs are approximate           |
 | Was sampled in two stages with an expensive Phase 2 measurement      | `as_survey_twophase()`   | Two-phase variance accounting for both stages    |
 
@@ -424,33 +424,30 @@ svy_twophase
 
 ---
 
-## 5. `as_survey_srs()` — Simple Random Sample {#sec-srs}
+## 5. Simple Random Sample with `as_survey()` {#sec-srs}
 
-Use `as_survey_srs()` when every unit in your target population had an equal,
-known probability of selection — no clustering, no stratification
-[@cochran1977, ch. 2; @lohr2022, ch. 2]. This design is common in:
+Use `as_survey()` without `ids` or `strata` when every unit in your target
+population had an equal, known probability of selection — no clustering, no
+stratification [@cochran1977, ch. 2; @lohr2022, ch. 2]. This design is common
+in:
 
 - Surveys of a complete organizational roster (all employees at a company,
   all students at a school) where units are drawn directly from a list
 - Small-scale research with a well-defined, numbered sampling frame
 - Pilot studies and classroom experiments
 
-### 5.1 Arguments
+When neither `ids` nor `strata` is specified, `as_survey()` creates a
+`survey_taylor` object with no cluster or stratum structure — the SRS
+special case of the Taylor series estimator.
 
-| Argument  | What it does                                                                  |
-|-----------|-------------------------------------------------------------------------------|
-| `weights` | Sampling weight column — inverse of selection probability                     |
-| `probs`   | Selection probability column — supply `weights` *or* `probs`, not both        |
-| `fpc`     | Population size (integer column) or sampling fraction (numeric column, 0–1)   |
-
-### 5.2 The `fpc` argument matters more here
+### 5.1 The `fpc` argument matters more here
 
 Without clustering or stratification, the FPC has a proportionally larger
 effect on variance estimates than in complex designs [@cochran1977, §2.8].
 Supply it when you know the population size or sampling fraction. For the
 example below, the population is N = 400 schools.
 
-### 5.3 Worked example: School district survey
+### 5.2 Worked example: School district survey
 
 A district administrator draws a simple random sample of 80 schools from a
 complete roster of 400 schools. Every school has an equal probability of
@@ -471,7 +468,7 @@ school_survey <- data.frame(
   fpc = N # population size for FPC
 )
 
-svy_srs <- as_survey_srs(
+svy_srs <- as_survey(
   school_survey,
   weights = sw, # each sampled school represents 5 schools in the population
   fpc = fpc # reduces SEs: we sampled 20% of the population
@@ -494,22 +491,6 @@ with probability 80/400 = 0.20, so each receives weight 1/0.20 = 5.0. The
 weight is the same for every school because no school was oversampled or
 undersampled relative to any other. Uniform weights are not a simplification
 — they are the defining signature of simple random sampling.
-
-### 5.4 Relationship to `as_survey()`
-
-When `as_survey()` is called without specifying `ids` or `strata`, it
-automatically creates a `survey_srs` object and issues a warning. Use
-`as_survey_srs()` explicitly when you know your design is SRS — it suppresses
-the warning and signals your intent clearly to future readers of your code:
-
-```{r srs-dispatch}
-# These produce the same object:
-# as_survey_srs() — explicit, no warning
-svy_a <- as_survey_srs(school_survey, weights = sw, fpc = fpc)
-
-# as_survey() — warns that it is dispatching to SRS
-svy_b <- as_survey(school_survey, weights = sw, fpc = fpc)
-```
 
 ---
 
@@ -650,11 +631,12 @@ svy_campus <- as_survey_nonprob(campus_survey, weights = ps_weight)
 ```
 
 **If no calibration weights are available and you still want to use
-surveycore functions:** Add a column of 1s and use `as_survey_srs()`:
+surveycore functions:** Add a column of 1s and use `as_survey()` without
+`ids` or `strata`:
 
 ```r
 campus_survey$wt <- 1
-svy_campus <- as_survey_srs(campus_survey, weights = wt)
+svy_campus <- as_survey(campus_survey, weights = wt)
 ```
 
 This treats all respondents as equally weighted. The SEs it produces reflect
@@ -672,23 +654,24 @@ fully corrected by any weighting strategy [@baker2013].
 
 ## 7. Probability, SRS, and calibration weights: understanding the distinction {#sec-weight-types}
 
-The three constructors most users encounter — `as_survey()`,
-`as_survey_srs()`, and `as_survey_nonprob()` — differ in one fundamental
+The two constructor families most users encounter — `as_survey()` /
+`as_survey_replicate()` and `as_survey_nonprob()` — differ in one fundamental
 way: *where the weights come from*.
 
-| | `as_survey()` / `as_survey_replicate()` | `as_survey_srs()` | `as_survey_nonprob()` |
-|---|---|---|---|
-| Weight source | Sampling protocol (1/π_i) | Equal-probability selection | Post-hoc adjustment |
-| Selection probabilities | Known and controlled | Known; equal for all units | Unknown or overridden by calibration |
-| Weight values | Vary across respondents | Same for all respondents | Vary (reflect adjustment, not design) |
-| Variance estimator | Design-based (exact) | Design-based (exact) | Approximate |
+| | `as_survey()` / `as_survey_replicate()` | `as_survey_nonprob()` |
+|---|---|---|
+| Weight source | Sampling protocol (1/π_i) | Post-hoc adjustment |
+| Selection probabilities | Known and controlled | Unknown or overridden by calibration |
+| Weight values | Vary across respondents (or uniform for SRS) | Vary (reflect adjustment, not design) |
+| Variance estimator | Design-based (exact) | Approximate |
 
-In `as_survey()` and `as_survey_srs()`, every weight traces back to a
-specific moment in the sampling protocol — the moment each unit's selection
-probability was fixed. A PSU drawn with probability 1-in-10 gets weight 10.
-A school drawn from a roster of 400 with probability 1-in-5 gets weight 5.
-The randomness that makes design-based inference valid is mechanical and
-recorded.
+In `as_survey()`, every weight traces back to a specific moment in the
+sampling protocol — the moment each unit's selection probability was fixed.
+A PSU drawn with probability 1-in-10 gets weight 10. A school drawn from a
+roster of 400 with probability 1-in-5 gets weight 5. SRS designs are the
+special case where all weights are equal because every unit had the same
+selection probability. The randomness that makes design-based inference valid
+is mechanical and recorded.
 
 In `as_survey_nonprob()`, weights were computed *after* data collection
 to make the sample resemble a target population. The underlying selection
@@ -698,9 +681,8 @@ because the calibration step itself introduces additional uncertainty
 that standard variance formulas do not fully capture.
 
 The practical test: **if you can point to the sampling protocol that fixed
-each unit's probability of selection, use `as_survey()` or
-`as_survey_srs()`.** If the weights were derived from the data after
-collection, use `as_survey_nonprob()`.
+each unit's probability of selection, use `as_survey()`.** If the weights
+were derived from the data after collection, use `as_survey_nonprob()`.
 
 ---
 
@@ -724,11 +706,12 @@ not a survey design object.
 
 If the goal is purely **descriptive** — summarizing the attitudes of
 students in these specific classrooms without generalizing — you can treat
-the participants as a census. Add a column of 1s and use `as_survey_srs()`:
+the participants as a census. Add a column of 1s and use `as_survey()`
+without `ids` or `strata`:
 
 ```r
 classroom_data$wt <- 1
-svy_participants <- as_survey_srs(classroom_data, weights = wt)
+svy_participants <- as_survey(classroom_data, weights = wt)
 ```
 
 Equal weights treat all participants as equally represented. The SEs reflect
@@ -739,16 +722,17 @@ of all students at the school.
 
 | Design | Appropriate tool | Notes |
 |---|---|---|
-| Probability sample with design weights | `as_survey()`, `as_survey_replicate()`, `as_survey_srs()` | Exact variance |
+| Probability sample with design weights | `as_survey()`, `as_survey_replicate()` | Exact variance |
+| Pure SRS — equal probability, no clustering/strata | `as_survey()` (no `ids` or `strata`) | Exact variance; SRS special case of Taylor |
 | Any sample with calibration/raking/PSW/matching weights | `as_survey_nonprob()` | Approximate variance |
-| Voluntary response or convenience sample, no weights | `as_survey_srs()` with `weights = 1` | Conditional inference only; disclose |
+| Voluntary response or convenience sample, no weights | `as_survey()` with `weights = 1` (no `ids`/`strata`) | Conditional inference only; disclose |
 | Causal inference (treatment effect estimation) | Not surveycore | Use MatchIt, WeightIt, lme4, etc. |
 
-When you use `as_survey_srs()` with equal weights for a non-probability
-sample, surveycore produces estimates and SEs without error. The SEs are
-valid as a measure of variability *among the observed participants*. They
-should not be interpreted as uncertainty about a broader population unless
-the sample can be independently defended as representative.
+When you use `as_survey()` with equal weights and no `ids` or `strata` for
+a non-probability sample, surveycore produces estimates and SEs without
+error. The SEs are valid as a measure of variability *among the observed
+participants*. They should not be interpreted as uncertainty about a broader
+population unless the sample can be independently defended as representative.
 
 ---
 

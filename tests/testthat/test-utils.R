@@ -15,13 +15,13 @@
 #   6. .get_design_vars_flat() — NULL design variables dropped
 #   7. .get_design_vars_flat() — survey_twophase with p2 design info
 #   8. .get_design_vars_flat() — survey_nonprob returns weights column
-#   9. .get_design_vars_flat() — survey_srs returns weights (and fpc when set)
+#   9. .get_design_vars_flat() — SRS-style survey_taylor returns weights (and fpc when set)
 #  10. .get_design_vars() — survey_taylor named list
 #  11. .get_design_vars() — survey_replicate named list
 #  12. .get_design_vars() — survey_twophase named list (no p2 info)
 #  13. .get_design_vars() — survey_twophase with p2 design info
 #  14. .get_design_vars() — survey_nonprob returns weights entry
-#  15. .get_design_vars() — survey_srs returns weights (and fpc when set)
+#  15. .get_design_vars() — SRS-style survey_taylor returns weights (and fpc when set)
 #  16. .resolve_tidy_select() — NULL quosure → NULL
 #  17. .resolve_tidy_select() — bare name → character vector
 #  18. .resolve_tidy_select() — c() → multiple column names
@@ -114,7 +114,7 @@ make_calibrated <- function() {
 make_srs <- function(seed = 42L) {
   set.seed(seed)
   df <- data.frame(y = rnorm(20L), w = runif(20L, 0.5, 2.0))
-  suppressWarnings(as_survey_srs(df, weights = w))
+  suppressWarnings(as_survey(df, weights = w))
 }
 
 make_srs_with_fpc <- function(seed = 42L) {
@@ -124,7 +124,7 @@ make_srs_with_fpc <- function(seed = 42L) {
     w = runif(20L, 0.5, 2.0),
     fpc = rep(200L, 20L)
   )
-  suppressWarnings(as_survey_srs(df, weights = w, fpc = fpc))
+  suppressWarnings(as_survey(df, weights = w, fpc = fpc))
 }
 
 
@@ -263,22 +263,22 @@ test_that(".get_design_vars_flat() returns weights column name for survey_nonpro
 })
 
 
-# ── 9. .get_design_vars_flat() — survey_srs returns weights (and fpc) ────────
+# ── 9. .get_design_vars_flat() — SRS-style survey_taylor returns weights (and fpc) ──
 
-test_that(".get_design_vars_flat() returns weights column name for survey_srs", {
+test_that(".get_design_vars_flat() returns weights column name for SRS-style design", {
   d <- make_srs()
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true(d@variables$weights %in% flat)
 })
 
-test_that(".get_design_vars_flat() includes fpc column for survey_srs with fpc", {
+test_that(".get_design_vars_flat() includes fpc column for SRS-style design with fpc", {
   d <- make_srs_with_fpc()
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true(d@variables$weights %in% flat)
   expect_true(d@variables$fpc %in% flat)
 })
 
-test_that(".get_design_vars_flat() excludes fpc for survey_srs without fpc", {
+test_that(".get_design_vars_flat() excludes fpc for SRS-style design without fpc", {
   d <- make_srs()
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_null(d@variables$fpc)
@@ -385,9 +385,9 @@ test_that(".get_design_vars() returns a list with weights entry for survey_nonpr
 })
 
 
-# ── 15. .get_design_vars() — survey_srs returns weights (and fpc when set) ───
+# ── 15. .get_design_vars() — SRS-style survey_taylor returns weights (and fpc when set) ───
 
-test_that(".get_design_vars() returns weights entry for survey_srs", {
+test_that(".get_design_vars() returns weights entry for SRS-style design", {
   d <- make_srs()
   vars <- surveycore:::.get_design_vars(d)
   expect_true(is.list(vars))
@@ -395,7 +395,7 @@ test_that(".get_design_vars() returns weights entry for survey_srs", {
   expect_false("fpc" %in% names(vars))
 })
 
-test_that(".get_design_vars() includes fpc entry for survey_srs with fpc", {
+test_that(".get_design_vars() includes fpc entry for SRS-style design with fpc", {
   d <- make_srs_with_fpc()
   vars <- surveycore:::.get_design_vars(d)
   expect_true("weights" %in% names(vars))

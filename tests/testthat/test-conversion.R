@@ -72,7 +72,7 @@ make_taylor <- function(seed = 42L) {
 
 make_srs <- function(seed = 42L) {
   df <- make_survey_data(n = 30L, n_psu = 10L, n_strata = 2L, seed = seed)
-  as_survey_srs(df, weights = wt)
+  as_survey(df, weights = wt)
 }
 
 make_rep <- function(seed = 42L) {
@@ -126,7 +126,7 @@ test_that("as_svydesign() converts survey_taylor without error", {
 
 # ── 2. as_svydesign() — SRS survey_taylor happy path ─────────────────────────
 
-test_that("as_svydesign() converts survey_srs without error", {
+test_that("as_svydesign() converts SRS-style survey_taylor without error", {
   skip_if_not_installed("survey")
   d <- make_srs()
   test_invariants(d)

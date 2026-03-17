@@ -24,7 +24,7 @@ get_freqs(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> One or more categorical
 variables. Bare names or tidy-select helpers (e.g., \code{c(q1, q2, q3)}).

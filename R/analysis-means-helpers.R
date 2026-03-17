@@ -6,7 +6,6 @@
 #   .mean_domain_vec()      — build na-aware active-domain vector
 #   .taylor_mean_cell()     — Taylor domain-estimation mean
 #   .replicate_mean_cell()  — replicate-weight domain mean
-#   .srs_mean_cell()        — SRS domain mean
 #   .twophase_mean_cell()   — two-phase domain mean
 #   .calibrated_mean_cell() — calibrated domain mean
 #   .mean_cell()            — dispatcher
@@ -162,71 +161,6 @@
 }
 
 
-# ── .srs_mean_cell() ──────────────────────────────────────────────────────────
-#
-# Domain estimation of a weighted mean for SRS designs. Uses the same Taylor
-# (HT) linearization as survey_taylor via .build_cluster_matrices() +
-# .svy_recvar(), which handles non-proportional weights correctly.
-# se_srs = se for SRS (design effect = 1).
-#
-# @param design  A survey_srs object.
-# @param y_col   Character: variable name.
-# @param domain  Numeric 0/1 vector (full length).
-# @return Named list: mean, se, se_srs, n, n_weighted.
-.srs_mean_cell <- function(design, y_col, domain) {
-  data <- design@data
-  vars <- design@variables
-
-  idx <- domain > 0
-  n_d <- as.integer(sum(idx))
-
-  if (n_d == 0L) {
-    return(list(
-      mean = NA_real_,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = 0L,
-      n_weighted = 0
-    ))
-  }
-
-  w_sub <- data[[vars$weights]][idx]
-  y_sub <- data[[y_col]][idx]
-  N_d <- sum(w_sub)
-  ybar <- sum(w_sub * y_sub) / N_d
-
-  if (n_d == 1L) {
-    return(list(
-      mean = ybar,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = 1L,
-      n_weighted = N_d
-    ))
-  }
-
-  # Taylor linearization via .build_cluster_matrices() + .svy_recvar()
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
-  # Full-length influence vector: w_i * domain_i * (y_i - ybar) / N_d
-  y_safe <- ifelse(idx, data[[y_col]], 0)
-  w_all  <- data[[vars$weights]]
-  infl   <- w_all * domain * (y_safe - ybar) / N_d
-
-  infl_mat <- matrix(infl, ncol = 1L, dimnames = list(NULL, y_col))
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat, mats$strata_mat, mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[[1L, 1L]]))
-
-  list(mean = ybar, se = se, se_srs = se, n = n_d, n_weighted = N_d)
-}
-
-
 # ── .twophase_mean_cell() ─────────────────────────────────────────────────────
 #
 # Domain estimation of a weighted mean for two-phase designs. Computes
@@ -366,8 +300,6 @@
     .replicate_mean_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_mean_cell(design, y_col, domain)
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    .srs_mean_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     .calibrated_mean_cell(design, y_col, domain)
   } else {

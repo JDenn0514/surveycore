@@ -5,7 +5,6 @@
 # Functions:
 #   .taylor_total_cell()     — Taylor domain-estimation total
 #   .replicate_total_cell()  — replicate-weight domain total
-#   .srs_total_cell()        — SRS domain total
 #   .twophase_total_cell()   — two-phase domain total
 #   .calibrated_total_cell() — calibrated domain total
 #   .total_cell()            — dispatcher
@@ -157,89 +156,6 @@
     total = T_hat,
     se = se,
     se_srs = se_srs,
-    n = if (is.null(y_col)) NULL else n_d,
-    n_weighted = N_d
-  )
-}
-
-
-# ── .srs_total_cell() ─────────────────────────────────────────────────────────
-#
-# Domain estimation of a weighted total for SRS designs. Uses the same Taylor
-# (HT) linearization as survey_taylor via .build_cluster_matrices() +
-# .svy_recvar(), which handles non-proportional weights correctly.
-#
-# @param design  A survey_srs object.
-# @param y_col   Character: variable name, OR NULL for population size.
-# @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
-.srs_total_cell <- function(design, y_col, domain) {
-  data <- design@data
-  vars <- design@variables
-
-  idx <- domain > 0
-  n_d <- as.integer(sum(idx))
-
-  if (n_d == 0L) {
-    return(list(
-      total = NA_real_,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = if (is.null(y_col)) NULL else 0L,
-      n_weighted = 0
-    ))
-  }
-
-  w_sub <- data[[vars$weights]][idx]
-
-  if (is.null(y_col)) {
-    # Population size mode
-    T_hat <- sum(w_sub)
-    y_safe_col <- "..srs_total_ones.."
-  } else {
-    T_hat <- sum(w_sub * data[[y_col]][idx])
-    y_safe_col <- y_col
-  }
-
-  N_d <- sum(w_sub)
-
-  if (n_d == 1L) {
-    return(list(
-      total = T_hat,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = if (is.null(y_col)) NULL else 1L,
-      n_weighted = N_d
-    ))
-  }
-
-  # Taylor linearization via .build_cluster_matrices() + .svy_recvar()
-  # For totals, influence = w_i * domain_i * y_i
-  mats <- .build_cluster_matrices(data, vars)
-  lonely.psu <- getOption("survey.lonely.psu", "remove")
-
-  w_all <- data[[vars$weights]]
-  if (is.null(y_col)) {
-    # Population size mode: y = 1 for in-domain rows
-    y_safe <- as.numeric(idx)
-  } else {
-    y_safe <- ifelse(idx, data[[y_col]], 0)
-  }
-  infl <- w_all * domain * y_safe
-
-  infl_mat <- matrix(infl, ncol = 1L, dimnames = list(NULL, "total"))
-  v <- .svy_recvar(
-    infl_mat,
-    mats$clusters_mat, mats$strata_mat, mats$fpcs,
-    lonely.psu = lonely.psu
-  )
-
-  se <- sqrt(max(0, v[[1L, 1L]]))
-
-  list(
-    total = T_hat,
-    se = se,
-    se_srs = se, # SRS: se_srs = se
     n = if (is.null(y_col)) NULL else n_d,
     n_weighted = N_d
   )
@@ -409,8 +325,6 @@
     .replicate_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_total_cell(design, y_col, domain)
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    .srs_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     .calibrated_total_cell(design, y_col, domain)
   } else {

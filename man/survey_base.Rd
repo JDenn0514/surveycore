@@ -13,10 +13,10 @@ survey_base(
 )
 }
 \description{
-All survey design objects (\code{survey_srs}, \code{survey_taylor},
-\code{survey_replicate}, \code{survey_twophase}, \code{survey_nonprob}) inherit from
-\code{survey_base}. This class is abstract and cannot be instantiated directly —
-use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, \code{\link[=as_survey_twophase]{as_survey_twophase()}}, or
+All survey design objects (\code{survey_taylor}, \code{survey_replicate},
+\code{survey_twophase}, \code{survey_nonprob}) inherit from \code{survey_base}. This
+class is abstract and cannot be instantiated directly — use
+\code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, \code{\link[=as_survey_twophase]{as_survey_twophase()}}, or
 \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} instead.
 }
 \section{Properties}{

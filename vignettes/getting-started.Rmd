@@ -55,17 +55,15 @@ the survey objects are for. They tell the analysis functions how to conduct
 their analysis so they can properly take into account the variance and bias from
 the survey design. 
 
-`surveycore` has five different survey object constructors: 
+`surveycore` has four different survey object constructors:
 
 1. `as_survey()`
 
 2. `as_survey_replicate()`
 
-3. `as_survey_srs()`
+3. `as_survey_nonprob()`
 
-4. `as_survey_nonprob()`
-
-5. `as_survey_twophase()`
+4. `as_survey_twophase()`
 
 Rather than going into detail on each constructor, I'm just going to provide a quick
 overview of each. For more information visit `vignette("creating-survey-objects")`.
@@ -108,13 +106,14 @@ pew_jewish_svy
 ```
 
 
-### `as_survey_srs()`
+### SRS designs with `as_survey()`
 
-Use this when your survey was a pure simple random sample, meaning each respondent
-had equal probability of selection and there are neither clustering nor strata.
+When your survey was a pure simple random sample — each respondent had equal
+probability of selection, no clustering, no strata — use `as_survey()` without
+specifying `ids` or `strata`. Omitting both creates a `survey_taylor` object
+with no cluster or stratum structure, which is the SRS special case.
 
-I don't have a specific dataset example to use, so I'll just make a fake one. This
-fake dataset is meant to replicate a school district survey.
+Here is a synthetic school district survey to illustrate:
 
 ```{r srs}
 set.seed(101)
@@ -130,7 +129,7 @@ school_survey <- data.frame(
   fpc = N # population size for FPC
 )
 
-school_svy <- as_survey_srs(
+school_svy <- as_survey(
   school_survey,
   weights = sw, # each sampled school represents 5 schools in the population
   fpc = fpc # reduces SEs: we sampled 20% of the population
@@ -611,7 +610,7 @@ All functions:
 - Return a tibble subclass ready for further analysis or display
 - Accept a `group` argument for subgroup estimates
 - Accept a `variance` argument to control which uncertainty columns appear
-- Handle all five survey design classes: `survey_taylor`, `survey_replicate`,
-  `survey_srs`, `survey_twophase`, and `survey_nonprob`
+- Handle all survey design classes: `survey_taylor`, `survey_replicate`,
+  `survey_twophase`, and `survey_nonprob`
 
 

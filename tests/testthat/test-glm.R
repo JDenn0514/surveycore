@@ -28,7 +28,7 @@ library(surveycore)
 
 .glm_srs <- function(seed = 1L) {
   df <- make_survey_data(n = 200L, seed = seed)
-  as_survey_srs(df, weights = wt)
+  as_survey(df, weights = wt)
 }
 
 .glm_replicate <- function(seed = 1L) {

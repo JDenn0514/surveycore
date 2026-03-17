@@ -76,7 +76,7 @@ test_that("Gaussian oracle: SRS design (no FPC) — coef and SE match survey::sv
   skip_if_not_installed("survey")
   df <- make_survey_data(seed = 42)
 
-  d_sc <- as_survey_srs(df, weights = wt)
+  d_sc <- as_survey(df, weights = wt)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
 
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
@@ -472,7 +472,7 @@ test_that(".degf() oracle: Replicate BRR design matches survey::degf()", {
 test_that(".degf() oracle: SRS design matches survey::degf()", {
   skip_if_not_installed("survey")
   df <- make_survey_data(seed = 42)
-  d_sc <- as_survey_srs(df, weights = wt)
+  d_sc <- as_survey(df, weights = wt)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
   expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)
 })
@@ -522,7 +522,7 @@ test_that("PSD check: Taylor vcov is positive semi-definite", {
 
 test_that("PSD check: SRS vcov is positive semi-definite", {
   df <- make_survey_data(seed = 42)
-  d_sc <- as_survey_srs(df, weights = wt)
+  d_sc <- as_survey(df, weights = wt)
   fit_sc <- survey_glm(d_sc, y1 ~ y2 + y3)
   ev <- eigen(vcov(fit_sc))$values
   expect_true(all(ev >= -1e-10))

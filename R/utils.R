@@ -256,8 +256,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     ))
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     unique(c(design@variables$weights))
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    unique(c(design@variables$weights, design@variables$fpc))
   } else {
     character(0L) # nocov — defensive: all known types handled above
   }
@@ -308,14 +306,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       Negate(is.null),
       list(weights = design@variables$weights)
     )
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    Filter(
-      Negate(is.null),
-      list(
-        weights = design@variables$weights,
-        fpc = design@variables$fpc
-      )
-    )
   } else {
     list() # nocov — defensive: all known types handled above
   }
@@ -325,8 +315,8 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # ── Internal: weighting history promotion ────────────────────────────────────
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
-# Called by constructors that accept a raw data frame (as_survey_srs,
-# as_survey, as_survey_replicate). Returns the metadata object unchanged when the
+# Called by constructors that accept a raw data frame (as_survey,
+# as_survey_replicate). Returns the metadata object unchanged when the
 # attribute is absent or is not a non-empty list.
 #
 # @param data     A data.frame (may or may not have "weighting_history" attr).

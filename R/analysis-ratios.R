@@ -19,7 +19,7 @@
 #' classes.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`.
 #' @param numerator <[`tidy-select`][tidyselect::language]> A single unquoted
 #'   numeric variable name for the numerator. Must resolve to exactly one
 #'   numeric column.

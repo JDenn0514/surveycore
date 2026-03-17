@@ -30,7 +30,7 @@ against the messages defined here.
 | 1 | `as_survey()` | `data` is not a data frame | ERROR | `surveycore_error_not_data_frame` | `"{.arg data} must be a data frame, not {.cls {class(data)}}"` |
 | 2 | `as_survey()` | `data` has 0 rows | ERROR | `surveycore_error_empty_data` | `"{.arg data} must have at least one row"` |
 | 3 | `as_survey()` | `data` has duplicate column names | ERROR | `surveycore_error_duplicate_names` | `"Column names in {.arg data} must be unique. Duplicates: {.field {dupes}}"` |
-| 4 | `as_survey()` | `data` has 1 row | WARN | `surveycore_warning_single_row` | `"{.arg data} has only 1 row — variance cannot be estimated"` |
+| 4 | `as_survey()` | `data` has 1 row | ERROR | `surveycore_error_single_row` | `"{.arg data} has only 1 row. A survey design requires at least 2 observations."` |
 | 5 | `as_survey()` | Both `probs` and `weights` provided, inconsistent values | ERROR | `surveycore_error_probs_weights_conflict` | `"Cannot specify both {.arg probs} and {.arg weights} with inconsistent values. {.arg weights} should equal 1 / {.arg probs}"` |
 | 6 | `as_survey()` | Both `probs` and `weights` provided, consistent values | INFO | `surveycore_inform_probs_weights_consistent` | `"Using {.arg weights}; provided {.arg probs} is consistent (weights = 1/probs)"` |
 | 7 | `as_survey()` | No weights, probs, or ids (SRS) | WARN | `surveycore_warning_srs_no_weights` | `"No weights or population size provided. Treating as equal-probability SRS with unknown population size. Valid: means, proportions, correlations. Invalid: population totals."` |

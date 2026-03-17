@@ -7,7 +7,6 @@
 # for S7 objects and must never be used here.
 #
 # Classes defined in R/00-s7-classes.R:
-#   survey_srs      — Simple random sample design
 #   survey_taylor   — Taylor series linearization design
 #   survey_replicate — Replicate weights design
 #   survey_twophase — Two-phase sampling design
@@ -225,115 +224,6 @@ S7::method(print, survey_taylor) <- function(
     x@variables$fpc
   ))
   .print_hidden_note(design_vars_all, data_shown)
-
-  invisible(x)
-}
-
-
-# ── print.survey_srs ───────────────────────────────────────────────────────
-
-# Print a Simple Random Sample Survey Design
-#
-# @param x A survey_srs object.
-# @param n Maximum number of data rows to print. Default 10L.
-# @param design_info Show design specification section?
-# @param weights_info Show weight distribution statistics?
-# @param metadata_info Show metadata summary?
-# @param full If TRUE, show all sections.
-# @param ... Passed to tibble print.
-# @return x, invisibly.
-# Class defined in R/00-s7-classes.R
-S7::method(print, survey_srs) <- function(
-  x,
-  n             = 10L,
-  design_info   = FALSE,
-  weights_info  = FALSE,
-  metadata_info = FALSE,
-  full          = FALSE,
-  ...
-) {
-  if (full) {
-    design_info <- weights_info <- metadata_info <- TRUE
-  }
-
-  # ── Header ────────────────────────────────────────────────────────────────
-  cli::cli_h1("Survey Design")
-  cli::cli_text("{.cls survey_srs} (simple random sample)")
-  cli::cli_text("Sample size: {.val {nrow(x@data)}}")
-  .print_domain_info(x)
-
-  if (length(x@groups) > 0L) {
-    cli::cli_text("Groups: {.field {x@groups}}")
-  }
-
-  if (weights_info) {
-    wts        <- x@data[[x@variables$weights]]
-    weighted_n <- round(sum(wts, na.rm = TRUE))
-    cli::cli_text("Weighted N: {.val {weighted_n}}")
-  }
-
-  # ── Design specification ──────────────────────────────────────────────────
-  if (design_info) {
-    cli::cli_text("")
-    cli::cli_h2("Design")
-
-    wts_var    <- x@variables$weights
-    is_uniform <- identical(wts_var, .SURVEYCORE_WT_COL) &&
-      !isTRUE(x@variables$probs_provided)
-    if (is_uniform) {
-      cli::cli_bullets(c("*" = "Weights: uniform (auto-assigned)"))
-    } else if (isTRUE(x@variables$probs_provided)) {
-      cli::cli_bullets(c(
-        "*" = "Weights: {.field {wts_var}} (from sampling probabilities)"
-      ))
-    } else {
-      cli::cli_bullets(c("*" = "Weights: {.field {wts_var}}"))
-    }
-
-    fpc_var  <- x@variables$fpc
-    fpc_type <- x@variables$fpc_type
-    if (!is.null(fpc_var)) {
-      fpc_label <- if (identical(fpc_type, "population")) {
-        "(population sizes)"
-      } else {
-        "(sampling fractions)"
-      }
-      cli::cli_bullets(c("*" = "FPC: {.field {fpc_var}} {fpc_label}"))
-      fpc_col <- x@data[[fpc_var]]
-      n_obs   <- nrow(x@data)
-      f <- if (identical(fpc_type, "population")) {
-        round(n_obs / mean(fpc_col, na.rm = TRUE), 4L)
-      } else {
-        round(mean(fpc_col, na.rm = TRUE), 4L)
-      }
-      cli::cli_bullets(c("*" = "Sampling fraction: {.val {f}}"))
-    } else {
-      cli::cli_bullets(c("*" = "FPC: not specified"))
-    }
-  }
-
-  # ── Weight distribution ───────────────────────────────────────────────────
-  if (weights_info) {
-    wts <- x@data[[x@variables$weights]]
-    cli::cli_text("")
-    cli::cli_h2("Weight distribution")
-    .print_weight_distribution(wts)
-  }
-
-  # ── Metadata ──────────────────────────────────────────────────────────────
-  if (metadata_info) {
-    n_labeled <- length(x@metadata@variable_labels)
-    cli::cli_text("")
-    cli::cli_h2("Metadata")
-    cli::cli_text("{n_labeled} variable(s) labeled")
-  }
-
-  # ── Data ──────────────────────────────────────────────────────────────────
-  cli::cli_text("")
-  data_shown <- .data_for_print(x)
-  print(data_shown, n = n, ...)
-
-  .print_hidden_note(c(x@variables$weights, x@variables$fpc), data_shown)
 
   invisible(x)
 }
@@ -725,58 +615,6 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
   fpc_var <- x@variables$fpc
   if (!is.null(fpc_var)) {
     cli::cli_text("FPC: {.field {fpc_var}}")
-  }
-
-  cli::cli_text("")
-  n_labeled <- length(x@metadata@variable_labels)
-  n_total   <- ncol(x@data)
-  cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
-
-  invisible(x)
-}
-
-
-# ── summary.survey_srs ────────────────────────────────────────────────────
-
-# Summarise a Simple Random Sample Survey Design
-# @param object A survey_srs object.
-# @return object, invisibly.
-# Class defined in R/00-s7-classes.R
-S7::method(summary, survey_srs) <- function(object, ...) {
-  x <- object
-
-  cli::cli_h1("Survey Design Summary")
-  cli::cli_text("Type: simple random sample (SRS)")
-  cli::cli_text("Sample size: {.val {nrow(x@data)}}")
-
-  wts_var    <- x@variables$weights
-  wts        <- x@data[[wts_var]]
-  weighted_n <- round(sum(wts, na.rm = TRUE))
-  cli::cli_text("Weighted N: {.val {weighted_n}}")
-
-  cli::cli_text("")
-  cli::cli_h2("Design")
-
-  is_uniform <- identical(wts_var, .SURVEYCORE_WT_COL) &&
-    !isTRUE(x@variables$probs_provided)
-  if (is_uniform) {
-    cli::cli_text("Weights: uniform (auto-assigned)")
-  } else {
-    cli::cli_text("Weights: {.field {wts_var}}")
-  }
-  .print_weight_distribution(wts)
-
-  fpc_var  <- x@variables$fpc
-  fpc_type <- x@variables$fpc_type
-  if (!is.null(fpc_var)) {
-    fpc_label <- if (identical(fpc_type, "population")) {
-      "(population sizes)"
-    } else {
-      "(sampling fractions)"
-    }
-    cli::cli_text("FPC: {.field {fpc_var}} {fpc_label}")
-  } else {
-    cli::cli_text("FPC: not specified")
   }
 
   cli::cli_text("")

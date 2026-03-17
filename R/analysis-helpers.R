@@ -348,7 +348,6 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
     if (S7::S7_inherits(design, survey_taylor))      "taylor"
     else if (S7::S7_inherits(design, survey_replicate))  "replicate"
     else if (S7::S7_inherits(design, survey_twophase))   "twophase"
-    else if (S7::S7_inherits(design, survey_srs))        "srs"
     else if (S7::S7_inherits(design, survey_nonprob)) "calibrated"
     else cli::cli_abort(
       c("x" = "Unrecognized design class {.cls {class(design)[1L]}}."),
@@ -609,7 +608,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 # @param se_vec       Numeric vector of standard errors (length = n_cells).
 # @param estimate_vec Numeric vector of point estimates (same length).
 # @param se_srs_vec   Numeric vector of SRS-equivalent SEs (for deff).
-#                     Pass NULL when deff not requested. For survey_srs,
+#                     Pass NULL when deff not requested. For SRS designs,
 #                     the calling function always passes se_srs_vec = se_vec.
 # @param conf_level   Numeric scalar in (0, 1).
 # @param degf         Degrees of freedom for qt() (scalar or vector).
@@ -720,7 +719,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
   } else {
-    # survey_srs, survey_nonprob, unknown
+    # survey_nonprob, unknown
     max(1L, nrow(design@data) - 1L)
   }
 }
