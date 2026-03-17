@@ -141,6 +141,7 @@ get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
 Other analysis: 
 \code{\link{clean}()},
 \code{\link{get_corr}()},
+\code{\link{get_diffs}()},
 \code{\link{get_means}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},

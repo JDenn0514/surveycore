@@ -26,6 +26,7 @@ Imports:
     tidyselect (>= 1.2.0),
     cli (>= 3.6.0),
     tibble (>= 3.1.0),
+    marginaleffects (>= 0.18.0),
     stats
 Suggests:
     testthat (>= 3.0.0),
@@ -37,7 +38,6 @@ Suggests:
     dplyr (>= 1.1.0),
     lifecycle (>= 1.0.0),
     broom (>= 1.0.0),
-    marginaleffects (>= 0.18.0),
     covr,
     knitr,
     rmarkdown

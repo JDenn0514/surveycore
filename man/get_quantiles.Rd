@@ -118,6 +118,7 @@ position measures. \emph{Journal of the American Statistical Association},
 Other analysis: 
 \code{\link{clean}()},
 \code{\link{get_corr}()},
+\code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
 \code{\link{get_ratios}()},
