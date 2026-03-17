@@ -6,7 +6,6 @@
 #   .get_levels()            — ordered unique levels for a variable
 #   .taylor_freq_cell()      — ratio linearization (survey_taylor)
 #   .replicate_freq_cell()   — replicate-weight proportion variance
-#   .srs_freq_cell()         — SRS proportion variance
 #   .twophase_freq_cell()    — two-phase proportion via .twophasevar()
 #   .calibrated_freq_cell()  — HT proportion variance (survey_nonprob)
 #   .freq_cell()             — dispatcher
@@ -166,28 +165,6 @@
 }
 
 
-# ── .srs_freq_cell() ──────────────────────────────────────────────────────────
-#
-# Compute a weighted proportion and its standard error for one cell on an SRS
-# design. Delegates to .taylor_freq_cell() which uses .build_cluster_matrices()
-# + .svy_recvar() — the same Taylor (HT) linearization that handles any weight
-# structure correctly. For SRS, .build_cluster_matrices() treats each row as
-# its own PSU in a single stratum, matching survey::svydesign(ids = ~1).
-# se_srs = se for SRS (design effect = 1 by definition).
-#
-# @param design  A survey_srs object.
-# @param num     Numeric vector (0/1): cell membership.
-# @param denom   Numeric vector (0/1): group/domain membership.
-#
-# @return Named list: pct, se, se_srs, n, n_weighted.
-.srs_freq_cell <- function(design, num, denom) {
-  result <- .taylor_freq_cell(design, num, denom)
-  # Override se_srs: for SRS, design effect = 1, so se_srs = se
-  result$se_srs <- result$se
-  result
-}
-
-
 # ── .twophase_freq_cell() ─────────────────────────────────────────────────────
 #
 # Compute a weighted proportion and its two-phase linearized standard error
@@ -328,8 +305,6 @@
     .calibrated_freq_cell(design, num, denom)
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_freq_cell(design, num, denom)
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    .srs_freq_cell(design, num, denom)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_freq_cell(design, num, denom)
   } else {

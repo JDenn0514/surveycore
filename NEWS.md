@@ -9,6 +9,15 @@
   `as_survey_calibrated()`. "Calibrated" implies a post-processing step on a
   probability sample; `nonprob` accurately reflects the design type.
 
+* `survey_srs` and `as_survey_srs()` have been removed. SRS designs are now
+  created via `as_survey()` with no `ids` or `strata` — this produces a
+  `survey_taylor` with no cluster/strata structure. All estimates are
+  numerically identical. Print output now says "Taylor series linearization"
+  instead of "simple random sample".
+
+* Single-row data frames are now rejected at construction time (previously
+  a warning). This matches `survey::svydesign()` behavior.
+
 * The positional setter form `set_var_label(svy, age, "label")` has been
   removed. Use the named form `set_var_label(svy, age = "label")` instead.
 
@@ -52,8 +61,8 @@
 
 ## New features
 
-* `survey_glm()` fits survey-weighted generalized linear models for all five
-  design classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
+* `survey_glm()` fits survey-weighted generalized linear models for all four
+  design classes (`survey_taylor`, `survey_replicate`,
   `survey_twophase`, `survey_nonprob`); returns a `survey_glm_fit` object
   with design-based (Binder 1983 sandwich) standard errors and degrees of
   freedom.
@@ -89,8 +98,8 @@
 
 ## New features
 
-* `print()` methods for all five survey design classes (`survey_taylor`,
-  `survey_srs`, `survey_replicate`, `survey_twophase`, `survey_nonprob`)
+* `print()` methods for all four survey design classes (`survey_taylor`,
+  `survey_replicate`, `survey_twophase`, `survey_nonprob`)
   now display a `Domain: <n> of <N> rows` line when `surveytidy::filter()`
   has been applied. The line appears after the sample size line and before
   the `Groups:` line. For two-phase designs, domain counts reflect Phase 2
@@ -143,7 +152,7 @@
 
 * `survey_weighting_history()` returns the weighting history stored in a
   survey design object's metadata; `as_survey()`, `as_survey_replicate()`, and
-  `as_survey_srs()` now promote `"weighting_history"` attributes from the
+  `as_survey_nonprob()` now promote `"weighting_history"` attributes from the
   input data frame automatically.
 
 * Two-phase variance estimation (`as_survey_twophase()`) is now fully

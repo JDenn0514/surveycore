@@ -7,7 +7,7 @@
 #   1. names() — survey_taylor returns @data column names
 #   2. names() — survey_replicate returns @data column names
 #   3. names() — survey_twophase returns @data column names
-#   4. names() — survey_srs returns @data column names
+#   4. names() — SRS-style survey_taylor returns @data column names
 #   5. names() — consistent with names(survey_data(design))
 
 test_that("names() returns @data column names for survey_taylor", {
@@ -38,9 +38,9 @@ test_that("names() returns @data column names for survey_twophase", {
   expect_identical(names(d), names(df))
 })
 
-test_that("names() returns @data column names for survey_srs", {
+test_that("names() returns @data column names for SRS-style survey_taylor", {
   df <- data.frame(y = 1:10, grp = letters[1:10], w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_identical(names(d), names(df))
 })
 

@@ -23,7 +23,7 @@ srs_srvyr <- apisrs |> as_survey_design(ids = 1, fpc = fpc, weights = pw)
 srs_srvyr
 
 ## ----srs-sc, eval=has_survey--------------------------------------------------
-srs_sc <- as_survey_srs(apisrs, weights = pw, fpc = fpc)
+srs_sc <- as_survey(apisrs, weights = pw, fpc = fpc)
 srs_sc
 
 ## ----strat-survey, eval=has_survey--------------------------------------------

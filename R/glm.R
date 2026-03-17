@@ -300,9 +300,16 @@ survey_glm_fit <- S7::new_class(
     .glm_sandwich_vcov(meat, bread)
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .glm_replicate_vcov(fit, design, row_mask, domain_mask)
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
+    .glm_calibrated_vcov(fit, design, row_mask, domain_mask)
   } else {
-    # survey_srs, survey_nonprob — SRS sandwich
-    .glm_srs_vcov(fit, design, row_mask, domain_mask)
+    cli::cli_abort(
+      c(
+        "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in GLM.",
+        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+      ),
+      class = "surveycore_error_unsupported_class"
+    )
   }
 }
 
@@ -400,30 +407,26 @@ survey_glm_fit <- S7::new_class(
 }
 
 
-# ── .glm_srs_vcov() ───────────────────────────────────────────────────────────
+# ── .glm_calibrated_vcov() ────────────────────────────────────────────────────
 #
-# SRS score-based sandwich (also used for survey_nonprob):
+# SRS score-based sandwich for survey_nonprob designs:
 #   meat = (1 - f) * n * S²_u
 #
 # where u_i = w_i * x_i * e_i (pre-weighted scores from .glm_score()) and
-# S²_u is the p × p sample covariance matrix of the score rows.  This is the
-# correct SRS sandwich formula because u_i already carries the weight w_i:
-#   Var(Σ u_i) = (N/n)² * N² * (1-f)/n * S²_{unweighted}
-#              = (1-f) * n * S²_u   [substituting S²_{unweighted} = (n/N)² * S²_u]
+# S²_u is the p × p sample covariance matrix of the score rows.
 #
 # Uses the full p × p sample covariance matrix — off-diagonal terms are
 # required when bread is non-diagonal (multiple predictors).
 #
-# When no FPC column is specified, f = 0 (infinite population, matching
-# survey::svydesign() with fpc = NULL).
+# survey_nonprob has no FPC, so f = 0 (infinite population).
 #
 # @param fit         Full-sample stats::glm() result.
-# @param design      A survey_srs or survey_nonprob object.
+# @param design      A survey_nonprob object.
 # @param row_mask    Rows used in fitting.
 # @param domain_mask Domain indicator.
 # @return p × p matrix.
 #' @noRd
-.glm_srs_vcov <- function(fit, design, row_mask, domain_mask) {
+.glm_calibrated_vcov <- function(fit, design, row_mask, domain_mask) {
   bread <- summary(fit)$cov.unscaled
   score_mat <- .glm_score(fit, design, row_mask, domain_mask)
 
@@ -436,17 +439,8 @@ survey_glm_fit <- S7::new_class(
   }
   n_fit <- length(fit_rows)
 
-  # Sampling fraction f: from explicit FPC column when present, else 0.
-  # When no FPC is specified the design assumes an infinite population
-  # (matching survey::svydesign() with fpc = NULL).
-  vars <- design@variables
-  fpc_var <- if (S7::S7_inherits(design, survey_srs)) vars$fpc else NULL
-  if (!is.null(fpc_var)) {
-    fpc_val <- design@data[[fpc_var]][fit_rows[1L]]
-    f <- if (fpc_val > 1) n_fit / fpc_val else fpc_val
-  } else {
-    f <- 0
-  }
+  # survey_nonprob has no FPC → f = 0 (infinite population assumption)
+  f <- 0
 
   # p × p sample covariance of score columns (includes off-diagonals).
   # score_used rows = u_i = w_i * x_i * e_i (pre-weighted scores).
@@ -501,7 +495,7 @@ survey_glm_fit <- S7::new_class(
 #' All five surveycore design classes are supported.
 #'
 #' @param design A survey design object created by [as_survey()],
-#'   [as_survey_replicate()], [as_survey_twophase()], [as_survey_srs()], or
+#'   [as_survey_replicate()], [as_survey_twophase()], or
 #'   [as_survey_nonprob()].
 #' @param formula A model formula in standard R notation
 #'   (e.g. `y ~ x1 + x2`). Mutually exclusive with `response`/`predictors`.

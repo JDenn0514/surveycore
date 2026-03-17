@@ -26,11 +26,11 @@ Items that are **not** in scope for this plan (require full spec workflow first)
 ## PR Map
 
 ### Wave 1 — Refactoring (no behavior change)
-- [ ] PR 1: `refactor/extract-fpc-helper` — deduplicate FPC conversion logic (7+ sites)
-- [ ] PR 2: `refactor/extract-psu-strata-builder` — deduplicate PSU/strata matrix builder (6+ sites)
+- [x] PR 1: `refactor/extract-fpc-helper` — **Superseded by `feature/multi-stage` PR 2.** FPC logic folded into `.build_cluster_matrices()`; `R/variance-srs.R` scope explicitly added to that PR.
+- [x] PR 2: `refactor/extract-psu-strata-builder` — **Superseded by `feature/multi-stage` PR 2.** `.build_cluster_matrices()` replaces all call sites (including `variance-srs.R`).
 
 ### Wave 2 — Critical correctness
-- [ ] PR 3: `fix/multistage-cluster-variance` — un-truncate multi-stage variance to use all PSU levels (**requires spec first — see below**)
+- [x] PR 3: `fix/multistage-cluster-variance` — **Superseded by `feature/multi-stage`.** Spec written at `plans/spec-multi-stage.md` (v0.3, approved); full implementation across PRs 1–7 of `plans/impl-multi-stage.md`.
 
 ### Wave 3 — Major correctness
 - [ ] PR 4: `fix/srs-weighted-variance` — replace unweighted `s²` with weighted variance estimator
@@ -44,7 +44,11 @@ Items that are **not** in scope for this plan (require full spec workflow first)
 
 ---
 
-## PR 1: Extract shared FPC helper
+## PR 1: Extract shared FPC helper *(superseded)*
+
+> **Superseded by `feature/multi-stage` PR 2** (`feature/build-cluster-matrices`). FPC logic is
+> handled inside `.build_cluster_matrices()`. The `R/variance-srs.R` call site has been added
+> to that PR's scope. Do not implement this PR separately.
 
 **Branch:** `refactor/extract-fpc-helper`
 **Depends on:** none
@@ -86,7 +90,11 @@ Items that are **not** in scope for this plan (require full spec workflow first)
 
 ---
 
-## PR 2: Extract shared PSU/strata matrix builder
+## PR 2: Extract shared PSU/strata matrix builder *(superseded)*
+
+> **Superseded by `feature/multi-stage` PR 2** (`feature/build-cluster-matrices`).
+> `.build_cluster_matrices()` replaces all call sites listed below, including `variance-srs.R`.
+> Do not implement this PR separately.
 
 **Branch:** `refactor/extract-psu-strata-builder`
 **Depends on:** PR 1 (can be done in parallel, but simpler to sequence)
@@ -121,7 +129,11 @@ Items that are **not** in scope for this plan (require full spec workflow first)
 
 ---
 
-## PR 3: Fix multi-stage cluster variance truncation
+## PR 3: Fix multi-stage cluster variance truncation *(superseded)*
+
+> **Superseded by `feature/multi-stage`** (PRs 1–7 of `plans/impl-multi-stage.md`).
+> The spec referenced below has been written and approved (`plans/spec-multi-stage.md` v0.3).
+> Do not implement this PR separately — execute the multi-stage feature plan instead.
 
 **Branch:** `fix/multistage-cluster-variance`
 **Depends on:** PRs 1 and 2
@@ -384,15 +396,29 @@ They are tracked here as reminders but have no PRs assigned yet.
 
 ## Implementation order summary
 
+> **Updated:** PRs 1, 2, and 3 are superseded by the `feature/multi-stage` feature
+> (see `plans/impl-multi-stage.md`). PRs 4–7 remain in scope but must be sequenced
+> after the multi-stage PRs that touch the same files — see sequencing note below.
+
 ```
-PRs 1–2  (refactor, parallelizable)
+feature/multi-stage PRs 1–7  (execute per plans/impl-multi-stage.md)
     ↓
-PR 3     (critical — spec required first; block here until spec written)
+audit PRs 4, 5, 6, 7  (independent of each other; sequenced per table below)
     ↓
-PRs 4–6  (major correctness — parallelizable after PRs 1–2)
-    ↓
-PRs 7–9  (minor bugs — any order)
+(PRs 8, 9 already complete)
 ```
 
-PRs 4, 5, 6, 7, 8, 9 are all independent of each other and can be parallelized
-once PRs 1–2 land.
+### Sequencing constraints for audit PRs 4–7
+
+Each audit PR shares a file with a multi-stage PR. Branch only after the relevant
+multi-stage PR has merged to `develop`:
+
+| Audit PR | Shared file | Must follow multi-stage PR |
+|----------|-------------|---------------------------|
+| PR 4 `fix/srs-weighted-variance` | `R/variance-srs.R` | `feature/build-cluster-matrices` (multi-stage PR 2) |
+| PR 5 `fix/twophase-phase1-type-restriction` | `R/core-constructors.R` | `feature/multi-stage-constructor` (multi-stage PR 3) |
+| PR 6 `fix/nonprob-dispatch-consistency` | `R/analysis-freqs-helpers.R` | `feature/multi-stage-analysis` (multi-stage PR 5) |
+| PR 7 `fix/glm-weights-na-contiguous` | `R/glm.R` | `feature/multi-stage-glm` (multi-stage PR 6) |
+
+The simplest rule: finish all multi-stage PRs, then run audit PRs 4–7 in any order —
+they are mutually independent of each other.

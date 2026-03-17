@@ -24,8 +24,6 @@
     .vcov_pair_replicate(design, x_col, y_col, domain, na.rm)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .vcov_pair_twophase(design, x_col, y_col, domain, na.rm)
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    .vcov_pair_srs(design, x_col, y_col, domain, na.rm)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     .vcov_pair_calibrated(design, x_col, y_col, domain, na.rm)
   } else {
@@ -37,6 +35,65 @@
       class = "surveycore_error_unsupported_class"
     )
   }
+}
+
+
+# ── .vcov_pair_calibrated() ───────────────────────────────────────────────────
+#
+# HT-style variance-covariance pair estimation for survey_nonprob designs.
+# Uses SRS-equivalent HT influence functions: infl_j_i = w_i * g_j_i / W_d.
+# Meta-vcov is computed as n/(n-1) * crossprod(infl_mat).
+#
+# @param design  A survey_nonprob object.
+# @param x_col   Character: first variable name.
+# @param y_col   Character: second variable name.
+# @param domain  Numeric 0/1 vector (full length): domain membership mask.
+# @param na.rm   Logical.
+# @return Named list: a, b, c, sigma (3x3), n, n_weighted.
+.vcov_pair_calibrated <- function(design, x_col, y_col, domain, na.rm = TRUE) {
+  data  <- design@data
+  vars  <- design@variables
+  x_all <- data[[x_col]]
+  y_all <- data[[y_col]]
+
+  if (na.rm) {
+    idx <- domain > 0 & !is.na(x_all) & !is.na(y_all)
+  } else {
+    idx <- domain > 0
+  }
+
+  n_d <- as.integer(sum(idx))
+
+  if (n_d < 2L) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = NA_real_, b = NA_real_, c = NA_real_,
+      sigma = sigma, n = n_d, n_weighted = 0
+    ))
+  }
+
+  w_sub <- data[[vars$weights]][idx]
+  x_sub <- x_all[idx]
+  y_sub <- y_all[idx]
+  W_d   <- sum(w_sub)
+  xbar  <- sum(w_sub * x_sub) / W_d
+  ybar  <- sum(w_sub * y_sub) / W_d
+  cx    <- x_sub - xbar
+  cy    <- y_sub - ybar
+  a     <- sum(w_sub * cx^2) / W_d
+  b     <- sum(w_sub * cx * cy) / W_d
+  c_val <- sum(w_sub * cy^2) / W_d
+
+  # HT influence functions: infl_j_i = w_i * g_j_i / W_d
+  infl_mat <- cbind(
+    w_sub * (cx^2 - a) / W_d,
+    w_sub * (cx * cy - b) / W_d,
+    w_sub * (cy^2 - c_val) / W_d
+  )
+  # Meta-vcov: n / (n-1) * t(infl) %*% infl  (HT formula)
+  sigma <- (n_d / (n_d - 1L)) * crossprod(infl_mat)
+
+  list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
 }
 
 

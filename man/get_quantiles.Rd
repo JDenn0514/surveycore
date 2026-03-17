@@ -22,7 +22,7 @@ get_quantiles(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> A single unquoted numeric
 variable name. Must resolve to exactly one numeric column.}

@@ -53,9 +53,9 @@ test_that("get_means() works for survey_replicate design", {
   expect_true(is.finite(result$ci_low[[1L]]))
 })
 
-test_that("get_means() works for survey_srs design", {
+test_that("get_means() works for SRS design (Taylor with no ids/strata)", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 3L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_means(d, y1)
   test_result_invariants(result, "survey_means")
@@ -264,7 +264,7 @@ test_that("get_means() na.rm = TRUE excludes NAs from computation", {
 
 test_that("get_means() na.rm = FALSE returns NA when any x is NA", {
   df <- data.frame(y = c(1.0, 2.0, NA_real_), w = rep(1, 3))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   result <- get_means(d, y, variance = NULL, na.rm = FALSE)
   expect_true(is.na(result$mean[[1L]]))
 })
@@ -319,7 +319,7 @@ test_that("get_means() errors for non-survey-design object", {
 
 test_that("get_means() errors for non-numeric variable", {
   df <- data.frame(y = letters[1:10], w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_means(d, y),
     class = "surveycore_error_non_numeric_variable"
@@ -329,7 +329,7 @@ test_that("get_means() errors for non-numeric variable", {
 
 test_that("get_means() errors when x resolves to zero variables", {
   df <- data.frame(y1 = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   # Select an empty set
   expect_error(
     get_means(d, starts_with("zzz")),
@@ -339,7 +339,7 @@ test_that("get_means() errors when x resolves to zero variables", {
 
 test_that("get_means() errors when x resolves to multiple variables", {
   df <- data.frame(y1 = 1:10, y2 = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_means(d, starts_with("y")),
     class = "surveycore_error_wrong_variable_count"
@@ -348,7 +348,7 @@ test_that("get_means() errors when x resolves to multiple variables", {
 
 test_that("get_means() errors for invalid variance value", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_means(d, y, variance = "bogus"),
     class = "surveycore_error_invalid_variance_arg"
@@ -358,7 +358,7 @@ test_that("get_means() errors for invalid variance value", {
 
 test_that("get_means() errors for invalid conf_level", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_means(d, y, conf_level = 1.5),
     class = "surveycore_error_invalid_conf_level"
@@ -371,7 +371,7 @@ test_that("get_means() errors for invalid conf_level", {
 
 test_that("get_means() n column equals unweighted count of non-NA observations", {
   df <- data.frame(y = c(1:8, NA_real_, NA_real_), w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   result <- get_means(d, y, variance = NULL, na.rm = TRUE)
   expect_equal(result$n[[1L]], 8L)
 })
@@ -489,7 +489,7 @@ test_that("get_means() group column is <fct> when group var has haven labels", {
     ),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   result <- get_means(d, y, group = gender, variance = NULL)
   expect_true(is.factor(result$gender))
@@ -503,7 +503,7 @@ test_that("get_means() group column is <fct> when group var is a plain R factor"
     grp = factor(rep(c("B", "A"), 50), levels = c("B", "A")),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   result <- get_means(d, y, group = grp, variance = NULL)
   expect_true(is.factor(result$grp))
@@ -519,7 +519,7 @@ test_that("get_means() group column retains raw codes when label_values = FALSE"
     ),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   result <- get_means(
     d,
@@ -541,7 +541,7 @@ test_that("get_means() meta$group stores value_labels regardless of label_values
     ),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   r_true <- get_means(
     d,
@@ -571,7 +571,7 @@ test_that("get_means() meta$group stores value_labels regardless of label_values
 
 test_that("get_means() group column name is always raw variable name (not label)", {
   df <- data.frame(y = rnorm(50), grp = rep(1:2, 25), w = rep(1, 50))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   d <- set_var_label(d, grp = "Group variable")
 
   result <- get_means(d, y, group = grp, variance = NULL, label_vars = TRUE)
@@ -582,7 +582,7 @@ test_that("get_means() group column name is always raw variable name (not label)
 
 test_that("get_means() meta$x has correct nested structure", {
   df <- data.frame(y = rnorm(50), w = rep(1, 50))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   d <- set_var_label(d, y = "Outcome variable")
 
   result <- get_means(d, y, variance = NULL)
@@ -975,13 +975,13 @@ test_that("get_means() NA group row mean matches filtered calibrated design [ora
   expect_equal(na_row$n, expected$n)
 })
 
-test_that("get_means() NA group row mean matches filtered srs design [oracle]", {
+test_that("get_means() NA group row mean matches filtered SRS design [oracle]", {
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_srs <- as_survey_srs(df_s, weights = wt)
+  design_srs <- as_survey(df_s, weights = wt)
   na_df_s <- df_s[is.na(df_s$grp), ]
-  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  na_design_srs <- as_survey(na_df_s, weights = wt)
   expected <- get_means(na_design_srs, y1, variance = "se")
   result <- get_means(
     design_srs,
@@ -1098,15 +1098,18 @@ test_that("get_means() twophase: empty domain returns NA (covers .twophase_mean_
   expect_true(all(is.na(result$mean)))
 })
 
-test_that("get_means() survey_srs n_d=1 domain returns NA se (covers n_d=1 branch)", {
+test_that("get_means() SRS design n_d=1 domain returns se = 0 (Taylor: centered influence is zero)", {
   set.seed(503)
   n <- 30L
   df <- data.frame(y = rnorm(n), w = rep(1, n))
-  sc <- as_survey_srs(df, weights = w)
+  sc <- as_survey(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
   result <- get_means(sc, y, variance = "se")
   expect_equal(result$n[[1L]], 1L)
-  expect_true(is.na(result$se[[1L]]))
+  # With n_d=1 the single observation equals the domain mean, so the centered
+
+  # influence function is identically 0 → SE = 0 (matches survey::svymean)
+  expect_equal(result$se[[1L]], 0)
 })
 
 test_that("get_means() replicate: empty domain returns NA (covers n_d=0 in .replicate_mean_cell())", {

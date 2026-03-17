@@ -26,7 +26,6 @@
   if (S7::S7_inherits(d, survey_taylor))           "Taylor series"
   else if (S7::S7_inherits(d, survey_replicate))   "Replicate weights"
   else if (S7::S7_inherits(d, survey_twophase))    "Two-phase"
-  else if (S7::S7_inherits(d, survey_srs))         "SRS"
   else if (S7::S7_inherits(d, survey_nonprob))  "Calibrated"
   else "Unknown"
 }
@@ -36,13 +35,12 @@
 # Returns the short design_type string matching Phase 1 .build_meta().
 #
 # @param design A survey_base object.
-# @return One of "taylor", "replicate", "twophase", "srs", "calibrated".
+# @return One of "taylor", "replicate", "twophase", "calibrated".
 #' @noRd
 .glm_design_type_string <- function(design) {
   if (S7::S7_inherits(design, survey_taylor))           "taylor"
   else if (S7::S7_inherits(design, survey_replicate))   "replicate"
   else if (S7::S7_inherits(design, survey_twophase))    "twophase"
-  else if (S7::S7_inherits(design, survey_srs))         "srs"
   else if (S7::S7_inherits(design, survey_nonprob))  "calibrated"
   else "unknown"
 }

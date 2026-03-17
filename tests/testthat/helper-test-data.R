@@ -240,12 +240,6 @@ make_survey_data <- function(
 #'   violated invariant.
 #' @keywords internal
 test_invariants <- function(design) {
-  # survey_srs has additional @variables keys (fpc_type, visible_vars) — check here
-  # before the general invariants run.
-  if (S7::S7_inherits(design, survey_srs)) {
-    testthat::expect_true("fpc_type" %in% names(design@variables))
-  }
-
   # All design types must have visible_vars in @variables (may be NULL).
   # Required for surveytidy's select() compatibility.
   if (!S7::S7_inherits(design, survey_nonprob)) {
@@ -534,7 +528,7 @@ make_all_designs <- function(seed = 42L) {
   )
   calibrated <- as_survey_nonprob(df_c, weights = wt)
 
-  # Simple random sample design
+  # Simple random sample (Taylor with no ids/strata)
   df_s <- make_survey_data(
     n = 100L,
     n_psu = 10L,
@@ -542,7 +536,7 @@ make_all_designs <- function(seed = 42L) {
     design = "taylor",
     seed = seed
   )
-  srs <- as_survey_srs(df_s, weights = wt)
+  srs <- as_survey(df_s, weights = wt)
 
   list(
     srs = srs,

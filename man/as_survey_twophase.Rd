@@ -16,11 +16,11 @@ as_survey_twophase(
 }
 \arguments{
 \item{phase1}{A survey design object (inheriting from \code{survey_base})
-representing the Phase 1 design. Accepts \code{survey_taylor},
-\code{survey_srs}, or \code{survey_replicate} objects.
+representing the Phase 1 design. Accepts \code{survey_taylor} or
+\code{survey_replicate} objects.
 Its \verb{@data} must contain ALL rows from both phases, plus a logical
-indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}},
-\code{\link[=as_survey_srs]{as_survey_srs()}}, or \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
+indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}
+or \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
 column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:
@@ -110,13 +110,11 @@ Other constructors:
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
-\code{\link{as_survey_srs}()},
 \code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},
-\code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}
 }

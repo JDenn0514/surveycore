@@ -14,7 +14,7 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 |-------|--------|-------|
 | Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | Tagged v0.1.0 |
 | Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
-| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`) | ✅ Complete | See `plans/survey-srs-formal-specification.md` |
+| Prereq PR 1 — SRS support (originally `survey_srs`, now absorbed into `survey_taylor`) | ✅ Complete | `survey_srs` removed; SRS is `survey_taylor` with no ids/strata |
 | Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`) | ✅ Complete | Required before Phase 1 |
 | Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | Core functions on main (v0.3.0); nested `.meta` + group label refactor merged to develop (PR #22–23) |
 | Phase 2 — Regression (`survey_glm_fit`, `survey_glm()`) | 🔜 Next | See `plans/phase-2-glm-formal-specification.md` |
@@ -25,7 +25,7 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 
 ## Class Naming Conventions
 
-- S7 classes: `survey_base`, `survey_srs`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_nonprob`
+- S7 classes: `survey_base`, `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_metadata`, `survey_nonprob`
 - GLM fit class: `survey_glm_fit` (constructor function is `survey_glm()`)
 - Result classes: `survey_mean`, `survey_total`, `survey_freq`, etc. (S3 built on tibble)
 
@@ -94,7 +94,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/phase-2/decisions-phase-2.md` — pre-implementation review decisions for Phase 2
 - `archive/phase-2/impl-phase-2.md` — Phase 2 implementation plan
 - `archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)
-- `archive/survey-srs/survey-srs-formal-specification.md` — authoritative spec for `survey_srs` class + `as_survey_srs()` + SRS variance
+- `archive/survey-srs/survey-srs-formal-specification.md` — historical spec for removed `survey_srs` class (now absorbed into `survey_taylor`)
 - `archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context, multi-stage)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
 - `.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md` — Phase 0 implementation details (archived)

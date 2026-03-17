@@ -21,16 +21,6 @@
 #  15. summary.survey_taylor — invisible return
 #  16. summary.survey_replicate — output (snapshot)
 #  17. summary.survey_twophase — output (snapshot)
-#  18. print.survey_srs — default output (snapshot)
-#  19. print.survey_srs — design_info with population FPC (snapshot)
-#  20. print.survey_srs — design_info with fraction FPC (snapshot)
-#  21. print.survey_srs — full = TRUE (snapshot)
-#  22. print.survey_srs — uniform auto-weights label
-#  23. print.survey_srs — invisible return
-#  24. summary.survey_srs — output and invisible return
-#  25. summary.survey_srs — FPC info in output
-#  26. summary.survey_srs — output (snapshot)
-#  27. print.survey_srs — probs_provided label in design_info
 #
 # Note: cli output (cli_h1/h2/text/bullets) goes to message(), not stdout.
 # Use capture.output(type = "message") to capture cli output in tests.
@@ -53,8 +43,6 @@ make_taylor_design <- function(seed = 42L) {
 }
 
 # Taylor design with no ids/strata and auto-weights (tests print/summary "none" branches)
-# Directly constructed to bypass SRS dispatch (as_survey() without ids/strata
-# now creates survey_srs; survey_srs print/summary added in Step 3)
 make_srs_design <- function(seed = 42L) {
   df <- make_survey_data(n = 30L, n_psu = 10L, n_strata = 2L, seed = seed)
   wt_col <- surveycore:::.SURVEYCORE_WT_COL
@@ -372,153 +360,15 @@ test_that("summary.survey_twophase returns object invisibly", {
 })
 
 
-# ── 18. print.survey_srs — default output ────────────────────────────────────
-
-test_that("print.survey_srs default output matches snapshot", {
-  d <- as_survey_srs(
-    data.frame(y = 1:10, wt = rep(2, 10)),
-    weights = wt
-  )
-  test_invariants(d)
-  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  expect_snapshot(print(d))
-})
-
-
-# ── 19. print.survey_srs — design_info with population FPC ───────────────────
-
-test_that("print.survey_srs design_info=TRUE with population FPC matches snapshot", {
-  df <- data.frame(y = 1:5, wt = rep(2, 5), pop = rep(100L, 5))
-  d <- as_survey_srs(df, weights = wt, fpc = pop)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  expect_snapshot(print(d, design_info = TRUE))
-})
-
-
-# ── 20. print.survey_srs — design_info with fraction FPC ─────────────────────
-
-test_that("print.survey_srs design_info=TRUE with fraction FPC matches snapshot", {
-  df <- data.frame(y = 1:5, wt = rep(2, 5), frac = rep(0.1, 5))
-  d <- as_survey_srs(df, weights = wt, fpc = frac)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  expect_snapshot(print(d, design_info = TRUE))
-})
-
-
-# ── 21. print.survey_srs — full = TRUE ───────────────────────────────────────
-
-test_that("print.survey_srs full=TRUE output matches snapshot", {
-  d <- as_survey_srs(
-    data.frame(y = 1:5, wt = rep(2, 5)),
-    weights = wt
-  )
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  expect_snapshot(print(d, full = TRUE))
-})
-
-
-# ── 22. print.survey_srs — uniform auto-weights label ────────────────────────
-
-test_that("print.survey_srs shows 'uniform (auto-assigned)' for no-weights design", {
-  d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  out <- capture.output(print(d, design_info = TRUE), type = "message")
-  expect_true(any(grepl("uniform \\(auto-assigned\\)", out)))
-})
-
-
-# ── 23. print.survey_srs — invisible return ───────────────────────────────────
-
-test_that("print.survey_srs returns object invisibly", {
-  d <- as_survey_srs(data.frame(y = 1:5, wt = rep(1, 5)), weights = wt)
-  result <- withVisible(suppressMessages(print(d)))
-  expect_false(result$visible)
-  expect_true(S7::S7_inherits(result$value, survey_srs))
-})
-
-
-# ── 24. summary.survey_srs — output and invisible return ─────────────────────
-
-test_that("summary.survey_srs shows type, size, weights, FPC, and metadata sections", {
-  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  out <- capture.output(summary(d), type = "message")
-  expect_true(any(grepl("simple random sample", out, ignore.case = TRUE)))
-  expect_true(any(grepl("Sample size", out)))
-  expect_true(any(grepl("Weighted N", out)))
-  expect_true(any(grepl("FPC", out)))
-  expect_true(any(grepl("Metadata", out)))
-})
-
-test_that("summary.survey_srs returns object invisibly", {
-  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
-  test_invariants(d)
-  result <- suppressMessages(summary(d))
-  expect_identical(result, d)
-})
-
-
-# ── 25. summary.survey_srs — FPC info in output ───────────────────────────────
-
-test_that("summary.survey_srs reflects population FPC in output", {
-  df <- data.frame(y = 1:5, wt = rep(1, 5), pop = rep(100L, 5))
-  d <- as_survey_srs(df, weights = wt, fpc = pop)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  out <- capture.output(summary(d), type = "message")
-  expect_true(any(grepl("pop", out)))
-  expect_true(any(grepl("population sizes", out)))
-})
-
-test_that("summary.survey_srs reflects fraction FPC in output", {
-  df <- data.frame(y = 1:5, wt = rep(1, 5), frac = rep(0.1, 5))
-  d <- as_survey_srs(df, weights = wt, fpc = frac)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  out <- capture.output(summary(d), type = "message")
-  expect_true(any(grepl("frac", out)))
-  expect_true(any(grepl("sampling fractions", out)))
-})
-
-
-# ── 26. summary.survey_srs — output (snapshot) ───────────────────────────────
-
-test_that("summary.survey_srs output matches snapshot", {
-  d <- as_survey_srs(data.frame(y = 1:10, wt = rep(2, 10)), weights = wt)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  expect_snapshot(summary(d))
-})
-
-
-# ── 27. print.survey_srs — probs_provided label ──────────────────────────────
-
-test_that("print.survey_srs shows '(from sampling probabilities)' when probs_provided", {
-  df <- data.frame(y = 1:10, p = rep(0.1, 10))
-  d <- as_survey_srs(df, probs = p)
-  test_invariants(d)
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  out <- capture.output(print(d, design_info = TRUE), type = "message")
-  expect_true(any(grepl("from sampling probabilities", out)))
-})
-
-
 # ── Domain info line ─────────────────────────────────────────────────────────
 # 28. print.survey_taylor — domain line present (snapshot)
 # 29. print.survey_taylor — domain count excludes NAs (snapshot)
 # 30. print.survey_taylor — domain line appears before groups line (snapshot)
-# 31. print.survey_srs — domain line present (snapshot)
-# 32. print.survey_replicate — domain line present (snapshot)
-# 33. print.survey_twophase — domain line present (snapshot)
-# 34. print.survey_nonprob — default output (snapshot; net-new baseline)
-# 35. print.survey_nonprob — domain line present (snapshot)
-# 36. print.survey_taylor — zero rows in domain (snapshot)
+# 31. print.survey_replicate — domain line present (snapshot)
+# 32. print.survey_twophase — domain line present (snapshot)
+# 33. print.survey_nonprob — default output (snapshot; net-new baseline)
+# 34. print.survey_nonprob — domain line present (snapshot)
+# 35. print.survey_taylor — zero rows in domain (snapshot)
 
 # ── 28. print.survey_taylor — domain line present ────────────────────────────
 
@@ -555,21 +405,7 @@ test_that("print.survey_taylor() domain line appears before groups line", {
 })
 
 
-# ── 31. print.survey_srs — domain line present ───────────────────────────────
-
-test_that("print.survey_srs() shows domain line when domain column is present", {
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  d <- as_survey_srs(
-    make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L),
-    weights = wt
-  )
-  test_invariants(d)
-  d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
-  expect_snapshot(print(d))
-})
-
-
-# ── 32. print.survey_replicate — domain line present ─────────────────────────
+# ── 31. print.survey_replicate — domain line present ─────────────────────────
 
 test_that("print.survey_replicate() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -631,21 +467,7 @@ test_that("print.survey_taylor() shows domain line when zero rows are in domain"
   expect_snapshot(print(d))
 })
 
-# ── 37. print.survey_srs — groups line ───────────────────────────────────────
-
-test_that("print.survey_srs() shows groups line when @groups is set", {
-  withr::local_options(list(width = 80L, cli.width = 80L))
-  d <- as_survey_srs(
-    make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L),
-    weights = wt
-  )
-  test_invariants(d)
-  d@groups <- "strata"
-  out <- capture.output(print(d), type = "message")
-  expect_true(any(grepl("Groups", out)))
-})
-
-# ── 38. print.survey_replicate — groups + FPC ────────────────────────────────
+# ── 37. print.survey_replicate — groups + FPC ────────────────────────────────
 
 test_that("print.survey_replicate() shows groups when @groups is set", {
   withr::local_options(list(width = 80L, cli.width = 80L))

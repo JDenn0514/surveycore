@@ -71,9 +71,11 @@ as_survey(df, ids = c(psu, ssu), weights = wt)
 
 \section{Simple random sample}{
 
-If \code{ids}, \code{weights}, and \code{probs} are all omitted, an equal-probability SRS
-is assumed. A warning is issued because population totals cannot be
-estimated without weights or population size.
+When no \code{ids} or \code{strata} are specified, the result is a \code{survey_taylor}
+object with \code{NULL} ids and strata — i.e., a simple random sample (SRS).
+The Taylor variance machinery produces the same estimates as the classical
+SRS formula \code{(1 - f) * s^2 / n}. If \code{weights} and \code{probs} are also both
+omitted, uniform weights are assigned and a warning is issued.
 }
 
 \section{Known limitations}{
@@ -123,14 +125,12 @@ d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 Other constructors: 
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
-\code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},
-\code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}
 }

@@ -81,9 +81,9 @@ test_that("get_quantiles() returns correct result for survey_replicate", {
   expect_lt(result$estimate[[1L]], result$ci_high[[1L]])
 })
 
-test_that("get_quantiles() returns correct result for survey_srs", {
+test_that("get_quantiles() returns correct result for SRS design", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 3L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_quantiles(d, y1, probs = c(0.25, 0.75))
   test_result_invariants(result, "survey_quantiles")
@@ -288,7 +288,7 @@ test_that("get_quantiles() SRS matches svyquantile() [oracle]", {
   )
   df$wt_equal <- 1L
 
-  d_sc <- as_survey_srs(df, weights = wt_equal)
+  d_sc <- as_survey(df, weights = wt_equal)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt_equal, data = df)
 
   sc <- get_quantiles(d_sc, y1, probs = 0.5, variance = c("ci", "se"))
@@ -1266,9 +1266,9 @@ test_that("get_quantiles() NA group row estimate matches filtered srs design [or
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_srs <- as_survey_srs(df_s, weights = wt)
+  design_srs <- as_survey(df_s, weights = wt)
   na_df_s <- df_s[is.na(df_s$grp), ]
-  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  na_design_srs <- as_survey(na_df_s, weights = wt)
   expected <- get_quantiles(na_design_srs, y1, probs = 0.5, variance = "se")
   result <- get_quantiles(
     design_srs,
@@ -1340,11 +1340,11 @@ test_that("get_quantiles() empty domain returns NA estimate and se (covers NA CI
   expect_true(all(is.na(result$estimate)))
 })
 
-test_that("get_quantiles() works for survey_srs design", {
+test_that("get_quantiles() works for SRS design (Taylor with no ids/strata)", {
   set.seed(801)
   n <- 100L
   df <- data.frame(y = rnorm(n), w = rep(1, n))
-  sc <- as_survey_srs(df, weights = w)
+  sc <- as_survey(df, weights = w)
   result <- get_quantiles(sc, y, probs = c(0.25, 0.5, 0.75), variance = "se")
   test_result_invariants(result, "survey_quantiles")
   expect_equal(nrow(result), 3L)
@@ -1405,15 +1405,16 @@ test_that("get_quantiles() empty domain triggers NA p_hat path in .quantile_wood
 # single-observation domains (no variance with one point).
 # ---------------------------------------------------------------------------
 
-test_that("get_quantiles() single-row SRS domain triggers is.na(se_p) path in .quantile_woodruff_cell()", {
+test_that("get_quantiles() single-row SRS domain: CI collapses to point estimate", {
   n <- 50L
   df <- make_survey_data(n = n, seed = 910L)
-  sc <- as_survey_srs(df, weights = wt)
+  sc <- as_survey(df, weights = wt)
   # Domain contains exactly 1 non-NA observation → n_d == 1
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
   result <- suppressWarnings(get_quantiles(sc, y1, probs = 0.5))
-  # estimate is the single observed value (not NA); CI is NA (no SE with n=1)
+  # With n_d=1, estimate is the single observed value; CI collapses to it
+  # (Taylor SE for the proportion at the quantile is 0 → CI width is 0)
   expect_false(is.na(result$estimate[[1L]]))
-  expect_true(is.na(result$ci_low[[1L]]))
-  expect_true(is.na(result$ci_high[[1L]]))
+  expect_equal(result$ci_low[[1L]], result$estimate[[1L]])
+  expect_equal(result$ci_high[[1L]], result$estimate[[1L]])
 })

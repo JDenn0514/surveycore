@@ -538,7 +538,7 @@ test_that(".twophase_total() NA path fires when all domain values are NA", {
 
 # ── Section 6: SRS / replicate phase-1 designs ──────────────────────────────
 
-test_that("two-phase with survey_srs phase-1 matches survey [oracle]", {
+test_that("two-phase with SRS phase-1 matches survey [oracle]", {
   skip_if_not_installed("survival")
   skip_if_not_installed("survey")
 
@@ -548,7 +548,7 @@ test_that("two-phase with survey_srs phase-1 matches survey [oracle]", {
   pbc_ph1$in_ph2 <- !is.na(pbc_ph1$chol)
   pbc_ph1$wt     <- 1
 
-  ph1_sc <- as_survey_srs(pbc_ph1, weights = wt)
+  ph1_sc <- as_survey(pbc_ph1, weights = wt)
   d_sc   <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
 
   d_sv <- survey::twophase(
@@ -567,7 +567,7 @@ test_that("two-phase with survey_srs phase-1 matches survey [oracle]", {
   expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 })
 
-test_that("two-phase with survey_srs phase-1 get_totals matches survey [oracle]", {
+test_that("two-phase with SRS phase-1 get_totals matches survey [oracle]", {
   skip_if_not_installed("survival")
   skip_if_not_installed("survey")
 
@@ -576,7 +576,7 @@ test_that("two-phase with survey_srs phase-1 get_totals matches survey [oracle]"
   pbc_ph1$in_ph2 <- !is.na(pbc_ph1$chol)
   pbc_ph1$wt     <- 1
 
-  ph1_sc <- as_survey_srs(pbc_ph1, weights = wt)
+  ph1_sc <- as_survey(pbc_ph1, weights = wt)
   d_sc   <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
 
   d_sv <- survey::twophase(

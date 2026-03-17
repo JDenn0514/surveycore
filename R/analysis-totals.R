@@ -15,7 +15,7 @@
 #' labelling.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Optional single unquoted
 #'   numeric variable name. When `NULL` (default), estimates the population
 #'   size (`Σ w_i`). When supplied, estimates the weighted sum (`Σ w_i × x_i`).

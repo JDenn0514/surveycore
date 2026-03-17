@@ -82,8 +82,6 @@
     subset <- design@data[[design@variables$subset]]
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    max(1L, nrow(design@data) - 1L)
   } else {
     # Calibrated and unknown: use n - 1
     max(1L, nrow(design@data) - 1L)

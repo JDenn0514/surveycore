@@ -73,11 +73,11 @@ NULL
     )
   }
 
-  # Warning 4: single-row data cannot support variance estimation
+  # Error 4: single-row data cannot support variance estimation
   if (nrow(data) == 1L) {
-    cli::cli_warn(
-      c("!" = "{.arg data} has only 1 row \u2014 variance cannot be estimated"),
-      class = "surveycore_warning_single_row",
+    cli::cli_abort(
+      c("x" = "{.arg data} has only 1 row. A survey design requires at least 2 observations."),
+      class = "surveycore_error_single_row",
       call = call
     )
   }
