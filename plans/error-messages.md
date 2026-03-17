@@ -6,6 +6,7 @@
 
 **Phase 1 rows:** 43–64 (analysis functions)
 **Phase 2 rows:** 65–87 (survey GLM — 19 new + 2 reused from Phase 1)
+**get_diffs() rows:** 92–100 (9 new)
 
 ---
 
@@ -134,6 +135,15 @@ against the messages defined here.
 | 90 | `as_survey()` | Stage-j FPC population size < stage-j cluster count within parent | ERROR | `surveycore_error_fpc_smaller_than_n` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} has population sizes smaller than the observed cluster count in {n_bad} parent group(s).", "i" = "Population size must be >= the number of sampled units within each parent cluster."` |
 | 91 | `as_survey()` | Stage-j FPC fraction not constant within parent cluster | ERROR | `surveycore_error_fpc_not_constant` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} is not constant within parent clusters.", "i" = "FPC fractions must be the same for all units within each parent cluster."` |
 | 13b | `as_survey()` | `fpc` selects >1 column (multi-stage: now allowed) / `as_survey_replicate()` | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` (only enforced for `as_survey_replicate()` and `as_survey_srs()`) |
+| 92 | `get_diffs()` | `x` resolves to != 1 column | ERROR | `surveycore_error_wrong_variable_count` | `"{.arg x} must select exactly one column."` |
+| 93 | `get_diffs()` | `treats` resolves to != 1 column | ERROR | `surveycore_error_treats_single` | `"{.arg treats} must select exactly one column."` |
+| 94 | `get_diffs()` | `ref_level` not in levels of treats | ERROR | `surveycore_error_ref_level_not_found` | `"{.arg ref_level} {.val {ref_level}} not found in levels of {.field {treats_name}}."` |
+| 95 | `get_diffs()` | `treats` has < 2 levels after NA removal | ERROR | `surveycore_error_treats_one_level` | `"{.arg treats} must have at least 2 levels. {.field {treats_name}} has only 1."` |
+| 96 | `get_diffs()` | `pval_adj` not a valid method | ERROR | `surveycore_error_invalid_pval_adj` | `"{.arg pval_adj} must be a valid method for {.fn stats::p.adjust}."` |
+| 97 | `get_diffs()` | `covariates` is not character | ERROR | `surveycore_error_covariates_not_character` | `"{.arg covariates} must be a character vector of model terms."` |
+| 98 | `get_diffs()` | `clean()` output missing intercept | ERROR | `surveycore_error_reference_row_not_found` | `"Reference row not found in model output. Expected exactly one intercept row."` |
+| 99 | `get_diffs()` | `show_pct_change = TRUE` and ref mean is 0 | WARN | `surveycore_warning_pct_change_zero_ref` | `"Reference group mean is 0; percentage change is undefined."` |
+| 100 | `get_diffs()` | `treats` column not a factor | WARN | `surveycore_warning_treats_coerced` | `"{.field {treats_name}} coerced to factor."` |
 
 ---
 
@@ -188,3 +198,5 @@ Which test files cover which error table rows:
 | `test-glm-methods.R` | 76 |
 | `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |
+| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
+| `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
