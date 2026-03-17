@@ -17,7 +17,7 @@ itself with all three test files.
 ## PR Map
 
 - [x] PR 1: `feature/diffs-infrastructure` — Shared helper changes + `.stars_pval()` + `print.survey_diffs()` + error class registration (PR #77)
-- [ ] PR 2: `feature/get-diffs` — `get_diffs()` function + all tests (happy path, error path, edge case, numerical oracle, marginaleffects path)
+- [x] PR 2: `feature/get-diffs` — `get_diffs()` function + all tests (happy path, error path, edge case, numerical oracle, marginaleffects path) (PR #78)
 
 ---
 
