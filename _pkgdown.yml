@@ -61,6 +61,7 @@ reference:
       - get_corr
       - get_quantiles
       - get_ratios
+      - get_diffs
 
   - title: "Regression"
     desc: >
