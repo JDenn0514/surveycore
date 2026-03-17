@@ -1,3 +1,14 @@
+# surveycore 0.5.0.9000 (development)
+
+## New features
+
+* Infrastructure for `get_diffs()`: `.stars_pval()` internal helper for
+  significance star annotations, `DIFFS_META_KEYS` constant,
+  `print.survey_diffs()` method with design/family/treatment header, and
+  `exclude` parameter on `.apply_name_style()` for column-rename control.
+  Nine new error/warning classes registered in the error message table
+  (rows 92--100).
+
 # surveycore 0.5.0
 
 ## Breaking changes

@@ -33,6 +33,10 @@ TOTALS_META_KEYS    <- c("group", "x")
 CORR_META_KEYS      <- c("group", "x", "method")
 QUANTILES_META_KEYS <- c("group", "x", "probs")
 RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
+DIFFS_META_KEYS     <- c(
+  "group", "x", "treats", "covariates", "family", "link",
+  "pval_adj", "estimate_method", "mean_method", "estimate_scale"
+)
 
 
 # ── .extract_var_meta() ───────────────────────────────────────────────────────
@@ -540,7 +544,7 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 # @param result     A survey_result tibble.
 # @param name_style "surveycore" (no-op) or "broom".
 # @return The (possibly renamed) result tibble with class and .meta preserved.
-.apply_name_style <- function(result, name_style) {
+.apply_name_style <- function(result, name_style, exclude = NULL) {
   if (name_style == "surveycore") return(result)
 
   broom_map <- c(
@@ -559,6 +563,9 @@ RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
 
   cols_present <- names(result)
   to_rename    <- intersect(names(broom_map), cols_present)
+  if (!is.null(exclude)) {
+    to_rename <- setdiff(to_rename, exclude)
+  }
 
   if (length(to_rename) > 0L) {
     saved_meta  <- attr(result, ".meta")
