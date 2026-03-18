@@ -1,24 +1,55 @@
-# surveycore 0.5.0.9000 (development)
+# surveycore 0.6.0
+
+## Breaking changes
+
+* `survey_srs` class and `as_survey_srs()` constructor have been removed. SRS
+  designs are now created via `as_survey()` with no `ids` or `strata` — this
+  produces a `survey_taylor` with no cluster/strata structure. All estimates are
+  numerically identical.
 
 ## New features
 
-* `get_diffs()` estimates treatment effects (differences from a reference
-  group) via survey-weighted regression. Supports bivariate and multivariate
-  models, Gaussian and non-Gaussian families (e.g., `quasibinomial()`), and
-  optional subgroup analysis. Two estimation paths: direct coefficients
-  (clean path) for simple models, and `marginaleffects::avg_slopes()` /
-  `avg_predictions()` for covariates, non-Gaussian AMEs, or grouped designs.
-  Returns a `survey_diffs` tibble with optional `mean`, `pct_change`,
-  `n_weighted` columns, significance stars, and p-value adjustment via
-  `stats::p.adjust()`. Column-level labels are set for `gt::gt()`
-  compatibility. `marginaleffects` moved from Suggests to Imports.
+* `get_diffs()` estimates treatment effects (differences from a reference group)
+  via survey-weighted regression. Supports bivariate and multivariate models,
+  Gaussian and non-Gaussian families, and optional subgroup analysis. Two
+  estimation paths: direct coefficients for simple models, and
+  `marginaleffects::avg_slopes()` / `avg_predictions()` for models with
+  covariates or non-Gaussian AMEs. Returns a `survey_diffs` tibble with optional
+  `mean`, `pct_change`, `n_weighted` columns, significance stars, and p-value
+  adjustment. `marginaleffects` moved from Suggests to Imports.
 
-* Infrastructure for `get_diffs()`: `.stars_pval()` internal helper for
-  significance star annotations, `DIFFS_META_KEYS` constant,
-  `print.survey_diffs()` method with design/family/treatment header, and
-  `exclude` parameter on `.apply_name_style()` for column-rename control.
-  Nine new error/warning classes registered in the error message table
-  (rows 92--100).
+* `as_survey()` now supports multi-column FPC for multi-stage designs
+  (e.g., `fpc = c(fpc_stage1, fpc_stage2)`). Each FPC column corresponds to one
+  ID stage. Per-stage FPC is validated for NAs, non-positive values, and
+  within-cluster constancy.
+
+* `print()` for `survey_taylor` now displays per-stage FPC bullets for
+  multi-stage designs (e.g., `FPC (stage 1): fpc`, `FPC (stage 2): fpc2`).
+
+## Bug fixes
+
+* SRS variance estimation now uses Taylor (HT) linearization via
+  `.build_cluster_matrices()`, correct for any weight structure. Previously used
+  unweighted sample variance which was incorrect for non-proportional weights.
+
+* `survey_glm()` now correctly indexes weights when `na.action = na.omit` drops
+  non-contiguous rows.
+
+* `get_freqs()` now routes `survey_nonprob` designs through the
+  Horvitz-Thompson variance path, consistent with the other five analysis
+  functions.
+
+* `as_survey_twophase()` now accepts `survey_replicate` and SRS
+  `survey_taylor` objects as the phase-1 design (previously restricted to
+  stratified/clustered `survey_taylor` only).
+
+* `as_survey()` SRS fallback downgraded from warning to message.
+
+## Internal infrastructure
+
+* `.build_cluster_matrices()` extracts multi-stage cluster, strata, and FPC
+  matrix construction into a shared helper, used across the Taylor variance
+  engine, analysis cell estimators, and GLM sandwich variance.
 
 # surveycore 0.5.0
 
