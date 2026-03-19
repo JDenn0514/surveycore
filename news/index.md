@@ -1,5 +1,70 @@
 # Changelog
 
+## surveycore 0.6.0
+
+### Breaking changes
+
+- `survey_srs` class and `as_survey_srs()` constructor have been
+  removed. SRS designs are now created via
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  with no `ids` or `strata` — this produces a `survey_taylor` with no
+  cluster/strata structure. All estimates are numerically identical.
+
+### New features
+
+- [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
+  estimates treatment effects (differences from a reference group) via
+  survey-weighted regression. Supports bivariate and multivariate
+  models, Gaussian and non-Gaussian families, and optional subgroup
+  analysis. Two estimation paths: direct coefficients for simple models,
+  and
+  [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
+  /
+  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
+  for models with covariates or non-Gaussian AMEs. Returns a
+  `survey_diffs` tibble with optional `mean`, `pct_change`, `n_weighted`
+  columns, significance stars, and p-value adjustment. `marginaleffects`
+  moved from Suggests to Imports.
+
+- [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  now supports multi-column FPC for multi-stage designs (e.g.,
+  `fpc = c(fpc_stage1, fpc_stage2)`). Each FPC column corresponds to one
+  ID stage. Per-stage FPC is validated for NAs, non-positive values, and
+  within-cluster constancy.
+
+- [`print()`](https://rdrr.io/r/base/print.html) for `survey_taylor` now
+  displays per-stage FPC bullets for multi-stage designs (e.g.,
+  `FPC (stage 1): fpc`, `FPC (stage 2): fpc2`).
+
+### Bug fixes
+
+- SRS variance estimation now uses Taylor (HT) linearization via
+  `.build_cluster_matrices()`, correct for any weight structure.
+  Previously used unweighted sample variance which was incorrect for
+  non-proportional weights.
+
+- [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  now correctly indexes weights when `na.action = na.omit` drops
+  non-contiguous rows.
+
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  now routes `survey_nonprob` designs through the Horvitz-Thompson
+  variance path, consistent with the other five analysis functions.
+
+- [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  now accepts `survey_replicate` and SRS `survey_taylor` objects as the
+  phase-1 design (previously restricted to stratified/clustered
+  `survey_taylor` only).
+
+- [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  SRS fallback downgraded from warning to message.
+
+### Internal infrastructure
+
+- `.build_cluster_matrices()` extracts multi-stage cluster, strata, and
+  FPC matrix construction into a shared helper, used across the Taylor
+  variance engine, analysis cell estimators, and GLM sandwich variance.
+
 ## surveycore 0.5.0
 
 ### Breaking changes
@@ -13,6 +78,19 @@
   replace `survey_calibrated` and `as_survey_calibrated()`. “Calibrated”
   implies a post-processing step on a probability sample; `nonprob`
   accurately reflects the design type.
+
+- `survey_srs` and `as_survey_srs()` have been removed. SRS designs are
+  now created via
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  with no `ids` or `strata` — this produces a `survey_taylor` with no
+  cluster/strata structure. All estimates are numerically identical.
+  Print output now says “Taylor series linearization” instead of “simple
+  random sample”.
+
+- Single-row data frames are now rejected at construction time
+  (previously a warning). This matches
+  [`survey::svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html)
+  behavior.
 
 - The positional setter form `set_var_label(svy, age, "label")` has been
   removed. Use the named form `set_var_label(svy, age = "label")`
@@ -75,11 +153,10 @@
 ### New features
 
 - [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
-  fits survey-weighted generalized linear models for all five design
-  classes (`survey_taylor`, `survey_replicate`, `survey_srs`,
-  `survey_twophase`, `survey_nonprob`); returns a `survey_glm_fit`
-  object with design-based (Binder 1983 sandwich) standard errors and
-  degrees of freedom.
+  fits survey-weighted generalized linear models for all four design
+  classes (`survey_taylor`, `survey_replicate`, `survey_twophase`,
+  `survey_nonprob`); returns a `survey_glm_fit` object with design-based
+  (Binder 1983 sandwich) standard errors and degrees of freedom.
 
 - [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md)
   converts a `survey_glm_fit` to a tidy `survey_glm_tidy` tibble with
@@ -109,7 +186,9 @@
   [`update()`](https://rdrr.io/r/stats/update.html).
 
 - `survey_glm_fit` integrates with the `marginaleffects` package; when
-  `marginaleffects` is installed, `avg_slopes()`, `avg_predictions()`,
+  `marginaleffects` is installed,
+  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
+  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
   and the full marginaleffects API work directly on `survey_glm_fit`
   objects.
 
@@ -133,9 +212,9 @@
 
 ### New features
 
-- [`print()`](https://rdrr.io/r/base/print.html) methods for all five
-  survey design classes (`survey_taylor`, `survey_srs`,
-  `survey_replicate`, `survey_twophase`, `survey_nonprob`) now display a
+- [`print()`](https://rdrr.io/r/base/print.html) methods for all four
+  survey design classes (`survey_taylor`, `survey_replicate`,
+  `survey_twophase`, `survey_nonprob`) now display a
   `Domain: <n> of <N> rows` line when `surveytidy::filter()` has been
   applied. The line appears after the sample size line and before the
   `Groups:` line. For two-phase designs, domain counts reflect Phase 2
@@ -200,7 +279,7 @@
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
   [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
   and
-  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
   now promote `"weighting_history"` attributes from the input data frame
   automatically.
 

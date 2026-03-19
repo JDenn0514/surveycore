@@ -13,7 +13,7 @@ correction. Uses a tidy-select interface for all design variable arguments."><me
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,8 +91,12 @@ variable column (a single column).</p></dd>
 
 <dt id="arg-fpc">fpc<a class="anchor" aria-label="anchor" href="#arg-fpc"></a></dt>
 <dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Finite population
-correction column (a single column). Accepts either total population size
-(integer) or sampling fraction (numeric, 0–1). Cannot contain <code>NA</code>.</p></dd>
+correction column(s). For single-stage designs, supply one column.
+For multi-stage designs, supply one column per stage:
+<code>fpc = c(fpc_stage1, fpc_stage2)</code>. Each column accepts either total
+population size (integer, all &gt; 1) or sampling fraction (numeric,
+all in (0, 1]). Cannot contain <code>NA</code>. Cannot have more columns than
+<code>ids</code> stages; fewer is allowed (later stages assume infinite population).</p></dd>
 
 
 <dt id="arg-nest">nest<a class="anchor" aria-label="anchor" href="#arg-nest"></a></dt>
@@ -123,9 +127,29 @@ support tidy-select syntax:</p>
     <h2 id="simple-random-sample">Simple random sample<a class="anchor" aria-label="anchor" href="#simple-random-sample"></a></h2>
 
 
-<p>If <code>ids</code>, <code>weights</code>, and <code>probs</code> are all omitted, an equal-probability SRS
-is assumed. A warning is issued because population totals cannot be
-estimated without weights or population size.</p>
+<p>When no <code>ids</code> or <code>strata</code> are specified, the result is a <code>survey_taylor</code>
+object with <code>NULL</code> ids and strata — i.e., a simple random sample (SRS).
+The Taylor variance machinery produces the same estimates as the classical
+SRS formula <code>(1 - f) * s^2 / n</code>. If <code>weights</code> and <code>probs</code> are also both
+omitted, uniform weights are assigned and a warning is issued.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h2>
+
+
+<p><code>as_survey()</code> does not support probability-proportional-to-size (PPS)
+variance estimation. Taylor series linearization treats all designs as
+with-replacement, which overestimates (is conservative for) variance in
+PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
+estimators available in <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign()</a></code> via its <code>pps</code> and <code>variance</code>
+arguments are not supported.</p>
+<p>If your design requires PPS-specific variance estimation, create the design
+with <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign()</a></code> and convert it with <code><a href="from_svydesign.html">from_svydesign()</a></code>:</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="va">d_survey</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span></span>
+<span>  ids <span class="op">=</span> <span class="op">~</span><span class="va">psu</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">wt</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">stratum</span>,</span>
+<span>  pps <span class="op">=</span> <span class="st">"brewer"</span>, data <span class="op">=</span> <span class="va">mydata</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_svydesign.html">from_svydesign</a></span><span class="op">(</span><span class="va">d_survey</span><span class="op">)</span></span></code></pre><p></p></div>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -135,14 +159,12 @@ estimated without weights or population size.</p>
 <p>Other constructors:
 <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
 <code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
-<code><a href="as_survey_srs.html">as_survey_srs()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
 <code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
 <code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
 <code><a href="survey_replicate.html">survey_replicate()</a></code>,
-<code><a href="survey_srs.html">survey_srs()</a></code>,
 <code><a href="survey_taylor.html">survey_taylor()</a></code>,
 <code><a href="survey_twophase.html">survey_twophase()</a></code></p></div>
     </div>

@@ -17,7 +17,6 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.html</loc></url>
-<url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_srs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_svydesign.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.html</loc></url>
@@ -33,6 +32,7 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/from_svydesign.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/get_corr.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/get_diffs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/get_freqs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/get_means.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/get_quantiles.html</loc></url>
@@ -46,6 +46,7 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/ns_wave1.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/pew_jewish_2020.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/pew_npors_2025.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_diffs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_result.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_missing_codes.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_question_preface.html</loc></url>
@@ -60,7 +61,6 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_metadata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_nonprob.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_replicate.html</loc></url>
-<url><loc>https://jdenn0514.github.io/surveycore/reference/survey_srs.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_taylor.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_twophase.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.html</loc></url>

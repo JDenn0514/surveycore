@@ -28,7 +28,7 @@ get_means(
 - design:
 
   A survey design object: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+  `survey_twophase`, or `survey_nonprob`.
 
 - x:
 
@@ -120,6 +120,7 @@ metadata.
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+[`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),

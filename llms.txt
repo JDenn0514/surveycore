@@ -200,8 +200,6 @@ interface — bare column names, no formula syntax.
 
 - [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
   : Create a Taylor Series Linearization Survey Design
-- [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
-  : Create a Simple Random Sample Survey Design
 - [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
   : Create a Replicate Weights Survey Design
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
@@ -230,6 +228,8 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Quantiles
 - [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
   : Survey-Weighted Ratio Estimation
+- [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
+  : Treatment Effect Estimation for Survey Designs
 
 ## Regression
 
@@ -308,8 +308,6 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
 
 - [`survey_base()`](https://jdenn0514.github.io/surveycore/reference/survey_base.md)
   : Abstract Base Survey Design Class
-- [`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md)
-  : Simple Random Sample Survey Design
 - [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
   : Taylor Series Linearization Survey Design
 - [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md)

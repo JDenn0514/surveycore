@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,11 +31,40 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.0" id="surveycore-060">surveycore 0.6.0<a class="anchor" aria-label="anchor" href="#surveycore-060"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-6-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-6-0"></a></h3>
+<ul><li>
+<code>survey_srs</code> class and <code>as_survey_srs()</code> constructor have been removed. SRS designs are now created via <code><a href="../reference/as_survey.html">as_survey()</a></code> with no <code>ids</code> or <code>strata</code> — this produces a <code>survey_taylor</code> with no cluster/strata structure. All estimates are numerically identical.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-6-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-6-0"></a></h3>
+<ul><li><p><code><a href="../reference/get_diffs.html">get_diffs()</a></code> estimates treatment effects (differences from a reference group) via survey-weighted regression. Supports bivariate and multivariate models, Gaussian and non-Gaussian families, and optional subgroup analysis. Two estimation paths: direct coefficients for simple models, and <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">marginaleffects::avg_slopes()</a></code> / <code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">avg_predictions()</a></code> for models with covariates or non-Gaussian AMEs. Returns a <code>survey_diffs</code> tibble with optional <code>mean</code>, <code>pct_change</code>, <code>n_weighted</code> columns, significance stars, and p-value adjustment. <code>marginaleffects</code> moved from Suggests to Imports.</p></li>
+<li><p><code><a href="../reference/as_survey.html">as_survey()</a></code> now supports multi-column FPC for multi-stage designs (e.g., <code>fpc = c(fpc_stage1, fpc_stage2)</code>). Each FPC column corresponds to one ID stage. Per-stage FPC is validated for NAs, non-positive values, and within-cluster constancy.</p></li>
+<li><p><code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> for <code>survey_taylor</code> now displays per-stage FPC bullets for multi-stage designs (e.g., <code>FPC (stage 1): fpc</code>, <code>FPC (stage 2): fpc2</code>).</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-6-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-6-0"></a></h3>
+<ul><li><p>SRS variance estimation now uses Taylor (HT) linearization via <code>.build_cluster_matrices()</code>, correct for any weight structure. Previously used unweighted sample variance which was incorrect for non-proportional weights.</p></li>
+<li><p><code><a href="../reference/survey_glm.html">survey_glm()</a></code> now correctly indexes weights when <code>na.action = na.omit</code> drops non-contiguous rows.</p></li>
+<li><p><code><a href="../reference/get_freqs.html">get_freqs()</a></code> now routes <code>survey_nonprob</code> designs through the Horvitz-Thompson variance path, consistent with the other five analysis functions.</p></li>
+<li><p><code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code> now accepts <code>survey_replicate</code> and SRS <code>survey_taylor</code> objects as the phase-1 design (previously restricted to stratified/clustered <code>survey_taylor</code> only).</p></li>
+<li><p><code><a href="../reference/as_survey.html">as_survey()</a></code> SRS fallback downgraded from warning to message.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-infrastructure-0-6-0">Internal infrastructure<a class="anchor" aria-label="anchor" href="#internal-infrastructure-0-6-0"></a></h3>
+<ul><li>
+<code>.build_cluster_matrices()</code> extracts multi-stage cluster, strata, and FPC matrix construction into a shared helper, used across the Taylor variance engine, analysis cell estimators, and GLM sandwich variance.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.0" id="surveycore-050">surveycore 0.5.0<a class="anchor" aria-label="anchor" href="#surveycore-050"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-0-5-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-5-0"></a></h3>
 <ul><li><p><code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> replaces <code>as_survey_repweights()</code>. The constructor name now matches the underlying <code>survey_replicate</code> class.</p></li>
 <li><p><code>survey_nonprob</code> and <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> replace <code>survey_calibrated</code> and <code>as_survey_calibrated()</code>. “Calibrated” implies a post-processing step on a probability sample; <code>nonprob</code> accurately reflects the design type.</p></li>
+<li><p><code>survey_srs</code> and <code>as_survey_srs()</code> have been removed. SRS designs are now created via <code><a href="../reference/as_survey.html">as_survey()</a></code> with no <code>ids</code> or <code>strata</code> — this produces a <code>survey_taylor</code> with no cluster/strata structure. All estimates are numerically identical. Print output now says “Taylor series linearization” instead of “simple random sample”.</p></li>
+<li><p>Single-row data frames are now rejected at construction time (previously a warning). This matches <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign()</a></code> behavior.</p></li>
 <li><p>The positional setter form <code>set_var_label(svy, age, "label")</code> has been removed. Use the named form <code>set_var_label(svy, age = "label")</code> instead.</p></li>
 <li><p><code><a href="../reference/extract_var_label.html">extract_var_label()</a></code>, <code><a href="../reference/extract_question_preface.html">extract_question_preface()</a></code>, and <code><a href="../reference/extract_var_note.html">extract_var_note()</a></code> now return a named character vector. <code>extract_var_label(svy, age)</code> now returns <code>c(age = "Age in years")</code> rather than <code>"Age in years"</code>.</p></li>
 <li><p><code><a href="../reference/extract_val_labels.html">extract_val_labels()</a></code> now returns a named list. <code>extract_val_labels(svy, sex)</code> now returns <code>list(sex = c(Male = 1L, Female = 2L))</code> rather than <code>c(Male = 1L, Female = 2L)</code>.</p></li>
@@ -57,10 +86,10 @@
 <h2 class="pkg-version" data-toc-text="0.4.0" id="surveycore-040">surveycore 0.4.0<a class="anchor" aria-label="anchor" href="#surveycore-040"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-4-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-4-0"></a></h3>
-<ul><li><p><code><a href="../reference/survey_glm.html">survey_glm()</a></code> fits survey-weighted generalized linear models for all five design classes (<code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_srs</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>); returns a <code>survey_glm_fit</code> object with design-based (Binder 1983 sandwich) standard errors and degrees of freedom.</p></li>
+<ul><li><p><code><a href="../reference/survey_glm.html">survey_glm()</a></code> fits survey-weighted generalized linear models for all four design classes (<code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>); returns a <code>survey_glm_fit</code> object with design-based (Binder 1983 sandwich) standard errors and degrees of freedom.</p></li>
 <li><p><code><a href="../reference/clean.html">clean()</a></code> converts a <code>survey_glm_fit</code> to a tidy <code>survey_glm_tidy</code> tibble with one row per coefficient, design-based confidence intervals, structured metadata, and optional reference rows for factor predictors.</p></li>
 <li><p><code>survey_glm_fit</code> objects support 20 S3 methods: <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, <code><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted()</a></code>, <code><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals()</a></code>, <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code>, <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula()</a></code>, <code><a href="https://rdrr.io/r/stats/terms.html" class="external-link">terms()</a></code>, <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix()</a></code>, <code><a href="https://rdrr.io/r/stats/model.frame.html" class="external-link">model.frame()</a></code>, <code><a href="https://rdrr.io/r/stats/deviance.html" class="external-link">deviance()</a></code>, <code><a href="https://rdrr.io/r/stats/df.residual.html" class="external-link">df.residual()</a></code>, <code><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs()</a></code>, <code><a href="https://rdrr.io/r/stats/influence.measures.html" class="external-link">hatvalues()</a></code>, <code><a href="https://rdrr.io/r/stats/logLik.html" class="external-link">logLik()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">AIC()</a></code>, <code><a href="https://rdrr.io/r/stats/AIC.html" class="external-link">BIC()</a></code>, and <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>.</p></li>
-<li><p><code>survey_glm_fit</code> integrates with the <code>marginaleffects</code> package; when <code>marginaleffects</code> is installed, <code>avg_slopes()</code>, <code>avg_predictions()</code>, and the full marginaleffects API work directly on <code>survey_glm_fit</code> objects.</p></li>
+<li><p><code>survey_glm_fit</code> integrates with the <code>marginaleffects</code> package; when <code>marginaleffects</code> is installed, <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes()</a></code>, <code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">avg_predictions()</a></code>, and the full marginaleffects API work directly on <code>survey_glm_fit</code> objects.</p></li>
 <li><p><code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">broom::tidy()</a></code> is supported for <code>survey_glm_fit</code> objects via a shim that delegates to <code><a href="../reference/clean.html">clean()</a></code>.</p></li>
 <li><p><code>as_survey_rep()</code> has been renamed to <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> to avoid a namespace clash with the <code>srvyr</code> package.</p></li>
 </ul></div>
@@ -75,7 +104,7 @@
 <div class="section level3">
 <h3 id="new-features-0-3-3">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-3"></a></h3>
 <ul><li>
-<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> methods for all five survey design classes (<code>survey_taylor</code>, <code>survey_srs</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>) now display a <code>Domain: &lt;n&gt; of &lt;N&gt; rows</code> line when <code>surveytidy::filter()</code> has been applied. The line appears after the sample size line and before the <code>Groups:</code> line. For two-phase designs, domain counts reflect Phase 2 rows only.</li>
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> methods for all four survey design classes (<code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>) now display a <code>Domain: &lt;n&gt; of &lt;N&gt; rows</code> line when <code>surveytidy::filter()</code> has been applied. The line appears after the sample size line and before the <code>Groups:</code> line. For two-phase designs, domain counts reflect Phase 2 rows only.</li>
 </ul></div>
 </div>
     <div class="section level2">
@@ -102,7 +131,7 @@
 <li><p>All six analysis functions gain a <code>decimals</code> argument to round numeric output columns to a fixed number of decimal places.</p></li>
 <li><p><code>na.rm = FALSE</code> now includes rows where a grouping variable is <code>NA</code> as a separate group row in all six analysis functions’ output.</p></li>
 <li><p><code><a href="../reference/infer_question_prefaces.html">infer_question_prefaces()</a></code> auto-detects shared battery prefaces from variable labels using separator-based and longest-common-prefix detection.</p></li>
-<li><p><code><a href="../reference/survey_weighting_history.html">survey_weighting_history()</a></code> returns the weighting history stored in a survey design object’s metadata; <code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>, and <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> now promote <code>"weighting_history"</code> attributes from the input data frame automatically.</p></li>
+<li><p><code><a href="../reference/survey_weighting_history.html">survey_weighting_history()</a></code> returns the weighting history stored in a survey design object’s metadata; <code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>, and <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> now promote <code>"weighting_history"</code> attributes from the input data frame automatically.</p></li>
 <li><p>Two-phase variance estimation (<code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code>) is now fully supported in <code><a href="../reference/get_means.html">get_means()</a></code> and <code><a href="../reference/get_totals.html">get_totals()</a></code>, using the <code>"full"</code>, <code>"approx"</code>, and <code>"simple"</code> methods vendored from the <code>survey</code> package.</p></li>
 </ul></div>
 <div class="section level3">

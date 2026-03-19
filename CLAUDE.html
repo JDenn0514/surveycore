@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,10 +45,10 @@
 </tr><tr class="even"><td>Phase 0.5 — surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
 <td>✅ Complete</td>
 <td>Separate <code>surveytidy</code> package</td>
-</tr><tr class="odd"><td>Prereq PR 1 — <code>survey_srs</code> class + constructor + variance (<code>feature/survey-srs</code>)</td>
+</tr><tr class="odd"><td>Prereq PR 1 — SRS support (originally <code>survey_srs</code>, now absorbed into <code>survey_taylor</code>)</td>
 <td>✅ Complete</td>
-<td>See <code>plans/survey-srs-formal-specification.md</code>
-</td>
+<td>
+<code>survey_srs</code> removed; SRS is <code>survey_taylor</code> with no ids/strata</td>
 </tr><tr class="even"><td>Phase 0.75 — Two-phase variance vendoring (<code>feature/variance-twophase</code>)</td>
 <td>✅ Complete</td>
 <td>Required before Phase 1</td>
@@ -63,14 +63,14 @@
 <hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
-<ul><li>S7 classes: <code>survey_base</code>, <code>survey_srs</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_nonprob</code>
+<ul><li>S7 classes: <code>survey_base</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_nonprob</code>
 </li>
 <li>GLM fit class: <code>survey_glm_fit</code> (constructor function is <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</li>
 <li>Result classes: <code>survey_mean</code>, <code>survey_total</code>, <code>survey_freq</code>, etc. (S3 built on tibble)</li>
 </ul></div>
 <div class="section level2">
 <h2 id="naming-conventions">Naming Conventions<a class="anchor" aria-label="anchor" href="#naming-conventions"></a></h2>
-<ul><li>Analysis functions: <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_means.html">get_means()</a></code>, <code>get_diffs()</code>, <code><a href="reference/get_corr.html">get_corr()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>
+<ul><li>Analysis functions: <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_means.html">get_means()</a></code>, <code><a href="reference/get_diffs.html">get_diffs()</a></code>, <code><a href="reference/get_corr.html">get_corr()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>
 </li>
 <li>Metadata getters: <code><a href="reference/extract_var_label.html">extract_var_label()</a></code>, <code><a href="reference/extract_val_labels.html">extract_val_labels()</a></code>, <code><a href="reference/extract_question_preface.html">extract_question_preface()</a></code>, <code><a href="reference/extract_var_note.html">extract_var_note()</a></code>
 </li>
@@ -128,15 +128,17 @@
 <ul><li>
 <code>plans/error-messages.md</code> — canonical error/warning class names and CLI message templates</li>
 <li>
-<code>plans/spec-phase-2.md</code> — authoritative Phase 2 spec (regression)</li>
+<code>archive/phase-2/spec-phase-2.md</code> — authoritative Phase 2 spec (regression)</li>
 <li>
-<code>plans/decisions-phase-2.md</code> — pre-implementation review decisions for Phase 2</li>
+<code>archive/phase-2/decisions-phase-2.md</code> — pre-implementation review decisions for Phase 2</li>
 <li>
-<code>plans/archive/phase-1/</code> — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)</li>
+<code>archive/phase-2/impl-phase-2.md</code> — Phase 2 implementation plan</li>
 <li>
-<code>plans/archive/survey-srs/survey-srs-formal-specification.md</code> — authoritative spec for <code>survey_srs</code> class + <code><a href="reference/as_survey_srs.html">as_survey_srs()</a></code> + SRS variance</li>
+<code>archive/phase-1/</code> — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)</li>
 <li>
-<code>plans/archive/</code> — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context)</li>
+<code>archive/survey-srs/survey-srs-formal-specification.md</code> — historical spec for removed <code>survey_srs</code> class (now absorbed into <code>survey_taylor</code>)</li>
+<li>
+<code>archive/</code> — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context, multi-stage)</li>
 <li>
 <code>.claude/rules/</code> — code style, testing standards, R package conventions, GitHub strategy</li>
 <li>

@@ -55,9 +55,13 @@ as_survey(
 - fpc:
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
-  Finite population correction column (a single column). Accepts either
-  total population size (integer) or sampling fraction (numeric, 0–1).
-  Cannot contain `NA`.
+  Finite population correction column(s). For single-stage designs,
+  supply one column. For multi-stage designs, supply one column per
+  stage: `fpc = c(fpc_stage1, fpc_stage2)`. Each column accepts either
+  total population size (integer, all \> 1) or sampling fraction
+  (numeric, all in (0, 1\]). Cannot contain `NA`. Cannot have more
+  columns than `ids` stages; fewer is allowed (later stages assume
+  infinite population).
 
 - nest:
 
@@ -84,9 +88,33 @@ All design variable arguments (`ids`, `probs`, `weights`, `strata`,
 
 ## Simple random sample
 
-If `ids`, `weights`, and `probs` are all omitted, an equal-probability
-SRS is assumed. A warning is issued because population totals cannot be
-estimated without weights or population size.
+When no `ids` or `strata` are specified, the result is a `survey_taylor`
+object with `NULL` ids and strata — i.e., a simple random sample (SRS).
+The Taylor variance machinery produces the same estimates as the
+classical SRS formula `(1 - f) * s^2 / n`. If `weights` and `probs` are
+also both omitted, uniform weights are assigned and a warning is issued.
+
+## Known limitations
+
+`as_survey()` does not support probability-proportional-to-size (PPS)
+variance estimation. Taylor series linearization treats all designs as
+with-replacement, which overestimates (is conservative for) variance in
+PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
+estimators available in
+[`survey::svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html)
+via its `pps` and `variance` arguments are not supported.
+
+If your design requires PPS-specific variance estimation, create the
+design with
+[`survey::svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html)
+and convert it with
+[`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md):
+
+    d_survey <- survey::svydesign(
+      ids = ~psu, weights = ~wt, strata = ~stratum,
+      pps = "brewer", data = mydata
+    )
+    d <- from_svydesign(d_survey)
 
 ## See also
 
@@ -100,14 +128,12 @@ to add variable labels
 Other constructors:
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
-[`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
-[`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
 

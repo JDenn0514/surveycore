@@ -67,7 +67,7 @@ srs_srvyr
 **surveycore**
 
 ``` r
-srs_sc <- as_survey_srs(apisrs, weights = pw, fpc = fpc)
+srs_sc <- surveycore::as_survey(apisrs, weights = pw, fpc = fpc)
 srs_sc
 ```
 
@@ -75,7 +75,7 @@ srs_sc
 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
 
-    #> <survey_srs> (simple random sample)
+    #> <survey_taylor> (Taylor series linearization)
 
     #> Sample size: 200
 
@@ -104,13 +104,9 @@ srs_sc
 
 `ids = ~1` is `survey`’s idiom for “no clusters” — not immediately
 obvious to new users.
-[`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
-names the design type explicitly. When neither `ids` nor `strata` are
-specified,
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
-also dispatches to
-[`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
-automatically.
+without `ids` or `strata` creates an SRS design directly, making the
+design type clear from context.
 
 ### 1.2 Stratified Design
 
@@ -158,26 +154,40 @@ strat_srvyr
 **surveycore**
 
 ``` r
-strat_sc <- as_survey(apistrat, strata = stype, weights = pw, fpc = fpc)
+strat_sc <- surveycore::as_survey(apistrat, strata = stype, weights = pw, fpc = fpc)
 strat_sc
 ```
 
-    #> Stratified Independent Sampling design
-    #> Called via srvyr
-    #> Sampling variables:
-    #>   - ids: `1` 
-    #>   - strata: stype 
-    #>   - fpc: fpc 
-    #>   - weights: pw 
-    #> Data variables: 
-    #>   - cds (chr), stype (fct), name (chr), sname (chr), snum (dbl), dname (chr),
-    #>     dnum (int), cname (chr), cnum (int), flag (int), pcttest (int), api00
-    #>     (int), api99 (int), target (int), growth (int), sch.wide (fct), comp.imp
-    #>     (fct), both (fct), awards (fct), meals (int), ell (int), yr.rnd (fct),
-    #>     mobility (int), acs.k3 (int), acs.46 (int), acs.core (int), pct.resp (int),
-    #>     not.hsg (int), hsg (int), some.col (int), col.grad (int), grad.sch (int),
-    #>     avg.ed (dbl), full (int), emer (int), enroll (int), api.stu (int), pw
-    #>     (dbl), fpc (dbl)
+    #> 
+
+    #> ── Survey Design ───────────────────────────────────────────────────────────────
+
+    #> <survey_taylor> (Taylor series linearization)
+
+    #> Sample size: 200
+
+    #> 
+
+    #> # A tibble: 200 × 39
+    #>    cds       stype name  sname  snum dname  dnum cname  cnum  flag pcttest api00
+    #>    <chr>     <fct> <chr> <chr> <dbl> <chr> <int> <chr> <int> <int>   <int> <int>
+    #>  1 19647336… E     Open… Open…  2077 Los …   401 Los …    18    NA      99   840
+    #>  2 19647336… E     Belv… Belv…  1622 Los …   401 Los …    18    NA     100   516
+    #>  3 19648816… E     Alta… Alta…  2236 Pasa…   541 Los …    18    NA      99   531
+    #>  4 19647336… E     Soto… Soto…  1921 Los …   401 Los …    18    NA     100   501
+    #>  5 56739406… E     Waln… Waln…  6140 Moor…   460 Vent…    55    NA     100   720
+    #>  6 56726036… E     Athe… Athe…  6077 Simi…   689 Vent…    55    NA     100   805
+    #>  7 56726036… E     Town… Town…  6071 Simi…   689 Vent…    55    NA      99   778
+    #>  8 15633216… E     Thor… Thor…   904 Bake…    41 Kern     14    NA      98   731
+    #>  9 37683956… E     Nico… Nico…  4637 Sout…   702 San …    36    NA     100   592
+    #> 10 37680236… E     Vall… Vall…  4311 Chul…   135 San …    36    NA     100   669
+    #> # ℹ 190 more rows
+    #> # ℹ 27 more variables: api99 <int>, target <int>, growth <int>, sch.wide <fct>,
+    #> #   comp.imp <fct>, both <fct>, awards <fct>, meals <int>, ell <int>,
+    #> #   yr.rnd <fct>, mobility <int>, acs.k3 <int>, acs.46 <int>, acs.core <int>,
+    #> #   pct.resp <int>, not.hsg <int>, hsg <int>, some.col <int>, col.grad <int>,
+    #> #   grad.sch <int>, avg.ed <dbl>, full <int>, emer <int>, enroll <int>,
+    #> #   api.stu <int>, pw <dbl>, fpc <dbl>
 
 ### 1.3 Cluster Design
 
@@ -223,26 +233,40 @@ clus_srvyr
 **surveycore**
 
 ``` r
-clus_sc <- as_survey(apiclus1, ids = dnum, fpc = fpc, weights = pw)
+clus_sc <- surveycore::as_survey(apiclus1, ids = dnum, fpc = fpc, weights = pw)
 clus_sc
 ```
 
-    #> 1 - level Cluster Sampling design
-    #> With (15) clusters.
-    #> Called via srvyr
-    #> Sampling variables:
-    #>   - ids: dnum 
-    #>   - fpc: fpc 
-    #>   - weights: pw 
-    #> Data variables: 
-    #>   - cds (chr), stype (fct), name (chr), sname (chr), snum (dbl), dname (chr),
-    #>     dnum (int), cname (chr), cnum (int), flag (int), pcttest (int), api00
-    #>     (int), api99 (int), target (int), growth (int), sch.wide (fct), comp.imp
-    #>     (fct), both (fct), awards (fct), meals (int), ell (int), yr.rnd (fct),
-    #>     mobility (int), acs.k3 (int), acs.46 (int), acs.core (int), pct.resp (int),
-    #>     not.hsg (int), hsg (int), some.col (int), col.grad (int), grad.sch (int),
-    #>     avg.ed (dbl), full (int), emer (int), enroll (int), api.stu (int), fpc
-    #>     (dbl), pw (dbl)
+    #> 
+
+    #> ── Survey Design ───────────────────────────────────────────────────────────────
+
+    #> <survey_taylor> (Taylor series linearization)
+
+    #> Sample size: 183
+
+    #> 
+
+    #> # A tibble: 183 × 39
+    #>    cds       stype name  sname  snum dname  dnum cname  cnum  flag pcttest api00
+    #>    <chr>     <fct> <chr> <chr> <dbl> <chr> <int> <chr> <int> <int>   <int> <int>
+    #>  1 01612910… H     San … San …   236 San …   637 Alam…     1    NA      97   608
+    #>  2 01612916… E     Garf… Garf…   237 San …   637 Alam…     1    NA     100   684
+    #>  3 01612916… E     Jeff… Jeff…   238 San …   637 Alam…     1    NA     100   612
+    #>  4 01612916… E     Madi… Madi…   239 San …   637 Alam…     1    NA     100   710
+    #>  5 01612916… E     McKi… McKi…   240 San …   637 Alam…     1    NA      99   729
+    #>  6 01612916… E     Monr… Monr…   241 San …   637 Alam…     1    NA     100   714
+    #>  7 01612916… E     Roos… Roos…   242 San …   637 Alam…     1    NA      99   759
+    #>  8 01612916… E     Wash… Wash…   243 San …   637 Alam…     1    NA      99   585
+    #>  9 01612916… E     Wils… Wils…   244 San …   637 Alam…     1    NA     100   625
+    #> 10 01612916… M     Banc… Banc…   245 San …   637 Alam…     1    NA     100   664
+    #> # ℹ 173 more rows
+    #> # ℹ 27 more variables: api99 <int>, target <int>, growth <int>, sch.wide <fct>,
+    #> #   comp.imp <fct>, both <fct>, awards <fct>, meals <int>, ell <int>,
+    #> #   yr.rnd <fct>, mobility <int>, acs.k3 <int>, acs.46 <int>, acs.core <int>,
+    #> #   pct.resp <int>, not.hsg <int>, hsg <int>, some.col <int>, col.grad <int>,
+    #> #   grad.sch <int>, avg.ed <dbl>, full <int>, emer <int>, enroll <int>,
+    #> #   api.stu <int>, fpc <dbl>, pw <dbl>
 
 ### 1.4 Replicate Weights
 
@@ -478,7 +502,7 @@ the Breslow-Cain variance estimator ([Breslow and Cain
 
 | Design         | survey                            | srvyr                                    | surveycore                                     |
 |----------------|-----------------------------------|------------------------------------------|------------------------------------------------|
-| SRS            | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`           | `as_survey_srs(...)`                           |
+| SRS            | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`           | `as_survey(...)` (no `ids`/`strata`)           |
 | Stratified     | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`        | `as_survey(..., strata=s)`                     |
 | Cluster        | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`           | `as_survey(..., ids=d)`                        |
 | Replicate wts  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
@@ -1031,7 +1055,7 @@ small_df <- data.frame(
   x     = rnorm(223),
   w     = 1
 )
-small_svy <- as_survey_srs(small_df, weights = w)
+small_svy <- surveycore::as_survey(small_df, weights = w)
 
 get_means(small_svy, x, group = group)
 ```
@@ -1042,8 +1066,8 @@ get_means(small_svy, x, group = group)
     #> # A tibble: 3 × 5
     #>   group   mean  ci_low ci_high     n
     #>   <chr>  <dbl>   <dbl>   <dbl> <int>
-    #> 1 A     -0.486 -1.36     0.389     8
-    #> 2 B     -0.186 -0.700    0.328    15
+    #> 1 A     -0.486 -1.31     0.335     8
+    #> 2 B     -0.186 -0.683    0.312    15
     #> 3 C      0.105 -0.0377   0.248   200
 
 Suppress the warning when small cells are expected:
@@ -1295,7 +1319,7 @@ as_survey_nonprob(ns_wave1, weights = weight) |>
 
 | Task               | survey                            | srvyr                                      | surveycore                                     |
 |--------------------|-----------------------------------|--------------------------------------------|------------------------------------------------|
-| SRS design         | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`             | `as_survey_srs(...)`                           |
+| SRS design         | `svydesign(ids=~1, ...)`          | `as_survey_design(ids=1, ...)`             | `as_survey(...)` (no `ids`/`strata`)           |
 | Stratified design  | `svydesign(strata=~s, ...)`       | `as_survey_design(strata=s, ...)`          | `as_survey(..., strata=s)`                     |
 | Cluster design     | `svydesign(ids=~d, ...)`          | `as_survey_design(ids=d, ...)`             | `as_survey(..., ids=d)`                        |
 | Replicate weights  | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))`   | `as_survey_replicate(repweights=matches(...))` |

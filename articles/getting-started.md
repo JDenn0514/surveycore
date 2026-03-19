@@ -36,17 +36,15 @@ That’s what the survey objects are for. They tell the analysis functions
 how to conduct their analysis so they can properly take into account the
 variance and bias from the survey design.
 
-`surveycore` has five different survey object constructors:
+`surveycore` has four different survey object constructors:
 
 1.  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 
 2.  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
 
-3.  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md)
+3.  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 
-4.  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-
-5.  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+4.  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
 
 Rather than going into detail on each constructor, I’m just going to
 provide a quick overview of each. For more information visit
@@ -152,14 +150,16 @@ pew_jewish_svy
     #> #   extweight22 <dbl>, extweight23 <dbl>, extweight24 <dbl>, extweight25 <dbl>,
     #> #   extweight26 <dbl>, extweight27 <dbl>, extweight28 <dbl>, …
 
-### `as_survey_srs()`
+### SRS designs with `as_survey()`
 
-Use this when your survey was a pure simple random sample, meaning each
-respondent had equal probability of selection and there are neither
-clustering nor strata.
+When your survey was a pure simple random sample — each respondent had
+equal probability of selection, no clustering, no strata — use
+[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+without specifying `ids` or `strata`. Omitting both creates a
+`survey_taylor` object with no cluster or stratum structure, which is
+the SRS special case.
 
-I don’t have a specific dataset example to use, so I’ll just make a fake
-one. This fake dataset is meant to replicate a school district survey.
+Here is a synthetic school district survey to illustrate:
 
 ``` r
 set.seed(101)
@@ -175,7 +175,7 @@ school_survey <- data.frame(
   fpc = N # population size for FPC
 )
 
-school_svy <- as_survey_srs(
+school_svy <- as_survey(
   school_survey,
   weights = sw, # each sampled school represents 5 schools in the population
   fpc = fpc # reduces SEs: we sampled 20% of the population
@@ -188,7 +188,7 @@ school_svy
 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
 
-    #> <survey_srs> (simple random sample)
+    #> <survey_taylor> (Taylor series linearization)
 
     #> Sample size: 80
 
@@ -508,8 +508,6 @@ quick data cleaning using the `surveytidy` package (I’ll go more
 in-depth later showing what this package can do).
 
 ``` r
-library(surveytidy)
-
 ns_wave1_svy |>
   # drop NAs
   drop_na(cand_favorability_trump, cand_favorability_biden) |>
@@ -853,8 +851,8 @@ website will be up shortly.
 All functions: - Return a tibble subclass ready for further analysis or
 display - Accept a `group` argument for subgroup estimates - Accept a
 `variance` argument to control which uncertainty columns appear - Handle
-all five survey design classes: `survey_taylor`, `survey_replicate`,
-`survey_srs`, `survey_twophase`, and `survey_nonprob`
+all survey design classes: `survey_taylor`, `survey_replicate`,
+`survey_twophase`, and `survey_nonprob`
 
 Lohr, Sharon L. 2022. *Sampling: Design and Analysis*. 3rd ed. CRC
 Press.

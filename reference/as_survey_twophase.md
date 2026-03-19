@@ -23,10 +23,13 @@ as_survey_twophase(
 
 - phase1:
 
-  A `survey_taylor` object representing the Phase 1 design. Its `@data`
-  must contain ALL rows from both phases, plus a logical indicator
-  column for Phase 2 membership. Create with
-  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).
+  A survey design object (inheriting from `survey_base`) representing
+  the Phase 1 design. Accepts `survey_taylor` or `survey_replicate`
+  objects. Its `@data` must contain ALL rows from both phases, plus a
+  logical indicator column for Phase 2 membership. Create with
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  or
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - ids2:
 
@@ -99,13 +102,11 @@ Other constructors:
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
-[`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md),
 [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
-[`survey_srs()`](https://jdenn0514.github.io/surveycore/reference/survey_srs.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
 

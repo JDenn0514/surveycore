@@ -18,7 +18,7 @@ vendored variance estimation code. License: GPL-3.
 |---------------------------------------------------------------------------------------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------|
 | Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                            | ✅ Complete | Tagged v0.1.0                                                                                         |
 | Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                             | ✅ Complete | Separate `surveytidy` package                                                                         |
-| Prereq PR 1 — `survey_srs` class + constructor + variance (`feature/survey-srs`)                                          | ✅ Complete | See `plans/survey-srs-formal-specification.md`                                                        |
+| Prereq PR 1 — SRS support (originally `survey_srs`, now absorbed into `survey_taylor`)                                    | ✅ Complete | `survey_srs` removed; SRS is `survey_taylor` with no ids/strata                                       |
 | Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`)                                                   | ✅ Complete | Required before Phase 1                                                                               |
 | Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`)          | ✅ Complete | Core functions on main (v0.3.0); nested `.meta` + group label refactor merged to develop (PR \#22–23) |
 | Phase 2 — Regression (`survey_glm_fit`, [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)) | 🔜 Next     | See `plans/phase-2-glm-formal-specification.md`                                                       |
@@ -30,9 +30,8 @@ vendored variance estimation code. License: GPL-3.
 
 ## Class Naming Conventions
 
-- S7 classes: `survey_base`, `survey_srs`, `survey_taylor`,
-  `survey_replicate`, `survey_twophase`, `survey_metadata`,
-  `survey_nonprob`
+- S7 classes: `survey_base`, `survey_taylor`, `survey_replicate`,
+  `survey_twophase`, `survey_metadata`, `survey_nonprob`
 - GLM fit class: `survey_glm_fit` (constructor function is
   [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md))
 - Result classes: `survey_mean`, `survey_total`, `survey_freq`, etc. (S3
@@ -43,7 +42,7 @@ vendored variance estimation code. License: GPL-3.
 - Analysis functions:
   [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
   [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
-  `get_diffs()`,
+  [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
   [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
   [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
   [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
@@ -139,17 +138,18 @@ so this rarely bites — but keep it in mind.
 
 - `plans/error-messages.md` — canonical error/warning class names and
   CLI message templates
-- `plans/spec-phase-2.md` — authoritative Phase 2 spec (regression)
-- `plans/decisions-phase-2.md` — pre-implementation review decisions for
-  Phase 2
-- `plans/archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions,
-  reviews — all complete)
-- `plans/archive/survey-srs/survey-srs-formal-specification.md` —
-  authoritative spec for `survey_srs` class +
-  [`as_survey_srs()`](https://jdenn0514.github.io/surveycore/reference/as_survey_srs.md) +
-  SRS variance
-- `plans/archive/` — completed phase docs (Phase 0 spec, Phase 0 impl
-  plan, Phase 0.5 context)
+- `archive/phase-2/spec-phase-2.md` — authoritative Phase 2 spec
+  (regression)
+- `archive/phase-2/decisions-phase-2.md` — pre-implementation review
+  decisions for Phase 2
+- `archive/phase-2/impl-phase-2.md` — Phase 2 implementation plan
+- `archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions, reviews
+  — all complete)
+- `archive/survey-srs/survey-srs-formal-specification.md` — historical
+  spec for removed `survey_srs` class (now absorbed into
+  `survey_taylor`)
+- `archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan,
+  Phase 0.5 context, multi-stage)
 - `.claude/rules/` — code style, testing standards, R package
   conventions, GitHub strategy
 - `.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md`

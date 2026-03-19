@@ -30,7 +30,7 @@ get_quantiles(
 - design:
 
   A survey design object: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+  `survey_twophase`, or `survey_nonprob`.
 
 - x:
 
@@ -116,7 +116,10 @@ A `survey_quantiles` tibble (also inheriting `survey_result`).
 
 - Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
   `deff`) — only those requested via `variance`. CIs are Woodruff
-  intervals and are generally asymmetric around `estimate`.
+  intervals and are generally asymmetric around `estimate`. `deff` is
+  always `NA` for quantile estimates: computing it requires a kernel
+  density estimate at the quantile point (the Woodruff SRS approximation
+  used by `survey::svyquantile(deff = TRUE)`), which is not implemented.
 
 - `n` — unweighted count of non-NA observations used in the estimate.
 
@@ -136,6 +139,7 @@ position measures. *Journal of the American Statistical Association*,
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+[`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),

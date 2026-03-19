@@ -13,7 +13,7 @@ classes."><meta property="og:image" content="https://jdenn0514.github.io/surveyc
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,7 +69,7 @@ classes.</p>
 
 <dl><dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
 <dd><p>A survey design object: <code>survey_taylor</code>, <code>survey_replicate</code>,
-<code>survey_twophase</code>, <code>survey_srs</code>, or <code>survey_nonprob</code>.</p></dd>
+<code>survey_twophase</code>, or <code>survey_nonprob</code>.</p></dd>
 
 
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
@@ -150,7 +150,10 @@ renames <code>se</code> → <code>std.error</code>, <code>ci_low</code> → <cod
 <li><p><code>estimate</code> — weighted quantile estimate.</p></li>
 <li><p>Variance columns (<code>se</code>, <code>var</code>, <code>cv</code>, <code>ci_low</code>, <code>ci_high</code>, <code>moe</code>,
 <code>deff</code>) — only those requested via <code>variance</code>. CIs are Woodruff
-intervals and are generally asymmetric around <code>estimate</code>.</p></li>
+intervals and are generally asymmetric around <code>estimate</code>. <code>deff</code> is
+always <code>NA</code> for quantile estimates: computing it requires a kernel
+density estimate at the quantile point (the Woodruff SRS approximation
+used by <code>survey::svyquantile(deff = TRUE)</code>), which is not implemented.</p></li>
 <li><p><code>n</code> — unweighted count of non-NA observations used in the estimate.</p></li>
 <li><p><code>n_weighted</code> — sum of weights (only when requested).</p></li>
 </ul><p>One row per (group combination × quantile probability). The variable name
@@ -167,6 +170,7 @@ position measures. <em>Journal of the American Statistical Association</em>,
     <div class="dont-index"><p>Other analysis:
 <code><a href="clean.html">clean()</a></code>,
 <code><a href="get_corr.html">get_corr()</a></code>,
+<code><a href="get_diffs.html">get_diffs()</a></code>,
 <code><a href="get_freqs.html">get_freqs()</a></code>,
 <code><a href="get_means.html">get_means()</a></code>,
 <code><a href="get_ratios.html">get_ratios()</a></code>,

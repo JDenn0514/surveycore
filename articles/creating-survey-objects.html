@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -125,8 +125,9 @@ are covered in <code>vignette("estimation")</code>.</p>
 </tr>
 <tr class="odd">
 <td>Is a pure SRS — equal probability, no clustering, no strata</td>
-<td><code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code></td>
-<td>Simpler estimator for equal-probability samples</td>
+<td><code><a href="../reference/as_survey.html">as_survey()</a></code></td>
+<td>Omit <code>ids</code> and <code>strata</code>; creates an SRS
+design</td>
 </tr>
 <tr class="even">
 <td>Is a non-probability panel or opt-in sample with calibration
@@ -950,12 +951,14 @@ for subcohort members plus all relapse cases <span class="citation">(<a href="#r
 </div>
 </div>
 <div class="section level2">
-<h2 id="sec-srs">5. <code>as_survey_srs()</code> — Simple Random Sample<a class="anchor" aria-label="anchor" href="#sec-srs"></a>
+<h2 id="sec-srs">5. Simple Random Sample with <code>as_survey()</code><a class="anchor" aria-label="anchor" href="#sec-srs"></a>
 </h2>
-<p>Use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> when every unit in your target
-population had an equal, known probability of selection — no clustering,
-no stratification <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 2)</span>. This design is common
-in:</p>
+<p>Use <code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
+<code>strata</code> when every unit in your target population had an
+equal, known probability of selection — no clustering, no stratification
+<span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>,
+ch. 2; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 2)</span>. This design
+is common in:</p>
 <ul>
 <li>Surveys of a complete organizational roster (all employees at a
 company, all students at a school) where units are drawn directly from a
@@ -964,38 +967,12 @@ list</li>
 frame</li>
 <li>Pilot studies and classroom experiments</li>
 </ul>
+<p>When neither <code>ids</code> nor <code>strata</code> is specified,
+<code><a href="../reference/as_survey.html">as_survey()</a></code> creates a <code>survey_taylor</code> object
+with no cluster or stratum structure — the SRS special case of the
+Taylor series estimator.</p>
 <div class="section level3">
-<h3 id="arguments-1">5.1 Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="12%">
-<col width="87%">
-</colgroup>
-<thead><tr class="header">
-<th>Argument</th>
-<th>What it does</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>weights</code></td>
-<td>Sampling weight column — inverse of selection probability</td>
-</tr>
-<tr class="even">
-<td><code>probs</code></td>
-<td>Selection probability column — supply <code>weights</code>
-<em>or</em> <code>probs</code>, not both</td>
-</tr>
-<tr class="odd">
-<td><code>fpc</code></td>
-<td>Population size (integer column) or sampling fraction (numeric
-column, 0–1)</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="the-fpc-argument-matters-more-here">5.2 The <code>fpc</code> argument matters more here<a class="anchor" aria-label="anchor" href="#the-fpc-argument-matters-more-here"></a>
+<h3 id="the-fpc-argument-matters-more-here">5.1 The <code>fpc</code> argument matters more here<a class="anchor" aria-label="anchor" href="#the-fpc-argument-matters-more-here"></a>
 </h3>
 <p>Without clustering or stratification, the FPC has a proportionally
 larger effect on variance estimates than in complex designs <span class="citation">(<a href="#ref-cochran1977">Cochran 1977, sec.
@@ -1003,7 +980,7 @@ larger effect on variance estimates than in complex designs <span class="citatio
 fraction. For the example below, the population is N = 400 schools.</p>
 </div>
 <div class="section level3">
-<h3 id="worked-example-school-district-survey">5.3 Worked example: School district survey<a class="anchor" aria-label="anchor" href="#worked-example-school-district-survey"></a>
+<h3 id="worked-example-school-district-survey">5.2 Worked example: School district survey<a class="anchor" aria-label="anchor" href="#worked-example-school-district-survey"></a>
 </h3>
 <p>A district administrator draws a simple random sample of 80 schools
 from a complete roster of 400 schools. Every school has an equal
@@ -1022,7 +999,7 @@ probability of selection (80/400 = 0.20) — the textbook SRS case <span class="
 <span>  fpc <span class="op">=</span> <span class="va">N</span> <span class="co"># population size for FPC</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">svy_srs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span></span>
+<span><span class="va">svy_srs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">school_survey</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">sw</span>, <span class="co"># each sampled school represents 5 schools in the population</span></span>
 <span>  fpc <span class="op">=</span> <span class="va">fpc</span> <span class="co"># reduces SEs: we sampled 20% of the population</span></span>
@@ -1030,7 +1007,7 @@ probability of selection (80/400 = 0.20) — the textbook SRS case <span class="
 <span><span class="va">svy_srs</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
-<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_srs&gt;</span> (simple random sample)</span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_taylor&gt;</span> (Taylor series linearization)</span></span></code></pre>
 <pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">80</span></span></span></code></pre>
 <pre><code><span><span class="co">## </span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 80 × 6</span></span></span>
@@ -1063,26 +1040,6 @@ weight 1/0.20 = 5.0. The weight is the same for every school because no
 school was oversampled or undersampled relative to any other. Uniform
 weights are not a simplification — they are the defining signature of
 simple random sampling.</p>
-</div>
-<div class="section level3">
-<h3 id="relationship-to-as_survey">5.4 Relationship to <code>as_survey()</code><a class="anchor" aria-label="anchor" href="#relationship-to-as_survey"></a>
-</h3>
-<p>When <code><a href="../reference/as_survey.html">as_survey()</a></code> is called without specifying
-<code>ids</code> or <code>strata</code>, it automatically creates a
-<code>survey_srs</code> object and issues a warning. Use
-<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> explicitly when you know your design is SRS
-— it suppresses the warning and signals your intent clearly to future
-readers of your code:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># These produce the same object:</span></span>
-<span><span class="co"># as_survey_srs() — explicit, no warning</span></span>
-<span><span class="va">svy_a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">school_survey</span>, weights <span class="op">=</span> <span class="va">sw</span>, fpc <span class="op">=</span> <span class="va">fpc</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># as_survey() — warns that it is dispatching to SRS</span></span>
-<span><span class="va">svy_b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">school_survey</span>, weights <span class="op">=</span> <span class="va">sw</span>, fpc <span class="op">=</span> <span class="va">fpc</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> No `ids` or `strata` specified.</span></span>
-<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Creating a <span style="color: #0000BB;">&lt;survey_srs&gt;</span> design (equal-probability SRS).</span></span>
-<span><span class="co">## <span style="color: #00BB00;">✔</span> Use `as_survey_srs()` to create SRS designs without this warning.</span></span></code></pre>
 <hr>
 </div>
 </div>
@@ -1226,7 +1183,7 @@ presidential vote</td>
 <td><code>weights</code></td>
 </tr></tbody>
 </table>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_ns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span><span class="va">svy_ns</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span></code></pre>
@@ -1254,7 +1211,7 @@ presidential vote</td>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_telemundo &lt;dbl&gt;, news_sources_npr &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_amtalk &lt;dbl&gt;, news_sources_new_york_times &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_local_newspaper &lt;dbl&gt;, news_sources_other &lt;dbl&gt;, …</span></span></span></code></pre>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Presidential approval rating (July 2019)</span></span>
 <span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">svy_ns</span>, <span class="va">pres_approval</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
@@ -1282,7 +1239,7 @@ future readers of your code.</p>
 </h3>
 <p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and
 present standard errors as if the design were a probability sample:</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Creates a survey_taylor object, which misrepresents the design</span></span>
 <span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <p>Using <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> makes the non-probability
@@ -1305,14 +1262,15 @@ registrar demographics (year, major, housing status), use
 <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>. This is the appropriate constructor
 whenever the weights were derived to make the respondents resemble the
 full student body:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">ps_weight</span><span class="op">)</span></span></code></pre></div>
 <p><strong>If no calibration weights are available and you still want to
 use surveycore functions:</strong> Add a column of 1s and use
-<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
+<code>strata</code>:</p>
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">campus_survey</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>This treats all respondents as equally weighted. The SEs it produces
 reflect variability <em>among the 2,400 respondents</em> — they do not
 measure how representative those respondents are of the full student
@@ -1331,58 +1289,53 @@ strategy <span class="citation">(<a href="#ref-baker2013">Baker et al.
 <h2 id="sec-weight-types">7. Probability, SRS, and calibration weights: understanding the
 distinction<a class="anchor" aria-label="anchor" href="#sec-weight-types"></a>
 </h2>
-<p>The three constructors most users encounter —
-<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, and
+<p>The two constructor families most users encounter —
+<code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> and
 <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> — differ in one fundamental way:
 <em>where the weights come from</em>.</p>
 <table class="table">
 <colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
+<col width="33%">
+<col width="33%">
+<col width="33%">
 </colgroup>
 <thead><tr class="header">
 <th></th>
 <th>
 <code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>
 </th>
-<th><code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code></th>
 <th><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td>Weight source</td>
 <td>Sampling protocol (1/π_i)</td>
-<td>Equal-probability selection</td>
 <td>Post-hoc adjustment</td>
 </tr>
 <tr class="even">
 <td>Selection probabilities</td>
 <td>Known and controlled</td>
-<td>Known; equal for all units</td>
 <td>Unknown or overridden by calibration</td>
 </tr>
 <tr class="odd">
 <td>Weight values</td>
-<td>Vary across respondents</td>
-<td>Same for all respondents</td>
+<td>Vary across respondents (or uniform for SRS)</td>
 <td>Vary (reflect adjustment, not design)</td>
 </tr>
 <tr class="even">
 <td>Variance estimator</td>
 <td>Design-based (exact)</td>
-<td>Design-based (exact)</td>
 <td>Approximate</td>
 </tr>
 </tbody>
 </table>
-<p>In <code><a href="../reference/as_survey.html">as_survey()</a></code> and <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>, every
-weight traces back to a specific moment in the sampling protocol — the
-moment each unit’s selection probability was fixed. A PSU drawn with
-probability 1-in-10 gets weight 10. A school drawn from a roster of 400
-with probability 1-in-5 gets weight 5. The randomness that makes
-design-based inference valid is mechanical and recorded.</p>
+<p>In <code><a href="../reference/as_survey.html">as_survey()</a></code>, every weight traces back to a specific
+moment in the sampling protocol — the moment each unit’s selection
+probability was fixed. A PSU drawn with probability 1-in-10 gets weight
+10. A school drawn from a roster of 400 with probability 1-in-5 gets
+weight 5. SRS designs are the special case where all weights are equal
+because every unit had the same selection probability. The randomness
+that makes design-based inference valid is mechanical and recorded.</p>
 <p>In <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>, weights were computed
 <em>after</em> data collection to make the sample resemble a target
 population. The underlying selection mechanism is either unknown (opt-in
@@ -1392,9 +1345,8 @@ itself introduces additional uncertainty that standard variance formulas
 do not fully capture.</p>
 <p>The practical test: <strong>if you can point to the sampling protocol
 that fixed each unit’s probability of selection, use
-<code><a href="../reference/as_survey.html">as_survey()</a></code> or <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>.</strong> If
-the weights were derived from the data after collection, use
-<code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>.</p>
+<code><a href="../reference/as_survey.html">as_survey()</a></code>.</strong> If the weights were derived from the
+data after collection, use <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -1419,10 +1371,11 @@ survey design object.</p>
 <p>If the goal is purely <strong>descriptive</strong> — summarizing the
 attitudes of students in these specific classrooms without generalizing
 — you can treat the participants as a census. Add a column of 1s and use
-<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>:</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
+<code>strata</code>:</p>
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classroom_data</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_srs.html">as_survey_srs</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>Equal weights treat all participants as equally represented. The SEs
 reflect variation <em>among participants</em>. Do not interpret results
 as representative of all students at the school.</p>
@@ -1445,36 +1398,42 @@ as representative of all students at the school.</p>
 <tr class="odd">
 <td>Probability sample with design weights</td>
 <td>
-<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>,
-<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code>
+<code><a href="../reference/as_survey.html">as_survey()</a></code>, <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>
 </td>
 <td>Exact variance</td>
 </tr>
 <tr class="even">
+<td>Pure SRS — equal probability, no clustering/strata</td>
+<td>
+<code><a href="../reference/as_survey.html">as_survey()</a></code> (no <code>ids</code> or
+<code>strata</code>)</td>
+<td>Exact variance; SRS special case of Taylor</td>
+</tr>
+<tr class="odd">
 <td>Any sample with calibration/raking/PSW/matching weights</td>
 <td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
 <td>Approximate variance</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Voluntary response or convenience sample, no weights</td>
 <td>
-<code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> with <code>weights = 1</code>
-</td>
+<code><a href="../reference/as_survey.html">as_survey()</a></code> with <code>weights = 1</code> (no
+<code>ids</code>/<code>strata</code>)</td>
 <td>Conditional inference only; disclose</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Causal inference (treatment effect estimation)</td>
 <td>Not surveycore</td>
 <td>Use MatchIt, WeightIt, lme4, etc.</td>
 </tr>
 </tbody>
 </table>
-<p>When you use <code><a href="../reference/as_survey_srs.html">as_survey_srs()</a></code> with equal weights for a
-non-probability sample, surveycore produces estimates and SEs without
-error. The SEs are valid as a measure of variability <em>among the
-observed participants</em>. They should not be interpreted as
-uncertainty about a broader population unless the sample can be
-independently defended as representative.</p>
+<p>When you use <code><a href="../reference/as_survey.html">as_survey()</a></code> with equal weights and no
+<code>ids</code> or <code>strata</code> for a non-probability sample,
+surveycore produces estimates and SEs without error. The SEs are valid
+as a measure of variability <em>among the observed participants</em>.
+They should not be interpreted as uncertainty about a broader population
+unless the sample can be independently defended as representative.</p>
 <hr>
 </div>
 </div>
