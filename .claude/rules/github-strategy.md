@@ -11,7 +11,7 @@
 |----------|--------|
 | Branching model | `develop` integration branch — features → `develop`; `develop` → `main` for releases |
 | Branch naming | `feature/`, `fix/`, `hotfix/`, `docs/`, `chore/`, `refactor/` |
-| Merge strategy | Squash and merge everywhere |
+| Merge strategy | Squash for feature → develop; regular merge for develop → main |
 | Commit format | Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) |
 | PR granularity | One PR per logical unit of work |
 | Versioning | `X.Y.Z.9000` on `develop`; `X.Y.Z` on `main` after release |
@@ -106,9 +106,14 @@ feat(analysis): implement survey_glm() with Wald confidence intervals (#42)
 
 ## Merge Strategy
 
-**Squash and merge** on all PRs. GitHub settings: allow squash only; auto-delete head branches.
+**Feature → develop:** Squash and merge. `develop` history = one squash commit per
+feature PR.
 
-`main` history = one commit per release. `develop` history = one commit per feature PR.
+**Develop → main (releases only):** Regular merge. `main` history = one merge commit per
+release, plus the feature-level squash commits from develop. This avoids the SHA
+divergence that squash merges create between the two branches.
+
+GitHub settings: allow both squash merges and merge commits; auto-delete head branches.
 
 ---
 

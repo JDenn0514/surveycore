@@ -56,6 +56,11 @@ git status
 
 **If not on `develop`: STOP.** Tell the user to `git checkout develop` first.
 
+**Check GitHub merge settings:** The repo must have "Allow merge commits" enabled
+(GitHub → Settings → General → Pull Requests). Both squash and regular merge can be
+active simultaneously. If only squash is enabled, the `--merge` flag in Step 8 will
+fail — ask the user to enable merge commits before proceeding.
+
 **If working tree is not clean:** report what's uncommitted. Ask the user
 whether to stash or commit the changes before proceeding.
 
@@ -261,7 +266,7 @@ Wait for confirmation. Do not merge without it.
 On confirmation:
 
 ```bash
-gh pr merge <pr-number> --squash --subject "chore(release): bump version to X.Y.Z (#N)"
+gh pr merge <pr-number> --merge
 ```
 
 Mark the CI task complete:

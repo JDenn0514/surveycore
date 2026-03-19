@@ -1,3 +1,12 @@
+# surveycore 0.6.1
+
+## Bug fixes
+
+* `survey_nonprob` validator now accepts zero weights when at least one positive
+  weight exists, unblocking the surveywts `adjust_nonresponse()` workflow.
+  Previously, any zero weight triggered an error. Negative weights are still
+  rejected.
+
 # surveycore 0.6.0
 
 ## Breaking changes

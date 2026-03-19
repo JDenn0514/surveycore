@@ -37,7 +37,7 @@ against the messages defined here.
 | 7 | `as_survey()` | No weights, probs, or ids (SRS) | WARN | `surveycore_warning_srs_no_weights` | `"No weights or population size provided. Treating as equal-probability SRS with unknown population size. Valid: means, proportions, correlations. Invalid: population totals."` |
 | 8 | `as_survey()` | `weights` selects 0 columns | ERROR | `surveycore_error_weights_not_found` | `"{.arg weights} matched no columns in {.arg data}"` |
 | 9 | `as_survey()` | `weights` selects >1 column | ERROR | `surveycore_error_weights_multiple` | `"{.arg weights} must select exactly one column, not {length(weights_cols)}"` |
-| 10 | `as_survey()` | `weights` all zero | ERROR | `surveycore_error_weights_all_zero` | `"All values in {.arg weights} ({.field {weights_var}}) are zero or missing — no valid weights"` |
+| 10 | `as_survey()` | `weights` all zero | ERROR | `surveycore_error_weights_all_zero` | `"All values in {.arg weights} ({.field {weights_var}}) are zero or missing — no valid weights"` Note: Also thrown by `survey_nonprob` validator condition 4b (all non-NA weights are zero, no positive values). |
 | 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
 | 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
@@ -62,7 +62,7 @@ against the messages defined here.
 | 30 | `set_val_labels()` | Some data values lack a label | WARN | `surveycore_warning_missing_labels` | `"Not all values of {.field {var_name}} are labeled. Unlabeled values: {.val {missing}}"` |
 | 31 | S7 validator (`survey_taylor`) | Design variable not in data | ERROR | `surveycore_error_design_var_missing` | `"Design variable(s) not found in {.arg data}: {.field {missing}}"` |
 | 32 | S7 validator (`survey_taylor`) | Weight column not numeric | ERROR | `surveycore_error_weights_not_numeric` | `"Weight column {.field {weights_var}} must be numeric, not {.cls {class(wt_col)}}"` |
-| 33 | S7 validator (`survey_taylor`) | Weight column has non-positive values | ERROR | `surveycore_error_weights_nonpositive` | `"Weight column {.field {weights_var}} has {n_bad} non-positive value(s). All non-NA weights must be > 0."` |
+| 33 | S7 validator (`survey_taylor`, `survey_replicate`) | Weight column has non-positive values | ERROR | `surveycore_error_weights_nonpositive` | `"Weight column {.field {weights_var}} has {n_bad} non-positive value(s). All non-NA weights must be > 0."` Note: No longer thrown by `survey_nonprob` validator (see row 101, `surveycore_error_weights_negative`). |
 | 34 | S7 validator (`survey_taylor`) | Design variable is a list-column | ERROR | `surveycore_error_design_var_list` | `"Design variable {.field {var}} is a list-column. Design variables must be atomic vectors."` |
 | 35 | S7 validator (all) | PSU appears in multiple strata | WARN | `surveycore_warning_psu_multi_strata` | `"Some PSUs appear in more than one stratum: {.val {head(multi_strata_psus, 5)}}. If PSUs are nested within strata, set {.code nest = TRUE}."` |
 | 36 | `update_design()` | Any design variable update | WARN | *(inform, not warn)* | `"Survey design updated. This may affect statistical validity. Updated: {.field {changed_vars}}"` |
@@ -144,6 +144,7 @@ against the messages defined here.
 | 98 | `get_diffs()` | `clean()` output missing intercept | ERROR | `surveycore_error_reference_row_not_found` | `"Reference row not found in model output. Expected exactly one intercept row."` |
 | 99 | `get_diffs()` | `show_pct_change = TRUE` and ref mean is 0 | WARN | `surveycore_warning_pct_change_zero_ref` | `"Reference group mean is 0; percentage change is undefined."` |
 | 100 | `get_diffs()` | `treats` column not a factor | WARN | `surveycore_warning_treats_coerced` | `"{.field {treats_name}} coerced to factor."` |
+| 101 | S7 validator (`survey_nonprob`) | Weight column has negative values | ERROR | `surveycore_error_weights_negative` | `"x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s)."`, `"i" = "All non-NA weights must be non-negative (>= 0)."`, `"v" = "Remove or replace rows where {.field {weights_var}} is negative."` |
 
 ---
 
