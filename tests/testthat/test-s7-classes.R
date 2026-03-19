@@ -764,3 +764,153 @@ test_that("survey_nonprob validator rejects non-numeric weight column", {
     class = "surveycore_error_weights_not_numeric"
   )
 })
+
+# ── survey_nonprob validator: zero weights ────────────────────────────────────
+
+test_that("survey_nonprob allows zero weights after post-construction assignment", {
+  df <- data.frame(x = 1:5, w = c(1, 2, 3, 4, 5))
+  obj <- as_survey_nonprob(df, weights = w)
+  new_data <- obj@data
+  new_data$w <- c(1, 0, 0, 4, 0)
+  obj@data <- new_data
+  test_invariants(obj)
+  expect_equal(sum(obj@data$w == 0), 3L)
+})
+
+test_that("survey_nonprob validator accepts zero weights with at least one positive", {
+  df <- data.frame(x = 1:5, w = c(1, 0, 0, 2, 0))
+  obj <- survey_nonprob(
+    data = df,
+    variables = list(
+      weights        = "w",
+      probs_provided = FALSE,
+      ids            = NULL,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      visible_vars   = NULL
+    )
+  )
+  test_invariants(obj)
+  expect_s3_class(obj@data, "data.frame")
+  expect_equal(sum(obj@data$w == 0), 3L)
+})
+
+test_that("survey_nonprob validator rejects negative weights", {
+  df <- data.frame(x = 1:3, w = c(1, -0.5, 2))
+  expect_error(
+    survey_nonprob(
+      data = df,
+      variables = list(
+        weights        = "w",
+        probs_provided = FALSE,
+        ids            = NULL,
+        strata         = NULL,
+        fpc            = NULL,
+        nest           = FALSE,
+        visible_vars   = NULL
+      )
+    ),
+    class = "surveycore_error_weights_negative"
+  )
+})
+
+test_that("survey_nonprob validator rejects all-zero weights", {
+  df <- data.frame(x = 1:3, w = c(0, 0, 0))
+  expect_error(
+    survey_nonprob(
+      data = df,
+      variables = list(
+        weights        = "w",
+        probs_provided = FALSE,
+        ids            = NULL,
+        strata         = NULL,
+        fpc            = NULL,
+        nest           = FALSE,
+        visible_vars   = NULL
+      )
+    ),
+    class = "surveycore_error_weights_all_zero"
+  )
+})
+
+test_that("survey_nonprob validator accepts single positive weight among zeros", {
+  df <- data.frame(x = 1:5, w = c(0, 0, 0, 0, 0.001))
+  obj <- survey_nonprob(
+    data = df,
+    variables = list(
+      weights        = "w",
+      probs_provided = FALSE,
+      ids            = NULL,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      visible_vars   = NULL
+    )
+  )
+  test_invariants(obj)
+})
+
+test_that("survey_nonprob validator accepts mix of zeros and NAs with one positive", {
+  df <- data.frame(x = 1:4, w = c(0, NA, 1, 0))
+  obj <- survey_nonprob(
+    data = df,
+    variables = list(
+      weights        = "w",
+      probs_provided = FALSE,
+      ids            = NULL,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      visible_vars   = NULL
+    )
+  )
+  test_invariants(obj)
+})
+
+test_that("survey_nonprob validator rejects mix of zeros and negatives", {
+  df <- data.frame(x = 1:3, w = c(0, -1, 0))
+  expect_error(
+    survey_nonprob(
+      data = df,
+      variables = list(
+        weights        = "w",
+        probs_provided = FALSE,
+        ids            = NULL,
+        strata         = NULL,
+        fpc            = NULL,
+        nest           = FALSE,
+        visible_vars   = NULL
+      )
+    ),
+    class = "surveycore_error_weights_negative"
+  )
+})
+
+test_that("survey_nonprob validator rejects all-zero weights with NAs", {
+  df <- data.frame(x = 1:3, w = c(0, NA, 0))
+  expect_error(
+    survey_nonprob(
+      data = df,
+      variables = list(
+        weights        = "w",
+        probs_provided = FALSE,
+        ids            = NULL,
+        strata         = NULL,
+        fpc            = NULL,
+        nest           = FALSE,
+        visible_vars   = NULL
+      )
+    ),
+    class = "surveycore_error_weights_all_zero"
+  )
+})
+
+test_that("test_invariants() passes for survey_nonprob with zero weights", {
+  df <- data.frame(x = 1:5, w = c(1, 2, 3, 4, 5))
+  obj <- as_survey_nonprob(df, weights = w)
+  new_data <- obj@data
+  new_data$w <- c(1, 0, 0, 2, 0)
+  obj@data <- new_data
+  expect_no_error(test_invariants(obj))
+})

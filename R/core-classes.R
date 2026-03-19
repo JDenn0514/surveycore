@@ -697,15 +697,28 @@ survey_nonprob <- S7::new_class(
         )
       }
 
-      n_bad <- sum(non_na <= 0)
-      if (n_bad > 0L) {
+      # Condition 4a — reject negative weights
+      n_neg <- sum(non_na < 0)
+      if (n_neg > 0L) {
         cli::cli_abort(
           c(
-            "x" = "Weight column {.field {weights_var}} has {n_bad} non-positive value(s).",
-            "i" = "All non-NA weights must be strictly greater than 0.",
-            "v" = "Remove or replace rows where {.field {weights_var}} is 0 or negative."
+            "x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s).",
+            "i" = "All non-NA weights must be non-negative (>= 0).",
+            "v" = "Remove or replace rows where {.field {weights_var}} is negative."
           ),
-          class = "surveycore_error_weights_nonpositive"
+          class = "surveycore_error_weights_negative"
+        )
+      }
+
+      # Condition 4b — reject all-zero weights (no positive values)
+      if (!any(non_na > 0)) {
+        cli::cli_abort(
+          c(
+            "x" = "Weight column {.field {weights_var}} has no positive values.",
+            "i" = "At least one non-NA weight must be greater than 0.",
+            "v" = "Check that {.field {weights_var}} contains valid survey weights."
+          ),
+          class = "surveycore_error_weights_all_zero"
         )
       }
     }
