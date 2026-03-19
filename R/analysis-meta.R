@@ -110,3 +110,53 @@ print.survey_result <- function(x, ...) {
   NextMethod()
   invisible(x)
 }
+
+
+# ── print.survey_diffs ──────────────────────────────────────────────────────
+
+#' Print a Survey Diffs Result
+#'
+#' Prints a structured header showing design type, family, dependent
+#' variable, treatment variable with reference level, and estimation
+#' method, then delegates to the tibble print method for the body.
+#'
+#' @param x A `survey_diffs` object.
+#' @param ... Passed to the tibble print method.
+#'
+#' @return `x`, invisibly.
+#'
+#' @method print survey_diffs
+#' @export
+#' @keywords internal
+print.survey_diffs <- function(x, ...) {
+  m <- attr(x, ".meta")
+
+  design_display <- switch(
+    m$design_type,
+    taylor     = "Taylor series",
+    replicate  = "Replicate weights",
+    twophase   = "Two-phase",
+    calibrated = "Calibrated",
+    m$design_type
+  )
+
+  x_name      <- names(m$x)[1L]
+  treats_name <- m$treats$name
+  ref_level   <- m$treats$ref_level
+
+  cat("# A survey_diffs result\n")
+  cat(sprintf(
+    "# Design: %s | Family: %s (%s)\n",
+    design_display, m$family, m$link
+  ))
+  cat(sprintf(
+    "# DV: %s | Treatment: %s (ref: %s)\n",
+    x_name, treats_name, ref_level
+  ))
+  cat(sprintf(
+    "# Method: %s / %s\n",
+    m$estimate_method, m$mean_method
+  ))
+  NextMethod()
+  invisible(x)
+}

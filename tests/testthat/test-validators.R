@@ -47,11 +47,11 @@ test_that(".validate_data_frame() errors for duplicate column names", {
   )
 })
 
-test_that(".validate_data_frame() warns for 1-row data frame", {
+test_that(".validate_data_frame() errors for 1-row data frame", {
   single_row <- data.frame(x = 1, y = 2)
-  expect_warning(
+  expect_error(
     .validate_data_frame(single_row),
-    class = "surveycore_warning_single_row"
+    class = "surveycore_error_single_row"
   )
 })
 

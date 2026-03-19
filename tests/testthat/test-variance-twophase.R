@@ -535,3 +535,86 @@ test_that(".twophase_total() NA path fires when all domain values are NA", {
   result <- surveycore:::.twophase_total(sc, "y1", na.rm = FALSE)
   expect_true(is.na(result$total))
 })
+
+# ── Section 6: SRS / replicate phase-1 designs ──────────────────────────────
+
+test_that("two-phase with SRS phase-1 matches survey [oracle]", {
+  skip_if_not_installed("survival")
+  skip_if_not_installed("survey")
+
+  # Use the pbc dataset: SRS phase-1 (no clusters, no strata)
+  data("pbc", package = "survival", envir = environment())
+  pbc_ph1        <- subset(pbc, !is.na(trt))
+  pbc_ph1$in_ph2 <- !is.na(pbc_ph1$chol)
+  pbc_ph1$wt     <- 1
+
+  ph1_sc <- as_survey(pbc_ph1, weights = wt)
+  d_sc   <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
+
+  d_sv <- survey::twophase(
+    id     = list(~1, ~1),
+    data   = pbc_ph1,
+    subset = ~in_ph2,
+    method = "approx"
+  )
+
+  sc_est <- get_means(d_sc, chol, variance = c("se", "ci"))
+  sv_est <- survey::svymean(~chol, d_sv, na.rm = TRUE)
+
+  expect_equal(sc_est$mean,    coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+})
+
+test_that("two-phase with SRS phase-1 get_totals matches survey [oracle]", {
+  skip_if_not_installed("survival")
+  skip_if_not_installed("survey")
+
+  data("pbc", package = "survival", envir = environment())
+  pbc_ph1        <- subset(pbc, !is.na(trt))
+  pbc_ph1$in_ph2 <- !is.na(pbc_ph1$chol)
+  pbc_ph1$wt     <- 1
+
+  ph1_sc <- as_survey(pbc_ph1, weights = wt)
+  d_sc   <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
+
+  d_sv <- survey::twophase(
+    id     = list(~1, ~1),
+    data   = pbc_ph1,
+    subset = ~in_ph2,
+    method = "approx"
+  )
+
+  sc_est <- get_totals(d_sc, chol, variance = c("se", "ci"))
+  sv_est <- survey::svytotal(~chol, d_sv, na.rm = TRUE)
+
+  expect_equal(sc_est$total,   coef(sv_est)[["chol"]], tolerance = 1e-10)
+  expect_equal(sc_est$se,      as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low,  confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+})
+
+test_that("two-phase with survey_replicate phase-1 constructs and estimates", {
+  # No direct survey:: oracle for replicate phase-1 twophase, but verify
+
+  # construction succeeds and estimation produces finite results
+  df <- make_survey_data(
+    n = 100, n_psu = 10L, design = "replicate", seed = 801L
+  )
+  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
+
+  phase_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  tp <- as_survey_twophase(phase_rep, subset = in_phase2, method = "approx")
+
+  expect_true(S7::S7_inherits(tp, survey_twophase))
+
+  result <- get_means(tp, y1, variance = "se")
+  expect_true(is.finite(result$mean[[1L]]))
+  expect_gte(result$se[[1L]], 0)
+})

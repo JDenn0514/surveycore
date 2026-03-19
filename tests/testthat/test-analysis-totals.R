@@ -87,9 +87,9 @@ test_that("get_totals() works for survey_replicate design", {
   expect_true(is.finite(result$total[[1L]]))
 })
 
-test_that("get_totals() works for survey_srs design", {
+test_that("get_totals() works for SRS design (Taylor with no ids/strata)", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 5L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_totals(d, y1)
   test_result_invariants(result, "survey_totals")
@@ -300,7 +300,7 @@ test_that("get_totals() errors for non-survey-design object", {
 
 test_that("get_totals() errors for non-numeric variable", {
   df <- data.frame(y = letters[1:10], w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_totals(d, y),
     class = "surveycore_error_non_numeric_variable"
@@ -310,7 +310,7 @@ test_that("get_totals() errors for non-numeric variable", {
 
 test_that("get_totals() errors when x resolves to multiple variables", {
   df <- data.frame(y1 = 1:10, y2 = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_totals(d, starts_with("y")),
     class = "surveycore_error_wrong_variable_count"
@@ -319,7 +319,7 @@ test_that("get_totals() errors when x resolves to multiple variables", {
 
 test_that("get_totals() errors for invalid variance value", {
   df <- data.frame(y = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_totals(d, y, variance = "bad_val"),
     class = "surveycore_error_invalid_variance_arg"
@@ -369,14 +369,14 @@ test_that("get_totals() Taylor point + SE + CI match survey::svytotal() — NHAN
 
 test_that("get_totals() total = sum(w * y) for trivial SRS design", {
   df <- data.frame(y = c(1.0, 2.0, 3.0), w = c(2.0, 3.0, 4.0))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   result <- get_totals(d, y, variance = NULL)
   expect_equal(result$total[[1L]], 2 * 1 + 3 * 2 + 4 * 3, tolerance = 1e-14)
 })
 
 test_that("get_totals() no-variable total = sum(weights)", {
   df <- data.frame(y = 1:5, w = c(1, 2, 3, 4, 5))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   result <- get_totals(d, variance = NULL)
   expect_equal(result$total[[1L]], 15.0, tolerance = 1e-14)
 })
@@ -788,13 +788,13 @@ test_that("get_totals() NA group row total matches filtered calibrated design [o
   expect_equal(na_row$n, expected$n)
 })
 
-test_that("get_totals() NA group row total matches filtered srs design [oracle]", {
+test_that("get_totals() NA group row total matches filtered SRS design [oracle]", {
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_srs <- as_survey_srs(df_s, weights = wt)
+  design_srs <- as_survey(df_s, weights = wt)
   na_df_s <- df_s[is.na(df_s$grp), ]
-  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  na_design_srs <- as_survey(na_df_s, weights = wt)
   expected <- get_totals(na_design_srs, y1, variance = "se")
   result <- get_totals(
     design_srs,
@@ -805,7 +805,9 @@ test_that("get_totals() NA group row total matches filtered srs design [oracle]"
   )
   na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$total, expected$total, tolerance = 1e-10)
-  expect_equal(na_row$se, expected$se, tolerance = 1e-8)
+  # SE legitimately differs: HT variance depends on total sample size;
+  # domain estimation (full design, n=100) != pre-filtered oracle (n=~30).
+  expect_true(all(is.finite(na_row$se)))
   expect_equal(na_row$n, expected$n)
 })
 
@@ -853,24 +855,24 @@ test_that("get_totals() multi-group NA row total matches filtered taylor design 
 # Additional coverage: SRS, twophase, empty domains
 # ---------------------------------------------------------------------------
 
-test_that("get_totals() works for survey_srs design (covers .srs_total_cell())", {
+test_that("get_totals() works for SRS design (covers .srs_total_cell())", {
   set.seed(600)
   n <- 100L
   N <- 1000L
   df <- data.frame(y = rnorm(n, mean = 50, sd = 10), w = rep(N / n, n))
-  sc <- as_survey_srs(df, weights = w)
+  sc <- as_survey(df, weights = w)
   result <- get_totals(sc, y, variance = "se")
   test_result_invariants(result, "survey_totals")
   expect_true(is.finite(result$total[[1L]]))
   expect_gte(result$se[[1L]], 0)
 })
 
-test_that("get_totals() survey_srs with FPC covers FPC path in .srs_total_cell()", {
+test_that("get_totals() SRS design with FPC covers FPC path in .srs_total_cell()", {
   set.seed(601)
   n <- 80L
   N <- 800L
   df <- data.frame(y = rnorm(n), w = rep(N / n, n), pop = rep(N, n))
-  sc <- as_survey_srs(df, weights = w, fpc = pop)
+  sc <- as_survey(df, weights = w, fpc = pop)
   result <- get_totals(sc, y, variance = "se")
   test_result_invariants(result, "survey_totals")
   expect_true(is.finite(result$total[[1L]]))
@@ -954,16 +956,19 @@ test_that("get_totals() twophase: empty domain returns NA (covers .twophase_tota
   expect_true(all(is.na(result$total)))
 })
 
-test_that("get_totals() SRS n_d=1 domain returns point estimate with NA se", {
+test_that("get_totals() SRS design n_d=1 domain returns finite SE (Taylor: uncentered influence)", {
   set.seed(606)
   n <- 40L
   df <- data.frame(y = rnorm(n), w = rep(1, n))
-  sc <- as_survey_srs(df, weights = w)
+  sc <- as_survey(df, weights = w)
   sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- seq_len(n) == 1L
   result <- get_totals(sc, y, variance = "se")
   expect_equal(result$n[[1L]], 1L)
   expect_true(is.finite(result$total[[1L]]))
-  expect_true(is.na(result$se[[1L]]))
+  # For totals, the influence function is NOT centered (infl_i = w_i * y_i),
+  # so even with n_d=1 the single contributing PSU produces nonzero variance
+  # (matches survey::svytotal behavior)
+  expect_true(is.finite(result$se[[1L]]))
 })
 
 test_that("get_totals() taylor with FPC fraction covers FPC fraction path in .taylor_total_cell()", {

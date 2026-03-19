@@ -19,6 +19,7 @@ knitr::opts_chunk$set(comment = "#>")
 has_survey     <- requireNamespace("survey",     quietly = TRUE)
 has_srvyr      <- requireNamespace("srvyr",      quietly = TRUE)
 has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
+if (has_surveytidy) loadNamespace("surveytidy")
 
 if (has_survey) {
   library(survey)
@@ -71,14 +72,13 @@ srs_srvyr
 **surveycore**
 
 ```{r srs-sc, eval=has_survey}
-srs_sc <- as_survey_srs(apisrs, weights = pw, fpc = fpc)
+srs_sc <- surveycore::as_survey(apisrs, weights = pw, fpc = fpc)
 srs_sc
 ```
 
 `ids = ~1` is `survey`'s idiom for "no clusters" — not immediately obvious
-to new users. `as_survey_srs()` names the design type explicitly. When neither
-`ids` nor `strata` are specified, `as_survey()` also dispatches to
-`as_survey_srs()` automatically.
+to new users. `as_survey()` without `ids` or `strata` creates an SRS design
+directly, making the design type clear from context.
 
 ### 1.2 Stratified Design
 
@@ -105,7 +105,7 @@ strat_srvyr
 **surveycore**
 
 ```{r strat-sc, eval=has_survey}
-strat_sc <- as_survey(apistrat, strata = stype, weights = pw, fpc = fpc)
+strat_sc <- surveycore::as_survey(apistrat, strata = stype, weights = pw, fpc = fpc)
 strat_sc
 ```
 
@@ -132,7 +132,7 @@ clus_srvyr
 **surveycore**
 
 ```{r clus-sc, eval=has_survey}
-clus_sc <- as_survey(apiclus1, ids = dnum, fpc = fpc, weights = pw)
+clus_sc <- surveycore::as_survey(apiclus1, ids = dnum, fpc = fpc, weights = pw)
 clus_sc
 ```
 
@@ -230,7 +230,7 @@ For a full worked example using `survival::nwtco`, see
 
 | Design | survey | srvyr | surveycore |
 |--------|--------|-------|------------|
-| SRS | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey_srs(...)` |
+| SRS | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey(...)` (no `ids`/`strata`) |
 | Stratified | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
 | Replicate wts | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |
@@ -555,7 +555,7 @@ small_df <- data.frame(
   x     = rnorm(223),
   w     = 1
 )
-small_svy <- as_survey_srs(small_df, weights = w)
+small_svy <- surveycore::as_survey(small_df, weights = w)
 
 get_means(small_svy, x, group = group)
 ```
@@ -625,8 +625,8 @@ dependency footprint small.
 pak::pak("jacobdennen/surveytidy")
 ```
 
-```{r surveytidy-load, eval=has_surveytidy, include=FALSE}
-library(surveytidy)
+```{r surveytidy-load, eval=FALSE, include=FALSE}
+# surveytidy loaded via loadNamespace() in setup chunk
 ```
 
 ### 5.1 `mutate()` — Creating New Variables
@@ -733,7 +733,7 @@ as_survey_nonprob(ns_wave1, weights = weight) |>
 
 | Task | survey | srvyr | surveycore |
 |------|--------|-------|------------|
-| SRS design | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey_srs(...)` |
+| SRS design | `svydesign(ids=~1, ...)` | `as_survey_design(ids=1, ...)` | `as_survey(...)` (no `ids`/`strata`) |
 | Stratified design | `svydesign(strata=~s, ...)` | `as_survey_design(strata=s, ...)` | `as_survey(..., strata=s)` |
 | Cluster design | `svydesign(ids=~d, ...)` | `as_survey_design(ids=d, ...)` | `as_survey(..., ids=d)` |
 | Replicate weights | `svrepdesign(repweights="regex")` | `as_survey_rep(repweights=matches(...))` | `as_survey_replicate(repweights=matches(...))` |

@@ -5,7 +5,6 @@
 # Functions:
 #   .taylor_total_cell()     — Taylor domain-estimation total
 #   .replicate_total_cell()  — replicate-weight domain total
-#   .srs_total_cell()        — SRS domain total
 #   .twophase_total_cell()   — two-phase domain total
 #   .calibrated_total_cell() — calibrated domain total
 #   .total_cell()            — dispatcher
@@ -54,53 +53,17 @@
   # Influence: u_i = domain_i * y_i  (total linearization)
   u <- domain * y_safe
 
-  # Build cluster / strata IDs
-  strata_id <- if (!is.null(vars$strata)) {
-    data[[vars$strata]]
-  } else {
-    rep(1L, n_full)
-  }
-
-  psu_id <- if (!is.null(vars$ids)) {
-    raw_ids <- data[[vars$ids[[1L]]]]
-    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
-      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
-    } else {
-      raw_ids
-    }
-  } else {
-    seq_len(n_full)
-  }
-
-  clusters_mat <- matrix(psu_id, ncol = 1L)
-  strata_mat <- matrix(strata_id, ncol = 1L)
-
-  psu_per_stratum <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
-  sampsize_vec <- as.integer(psu_per_stratum[as.character(strata_id)])
-  sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
-
-  fpc_col_full <- if (!is.null(vars$fpc)) data[[vars$fpc]] else NULL
-  popsize_mat <- if (!is.null(fpc_col_full)) {
-    fpc_vals <- fpc_col_full
-    if (any(fpc_vals > 1, na.rm = TRUE)) {
-      matrix(as.numeric(fpc_vals), ncol = 1L)
-    } else {
-      matrix(as.numeric(sampsize_vec / fpc_vals), ncol = 1L)
-    }
-  } else {
-    NULL
-  }
-
-  fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
+  mats <- .build_cluster_matrices(data, vars)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   lbl <- if (is.null(y_col)) "pop_total" else y_col
   infl_mat <- matrix(w * u, ncol = 1L, dimnames = list(NULL, lbl))
   v <- .svy_recvar(
     infl_mat,
-    clusters_mat,
-    strata_mat,
-    fpcs,
+    mats$clusters_mat,
+    mats$strata_mat,
+    mats$fpcs,
     lonely.psu = lonely.psu
   )
 
@@ -193,93 +156,6 @@
     total = T_hat,
     se = se,
     se_srs = se_srs,
-    n = if (is.null(y_col)) NULL else n_d,
-    n_weighted = N_d
-  )
-}
-
-
-# ── .srs_total_cell() ─────────────────────────────────────────────────────────
-#
-# Domain estimation of a weighted total for SRS designs.
-#
-# @param design  A survey_srs object.
-# @param y_col   Character: variable name, OR NULL for population size.
-# @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
-.srs_total_cell <- function(design, y_col, domain) {
-  data <- design@data
-  vars <- design@variables
-
-  idx <- domain > 0
-  n_d <- as.integer(sum(idx))
-
-  if (n_d == 0L) {
-    return(list(
-      total = NA_real_,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = if (is.null(y_col)) NULL else 0L,
-      n_weighted = 0
-    ))
-  }
-
-  w_sub <- data[[vars$weights]][idx]
-
-  if (is.null(y_col)) {
-    # Population size mode
-    T_hat <- sum(w_sub)
-    y_sub <- rep(1, n_d)
-  } else {
-    y_sub <- data[[y_col]][idx]
-    T_hat <- sum(w_sub * y_sub)
-  }
-
-  N_d <- sum(w_sub)
-
-  if (n_d == 1L) {
-    return(list(
-      total = T_hat,
-      se = NA_real_,
-      se_srs = NA_real_,
-      n = if (is.null(y_col)) NULL else 1L,
-      n_weighted = N_d
-    ))
-  }
-
-  # FPC
-  fpc_var <- vars$fpc
-  fpc_type <- vars$fpc_type
-  f <- 0
-  N_hat <- N_d
-
-  if (!is.null(fpc_var)) {
-    fpc_col <- data[[fpc_var]][idx]
-    if (identical(fpc_type, "population")) {
-      N_hat <- mean(fpc_col, na.rm = TRUE)
-      f <- n_d / N_hat
-    } else {
-      f <- mean(fpc_col, na.rm = TRUE)
-    }
-  }
-
-  ybar <- T_hat / N_d
-  s2 <- sum((y_sub - ybar)^2) / (n_d - 1L)
-
-  var_T <- if (identical(fpc_type, "population")) {
-    N_hat^2 * (1 - f) * s2 / n_d
-  } else if (identical(fpc_type, "fraction")) {
-    N_d^2 * (1 - f) * s2 / n_d
-  } else {
-    N_d^2 * s2 / n_d
-  }
-
-  se <- sqrt(max(0, var_T))
-
-  list(
-    total = T_hat,
-    se = se,
-    se_srs = se, # SRS: se_srs = se
     n = if (is.null(y_col)) NULL else n_d,
     n_weighted = N_d
   )
@@ -449,8 +325,6 @@
     .replicate_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_total_cell(design, y_col, domain)
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    .srs_total_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     .calibrated_total_cell(design, y_col, domain)
   } else {

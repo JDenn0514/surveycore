@@ -14,7 +14,7 @@
 #' labelling.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> A single unquoted numeric
 #'   variable name. Must resolve to exactly one numeric column.
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping

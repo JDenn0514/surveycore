@@ -34,8 +34,12 @@ column (a single column, values strictly > 0).}
 variable column (a single column).}
 
 \item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
-correction column (a single column). Accepts either total population size
-(integer) or sampling fraction (numeric, 0–1). Cannot contain \code{NA}.}
+correction column(s). For single-stage designs, supply one column.
+For multi-stage designs, supply one column per stage:
+\code{fpc = c(fpc_stage1, fpc_stage2)}. Each column accepts either total
+population size (integer, all > 1) or sampling fraction (numeric,
+all in (0, 1]). Cannot contain \code{NA}. Cannot have more columns than
+\code{ids} stages; fewer is allowed (later stages assume infinite population).}
 
 \item{nest}{Logical. If \code{TRUE}, PSU IDs are treated as nested within
 strata — i.e., the same ID value in two different strata refers to two
@@ -67,9 +71,31 @@ as_survey(df, ids = c(psu, ssu), weights = wt)
 
 \section{Simple random sample}{
 
-If \code{ids}, \code{weights}, and \code{probs} are all omitted, an equal-probability SRS
-is assumed. A warning is issued because population totals cannot be
-estimated without weights or population size.
+When no \code{ids} or \code{strata} are specified, the result is a \code{survey_taylor}
+object with \code{NULL} ids and strata — i.e., a simple random sample (SRS).
+The Taylor variance machinery produces the same estimates as the classical
+SRS formula \code{(1 - f) * s^2 / n}. If \code{weights} and \code{probs} are also both
+omitted, uniform weights are assigned and a warning is issued.
+}
+
+\section{Known limitations}{
+
+\code{as_survey()} does not support probability-proportional-to-size (PPS)
+variance estimation. Taylor series linearization treats all designs as
+with-replacement, which overestimates (is conservative for) variance in
+PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
+estimators available in \code{\link[survey:svydesign]{survey::svydesign()}} via its \code{pps} and \code{variance}
+arguments are not supported.
+
+If your design requires PPS-specific variance estimation, create the design
+with \code{\link[survey:svydesign]{survey::svydesign()}} and convert it with \code{\link[=from_svydesign]{from_svydesign()}}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{d_survey <- survey::svydesign(
+  ids = ~psu, weights = ~wt, strata = ~stratum,
+  pps = "brewer", data = mydata
+)
+d <- from_svydesign(d_survey)
+}\if{html}{\out{</div>}}
 }
 
 \examples{
@@ -99,14 +125,12 @@ d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 Other constructors: 
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
-\code{\link{as_survey_srs}()},
 \code{\link{as_survey_twophase}()},
 \code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},
-\code{\link{survey_srs}()},
 \code{\link{survey_taylor}()},
 \code{\link{survey_twophase}()}
 }

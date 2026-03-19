@@ -1,13 +1,12 @@
 # tests/testthat/test-constructors.R
 #
-# Tests for R/03-constructors.R — as_survey_srs(), as_survey(), as_survey_replicate(),
+# Tests for R/03-constructors.R — as_survey(), as_survey_replicate(),
 # and as_survey_twophase().
 #
 # Coverage (per plans/error-messages.md):
 #   Rows 1–15: as_survey() errors and warnings
 #   Rows 1–4, 8–10, 16–18: as_survey_replicate() errors and warnings
 #   Rows 19–25: as_survey_twophase() errors and warnings
-#   Rows 56–61: as_survey_srs() errors and warnings
 #
 # Test structure (per .claude/rules/testing-standards.md):
 #   1. Happy paths  (one block per design type)
@@ -17,29 +16,21 @@
 
 # ── Happy paths ───────────────────────────────────────────────────────────────
 
-test_that("as_survey() dispatches to survey_srs for SRS (no ids or strata)", {
+test_that("as_survey() creates survey_taylor with NULL ids/strata (no ids or strata)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  suppressWarnings(
-    expect_warning(
-      d <- as_survey(df),
-      class = "surveycore_warning_as_survey_srs_fallback"
-    )
-  )
+  d <- suppressWarnings(as_survey(df))
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, NULL)
   expect_identical(d@variables$strata, NULL)
   expect_false(d@variables$probs_provided)
 })
 
-test_that("as_survey() dispatches to survey_srs for weighted SRS (weights only)", {
+test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
   df <- make_survey_data(n = 100, seed = 1L)
-  expect_warning(
-    d <- as_survey(df, weights = wt),
-    class = "surveycore_warning_as_survey_srs_fallback"
-  )
+  d <- suppressWarnings(as_survey(df, weights = wt))
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$ids, NULL)
   expect_false(d@variables$probs_provided)
@@ -129,7 +120,6 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
     wt = rep(5, 5), # consistent: 1/0.2 = 5
     strata = c("A", "A", "B", "B", "B")
   )
-  # Use strata to stay on Taylor path (SRS path rejects both probs+weights)
   expect_message(
     {
       d <- as_survey(df, probs = prob, weights = wt, strata = strata)
@@ -195,24 +185,17 @@ test_that("as_survey() errors when data has duplicate column names [row 3]", {
   )
 })
 
-# Row 4: data has 1 row (warning, not error)
-test_that("as_survey() warns when data has 1 row [row 4]", {
+# Row 4: data has 1 row (error — matches survey package behavior)
+test_that("as_survey() errors when data has 1 row [row 4]", {
   single_row <- data.frame(x = 42, w = 1)
-  suppressWarnings(
-    expect_warning(
-      as_survey(single_row, weights = w),
-      class = "surveycore_warning_single_row"
-    )
+  expect_error(
+    as_survey(single_row, weights = w),
+    class = "surveycore_error_single_row"
   )
+  expect_snapshot(error = TRUE, as_survey(single_row, weights = w))
 })
 
-test_that("as_survey() still returns a valid object after single-row warning [row 4]", {
-  single_row <- data.frame(x = 42, w = 1)
-  d <- suppressWarnings(as_survey(single_row, weights = w))
-  expect_true(S7::S7_inherits(d, survey_srs))
-})
-
-# Row 5: probs and weights inconsistent (Taylor path — needs ids or strata)
+# Row 5: probs and weights inconsistent
 test_that("as_survey() errors when probs and weights are inconsistent [row 5]", {
   df <- data.frame(
     y = 1:5,
@@ -220,7 +203,6 @@ test_that("as_survey() errors when probs and weights are inconsistent [row 5]", 
     wt = rep(3, 5), # inconsistent
     strata = c("A", "A", "B", "B", "B")
   )
-  # Use strata to stay on Taylor path (SRS path errors differently for both supplied)
   expect_error(
     as_survey(df, probs = prob, weights = wt, strata = strata),
     class = "surveycore_error_probs_weights_conflict"
@@ -343,7 +325,7 @@ test_that("as_survey() warns when strata has only one unique value [row 12]", {
   )
 })
 
-# Row 13: fpc selects >1 column
+# Row 13: fpc selects >1 column (with no ids, n_ids=1 so 2 fpc > 1 stage)
 test_that("as_survey() errors when fpc expression selects multiple columns [row 13]", {
   df <- data.frame(
     x = 1:5,
@@ -352,8 +334,8 @@ test_that("as_survey() errors when fpc expression selects multiple columns [row 
     fpc2 = rep(2000L, 5)
   )
   expect_error(
-    suppressWarnings(as_survey(df, weights = wt, fpc = starts_with("fpc"))),
-    class = "surveycore_error_fpc_multiple"
+    as_survey(df, weights = wt, fpc = starts_with("fpc")),
+    class = "surveycore_error_fpc_too_many_stages"
   )
   expect_snapshot(
     error = TRUE,
@@ -403,7 +385,7 @@ test_that("as_survey() with tibble input (inherits data.frame)", {
   tb <- tibble::tibble(y = 1:10, wt = runif(10, 0.5, 2))
   d <- suppressWarnings(as_survey(tb, weights = wt))
   test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
+  expect_true(S7::S7_inherits(d, survey_taylor))
 })
 
 test_that("as_survey() populates all expected @variables keys", {
@@ -789,12 +771,12 @@ test_that("as_survey_replicate() errors when data has duplicate column names [ro
   )
 })
 
-# Row 4: data has 1 row (warning, not error)
-test_that("as_survey_replicate() warns when data has 1 row [row 4]", {
+# Row 4: data has 1 row (error — matches survey package behavior)
+test_that("as_survey_replicate() errors when data has 1 row [row 4]", {
   df <- data.frame(x = 1, w = 1, r1 = 0.9)
-  expect_warning(
+  expect_error(
     as_survey_replicate(df, weights = w, repweights = r1, type = "JK1"),
-    class = "surveycore_warning_single_row"
+    class = "surveycore_error_single_row"
   )
 })
 
@@ -1173,8 +1155,8 @@ test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 
 
 # ── Error paths ───────────────────────────────────────────────────────────────
 
-# Row 19: phase1 is not a survey_taylor
-test_that("as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]", {
+# Row 19: phase1 is not a survey design object
+test_that("as_survey_twophase() errors when phase1 is a data.frame [row 19]", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 19L)
   expect_error(
     as_survey_twophase(df, subset = subset),
@@ -1183,19 +1165,35 @@ test_that("as_survey_twophase() errors when phase1 is not a survey_taylor [row 1
   expect_snapshot(error = TRUE, as_survey_twophase(df, subset = subset))
 })
 
-test_that("as_survey_twophase() errors when phase1 is a survey_replicate [row 19]", {
-  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 20L)
+test_that("as_survey_twophase() errors when phase1 is a plain list [row 19]", {
+  expect_error(
+    as_survey_twophase(list(a = 1), subset = a),
+    class = "surveycore_error_phase1_class"
+  )
+})
+
+test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no ids/strata)", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  tp <- as_survey_twophase(phase1, subset = subset)
+  test_invariants(tp)
+  expect_true(S7::S7_inherits(tp, survey_twophase))
+})
+
+test_that("as_survey_twophase() accepts survey_replicate phase-1", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10L, design = "replicate", seed = 20L
+  )
+  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
   phase_rep <- as_survey_replicate(
     df,
     weights = wt,
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  # phase1 class error fires before subset is resolved — bare name doesn't matter
-  expect_error(
-    as_survey_twophase(phase_rep, subset = in_phase2),
-    class = "surveycore_error_phase1_class"
-  )
+  tp <- as_survey_twophase(phase_rep, subset = in_phase2)
+  test_invariants(tp)
+  expect_true(S7::S7_inherits(tp, survey_twophase))
 })
 
 # Row 20: subset not provided
@@ -1685,13 +1683,12 @@ test_that("as_survey_nonprob() rejects non-positive weights", {
 
 # ── Warning paths ──────────────────────────────────────────────────────────────
 
-test_that("as_survey_nonprob() warns for single-row data", {
+test_that("as_survey_nonprob() errors for single-row data", {
   df <- data.frame(y = 1, w = 1)
-  expect_warning(
-    result <- as_survey_nonprob(df, weights = w),
-    class = "surveycore_warning_single_row"
+  expect_error(
+    as_survey_nonprob(df, weights = w),
+    class = "surveycore_error_single_row"
   )
-  expect_true(S7::S7_inherits(result, survey_nonprob))
 })
 
 # ── Estimation ─────────────────────────────────────────────────────────────────
@@ -1992,285 +1989,6 @@ test_that("get_means() handles partial-NA weight column for survey_nonprob", {
 })
 
 
-# ── as_survey_srs() — happy paths ─────────────────────────────────────────────
-
-# Row 1: explicit weights → survey_srs class
-test_that("as_survey_srs() creates survey_srs with explicit weights", {
-  df <- data.frame(y = 1:10, wt = runif(10, 0.5, 2))
-  d <- as_survey_srs(df, weights = wt)
-  test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
-  expect_identical(d@variables$weights, "wt")
-  expect_identical(d@variables$ids, NULL)
-  expect_identical(d@variables$strata, NULL)
-  expect_false(d@variables$nest)
-  expect_false(d@variables$probs_provided)
-  expect_null(d@variables$fpc_type)
-})
-
-# Row 2: FPC as population sizes → fpc_type == "population"
-test_that("as_survey_srs() detects fpc_type = 'population' for FPC > 1", {
-  df <- data.frame(y = 1:10, wt = rep(1, 10), N = rep(1000L, 10))
-  d <- as_survey_srs(df, weights = wt, fpc = N)
-  test_invariants(d)
-  expect_identical(d@variables$fpc, "N")
-  expect_identical(d@variables$fpc_type, "population")
-})
-
-# Row 3: FPC as sampling fractions → fpc_type == "fraction"
-test_that("as_survey_srs() detects fpc_type = 'fraction' for FPC in (0,1]", {
-  df <- data.frame(y = 1:10, wt = rep(1, 10), f = rep(0.01, 10))
-  d <- as_survey_srs(df, weights = wt, fpc = f)
-  test_invariants(d)
-  expect_identical(d@variables$fpc, "f")
-  expect_identical(d@variables$fpc_type, "fraction")
-})
-
-# Row 4: no weights → uniform weights auto-assigned
-test_that("as_survey_srs() auto-assigns uniform weights when none provided", {
-  df <- data.frame(y = 1:5)
-  expect_warning(
-    d <- as_survey_srs(df),
-    class = "surveycore_warning_srs_no_weights"
-  )
-  test_invariants(d)
-  wt_col <- d@data[[d@variables$weights]]
-  expect_true(all(wt_col == 1L))
-  expect_false(d@variables$probs_provided)
-})
-
-# Row 5: returns survey_srs class (not survey_taylor)
-test_that("as_survey_srs() returns survey_srs, not survey_taylor", {
-  df <- data.frame(y = 1:10, wt = runif(10, 1, 3))
-  d <- as_survey_srs(df, weights = wt)
-  test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
-  expect_false(S7::S7_inherits(d, survey_taylor))
-})
-
-# Row 6: @variables$fpc_type == "population" when FPC > 1
-test_that("as_survey_srs() stores fpc_type 'population' in @variables", {
-  df <- data.frame(y = 1:20, wt = rep(2, 20), N = rep(500L, 20))
-  d <- as_survey_srs(df, weights = wt, fpc = N)
-  expect_identical(d@variables$fpc_type, "population")
-})
-
-# Row 7: @variables$fpc_type == "fraction" when FPC in (0,1]
-test_that("as_survey_srs() stores fpc_type 'fraction' in @variables", {
-  df <- data.frame(y = 1:20, wt = rep(2, 20), f = rep(0.04, 20))
-  d <- as_survey_srs(df, weights = wt, fpc = f)
-  expect_identical(d@variables$fpc_type, "fraction")
-})
-
-# Row 8: @variables$fpc_type is NULL when no FPC
-test_that("as_survey_srs() stores fpc_type = NULL when no FPC provided", {
-  df <- data.frame(y = 1:10, wt = rep(1, 10))
-  d <- as_survey_srs(df, weights = wt)
-  expect_null(d@variables$fpc_type)
-  expect_null(d@variables$fpc)
-})
-
-# Row 9: as_survey() with no ids/strata creates survey_srs (fallback warning)
-test_that("as_survey() fallback to survey_srs fires surveycore_warning_as_survey_srs_fallback", {
-  df <- data.frame(y = 1:10, wt = rep(1, 10))
-  expect_warning(
-    d <- as_survey(df, weights = wt),
-    class = "surveycore_warning_as_survey_srs_fallback"
-  )
-  test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
-})
-
-# Row 9b: probs supplied → @variables$probs_provided == TRUE, weights = 1/probs
-test_that("as_survey_srs() accepts probs and converts to weights", {
-  df <- data.frame(y = 1:5, p = c(0.1, 0.2, 0.1, 0.05, 0.1))
-  d <- as_survey_srs(df, probs = p)
-  test_invariants(d)
-  expect_true(d@variables$probs_provided)
-  wt_col <- d@data[[d@variables$weights]]
-  expected_wt <- 1 / df$p
-  expect_equal(wt_col, expected_wt, tolerance = 1e-10)
-})
-
-
-# ── as_survey_srs() — error paths (rows 56–59 + existing shared rows) ─────────
-
-# Row 56: both weights and probs supplied (dual pattern)
-test_that("as_survey_srs() rejects both weights and probs supplied", {
-  df <- data.frame(y = 1:5, wt = rep(1, 5), p = rep(0.1, 5))
-  expect_error(
-    as_survey_srs(df, weights = wt, probs = p),
-    class = "surveycore_error_weights_probs_both"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt, probs = p)
-  )
-})
-
-# Shared row 1: not a data frame
-test_that("as_survey_srs() rejects non-data-frame data", {
-  expect_error(
-    as_survey_srs(list(y = 1:5)),
-    class = "surveycore_error_not_data_frame"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(list(y = 1:5))
-  )
-})
-
-# Shared row 2: empty data frame
-test_that("as_survey_srs() rejects empty data frame", {
-  df <- data.frame(y = numeric(0))
-  expect_error(
-    as_survey_srs(df),
-    class = "surveycore_error_empty_data"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df)
-  )
-})
-
-# Shared row 8: weights column not found (use tidyselect helper with 0 matches)
-test_that("as_survey_srs() rejects weights selector that matches no columns", {
-  df <- data.frame(y = 1:5)
-  expect_error(
-    as_survey_srs(df, weights = starts_with("zzz_nonexistent")),
-    class = "surveycore_error_weights_not_found"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = starts_with("zzz_nonexistent"))
-  )
-})
-
-# Shared row 9: weights column is non-positive (zero weight)
-test_that("as_survey_srs() rejects zero weight values", {
-  df <- data.frame(y = 1:5, wt = c(1, 0, 1, 1, 1))
-  expect_error(
-    as_survey_srs(df, weights = wt),
-    class = "surveycore_error_weights_nonpositive"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt)
-  )
-})
-
-# Row 57: FPC non-positive values (dual pattern)
-test_that("as_survey_srs() rejects non-positive FPC values", {
-  df <- data.frame(y = 1:5, wt = rep(1, 5), fpc_col = c(500, 0, 500, 500, 500))
-  expect_error(
-    as_survey_srs(df, weights = wt, fpc = fpc_col),
-    class = "surveycore_error_fpc_nonpositive"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt, fpc = fpc_col)
-  )
-})
-
-# Row 58: FPC ambiguous — mixes > 1 and ≤ 1 (dual pattern)
-test_that("as_survey_srs() rejects FPC that mixes >1 and ≤1 values", {
-  df <- data.frame(
-    y = 1:5,
-    wt = rep(1, 5),
-    fpc_col = c(500, 0.5, 500, 500, 500)
-  )
-  expect_error(
-    as_survey_srs(df, weights = wt, fpc = fpc_col),
-    class = "surveycore_error_fpc_ambiguous"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt, fpc = fpc_col)
-  )
-})
-
-# Row 59: FPC population size below sample size (dual pattern)
-test_that("as_survey_srs() rejects FPC population size smaller than sample", {
-  # 10 rows, population size = 5 < n = 10
-  df <- data.frame(y = 1:10, wt = rep(1, 10), fpc_col = rep(5L, 10))
-  expect_error(
-    as_survey_srs(df, weights = wt, fpc = fpc_col),
-    class = "surveycore_error_fpc_below_sample"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt, fpc = fpc_col)
-  )
-})
-
-# Existing FPC NA check (shared row from error-messages.md)
-test_that("as_survey_srs() rejects FPC column with NA values", {
-  df <- data.frame(
-    y = 1:5,
-    wt = rep(1, 5),
-    fpc_col = c(500L, NA, 500L, 500L, 500L)
-  )
-  expect_error(
-    as_survey_srs(df, weights = wt, fpc = fpc_col),
-    class = "surveycore_error_fpc_na"
-  )
-  expect_snapshot(
-    error = TRUE,
-    as_survey_srs(df, weights = wt, fpc = fpc_col)
-  )
-})
-
-
-# ── as_survey_srs() — warning paths ──────────────────────────────────────────
-
-# Row 61: no weights warning (result is still constructed correctly)
-test_that("as_survey_srs() fires srs_no_weights warning and still returns object", {
-  df <- data.frame(y = 1:10)
-  expect_warning(
-    d <- as_survey_srs(df),
-    class = "surveycore_warning_srs_no_weights"
-  )
-  test_invariants(d)
-  expect_true(S7::S7_inherits(d, survey_srs))
-  expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
-})
-
-# Row 60: as_survey() fallback warning — both warnings fire in order when no weights
-test_that("as_survey() fallback fires srs_fallback then srs_no_weights warnings", {
-  df <- data.frame(y = 1:5)
-  # Both warnings fire: first fallback (row 60), then srs_no_weights (row 61)
-  warns <- list()
-  withCallingHandlers(
-    {
-      d <- as_survey(df)
-    },
-    warning = function(w) {
-      warns[[length(warns) + 1L]] <<- class(w)[[1L]]
-      invokeRestart("muffleWarning")
-    }
-  )
-  expect_identical(warns[[1L]], "surveycore_warning_as_survey_srs_fallback")
-  expect_identical(warns[[2L]], "surveycore_warning_srs_no_weights")
-})
-
-
-# ── as_survey_srs() — snapshot for fallback warning ──────────────────────────
-
-test_that("as_survey() fallback warning snapshot matches expected message", {
-  df <- data.frame(y = 1:5, wt = rep(1, 5))
-  expect_snapshot(
-    as_survey(df, weights = wt)
-  )
-})
-
-test_that("as_survey_srs() no-weights warning snapshot matches expected message", {
-  df <- data.frame(y = 1:5)
-  expect_snapshot(
-    as_survey_srs(df)
-  )
-})
-
-
 # ── weighting_history promotion ───────────────────────────────────────────────
 
 test_that("as_survey() promotes weighting_history attribute from data", {
@@ -2301,11 +2019,11 @@ test_that("as_survey_replicate() promotes weighting_history attribute from data"
   expect_identical(d@metadata@weighting_history, history)
 })
 
-test_that("as_survey_srs() promotes weighting_history attribute from data", {
+test_that("as_survey() promotes weighting_history for weights-only design", {
   df <- data.frame(y = 1:10, wt = rep(1, 10))
   history <- list(list(step = 1L, operation = "nonresponse_weighting_class"))
   attr(df, "weighting_history") <- history
-  d <- as_survey_srs(df, weights = wt)
+  d <- suppressWarnings(as_survey(df, weights = wt))
   test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
@@ -2315,4 +2033,267 @@ test_that("as_survey() leaves weighting_history as list() for plain data.frame",
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   test_invariants(d)
   expect_identical(d@metadata@weighting_history, list())
+})
+
+# =============================================================================
+# as_survey() multi-stage FPC
+# =============================================================================
+
+test_that("as_survey() accepts multi-column fpc and stores as character vector", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  sc <- as_survey(
+    df,
+    ids = c(psu, ssu),
+    weights = wt,
+    strata = strata,
+    fpc = c(fpc, fpc2)
+  )
+  test_invariants(sc)
+  expect_identical(sc@variables$fpc, c("fpc", "fpc2"))
+})
+
+test_that("as_survey() stores single-column fpc as character(1) [backward compat]", {
+  df <- make_survey_data(n = 200, n_psu = 20, seed = 1)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  test_invariants(sc)
+  expect_identical(sc@variables$fpc, "fpc")
+})
+
+test_that("as_survey() errors when fpc has more columns than ID stages", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  # Need a third distinct FPC column to trigger >2 columns for 2-stage ids
+  df$fpc3 <- df$fpc2 + 1L
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2, fpc3)
+    ),
+    class = "surveycore_error_fpc_too_many_stages"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2, fpc3)
+    )
+  )
+})
+
+test_that("as_survey() warns for partial FPC (stage-1 col with 2-stage ids)", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  expect_warning(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      strata = strata,
+      fpc = fpc
+    ),
+    class = "surveycore_warning_fpc_partial_stages"
+  )
+})
+
+test_that("as_survey() rejects NA in stage-2 FPC column [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- df$fpc2
+  df$fpc2_bad[1L] <- NA_integer_
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects nonpositive stage-2 FPC value [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- df$fpc2
+  df$fpc2_bad[1L] <- 0L
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects stage-2 FPC smaller than stage-2 cluster count [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  df$fpc2_bad <- 2L # smaller than actual SSU count per PSU (5)
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_smaller_than_n"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey() rejects non-constant stage-2 FPC fraction within PSU [dual-pattern]", {
+  df <- make_survey_data(n = 200, n_psu = 20, n_ssu = 5, seed = 1)
+  set.seed(99)
+  df$fpc2_bad <- runif(nrow(df), 0.1, 0.9)
+  expect_error(
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    ),
+    class = "surveycore_error_fpc_not_constant"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(
+      df,
+      ids = c(psu, ssu),
+      weights = wt,
+      fpc = c(fpc, fpc2_bad)
+    )
+  )
+})
+
+test_that("as_survey_replicate() still rejects multi-column fpc", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10, n_ssu = 5, design = "replicate", seed = 1
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      fpc = c(fpc, fpc2)
+    ),
+    class = "surveycore_error_fpc_multiple"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      fpc = c(fpc, fpc2)
+    )
+  )
+})
+
+
+# =============================================================================
+# make_survey_data() extension — multi-stage (n_ssu, n_unit)
+# =============================================================================
+
+test_that("make_survey_data() with n_ssu produces ssu and fpc2 columns", {
+  df <- make_survey_data(n = 100, n_psu = 10, n_ssu = 5, seed = 1)
+
+  # ssu column exists and is character
+
+  expect_true("ssu" %in% names(df))
+  expect_type(df$ssu, "character")
+
+  # fpc2 column exists and is integer
+
+  expect_true("fpc2" %in% names(df))
+  expect_type(df$fpc2, "integer")
+
+  # ssu IDs follow format "{psu}_s{j}"
+  expect_true(all(grepl("^psu_\\d+_s\\d+$", df$ssu)))
+
+  # ssu IDs are unique within each PSU
+  ssu_per_psu <- split(df$ssu, df$psu)
+  for (psu_ssus in ssu_per_psu) {
+    n_unique_ssu <- length(unique(psu_ssus))
+    expect_lte(n_unique_ssu, 5L)
+  }
+
+  # fpc2 is constant within each PSU and equals n_ssu * 2L
+  fpc2_per_psu <- split(df$fpc2, df$psu)
+  for (psu_fpc2 in fpc2_per_psu) {
+    expect_identical(unique(psu_fpc2), 10L) # n_ssu * 2L = 5 * 2 = 10
+  }
+})
+
+test_that("make_survey_data() with n_ssu and n_unit produces unit and fpc3", {
+  df <- make_survey_data(
+    n = 100, n_psu = 10, n_ssu = 5, n_unit = 3, seed = 1
+  )
+
+  # unit column exists and is character
+  expect_true("unit" %in% names(df))
+  expect_type(df$unit, "character")
+
+  # fpc3 column exists and is integer
+  expect_true("fpc3" %in% names(df))
+  expect_type(df$fpc3, "integer")
+
+  # unit IDs follow format "{ssu}_u{j}"
+  expect_true(all(grepl("_s\\d+_u\\d+$", df$unit)))
+
+  # fpc3 is constant within each SSU and equals n_unit * 2L
+  fpc3_per_ssu <- split(df$fpc3, df$ssu)
+  for (ssu_fpc3 in fpc3_per_ssu) {
+    expect_identical(unique(ssu_fpc3), 6L) # n_unit * 2L = 3 * 2 = 6
+  }
+})
+
+test_that("make_survey_data() errors when n_unit given without n_ssu", {
+  expect_error(
+    make_survey_data(n_unit = 3),
+    regexp = "n_ssu"
+  )
+})
+
+test_that("make_survey_data() with no n_ssu/n_unit is identical to original", {
+  df_old <- make_survey_data(n = 100, n_psu = 10, seed = 42)
+  df_new <- make_survey_data(n = 100, n_psu = 10, n_ssu = NULL, seed = 42)
+
+  # Same columns — no ssu, fpc2, unit, fpc3
+  expect_false("ssu" %in% names(df_new))
+  expect_false("fpc2" %in% names(df_new))
+  expect_false("unit" %in% names(df_new))
+  expect_false("fpc3" %in% names(df_new))
+
+  # Identical output
+  expect_identical(df_old, df_new)
 })

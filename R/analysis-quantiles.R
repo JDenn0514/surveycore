@@ -15,7 +15,7 @@
 #' classes.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> A single unquoted numeric
 #'   variable name. Must resolve to exactly one numeric column.
 #' @param probs Numeric vector of probabilities in (0, 1). Default
@@ -59,7 +59,10 @@
 #'   \item `estimate` — weighted quantile estimate.
 #'   \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'     `deff`) — only those requested via `variance`. CIs are Woodruff
-#'     intervals and are generally asymmetric around `estimate`.
+#'     intervals and are generally asymmetric around `estimate`. `deff` is
+#'     always `NA` for quantile estimates: computing it requires a kernel
+#'     density estimate at the quantile point (the Woodruff SRS approximation
+#'     used by `survey::svyquantile(deff = TRUE)`), which is not implemented.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
@@ -315,7 +318,10 @@ get_quantiles <- function(
       var_cols$moe <- (acc_ci_high - acc_ci_low) / 2
     }
     if ("deff" %in% variance) {
-      # No closed-form SRS SE for quantiles; deff is always NA
+      # DEFF requires se_srs, which for quantiles needs a kernel density
+      # estimate at the quantile point (Woodruff SRS approximation).
+      # Not implemented — deff is intentionally NA. See PR 8 in
+      # plans/audit-remediation-plan.md for the implementation path.
       var_cols$deff <- rep(NA_real_, length(acc_estimate))
     }
   }

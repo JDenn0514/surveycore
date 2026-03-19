@@ -28,7 +28,7 @@ library(surveycore)
 
 .glm_srs <- function(seed = 1L) {
   df <- make_survey_data(n = 200L, seed = seed)
-  as_survey_srs(df, weights = wt)
+  as_survey(df, weights = wt)
 }
 
 .glm_replicate <- function(seed = 1L) {
@@ -1087,4 +1087,81 @@ test_that("clean() CIs are numerically identical to confint(fit)", {
     unname(ci_confint[, "97.5 %"]),
     tolerance = 1e-12
   )
+})
+
+
+# ===========================================================================
+# Multi-stage GLM tests
+# ===========================================================================
+
+test_that("survey_glm() matches survey::svyglm() for 2-stage design [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 500, n_psu = 50, n_ssu = 10, seed = 42)
+  sc <- as_survey(df, ids = c(psu, ssu), weights = wt, strata = strata)
+  test_invariants(sc)
+  test_glm_fit_invariants(survey_glm(y1 ~ y2, design = sc))
+  sv <- survey::svydesign(
+    id = ~psu + ssu, weights = ~wt, strata = ~strata,
+    data = df, nest = TRUE
+  )
+  sc_fit <- survey_glm(y1 ~ y2, design = sc)
+  sv_fit <- survey::svyglm(y1 ~ y2, design = sv)
+  expect_equal(sc_fit@coefficients, coef(sv_fit), tolerance = 1e-10)
+  expect_equal(
+    as.numeric(sqrt(diag(sc_fit@vcov))),
+    as.numeric(survey::SE(sv_fit)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("survey_glm() accepts multi-stage design without error [smoke]", {
+  df <- make_survey_data(n = 300, n_psu = 30, n_ssu = 5, seed = 1)
+  sc <- as_survey(
+    df,
+    ids = c(psu, ssu),
+    weights = wt,
+    strata = strata
+  )
+  expect_no_error(survey_glm(y1 ~ y2, design = sc))
+})
+
+# ── Audit: non-contiguous NA weight indexing fix ──────────────────────────────
+
+test_that("survey_glm() @weights correct with non-contiguous NAs and na.omit", {
+  df <- make_survey_data(n = 200L, seed = 42)
+  # Inject NAs at non-contiguous positions in the response
+  na_positions <- c(3L, 7L, 15L, 42L, 100L)
+  df$y1[na_positions] <- NA_real_
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit <- survey_glm(d, y1 ~ y2, na.action = na.omit)
+
+  test_glm_fit_invariants(fit)
+
+  # Number of weights must equal number of fitted values
+  expect_equal(length(fit@weights), length(fit@fitted_values))
+
+  # Weights should correspond to the non-NA rows' weights
+  non_na_mask <- !seq_len(nrow(df)) %in% na_positions
+  expected_weights <- df$wt[non_na_mask]
+  expect_equal(fit@weights, expected_weights, tolerance = 1e-10)
+})
+
+test_that("survey_glm() with non-contiguous na.omit matches clean-data fit", {
+  df <- make_survey_data(n = 200L, seed = 42)
+  na_positions <- c(3L, 7L, 15L, 42L, 100L)
+  df$y1[na_positions] <- NA_real_
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  fit_na <- survey_glm(d, y1 ~ y2, na.action = na.omit)
+
+  # Fit on manually cleaned data
+  df_clean <- df[!is.na(df$y1), ]
+  d_clean <- as_survey(
+    df_clean, ids = psu, weights = wt, strata = strata, nest = TRUE
+  )
+  fit_clean <- survey_glm(d_clean, y1 ~ y2)
+
+  expect_equal(
+    fit_na@coefficients, fit_clean@coefficients, tolerance = 1e-10
+  )
+  expect_equal(fit_na@weights, fit_clean@weights, tolerance = 1e-10)
 })

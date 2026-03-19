@@ -21,7 +21,7 @@ get_totals(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
 numeric variable name. When \code{NULL} (default), estimates the population
@@ -96,6 +96,7 @@ get_totals(d, agep, group = sex)
 Other analysis: 
 \code{\link{clean}()},
 \code{\link{get_corr}()},
+\code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
 \code{\link{get_quantiles}()},

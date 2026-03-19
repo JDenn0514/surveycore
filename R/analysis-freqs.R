@@ -17,7 +17,7 @@
 #' quantification, and metadata-driven labelling.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, `survey_srs`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> One or more categorical
 #'   variables. Bare names or tidy-select helpers (e.g., `c(q1, q2, q3)`).
 #'   When two or more variables are selected, multi-variable stacking mode

@@ -25,11 +25,11 @@ make_battery_df <- function() {
   df
 }
 
-# Survey object built via as_survey_srs() so labels land in @metadata.
+# Survey object built via as_survey() so labels land in @metadata.
 make_battery_survey <- function() {
   df    <- make_battery_df()
   df$wt <- rep(1.0, 5L)
-  as_survey_srs(df, weights = wt)
+  as_survey(df, weights = wt)
 }
 
 # Survey object built directly (bypassing as_survey) so labels stay on @data.
@@ -224,7 +224,7 @@ test_that("infer_question_prefaces() on data frame: as_survey() picks up preface
   df  <- make_battery_df()
   df$wt <- rep(1.0, 5L)
   df2 <- infer_question_prefaces(df, verbose = FALSE)
-  d   <- as_survey_srs(df2, weights = wt)
+  d   <- as_survey(df2, weights = wt)
 
   expect_identical(
     d@metadata@question_prefaces[["discrim_a"]],

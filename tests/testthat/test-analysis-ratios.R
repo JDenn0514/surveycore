@@ -76,9 +76,9 @@ test_that("get_ratios() returns correct result for survey_replicate", {
   expect_lt(result$ci_low[[1L]], result$ci_high[[1L]])
 })
 
-test_that("get_ratios() returns correct result for survey_srs", {
+test_that("get_ratios() returns correct result for SRS design", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 3L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_ratios(d, y1, y2)
   test_result_invariants(result, "survey_ratios")
@@ -242,7 +242,7 @@ test_that("get_ratios() SRS matches svyratio() — equal weights [oracle]", {
   )
   df$wt_equal <- 1L
 
-  d_sc <- as_survey_srs(df, weights = wt_equal)
+  d_sc <- as_survey(df, weights = wt_equal)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt_equal, data = df)
 
   sc <- get_ratios(d_sc, y1, y2, variance = c("se", "ci"))
@@ -577,7 +577,7 @@ test_that("get_ratios() errors for non-survey-design object", {
 
 test_that("get_ratios() errors for non-numeric numerator", {
   df <- data.frame(y = letters[1:10], x = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, x),
     class = "surveycore_error_non_numeric_variable"
@@ -587,7 +587,7 @@ test_that("get_ratios() errors for non-numeric numerator", {
 
 test_that("get_ratios() errors for non-numeric denominator", {
   df <- data.frame(y = 1:10, x = letters[1:10], w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, x),
     class = "surveycore_error_non_numeric_variable"
@@ -597,7 +597,7 @@ test_that("get_ratios() errors for non-numeric denominator", {
 
 test_that("get_ratios() errors when all denominator values are zero", {
   df <- data.frame(y = 1:10, x = rep(0, 10), w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, x),
     class = "surveycore_error_ratio_zero_denominator"
@@ -607,7 +607,7 @@ test_that("get_ratios() errors when all denominator values are zero", {
 
 test_that("get_ratios() errors for invalid variance value", {
   df <- data.frame(y = 1:10, x = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, x, variance = "bogus"),
     class = "surveycore_error_invalid_variance_arg"
@@ -617,7 +617,7 @@ test_that("get_ratios() errors for invalid variance value", {
 
 test_that("get_ratios() errors for invalid conf_level", {
   df <- data.frame(y = 1:10, x = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, x, conf_level = 1.5),
     class = "surveycore_error_invalid_conf_level"
@@ -626,7 +626,7 @@ test_that("get_ratios() errors for invalid conf_level", {
 
 test_that("get_ratios() errors when numerator resolves to multiple variables", {
   df <- data.frame(y1 = 1:10, y2 = 1:10, x = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, starts_with("y"), x),
     class = "surveycore_error_wrong_variable_count"
@@ -635,7 +635,7 @@ test_that("get_ratios() errors when numerator resolves to multiple variables", {
 
 test_that("get_ratios() errors when denominator resolves to zero variables", {
   df <- data.frame(y = 1:10, x = 1:10, w = rep(1, 10))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
   expect_error(
     get_ratios(d, y, starts_with("zzz")),
     class = "surveycore_error_wrong_variable_count"
@@ -648,7 +648,7 @@ test_that("get_ratios() errors when denominator resolves to zero variables", {
 
 test_that("get_ratios() warns for small cell (n < min_cell_n)", {
   df <- data.frame(y = 1:5, x = 5:1, w = rep(1, 5))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   expect_warning(
     get_ratios(d, y, x, min_cell_n = 30L),
@@ -658,7 +658,7 @@ test_that("get_ratios() warns for small cell (n < min_cell_n)", {
 
 test_that("get_ratios() no small-cell warning when min_cell_n = 0L", {
   df <- data.frame(y = 1:5, x = 5:1, w = rep(1, 5))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   expect_no_warning(
     get_ratios(d, y, x, min_cell_n = 0L)
@@ -668,7 +668,7 @@ test_that("get_ratios() no small-cell warning when min_cell_n = 0L", {
 test_that("get_ratios() cv = NA + warning when ratio estimate is 0", {
   # ratio = 0: numerator is all zeros; use n >= 30 to avoid small-cell warning
   df <- data.frame(y = rep(0, 50), x = seq_len(50), w = rep(1, 50))
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   expect_warning(
     result <- get_ratios(d, y, x, variance = "cv"),
@@ -795,7 +795,7 @@ test_that("get_ratios() group column is <fct> when group var has haven labels", 
     ),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   result <- get_ratios(d, y1, y2, group = gender)
   expect_true(is.factor(result$gender))
@@ -812,7 +812,7 @@ test_that("get_ratios() meta$group stores labels regardless of label_values", {
     ),
     w = rep(1, 100)
   )
-  d <- as_survey_srs(df, weights = w)
+  d <- as_survey(df, weights = w)
 
   r_true <- get_ratios(d, y1, y2, group = gender, label_values = TRUE)
   r_false <- get_ratios(d, y1, y2, group = gender, label_values = FALSE)
@@ -1214,9 +1214,9 @@ test_that("get_ratios() NA group row ratio matches filtered srs design [oracle]"
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_srs <- as_survey_srs(df_s, weights = wt)
+  design_srs <- as_survey(df_s, weights = wt)
   na_df_s <- df_s[is.na(df_s$grp), ]
-  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  na_design_srs <- as_survey(na_df_s, weights = wt)
   expected <- get_ratios(na_design_srs, y1, y2, variance = "se")
   result <- get_ratios(
     design_srs,

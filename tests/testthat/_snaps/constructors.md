@@ -24,6 +24,14 @@
       Error in `as_survey()`:
       x Column names in `data` must be unique. Duplicates: x
 
+# as_survey() errors when data has 1 row [row 4]
+
+    Code
+      as_survey(single_row, weights = w)
+    Condition
+      Error in `as_survey()`:
+      x `data` has only 1 row. A survey design requires at least 2 observations.
+
 # as_survey() errors when probs and weights are inconsistent [row 5]
 
     Code
@@ -37,11 +45,7 @@
     Code
       as_survey(df, weights = starts_with("zzz"))
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
-      Error in `as_survey_srs()`:
+      Error in `as_survey()`:
       x `weights` matched no columns in `data`
 
 # as_survey() errors when weights expression selects multiple columns [row 9]
@@ -49,11 +53,7 @@
     Code
       as_survey(df, weights = starts_with("wt"))
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
-      Error in `as_survey_srs()`:
+      Error in `as_survey()`:
       x `weights` must select exactly one column, not 2
 
 # as_survey() errors when strata expression selects multiple columns [row 11]
@@ -69,22 +69,15 @@
     Code
       as_survey(df, weights = wt, fpc = starts_with("fpc"))
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
-      Error in `as_survey_srs()`:
-      x `fpc` must select exactly one column, not 2
+      Error in `as_survey()`:
+      x `fpc` selected 2 column(s) but `ids` has only 1 stage(s).
+      i FPC columns must correspond 1-to-1 with ID stages. Supply at most 1 FPC column(s).
 
 # as_survey() errors when fpc column has NA values [row 14]
 
     Code
       as_survey(df, weights = wt, fpc = fpc)
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
       Error in `.validate_fpc()`:
       x `fpc` column fpc contains 1 NA value(s). FPC must be fully observed.
       v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
@@ -162,14 +155,14 @@
       # i 190 more rows
       # i 1 more variable: phase2_prob <dbl>
 
-# as_survey_twophase() errors when phase1 is not a survey_taylor [row 19]
+# as_survey_twophase() errors when phase1 is a data.frame [row 19]
 
     Code
       as_survey_twophase(df, subset = subset)
     Condition
       Error in `as_survey_twophase()`:
-      x `phase1` must be a <survey_taylor> object, not <data.frame>.
-      i Create it first with `as_survey()`.
+      x `phase1` must be a survey design object (<survey_base>), not <data.frame>.
+      i Create it first with `as_survey()` or `as_survey_replicate()`.
 
 # as_survey_twophase() errors when subset is not provided [row 20]
 
@@ -463,131 +456,57 @@
       i Got <character>.
       v Convert with `as.numeric(w)`.
 
-# as_survey_srs() rejects both weights and probs supplied
+# as_survey() errors when fpc has more columns than ID stages
 
     Code
-      as_survey_srs(df, weights = wt, probs = p)
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2, fpc3))
     Condition
-      Error in `as_survey_srs()`:
-      x Supply `weights` or `probs`, not both.
-      i Use `weights` for sampling weights or `probs` for sampling probabilities.
+      Error in `as_survey()`:
+      x `fpc` selected 3 column(s) but `ids` has only 2 stage(s).
+      i FPC columns must correspond 1-to-1 with ID stages. Supply at most 2 FPC column(s).
 
-# as_survey_srs() rejects non-data-frame data
-
-    Code
-      as_survey_srs(list(y = 1:5))
-    Condition
-      Error in `as_survey_srs()`:
-      x `data` must be a data frame, not <list>
-
-# as_survey_srs() rejects empty data frame
+# as_survey() rejects NA in stage-2 FPC column [dual-pattern]
 
     Code
-      as_survey_srs(df)
-    Condition
-      Error in `as_survey_srs()`:
-      x `data` must have at least one row
-
-# as_survey_srs() rejects weights selector that matches no columns
-
-    Code
-      as_survey_srs(df, weights = starts_with("zzz_nonexistent"))
-    Condition
-      Error in `as_survey_srs()`:
-      x `weights` matched no columns in `data`
-
-# as_survey_srs() rejects zero weight values
-
-    Code
-      as_survey_srs(df, weights = wt)
-    Condition
-      Error in `.validate_weights()`:
-      x Weight column wt has 1 non-positive value(s).
-      i All non-NA weights must be strictly greater than 0.
-      v Remove or replace rows where wt is 0 or negative.
-
-# as_survey_srs() rejects non-positive FPC values
-
-    Code
-      as_survey_srs(df, weights = wt, fpc = fpc_col)
-    Condition
-      Error in `as_survey_srs()`:
-      x `fpc` column fpc_col has 1 non-positive value(s). FPC values must be > 0.
-      i FPC must be either population sizes (> 1) or sampling fractions (0 < f ≤ 1).
-
-# as_survey_srs() rejects FPC that mixes >1 and ≤1 values
-
-    Code
-      as_survey_srs(df, weights = wt, fpc = fpc_col)
-    Condition
-      Error in `as_survey_srs()`:
-      x `fpc` column fpc_col mixes values > 1 (population sizes) and values ≤ 1 (sampling fractions). All FPC values must be consistently one type.
-      i Use all values > 1 for population sizes, or all values in (0, 1] for sampling fractions.
-
-# as_survey_srs() rejects FPC population size smaller than sample
-
-    Code
-      as_survey_srs(df, weights = wt, fpc = fpc_col)
-    Condition
-      Error in `as_survey_srs()`:
-      x `fpc` column fpc_col has 10 value(s) smaller than the sample size (10). Population size cannot be smaller than the number of sampled units.
-      i Check your FPC column. For sampling fractions, supply values in (0, 1] instead.
-
-# as_survey_srs() rejects FPC column with NA values
-
-    Code
-      as_survey_srs(df, weights = wt, fpc = fpc_col)
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
     Condition
       Error in `.validate_fpc()`:
-      x `fpc` column fpc_col contains 1 NA value(s). FPC must be fully observed.
+      x `fpc` column fpc2_bad contains 1 NA value(s). FPC must be fully observed.
       v Remove rows with missing FPC or set `fpc = NULL` to omit the correction.
 
-# as_survey() fallback warning snapshot matches expected message
+# as_survey() rejects nonpositive stage-2 FPC value [dual-pattern]
 
     Code
-      as_survey(df, weights = wt)
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
     Condition
-      Warning:
-      ! No `ids` or `strata` specified.
-      i Creating a <survey_srs> design (equal-probability SRS).
-      v Use `as_survey_srs()` to create SRS designs without this warning.
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 5
-      
-    Output
-      # A tibble: 5 x 2
-            y    wt
-        <int> <dbl>
-      1     1     1
-      2     2     1
-      3     3     1
-      4     4     1
-      5     5     1
+      Error in `as_survey()`:
+      x `fpc` column fpc2_bad has 1 non-positive value(s). FPC values must be > 0.
+      i FPC must be either population sizes (> 1) or sampling fractions (0 < f ≤ 1).
 
-# as_survey_srs() no-weights warning snapshot matches expected message
+# as_survey() rejects stage-2 FPC smaller than stage-2 cluster count [dual-pattern]
 
     Code
-      as_survey_srs(df)
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
     Condition
-      Warning:
-      ! No `weights` provided to `as_survey_srs()`. Assigning uniform weights (`..surveycore_wt.. = 1`).
-      i Population size unknown — total estimates will use `Σw_i = n` as the estimated N.
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 5
-      
-    Output
-      # A tibble: 5 x 2
-            y ..surveycore_wt..
-        <int>             <int>
-      1     1                 1
-      2     2                 1
-      3     3                 1
-      4     4                 1
-      5     5                 1
+      Error in `as_survey()`:
+      x Stage-2 FPC column fpc2_bad has population sizes smaller than the observed cluster count in 20 parent group(s).
+      i Population size must be >= the number of sampled units within each parent cluster.
+
+# as_survey() rejects non-constant stage-2 FPC fraction within PSU [dual-pattern]
+
+    Code
+      as_survey(df, ids = c(psu, ssu), weights = wt, fpc = c(fpc, fpc2_bad))
+    Condition
+      Error in `as_survey()`:
+      x Stage-2 FPC column fpc2_bad is not constant within parent clusters.
+      i FPC fractions must be the same for all units within each parent cluster.
+
+# as_survey_replicate() still rejects multi-column fpc
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", fpc = c(fpc, fpc2))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must select exactly one column, not 2
 

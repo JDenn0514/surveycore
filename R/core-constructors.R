@@ -3,249 +3,18 @@
 # Constructor functions for survey design objects.
 #
 # Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
-#   as_survey_srs()         — creates a survey_srs object (equal-probability SRS)
 #   as_survey()             — creates a survey_taylor object (Taylor series design)
-#   as_survey_replicate()         — creates a survey_replicate object (replicate weights)
+#   as_survey_replicate()   — creates a survey_replicate object (replicate weights)
 #   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
-#   as_survey_nonprob()  — creates a survey_nonprob object (Phase 2.5 skeleton)
+#   as_survey_nonprob()     — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
 #   Layer 2 — reusable validator helpers (R/02-validators.R)
 #   Layer 3 — constructor input parsing  (R/03-constructors.R)  <-- this file
 #
-# Error classes match plans/error-messages.md exactly (rows 1–25, 56–61).
+# Error classes match plans/error-messages.md exactly.
 # All cli_abort()/cli_warn() calls include a class= argument.
-
-# ── as_survey_srs ──────────────────────────────────────────────────────────────
-
-#' Create a Simple Random Sample Survey Design
-#'
-#' Creates a survey design object for equal-probability simple random samples
-#' (SRS). Computes variances using the classical SRS formula
-#' `var(ȳ) = (1 - f) × s² / n`, where `s²` is the unweighted sample variance,
-#' `n` is the sample size, and `f = n/N` is the sampling fraction (0 when
-#' population size is unknown).
-#'
-#' @param data A `data.frame` containing the survey responses. Must have at
-#'   least one row and unique column names.
-#' @param weights <[`tidy-select`][tidyselect::language]> Sampling weight
-#'   column (a single column, values strictly > 0). Supply either `weights` or
-#'   `probs`, not both. If both are `NULL`, uniform weights (`= 1`) are
-#'   auto-assigned and a warning is issued; population totals will then
-#'   equal sample totals, not estimated population totals.
-#' @param probs <[`tidy-select`][tidyselect::language]> Sampling probability
-#'   column (a single column, values in (0, 1]). Converted to weights
-#'   `= 1/probs` and stored internally as `..surveycore_wt..`. Supply either
-#'   `weights` or `probs`, not both.
-#' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). Accepts either total population size
-#'   (all values > 1) or sampling fraction (all values in (0, 1]). Cannot mix
-#'   the two types. Cannot contain `NA` or non-positive values. If any FPC
-#'   value (of population-size type) is less than the sample size, an error is
-#'   thrown.
-#'
-#' @return A `survey_srs` object.
-#'
-#' @examples
-#' # Minimal: no weights, no FPC (uniform weights auto-assigned)
-#' d <- suppressWarnings(as_survey_srs(data.frame(y = 1:5)))
-#'
-#' @seealso [as_survey()] for designs with cluster or stratification structure,
-#'   [as_survey_replicate()] for replicate-weight designs
-#'
-#' @family constructors
-#' @export
-as_survey_srs <- function(
-  data,
-  weights = NULL,
-  probs = NULL,
-  fpc = NULL
-) {
-  call <- match.call()
-
-  # ── Layer 3: data-level validation ─────────────────────────────────────────
-  .validate_data_frame(data)
-
-  # ── Capture quosures ────────────────────────────────────────────────────────
-  weights_quo <- rlang::enquo(weights)
-  probs_quo <- rlang::enquo(probs)
-  fpc_quo <- rlang::enquo(fpc)
-
-  weights_is_null <- rlang::quo_is_null(weights_quo)
-  probs_is_null <- rlang::quo_is_null(probs_quo)
-
-  # ── Error 56: both weights and probs supplied ───────────────────────────────
-  if (!weights_is_null && !probs_is_null) {
-    cli::cli_abort(
-      c(
-        "x" = "Supply {.arg weights} or {.arg probs}, not both.",
-        "i" = paste0(
-          "Use {.arg weights} for sampling weights or ",
-          "{.arg probs} for sampling probabilities."
-        )
-      ),
-      class = "surveycore_error_weights_probs_both"
-    )
-  }
-
-  # ── Probs → weights conversion ──────────────────────────────────────────────
-  probs_provided <- FALSE
-
-  if (!probs_is_null) {
-    # Resolve probs column, compute 1/probs, store as internal weight column
-    probs_var <- .resolve_single_col(
-      probs_quo,
-      data,
-      "probs",
-      class_none = "surveycore_error_weights_not_found",
-      class_multi = "surveycore_error_weights_multiple"
-    )
-    weights_var <- .SURVEYCORE_WT_COL
-    data[[weights_var]] <- 1 / data[[probs_var]]
-    probs_provided <- TRUE
-  } else if (!weights_is_null) {
-    # Weights path: resolve column via tidy-select
-    weights_var <- .resolve_single_col(
-      weights_quo,
-      data,
-      "weights",
-      class_none = "surveycore_error_weights_not_found",
-      class_multi = "surveycore_error_weights_multiple"
-    )
-  } else {
-    # No-weights fallback: auto-assign uniform weights (row 61)
-    weights_var <- .SURVEYCORE_WT_COL
-    data[[weights_var]] <- rep(1L, nrow(data))
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "No {.arg weights} provided to {.fn as_survey_srs}. ",
-          "Assigning uniform weights ({.code ..surveycore_wt.. = 1})."
-        ),
-        "i" = paste0(
-          "Population size unknown \u2014 total estimates will use ",
-          "{.code \u03a3w_i = n} as the estimated N."
-        )
-      ),
-      class = "surveycore_warning_srs_no_weights"
-    )
-  }
-
-  # ── Validate weights ────────────────────────────────────────────────────────
-  .validate_weights(weights_var, data)
-
-  # ── FPC checks (only when fpc is non-NULL) ──────────────────────────────────
-  fpc_is_null <- rlang::quo_is_null(fpc_quo)
-  fpc_type <- NULL
-
-  if (!fpc_is_null) {
-    # Resolve FPC column
-    fpc_var <- .resolve_single_col(
-      fpc_quo,
-      data,
-      "fpc",
-      class_none = "surveycore_error_fpc_not_found",
-      class_multi = "surveycore_error_fpc_multiple"
-    )
-
-    # FPC check 1: NA values (via Layer 2 helper)
-    .validate_fpc(fpc_var, data)
-
-    fpc_col <- data[[fpc_var]]
-    n <- nrow(data)
-
-    # FPC check 2: non-positive values (row 57)
-    n_bad <- sum(fpc_col <= 0, na.rm = TRUE)
-    if (n_bad > 0L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg fpc} column {.field {fpc_var}} has {n_bad} ",
-            "non-positive value(s). FPC values must be > 0."
-          ),
-          "i" = paste0(
-            "FPC must be either population sizes (> 1) or ",
-            "sampling fractions (0 < f \u2264 1)."
-          )
-        ),
-        class = "surveycore_error_fpc_nonpositive"
-      )
-    }
-
-    # FPC check 3: ambiguous — mixes values > 1 and ≤ 1 (row 58)
-    has_above_one <- any(fpc_col > 1, na.rm = TRUE)
-    has_le_one <- any(fpc_col <= 1, na.rm = TRUE)
-    if (has_above_one && has_le_one) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "{.arg fpc} column {.field {fpc_var}} mixes values > 1 ",
-            "(population sizes) and values \u2264 1 (sampling fractions). ",
-            "All FPC values must be consistently one type."
-          ),
-          "i" = paste0(
-            "Use all values > 1 for population sizes, or all values ",
-            "in (0, 1] for sampling fractions."
-          )
-        ),
-        class = "surveycore_error_fpc_ambiguous"
-      )
-    }
-
-    # FPC check 4: population size < sample size (row 59)
-    if (has_above_one) {
-      n_bad <- sum(fpc_col < n, na.rm = TRUE)
-      if (n_bad > 0L) {
-        cli::cli_abort(
-          c(
-            "x" = paste0(
-              "{.arg fpc} column {.field {fpc_var}} has {n_bad} ",
-              "value(s) smaller than the sample size ({n}). ",
-              "Population size cannot be smaller than the number of ",
-              "sampled units."
-            ),
-            "i" = paste0(
-              "Check your FPC column. For sampling fractions, ",
-              "supply values in (0, 1] instead."
-            )
-          ),
-          class = "surveycore_error_fpc_below_sample"
-        )
-      }
-    }
-
-    # Detect fpc_type after all checks pass
-    fpc_type <- if (has_above_one) "population" else "fraction"
-  } else {
-    fpc_var <- NULL
-  }
-
-  # ── Extract haven-style metadata ────────────────────────────────────────────
-  metadata <- .extract_haven_metadata(data)
-  metadata <- .promote_weighting_history(data, metadata)
-
-  # ── Build @variables list (all 8 keys always present) ──────────────────────
-  variables <- list(
-    weights = weights_var,
-    fpc = fpc_var,
-    fpc_type = fpc_type,
-    probs_provided = probs_provided,
-    ids = NULL,
-    strata = NULL,
-    nest = FALSE,
-    visible_vars = NULL
-  )
-
-  # ── Construct and return survey_srs object ──────────────────────────────────
-  survey_srs(
-    data = data,
-    metadata = metadata,
-    variables = variables,
-    call = call
-  )
-}
-
 
 # ── as_survey ─────────────────────────────────────────────────────────────────
 
@@ -270,8 +39,12 @@ as_survey_srs <- function(
 #' @param strata <[`tidy-select`][tidyselect::language]> Stratification
 #'   variable column (a single column).
 #' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). Accepts either total population size
-#'   (integer) or sampling fraction (numeric, 0–1). Cannot contain `NA`.
+#'   correction column(s). For single-stage designs, supply one column.
+#'   For multi-stage designs, supply one column per stage:
+#'   `fpc = c(fpc_stage1, fpc_stage2)`. Each column accepts either total
+#'   population size (integer, all > 1) or sampling fraction (numeric,
+#'   all in (0, 1]). Cannot contain `NA`. Cannot have more columns than
+#'   `ids` stages; fewer is allowed (later stages assume infinite population).
 #' @param nest Logical. If `TRUE`, PSU IDs are treated as nested within
 #'   strata — i.e., the same ID value in two different strata refers to two
 #'   distinct PSUs. Set `nest = TRUE` when PSU IDs are not globally unique
@@ -292,9 +65,29 @@ as_survey_srs <- function(
 #' ```
 #'
 #' @section Simple random sample:
-#' If `ids`, `weights`, and `probs` are all omitted, an equal-probability SRS
-#' is assumed. A warning is issued because population totals cannot be
-#' estimated without weights or population size.
+#' When no `ids` or `strata` are specified, the result is a `survey_taylor`
+#' object with `NULL` ids and strata — i.e., a simple random sample (SRS).
+#' The Taylor variance machinery produces the same estimates as the classical
+#' SRS formula `(1 - f) * s^2 / n`. If `weights` and `probs` are also both
+#' omitted, uniform weights are assigned and a warning is issued.
+#'
+#' @section Known limitations:
+#' `as_survey()` does not support probability-proportional-to-size (PPS)
+#' variance estimation. Taylor series linearization treats all designs as
+#' with-replacement, which overestimates (is conservative for) variance in
+#' PPS-without-replacement designs. The Yates-Grundy and Brewer/Overton
+#' estimators available in [survey::svydesign()] via its `pps` and `variance`
+#' arguments are not supported.
+#'
+#' If your design requires PPS-specific variance estimation, create the design
+#' with [survey::svydesign()] and convert it with [from_svydesign()]:
+#' ```r
+#' d_survey <- survey::svydesign(
+#'   ids = ~psu, weights = ~wt, strata = ~stratum,
+#'   pps = "brewer", data = mydata
+#' )
+#' d <- from_svydesign(d_survey)
+#' ```
 #'
 #' @examples
 #' # Full NHANES design: stratified cluster with PSU IDs nested within strata
@@ -342,34 +135,13 @@ as_survey <- function(
   strata_quo <- rlang::enquo(strata)
   fpc_quo <- rlang::enquo(fpc)
 
-  # ── SRS dispatch: when ids and strata are both NULL ─────────────────────────
-  # Forward to as_survey_srs() via rlang::inject() to preserve tidy-select NSE.
+  # ── Resolve tidy-select expressions ──────────────────────────────────────────
+
   ids_is_null <- rlang::quo_is_null(ids_quo)
   strata_is_null <- rlang::quo_is_null(strata_quo)
 
-  if (ids_is_null && strata_is_null) {
-    cli::cli_warn(
-      c(
-        "!" = "No {.arg ids} or {.arg strata} specified.",
-        "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).",
-        "v" = paste0(
-          "Use {.fn as_survey_srs} to create SRS designs without this warning."
-        )
-      ),
-      class = "surveycore_warning_as_survey_srs_fallback"
-    )
-    return(rlang::inject(as_survey_srs(
-      data,
-      weights = !!weights_quo,
-      probs = !!probs_quo,
-      fpc = !!fpc_quo
-    )))
-  }
-
-  # ── Taylor path: resolve tidy-select expressions ────────────────────────────
-
   # ids (may select multiple columns for multi-stage designs)
-  if (rlang::quo_is_null(ids_quo)) {
+  if (ids_is_null) {
     ids_vars <- NULL
   } else {
     ids_cols <- tidyselect::eval_select(ids_quo, data)
@@ -397,13 +169,19 @@ as_survey <- function(
     class_none = "surveycore_error_strata_not_found",
     class_multi = "surveycore_error_strata_multiple"
   )
-  fpc_var <- .resolve_single_col(
-    fpc_quo,
-    data,
-    "fpc",
-    class_none = "surveycore_error_fpc_not_found",
-    class_multi = "surveycore_error_fpc_multiple"
-  )
+  # fpc (may select multiple columns for multi-stage designs)
+  if (rlang::quo_is_null(fpc_quo)) {
+    fpc_vars <- NULL
+  } else {
+    fpc_cols <- tidyselect::eval_select(fpc_quo, data)
+    if (length(fpc_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg fpc} matched no columns in {.arg data}"),
+        class = "surveycore_error_fpc_not_found"
+      )
+    }
+    fpc_vars <- names(fpc_cols)
+  }
 
   # ── Probs / weights reconciliation ─────────────────────────────────────────
 
@@ -495,8 +273,191 @@ as_survey <- function(
   # Validate design variable columns exist and are atomic
   .validate_design_vars(c(ids_vars, strata_var), data)
 
-  # Validate fpc column (no NAs) via Layer 2
-  .validate_fpc(fpc_var, data)
+  # ── Multi-stage FPC validation ──────────────────────────────────────────────
+
+  if (!is.null(fpc_vars)) {
+    n_fpc <- length(fpc_vars)
+    n_ids <- if (is.null(ids_vars)) 1L else length(ids_vars)
+
+    # Error 88: fpc has more columns than ID stages
+    if (n_fpc > n_ids) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg fpc} selected {n_fpc} column(s) but ",
+            "{.arg ids} has only {n_ids} stage(s)."
+          ),
+          "i" = paste0(
+            "FPC columns must correspond 1-to-1 with ID stages. ",
+            "Supply at most {n_ids} FPC column(s)."
+          )
+        ),
+        class = "surveycore_error_fpc_too_many_stages"
+      )
+    }
+
+    # Warning 89: fpc has fewer columns than ID stages
+    if (n_fpc < n_ids) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.arg fpc} has {n_fpc} column(s) but ",
+            "{.arg ids} has {n_ids} stage(s)."
+          ),
+          "i" = paste0(
+            "Later stages assume sampling from an infinite ",
+            "population (no FPC)."
+          )
+        ),
+        class = "surveycore_warning_fpc_partial_stages"
+      )
+    }
+
+    # Per-column FPC validation loop
+    for (j in seq_along(fpc_vars)) {
+      fpc_var_j <- fpc_vars[[j]]
+      fpc_col_j <- data[[fpc_var_j]]
+
+      # FPC check: NA values (reuse Layer 2 helper for each column)
+      .validate_fpc(fpc_var_j, data)
+
+      # FPC check: non-positive values (row 57)
+      n_bad <- sum(fpc_col_j <= 0, na.rm = TRUE)
+      if (n_bad > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg fpc} column {.field {fpc_var_j}} has {n_bad} ",
+              "non-positive value(s). FPC values must be > 0."
+            ),
+            "i" = paste0(
+              "FPC must be either population sizes (> 1) or ",
+              "sampling fractions (0 < f \u2264 1)."
+            )
+          ),
+          class = "surveycore_error_fpc_nonpositive"
+        )
+      }
+
+      # Determine if this column is population size or fraction
+      has_above_one <- any(fpc_col_j > 1, na.rm = TRUE)
+      has_le_one <- any(fpc_col_j <= 1, na.rm = TRUE)
+
+      # FPC check: ambiguous (mixes > 1 and <= 1) — row 58
+      if (has_above_one && has_le_one) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg fpc} column {.field {fpc_var_j}} mixes ",
+              "values > 1 (population sizes) and values ",
+              "\u2264 1 (sampling fractions). All FPC values ",
+              "must be consistently one type."
+            ),
+            "i" = paste0(
+              "Use all values > 1 for population sizes, or ",
+              "all values in (0, 1] for sampling fractions."
+            )
+          ),
+          class = "surveycore_error_fpc_ambiguous"
+        )
+      }
+
+      # Stage-j-aware checks: parent cluster grouping
+      if (has_above_one) {
+        # Population size type: check within parent clusters
+        # For stage 1: group by strata (if present) or treat as one group
+        # For stage j>1: group by the (j-1)th ID column
+        if (j == 1L) {
+          parent_col <- if (!is.null(strata_var)) {
+            data[[strata_var]]
+          } else {
+            rep(1L, nrow(data))
+          }
+        } else {
+          parent_col <- data[[ids_vars[[j - 1L]]]]
+        }
+
+        # Error 90: FPC pop size < cluster count within parent
+        parent_groups <- split(
+          seq_len(nrow(data)),
+          parent_col
+        )
+        n_bad_parents <- 0L
+        for (grp_rows in parent_groups) {
+          fpc_val <- fpc_col_j[grp_rows[[1L]]]
+          # Count clusters at this stage within this parent
+          if (j <= length(ids_vars)) {
+            n_clusters <- length(
+              unique(data[[ids_vars[[j]]]][grp_rows])
+            )
+          } else {
+            n_clusters <- length(grp_rows)
+          }
+          if (fpc_val < n_clusters) {
+            n_bad_parents <- n_bad_parents + 1L
+          }
+        }
+
+        if (n_bad_parents > 0L) {
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "Stage-{j} FPC column {.field {fpc_var_j}} has ",
+                "population sizes smaller than the observed ",
+                "cluster count in {n_bad_parents} parent ",
+                "group(s)."
+              ),
+              "i" = paste0(
+                "Population size must be >= the number of ",
+                "sampled units within each parent cluster."
+              )
+            ),
+            class = "surveycore_error_fpc_smaller_than_n"
+          )
+        }
+      } else {
+        # Fraction type: check constancy within parent clusters
+        if (j == 1L) {
+          parent_col <- if (!is.null(strata_var)) {
+            data[[strata_var]]
+          } else {
+            rep(1L, nrow(data))
+          }
+        } else {
+          parent_col <- data[[ids_vars[[j - 1L]]]]
+        }
+
+        parent_groups <- split(
+          seq_len(nrow(data)),
+          parent_col
+        )
+        any_not_constant <- FALSE
+        for (grp_rows in parent_groups) {
+          vals <- fpc_col_j[grp_rows]
+          if (length(unique(vals)) > 1L) {
+            any_not_constant <- TRUE
+            break
+          }
+        }
+
+        if (any_not_constant) {
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "Stage-{j} FPC column {.field {fpc_var_j}} is ",
+                "not constant within parent clusters."
+              ),
+              "i" = paste0(
+                "FPC fractions must be the same for all units ",
+                "within each parent cluster."
+              )
+            ),
+            class = "surveycore_error_fpc_not_constant"
+          )
+        }
+      }
+    }
+  }
 
   # Warning 12: strata has only one unique value
   if (!is.null(strata_var)) {
@@ -520,7 +481,7 @@ as_survey <- function(
     ids = ids_vars,
     weights = weights_var,
     strata = strata_var,
-    fpc = fpc_var,
+    fpc = fpc_vars,
     nest = isTRUE(nest),
     probs_provided = probs_provided,
     visible_vars = NULL
@@ -765,9 +726,12 @@ as_survey_replicate <- function(
 #' strict subset indicated by a logical column. Uses a tidy-select interface
 #' for all Phase 2 design variable arguments.
 #'
-#' @param phase1 A `survey_taylor` object representing the Phase 1 design.
+#' @param phase1 A survey design object (inheriting from `survey_base`)
+#'   representing the Phase 1 design. Accepts `survey_taylor` or
+#'   `survey_replicate` objects.
 #'   Its `@data` must contain ALL rows from both phases, plus a logical
-#'   indicator column for Phase 2 membership. Create with [as_survey()].
+#'   indicator column for Phase 2 membership. Create with [as_survey()]
+#'   or [as_survey_replicate()].
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
 #'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
 #'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
@@ -853,16 +817,19 @@ as_survey_twophase <- function(
   call <- match.call()
   method <- match.arg(method)
 
-  # ── Error 19: phase1 must be a survey_taylor object ─────────────────────────
+  # ── Error 19: phase1 must be a survey design object ─────────────────────────
 
-  if (!S7::S7_inherits(phase1, survey_taylor)) {
+  if (!S7::S7_inherits(phase1, survey_base)) {
     cli::cli_abort(
       c(
         "x" = paste0(
-          "{.arg phase1} must be a {.cls survey_taylor} object, not ",
-          "{.cls {class(phase1)[[1L]]}}."
+          "{.arg phase1} must be a survey design object ",
+          "({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}."
         ),
-        "i" = "Create it first with {.fn as_survey}."
+        "i" = paste0(
+          "Create it first with {.fn as_survey} or ",
+          "{.fn as_survey_replicate}."
+        )
       ),
       class = "surveycore_error_phase1_class"
     )

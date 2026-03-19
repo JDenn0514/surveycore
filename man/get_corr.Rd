@@ -24,7 +24,7 @@ get_corr(
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, \code{survey_srs}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
 numeric variable names. Non-numeric variables are dropped with a warning.
@@ -137,6 +137,7 @@ get_corr(d, x = c(ridageyr, bpxsy1),
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
 \code{\link{get_quantiles}()},

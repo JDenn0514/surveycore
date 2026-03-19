@@ -6,6 +6,7 @@
 
 **Phase 1 rows:** 43–64 (analysis functions)
 **Phase 2 rows:** 65–87 (survey GLM — 19 new + 2 reused from Phase 1)
+**get_diffs() rows:** 92–100 (9 new)
 
 ---
 
@@ -30,7 +31,7 @@ against the messages defined here.
 | 1 | `as_survey()` | `data` is not a data frame | ERROR | `surveycore_error_not_data_frame` | `"{.arg data} must be a data frame, not {.cls {class(data)}}"` |
 | 2 | `as_survey()` | `data` has 0 rows | ERROR | `surveycore_error_empty_data` | `"{.arg data} must have at least one row"` |
 | 3 | `as_survey()` | `data` has duplicate column names | ERROR | `surveycore_error_duplicate_names` | `"Column names in {.arg data} must be unique. Duplicates: {.field {dupes}}"` |
-| 4 | `as_survey()` | `data` has 1 row | WARN | `surveycore_warning_single_row` | `"{.arg data} has only 1 row — variance cannot be estimated"` |
+| 4 | `as_survey()` | `data` has 1 row | ERROR | `surveycore_error_single_row` | `"{.arg data} has only 1 row. A survey design requires at least 2 observations."` |
 | 5 | `as_survey()` | Both `probs` and `weights` provided, inconsistent values | ERROR | `surveycore_error_probs_weights_conflict` | `"Cannot specify both {.arg probs} and {.arg weights} with inconsistent values. {.arg weights} should equal 1 / {.arg probs}"` |
 | 6 | `as_survey()` | Both `probs` and `weights` provided, consistent values | INFO | `surveycore_inform_probs_weights_consistent` | `"Using {.arg weights}; provided {.arg probs} is consistent (weights = 1/probs)"` |
 | 7 | `as_survey()` | No weights, probs, or ids (SRS) | WARN | `surveycore_warning_srs_no_weights` | `"No weights or population size provided. Treating as equal-probability SRS with unknown population size. Valid: means, proportions, correlations. Invalid: population totals."` |
@@ -47,7 +48,7 @@ against the messages defined here.
 | 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
 | 17 | `as_survey_replicate()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
 | 18 | `as_survey_replicate()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
-| 19 | `as_survey_twophase()` | `phase1` is not a `survey_taylor` | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a {.cls survey_taylor} object, not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}."` |
+| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}, {.fn as_survey_srs}, or {.fn as_survey_replicate}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
 | 22 | `as_survey_twophase()` | `subset` column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"{.arg subset} column {.field {subset_var}} must be logical, not {.cls {class(data[[subset_var]])}}"` |
@@ -90,7 +91,7 @@ against the messages defined here.
 | 57 | `as_survey_srs()` | `fpc` column has non-positive values | ERROR | `surveycore_error_fpc_nonpositive` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} non-positive value(s). FPC values must be > 0."` |
 | 58 | `as_survey_srs()` | `fpc` column mixes values > 1 and ≤ 1 | ERROR | `surveycore_error_fpc_ambiguous` | `"{.arg fpc} column {.field {fpc_var}} mixes values > 1 (population sizes) and values \u2264 1 (sampling fractions). All FPC values must be consistently one type."` |
 | 59 | `as_survey_srs()` | `fpc` population size < sample size | ERROR | `surveycore_error_fpc_below_sample` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} value(s) smaller than the sample size ({n}). Population size cannot be smaller than the number of sampled units."` |
-| 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | WARN | `surveycore_warning_as_survey_srs_fallback` | `c("!" = "No {.arg ids} or {.arg strata} specified.", "i" = "Creating a {.cls survey_srs} design (equal-probability SRS).", "v" = "Use {.fn as_survey_srs} to create SRS designs without this warning.")` |
+| 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | INFO | `surveycore_message_as_survey_srs_fallback` | `c("i" = "No {.arg ids} or {.arg strata} specified; creating a {.cls survey_srs} design.", "i" = "Use {.fn as_survey_srs} to avoid this message.")` |
 | 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
 | 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
 | 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
@@ -129,6 +130,20 @@ against the messages defined here.
 | M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
 | M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
 | M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
+| 88 | `as_survey()` | `fpc` selects more columns than `ids` stages | ERROR | `surveycore_error_fpc_too_many_stages` | `"x" = "{.arg fpc} selected {n_fpc} column(s) but {.arg ids} has only {n_ids} stage(s).", "i" = "FPC columns must correspond 1-to-1 with ID stages. Supply at most {n_ids} FPC column(s)."` |
+| 89 | `as_survey()` | `fpc` selects fewer columns than `ids` stages | WARN | `surveycore_warning_fpc_partial_stages` | `"!" = "{.arg fpc} has {n_fpc} column(s) but {.arg ids} has {n_ids} stage(s).", "i" = "Later stages assume sampling from an infinite population (no FPC)."` |
+| 90 | `as_survey()` | Stage-j FPC population size < stage-j cluster count within parent | ERROR | `surveycore_error_fpc_smaller_than_n` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} has population sizes smaller than the observed cluster count in {n_bad} parent group(s).", "i" = "Population size must be >= the number of sampled units within each parent cluster."` |
+| 91 | `as_survey()` | Stage-j FPC fraction not constant within parent cluster | ERROR | `surveycore_error_fpc_not_constant` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} is not constant within parent clusters.", "i" = "FPC fractions must be the same for all units within each parent cluster."` |
+| 13b | `as_survey()` | `fpc` selects >1 column (multi-stage: now allowed) / `as_survey_replicate()` | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` (only enforced for `as_survey_replicate()` and `as_survey_srs()`) |
+| 92 | `get_diffs()` | `x` resolves to != 1 column | ERROR | `surveycore_error_wrong_variable_count` | `"{.arg x} must select exactly one column."` |
+| 93 | `get_diffs()` | `treats` resolves to != 1 column | ERROR | `surveycore_error_treats_single` | `"{.arg treats} must select exactly one column."` |
+| 94 | `get_diffs()` | `ref_level` not in levels of treats | ERROR | `surveycore_error_ref_level_not_found` | `"{.arg ref_level} {.val {ref_level}} not found in levels of {.field {treats_name}}."` |
+| 95 | `get_diffs()` | `treats` has < 2 levels after NA removal | ERROR | `surveycore_error_treats_one_level` | `"{.arg treats} must have at least 2 levels. {.field {treats_name}} has only 1."` |
+| 96 | `get_diffs()` | `pval_adj` not a valid method | ERROR | `surveycore_error_invalid_pval_adj` | `"{.arg pval_adj} must be a valid method for {.fn stats::p.adjust}."` |
+| 97 | `get_diffs()` | `covariates` is not character | ERROR | `surveycore_error_covariates_not_character` | `"{.arg covariates} must be a character vector of model terms."` |
+| 98 | `get_diffs()` | `clean()` output missing intercept | ERROR | `surveycore_error_reference_row_not_found` | `"Reference row not found in model output. Expected exactly one intercept row."` |
+| 99 | `get_diffs()` | `show_pct_change = TRUE` and ref mean is 0 | WARN | `surveycore_warning_pct_change_zero_ref` | `"Reference group mean is 0; percentage change is undefined."` |
+| 100 | `get_diffs()` | `treats` column not a factor | WARN | `surveycore_warning_treats_coerced` | `"{.field {treats_name}} coerced to factor."` |
 
 ---
 
@@ -166,7 +181,7 @@ Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–24, 23b, 56–61 |
+| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b |
 | `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30, M-2/M-7, M-3–M-15 |
@@ -183,3 +198,5 @@ Which test files cover which error table rows:
 | `test-glm-methods.R` | 76 |
 | `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |
+| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
+| `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |

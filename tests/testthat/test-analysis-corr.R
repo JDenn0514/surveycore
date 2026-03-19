@@ -66,9 +66,9 @@ test_that("get_corr() works for survey_replicate design", {
   expect_true(result$ci_high[[1L]] <= 1)
 })
 
-test_that("get_corr() works for survey_srs design", {
+test_that("get_corr() works for SRS design (Taylor with no ids/strata)", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 3L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_corr(d, x = c(y1, y2))
   test_result_invariants(result, "survey_corr")
@@ -475,7 +475,7 @@ test_that("get_corr() Fisher Z CI bounds are always in (-1, 1)", {
     y2 = x_base + rnorm(n, 0, 1),
     wt = runif(n, 0.5, 2)
   )
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
 
   result <- get_corr(d, x = c(y1, y2))
   expect_gt(result$ci_low[[1L]], -1)
@@ -494,7 +494,7 @@ test_that("get_corr() Fisher Z CI width for |r| > 0.9 matches oracle", {
     y2 = x_base + rnorm(n, 0, 1),
     wt = runif(n, 0.5, 2)
   )
-  d_sc <- as_survey_srs(df, weights = wt)
+  d_sc <- as_survey(df, weights = wt)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
 
   result <- get_corr(d_sc, x = c(y1, y2), variance = c("ci", "se"))
@@ -784,7 +784,7 @@ test_that("get_corr() r matches survey::svyvar() oracle for BRR [numerical]", {
 test_that("get_corr() r matches survey::svyvar() oracle for SRS [numerical]", {
   skip_if_not_installed("survey")
   df <- make_survey_data(n = 500L, design = "taylor", seed = 32L)
-  d_sc <- as_survey_srs(df, weights = wt)
+  d_sc <- as_survey(df, weights = wt)
   d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
 
   result <- get_corr(d_sc, x = c(y1, y2), variance = "se")
@@ -1402,9 +1402,9 @@ test_that("get_corr() NA group row r matches filtered srs design [oracle]", {
   df_s <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 42L)
   set.seed(43L)
   df_s$grp <- sample(c("A", "B", NA_character_), 100L, replace = TRUE)
-  design_srs <- as_survey_srs(df_s, weights = wt)
+  design_srs <- as_survey(df_s, weights = wt)
   na_df_s <- df_s[is.na(df_s$grp), ]
-  na_design_srs <- as_survey_srs(na_df_s, weights = wt)
+  na_design_srs <- as_survey(na_df_s, weights = wt)
   expected <- get_corr(na_design_srs, x = c(y1, y2), variance = "se")
   result <- get_corr(
     design_srs,
@@ -1467,13 +1467,13 @@ test_that("get_corr() multi-group NA row r matches filtered taylor design [oracl
 # Additional coverage: SRS, twophase, n<3, cv warning
 # ---------------------------------------------------------------------------
 
-test_that("get_corr() works for survey_srs design (covers .vcov_pair_srs())", {
+test_that("get_corr() works for SRS design (covers .vcov_pair_srs())", {
   set.seed(300)
   n <- 80L
   x <- rnorm(n)
   y <- x * 0.8 + rnorm(n, sd = 0.3)
   df <- data.frame(x = x, y = y, w = rep(1, n))
-  sc <- as_survey_srs(df, weights = w)
+  sc <- as_survey(df, weights = w)
   result <- get_corr(sc, x = c(x, y), variance = "se")
   test_result_invariants(result, "survey_corr")
   expect_true(is.finite(result$r[[1L]]))

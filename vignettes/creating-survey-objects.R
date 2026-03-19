@@ -122,7 +122,7 @@ school_survey <- data.frame(
   fpc = N # population size for FPC
 )
 
-svy_srs <- as_survey_srs(
+svy_srs <- as_survey(
   school_survey,
   weights = sw, # each sampled school represents 5 schools in the population
   fpc = fpc # reduces SEs: we sampled 20% of the population
@@ -131,8 +131,8 @@ svy_srs
 
 ## ----srs-dispatch-------------------------------------------------------------
 # These produce the same object:
-# as_survey_srs() — explicit, no warning
-svy_a <- as_survey_srs(school_survey, weights = sw, fpc = fpc)
+# as_survey() — explicit, no warning
+svy_a <- as_survey(school_survey, weights = sw, fpc = fpc)
 
 # as_survey() — warns that it is dispatching to SRS
 svy_b <- as_survey(school_survey, weights = sw, fpc = fpc)

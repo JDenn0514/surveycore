@@ -82,8 +82,6 @@
     subset <- design@data[[design@variables$subset]]
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
-  } else if (S7::S7_inherits(design, survey_srs)) {
-    max(1L, nrow(design@data) - 1L)
   } else {
     # Calibrated and unknown: use n - 1
     max(1L, nrow(design@data) - 1L)
@@ -210,7 +208,10 @@
     se         = se_q,
     ci_low     = ci_low,
     ci_high    = ci_high,
-    se_srs     = NA_real_,  # No closed-form SRS SE for quantiles
+    se_srs     = NA_real_,  # DEFF for quantiles requires a kernel density
+                            # estimate at the quantile point (Woodruff SRS
+                            # approximation; see survey::svyquantile(deff=TRUE)).
+                            # Not implemented — deff is always NA.
     n          = n_d,
     n_weighted = N_d
   )

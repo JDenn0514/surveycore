@@ -40,7 +40,7 @@ school_survey <- data.frame(
   fpc = N # population size for FPC
 )
 
-school_svy <- as_survey_srs(
+school_svy <- as_survey(
   school_survey,
   weights = sw, # each sampled school represents 5 schools in the population
   fpc = fpc # reduces SEs: we sampled 20% of the population
@@ -109,7 +109,6 @@ get_totals(pew_jewish_svy, group = age4cat)
 
 ## ----corr-basic, eval=has_surveytidy------------------------------------------
 
-library(surveytidy)
 
 ns_wave1_svy |>
   # drop NAs

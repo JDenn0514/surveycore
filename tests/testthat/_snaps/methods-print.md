@@ -297,146 +297,6 @@
       
       Metadata: 0 of 11 variable(s) labeled
 
-# print.survey_srs default output matches snapshot
-
-    Code
-      print(d)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 10
-      
-    Output
-      # A tibble: 10 x 2
-             y    wt
-         <int> <dbl>
-       1     1     2
-       2     2     2
-       3     3     2
-       4     4     2
-       5     5     2
-       6     6     2
-       7     7     2
-       8     8     2
-       9     9     2
-      10    10     2
-
-# print.survey_srs design_info=TRUE with population FPC matches snapshot
-
-    Code
-      print(d, design_info = TRUE)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 5
-      
-      
-      -- Design --
-      
-      * Weights: wt
-      * FPC: pop (population sizes)
-      * Sampling fraction: 0.05
-      
-    Output
-      # A tibble: 5 x 3
-            y    wt   pop
-        <int> <dbl> <int>
-      1     1     2   100
-      2     2     2   100
-      3     3     2   100
-      4     4     2   100
-      5     5     2   100
-
-# print.survey_srs design_info=TRUE with fraction FPC matches snapshot
-
-    Code
-      print(d, design_info = TRUE)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 5
-      
-      
-      -- Design --
-      
-      * Weights: wt
-      * FPC: frac (sampling fractions)
-      * Sampling fraction: 0.1
-      
-    Output
-      # A tibble: 5 x 3
-            y    wt  frac
-        <int> <dbl> <dbl>
-      1     1     2   0.1
-      2     2     2   0.1
-      3     3     2   0.1
-      4     4     2   0.1
-      5     5     2   0.1
-
-# print.survey_srs full=TRUE output matches snapshot
-
-    Code
-      print(d, full = TRUE)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 5
-      Weighted N: 10
-      
-      
-      -- Design --
-      
-      * Weights: wt
-      * FPC: not specified
-      
-      
-      -- Weight distribution --
-      
-      * Range: 2 – 2
-      * Mean: 2
-      * CV: 0
-      
-      
-      -- Metadata --
-      
-      0 variable(s) labeled
-      
-    Output
-      # A tibble: 5 x 2
-            y    wt
-        <int> <dbl>
-      1     1     2
-      2     2     2
-      3     3     2
-      4     4     2
-      5     5     2
-
-# summary.survey_srs output matches snapshot
-
-    Code
-      summary(d)
-    Message
-      
-      -- Survey Design Summary -------------------------------------------------------
-      Type: simple random sample (SRS)
-      Sample size: 10
-      Weighted N: 20
-      
-      
-      -- Design --
-      
-      Weights: wt
-      * Range: 2 – 2
-      * Mean: 2
-      * CV: 0
-      FPC: not specified
-      
-      Metadata: 0 of 2 variable(s) labeled
-
 # print.survey_taylor() shows domain line when domain column is present
 
     Code
@@ -518,33 +378,6 @@
        9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     TRUE                 
       10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     TRUE                 
       # i 40 more rows
-
-# print.survey_srs() shows domain line when domain column is present
-
-    Code
-      print(d)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_srs> (simple random sample)
-      Sample size: 30
-      Domain: 30 of 30 rows
-      
-    Output
-      # A tibble: 30 x 9
-         psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_domain..
-         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <lgl>                
-       1 psu_1 stratum_1   145 14.3   55.0 -0.727      1 A     TRUE                 
-       2 psu_1 stratum_1   145 12.9   32.8  1.30       1 B     TRUE                 
-       3 psu_1 stratum_1   145 17.8   42.2  0.336      1 A     TRUE                 
-       4 psu_2 stratum_1   145 12.9   41.5  1.04       0 A     TRUE                 
-       5 psu_2 stratum_1   145 19.7   25.9  0.921      1 A     TRUE                 
-       6 psu_2 stratum_1   145 13.0   50.4  0.721      1 C     TRUE                 
-       7 psu_2 stratum_1   145 17.1   52.1 -1.04       1 B     TRUE                 
-       8 psu_2 stratum_1   145 20.8   46.4 -0.0902     1 B     TRUE                 
-       9 psu_3 stratum_1   145  9.98  57.6  0.624      0 B     TRUE                 
-      10 psu_3 stratum_1   145 12.5   42.7 -0.954      1 A     TRUE                 
-      # i 20 more rows
 
 # print.survey_replicate() shows domain line when domain column is present
 
@@ -683,4 +516,43 @@
        9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C     FALSE                
       10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     FALSE                
       # i 40 more rows
+
+# print.survey_taylor shows per-stage FPC for 2-stage design
+
+    Code
+      print(sc, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 200
+      
+      
+      -- Design specification --
+      
+      * IDs: psu and ssu (20 PSUs)
+      * Strata: strata (5 strata)
+      * Weights: wt
+      * Weights provided as: sampling weights
+      * FPC (stage 1): fpc
+      * FPC (stage 2): fpc2
+      * Nesting: FALSE
+      
+      Design variables: psu, ssu, wt, strata, fpc, and fpc2
+      
+    Output
+      # A tibble: 200 x 10
+         psu   strata      fpc    wt    y1      y2    y3 group ssu       fpc2
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr> <chr>    <int>
+       1 psu_1 stratum_1   365  9.09  61.7  0.606      0 A     psu_1_s1    10
+       2 psu_1 stratum_1   365 10.4   35.4  1.34       0 B     psu_1_s2    10
+       3 psu_1 stratum_1   365  8.25  51.0  0.767      0 A     psu_1_s3    10
+       4 psu_1 stratum_1   365 10.8   58.5  0.194      0 B     psu_1_s4    10
+       5 psu_1 stratum_1   365  7.70  33.8  1.14       1 C     psu_1_s5    10
+       6 psu_1 stratum_1   365  9.43  64.1  0.0139     1 B     psu_1_s1    10
+       7 psu_1 stratum_1   365 10.6   44.6 -1.11       0 C     psu_1_s2    10
+       8 psu_1 stratum_1   365 10.1   52.8 -0.0252     0 B     psu_1_s3    10
+       9 psu_1 stratum_1   365 11.6   48.1 -0.164      0 B     psu_1_s4    10
+      10 psu_1 stratum_1   365  9.75  65.8  0.370      0 C     psu_1_s5    10
+      # i 190 more rows
 

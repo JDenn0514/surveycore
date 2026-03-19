@@ -138,7 +138,6 @@
     lonely.psu = lonely.psu, stage = stage
   )
 
-  # nocov start — Phase 0 builder always passes single-column cluster/strata matrices
   if (!isTRUE(one.stage) && !is.null(popmat) && NCOL(clusters) > 1L) {
     v.sub <- by(seq_len(n), list(as.numeric(clusters[, 1L])), function(index) {
       .svy_multistage(
@@ -154,7 +153,6 @@
     })
     for (i in seq_along(v.sub)) v <- v + v.sub[[i]]
   }
-  # nocov end
 
   dimnames(v) <- list(colnames(x), colnames(x))
   v
@@ -189,78 +187,30 @@
   vars <- design@variables
 
   y <- data[[y_col]]
-  w <- data[[vars$weights]]   # survey weights = 1 / inclusion_prob
 
-  # --- Cluster IDs ---
-  # If nest = TRUE, make PSU IDs globally unique by interaction with strata.
-  strata_id <- if (!is.null(vars$strata)) {
-    data[[vars$strata]]
-  } else {
-    rep(1L, nrow(data))
-  }
-
-  psu_id <- if (!is.null(vars$ids)) {
-    raw_ids <- data[[vars$ids[[1L]]]]
-    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
-      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
-    } else {
-      raw_ids
-    }
-  } else {
-    seq_len(nrow(data))  # each row is its own PSU
-  }
+  # Build cluster/strata/FPC matrices from full dataset BEFORE na.rm
+  # filtering. sampsize is a design property (number of PSUs per
+  # stratum), not an outcome property — it must reflect the full
+  # dataset. This matches survey package semantics.
+  mats <- .build_cluster_matrices(data, vars)
 
   # --- Handle na.rm ---
-  if (na.rm) {
-    keep    <- !is.na(y)
-    y       <- y[keep]
-    w       <- w[keep]
-    strata_id <- strata_id[keep]
-    psu_id    <- psu_id[keep]
-    if (!is.null(vars$fpc)) {
-      fpc_col_full <- data[[vars$fpc]][keep]
-    } else {
-      fpc_col_full <- NULL
-    }
-  } else {
-    fpc_col_full <- if (!is.null(vars$fpc)) data[[vars$fpc]] else NULL
+  keep <- if (na.rm) !is.na(y) else seq_along(y)
+  y <- y[keep]
+  w <- data[[vars$weights]][keep]
+  mats$clusters_mat <- mats$clusters_mat[keep, , drop = FALSE]
+  mats$strata_mat <- mats$strata_mat[keep, , drop = FALSE]
+  mats$fpcs$sampsize <- mats$fpcs$sampsize[keep, , drop = FALSE]
+  if (!is.null(mats$fpcs$popsize)) {
+    mats$fpcs$popsize <- mats$fpcs$popsize[keep, , drop = FALSE]
   }
-
-  n <- length(y)
-
-  # --- Build cluster and strata matrices ---
-  clusters_mat <- matrix(psu_id, ncol = 1L)
-  strata_mat   <- matrix(strata_id, ncol = 1L)
-
-  # --- Build FPC structure ---
-  # sampsize[i] = number of unique PSUs in stratum of obs i.
-  # Use tapply for O(N log N) instead of the O(N*S) for-loop alternative.
-  psu_per_stratum  <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
-  sampsize_vec     <- as.integer(psu_per_stratum[as.character(strata_id)])
-  sampsize_mat     <- matrix(sampsize_vec, ncol = 1L)
-
-  # popsize: NULL (no FPC) or per-row population sizes
-  popsize_mat <- if (!is.null(fpc_col_full)) {
-    fpc_vals <- fpc_col_full
-    if (any(fpc_vals > 1, na.rm = TRUE)) {
-      # values > 1 are population sizes
-      matrix(as.numeric(fpc_vals), ncol = 1L)
-    } else {
-      # values in (0,1] are sampling fractions → convert to population sizes
-      matrix(as.numeric(sampsize_vec / fpc_vals), ncol = 1L)
-    }
-  } else {
-    NULL
-  }
-
-  fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
 
   list(
     y        = y,
     w        = w,
-    clusters = clusters_mat,
-    stratas  = strata_mat,
-    fpcs     = fpcs
+    clusters = mats$clusters_mat,
+    stratas  = mats$strata_mat,
+    fpcs     = mats$fpcs
   )
 }
 
@@ -387,50 +337,16 @@
   infl_b   <- w * pair_mask * (cx * cy - b) / W_d
   infl_c   <- w * pair_mask * (cy^2 - c_val) / W_d
 
-  # Build cluster / strata structure (full dataset)
-  strata_id <- if (!is.null(vars$strata)) {
-    data[[vars$strata]]
-  } else {
-    rep(1L, n_full)
-  }
-
-  psu_id <- if (!is.null(vars$ids)) {
-    raw_ids <- data[[vars$ids[[1L]]]]
-    if (isTRUE(vars$nest) && !is.null(vars$strata)) {
-      as.integer(interaction(strata_id, raw_ids, drop = TRUE))
-    } else {
-      raw_ids
-    }
-  } else {
-    seq_len(n_full)
-  }
-
-  clusters_mat <- matrix(psu_id, ncol = 1L)
-  strata_mat   <- matrix(strata_id, ncol = 1L)
-
-  psu_per_stratum <- tapply(psu_id, strata_id, function(ps) length(unique(ps)))
-  sampsize_vec    <- as.integer(psu_per_stratum[as.character(strata_id)])
-  sampsize_mat    <- matrix(sampsize_vec, ncol = 1L)
-
-  fpc_col_full <- if (!is.null(vars$fpc)) data[[vars$fpc]] else NULL
-  popsize_mat  <- if (!is.null(fpc_col_full)) {
-    fpc_vals <- fpc_col_full
-    if (any(fpc_vals > 1, na.rm = TRUE)) {
-      matrix(as.numeric(fpc_vals), ncol = 1L)
-    } else {
-      matrix(as.numeric(sampsize_vec / fpc_vals), ncol = 1L)
-    }
-  } else {
-    NULL
-  }
-
-  fpcs       <- list(sampsize = sampsize_mat, popsize = popsize_mat)
+  # Build cluster / strata / FPC structure from full dataset
+  mats       <- .build_cluster_matrices(data, vars)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- cbind(infl_a, infl_b, infl_c)
   colnames(infl_mat) <- c("a", "b", "c")
   sigma <- .svy_recvar(
-    infl_mat, clusters_mat, strata_mat, fpcs, lonely.psu = lonely.psu
+    infl_mat,
+    mats$clusters_mat, mats$strata_mat, mats$fpcs,
+    lonely.psu = lonely.psu
   )
 
   list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)

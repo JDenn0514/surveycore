@@ -363,10 +363,10 @@ test_that(".build_meta() returns design_type = 'twophase' for survey_twophase", 
   expect_identical(meta$design_type, "twophase")
 })
 
-test_that(".build_meta() returns design_type = 'srs' for survey_srs", {
+test_that(".build_meta() returns design_type = 'taylor' for SRS-style design", {
   designs <- make_all_designs(seed = 42L)
   meta <- .build_meta(designs$srs, list(conf_level = 0.95))
-  expect_identical(meta$design_type, "srs")
+  expect_identical(meta$design_type, "taylor")
 })
 
 test_that(".build_meta() returns design_type = 'calibrated' for survey_nonprob", {
@@ -580,7 +580,7 @@ test_that('.apply_name_style() is a no-op for name_style = "surveycore"', {
       ci_high = 12.0,
       n = 50L
     ),
-    .meta = list(design_type = "srs"),
+    .meta = list(design_type = "taylor"),
     class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "surveycore")
@@ -596,7 +596,7 @@ test_that('.apply_name_style() renames columns for name_style = "broom"', {
       ci_high = 12.0,
       n = 50L
     ),
-    .meta = list(design_type = "srs"),
+    .meta = list(design_type = "taylor"),
     class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
@@ -611,7 +611,7 @@ test_that('.apply_name_style() renames columns for name_style = "broom"', {
 test_that(".apply_name_style() preserves .meta and class after rename", {
   result <- structure(
     tibble::tibble(mean = 10.0, se = 1.0),
-    .meta = list(design_type = "srs", n_respondents = 50L),
+    .meta = list(design_type = "taylor", n_respondents = 50L),
     class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
@@ -623,7 +623,7 @@ test_that(".apply_name_style() only renames columns that are present", {
   # result has 'mean' but not 'se'; 'se' should not be added
   result <- structure(
     tibble::tibble(mean = 10.0, n = 50L),
-    .meta = list(design_type = "srs"),
+    .meta = list(design_type = "taylor"),
     class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
   )
   out <- .apply_name_style(result, "broom")
@@ -704,10 +704,10 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
   expect_gte(.degf(phase1), 1L)
 })
 
-test_that(".degf() returns design-based finite df for survey_srs", {
+test_that(".degf() returns design-based finite df for SRS-style design", {
   # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
-  d <- as_survey_srs(df, weights = wt)
+  d <- as_survey(df, weights = wt)
   test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)

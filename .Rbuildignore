@@ -4,6 +4,7 @@
 ^\.github$
 ^changelog$
 ^README\.Rmd$
+^README\.html$
 ^\.claude$
 ^CLAUDE\.md$
 ^data-raw$
