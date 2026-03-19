@@ -117,8 +117,25 @@
       "Bash(R:*)",
       "Bash(Rscript 2:*)",
       "WebFetch(domain:gdfe.co)",
-      "Bash(sed:*)"
-    ]
+      "Bash(sed:*)",
+      "Bash(/tmp/sampsize_check.txt:*)",
+      "Read(//tmp/**)",
+      "Bash(/tmp/scaling_factor.txt:*)",
+      "Bash(Rscript -e \"devtools::test\\(\\)\" 2>&1 | tail -20)",
+      "Bash(Rscript -e \"devtools::test\\(\\)\" 2>&1 | tail -15)",
+      "Bash(Rscript -e \"devtools::check\\(\\)\" 2>&1 | tail -10)",
+      "Bash(Rscript -e 'devtools::test\\(\\)' 2>&1 | tail -30)",
+      "Bash(grep -r \"filter\\(\" /Users/jacobdennen/surveycore/tests/testthat/test-analysis-*.R | head -20)",
+      "Bash(Rscript -e 'devtools::test\\(\\)')",
+      "Bash(Rscript -e 'testthat::snapshot_accept\\(\"methods-print\"\\)' 2>&1)",
+      "Bash(grep -n \"\\\\.validate_shared_args\\(\" /Users/jacobdennen/surveycore/R/analysis-*.R)",
+      "Bash(for f:*)",
+      "Bash(Rscript -e 'devtools::document\\(\\)')",
+      "Bash(Rscript -e 'devtools::check\\(\\)')",
+      "Bash(grep -n \"^\\\\.resolve_tidy_select\\\\s*<-\" /Users/jacobdennen/surveycore/R/*.R)",
+      "Bash(Rscript -e \"devtools::check\\(\\)\" 2>&1)"
+    ],
+    "defaultMode": "bypassPermissions"
   },
   "outputStyle": "default"
 }

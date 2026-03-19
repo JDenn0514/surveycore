@@ -7,7 +7,8 @@ description: >
   "draft the plan", "review the plan", "resolve plan issues", or "implementation
   plan". Always runs after spec-workflow is complete. Has three stages: Stage 1
   (draft plan), Stage 2 (adversarial review), Stage 3 (resolve + decisions log).
-  After the plan is approved, hand off to /r-implement.
+  After the plan is approved, hand off to /r-implement (section-by-section
+  with manual oversight) or /auto-ship (fully autonomous end-to-end execution).
 ---
 
 # Surveyverse Implementation Workflow
@@ -21,7 +22,10 @@ packages). Three stages, always in order:
 2. **Stage 2 — Review:** Adversarial batch pass; saves all issues to a file
 3. **Stage 3 — Resolve:** Interactively work through issues and log decisions
 
-After the plan is approved, hand off to `/r-implement`.
+After the plan is approved, hand off to:
+- `/r-implement` — section-by-section with manual oversight between sections
+- `/auto-ship` — fully autonomous: implements, commits, PRs, monitors CI, and
+  merges each section without manual handoffs
 
 ```dot
 digraph impl_stages {
@@ -29,7 +33,7 @@ digraph impl_stages {
     S1 [label="Stage 1\nDraft Plan", shape=box];
     S2 [label="Stage 2\nAdversarial Review", shape=box];
     S3 [label="Stage 3\nResolve + Log", shape=box];
-    done [label="→ /r-implement", shape=doublecircle];
+    done [label="→ /r-implement\nor /auto-ship", shape=doublecircle];
 
     S1 -> S2;
     S2 -> S3 [label="issues found"];
@@ -40,9 +44,10 @@ digraph impl_stages {
 ```
 
 <HARD-GATE>
-Do not hand off to `/r-implement` until Stage 3 is complete, all issues in
-`plans/plan-review-{id}.md` are resolved, and `plans/decisions-{id}.md` is
-populated. No implementation begins until the plan is fully approved.
+Do not hand off to `/r-implement` or `/auto-ship` until Stage 3 is complete,
+all issues in `plans/plan-review-{id}.md` are resolved, and
+`plans/decisions-{id}.md` is populated. No implementation begins until the
+plan is fully approved.
 </HARD-GATE>
 
 ---
