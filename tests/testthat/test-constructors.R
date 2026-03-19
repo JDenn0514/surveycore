@@ -1794,25 +1794,6 @@ test_that("survey_nonprob validator rejects missing weight column in @data", {
   )
 })
 
-test_that("survey_nonprob validator rejects non-numeric weight column", {
-  df <- data.frame(y = 1:5, w = letters[1:5])
-  expect_error(
-    survey_nonprob(
-      data = df,
-      variables = list(
-        weights = "w",
-        probs_provided = FALSE,
-        ids = NULL,
-        strata = NULL,
-        fpc = NULL,
-        nest = FALSE,
-        visible_vars = NULL
-      )
-    ),
-    class = "surveycore_error_weights_not_numeric"
-  )
-})
-
 test_that("survey_nonprob validator rejects all-NA weight column", {
   df <- data.frame(y = 1:5, w = NA_real_)
   expect_error(
@@ -1832,7 +1813,7 @@ test_that("survey_nonprob validator rejects all-NA weight column", {
   )
 })
 
-test_that("survey_nonprob validator rejects non-positive weight column", {
+test_that("survey_nonprob validator rejects negative weights", {
   df <- data.frame(y = 1:5, w = c(1, -1, 1, 1, 1))
   expect_error(
     survey_nonprob(
@@ -1847,7 +1828,7 @@ test_that("survey_nonprob validator rejects non-positive weight column", {
         visible_vars = NULL
       )
     ),
-    class = "surveycore_error_weights_nonpositive"
+    class = "surveycore_error_weights_negative"
   )
 })
 

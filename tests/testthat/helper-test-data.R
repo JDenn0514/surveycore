@@ -284,8 +284,12 @@ test_invariants <- function(design) {
         label = "weight column has at least one non-NA value"
       )
       testthat::expect_true(
-        all(wt_col[!is.na(wt_col)] > 0),
-        label = "weight column has all positive non-NA values"
+        all(wt_col[!is.na(wt_col)] >= 0),
+        label = "weight column has all non-negative non-NA values"
+      )
+      testthat::expect_true(
+        any(wt_col[!is.na(wt_col)] > 0),
+        label = "weight column has at least one positive non-NA value"
       )
     }
 
