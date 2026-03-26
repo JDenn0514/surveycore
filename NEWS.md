@@ -15,7 +15,6 @@
   `survey_nonprob`.
 * Added `@examples` to 12 exported functions and `@return` to
   `survey_base` for CRAN compliance.
-* Added `surveytidy` to Suggests for vignette dependency.
 
 # surveycore 0.6.1
 
