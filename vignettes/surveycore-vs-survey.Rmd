@@ -43,7 +43,7 @@ section shows the same task three ways: `survey`, `srvyr`, and `surveycore`.
 
 **Constructor comparisons** use the `api` dataset from the `survey` package —
 the same reference dataset as the
-[srvyr comparison vignette](https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html),
+[srvyr comparison vignette](https://CRAN.R-project.org/package=srvyr),
 so cross-referencing is easy. **Analysis comparisons** use `ns_wave1`
 (Nationscape Wave 1, Democracy Fund + UCLA) from surveycore's bundled data.
 
@@ -764,6 +764,6 @@ as_survey_nonprob(ns_wave1, weights = weight) |>
 - `vignette("getting-started")` — full surveycore overview with worked examples
 - `vignette("creating-survey-objects")` — all five constructors, including
   two-phase designs and the `nest` argument
-- [srvyr comparison vignette](https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html)
+- [srvyr comparison vignette](https://CRAN.R-project.org/package=srvyr)
   — the original side-by-side that this vignette is modeled on
 - @lumley2010 — the definitive reference on complex survey analysis in R

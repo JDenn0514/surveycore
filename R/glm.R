@@ -50,6 +50,13 @@
 #'
 #' @return A `survey_glm_fit` object.
 #'
+#' @examples
+#' # survey_glm_fit objects are created by survey_glm(), not directly
+#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                strata = vstrat, nest = TRUE)
+#' fit <- survey_glm(d, age ~ sex)
+#' fit@coefficients
+#'
 #' @seealso [survey_glm()] to create a `survey_glm_fit`.
 #' @family constructors
 #' @export

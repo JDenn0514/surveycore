@@ -37,14 +37,16 @@ pak::pak("JDenn0514/surveycore")
 ## What surveycore provides
 
 - **S7 survey objects**: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`
-- **Constructors**: `as_survey()`, `as_survey_rep()`,
-  `as_survey_twophase()`
+  `survey_twophase`, `survey_nonprob`
+- **Constructors**: `as_survey()`, `as_survey_replicate()`,
+  `as_survey_twophase()`, `as_survey_nonprob()`
 - **Metadata system**: `set_var_label()`, `set_val_labels()`,
   `extract_var_label()`, `extract_val_labels()` — with automatic haven
   attribute import
 - **Analysis functions**: `get_freqs()`, `get_means()`, `get_totals()`,
-  `get_corr()`, `get_quantiles()`, `get_ratios()`
+  `get_corr()`, `get_quantiles()`, `get_ratios()`, `get_diffs()`
+- **Regression**: `survey_glm()` for survey-weighted GLMs with `clean()`
+  for tidy coefficient tables
 - **Design utilities**: `update_design()`, `as_svydesign()`,
   `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()`
 
@@ -111,7 +113,7 @@ df_rep <- data.frame(
   rep4 = runif(20, 0.5, 2)
 )
 
-d_rep <- as_survey_rep(
+d_rep <- as_survey_replicate(
   df_rep,
   weights = wt,
   repweights = starts_with("rep"),
@@ -145,13 +147,15 @@ surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
 ``` r
-d2 <- set_var_label(d, income, "Annual household income (USD)")
-d2 <- set_var_label(d2, age, "Respondent age in years")
+d2 <- set_var_label(d, income = "Annual household income (USD)")
+d2 <- set_var_label(d2, age = "Respondent age in years")
 
 extract_var_label(d2, income)
-#> [1] "Annual household income (USD)"
+#>                          income 
+#> "Annual household income (USD)"
 extract_var_label(d2, age)
-#> [1] "Respondent age in years"
+#>                       age 
+#> "Respondent age in years"
 ```
 
 ## Conversion to/from survey and srvyr

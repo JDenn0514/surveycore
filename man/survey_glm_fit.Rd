@@ -71,6 +71,14 @@ survey-weighted generalised linear model: design-based coefficient
 estimates, variance-covariance matrix, fitted values, residuals, and
 model metadata.
 }
+\examples{
+# survey_glm_fit objects are created by survey_glm(), not directly
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+fit <- survey_glm(d, age ~ sex)
+fit@coefficients
+
+}
 \seealso{
 \code{\link[=survey_glm]{survey_glm()}} to create a \code{survey_glm_fit}.
 

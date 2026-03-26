@@ -50,6 +50,13 @@ rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 }
 }
 
+\examples{
+# Prefer as_survey() over calling survey_taylor() directly
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+class(d)
+
+}
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object.
 

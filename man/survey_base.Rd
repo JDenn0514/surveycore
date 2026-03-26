@@ -12,6 +12,11 @@ survey_base(
   call = NULL
 )
 }
+\value{
+Cannot be instantiated directly. See \link{survey_taylor},
+\link{survey_replicate}, \link{survey_twophase}, or \link{survey_nonprob} for
+concrete subclasses.
+}
 \description{
 All survey design objects (\code{survey_taylor}, \code{survey_replicate},
 \code{survey_twophase}, \code{survey_nonprob}) inherit from \code{survey_base}. This

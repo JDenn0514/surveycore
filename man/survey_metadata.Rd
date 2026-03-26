@@ -54,6 +54,20 @@ transformation history for variables in a survey design object.
 Automatically populated from haven-style attributes when
 \code{\link[=as_survey]{as_survey()}} or related constructors are called.
 }
+\examples{
+# Empty metadata (default)
+m <- survey_metadata()
+m@variable_labels
+
+# Pre-populated metadata
+m <- survey_metadata(
+  variable_labels = list(age = "Respondent age", income = "Annual income"),
+  value_labels = list(sex = c(Male = 1L, Female = 2L))
+)
+m@variable_labels$age
+m@value_labels$sex
+
+}
 \seealso{
 Other metadata: 
 \code{\link{extract_metadata}()},

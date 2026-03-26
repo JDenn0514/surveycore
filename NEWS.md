@@ -1,3 +1,13 @@
+# surveycore (development version)
+
+* Moved `dplyr` from Suggests to Imports (used unguarded in metadata
+  functions).
+* Fixed broken `vignette("estimation")` cross-reference in
+  `creating-survey-objects` vignette.
+* Updated README to reflect current API: `as_survey_replicate()` (not
+  `as_survey_rep()`), added `get_diffs()`, `survey_glm()`, and
+  `survey_nonprob`.
+
 # surveycore 0.6.1
 
 ## Bug fixes
