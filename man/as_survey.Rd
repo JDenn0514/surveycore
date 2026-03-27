@@ -117,6 +117,16 @@ d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
                   strata = sdmvstra, nest = TRUE)
 
 }
+\references{
+Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
+\emph{Model Assisted Survey Sampling}. Springer.
+
+Lumley, T. (2004) Analysis of complex survey samples.
+\emph{Journal of Statistical Software} \bold{9}(1), 1--19.
+
+Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
+John Wiley and Sons.
+}
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs,
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs,

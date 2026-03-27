@@ -26,7 +26,7 @@ survey_glm_fit(
 \arguments{
 \item{coefficients}{Named numeric vector of length \code{p}.}
 
-\item{vcov}{\verb{p × p} design-based variance-covariance matrix.}
+\item{vcov}{\verb{p x p} design-based variance-covariance matrix.}
 
 \item{fitted_values}{Numeric vector of length \code{n} (response scale).}
 

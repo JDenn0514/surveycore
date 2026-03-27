@@ -40,6 +40,36 @@ See our guide on [how to create a great issue](https://code-review.tidyverse.org
 *  We use [testthat](https://cran.r-project.org/package=testthat) for unit tests. 
    Contributions with test cases included are easier to accept.  
 
+## Extended tests
+
+Some tests are computationally expensive or require optional packages and are
+not run on every check. They are gated by an environment variable:
+
+```bash
+SURVEYCORE_EXTENDED_TESTS=true Rscript -e "devtools::test()"
+```
+
+To run extended tests locally:
+
+```r
+Sys.setenv(SURVEYCORE_EXTENDED_TESTS = "true")
+devtools::test()
+```
+
+Extended tests live in the same `tests/testthat/` directory as regular tests.
+Any test block that requires the extended flag wraps its body in:
+
+```r
+skip_if(
+  !identical(Sys.getenv("SURVEYCORE_EXTENDED_TESTS"), "true"),
+  message = "Set SURVEYCORE_EXTENDED_TESTS=true to run extended tests"
+)
+```
+
+Extended tests typically cover: large-data scaling checks, long-running
+numerical benchmarks, and comparisons against reference implementations
+that are in `Suggests` but not installed in CI by default.
+
 ## Code of Conduct
 
 Please note that the surveycore project is released with a

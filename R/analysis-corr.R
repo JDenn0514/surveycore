@@ -25,6 +25,7 @@
 #'   per variable pair with inference statistics. Wide format returns the
 #'   correlation matrix (`r` values only — no variance or inference columns).
 #'   When `group` is active, group columns are prepended in both formats.
+#'   Case-sensitive.
 #' @param redundant Logical. If `FALSE` (default), each pair appears once
 #'   (lower triangle: pairs where var1 precedes var2 in input order). If
 #'   `TRUE`, both `(A, B)` and `(B, A)` are included (full directed pairs).
@@ -35,7 +36,7 @@
 #'   (r equals 1) are included.
 #' @param variance `NULL` or a character vector of one or more of `"se"`,
 #'   `"ci"`, `"var"`, `"cv"`, `"moe"`, `"deff"`. Default `"ci"`. CI bounds
-#'   use the Fisher Z transform (guaranteeing bounds in (−1, 1)). Only
+#'   use the Fisher Z transform (guaranteeing bounds in (-1, 1)). Only
 #'   applies to long format.
 #' @param conf_level Numeric scalar in (0, 1). Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the

@@ -13,20 +13,8 @@
 #'   using NHANES and ACS PUMS datasets (see test-variance-taylor.R,
 #'   test-variance-replicate.R).
 #'
-#' @srrstats {G2.0} Constructors assert that named design columns (ids,
-#'   weights, strata, fpc) are present in the supplied data frame and that each
-#'   resolves to a valid column via tidyselect before object construction.
-#'
 #' @srrstats {G2.0a} All @param entries for column-selecting arguments
 #'   explicitly state whether a single column or multiple columns are expected.
-#'
-#' @srrstats {G2.1} Type assertions are implemented in R/core-validators.R:
-#'   weights must be numeric and positive; FPC must be numeric and
-#'   non-missing; strata and ids must refer to columns that exist in @data.
-#'
-#' @srrstats {G2.1a} @param documentation for all constructor arguments states
-#'   accepted data types (e.g. numeric for weights, character or factor for
-#'   strata).
 #'
 #' @srrstats {G2.2} Parameters expected to be univariate (type, fpctype, mse,
 #'   nest) are validated via match.arg() or logical coercion, preventing
@@ -65,25 +53,13 @@
 #'   consistently, never [, ensuring single-column extraction returns a
 #'   vector regardless of the underlying tabular class.
 #'
-#' @srrstats {G2.13} Pre-processing in R/core-validators.R checks for missing
-#'   values in design variables: NA weights cause an error
-#'   (surveycore_error_weights_na); NA FPC values cause an error
-#'   (surveycore_error_fpc_na).
-#'
 #' @srrstats {G2.14} Analysis functions provide an na.rm parameter (default
 #'   TRUE) giving users explicit control over missing-value handling in
 #'   analytic computations.
 #'
-#' @srrstats {G2.14a} Validators error on missing values in design variables
-#'   (weights, FPC) that must be fully observed for variance estimation.
-#'
 #' @srrstats {G2.14b} Analysis functions default to na.rm = TRUE, excluding
 #'   missing outcome values from computations; behaviour is documented in
 #'   @param na.rm.
-#'
-#' @srrstats {G2.15} No function in the package passes data to base routines
-#'   with a default na.rm = FALSE. All calls to mean(), sum(), var(), and
-#'   similar functions use explicit na.rm = TRUE or receive pre-filtered data.
 #'
 #' @srrstats {G5.0} Standard datasets with known properties (nhanes_2017 and
 #'   acs_pums_wy) are used in numerical correctness tests.
@@ -115,178 +91,118 @@
 #' @srrstats {G5.5} Correctness tests that use synthetic data call
 #'   make_survey_data(seed = N) with a fixed seed, ensuring reproducibility.
 #'
-#' @srrstats {EA2.4} surveycore uses an explicit S7 class system
-#'   (survey_taylor, survey_replicate, survey_twophase) that encodes the design
-#'   type and all associated parameters.
+#' @srrstats {G1.0} Primary academic references are listed in inst/CITATION:
+#'   Lumley (2004) JSS article on analysis of complex survey samples, and
+#'   Lumley (2010) book. These are the definitive sources for the Taylor
+#'   linearization and replicate-weight variance methods vendored in this
+#'   package. References also appear in README.md.
 #'
-#' @srrstats {EA2.6} Routines process vector columns regardless of additional
-#'   attributes: haven-style "label" and "labels" attributes are automatically
-#'   detected and preserved in @metadata during construction, and restored in
-#'   analysis output when requested.
+#' @srrstats {G1.1} surveycore implements established survey variance
+#'   estimation algorithms (Taylor linearization, BRR, jackknife, bootstrap,
+#'   two-phase) that were originally implemented in Thomas Lumley's survey
+#'   package. surveycore is an improvement on the existing R implementation:
+#'   it provides a modern S7 class system, a tidy-select interface, automatic
+#'   haven label preservation, and a consistent tibble-based output API that
+#'   survey and srvyr do not offer. Full comparison documented in
+#'   vignette("surveycore-vs-survey").
 #'
-#' @srrstats {EA3.0} The get_*() family (get_freqs(), get_means(),
-#'   get_totals(), get_corr(), get_quantiles(), get_ratios(), get_diffs())
-#'   provides automated, reproducible extraction of survey statistics without
-#'   requiring manual formula-writing or post-processing.
+#' @srrstats {G1.2} A Life Cycle Statement is included in README.md under
+#'   the "Development status" section, showing the completed phases (0–2),
+#'   current stability of the API, and planned future phases (2.5
+#'   calibration, 3 polish/CRAN). NEWS.md documents the full changelog.
 #'
-#' @srrstats {EA3.1} All get_*() functions return tidy tibbles with consistent
-#'   column naming conventions, enabling direct comparison of estimates across
-#'   variables, groups, and designs.
+#' @srrstats {G1.3} Statistical terminology (complex survey design, primary
+#'   sampling unit, finite population correction, Taylor linearization,
+#'   replicate weights, two-phase design, design-based inference, Binder
+#'   sandwich estimator) is defined and illustrated in the package vignettes:
+#'   vignette("creating-survey-objects") and vignette("getting-started").
 #'
-#' @srrstats {EA4.0} All get_*() functions return tibble-based objects;
-#'   survey_glm() returns a survey_glm_fit S7 object. Return types do not vary
-#'   by input class within the accepted input space.
+#' @srrstats {G1.4a} All internal (non-exported) functions in R/ carry a
+#'   final @noRd roxygen2 tag, including all 16 helpers in
+#'   R/analysis-helpers.R and all internal helpers in R/glm.R,
+#'   R/core-validators.R, and R/variance-*.R files.
 #'
-#' @srrstats {EA4.2} All survey design objects have a print method that
-#'   provides a structured summary (design type, sample size, variable
-#'   preview). survey_glm_fit has both print and summary methods.
+#' @srrstats {G2.3b} All character parameters that use match.arg() are
+#'   explicitly documented as case-sensitive in their @param entries:
+#'   type and fpctype in as_survey_replicate(), method in
+#'   as_survey_twophase(), format in get_corr(), scale in get_diffs().
+#' @srrstats {G2.9} surveycore does not perform implicit type conversions that
+#'   lose information. Design variable types (weights, FPC) are validated at
+#'   construction time — non-numeric types cause informative errors rather than
+#'   silent coercion. The one coercion that does occur (character → factor in
+#'   survey_glm() via stats::model.matrix()) is documented in survey_glm()
+#'   @details ("Predictor variable types") and @param family.
 #'
-#' @srrstats {EA5.2} The print.survey_glm_fit() and print.survey_glm_summary()
-#'   methods format numeric output via format(round(x, digits), nsmall =
-#'   digits) rather than relying on default numeric printing.
+#' @srrstats {G2.11} All design variables (weights, FPC, strata IDs, PSU IDs)
+#'   are validated at construction time; columns with non-standard class
+#'   attributes produce informative errors (surveycore_error_weights_not_numeric
+#'   etc.). Non-design columns with unusual types are passed through unchanged
+#'   and only produce errors if used in analysis — in which case the error
+#'   originates from the statistical computation (e.g., stats::model.matrix()
+#'   for non-formula-compatible types). Tested in test-srr-compliance.R (G5.8b).
 #'
-#' @srrstats {EA5.3} The tibble print method for get_*() output includes
-#'   column type abbreviations (<dbl>, <int>, <fct>, etc.), indicating the
-#'   class and storage mode of each column.
+#' @srrstats {G2.12} surveycore does not accept or process list columns as
+#'   design variables (weights, FPC, strata, IDs). Passing a list column where
+#'   a numeric is expected produces a surveycore_error_weights_not_numeric or
+#'   equivalent error. List columns in non-design positions are stored as-is
+#'   and rejected with clear errors if used in analysis. Tested in
+#'   test-srr-compliance.R (G5.8b).
 #'
-#' @srrstats {EA6.0} Return values from all get_*() functions are tested for
-#'   class, dimensions, column names, column types, and numeric values. See
-#'   EA6.0a through EA6.0e.
+#' @srrstats {G2.16} All analysis functions (get_means(), get_totals(),
+#'   get_freqs(), get_quantiles(), get_corr(), get_ratios(), get_diffs())
+#'   accept a na.rm argument that controls how NA (and NaN, since is.na(NaN)
+#'   is TRUE in R) values in outcome variables are handled. survey_glm()
+#'   provides na.action to handle undefined values in formula variables.
+#'   Design variables (weights, FPC) that contain NA, NaN, or Inf produce
+#'   informative errors at construction time (surveycore_error_weights_na,
+#'   surveycore_error_fpc_na, etc.). Inf in outcome variables propagates
+#'   through the variance estimator as expected by standard R behaviour.
 #'
-#' @srrstats {EA6.0a} Tests verify the class of all return objects: get_*()
-#'   functions return tibbles; constructors return the correct S7 subclass.
+#' @srrstats {G3.0} All statistical computations in surveycore use integer
+#'   equality (with integer literals, e.g. == 0L, == 1L) or tolerance-based
+#'   comparisons (e.g. abs(x) < .Machine$double.eps, isTRUE(all.equal(x,y))).
+#'   The only floating-point == 0 comparisons are display-level guards in
+#'   get_diffs() (pct_change column), where dividing by zero would produce
+#'   Inf in a formatted output column — these are intentional guards, not
+#'   algorithmic equality tests. All algorithmic thresholds (e.g. separation
+#'   detection in survey_glm()) use .Machine$double.eps-based bounds.
 #'
-#' @srrstats {EA6.0b} Tests verify the dimensions (number of rows and columns)
-#'   of all tabular return objects for representative inputs.
+#' @srrstats {G5.6} Parameter recovery tests compare surveycore estimates
+#'   against the survey reference implementation (oracle tests in
+#'   test-glm-numerical.R, test-variance-taylor.R, test-variance-replicate.R,
+#'   test-variance-twophase.R, test-variance-srs.R). Direct analytical
+#'   recovery from deterministic data is tested in test-srr-compliance.R
+#'   (G5.6/G5.6a block).
 #'
-#' @srrstats {EA6.0c} Tests verify that returned tibbles carry the expected
-#'   column names (e.g. mean, se, ci_low, ci_high, n for get_means()).
+#' @srrstats {G5.6a} All parameter recovery tests use tolerance-based
+#'   comparisons: coef oracle tests use tolerance = 1e-10, SE tests use
+#'   1e-8, CI tests use 1e-6. Analytical recovery tests in
+#'   test-srr-compliance.R use tolerance = 0.05 (finite-sample variance
+#'   of the recovery estimate with n = 1000).
 #'
-#' @srrstats {EA6.0d} Tests verify column classes within returned tibbles
-#'   (e.g. numeric estimates, integer counts, factor group columns).
+#' @srrstats {EA1.0} Target audiences are identified in README.md ("Who is
+#'   this for?" section): survey researchers and methodologists, social
+#'   scientists / epidemiologists / public health researchers, and R users
+#'   seeking a tidyverse-compatible alternative to survey and srvyr.
 #'
-#' @srrstats {EA6.0e} Numeric return values are tested with
-#'   expect_equal(..., tolerance = 1e-10) or equivalent against reference
-#'   values from the survey package.
+#' @srrstats {EA1.1} README.md ("Who is this for?" section) identifies the
+#'   kinds of data the software analyses: rectangular survey microdata with
+#'   complex probability sampling designs (stratified, clustered, replicate-
+#'   weight, two-phase), including data with haven-style variable and value
+#'   labels. Supported input formats: data.frame, tibble, data.table.
 #'
-#' @srrstats {RE1.0} survey_glm() requires a formula interface: the first
-#'   argument is a standard R formula (e.g. y ~ x1 + x2), and no alternative
-#'   matrix interface is provided.
+#' @srrstats {EA1.2} README.md ("Who is this for?" section) identifies the
+#'   kinds of questions: weighted means, totals, frequencies, quantiles,
+#'   correlations, ratios, survey-weighted regression, and subgroup
+#'   comparisons. The package is designed for inferential questions that
+#'   require design-consistent variance estimates.
 #'
-#' @srrstats {RE2.1} survey_glm() accepts an na.action argument (forwarded to
-#'   stats::glm()) controlling how missing values in predictor and response
-#'   data are handled; default is na.omit.
-#'
-#' @srrstats {RE3.0} Convergence warnings from the underlying stats::glm() fit
-#'   are propagated unchanged to the user, as surveycore does not suppress
-#'   them.
-#'
-#' @srrstats {RE3.2} Convergence thresholds inherit stats::glm.control()
-#'   defaults (epsilon = 1e-8, maxit = 25), which are well-established and
-#'   documented in ?glm.control.
-#'
-#' @srrstats {RE3.3} Users may supply a control argument to survey_glm()
-#'   (forwarded to stats::glm()), allowing explicit setting of epsilon and
-#'   maxit via glm.control().
-#'
-#' @srrstats {RE4.0} survey_glm() returns a survey_glm_fit S7 object that
-#'   stores coefficients, vcov, formula, design, and the underlying glm fit.
-#'
-#' @srrstats {RE4.2} coef.survey_glm_fit() is implemented and returns the
-#'   survey-weighted coefficient vector.
-#'
-#' @srrstats {RE4.3} confint.survey_glm_fit() is implemented and returns Wald
-#'   confidence intervals based on the sandwich variance-covariance matrix.
-#'
-#' @srrstats {RE4.4} formula.survey_glm_fit() is implemented and returns the
-#'   model formula as specified by the user.
-#'
-#' @srrstats {RE4.5} nobs.survey_glm_fit() is implemented and returns the
-#'   number of observations used in the fit.
-#'
-#' @srrstats {RE4.6} vcov.survey_glm_fit() is implemented and returns the
-#'   sandwich variance-covariance matrix of the model parameters.
-#'
-#' @srrstats {RE4.7} Convergence statistics are available via
-#'   summary.survey_glm_fit(), which reports the underlying glm deviance,
-#'   degrees of freedom, and AIC.
-#'
-#' @srrstats {RE4.8} Response variable values are accessible via
-#'   model.frame.survey_glm_fit(), which returns the model frame including the
-#'   response column.
-#'
-#' @srrstats {RE4.9} Fitted (modelled) values of the response variable are
-#'   returned by fitted.survey_glm_fit().
-#'
-#' @srrstats {RE4.10} Model residuals are returned by
-#'   residuals.survey_glm_fit(), with support for types deviance, pearson,
-#'   response, and working.
-#'
-#' @srrstats {RE4.11} Goodness-of-fit statistics are accessible via
-#'   AIC.survey_glm_fit(), BIC.survey_glm_fit(), logLik.survey_glm_fit(), and
-#'   deviance.survey_glm_fit().
-#'
-#' @srrstats {RE4.13} Predictor variable values and metadata are accessible
-#'   via model.matrix.survey_glm_fit() and model.frame.survey_glm_fit().
-#'
-#' @srrstats {RE4.17} print.survey_glm_fit() provides an on-screen summary of
-#'   the family/link, formula, design type, and coefficient table with
-#'   configurable digit precision.
-#'
-#' @srrstats {RE4.18} summary.survey_glm_fit() returns a survey_glm_summary
-#'   object with coefficient table, deviance residuals, dispersion, and AIC.
-#'
-#' @srrstats {RE7.3} tests/testthat/test-glm-methods.R demonstrates and tests
-#'   the accessor methods coef(), vcov(), confint(), formula(), nobs(),
-#'   fitted(), residuals(), AIC(), BIC(), logLik(), and deviance() for
-#'   survey_glm_fit objects.
-#'
-#' @srrstatsTODO {G1.0} *Statistical Software should list at least one primary reference from published academic literature.*
-#' @srrstatsTODO {G1.1} *Statistical Software should document whether the algorithm(s) it implements are: The first implementation of a novel algorithm; or The first implementation within R of an algorithm which has previously been implemented in other languages or contexts; or An improvement on other implementations of similar algorithms in R.*
-#' @srrstatsTODO {G1.2} *Statistical Software should include a Life Cycle Statement describing current and anticipated future states of development.*
-#' @srrstatsTODO {G1.3} *All statistical terminology should be clarified and unambiguously defined.*
-#' @srrstatsTODO {G1.4a} *All internal (non-exported) functions should also be documented in standard roxygen2 format, along with a final @noRd tag.*
-#' @srrstatsTODO {G2.3b} *Either: use tolower() or equivalent to ensure input of character parameters is not case dependent; or explicitly document that parameters are strictly case-sensitive.*
-#' @srrstatsTODO {G2.9} *Software should issue diagnostic messages for type conversion in which information is lost (such as conversion of variables from factor to character; standardisation of variable names; or removal of meta-data).*
-#' @srrstatsTODO {G2.11} *Software should ensure that data.frame-like tabular objects which have columns which do not themselves have standard class attributes (typically, vector) are appropriately processed, and do not error without reason.*
-#' @srrstatsTODO {G2.12} *Software should ensure that data.frame-like tabular objects which have list columns should ensure that those columns are appropriately pre-processed.*
-#' @srrstatsTODO {G2.16} *All functions should also provide options to handle undefined values (e.g., NaN, Inf and -Inf), including potentially ignoring or removing such values.*
-#' @srrstatsTODO {G3.0} *Statistical software should never compare floating point numbers for equality. All numeric equality comparisons should either ensure that they are made between integers, or use appropriate tolerances for approximate equality.*
-#' @srrstatsTODO {G5.3} *For functions which are expected to return objects containing no missing (NA) or undefined (NaN, Inf) values, the absence of any such values in return objects should be explicitly tested.*
-#' @srrstatsTODO {G5.6} *Parameter recovery tests to test that the implementation produces expected results given data with known properties.*
-#' @srrstatsTODO {G5.6a} *Parameter recovery tests should generally be expected to succeed within a defined tolerance rather than recovering exact values.*
-#' @srrstatsTODO {G5.8} *Edge condition tests to test that these conditions produce expected behaviour.*
-#' @srrstatsTODO {G5.8a} *Zero-length data*
-#' @srrstatsTODO {G5.8b} *Data of unsupported types (e.g., character or complex numbers in for functions designed only for numeric data)*
-#' @srrstatsTODO {G5.8c} *Data with all-NA fields or columns or all identical fields or columns*
-#' @srrstatsTODO {G5.8d} *Data outside the scope of the algorithm (for example, data with more fields (columns) than observations (rows) for some regression algorithms)*
-#' @srrstatsTODO {G5.9} *Noise susceptibility tests*
-#' @srrstatsTODO {G5.9a} *Adding trivial noise (for example, at the scale of .Machine$double.eps) to data does not meaningfully change results*
-#' @srrstatsTODO {G5.10} *Extended tests should be included and run under a common framework with other tests but be switched on by flags such as a SURVEYCORE_EXTENDED_TESTS="true" environment variable.*
-#' @srrstatsTODO {G5.12} *Any conditions necessary to run extended tests should be described in developer documentation such as CONTRIBUTING.md or tests/README.md.*
-#' @srrstatsTODO {EA1.0} *Identify one or more target audiences for whom the software is intended*
-#' @srrstatsTODO {EA1.1} *Identify the kinds of data the software is capable of analysing.*
-#' @srrstatsTODO {EA1.2} *Identify the kinds of questions the software is intended to help explore.*
-#' @srrstatsTODO {EA1.3} *Identify the kinds of data each function is intended to accept as input*
-#' @srrstatsTODO {EA4.1} *EDA Software should implement parameters to enable explicit control of numeric precision*
-#' @srrstatsTODO {RE1.1} *Regression Software should document how formula interfaces are converted to matrix representations of input data.*
-#' @srrstatsTODO {RE1.2} *Regression Software should document expected format (types or classes) for inputting predictor variables.*
-#' @srrstatsTODO {RE1.3} *Regression Software which passes or otherwise transforms aspects of input data onto output structures should ensure that those output structures retain all relevant aspects of input data, notably including row and column names.*
-#' @srrstatsTODO {RE1.3a} *Where otherwise relevant information is not transferred, this should be explicitly documented.*
-#' @srrstatsTODO {RE1.4} *Regression Software should document any assumptions made with regard to input data.*
-#' @srrstatsTODO {RE2.0} *Regression Software should document any transformations applied to input data, for example conversion of label-values to factor.*
-#' @srrstatsTODO {RE2.2} *Regression Software should provide different options for processing missing values in predictor and response data.*
-#' @srrstatsTODO {RE2.4} *Regression Software should implement pre-processing routines to identify whether aspects of input data are perfectly collinear.*
-#' @srrstatsTODO {RE2.4a} *Perfect collinearity among predictor variables*
-#' @srrstatsTODO {RE2.4b} *Perfect collinearity between independent and dependent variables*
-#' @srrstatsTODO {RE3.1} *Enable convergence messages to be optionally suppressed, yet should ensure that the resultant model object nevertheless includes sufficient data to identify lack of convergence.*
-#' @srrstatsTODO {RE5.0} *Scaling relationships between sizes of input data and speed of algorithm.*
-#' @srrstatsTODO {RE6.0} *Model objects returned by Regression Software should have default plot methods.*
-#' @srrstatsTODO {RE6.1} *Where the default plot method is NOT a generic plot method dispatched on the class of return objects, that method dispatch should nevertheless exist.*
-#' @srrstatsTODO {RE6.2} *The default plot method should produce a plot of the fitted values of the model, with optional visualisation of confidence intervals or equivalent.*
-#' @srrstatsTODO {RE7.0} *Tests with noiseless, exact relationships between predictor (independent) data.*
-#' @srrstatsTODO {RE7.1} *Tests with noiseless, exact relationships between predictor (independent) and response (dependent) data.*
-#' @srrstatsTODO {RE7.2} Demonstrate that output objects retain aspects of input data such as row or case names (see RE1.3).
+#' @srrstats {EA1.3} README.md ("Who is this for?" section) includes a table
+#'   documenting the accepted input types for each get_*() function:
+#'   get_freqs() (categorical), get_means()/get_totals()/get_quantiles()
+#'   (numeric), get_corr() (pairs of numeric), get_ratios() (two numeric),
+#'   get_diffs() (categorical + numeric), survey_glm() (numeric/binary
+#'   response, numeric/categorical predictors).
 #' @noRd
 NULL
 

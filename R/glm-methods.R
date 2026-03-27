@@ -14,6 +14,73 @@
 # Spec: plans/spec-phase-2.md §V
 
 
+#' GLM Methods Standards
+#'
+#' @srrstats {RE4.2} coef.survey_glm_fit() is implemented and returns the
+#'   survey-weighted coefficient vector.
+#'
+#' @srrstats {RE4.3} confint.survey_glm_fit() is implemented and returns Wald
+#'   confidence intervals based on the sandwich variance-covariance matrix.
+#'
+#' @srrstats {RE4.4} formula.survey_glm_fit() is implemented and returns the
+#'   model formula as specified by the user.
+#'
+#' @srrstats {RE4.5} nobs.survey_glm_fit() is implemented and returns the
+#'   number of observations used in the fit.
+#'
+#' @srrstats {RE4.6} vcov.survey_glm_fit() is implemented and returns the
+#'   sandwich variance-covariance matrix of the model parameters.
+#'
+#' @srrstats {RE4.7} Convergence statistics are available via
+#'   summary.survey_glm_fit(), which reports the underlying glm deviance,
+#'   degrees of freedom, and AIC.
+#'
+#' @srrstats {RE4.8} Response variable values are accessible via
+#'   model.frame.survey_glm_fit(), which returns the model frame including
+#'   the response column.
+#'
+#' @srrstats {RE4.9} Fitted (modelled) values of the response variable are
+#'   returned by fitted.survey_glm_fit().
+#'
+#' @srrstats {RE4.10} Model residuals are returned by
+#'   residuals.survey_glm_fit(), with support for types deviance, pearson,
+#'   response, and working.
+#'
+#' @srrstats {RE4.11} Goodness-of-fit statistics are accessible via
+#'   AIC.survey_glm_fit(), BIC.survey_glm_fit(), logLik.survey_glm_fit(),
+#'   and deviance.survey_glm_fit().
+#'
+#' @srrstats {RE4.13} Predictor variable values and metadata are accessible
+#'   via model.matrix.survey_glm_fit() and model.frame.survey_glm_fit().
+#'
+#' @srrstats {RE4.17} print.survey_glm_fit() provides an on-screen summary of
+#'   the family/link, formula, design type, and coefficient table with
+#'   configurable digit precision.
+#'
+#' @srrstats {RE4.18} summary.survey_glm_fit() returns a survey_glm_summary
+#'   object with coefficient table, deviance residuals, dispersion, and AIC.
+#'
+#' @srrstats {RE6.0} survey_glm_fit has a default plot method,
+#'   plot.survey_glm_fit(), registered via registerS3method() in .onLoad().
+#'   The method produces a coefficient plot with design-based Wald CIs.
+#'
+#' @srrstats {RE6.1} plot.survey_glm_fit() is registered as an S3 method via
+#'   registerS3method("plot", "surveycore::survey_glm_fit",
+#'   plot.survey_glm_fit, envir = asNamespace("graphics")) in R/zzz.R.
+#'
+#' @srrstats {RE6.2} plot.survey_glm_fit() produces a dot-and-whisker
+#'   coefficient plot: point estimates with horizontal design-based Wald
+#'   confidence intervals (default 95%) for each non-intercept coefficient.
+#'
+#' @srrstats {RE7.3} tests/testthat/test-glm-methods.R demonstrates and tests
+#'   the accessor methods coef(), vcov(), confint(), formula(), nobs(),
+#'   fitted(), residuals(), AIC(), BIC(), logLik(), and deviance() for
+#'   survey_glm_fit objects.
+#'
+#' @noRd
+NULL
+
+
 # ── Internal helper: .glm_design_type_label() ─────────────────────────────────
 #
 # Returns the display label for the design type in print/summary output.
@@ -484,4 +551,85 @@ update.survey_glm_fit <- function(object, formula., ...) {
     }
   }
   eval(call, parent.frame())
+}
+
+
+# ── plot.survey_glm_fit ────────────────────────────────────────────────────────
+#
+# Default plot method: coefficient plot with design-based Wald confidence
+# intervals. Intercept is excluded when the model has more than one
+# coefficient (use with_intercept = TRUE to include it).
+#
+# Satisfies rOpenSci standards RE6.0, RE6.1, RE6.2.
+#
+# @param x A survey_glm_fit object.
+# @param conf.level Confidence level for Wald intervals. Default 0.95.
+# @param with_intercept Logical. Include the intercept in the plot?
+#   Default FALSE (intercept scale often differs from predictor scale).
+# @param ... Additional arguments passed to plot().
+# @return Invisibly returns x.
+#' @noRd
+plot.survey_glm_fit <- function(
+  x,
+  conf.level = 0.95,
+  with_intercept = FALSE,
+  ...
+) {
+  coefs <- stats::coef(x)
+  ci <- stats::confint(x, level = conf.level)
+
+  # Optionally drop intercept
+  if (!with_intercept && length(coefs) > 1L) {
+    keep <- names(coefs) != "(Intercept)"
+    coefs <- coefs[keep]
+    ci    <- ci[keep, , drop = FALSE]
+  }
+
+  n_coef <- length(coefs)
+  if (n_coef == 0L) {
+    cli::cli_abort(
+      c("x" = "No coefficients to plot after removing intercept."),
+      class = "surveycore_error_plot_no_coef"
+    )
+  }
+
+  y_pos <- seq_len(n_coef)
+  x_range <- range(c(ci[, 1L], ci[, 2L], coefs), na.rm = TRUE)
+  pad <- diff(x_range) * 0.05
+  x_range <- x_range + c(-pad, pad)
+
+  # Compute left margin width from longest label
+  max_label <- max(nchar(names(coefs)))
+  old_mar <- graphics::par("mar")
+  on.exit(graphics::par(mar = old_mar), add = TRUE)
+  graphics::par(mar = c(5.1, max_label * 0.55 + 2.5, 4.1, 1.5))
+
+  graphics::plot(
+    x = coefs, y = y_pos,
+    xlim = x_range,
+    ylim = c(0.5, n_coef + 0.5),
+    yaxt = "n",
+    xlab = paste0(
+      "Coefficient estimate (",
+      round(conf.level * 100),
+      "% CI)"
+    ),
+    ylab = "",
+    main = paste0(
+      "Survey GLM Coefficients [",
+      .glm_design_type_label(x),
+      "]"
+    ),
+    pch = 19,
+    ...
+  )
+  graphics::axis(2L, at = y_pos, labels = names(coefs), las = 1L)
+  graphics::abline(v = 0, lty = 2L, col = "gray50")
+  graphics::segments(
+    x0 = ci[, 1L], x1 = ci[, 2L],
+    y0 = y_pos,    y1 = y_pos,
+    lwd = 2L
+  )
+
+  invisible(x)
 }

@@ -107,6 +107,16 @@
 #' d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 #'                   strata = sdmvstra, nest = TRUE)
 #'
+#' @references
+#' Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
+#' \emph{Model Assisted Survey Sampling}. Springer.
+#'
+#' Lumley, T. (2004) Analysis of complex survey samples.
+#' \emph{Journal of Statistical Software} \bold{9}(1), 1--19.
+#'
+#' Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
+#' John Wiley and Sons.
+#'
 #' @seealso
 #'   [as_survey_replicate()] for replicate-weight designs,
 #'   [as_survey_twophase()] for two-phase designs,
@@ -525,7 +535,7 @@ as_survey <- function(
 #'   jackknife with varying replication counts), `"BRR"` (balanced repeated
 #'   replication), `"Fay"` (Fay's method, a modified BRR), `"bootstrap"`,
 #'   `"ACS"` (used in American Community Survey), `"successive-difference"`,
-#'   or `"other"` (user-specified scale).
+#'   or `"other"` (user-specified scale). Case-sensitive.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
 #'   the number of replicates: `(R-1)/R` for jackknife methods, `1/4` for
@@ -539,7 +549,7 @@ as_survey <- function(
 #'   adjust the variance estimator. `NULL` means no FPC correction.
 #' @param fpctype Character. How `fpc` is interpreted: `"fraction"` (sampling
 #'   fraction, 0–1) or `"correction"` (multiplier for the replicate variance).
-#'   Default `"fraction"`.
+#'   Default `"fraction"`. Case-sensitive.
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
@@ -585,6 +595,16 @@ as_survey <- function(
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
 #'   type       = "JK1"
 #' )
+#'
+#' @references
+#' Judkins, D.R. (1990) Fay's method for variance estimation.
+#' \emph{Journal of the American Statistical Association}
+#' \bold{85}(410), 895--904.
+#'
+#' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+#' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+#'
+#' Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
@@ -748,7 +768,7 @@ as_survey_replicate <- function(
 #'   values (non-degenerate).
 #' @param method Character. Variance estimation method for combining Phase 1
 #'   and Phase 2 variability. One of `"full"` (default), `"approx"`, or
-#'   `"simple"`. See Details.
+#'   `"simple"`. Case-sensitive. See Details.
 #'
 #' @details
 #' ## Variance methods
@@ -798,6 +818,20 @@ as_survey_replicate <- function(
 #'   subset  = in_phase2,
 #'   method  = "full"
 #' )
+#'
+#' @references
+#' Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+#' \emph{Model Assisted Survey Sampling}. Springer.
+#'
+#' Breslow, N.E. and Chatterjee, N. (1999) Design and analysis of two-phase
+#' studies with binary outcome applied to Wilms tumour prognosis.
+#' \emph{Applied Statistics} \bold{48}, 457--468.
+#'
+#' Breslow, N., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulick, M.
+#' (2009) Improved Horvitz-Thompson estimation of model parameters from
+#' two-phase stratified samples: applications in epidemiology.
+#' \emph{Statistics in Biosciences}.
+#' \doi{10.1007/s12561-009-9001-6}
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,

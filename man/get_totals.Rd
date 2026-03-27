@@ -25,7 +25,7 @@ get_totals(
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
 numeric variable name. When \code{NULL} (default), estimates the population
-size (\verb{Σ w_i}). When supplied, estimates the weighted sum (\verb{Σ w_i × x_i}).}
+size (sum of weights). When supplied, estimates the weighted sum (sum of w_i * x_i).}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Default \code{NULL}.}

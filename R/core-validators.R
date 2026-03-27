@@ -22,6 +22,29 @@
 #' Return `invisible(TRUE)` on success; call [cli::cli_abort()] or
 #' [cli::cli_warn()] on failure.
 #'
+#' @srrstats {G2.0} Constructors assert that named design columns (ids,
+#'   weights, strata, fpc) are present in the supplied data frame and that
+#'   each resolves to a valid column via tidyselect before object construction.
+#'
+#' @srrstats {G2.1} Type assertions are implemented here: weights must be
+#'   numeric and positive; FPC must be numeric and non-missing; strata and
+#'   ids must refer to columns that exist in @data.
+#'
+#' @srrstats {G2.1a} @param documentation for all constructor arguments states
+#'   accepted data types (e.g. numeric for weights, character or factor for
+#'   strata).
+#'
+#' @srrstats {G2.13} Pre-processing checks for missing values in design
+#'   variables: NA weights cause surveycore_error_weights_na; NA FPC values
+#'   cause surveycore_error_fpc_na.
+#'
+#' @srrstats {G2.14a} Validators error on missing values in design variables
+#'   (weights, FPC) that must be fully observed for variance estimation.
+#'
+#' @srrstats {G2.15} No function passes data to base routines with a default
+#'   na.rm = FALSE. All calls to mean(), sum(), var(), and similar functions
+#'   use explicit na.rm = TRUE or receive pre-filtered data.
+#'
 #' @name validators
 #' @keywords internal
 #' @noRd

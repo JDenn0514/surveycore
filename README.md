@@ -27,6 +27,9 @@ It provides S7-based survey design objects with:
 - Seamless conversion to and from `survey::svydesign` and
   `srvyr::tbl_svy`
 
+For a side-by-side comparison with `survey` and `srvyr`, see
+`vignette("surveycore-vs-survey")`.
+
 ## Installation
 
 ``` r
@@ -53,6 +56,42 @@ pak::pak("JDenn0514/surveycore")
   for tidy coefficient tables
 - **Design utilities**: `update_design()`, `as_svydesign()`,
   `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()`
+
+## Who is this for?
+
+surveycore is intended for:
+
+- **Survey researchers and methodologists** who analyse complex
+  probability samples and need design-consistent variance estimates
+  (stratified, clustered, replicate-weight, and two-phase designs).
+- **Social scientists, epidemiologists, and public health researchers**
+  working with population surveys such as NHANES, ACS, GSS, or custom
+  organizational surveys.
+- **R users who want a tidyverse-compatible interface** for the survey
+  analysis workflows currently served by `survey` and `srvyr`.
+
+The software is designed to analyse **rectangular survey microdata**:
+one row per respondent, numeric or categorical outcome variables, and
+either explicit survey weights or a design specification (ids, strata,
+FPC). It supports:
+
+- Data frames, tibbles, and data.table objects as input.
+- Variables with haven-style variable labels and value labels (e.g. from
+  `.xpt` or `.sav` files read with `haven`).
+- Grouped analyses (via `surveytidy::group_by()`).
+
+Each analysis function accepts specific types of outcome variables:
+
+| Function | Accepts |
+|----|----|
+| `get_freqs()` | Categorical or coded integer variables |
+| `get_means()` | Numeric variables |
+| `get_totals()` | Numeric variables |
+| `get_corr()` | Pairs of numeric variables |
+| `get_quantiles()` | Numeric variables |
+| `get_ratios()` | Two numeric variables (numerator / denominator) |
+| `get_diffs()` | A categorical grouping variable + one or more numeric outcomes |
+| `survey_glm()` | Numeric or binary response, numeric or categorical predictors |
 
 ## Basic usage
 
@@ -187,6 +226,23 @@ built around it:
 - **surveywts** — calibration and post-stratification for survey
   weights. Coming soon.
 
+## Development status
+
+surveycore follows a phased development roadmap:
+
+| Phase | Status | Milestone |
+|----|----|----|
+| 0 — S7 classes, constructors, variance engines, metadata | ✅ Complete | v0.1.0 |
+| 0.5 — `surveytidy` dplyr verbs | ✅ Complete | separate package |
+| 1 — Analysis functions (`get_freqs()` through `get_diffs()`) | ✅ Complete | v0.3.0 |
+| 2 — Survey-weighted GLM (`survey_glm()`) | ✅ Complete | v0.6.x |
+| 2.5 — `surveywts` calibration | 🔜 Planned |  |
+| 3 — Polish, CRAN submission | 🔜 Planned | v1.0.0 |
+
+The package API is stable for Phases 0–2. Functions in earlier phases
+are not expected to change in breaking ways; later phases may introduce
+new exported functions. See `NEWS.md` for the full changelog.
+
 ## Code of Conduct
 
 Please note that the surveycore project is released with a [Contributor
@@ -199,3 +255,11 @@ By contributing to this project, you agree to abide by its terms.
 GPL-3. Variance estimation code vendored from the
 [`survey`](https://cran.r-project.org/package=survey) package (Thomas
 Lumley, GPL-2/GPL-3) — see `VENDORED.md` for full attribution.
+
+## References
+
+Lumley T (2004). “Analysis of Complex Survey Samples.” *Journal of
+Statistical Software*, **9**(1), 1–19.
+
+Lumley T (2010). *Complex Surveys: A Guide to Analysis Using R*. John
+Wiley and Sons.
