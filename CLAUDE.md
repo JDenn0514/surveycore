@@ -8,18 +8,21 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 
 ---
 
-## Current Phase Status
+## Implementation Status
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | Tagged v0.1.0 |
-| Phase 0.5 — surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
-| Prereq PR 1 — SRS support (originally `survey_srs`, now absorbed into `survey_taylor`) | ✅ Complete | `survey_srs` removed; SRS is `survey_taylor` with no ids/strata |
-| Phase 0.75 — Two-phase variance vendoring (`feature/variance-twophase`) | ✅ Complete | Required before Phase 1 |
-| Phase 1 — Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | Core functions on main (v0.3.0); nested `.meta` + group label refactor merged to develop (PR #22–23) |
-| Phase 2 — Regression (`survey_glm_fit`, `survey_glm()`) | 🔜 Next | See `plans/phase-2-glm-formal-specification.md` |
+The package API is stable. All core functionality is complete. New analysis
+functions may be added but the existing structure will not change in breaking ways.
 
-**Next action:** Begin Phase 2 — Regression. Spec at `plans/phase-2-glm-formal-specification.md`.
+| Component | Status | Notes |
+|-----------|--------|-------|
+| S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | v0.1.0 |
+| surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
+| SRS support | ✅ Complete | Absorbed into `survey_taylor`; no ids/strata |
+| Two-phase variance | ✅ Complete | v0.2.x |
+| Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
+| Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
+| Pairwise tests (`get_pairwise()`) | 🔜 Planned | See `plans/spec-get-pairwise.md` |
+| SATA metadata (`set_sata()`, `detect_question_type()`) | 🔜 Planned | See `plans/spec-sata-metadata.md` |
 
 ---
 
@@ -90,11 +93,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `archive/phase-2/spec-phase-2.md` — authoritative Phase 2 spec (regression)
-- `archive/phase-2/decisions-phase-2.md` — pre-implementation review decisions for Phase 2
-- `archive/phase-2/impl-phase-2.md` — Phase 2 implementation plan
-- `archive/phase-1/` — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)
-- `archive/survey-srs/survey-srs-formal-specification.md` — historical spec for removed `survey_srs` class (now absorbed into `survey_taylor`)
-- `archive/` — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context, multi-stage)
+- `plans/spec-get-pairwise.md` — spec for `get_pairwise()` (not yet implemented)
+- `plans/spec-sata-metadata.md` — spec for SATA metadata properties (not yet implemented)
+- `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
-- `.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md` — Phase 0 implementation details (archived)

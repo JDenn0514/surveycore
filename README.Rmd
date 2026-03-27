@@ -183,20 +183,10 @@ around it:
 
 ## Development status
 
-surveycore follows a phased development roadmap:
-
-| Phase | Status | Milestone |
-|---|---|---|
-| 0 — S7 classes, constructors, variance engines, metadata | ✅ Complete | v0.1.0 |
-| 0.5 — `surveytidy` dplyr verbs | ✅ Complete | separate package |
-| 1 — Analysis functions (`get_freqs()` through `get_diffs()`) | ✅ Complete | v0.3.0 |
-| 2 — Survey-weighted GLM (`survey_glm()`) | ✅ Complete | v0.6.x |
-| 2.5 — `surveywts` calibration | 🔜 Planned | |
-| 3 — Polish, CRAN submission | 🔜 Planned | v1.0.0 |
-
-The package API is stable for Phases 0–2. Functions in earlier phases are not
-expected to change in breaking ways; later phases may introduce new exported
-functions. See `NEWS.md` for the full changelog.
+The package API is stable. The core classes, constructors, and analysis
+functions (`get_freqs()` through `get_diffs()`) are not expected to change
+in breaking ways. New analysis functions may be added in future releases.
+See `NEWS.md` for the full changelog.
 
 ## Code of Conduct
 

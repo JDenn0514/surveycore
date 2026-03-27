@@ -1,4 +1,3 @@
-
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # surveycore <a href = "https://jdenn0514.github.io/surveycore/index.html"><img src="man/figures/logo.png" align="right" height="138" /></a>
@@ -32,14 +31,12 @@ For a side-by-side comparison with `survey` and `srvyr`, see
 
 ## Installation
 
-``` r
-# From CRAN:
-install.packages("surveycore")
+    # From CRAN:
+    install.packages("surveycore")
 
-# Development version from GitHub:
-# install.packages("pak")
-pak::pak("JDenn0514/surveycore")
-```
+    # Development version from GitHub:
+    # install.packages("pak")
+    pak::pak("JDenn0514/surveycore")
 
 ## What surveycore provides
 
@@ -82,137 +79,165 @@ FPC). It supports:
 
 Each analysis function accepts specific types of outcome variables:
 
-| Function | Accepts |
-|----|----|
-| `get_freqs()` | Categorical or coded integer variables |
-| `get_means()` | Numeric variables |
-| `get_totals()` | Numeric variables |
-| `get_corr()` | Pairs of numeric variables |
-| `get_quantiles()` | Numeric variables |
-| `get_ratios()` | Two numeric variables (numerator / denominator) |
-| `get_diffs()` | A categorical grouping variable + one or more numeric outcomes |
-| `survey_glm()` | Numeric or binary response, numeric or categorical predictors |
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Accepts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_freqs()</code></td>
+<td>Categorical or coded integer variables</td>
+</tr>
+<tr>
+<td><code>get_means()</code></td>
+<td>Numeric variables</td>
+</tr>
+<tr>
+<td><code>get_totals()</code></td>
+<td>Numeric variables</td>
+</tr>
+<tr>
+<td><code>get_corr()</code></td>
+<td>Pairs of numeric variables</td>
+</tr>
+<tr>
+<td><code>get_quantiles()</code></td>
+<td>Numeric variables</td>
+</tr>
+<tr>
+<td><code>get_ratios()</code></td>
+<td>Two numeric variables (numerator / denominator)</td>
+</tr>
+<tr>
+<td><code>get_diffs()</code></td>
+<td>A categorical grouping variable + one or more numeric outcomes</td>
+</tr>
+<tr>
+<td><code>survey_glm()</code></td>
+<td>Numeric or binary response, numeric or categorical predictors</td>
+</tr>
+</tbody>
+</table>
 
 ## Basic usage
 
-``` r
-library(surveycore)
+    library(surveycore)
 
-# ── Simple SRS design ──────────────────────────────────────────────────────────
-set.seed(42)
-df <- data.frame(
-  psu = rep(1:10, each = 10),
-  strata = rep(c("A", "B"), each = 50),
-  weight = runif(100, 0.5, 2),
-  income = rnorm(100, 50000, 10000),
-  age = sample(18:80, 100, replace = TRUE)
-)
+    # ── Simple SRS design ──────────────────────────────────────────────────────────
+    set.seed(42)
+    df <- data.frame(
+      psu = rep(1:10, each = 10),
+      strata = rep(c("A", "B"), each = 50),
+      weight = runif(100, 0.5, 2),
+      income = rnorm(100, 50000, 10000),
+      age = sample(18:80, 100, replace = TRUE)
+    )
 
-d <- as_survey(df, ids = psu, weights = weight, strata = strata, nest = TRUE)
-d
-#> 
-#> ── Survey Design ───────────────────────────────────────────────────────────────
-#> <survey_taylor> (Taylor series linearization)
-#> Sample size: 100
-#> 
-#> # A tibble: 100 × 5
-#>      psu strata weight income   age
-#>    <int> <chr>   <dbl>  <dbl> <int>
-#>  1     1 A       1.87  53219.    42
-#>  2     1 A       1.91  42162.    33
-#>  3     1 A       0.929 65757.    71
-#>  4     1 A       1.75  56429.    41
-#>  5     1 A       1.46  50898.    50
-#>  6     1 A       1.28  52766.    78
-#>  7     1 A       1.60  56793.    55
-#>  8     1 A       0.702 50898.    60
-#>  9     1 A       1.49  20069.    58
-#> 10     1 A       1.56  52849.    39
-#> # ℹ 90 more rows
+    d <- as_survey(df, ids = psu, weights = weight, strata = strata, nest = TRUE)
+    d
+    #> 
+    #> ── Survey Design ───────────────────────────────────────────────────────────────
+    #> <survey_taylor> (Taylor series linearization)
+    #> Sample size: 100
+    #> 
+    #> # A tibble: 100 × 5
+    #>      psu strata weight income   age
+    #>    <int> <chr>   <dbl>  <dbl> <int>
+    #>  1     1 A       1.87  53219.    42
+    #>  2     1 A       1.91  42162.    33
+    #>  3     1 A       0.929 65757.    71
+    #>  4     1 A       1.75  56429.    41
+    #>  5     1 A       1.46  50898.    50
+    #>  6     1 A       1.28  52766.    78
+    #>  7     1 A       1.60  56793.    55
+    #>  8     1 A       0.702 50898.    60
+    #>  9     1 A       1.49  20069.    58
+    #> 10     1 A       1.56  52849.    39
+    #> # ℹ 90 more rows
 
-# ── Weighted mean and total ────────────────────────────────────────────────────
-get_means(d, income)
-#> # A tibble: 1 × 4
-#>     mean ci_low ci_high     n
-#>    <dbl>  <dbl>   <dbl> <int>
-#> 1 50206. 47921.  52490.   100
-get_totals(d, income)
-#> # A tibble: 1 × 4
-#>      total   ci_low  ci_high     n
-#>      <dbl>    <dbl>    <dbl> <int>
-#> 1 6460063. 5906356. 7013770.   100
-```
+    # ── Weighted mean and total ────────────────────────────────────────────────────
+    get_means(d, income)
+    #> # A tibble: 1 × 4
+    #>     mean ci_low ci_high     n
+    #>    <dbl>  <dbl>   <dbl> <int>
+    #> 1 50206. 47921.  52490.   100
+    get_totals(d, income)
+    #> # A tibble: 1 × 4
+    #>      total   ci_low  ci_high     n
+    #>      <dbl>    <dbl>    <dbl> <int>
+    #> 1 6460063. 5906356. 7013770.   100
 
 ## Complex survey designs
 
-``` r
-# ── Replicate weights (BRR) ───────────────────────────────────────────────────
-df_rep <- data.frame(
-  y = rnorm(20),
-  wt = runif(20, 1, 3),
-  rep1 = runif(20, 0.5, 2),
-  rep2 = runif(20, 0.5, 2),
-  rep3 = runif(20, 0.5, 2),
-  rep4 = runif(20, 0.5, 2)
-)
+    # ── Replicate weights (BRR) ───────────────────────────────────────────────────
+    df_rep <- data.frame(
+      y = rnorm(20),
+      wt = runif(20, 1, 3),
+      rep1 = runif(20, 0.5, 2),
+      rep2 = runif(20, 0.5, 2),
+      rep3 = runif(20, 0.5, 2),
+      rep4 = runif(20, 0.5, 2)
+    )
 
-d_rep <- as_survey_replicate(
-  df_rep,
-  weights = wt,
-  repweights = starts_with("rep"),
-  type = "BRR"
-)
-d_rep
-#> 
-#> ── Survey Design ───────────────────────────────────────────────────────────────
-#> <survey_replicate> (BRR, 4 replicates)
-#> Sample size: 20
-#> 
-#> # A tibble: 20 × 6
-#>         y    wt  rep1  rep2  rep3  rep4
-#>     <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-#>  1 -2.00   2.30 1.09  0.849 0.705 1.71 
-#>  2  0.334  2.84 0.619 1.37  0.766 1.90 
-#>  3  1.17   1.73 1.74  1.76  1.28  1.75 
-#>  4  2.06   2.71 0.609 0.698 1.72  0.691
-#>  5 -1.38   1.60 0.672 1.84  0.673 1.47 
-#>  6 -1.15   1.93 1.46  1.18  1.84  1.54 
-#>  7 -0.706  1.29 0.981 1.84  1.36  0.548
-#>  8 -1.05   2.62 0.783 0.873 0.720 1.88 
-#>  9 -0.646  2.33 1.09  0.626 1.85  1.22 
-#> 10 -0.185  1.12 1.79  0.573 0.880 0.900
-#> # ℹ 10 more rows
-```
+    d_rep <- as_survey_replicate(
+      df_rep,
+      weights = wt,
+      repweights = starts_with("rep"),
+      type = "BRR"
+    )
+    d_rep
+    #> 
+    #> ── Survey Design ───────────────────────────────────────────────────────────────
+    #> <survey_replicate> (BRR, 4 replicates)
+    #> Sample size: 20
+    #> 
+    #> # A tibble: 20 × 6
+    #>         y    wt  rep1  rep2  rep3  rep4
+    #>     <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    #>  1 -2.00   2.30 1.09  0.849 0.705 1.71 
+    #>  2  0.334  2.84 0.619 1.37  0.766 1.90 
+    #>  3  1.17   1.73 1.74  1.76  1.28  1.75 
+    #>  4  2.06   2.71 0.609 0.698 1.72  0.691
+    #>  5 -1.38   1.60 0.672 1.84  0.673 1.47 
+    #>  6 -1.15   1.93 1.46  1.18  1.84  1.54 
+    #>  7 -0.706  1.29 0.981 1.84  1.36  0.548
+    #>  8 -1.05   2.62 0.783 0.873 0.720 1.88 
+    #>  9 -0.646  2.33 1.09  0.626 1.85  1.22 
+    #> 10 -0.185  1.12 1.79  0.573 0.880 0.900
+    #> # ℹ 10 more rows
 
 ## Variable labels
 
 surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
-``` r
-d2 <- set_var_label(d, income = "Annual household income (USD)")
-d2 <- set_var_label(d2, age = "Respondent age in years")
+    d2 <- set_var_label(d, income = "Annual household income (USD)")
+    d2 <- set_var_label(d2, age = "Respondent age in years")
 
-extract_var_label(d2, income)
-#>                          income 
-#> "Annual household income (USD)"
-extract_var_label(d2, age)
-#>                       age 
-#> "Respondent age in years"
-```
+    extract_var_label(d2, income)
+    #>                          income 
+    #> "Annual household income (USD)"
+    extract_var_label(d2, age)
+    #>                       age 
+    #> "Respondent age in years"
 
 ## Conversion to/from survey and srvyr
 
-``` r
-# To survey::svydesign
-svy <- as_svydesign(d)
-class(svy)
-#> [1] "survey.design2" "survey.design"
+    # To survey::svydesign
+    svy <- as_svydesign(d)
+    class(svy)
+    #> [1] "survey.design2" "survey.design"
 
-# Back to surveycore
-d_rt <- from_svydesign(svy)
-d_rt
-```
+    # Back to surveycore
+    d_rt <- from_svydesign(svy)
+    d_rt
 
 ## The surveyverse ecosystem
 
@@ -228,20 +253,10 @@ built around it:
 
 ## Development status
 
-surveycore follows a phased development roadmap:
-
-| Phase | Status | Milestone |
-|----|----|----|
-| 0 — S7 classes, constructors, variance engines, metadata | ✅ Complete | v0.1.0 |
-| 0.5 — `surveytidy` dplyr verbs | ✅ Complete | separate package |
-| 1 — Analysis functions (`get_freqs()` through `get_diffs()`) | ✅ Complete | v0.3.0 |
-| 2 — Survey-weighted GLM (`survey_glm()`) | ✅ Complete | v0.6.x |
-| 2.5 — `surveywts` calibration | 🔜 Planned |  |
-| 3 — Polish, CRAN submission | 🔜 Planned | v1.0.0 |
-
-The package API is stable for Phases 0–2. Functions in earlier phases
-are not expected to change in breaking ways; later phases may introduce
-new exported functions. See `NEWS.md` for the full changelog.
+The package API is stable. The core classes, constructors, and analysis
+functions (`get_freqs()` through `get_diffs()`) are not expected to
+change in breaking ways. New analysis functions may be added in future
+releases. See `NEWS.md` for the full changelog.
 
 ## Code of Conduct
 
