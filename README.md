@@ -5,7 +5,11 @@
 
 <!-- badges: start -->
 
+[![Project Status: Active – The project has reached a stable, usable
+state and is being actively
+developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml)
+[![pkgcheck](https://github.com/JDenn0514/surveycore/workflows/pkgcheck/badge.svg)](https://github.com/JDenn0514/surveycore/actions?query=workflow%3Apkgcheck)
 [![Codecov test
 coverage](https://codecov.io/gh/JDenn0514/surveycore/graph/badge.svg)](https://app.codecov.io/gh/JDenn0514/surveycore)
 <!-- badges: end -->
@@ -182,6 +186,13 @@ built around it:
   propagate weights and strata correctly.
 - **surveywts** — calibration and post-stratification for survey
   weights. Coming soon.
+
+## Code of Conduct
+
+Please note that the surveycore project is released with a [Contributor
+Code of
+Conduct](https://jdenn0514.github.io/surveycore/CODE_OF_CONDUCT.html).
+By contributing to this project, you agree to abide by its terms.
 
 ## License
 

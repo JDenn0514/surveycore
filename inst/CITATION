@@ -1,0 +1,9 @@
+bibentry(
+  bibtype = "Manual",
+  title   = "surveycore: Core Survey Analysis Infrastructure",
+  author  = person("Jacob", "Dennen",
+                   comment = c(ORCID = "0000-0003-3006-7364")),
+  year    = "2026",
+  note    = "R package version 0.6.2",
+  url     = "https://github.com/JDenn0514/surveycore"
+)

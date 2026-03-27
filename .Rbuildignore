@@ -21,3 +21,5 @@
 # Vignette build artifacts (pre-built HTML from local development)
 ^vignettes/.*_files$
 ^vignettes/.*\.html$
+^codemeta\.json$
+^CODE_OF_CONDUCT\.md$
