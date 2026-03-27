@@ -37,7 +37,8 @@ variable(s). Combined with any grouping set by \code{group_by()}. Default
 \item{format}{\code{"long"} (default) or \code{"wide"}. Long format returns one row
 per variable pair with inference statistics. Wide format returns the
 correlation matrix (\code{r} values only — no variance or inference columns).
-When \code{group} is active, group columns are prepended in both formats.}
+When \code{group} is active, group columns are prepended in both formats.
+Case-sensitive.}
 
 \item{redundant}{Logical. If \code{FALSE} (default), each pair appears once
 (lower triangle: pairs where var1 precedes var2 in input order). If
@@ -51,7 +52,7 @@ excluded (diagonal is \code{NA} in wide format). If \code{TRUE}, self-correlatio
 
 \item{variance}{\code{NULL} or a character vector of one or more of \code{"se"},
 \code{"ci"}, \code{"var"}, \code{"cv"}, \code{"moe"}, \code{"deff"}. Default \code{"ci"}. CI bounds
-use the Fisher Z transform (guaranteeing bounds in (−1, 1)). Only
+use the Fisher Z transform (guaranteeing bounds in (-1, 1)). Only
 applies to long format.}
 
 \item{conf_level}{Numeric scalar in (0, 1). Default \code{0.95}.}

@@ -47,7 +47,7 @@
 #'   suppression (see Details). Default `FALSE`.
 #' @param scale Character(1). `"ame"` (default): average marginal effects
 #'   on the response scale. `"link"`: coefficients on the link scale.
-#'   For Gaussian/identity models, both are identical.
+#'   For Gaussian/identity models, both are identical. Case-sensitive.
 #' @param variance `NULL` or a character vector of one or more of `"se"`,
 #'   `"ci"`. Controls which uncertainty columns appear. Default `"ci"`.
 #' @param conf_level Numeric(1) in (0, 1). Confidence level. Default

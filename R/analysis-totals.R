@@ -18,7 +18,7 @@
 #'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Optional single unquoted
 #'   numeric variable name. When `NULL` (default), estimates the population
-#'   size (`Σ w_i`). When supplied, estimates the weighted sum (`Σ w_i × x_i`).
+#'   size (sum of weights). When supplied, estimates the weighted sum (sum of w_i * x_i).
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Default `NULL`.
 #' @param variance `NULL` or a character vector from `"se"`, `"ci"`, `"var"`,

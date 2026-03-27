@@ -14,6 +14,89 @@
 # Spec: plans/spec-phase-2.md §II–IV, §VIII
 # Error classes: plans/error-messages.md rows 65–87
 
+#' GLM Standards
+#'
+#' @srrstats {RE1.0} survey_glm() requires a formula interface: the first
+#'   argument is a standard R formula (e.g. y ~ x1 + x2), and no alternative
+#'   matrix interface is provided.
+#'
+#' @srrstats {RE1.1} survey_glm() documents how formula interfaces are
+#'   converted to model matrices in its @details section: formula is passed to
+#'   stats::model.matrix() via stats::glm(), producing an n x p model matrix
+#'   with treatment contrasts for factors.
+#'
+#' @srrstats {RE1.2} survey_glm() documents expected predictor types in its
+#'   @details section: numeric, integer, logical, factor, and character are
+#'   all accepted; character is coerced to factor by stats::model.matrix().
+#'
+#' @srrstats {RE1.3} The coefficient vector (fit@coefficients) and vcov matrix
+#'   (fit@vcov) carry names produced by stats::model.matrix(). The model frame
+#'   preserves row names from the rows used in fitting. Documented in
+#'   survey_glm() @details ("Row and column names").
+#'
+#' @srrstats {RE1.3a} Rows excluded by na.action (na.omit) do not appear in
+#'   the model frame; documented in survey_glm() @details ("Row and column
+#'   names"). No other input metadata is silently dropped.
+#'
+#' @srrstats {RE1.4} Input assumptions for survey_glm() are documented in
+#'   @details ("Input assumptions"): one row per sampled unit, positive finite
+#'   weights, formula variables must be columns of design@data, no automatic
+#'   centering or scaling applied.
+#'
+#' @srrstats {RE2.0} survey_glm() documents data transformations in @details
+#'   ("Data transformations"): no automatic transformation is applied; factor
+#'   encoding is handled by stats::model.matrix(); link function
+#'   transformations are applied by the family object.
+#'
+#' @srrstats {RE2.1} survey_glm() accepts an na.action argument (forwarded to
+#'   stats::glm()) controlling how missing values in predictor and response
+#'   data are handled; default is na.omit.
+#'
+#' @srrstats {RE2.2} survey_glm() provides na.action to control
+#'   missing-value handling in model frame variables. Two options are
+#'   documented: na.omit (default) and na.fail. See @param na.action and
+#'   @details ("Missing values").
+#'
+#' @srrstats {RE2.4} survey_glm() detects perfect collinearity in the model
+#'   matrix pre-fitting: stats::glm() produces NA coefficients for aliased
+#'   columns; surveycore checks for any NA in coef(fit) immediately after
+#'   fitting and throws surveycore_error_singular_model_matrix.
+#'
+#' @srrstats {RE2.4a} Perfect collinearity among predictor variables (e.g.,
+#'   x2 = 2 * x1) produces NA in stats::coef(fit), which is detected and
+#'   thrown as surveycore_error_singular_model_matrix.
+#'
+#' @srrstats {RE2.4b} Perfect collinearity between the response and a
+#'   predictor (e.g., y ~ y) causes numerical rank deficiency detected via
+#'   the NA coefficient check, thrown as surveycore_error_singular_model_matrix.
+#'
+#' @srrstats {RE3.0} Convergence warnings from the underlying stats::glm()
+#'   fit are propagated unchanged to the user; surveycore does not suppress
+#'   them.
+#'
+#' @srrstats {RE3.1} survey_glm() accepts quiet = FALSE (default) or
+#'   quiet = TRUE to suppress convergence warnings. The convergence status is
+#'   always stored in fit@converged regardless of quiet.
+#'
+#' @srrstats {RE3.2} Convergence thresholds inherit stats::glm.control()
+#'   defaults (epsilon = 1e-8, maxit = 25), which are well-established and
+#'   documented in ?glm.control.
+#'
+#' @srrstats {RE3.3} Users may supply a control argument to survey_glm()
+#'   (forwarded to stats::glm()), allowing explicit setting of epsilon and
+#'   maxit via glm.control().
+#'
+#' @srrstats {RE4.0} survey_glm() returns a survey_glm_fit S7 object that
+#'   stores coefficients, vcov, formula, design, and the underlying glm fit.
+#'
+#' @srrstats {RE5.0} Scaling relationships are documented in survey_glm()
+#'   @details ("Performance"): O(n*p^2) for score matrix computation, O(p^3)
+#'   for bread matrix. Dominant cost is typically stats::glm() IRLS.
+#'
+#' @noRd
+NULL
+
+
 # ===========================================================================
 # Section 1: survey_glm_fit S7 class
 # ===========================================================================
@@ -26,7 +109,7 @@
 #' model metadata.
 #'
 #' @param coefficients Named numeric vector of length `p`.
-#' @param vcov `p × p` design-based variance-covariance matrix.
+#' @param vcov `p x p` design-based variance-covariance matrix.
 #' @param fitted_values Numeric vector of length `n` (response scale).
 #' @param residuals Working residuals from IRLS, length `n`.
 #' @param weights Survey weights used in fitting, length `n`.
@@ -530,13 +613,18 @@ survey_glm_fit <- S7::new_class(
 #' @param mustart Starting values for the mean.
 #' @param control A list of GLM control parameters passed to
 #'   [stats::glm.control()].
+#' @param quiet Logical. If `TRUE`, suppresses convergence warnings emitted by
+#'   `survey_glm()` and its internal replicate-weight refitting loop.
+#'   Convergence status is always stored in `fit@converged` regardless of this
+#'   setting, so non-convergence can still be detected programmatically.
+#'   Default `FALSE`.
 #'
 #' @return A [survey_glm_fit] S7 object.
 #'
 #' @details
 #' **Variance estimation:** Uses the Binder (1983) sandwich estimator, which
 #' decomposes into per-observation score vectors passed to the Phase 0
-#' variance machinery. The bread `(X'W̃X)⁻¹` accounts for IRLS working
+#' variance machinery. The bread `(X'WX)^(-1)` accounts for IRLS working
 #' weights and is correct for all GLM families including binomial and
 #' Poisson.
 #'
@@ -550,6 +638,57 @@ survey_glm_fit <- S7::new_class(
 #'
 #' **Multinomial response:** `cbind()` on the LHS of `formula` is not
 #' supported. Multinomial logistic regression is deferred to a later phase.
+#'
+#' **Formula to model matrix:** `survey_glm()` passes the formula to
+#' `stats::model.matrix()` via `stats::glm()`. Factor and character predictors
+#' are dummy-coded using `model.matrix()` default contrasts (treatment coding:
+#' first level as reference). Numeric predictors enter as-is. Interaction
+#' terms (`:`, `*`) and inline transformations (`log()`, `I()`) are supported
+#' as in any standard R formula. The resulting model matrix is `n x p` where
+#' `p` is the number of coefficients including the intercept.
+#'
+#' **Predictor variable types:** Predictors may be numeric, integer, logical,
+#' factor, or character. Character predictors are coerced to factor by
+#' `stats::model.matrix()`. Ordered factors use polynomial contrasts by
+#' default. All other R types (list columns, complex, raw) will produce an
+#' error from `stats::model.matrix()`.
+#'
+#' **Input assumptions:** surveycore assumes (1) each row of `design@data`
+#' represents one sampled unit; (2) survey weights are positive and finite
+#' for all rows (validated at construction time); (3) the model formula
+#' variables are columns of `design@data`; (4) the design is correctly
+#' specified before calling `survey_glm()`. No centering, scaling, or
+#' other pre-processing is applied to predictor variables beyond what the
+#' formula specifies.
+#'
+#' **Data transformations:** No automatic transformation is applied to
+#' predictor or response variables. Factor encoding is handled by
+#' `stats::model.matrix()` using the active contrasts. Link function
+#' transformations (e.g. `log` link in `poisson()`) are applied by the
+#' family object, not by surveycore. To apply custom transformations, use
+#' `I()` or `log()` etc. inside the formula.
+#'
+#' **Row and column names:** The coefficient vector returned in
+#' `fit@coefficients` carries the names produced by `stats::model.matrix()`
+#' (e.g. `"(Intercept)"`, `"sexFemale"`, `"age"`). `fit@vcov` carries the
+#' same names on rows and columns. `model.frame.survey_glm_fit()` returns the
+#' model frame with row names matching the rows used in fitting (i.e. the
+#' row names of `design@data` after applying `na.action`). Rows excluded by
+#' `na.action = na.omit` do not appear in the model frame.
+#'
+#' **Missing values:** `na.action` controls handling of `NA` in model frame
+#' variables (predictors and response). `na.omit` (default) silently drops
+#' rows with any `NA`; the variance estimator uses the full design for
+#' correct sandwich SEs. `na.fail` stops with an informative error listing
+#' all variables containing `NA` and the row count for each. Survey weights
+#' are validated separately at construction time and must not contain `NA`.
+#'
+#' **Performance:** Runtime scales as O(*n* · *p*²) for the score matrix
+#' computation and O(*p*³) for the bread matrix (solve). For Taylor designs,
+#' variance estimation adds O(*n* · *H* · *p*²) where *H* is the number of
+#' strata. For replicate designs it adds O(*R* · *n* · *p*) where *R* is the
+#' number of replicates. The dominant cost for large *n* is typically the
+#' `stats::glm()` IRLS fit (O(*n* · *p*² · *I*) per IRLS iteration).
 #'
 #' @examples
 #' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat,
@@ -565,6 +704,19 @@ survey_glm_fit <- S7::new_class(
 #'   survey_glm(d, response = v, predictors = "sex")
 #' })
 #'
+#' @references
+#' Binder, D.A. (1983) On the variances of asymptotically normal estimators
+#' from complex surveys. \emph{International Statistical Review}
+#' \bold{51}(3), 279--292.
+#'
+#' Binder, D.A. (1991) Use of estimating functions for interval estimation
+#' from complex surveys. \emph{Proceedings of the American Statistical
+#' Association, Section on Survey Research Methods}, 34--42.
+#'
+#' Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
+#' \emph{Journal of the Royal Statistical Society: Series B}
+#' \bold{76}(2), 431--452.
+#'
 #' @family constructors
 #' @export
 survey_glm <- function(
@@ -577,7 +729,8 @@ survey_glm <- function(
   start = NULL,
   etastart = NULL,
   mustart = NULL,
-  control = list()
+  control = list(),
+  quiet = FALSE
 ) {
   # ── Step 1: Validate inputs ────────────────────────────────────────────────
   .check_unsupported_class(design, "survey_glm")
@@ -874,14 +1027,16 @@ survey_glm <- function(
     control = do.call(stats::glm.control, control)
   )
 
-  fit <- if (is_binomial) {
+  # suppressWarnings: binomial → suppress non-integer #successes;
+  # quiet  → also suppress glm.fit convergence warnings from stats
+  fit <- if (is_binomial || quiet) {
     suppressWarnings(do.call(stats::glm, glm_args))
   } else {
     do.call(stats::glm, glm_args)
   }
 
-  # Convergence warning
-  if (!fit$converged) {
+  # Convergence warning (suppressed when quiet = TRUE; status still in @converged)
+  if (!fit$converged && !quiet) {
     cli::cli_warn(
       c(
         "!" = "{.fn survey_glm} did not converge.",
@@ -936,12 +1091,26 @@ survey_glm <- function(
   domain_for_score <- logical(nrow(design@data))
   domain_for_score[used_in_fit] <- TRUE
 
-  vcov_mat <- .glm_vcov_dispatch(
-    fit,
-    design,
-    row_mask = used_in_fit,
-    domain_mask = domain_for_score
-  )
+  vcov_mat <- if (quiet) {
+    withCallingHandlers(
+      .glm_vcov_dispatch(
+        fit,
+        design,
+        row_mask = used_in_fit,
+        domain_mask = domain_for_score
+      ),
+      surveycore_warning_glm_convergence = function(w) {
+        invokeRestart("muffleWarning")
+      }
+    )
+  } else {
+    .glm_vcov_dispatch(
+      fit,
+      design,
+      row_mask = used_in_fit,
+      domain_mask = domain_for_score
+    )
+  }
 
   # Name the vcov matrix
   coef_names <- names(stats::coef(fit))

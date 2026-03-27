@@ -69,7 +69,7 @@ suppression (see Details). Default \code{FALSE}.}
 
 \item{scale}{Character(1). \code{"ame"} (default): average marginal effects
 on the response scale. \code{"link"}: coefficients on the link scale.
-For Gaussian/identity models, both are identical.}
+For Gaussian/identity models, both are identical. Case-sensitive.}
 
 \item{variance}{\code{NULL} or a character vector of one or more of \code{"se"},
 \code{"ci"}. Controls which uncertainty columns appear. Default \code{"ci"}.}

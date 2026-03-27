@@ -14,7 +14,8 @@ survey_glm(
   start = NULL,
   etastart = NULL,
   mustart = NULL,
-  control = list()
+  control = list(),
+  quiet = FALSE
 )
 }
 \arguments{
@@ -56,6 +57,12 @@ model frame variables; survey weights are validated separately.}
 
 \item{control}{A list of GLM control parameters passed to
 \code{\link[stats:glm.control]{stats::glm.control()}}.}
+
+\item{quiet}{Logical. If \code{TRUE}, suppresses convergence warnings emitted by
+\code{survey_glm()} and its internal replicate-weight refitting loop.
+Convergence status is always stored in \code{fit@converged} regardless of this
+setting, so non-convergence can still be detected programmatically.
+Default \code{FALSE}.}
 }
 \value{
 A \link{survey_glm_fit} S7 object.
@@ -68,7 +75,7 @@ All five surveycore design classes are supported.
 \details{
 \strong{Variance estimation:} Uses the Binder (1983) sandwich estimator, which
 decomposes into per-observation score vectors passed to the Phase 0
-variance machinery. The bread \verb{(X'W̃X)⁻¹} accounts for IRLS working
+variance machinery. The bread \verb{(X'WX)^(-1)} accounts for IRLS working
 weights and is correct for all GLM families including binomial and
 Poisson.
 
@@ -82,6 +89,57 @@ estimation uses the full design for correct design-based SEs.
 
 \strong{Multinomial response:} \code{cbind()} on the LHS of \code{formula} is not
 supported. Multinomial logistic regression is deferred to a later phase.
+
+\strong{Formula to model matrix:} \code{survey_glm()} passes the formula to
+\code{stats::model.matrix()} via \code{stats::glm()}. Factor and character predictors
+are dummy-coded using \code{model.matrix()} default contrasts (treatment coding:
+first level as reference). Numeric predictors enter as-is. Interaction
+terms (\code{:}, \code{*}) and inline transformations (\code{log()}, \code{I()}) are supported
+as in any standard R formula. The resulting model matrix is \verb{n x p} where
+\code{p} is the number of coefficients including the intercept.
+
+\strong{Predictor variable types:} Predictors may be numeric, integer, logical,
+factor, or character. Character predictors are coerced to factor by
+\code{stats::model.matrix()}. Ordered factors use polynomial contrasts by
+default. All other R types (list columns, complex, raw) will produce an
+error from \code{stats::model.matrix()}.
+
+\strong{Input assumptions:} surveycore assumes (1) each row of \code{design@data}
+represents one sampled unit; (2) survey weights are positive and finite
+for all rows (validated at construction time); (3) the model formula
+variables are columns of \code{design@data}; (4) the design is correctly
+specified before calling \code{survey_glm()}. No centering, scaling, or
+other pre-processing is applied to predictor variables beyond what the
+formula specifies.
+
+\strong{Data transformations:} No automatic transformation is applied to
+predictor or response variables. Factor encoding is handled by
+\code{stats::model.matrix()} using the active contrasts. Link function
+transformations (e.g. \code{log} link in \code{poisson()}) are applied by the
+family object, not by surveycore. To apply custom transformations, use
+\code{I()} or \code{log()} etc. inside the formula.
+
+\strong{Row and column names:} The coefficient vector returned in
+\code{fit@coefficients} carries the names produced by \code{stats::model.matrix()}
+(e.g. \code{"(Intercept)"}, \code{"sexFemale"}, \code{"age"}). \code{fit@vcov} carries the
+same names on rows and columns. \code{model.frame.survey_glm_fit()} returns the
+model frame with row names matching the rows used in fitting (i.e. the
+row names of \code{design@data} after applying \code{na.action}). Rows excluded by
+\code{na.action = na.omit} do not appear in the model frame.
+
+\strong{Missing values:} \code{na.action} controls handling of \code{NA} in model frame
+variables (predictors and response). \code{na.omit} (default) silently drops
+rows with any \code{NA}; the variance estimator uses the full design for
+correct sandwich SEs. \code{na.fail} stops with an informative error listing
+all variables containing \code{NA} and the row count for each. Survey weights
+are validated separately at construction time and must not contain \code{NA}.
+
+\strong{Performance:} Runtime scales as O(\emph{n} · \emph{p}²) for the score matrix
+computation and O(\emph{p}³) for the bread matrix (solve). For Taylor designs,
+variance estimation adds O(\emph{n} · \emph{H} · \emph{p}²) where \emph{H} is the number of
+strata. For replicate designs it adds O(\emph{R} · \emph{n} · \emph{p}) where \emph{R} is the
+number of replicates. The dominant cost for large \emph{n} is typically the
+\code{stats::glm()} IRLS fit (O(\emph{n} · \emph{p}² · \emph{I}) per IRLS iteration).
 }
 \examples{
 d <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat,
@@ -97,6 +155,19 @@ results <- lapply(c("age", "educ"), function(v) {
   survey_glm(d, response = v, predictors = "sex")
 })
 
+}
+\references{
+Binder, D.A. (1983) On the variances of asymptotically normal estimators
+from complex surveys. \emph{International Statistical Review}
+\bold{51}(3), 279--292.
+
+Binder, D.A. (1991) Use of estimating functions for interval estimation
+from complex surveys. \emph{Proceedings of the American Statistical
+Association, Section on Survey Research Methods}, 34--42.
+
+Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
+\emph{Journal of the Royal Statistical Society: Series B}
+\bold{76}(2), 431--452.
 }
 \seealso{
 Other constructors: 

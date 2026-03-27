@@ -6,16 +6,86 @@
 #
 # Contents:
 #   Meta-key constants (six character vectors)
+#   .extract_var_meta()     — variable/value label lookup for one variable
+#   .build_group_meta()     — metadata lookup for all group variables
+#   .apply_group_labels()   — convert coded group columns to labelled factors
+#   .build_group_combos()   — unique group value combinations from domain data
+#   .match_group_combo()    — row mask matching one group combination
 #   .degf_taylor()          — Taylor df formula (retained; not called by .degf())
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
 #   .build_meta()           — assemble .meta list
 #   .make_result_tibble()   — assemble result tibble + attach metadata
-#   .validate_shared_args() — validate variance/conf_level/name_style
+#   .validate_shared_args() — validate variance/conf_level/name_style/decimals
+#   .apply_decimals()       — round numeric output columns
 #   .apply_name_style()     — rename columns for broom compatibility
 #   .check_unsupported_class() — throw for non-survey-base objects
 #   .add_variance_cols()    — compute requested uncertainty columns
 #   .degf()                 — design degrees of freedom
+
+
+#' Analysis Helper Standards
+#'
+#' @srrstats {EA2.4} surveycore uses an explicit S7 class system
+#'   (survey_taylor, survey_replicate, survey_twophase) that encodes the design
+#'   type and all associated parameters.
+#'
+#' @srrstats {EA2.6} Routines process vector columns regardless of additional
+#'   attributes: haven-style "label" and "labels" attributes are automatically
+#'   detected and preserved in @metadata during construction, and restored in
+#'   analysis output when requested.
+#'
+#' @srrstats {EA3.0} The get_*() family (get_freqs(), get_means(),
+#'   get_totals(), get_corr(), get_quantiles(), get_ratios(), get_diffs())
+#'   provides automated, reproducible extraction of survey statistics without
+#'   requiring manual formula-writing or post-processing.
+#'
+#' @srrstats {EA3.1} All get_*() functions return tidy tibbles with consistent
+#'   column naming conventions, enabling direct comparison of estimates across
+#'   variables, groups, and designs.
+#'
+#' @srrstats {EA4.0} All get_*() functions return tibble-based objects;
+#'   survey_glm() returns a survey_glm_fit S7 object. Return types do not
+#'   vary by input class within the accepted input space.
+#'
+#' @srrstats {EA4.1} All seven get_*() analysis functions implement a
+#'   decimals parameter (integer or NULL) that rounds all numeric output
+#'   columns to the specified number of decimal places. Numeric precision
+#'   control is consistently available across the full analysis API.
+#'
+#' @srrstats {EA4.2} All survey design objects have a print method that
+#'   provides a structured summary (design type, sample size, variable
+#'   preview). survey_glm_fit has both print and summary methods.
+#'
+#' @srrstats {EA5.2} The print.survey_glm_fit() and print.survey_glm_summary()
+#'   methods format numeric output via format(round(x, digits), nsmall =
+#'   digits) rather than relying on default numeric printing.
+#'
+#' @srrstats {EA5.3} The tibble print method for get_*() output includes
+#'   column type abbreviations (<dbl>, <int>, <fct>, etc.), indicating the
+#'   class and storage mode of each column.
+#'
+#' @srrstats {EA6.0} Return values from all get_*() functions are tested for
+#'   class, dimensions, column names, column types, and numeric values.
+#'
+#' @srrstats {EA6.0a} Tests verify the class of all return objects: get_*()
+#'   functions return tibbles; constructors return the correct S7 subclass.
+#'
+#' @srrstats {EA6.0b} Tests verify the dimensions (number of rows and columns)
+#'   of all tabular return objects for representative inputs.
+#'
+#' @srrstats {EA6.0c} Tests verify that returned tibbles carry the expected
+#'   column names (e.g. mean, se, ci_low, ci_high, n for get_means()).
+#'
+#' @srrstats {EA6.0d} Tests verify column classes within returned tibbles
+#'   (e.g. numeric estimates, integer counts, factor group columns).
+#'
+#' @srrstats {EA6.0e} Numeric return values are tested with
+#'   expect_equal(..., tolerance = 1e-10) or equivalent against reference
+#'   values from the survey package.
+#'
+#' @noRd
+NULL
 
 
 # ── Meta-key constants ────────────────────────────────────────────────────────
@@ -39,18 +109,20 @@ DIFFS_META_KEYS     <- c(
 )
 
 
-# ── .extract_var_meta() ───────────────────────────────────────────────────────
-#
-# Returns a list(variable_label, question_preface, value_labels) for one
-# variable. Checks @metadata first; falls back to haven attributes on the
-# column when @metadata has no entry. For factor columns with no haven labels,
-# surfaces levels() as value_labels in haven format: a named integer vector
-# where names are level strings and values are sequential integers starting
-# at 1L.
-#
-# @param design   A survey design object.
-# @param var_name Character(1): column name in design@data.
-# @return Named list with keys: variable_label, question_preface, value_labels.
+#' Extract variable metadata from a survey design
+#'
+#' Returns a named list with `variable_label`, `question_preface`, and
+#' `value_labels` for a single variable. Checks `@metadata` first; falls back
+#' to haven-style attributes on the column when `@metadata` has no entry. For
+#' factor columns with no haven labels, surfaces `levels()` as `value_labels`
+#' in haven format: a named integer vector where names are level strings and
+#' values are sequential integers starting at `1L`.
+#'
+#' @param design   A survey design object.
+#' @param var_name Character(1). Column name in `design@data`.
+#' @return Named list with keys `variable_label`, `question_preface`, and
+#'   `value_labels`.
+#' @noRd
 .extract_var_meta <- function(design, var_name) {
   col <- design@data[[var_name]]
 
@@ -76,15 +148,16 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .build_group_meta() ───────────────────────────────────────────────────────
-#
-# Returns a named list, one entry per group variable, each being the output
-# of .extract_var_meta(). Returns list() when group_vars is empty or has
-# length 0.
-#
-# @param design     A survey design object.
-# @param group_vars Character vector of group variable names.
-# @return Named list of per-variable metadata lists.
+#' Build group metadata list for all group variables
+#'
+#' Returns a named list with one entry per group variable, each being the
+#' output of `.extract_var_meta()`. Returns `list()` when `group_vars` is
+#' empty or has length 0.
+#'
+#' @param design     A survey design object.
+#' @param group_vars Character vector of group variable names.
+#' @return Named list of per-variable metadata lists, named by variable name.
+#' @noRd
 .build_group_meta <- function(design, group_vars) {
   if (length(group_vars) == 0L) return(list())
   meta <- lapply(group_vars, function(gv) .extract_var_meta(design, gv))
@@ -92,28 +165,29 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .apply_group_labels() ─────────────────────────────────────────────────────
-#
-# Converts coded group columns in a group_combos data frame to labelled
-# factors in-place. When label_values = FALSE, returns group_combos unchanged.
-#
-# Haven-labelled columns: the value_labels vector has names = label strings
-# and values = numeric/integer codes. Produces a factor whose levels are
-# the label strings ordered by code value (ascending numeric order).
-#
-# Plain R factor columns: re-factors using the original levels() order exactly.
-#
-# Other columns (unlabelled integer, character, etc.): returned unchanged.
-#
-# IMPORTANT: Must be called AFTER group_combos is sorted on raw codes.
-# Sorting after label conversion would use factor level order, not raw numeric.
-#
-# @param group_combos A data.frame of group variable columns.
-# @param group_vars   Character vector of group variable names (must be
-#                     column names in group_combos and design@data).
-# @param design       A survey design object.
-# @param label_values Logical(1). When FALSE, returns group_combos unmodified.
-# @return The (possibly modified) group_combos data frame.
+#' Apply value labels to group combination columns
+#'
+#' Converts coded group columns in a `group_combos` data frame to labelled
+#' factors. When `label_values = FALSE`, returns `group_combos` unchanged.
+#'
+#' Haven-labelled columns produce a factor whose levels are the label strings
+#' ordered by code value (ascending). Plain R factor columns are re-factored
+#' using the original `levels()` order exactly. All other column types
+#' (unlabelled integer, character, etc.) are returned unchanged.
+#'
+#' **Important:** must be called *after* `group_combos` is sorted on raw
+#' codes. Sorting after label conversion would use factor level order instead
+#' of raw numeric order.
+#'
+#' @param group_combos A data.frame of group variable columns.
+#' @param group_vars   Character vector of group variable names. Must be column
+#'   names in both `group_combos` and `design@data`.
+#' @param design       A survey design object.
+#' @param label_values Logical(1). When `FALSE`, returns `group_combos`
+#'   unmodified. Default `TRUE`.
+#' @return The (possibly modified) `group_combos` data frame, with coded
+#'   columns replaced by labelled factors where applicable.
+#' @noRd
 .apply_group_labels <- function(group_combos, group_vars, design,
                                 label_values = TRUE) {
   if (!label_values) return(group_combos)
@@ -182,19 +256,21 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .build_group_combos() ─────────────────────────────────────────────────────
-#
-# Build the data frame of unique group value combinations from domain_data
-# (a data frame already filtered to the active domain rows, containing only
-# group variable columns). When na.rm = TRUE, rows with any NA are excluded
-# before unique(). When na.rm = FALSE, all rows including NA-containing are
-# used. Output is sorted: non-NA-containing combos first (ascending), then
-# NA-containing combos.
-#
-# @param domain_data  data.frame; rows = active domain; cols = group vars only
-# @param na.rm        logical; if TRUE, NA rows excluded before unique()
-# @return             data.frame of unique group combinations, sorted
-
+#' Build unique group value combinations from domain data
+#'
+#' Builds the data frame of unique group value combinations from `domain_data`
+#' (a data frame already filtered to the active domain rows, containing only
+#' group variable columns). When `na.rm = TRUE`, rows with any `NA` are
+#' excluded before `unique()`. Output is sorted: non-`NA` combos first
+#' (ascending by leftmost group variable), then `NA`-containing combos.
+#'
+#' @param domain_data data.frame. Rows are the active domain; columns are group
+#'   variables only — not the full design data frame.
+#' @param na.rm Logical. If `TRUE`, rows with any `NA` in any group column are
+#'   excluded before computing unique combinations.
+#' @return data.frame of unique group combinations, sorted with non-`NA` rows
+#'   first.
+#' @noRd
 # Sync note: spec §II is authoritative — keep this block in sync with the spec
 # if either changes. Do not edit one without updating the other.
 .build_group_combos <- function(domain_data, na.rm) {
@@ -216,22 +292,24 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .match_group_combo() ──────────────────────────────────────────────────────
-#
-# Returns a logical vector indicating which rows in data_cols match the single
-# group combination combo_row. Handles NA correctly: when combo_row[[gv]] is
-# NA, matches rows where data_cols[[gv]] is also NA. This replaces the inline
-# !is.na(gv_col) & (gv_col == cv) loop in all 6 analysis functions.
-#
-# data_cols must be full-design-length (not domain-filtered). Build as
-# as.list(design@data[group_vars]) and apply domain_mask after:
-# active_mask <- domain_mask & .match_group_combo(data_cols, combo_row).
-#
-# @param data_cols  named list; one element per group var; each a vector of
-#                   length nrow(design@data) — full design, NOT domain-filtered
-# @param combo_row  single-row data.frame; colnames match names(data_cols)
-# @return           logical vector; TRUE where the row matches the combo
-
+#' Match rows to a single group value combination
+#'
+#' Returns a logical vector indicating which rows in `data_cols` match the
+#' single group combination `combo_row`. Handles `NA` correctly: when
+#' `combo_row[[gv]]` is `NA`, matches rows where `data_cols[[gv]]` is also
+#' `NA` (using `is.na()` rather than `==`, which would not match `NA`).
+#'
+#' `data_cols` must be full-design-length (not domain-filtered). Build it as
+#' `as.list(design@data[group_vars])` and combine with `domain_mask` after:
+#' `active_mask <- domain_mask & .match_group_combo(data_cols, combo_row)`.
+#'
+#' @param data_cols Named list. One element per group variable, each a vector
+#'   of length `nrow(design@data)` — the **full** design, not domain-filtered.
+#' @param combo_row Single-row data.frame whose column names match
+#'   `names(data_cols)`.
+#' @return Logical vector of length `length(data_cols[[1]])`. `TRUE` where the
+#'   row matches every column of `combo_row`.
+#' @noRd
 # Sync note: spec §II is authoritative — keep this block in sync with the spec
 # if either changes. Do not edit one without updating the other.
 .match_group_combo <- function(data_cols, combo_row) {
@@ -249,21 +327,25 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .degf_taylor() ─────────────────────────────────────────────────────────────
-#
-# Compute Taylor series degrees of freedom from a data frame + variables list.
-# Retained for potential future use (e.g., deff computation, user-accessible
-# degf). Not called by .degf() — all designs now use Inf (normal approx CI).
-#
-# Rules:
-#   Stratified cluster: Σ(n_h - 1) = total PSUs - number of strata
-#   Unstratified cluster: n_psus - 1
-#   Stratified, no PSUs: n_obs - n_strata
-#   No structure: n - 1
-#
-# @param data  A data.frame (the design's @data).
-# @param vars  A named list with ids, strata, nest keys.
-# @return      Numeric(1): degrees of freedom.
+#' Compute Taylor series degrees of freedom
+#'
+#' Computes design-based degrees of freedom from a data frame and variables
+#' list using the Taylor series rules. Retained for potential future use (e.g.,
+#' design effect computation, user-accessible `degf()`). Not called by
+#' `.degf()` — Phase 1 analysis functions use `Inf` directly (normal
+#' approximation, matching `survey::svymean()` defaults).
+#'
+#' Rules applied, in order:
+#' 1. Stratified cluster: `Σ_h(n_h - 1)` = total PSUs − number of strata.
+#' 2. Unstratified cluster: `n_psus - 1`.
+#' 3. Stratified, no PSUs: `n_obs - n_strata`.
+#' 4. No structure (SRS): `n - 1`.
+#'
+#' @param data A data.frame (the survey design's `@data`).
+#' @param vars A named list with `ids`, `strata`, and `nest` keys, taken from
+#'   the design's `@variables`.
+#' @return Numeric(1). Degrees of freedom (non-negative integer).
+#' @noRd
 .degf_taylor <- function(data, vars) {
   ids_var    <- vars$ids
   strata_var <- vars$strata
@@ -296,16 +378,18 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .resolve_groups() ─────────────────────────────────────────────────────────
-#
-# Combine grouping variables from @groups (set by group_by()) and the group=
-# argument. The two sources are ANDed — both apply simultaneously. Returns
-# a deduplicated character vector of group variable names, or character(0)
-# if no groups are active.
-#
-# @param design     A survey design object.
-# @param group_expr A quosure from rlang::enquo(group).
-# @return character vector of group variable names.
+#' Resolve the active grouping variables for a get_*() call
+#'
+#' Combines grouping variables from `design@groups` (set by
+#' `surveytidy::group_by()`) with the `group =` argument supplied directly to
+#' the analysis function. Both sources are applied simultaneously (AND
+#' semantics). Returns a deduplicated character vector of group variable names,
+#' or `character(0)` when no groups are active.
+#'
+#' @param design     A survey design object.
+#' @param group_expr A quosure from `rlang::enquo(group)`.
+#' @return Character vector of group variable names, with duplicates removed.
+#' @noRd
 .resolve_groups <- function(design, group_expr) {
   from_groups_prop <- design@groups
   from_arg         <- .resolve_tidy_select(group_expr, design@data)
@@ -313,16 +397,20 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .apply_domain() ───────────────────────────────────────────────────────────
-#
-# Return a logical vector indicating which rows belong to the active domain.
-# If no domain column is present, all rows are in-domain (all TRUE).
-#
-# Domain rows are NOT physically removed — the full design is used for correct
-# variance estimation; only the estimation sum is restricted to in-domain rows.
-#
-# @param design A survey design object.
-# @return logical vector of length nrow(design@data).
+#' Extract the active domain membership mask
+#'
+#' Returns a logical vector indicating which rows of `design@data` belong to
+#' the active estimation domain. When no domain column is present, all rows are
+#' considered in-domain (all `TRUE`).
+#'
+#' Domain rows are **not** physically removed from the data — the full design
+#' is retained for correct variance estimation; only the estimation sum is
+#' restricted to in-domain rows.
+#'
+#' @param design A survey design object.
+#' @return Logical vector of length `nrow(design@data)`. `TRUE` for in-domain
+#'   rows.
+#' @noRd
 .apply_domain <- function(design) {
   if (SURVEYCORE_DOMAIN_COL %in% names(design@data)) {
     design@data[[SURVEYCORE_DOMAIN_COL]]
@@ -332,21 +420,24 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .build_meta() ─────────────────────────────────────────────────────────────
-#
-# Assemble the structured .meta list. Derives design_type and n_respondents
-# automatically from the design object; merges with meta_args (which carries
-# the common fields conf_level, call, group_names, group_labels, and all
-# function-specific fields).
-#
-# Valid design_type strings: "taylor", "replicate", "twophase", "srs",
-# "calibrated". Downstream code branches on these exact strings.
-#
-# @param design    A survey design object.
-# @param meta_args Named list of function-supplied metadata. Must include
-#                  the common fields (conf_level, call, group_names,
-#                  group_labels) plus all function-specific fields.
-# @return Named list representing the full .meta structure.
+#' Assemble the structured .meta list for a result tibble
+#'
+#' Assembles the `.meta` attribute that is attached to all `survey_result`
+#' tibbles. Derives `design_type` and `n_respondents` automatically from the
+#' design object, then prepends them to `meta_args`.
+#'
+#' Valid `design_type` strings: `"taylor"`, `"replicate"`, `"twophase"`,
+#' `"calibrated"`. Downstream code that reads `.meta` branches on these exact
+#' strings.
+#'
+#' @param design    A survey design object.
+#' @param meta_args Named list of function-supplied metadata. Must include the
+#'   common fields (`conf_level`, `call`, `group_names`, `group_labels`) plus
+#'   all function-specific fields defined in the relevant `*_META_KEYS`
+#'   constant.
+#' @return Named list representing the full `.meta` structure, with
+#'   `design_type` and `n_respondents` prepended.
+#' @noRd
 .build_meta <- function(design, meta_args) {
   design_type <-
     if (S7::S7_inherits(design, survey_taylor))      "taylor"
@@ -368,22 +459,28 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .make_result_tibble() ─────────────────────────────────────────────────────
-#
-# Assemble a survey_result tibble from pre-computed column vectors.
-# Uses the column-by-column accumulation pattern (no vctrs/dplyr dependency).
-#
-# @param col_vecs           Named list of vectors; one per result column.
-# @param groups_df          data.frame of group variable columns. Pass
-#                           data.frame() when there are no grouping variables.
-# @param class_name         Character(1): e.g. "survey_means".
-# @param design             A survey design object (passed to .build_meta()).
-# @param meta_args          Named list of metadata for the .meta attribute.
-# @param required_meta_keys Character vector of required function-specific
-#                           keys in meta_args. No default — always pass the
-#                           function's *_META_KEYS constant. Omitting it is
-#                           a programmer error.
-# @return A tibble with class c(class_name, "survey_result", "tbl_df", ...).
+#' Assemble a survey_result tibble with a .meta attribute
+#'
+#' Builds a `survey_result` tibble from pre-computed column vectors, attaches
+#' the `.meta` attribute via `.build_meta()`, and assigns the S3 class. Uses
+#' column-by-column list accumulation to avoid a `vctrs` or `dplyr` runtime
+#' dependency.
+#'
+#' @param col_vecs Named list. One named vector per result column (e.g.,
+#'   `mean`, `se`, `ci_low`, `ci_high`, `n`). Vectors must be the same length.
+#' @param groups_df data.frame of group variable columns to prepend. Pass
+#'   `data.frame()` when there are no grouping variables.
+#' @param class_name Character(1). S3 sub-class name for the result object,
+#'   e.g., `"survey_means"` or `"survey_freqs"`.
+#' @param design A survey design object passed to `.build_meta()`.
+#' @param meta_args Named list of metadata for the `.meta` attribute.
+#' @param required_meta_keys Character vector of required function-specific
+#'   keys that must be present in `meta_args`. Always pass the relevant
+#'   `*_META_KEYS` constant; omitting this argument is a programmer error.
+#' @return A tibble with class
+#'   `c(class_name, "survey_result", "tbl_df", "tbl", "data.frame")` and a
+#'   `.meta` attribute.
+#' @noRd
 .make_result_tibble <- function(
   col_vecs,
   groups_df,
@@ -400,29 +497,34 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .validate_shared_args() ───────────────────────────────────────────────────
-#
-# Validate the cross-cutting arguments that appear on all get_*() functions:
-# variance, conf_level, name_style, and decimals.
-#
-# Call this as the FIRST action in every get_*() function, before any tidy-
-# select resolution or estimation logic. This is the single canonical source
-# for these validation errors — never duplicate the checks inside individual
-# get_*() functions.
-#
-# Errors (from plans/error-messages.md):
-#   surveycore_error_invalid_variance_arg  (row 45)
-#   surveycore_error_invalid_conf_level    (row 45a)
-#   surveycore_error_invalid_name_style    (row 46)
-#   surveycore_error_invalid_decimals      (row 45b)
-#
-# @param variance       NULL or character vector of variance types.
-# @param conf_level     Numeric scalar in (0, 1).
-# @param name_style     "surveycore" or "broom".
-# @param decimals       NULL or a non-negative whole number.
-# @param valid_variance Character vector of accepted variance values.
-# @param call           Caller environment for error attribution.
-# @return invisible(TRUE) on success.
+#' Validate shared arguments across all get_*() functions
+#'
+#' Validates the cross-cutting arguments that appear on every `get_*()`
+#' function: `variance`, `conf_level`, `name_style`, `decimals`, and `na.rm`.
+#' Must be called as the **first action** in every `get_*()` function, before
+#' any tidy-select resolution or estimation logic. This is the single canonical
+#' source for these validation errors — never duplicate the checks inside
+#' individual `get_*()` functions.
+#'
+#' Error classes raised (see `plans/error-messages.md`):
+#' - `surveycore_error_na_rm_not_logical`
+#' - `surveycore_error_invalid_variance_arg`
+#' - `surveycore_error_invalid_conf_level`
+#' - `surveycore_error_invalid_name_style`
+#' - `surveycore_error_invalid_decimals`
+#'
+#' @param variance `NULL` or a character vector of variance type names.
+#' @param conf_level Numeric scalar strictly between 0 and 1.
+#' @param name_style `"surveycore"` (default) or `"broom"`.
+#' @param decimals `NULL` or a non-negative whole number.
+#' @param na.rm Logical(1). Must be exactly `TRUE` or `FALSE`.
+#' @param valid_variance Character vector of accepted variance type names.
+#'   Default covers all supported types: `"se"`, `"ci"`, `"var"`, `"cv"`,
+#'   `"moe"`, `"deff"`.
+#' @param call Caller environment for error attribution, passed to
+#'   `cli::cli_abort()`.
+#' @return `invisible(TRUE)` on success; errors otherwise.
+#' @noRd
 .validate_shared_args <- function(
   variance,
   conf_level,
@@ -501,17 +603,18 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .apply_decimals() ─────────────────────────────────────────────────────────
-#
-# Round all double-typed columns in a survey_result tibble to the specified
-# number of decimal places. Integer columns (e.g., n) and non-numeric columns
-# (group vars, character columns) are left unchanged. The .meta attribute and
-# S3 class are preserved across rounding using the same pattern as
-# .apply_name_style().
-#
-# @param result   A survey_result tibble.
-# @param decimals A non-negative whole number.
-# @return The result tibble with double columns rounded.
+#' Round numeric columns in a survey_result tibble
+#'
+#' Rounds all `double`-typed columns in a `survey_result` tibble to
+#' `decimals` decimal places. Integer columns (e.g., `n`) and non-numeric
+#' columns (group variables, character columns) are left unchanged. The `.meta`
+#' attribute and S3 class are preserved across the rounding operation.
+#'
+#' @param result   A `survey_result` tibble.
+#' @param decimals A non-negative whole number specifying decimal places.
+#' @return The result tibble with all `double` columns rounded to `decimals`
+#'   places.
+#' @noRd
 .apply_decimals <- function(result, decimals) {
   saved_meta  <- attr(result, ".meta")
   saved_class <- class(result)
@@ -526,24 +629,28 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .apply_name_style() ───────────────────────────────────────────────────────
-#
-# Rename result columns according to name_style. Called at the very end of
-# each get_*() function. No-op when name_style = "surveycore" (the default).
-# Preserves the .meta attribute and S3 class across the rename.
-#
-# Broom rename mapping (only columns that are present are renamed):
-#   se           → std.error
-#   ci_low       → conf.low
-#   ci_high      → conf.high
-#   p_value      → p.value
-#   mean/total/pct/r/ratio/estimate → estimate
-#   df           → parameter
-#   (statistic is unchanged)
-#
-# @param result     A survey_result tibble.
-# @param name_style "surveycore" (no-op) or "broom".
-# @return The (possibly renamed) result tibble with class and .meta preserved.
+#' Rename result columns for broom compatibility
+#'
+#' Renames columns in a `survey_result` tibble according to `name_style`.
+#' No-op when `name_style = "surveycore"` (the default). Preserves the `.meta`
+#' attribute and S3 class across the rename.
+#'
+#' Broom rename mapping (only columns that are present are renamed):
+#' - `se` → `std.error`
+#' - `ci_low` → `conf.low`
+#' - `ci_high` → `conf.high`
+#' - `p_value` → `p.value`
+#' - `mean`, `total`, `pct`, `r`, `ratio`, `estimate` → `estimate`
+#' - `df` → `parameter`
+#' - `statistic` is unchanged
+#'
+#' @param result     A `survey_result` tibble.
+#' @param name_style `"surveycore"` (no-op) or `"broom"`.
+#' @param exclude    Character vector of column names to exclude from renaming,
+#'   or `NULL`.
+#' @return The (possibly renamed) result tibble with S3 class and `.meta`
+#'   attribute preserved.
+#' @noRd
 .apply_name_style <- function(result, name_style, exclude = NULL) {
   if (name_style == "surveycore") return(result)
 
@@ -579,18 +686,22 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .check_unsupported_class() ────────────────────────────────────────────────
-#
-# Throw surveycore_error_unsupported_class when design does not inherit from
-# survey_base. Call at the very start of every get_*() function, before any
-# other validation or tidy-select resolution.
-#
-# Since Phase 0.75 is complete, this does NOT block survey_twophase — only
-# objects that are not survey_base at all trigger the error.
-#
-# @param design  The first argument passed to a get_*() function.
-# @param fn_name Character(1): calling function name for error messages.
-# @return invisible(NULL) on success.
+#' Check that a design object is a supported survey class
+#'
+#' Throws `surveycore_error_unsupported_class` when `design` does not inherit
+#' from `survey_base`. Must be called at the very start of every `get_*()`
+#' and `survey_glm()` function, before any other validation or tidy-select
+#' resolution.
+#'
+#' All five concrete design classes (`survey_taylor`, `survey_replicate`,
+#' `survey_twophase`, `survey_nonprob`) and the abstract `survey_base` are
+#' accepted. Only objects that do not inherit from `survey_base` at all trigger
+#' the error.
+#'
+#' @param design  The first argument passed to a `get_*()` or fitting function.
+#' @param fn_name Character(1). Calling function name, used in error messages.
+#' @return `invisible(NULL)` on success.
+#' @noRd
 .check_unsupported_class <- function(design, fn_name) {
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
@@ -605,22 +716,33 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .add_variance_cols() ──────────────────────────────────────────────────────
-#
-# Compute the requested uncertainty columns from a vector of standard errors.
-# Called after the point estimate and SE are computed in each get_*() function.
-# Returns only the columns requested in variance (order: se, var, cv, ci_low,
-# ci_high, moe, deff).
-#
-# @param se_vec       Numeric vector of standard errors (length = n_cells).
-# @param estimate_vec Numeric vector of point estimates (same length).
-# @param se_srs_vec   Numeric vector of SRS-equivalent SEs (for deff).
-#                     Pass NULL when deff not requested. For SRS designs,
-#                     the calling function always passes se_srs_vec = se_vec.
-# @param conf_level   Numeric scalar in (0, 1).
-# @param degf         Degrees of freedom for qt() (scalar or vector).
-# @param variance     NULL or character vector of requested variance types.
-# @return Named list of numeric vectors (only requested columns included).
+#' Compute and add requested uncertainty columns to a result list
+#'
+#' Computes uncertainty measures from a vector of standard errors and returns
+#' only the columns requested in `variance`. Called after the point estimate
+#' and SE are computed in each `get_*()` function. Columns are returned in
+#' this order when requested: `se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
+#' `deff`.
+#'
+#' @param se_vec       Numeric vector of standard errors. Length equals the
+#'   number of estimation cells.
+#' @param estimate_vec Numeric vector of point estimates. Same length as
+#'   `se_vec`.
+#' @param se_srs_vec   Numeric vector of SRS-equivalent standard errors, used
+#'   to compute the design effect as `(se / se_srs)^2`. Pass `NULL` when
+#'   `"deff"` is not in `variance`. For SRS designs, the calling function
+#'   always passes `se_srs_vec = se_vec`.
+#' @param conf_level   Numeric scalar in (0, 1). Confidence level for CIs and
+#'   margin of error.
+#' @param degf         Degrees of freedom for `stats::qt()`. Scalar or vector.
+#'   Pass `Inf` for a normal approximation (matching `survey::svymean()`
+#'   default).
+#' @param variance     `NULL` or a character vector of requested variance types.
+#'   Supported values: `"se"`, `"var"`, `"cv"`, `"ci"`, `"moe"`, `"deff"`.
+#'   Returns `list()` when `NULL`.
+#' @return Named list of numeric vectors. Only the columns named in `variance`
+#'   are included.
+#' @noRd
 .add_variance_cols <- function(
   se_vec,
   estimate_vec,
@@ -687,24 +809,23 @@ DIFFS_META_KEYS     <- c(
 }
 
 
-# ── .degf() ───────────────────────────────────────────────────────────────────
-#
-# Return design-based degrees of freedom as a numeric scalar.
-#
-# Used by survey_glm() for t-distribution critical values in CIs and Wald
-# tests. Phase 1 analysis functions (get_means, get_totals, etc.) use Inf
-# directly (normal approximation matching survey::svymean() defaults) and do
-# NOT call .degf().
-#
-# Design-specific formulas (matching survey::degf()):
-#   Taylor:    Σ(n_h - 1) = total PSUs − number of strata (.degf_taylor())
-#   Replicate: R − 1 where R = number of replicate columns
-#   Twophase:  Phase-1 Taylor df
-#   SRS:       n − 1
-#   Calibrated: n − 1 (conservative approximation)
-#
-# @param design A survey design object.
-# @return Numeric(1): degrees of freedom (always >= 1).
+#' Compute design-based degrees of freedom
+#'
+#' Returns the design-based degrees of freedom as a numeric scalar. Used by
+#' `survey_glm()` for t-distribution critical values in confidence intervals
+#' and Wald tests. Phase 1 analysis functions (`get_means()`, `get_totals()`,
+#' etc.) use `Inf` directly (normal approximation, matching
+#' `survey::svymean()` defaults) and do **not** call `.degf()`.
+#'
+#' Design-specific formulas (matching `survey::degf()`):
+#' - Taylor: `Σ_h(n_h - 1)` = total PSUs − number of strata.
+#' - Replicate: `R - 1` where `R` is the number of replicate weight columns.
+#' - Twophase: Phase-1 Taylor degrees of freedom.
+#' - SRS / Calibrated (`survey_nonprob`): `n - 1` (conservative approximation).
+#'
+#' @param design A survey design object inheriting from `survey_base`.
+#' @return Numeric(1). Design-based degrees of freedom, always ≥ 1.
+#' @noRd
 .degf <- function(design) {
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(

@@ -33,7 +33,7 @@ jackknife), \code{"JK2"} (delete-1 jackknife, stratified), \code{"JKn"} (delete-
 jackknife with varying replication counts), \code{"BRR"} (balanced repeated
 replication), \code{"Fay"} (Fay's method, a modified BRR), \code{"bootstrap"},
 \code{"ACS"} (used in American Community Survey), \code{"successive-difference"},
-or \code{"other"} (user-specified scale).}
+or \code{"other"} (user-specified scale). Case-sensitive.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
@@ -51,7 +51,7 @@ adjust the variance estimator. \code{NULL} means no FPC correction.}
 
 \item{fpctype}{Character. How \code{fpc} is interpreted: \code{"fraction"} (sampling
 fraction, 0–1) or \code{"correction"} (multiplier for the replicate variance).
-Default \code{"fraction"}.}
+Default \code{"fraction"}. Case-sensitive.}
 
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
@@ -113,6 +113,16 @@ d_sub <- as_survey_replicate(
   type       = "JK1"
 )
 
+}
+\references{
+Judkins, D.R. (1990) Fay's method for variance estimation.
+\emph{Journal of the American Statistical Association}
+\bold{85}(410), 895--904.
+
+Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+
+Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for Taylor series designs,
