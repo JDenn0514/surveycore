@@ -96,3 +96,14 @@ Other constructors:
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
+
+## Examples
+
+``` r
+# Prefer as_survey() over calling survey_taylor() directly
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+class(d)
+#> [1] "surveycore::survey_taylor" "surveycore::survey_base"  
+#> [3] "S7_object"                
+```

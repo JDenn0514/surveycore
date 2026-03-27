@@ -58,3 +58,48 @@ Other metadata:
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
 [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+
+## Examples
+
+``` r
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+d <- set_universe(d, age = "All respondents 18+")
+extract_metadata(d, age)
+#> $age
+#> $age$variable_label
+#> [1] "age of respondent"
+#> 
+#> $age$value_labels
+#>                           iap                     no answer 
+#>                          -100                           -99 
+#>                    don't know                skipped on web 
+#>                           -98                           -97 
+#>                  see codebook                    uncodeable 
+#>                           -96                           -95 
+#>                 not imputable                       refused 
+#>                           -94                           -90 
+#> not available in this release    not available in this year 
+#>                           -80                           -70 
+#>            I don't have a job                   dk, na, iap 
+#>                           -60                           -40 
+#>                   89 or older 
+#>                            89 
+#> 
+#> $age$question_preface
+#> NULL
+#> 
+#> $age$note
+#> NULL
+#> 
+#> $age$universe
+#> [1] "All respondents 18+"
+#> 
+#> $age$missing_codes
+#> NULL
+#> 
+#> $age$transformations
+#> list()
+#> 
+#> 
+```

@@ -13,7 +13,7 @@ model metadata."><meta property="og:image" content="https://jdenn0514.github.io/
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -160,6 +160,18 @@ Used for the deviance display; <strong>not</strong> the design-based residual df
 <code><a href="survey_twophase.html">survey_twophase()</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># survey_glm_fit objects are created by survey_glm(), not directly</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>, ids <span class="op">=</span> <span class="va">vpsu</span>, weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">vstrat</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="survey_glm.html">survey_glm</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">age</span> <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span><span class="op">@</span><span class="va">coefficients</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)         sex </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  47.5603545   0.2595301 </span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

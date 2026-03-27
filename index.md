@@ -28,11 +28,12 @@ pak::pak("JDenn0514/surveycore")
 ## What surveycore provides
 
 - **S7 survey objects**: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`
+  `survey_twophase`, `survey_nonprob`
 - **Constructors**:
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-  `as_survey_rep()`,
-  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
+  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 - **Metadata system**:
   [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
   [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
@@ -45,7 +46,13 @@ pak::pak("JDenn0514/surveycore")
   [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
   [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
   [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
-  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+  [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
+- **Regression**:
+  [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  for survey-weighted GLMs with
+  [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md)
+  for tidy coefficient tables
 - **Design utilities**:
   [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md),
   [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md),
@@ -116,7 +123,7 @@ df_rep <- data.frame(
   rep4 = runif(20, 0.5, 2)
 )
 
-d_rep <- as_survey_rep(
+d_rep <- as_survey_replicate(
   df_rep,
   weights = wt,
   repweights = starts_with("rep"),
@@ -150,13 +157,15 @@ surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
 ``` r
-d2 <- set_var_label(d, income, "Annual household income (USD)")
-d2 <- set_var_label(d2, age, "Respondent age in years")
+d2 <- set_var_label(d, income = "Annual household income (USD)")
+d2 <- set_var_label(d2, age = "Respondent age in years")
 
 extract_var_label(d2, income)
-#> [1] "Annual household income (USD)"
+#>                          income 
+#> "Annual household income (USD)"
 extract_var_label(d2, age)
-#> [1] "Respondent age in years"
+#>                       age 
+#> "Respondent age in years"
 ```
 
 ## Conversion to/from survey and srvyr

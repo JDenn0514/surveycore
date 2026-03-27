@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,20 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.2" id="surveycore-062">surveycore 0.6.2<a class="anchor" aria-label="anchor" href="#surveycore-062"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-0-6-2">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-6-2"></a></h3>
+<ul><li>Moved <code>dplyr</code> from Suggests to Imports (used unguarded in metadata functions).</li>
+<li>Fixed broken <code>vignette("estimation")</code> cross-reference in <code>creating-survey-objects</code> vignette.</li>
+<li>Fixed non-canonical CRAN URLs in <code>surveycore-vs-survey</code> vignette.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-6-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-6-2"></a></h3>
+<ul><li>Updated README to reflect current API: <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> (not <code>as_survey_rep()</code>), added <code><a href="../reference/get_diffs.html">get_diffs()</a></code>, <code><a href="../reference/survey_glm.html">survey_glm()</a></code>, and <code>survey_nonprob</code>.</li>
+<li>Added <code>@examples</code> to 12 exported functions and <code>@return</code> to <code>survey_base</code> for CRAN compliance.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.1" id="surveycore-061">surveycore 0.6.1<a class="anchor" aria-label="anchor" href="#surveycore-061"></a></h2>
 <div class="section level3">

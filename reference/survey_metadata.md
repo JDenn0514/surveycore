@@ -89,3 +89,23 @@ Other metadata:
 [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+
+## Examples
+
+``` r
+# Empty metadata (default)
+m <- survey_metadata()
+m@variable_labels
+#> list()
+
+# Pre-populated metadata
+m <- survey_metadata(
+  variable_labels = list(age = "Respondent age", income = "Annual income"),
+  value_labels = list(sex = c(Male = 1L, Female = 2L))
+)
+m@variable_labels$age
+#> [1] "Respondent age"
+m@value_labels$sex
+#>   Male Female 
+#>      1      2 
+```

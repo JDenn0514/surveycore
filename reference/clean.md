@@ -87,3 +87,25 @@ Other analysis:
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
+
+## Examples
+
+``` r
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+fit <- survey_glm(d, age ~ sex)
+clean(fit)
+#> # A tibble: 2 × 11
+#>   term       variable var_label label reference_row estimate std_error statistic
+#> * <chr>      <chr>    <chr>     <chr> <lgl>            <dbl>     <dbl>     <dbl>
+#> 1 (Intercep… (Interc… NA        (Int… FALSE           47.6       1.54     30.8  
+#> 2 sex        sex      responde… resp… FALSE            0.260     0.957     0.271
+#> # ℹ 3 more variables: p_value <dbl>, conf_low <dbl>, conf_high <dbl>
+clean(fit, conf_level = 0.99, exponentiate = FALSE)
+#> # A tibble: 2 × 11
+#>   term       variable var_label label reference_row estimate std_error statistic
+#> * <chr>      <chr>    <chr>     <chr> <lgl>            <dbl>     <dbl>     <dbl>
+#> 1 (Intercep… (Interc… NA        (Int… FALSE           47.6       1.54     30.8  
+#> 2 sex        sex      responde… resp… FALSE            0.260     0.957     0.271
+#> # ℹ 3 more variables: p_value <dbl>, conf_low <dbl>, conf_high <dbl>
+```

@@ -63,3 +63,14 @@ Other metadata:
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
 [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+
+## Examples
+
+``` r
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+d <- set_var_note(d, age = "Top-coded at 89")
+extract_var_note(d, age)
+#>               age 
+#> "Top-coded at 89" 
+```

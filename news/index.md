@@ -1,5 +1,26 @@
 # Changelog
 
+## surveycore 0.6.2
+
+### Bug fixes
+
+- Moved `dplyr` from Suggests to Imports (used unguarded in metadata
+  functions).
+- Fixed broken `vignette("estimation")` cross-reference in
+  `creating-survey-objects` vignette.
+- Fixed non-canonical CRAN URLs in `surveycore-vs-survey` vignette.
+
+### Documentation
+
+- Updated README to reflect current API:
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  (not `as_survey_rep()`), added
+  [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
+  [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
+  and `survey_nonprob`.
+- Added `@examples` to 12 exported functions and `@return` to
+  `survey_base` for CRAN compliance.
+
 ## surveycore 0.6.1
 
 ### Bug fixes

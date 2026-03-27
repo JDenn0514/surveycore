@@ -33,7 +33,8 @@ It is written for three audiences:
 This vignette covers object *creation* only. Estimation functions
 ([`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
-etc.) are covered in `vignette("estimation")`.
+etc.) are covered in
+[`vignette("getting-started")`](https://jdenn0514.github.io/surveycore/articles/getting-started.md).
 
 ------------------------------------------------------------------------
 

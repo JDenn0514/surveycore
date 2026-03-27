@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,7 +83,7 @@ haven-imported data, and richer tibble output.</li>
 </ul>
 <p><strong>Constructor comparisons</strong> use the <code>api</code>
 dataset from the <code>survey</code> package — the same reference
-dataset as the <a href="https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html" class="external-link">srvyr
+dataset as the <a href="https://CRAN.R-project.org/package=srvyr" class="external-link">srvyr
 comparison vignette</a>, so cross-referencing is easy. <strong>Analysis
 comparisons</strong> use <code>ns_wave1</code> (Nationscape Wave 1,
 Democracy Fund + UCLA) from surveycore’s bundled data.</p>
@@ -1100,114 +1100,7 @@ attached to results — label information is lost after estimation.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="data-manipulation-with-surveytidy-optional">5. Data Manipulation with <code>surveytidy</code> (Optional)<a class="anchor" aria-label="anchor" href="#data-manipulation-with-surveytidy-optional"></a>
-</h2>
-<p><code>surveytidy</code> is surveycore’s companion package for data
-manipulation. It provides dplyr verbs — <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>,
-<code>mutate()</code>, <code>select()</code>, <code>group_by()</code>,
-<code>rename()</code> — that work directly on survey design objects
-while preserving the survey weights and design structure. srvyr bundles
-design + analysis + manipulation in one package; surveycore separates
-them, keeping surveycore’s dependency footprint small.</p>
-<div class="sourceCode" id="cb142"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jacobdennen/surveytidy"</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="mutate-creating-new-variables">5.1 <code>mutate()</code> — Creating New Variables<a class="anchor" aria-label="anchor" href="#mutate-creating-new-variables"></a>
-</h3>
-<p><strong>survey</strong> — modify the data frame before (or after)
-creating the design; the design must be recreated if variables are added
-after construction</p>
-<div class="sourceCode" id="cb143"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1</span><span class="op">$</span><span class="va">fav_diff</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span><span class="op">$</span><span class="va">cand_favorability_trump</span> <span class="op">-</span></span>
-<span>  <span class="va">ns_wave1</span><span class="op">$</span><span class="va">cand_favorability_biden</span></span>
-<span><span class="va">ns_sv_mod</span> <span class="op">&lt;-</span> <span class="fu">svydesign</span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">weight</span>, data <span class="op">=</span> <span class="va">ns_wave1</span><span class="op">)</span></span></code></pre></div>
-<p><strong>surveytidy</strong> — create variables in-pipe; design is
-preserved</p>
-<div class="sourceCode" id="cb144"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_sc</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>fav_diff <span class="op">=</span> <span class="va">cand_favorability_trump</span> <span class="op">-</span> <span class="va">cand_favorability_biden</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">fav_diff</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="filter-domain-estimation">5.2 <code>filter()</code> — Domain Estimation<a class="anchor" aria-label="anchor" href="#filter-domain-estimation"></a>
-</h3>
-<p>Domain estimation restricts <em>what is estimated</em> without
-removing rows from the design — all three approaches keep the full
-design to compute correct standard errors.</p>
-<p><strong>survey</strong></p>
-<div class="sourceCode" id="cb145"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Subset returns a domain-restricted design</span></span>
-<span><span class="va">under_40_sv</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">ns_sv</span>, <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">40</span><span class="op">)</span></span>
-<span><span class="fu">svymean</span><span class="op">(</span><span class="op">~</span><span class="va">discrimination_blacks</span>, <span class="va">under_40_sv</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;                         mean     SE</span></span>
-<span><span class="co">#&gt; discrimination_blacks 2.1546 0.0431</span></span></code></pre>
-<p><strong>surveytidy</strong></p>
-<div class="sourceCode" id="cb147"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_sc</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&lt;</span> <span class="fl">40</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">discrimination_blacks</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="group_by-vs--group">5.3 <code>group_by()</code> vs. <code>group =</code><a class="anchor" aria-label="anchor" href="#group_by-vs--group"></a>
-</h3>
-<p>surveycore provides two equivalent ways to compute grouped
-estimates:</p>
-<div class="sourceCode" id="cb148"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># group_by() — persistent grouping; works in pipelines</span></span>
-<span><span class="va">ns_sc</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">pid3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">consider_trump</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb149"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># group = — ad hoc; no surveytidy required</span></span>
-<span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">consider_trump</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 12 × 4</span></span></span>
-<span><span class="co">#&gt;    pid3           consider_trump    pct     n</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Democrat       Yes            0.050<span style="text-decoration: underline;">1</span>   136</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Democrat       No             0.887   <span style="text-decoration: underline;">2</span>042</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Democrat       Don't know     0.062<span style="text-decoration: underline;">6</span>   111</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Republican     Yes            0.775   <span style="text-decoration: underline;">1</span>403</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Republican     No             0.128    227</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Republican     Don't know     0.096<span style="text-decoration: underline;">9</span>   183</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Independent    Yes            0.238    475</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Independent    No             0.566   <span style="text-decoration: underline;">1</span>071</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Independent    Don't know     0.195    316</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Something else Yes            0.209     73</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> Something else No             0.570    272</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span> Something else Don't know     0.221     91</span></span></code></pre>
-<p>Both return identical results. Use <code>group =</code> for one-off
-analyses; use <code>group_by()</code> in pipelines where the grouping
-should persist across steps.</p>
-</div>
-<div class="section level3">
-<h3 id="complete-pipeline">5.4 Complete Pipeline<a class="anchor" aria-label="anchor" href="#complete-pipeline"></a>
-</h3>
-<p><strong>srvyr</strong></p>
-<div class="sourceCode" id="cb151"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">as_survey_design</span><span class="op">(</span>weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">pid3</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">summarise</span><span class="op">(</span></span>
-<span>    mean_disc <span class="op">=</span> <span class="fu">survey_mean</span><span class="op">(</span><span class="va">discrimination_blacks</span>, vartype <span class="op">=</span> <span class="st">"ci"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
-<span><span class="co">#&gt;    pid3 mean_disc mean_disc_low mean_disc_upp</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1      1.83         1.75           1.90</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     2      3.04         2.95           3.14</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     3      2.52         2.42           2.62</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     4      2.36         2.17           2.56</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>    <span style="color: #BB0000;">NA</span>      1.17         0.814          1.53</span></span></code></pre>
-<p><strong>surveycore + surveytidy</strong></p>
-<div class="sourceCode" id="cb153"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&lt;</span> <span class="fl">65</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">discrimination_blacks</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="notable-differences">6. Notable Differences<a class="anchor" aria-label="anchor" href="#notable-differences"></a>
+<h2 id="notable-differences">5. Notable Differences<a class="anchor" aria-label="anchor" href="#notable-differences"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -1282,7 +1175,7 @@ suffix columns</td>
 <td>Pre/post construction</td>
 <td>Bundled via pipe</td>
 <td>
-<code>surveytidy</code> (separate package)</td>
+<code>surveytidy</code> (companion package)</td>
 </tr>
 <tr class="even">
 <td><strong>Runtime <code>survey</code> dep.</strong></td>
@@ -1297,7 +1190,7 @@ suffix columns</td>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="function-reference-table">7. Function Reference Table<a class="anchor" aria-label="anchor" href="#function-reference-table"></a>
+<h2 id="function-reference-table">6. Function Reference Table<a class="anchor" aria-label="anchor" href="#function-reference-table"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -1434,21 +1327,22 @@ suffix columns</td>
 <td><code>subset(d, cond)</code></td>
 <td><code>filter(cond)</code></td>
 <td>
-<code>filter(cond)</code> (surveytidy)</td>
+<code>filter(cond)</code> (<code>surveytidy</code>)</td>
 </tr>
 <tr class="even">
 <td>Mutate</td>
 <td>Modify df, recreate</td>
 <td><code>mutate(...)</code></td>
 <td>
-<code>mutate(...)</code> (surveytidy)</td>
+<code>mutate(...)</code> (<code>surveytidy</code>)</td>
 </tr>
 <tr class="odd">
 <td>Group by</td>
 <td><code>svyby(...)</code></td>
 <td><code>group_by(...)</code></td>
 <td>
-<code>group_by(...)</code> or <code>group=</code> arg</td>
+<code>group_by(...)</code> (<code>surveytidy</code>) or
+<code>group=</code> arg</td>
 </tr>
 </tbody>
 </table>
@@ -1456,7 +1350,7 @@ suffix columns</td>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="learning-more">8. Learning More<a class="anchor" aria-label="anchor" href="#learning-more"></a>
+<h2 id="learning-more">7. Learning More<a class="anchor" aria-label="anchor" href="#learning-more"></a>
 </h2>
 <ul>
 <li>
@@ -1467,9 +1361,9 @@ with worked examples</li>
 constructors, including two-phase designs and the <code>nest</code>
 argument</li>
 <li>
-<a href="https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html" class="external-link">srvyr
-comparison vignette</a> — the original side-by-side that this vignette
-is modeled on</li>
+<a href="https://CRAN.R-project.org/package=srvyr" class="external-link">srvyr comparison
+vignette</a> — the original side-by-side that this vignette is modeled
+on</li>
 <li>
 <span class="citation">Lumley (<a href="#ref-lumley2010">2010</a>)</span> — the definitive reference on
 complex survey analysis in R</li>

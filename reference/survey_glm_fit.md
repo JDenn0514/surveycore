@@ -129,3 +129,15 @@ Other constructors:
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
 [`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
 [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
+
+## Examples
+
+``` r
+# survey_glm_fit objects are created by survey_glm(), not directly
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+fit <- survey_glm(d, age ~ sex)
+fit@coefficients
+#> (Intercept)         sex 
+#>  47.5603545   0.2595301 
+```

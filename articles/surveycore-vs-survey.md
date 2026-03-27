@@ -18,8 +18,8 @@ already know. Every section shows the same task three ways: `survey`,
 
 **Constructor comparisons** use the `api` dataset from the `survey`
 package — the same reference dataset as the [srvyr comparison
-vignette](https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html),
-so cross-referencing is easy. **Analysis comparisons** use `ns_wave1`
+vignette](https://CRAN.R-project.org/package=srvyr), so
+cross-referencing is easy. **Analysis comparisons** use `ns_wave1`
 (Nationscape Wave 1, Democracy Fund + UCLA) from surveycore’s bundled
 data.
 
@@ -1170,135 +1170,7 @@ information is lost after estimation.
 
 ------------------------------------------------------------------------
 
-## 5. Data Manipulation with `surveytidy` (Optional)
-
-`surveytidy` is surveycore’s companion package for data manipulation. It
-provides dplyr verbs —
-[`filter()`](https://rdrr.io/r/stats/filter.html), `mutate()`,
-`select()`, `group_by()`, `rename()` — that work directly on survey
-design objects while preserving the survey weights and design structure.
-srvyr bundles design + analysis + manipulation in one package;
-surveycore separates them, keeping surveycore’s dependency footprint
-small.
-
-``` r
-pak::pak("jacobdennen/surveytidy")
-```
-
-### 5.1 `mutate()` — Creating New Variables
-
-**survey** — modify the data frame before (or after) creating the
-design; the design must be recreated if variables are added after
-construction
-
-``` r
-ns_wave1$fav_diff <- ns_wave1$cand_favorability_trump -
-  ns_wave1$cand_favorability_biden
-ns_sv_mod <- svydesign(ids = ~1, weights = ~weight, data = ns_wave1)
-```
-
-**surveytidy** — create variables in-pipe; design is preserved
-
-``` r
-ns_sc |>
-  mutate(fav_diff = cand_favorability_trump - cand_favorability_biden) |>
-  get_means(fav_diff)
-```
-
-### 5.2 `filter()` — Domain Estimation
-
-Domain estimation restricts *what is estimated* without removing rows
-from the design — all three approaches keep the full design to compute
-correct standard errors.
-
-**survey**
-
-``` r
-# Subset returns a domain-restricted design
-under_40_sv <- subset(ns_sv, age < 40)
-svymean(~discrimination_blacks, under_40_sv, na.rm = TRUE)
-```
-
-    #>                         mean     SE
-    #> discrimination_blacks 2.1546 0.0431
-
-**surveytidy**
-
-``` r
-ns_sc |>
-  filter(age < 40) |>
-  get_means(discrimination_blacks)
-```
-
-### 5.3 `group_by()` vs. `group =`
-
-surveycore provides two equivalent ways to compute grouped estimates:
-
-``` r
-# group_by() — persistent grouping; works in pipelines
-ns_sc |>
-  group_by(pid3) |>
-  get_freqs(consider_trump)
-```
-
-``` r
-# group = — ad hoc; no surveytidy required
-get_freqs(ns_sc, consider_trump, group = pid3)
-```
-
-    #> # A tibble: 12 × 4
-    #>    pid3           consider_trump    pct     n
-    #>    <fct>          <fct>           <dbl> <int>
-    #>  1 Democrat       Yes            0.0501   136
-    #>  2 Democrat       No             0.887   2042
-    #>  3 Democrat       Don't know     0.0626   111
-    #>  4 Republican     Yes            0.775   1403
-    #>  5 Republican     No             0.128    227
-    #>  6 Republican     Don't know     0.0969   183
-    #>  7 Independent    Yes            0.238    475
-    #>  8 Independent    No             0.566   1071
-    #>  9 Independent    Don't know     0.195    316
-    #> 10 Something else Yes            0.209     73
-    #> 11 Something else No             0.570    272
-    #> 12 Something else Don't know     0.221     91
-
-Both return identical results. Use `group =` for one-off analyses; use
-`group_by()` in pipelines where the grouping should persist across
-steps.
-
-### 5.4 Complete Pipeline
-
-**srvyr**
-
-``` r
-ns_wave1 |>
-  as_survey_design(weights = weight) |>
-  group_by(pid3) |>
-  summarise(
-    mean_disc = survey_mean(discrimination_blacks, vartype = "ci", na.rm = TRUE)
-  )
-```
-
-    #> # A tibble: 5 × 4
-    #>    pid3 mean_disc mean_disc_low mean_disc_upp
-    #>   <dbl>     <dbl>         <dbl>         <dbl>
-    #> 1     1      1.83         1.75           1.90
-    #> 2     2      3.04         2.95           3.14
-    #> 3     3      2.52         2.42           2.62
-    #> 4     4      2.36         2.17           2.56
-    #> 5    NA      1.17         0.814          1.53
-
-**surveycore + surveytidy**
-
-``` r
-as_survey_nonprob(ns_wave1, weights = weight) |>
-  filter(age < 65) |>
-  get_means(discrimination_blacks, group = pid3)
-```
-
-------------------------------------------------------------------------
-
-## 6. Notable Differences
+## 5. Notable Differences
 
 |                            | survey                   | srvyr                                             | surveycore                                                                                     |
 |----------------------------|--------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------|
@@ -1310,12 +1182,12 @@ as_survey_nonprob(ns_wave1, weights = weight) |>
 | **Weighted N**             | Separate call            | Separate call                                     | `n_weighted = TRUE`                                                                            |
 | **Correlation CIs**        | None (`svycor()`)        | No verb                                           | Fisher-Z CIs via [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)  |
 | **Non-probability design** | No dedicated constructor | No dedicated constructor                          | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
-| **Manipulation**           | Pre/post construction    | Bundled via pipe                                  | `surveytidy` (separate package)                                                                |
+| **Manipulation**           | Pre/post construction    | Bundled via pipe                                  | `surveytidy` (companion package)                                                               |
 | **Runtime `survey` dep.**  | Is `survey`              | Wraps `survey`                                    | Vendored — `survey` not required                                                               |
 
 ------------------------------------------------------------------------
 
-## 7. Function Reference Table
+## 6. Function Reference Table
 
 | Task               | survey                            | srvyr                                      | surveycore                                     |
 |--------------------|-----------------------------------|--------------------------------------------|------------------------------------------------|
@@ -1337,23 +1209,22 @@ as_survey_nonprob(ns_wave1, weights = weight) |>
 | Value labels       | Manual recode                     | Manual recode                              | `label_values = TRUE` (default)                |
 | Min-cell warning   | ✗                                 | ✗                                          | `min_cell_n = 30L` (default)                   |
 | Weighted N         | Separate call                     | Separate call                              | `n_weighted = TRUE`                            |
-| Domain filter      | `subset(d, cond)`                 | `filter(cond)`                             | `filter(cond)` (surveytidy)                    |
-| Mutate             | Modify df, recreate               | `mutate(...)`                              | `mutate(...)` (surveytidy)                     |
-| Group by           | `svyby(...)`                      | `group_by(...)`                            | `group_by(...)` or `group=` arg                |
+| Domain filter      | `subset(d, cond)`                 | `filter(cond)`                             | `filter(cond)` (`surveytidy`)                  |
+| Mutate             | Modify df, recreate               | `mutate(...)`                              | `mutate(...)` (`surveytidy`)                   |
+| Group by           | `svyby(...)`                      | `group_by(...)`                            | `group_by(...)` (`surveytidy`) or `group=` arg |
 
 ⚠ = partial / workaround; ✗ = no equivalent
 
 ------------------------------------------------------------------------
 
-## 8. Learning More
+## 7. Learning More
 
 - [`vignette("getting-started")`](https://jdenn0514.github.io/surveycore/articles/getting-started.md)
   — full surveycore overview with worked examples
 - [`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
   — all five constructors, including two-phase designs and the `nest`
   argument
-- [srvyr comparison
-  vignette](https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html)
+- [srvyr comparison vignette](https://CRAN.R-project.org/package=srvyr)
   — the original side-by-side that this vignette is modeled on
 - Lumley ([2010](#ref-lumley2010)) — the definitive reference on complex
   survey analysis in R

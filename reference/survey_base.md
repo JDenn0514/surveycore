@@ -22,6 +22,16 @@ survey_base(
 )
 ```
 
+## Value
+
+Cannot be instantiated directly. See
+[survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
+[survey_replicate](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
+[survey_twophase](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md),
+or
+[survey_nonprob](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md)
+for concrete subclasses.
+
 ## Properties
 
 - `data`:
