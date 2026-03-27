@@ -19,7 +19,7 @@ for the ANES data.
 
 ## Package size
 
-Installed package size is approximately 5.2 MB (4.7 MB in the `data/`
+Installed package size is approximately 6.4 MB (5.1 MB in the `data/`
 subdirectory). The package includes several bundled survey teaching datasets
 (ANES, NHANES, ACS PUMS, Pew Research) that are the primary examples for the
 package functionality.

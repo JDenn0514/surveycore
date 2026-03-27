@@ -49,6 +49,19 @@
 #'
 #' @return A `survey_metadata` object.
 #'
+#' @examples
+#' # Empty metadata (default)
+#' m <- survey_metadata()
+#' m@variable_labels
+#'
+#' # Pre-populated metadata
+#' m <- survey_metadata(
+#'   variable_labels = list(age = "Respondent age", income = "Annual income"),
+#'   value_labels = list(sex = c(Male = 1L, Female = 2L))
+#' )
+#' m@variable_labels$age
+#' m@value_labels$sex
+#'
 #' @family metadata
 #' @export
 survey_metadata <- S7::new_class(
@@ -117,6 +130,9 @@ survey_metadata <- S7::new_class(
 #'     or `NULL`.}
 #' }
 #'
+#' @return Cannot be instantiated directly. See [survey_taylor],
+#'   [survey_replicate], [survey_twophase], or [survey_nonprob] for
+#'   concrete subclasses.
 #' @keywords internal
 #' @export
 survey_base <- S7::new_class(
@@ -185,6 +201,13 @@ survey_base <- S7::new_class(
 #'   groups = character(0),
 #'   call = NULL
 #' )
+#'
+#' @examples
+#' # Prefer as_survey() over calling survey_taylor() directly
+#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                strata = vstrat, nest = TRUE)
+#' class(d)
+#'
 #' @seealso [as_survey()] to create a `survey_taylor` object.
 #' @family constructors
 #' @export
@@ -348,6 +371,16 @@ survey_taylor <- S7::new_class(
 #'   groups = character(0),
 #'   call = NULL
 #' )
+#'
+#' @examples
+#' # Prefer as_survey_replicate() over calling survey_replicate() directly
+#' set.seed(1)
+#' df <- data.frame(y = rnorm(20), wt = runif(20, 1, 3),
+#'                  rep1 = runif(20, 0.5, 2), rep2 = runif(20, 0.5, 2))
+#' d <- as_survey_replicate(df, weights = wt,
+#'                          repweights = starts_with("rep"), type = "BRR")
+#' class(d)
+#'
 #' @seealso [as_survey_replicate()] to create a `survey_replicate` object.
 #' @family constructors
 #' @export
@@ -481,6 +514,17 @@ survey_replicate <- S7::new_class(
 #'   groups = character(0),
 #'   call = NULL
 #' )
+#'
+#' @examples
+#' # Prefer as_survey_twophase() over calling survey_twophase() directly
+#' set.seed(1)
+#' df <- data.frame(id = 1:100, y = rnorm(100), x = rnorm(100),
+#'                  wt = runif(100, 1, 3),
+#'                  in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60)))
+#' phase1 <- as_survey(df, weights = wt)
+#' d <- as_survey_twophase(phase1, subset = in_phase2)
+#' class(d)
+#'
 #' @seealso [as_survey_twophase()] to create a `survey_twophase` object.
 #' @family constructors
 #' @export

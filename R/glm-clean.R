@@ -306,6 +306,13 @@
 #'   `c("survey_glm_tidy", "survey_result", "tbl_df", "tbl", "data.frame")`.
 #'   Metadata is accessed via [meta()].
 #'
+#' @examples
+#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                strata = vstrat, nest = TRUE)
+#' fit <- survey_glm(d, age ~ sex)
+#' clean(fit)
+#' clean(fit, conf_level = 0.99, exponentiate = FALSE)
+#'
 #' @seealso [survey_glm()] to fit the model, [meta()] to access metadata.
 #' @family analysis
 #' @export

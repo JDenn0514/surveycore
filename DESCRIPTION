@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.6.1
+Version: 0.6.2
 Authors@R:
     person(
         "Jacob", "Dennen", 
@@ -26,6 +26,7 @@ Imports:
     tidyselect (>= 1.2.0),
     cli (>= 3.6.0),
     tibble (>= 3.1.0),
+    dplyr (>= 1.1.0),
     marginaleffects (>= 0.18.0),
     stats
 Suggests:
@@ -35,7 +36,6 @@ Suggests:
     survival,
     srvyr (>= 1.0),
     haven (>= 2.5.0),
-    dplyr (>= 1.1.0),
     lifecycle (>= 1.0.0),
     broom (>= 1.0.0),
     covr,

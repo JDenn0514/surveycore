@@ -8,6 +8,7 @@
 # R CMD check artifacts
 *.Rcheck/
 *.tar.gz
+Rplots.pdf
 
 # Large raw data files — re-download with data-raw/download-*.R
 data-raw/brfss/LLCP2023.XPT

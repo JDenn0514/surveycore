@@ -39,7 +39,7 @@ It is written for three audiences:
   raking weights, skip ahead to [Section 6](#sec-calibrated).
 
 This vignette covers object *creation* only. Estimation functions (`get_means()`,
-`get_totals()`, etc.) are covered in `vignette("estimation")`.
+`get_totals()`, etc.) are covered in `vignette("getting-started")`.
 
 ---
 

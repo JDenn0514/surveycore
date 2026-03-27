@@ -30,6 +30,13 @@ Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_lab
 the calling conventions. For Convention 3 with a single variable, a bare
 named atomic vector is accepted in addition to a list.
 }
+\examples{
+d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+               strata = vstrat, nest = TRUE)
+d <- set_missing_codes(d, happy = c(Refused = -1L, DK = -2L))
+extract_missing_codes(d, happy)
+
+}
 \seealso{
 Other metadata: 
 \code{\link{extract_metadata}()},

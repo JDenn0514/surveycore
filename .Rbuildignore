@@ -14,6 +14,9 @@
 ^docs$
 ^pkgdown$
 ^cran-comments\.md$
+^SOPs$
+^archive$
+^Rplots\.pdf$
 
 # Vignette build artifacts (pre-built HTML from local development)
 ^vignettes/.*_files$
