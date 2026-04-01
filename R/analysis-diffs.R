@@ -177,7 +177,6 @@ get_diffs <- function(
   treats_sym <- rlang::ensym(treats)
   treats_name <- rlang::as_name(treats_sym)
 
-  # Validate x resolves to exactly 1 existing column
   if (!x_name %in% names(design@data)) {
     cli::cli_abort(
       c(
@@ -188,7 +187,6 @@ get_diffs <- function(
     )
   }
 
-  # Validate treats resolves to exactly 1 existing column
   if (!treats_name %in% names(design@data)) {
     cli::cli_abort(
       c(
@@ -217,8 +215,6 @@ get_diffs <- function(
   }
 
   treats_col <- design@data[[treats_name]]
-
-  # Coerce to factor if not already (with warning)
   if (!is.factor(treats_col)) {
     cli::cli_warn(
       c("!" = "{.field {treats_name}} coerced to factor."),
@@ -228,7 +224,6 @@ get_diffs <- function(
     design@data[[treats_name]] <- treats_col
   }
 
-  # Check >= 2 levels with observations
   obs_levels <- unique(
     as.character(treats_col[!is.na(treats_col)])
   )
@@ -342,791 +337,47 @@ get_diffs <- function(
   use_marginaleffects <- has_covariates ||
     has_group ||
     (family_name != "gaussian" && scale == "ame")
-
-  # Link-scale suppression: omit mean and pct_change when scale = "link"
-  # and family is non-gaussian
   suppress_mean <- (scale == "link" && family_name != "gaussian")
 
-  # ── Step 11: Extract estimates and means ──────────────────────────────────
+  # ── Step 11: Extract estimates ────────────────────────────────────────────
   if (!use_marginaleffects) {
-    # ── Clean path ──────────────────────────────────────────────────────────
     estimate_method <- "coefficient"
-    mean_method <- "intercept"
-    estimate_scale <- "coefficient"
-
-    tidy_result <- clean(
-      fit,
-      conf_level = conf_level,
-      include_reference = TRUE,
-      n = TRUE,
-      statistic = FALSE
-    )
-
-    # Extract intercept row (reference mean)
-    intercept_mask <- tidy_result$term == "(Intercept)"
-    if (sum(intercept_mask) != 1L) {
-      cli::cli_abort(
-        c(
-          "x" = paste0(
-            "Reference row not found in model output. ",
-            "Expected exactly one intercept row."
-          )
-        ),
-        class = "surveycore_error_reference_row_not_found"
-      )
-    }
-    reference_mean <- tidy_result$estimate[intercept_mask]
-
-    # Treatment rows: not intercept, not reference
-    treat_mask <- !intercept_mask &
-      !tidy_result$reference_row
-
-    treat_df <- tidy_result[treat_mask, , drop = FALSE]
-
-    # Extract level names from term column (strip variable prefix)
-    treat_level_names <- vapply(
-      treat_df$term,
-      function(t) {
-        sub(paste0("^", treats_name), "", t)
-      },
-      character(1L),
-      USE.NAMES = FALSE
-    )
-
-    estimates <- treat_df$estimate
-    ses <- treat_df$std_error
-    ci_lows <- treat_df$conf_low
-    ci_highs <- treat_df$conf_high
-    p_values <- treat_df$p_value
-    means <- reference_mean + estimates
-
-    result_levels <- treat_level_names
-    result_estimates <- estimates
-    result_means <- means
-    result_ses <- ses
-    result_ci_lows <- ci_lows
-    result_ci_highs <- ci_highs
-    result_p_values <- p_values
-    result_groups <- NULL
+    mean_method     <- "intercept"
+    estimate_scale  <- "coefficient"
+    result <- .extract_clean_estimates(fit, treats_name, conf_level)
   } else {
-    # ── Marginaleffects path ────────────────────────────────────────────────
     estimate_method <- "avg_slopes"
-    mean_method <- "avg_predictions"
-    estimate_scale <- if (scale == "link") "coefficient" else "ame"
-
-    p <- length(stats::coef(fit))
-    res_df <- max(1, fit@degf - (p - 1L))
-    me_type <- if (scale == "link") "link" else "response"
-
-    # Estimates via avg_slopes
-    if (!has_group) {
-      slopes <- marginaleffects::avg_slopes(
-        fit,
-        variables = treats_name,
-        type = me_type,
-        wts = fit@weights,
-        df = res_df
-      )
-    } else {
-      slopes <- marginaleffects::avg_slopes(
-        fit,
-        variables = treats_name,
-        by = group_names,
-        type = me_type,
-        wts = fit@weights,
-        df = res_df
-      )
-    }
-
-    slopes_df <- as.data.frame(slopes)
-
-    # Means via avg_predictions (skip if suppressed)
-    preds_df <- NULL
-    if (!suppress_mean) {
-      if (!has_group) {
-        preds <- marginaleffects::avg_predictions(
-          fit,
-          by = treats_name,
-          type = me_type,
-          wts = fit@weights,
-          df = res_df
-        )
-      } else {
-        preds <- marginaleffects::avg_predictions(
-          fit,
-          by = c(treats_name, group_names),
-          type = me_type,
-          wts = fit@weights,
-          df = res_df
-        )
-      }
-      preds_df <- as.data.frame(preds)
-    }
-
-    # Extract treatment levels from slopes
-    if (!has_group) {
-      result_levels <- as.character(slopes_df$contrast)
-      # avg_slopes uses "X - ref" format; extract just the level name
-      result_levels <- sub(
-        paste0("^(.+) - ", ref_level, "$"),
-        "\\1",
-        result_levels
-      )
-      result_estimates <- slopes_df$estimate
-      result_ses <- slopes_df$std.error
-      result_ci_lows <- slopes_df$conf.low
-      result_ci_highs <- slopes_df$conf.high
-      result_p_values <- slopes_df$p.value
-
-      if (!is.null(preds_df)) {
-        # Match means from preds
-        pred_means <- stats::setNames(
-          preds_df$estimate,
-          as.character(preds_df[[treats_name]])
-        )
-        result_means <- unname(pred_means[result_levels])
-        ref_mean_val <- unname(pred_means[ref_level])
-      } else {
-        result_means <- NULL
-        ref_mean_val <- NULL
-      }
-      result_groups <- NULL
-    } else {
-      # With group: slopes has one row per (contrast, group_combo)
-      result_levels <- sub(
-        paste0("^(.+) - ", ref_level, "$"),
-        "\\1",
-        as.character(slopes_df$contrast)
-      )
-      result_estimates <- slopes_df$estimate
-      result_ses <- slopes_df$std.error
-      result_ci_lows <- slopes_df$conf.low
-      result_ci_highs <- slopes_df$conf.high
-      result_p_values <- slopes_df$p.value
-
-      # Group columns from slopes
-      result_groups <- slopes_df[,
-        group_names,
-        drop = FALSE
-      ]
-
-      if (!is.null(preds_df)) {
-        # Build means lookup: match by treats + groups
-        result_means <- numeric(nrow(slopes_df))
-        ref_mean_vals <- list() # per group combo
-        for (i in seq_len(nrow(slopes_df))) {
-          lvl <- result_levels[[i]]
-          pred_match <- preds_df[[treats_name]] == lvl
-          for (gn in group_names) {
-            pred_match <- pred_match &
-              (preds_df[[gn]] == slopes_df[[gn]][[i]])
-          }
-          result_means[[i]] <- preds_df$estimate[pred_match][[1L]]
-        }
-
-        # Get reference means per group combo
-        ref_preds <- preds_df[
-          preds_df[[treats_name]] == ref_level,
-          ,
-          drop = FALSE
-        ]
-      } else {
-        result_means <- NULL
-        ref_preds <- NULL
-      }
-    }
+    mean_method     <- "avg_predictions"
+    estimate_scale  <- if (scale == "link") "coefficient" else "ame"
+    result <- .extract_me_estimates(
+      fit, treats_name, group_names, ref_level, scale, suppress_mean
+    )
   }
 
-  # ── Step 12: Compute n (domain-aware) ─────────────────────────────────────
+  # ── Steps 12–17: Build output ─────────────────────────────────────────────
   domain_mask <- .apply_domain(design)
   wt_var <- design@variables$weights
-
-  # Build the full output by assembling rows
-  # We need reference row(s) + treatment rows
-  all_treats_levels <- levels(design@data[[treats_name]])
-  non_ref_levels <- setdiff(all_treats_levels, ref_level)
-
-  if (!has_group) {
-    # Single-group case: build one set of rows
-    .build_output_rows <- function() {
-      rows <- list()
-
-      # Reference row (when show_means = TRUE)
-      if (show_means) {
-        ref_mask <- domain_mask &
-          (design@data[[treats_name]] == ref_level) &
-          !is.na(design@data[[treats_name]])
-        ref_n <- sum(ref_mask)
-
-        if (!is.null(wt_var)) {
-          ref_nw <- sum(
-            design@data[[wt_var]][ref_mask],
-            na.rm = TRUE
-          )
-        } else {
-          ref_nw <- as.numeric(ref_n)
-        }
-
-        if (use_marginaleffects && !is.null(preds_df)) {
-          ref_mean <- unname(
-            preds_df$estimate[
-              preds_df[[treats_name]] == ref_level
-            ][[1L]]
-          )
-        } else if (!use_marginaleffects) {
-          ref_mean <- reference_mean
-        } else {
-          ref_mean <- NA_real_
-        }
-
-        ref_row <- list(
-          level = ref_level,
-          estimate = 0,
-          mean = ref_mean,
-          n = as.integer(ref_n),
-          n_weighted = ref_nw,
-          se = NA_real_,
-          ci_low = NA_real_,
-          ci_high = NA_real_,
-          p_value = NA_real_,
-          stars = ""
-        )
-        rows <- c(rows, list(ref_row))
-      }
-
-      # Treatment rows
-      for (i in seq_along(result_levels)) {
-        lvl <- result_levels[[i]]
-        lvl_mask <- domain_mask &
-          (design@data[[treats_name]] == lvl) &
-          !is.na(design@data[[treats_name]])
-        lvl_n <- sum(lvl_mask)
-
-        if (!is.null(wt_var)) {
-          lvl_nw <- sum(
-            design@data[[wt_var]][lvl_mask],
-            na.rm = TRUE
-          )
-        } else {
-          lvl_nw <- as.numeric(lvl_n)
-        }
-
-        treat_row <- list(
-          level = lvl,
-          estimate = result_estimates[[i]],
-          mean = if (!is.null(result_means)) {
-            result_means[[i]]
-          } else {
-            NA_real_
-          },
-          n = as.integer(lvl_n),
-          n_weighted = lvl_nw,
-          se = result_ses[[i]],
-          ci_low = result_ci_lows[[i]],
-          ci_high = result_ci_highs[[i]],
-          p_value = result_p_values[[i]],
-          stars = ""
-        )
-        rows <- c(rows, list(treat_row))
-      }
-      rows
-    }
-
-    rows <- .build_output_rows()
-
-    # Small cell warning
-    for (r in rows) {
-      if (!is.na(r$n) && r$n > 0L && r$n < min_cell_n) {
-        cli::cli_warn(
-          c(
-            "!" = paste0(
-              "Treatment level {.val {r$level}} has only ",
-              "{r$n} observation{?s} (threshold: {min_cell_n})."
-            )
-          ),
-          class = "surveycore_warning_small_cell"
-        )
-      }
-    }
-
-    # ── Step 13: Apply pval_adj ─────────────────────────────────────────────
-    if (!is.null(pval_adj)) {
-      # Adjust only comparison rows (not reference)
-      comparison_idx <- which(vapply(
-        rows,
-        function(r) r$estimate != 0,
-        logical(1L)
-      ))
-      pvals <- vapply(
-        rows[comparison_idx],
-        function(r) r$p_value,
-        double(1L)
-      )
-      adj_pvals <- stats::p.adjust(pvals, method = pval_adj)
-      for (j in seq_along(comparison_idx)) {
-        rows[[comparison_idx[[j]]]]$p_value <- adj_pvals[[j]]
-      }
-    }
-
-    # ── Step 14-16: pct_change, stars ───────────────────────────────────────
-    ref_mean_for_pct <- if (show_means && length(rows) > 0L) {
-      rows[[1L]]$mean
-    } else if (!use_marginaleffects) {
-      reference_mean
-    } else if (!is.null(preds_df)) {
-      preds_df$estimate[
-        preds_df[[treats_name]] == ref_level
-      ][[1L]]
-    } else {
-      NA_real_
-    }
-
-    # pct_change warning
-    ref_is_zero <- !is.na(ref_mean_for_pct) &&
-      abs(ref_mean_for_pct) < .Machine$double.eps * 100
-    if (show_pct_change && !suppress_mean && ref_is_zero) {
-      cli::cli_warn(
-        c(
-          "!" = paste0(
-            "Reference group mean is 0; ",
-            "percentage change is undefined."
-          )
-        ),
-        class = "surveycore_warning_pct_change_zero_ref"
-      )
-    }
-
-    for (i in seq_along(rows)) {
-      r <- rows[[i]]
-
-      # Stars
-      rows[[i]]$stars <- .stars_pval(r$p_value)
-
-      # pct_change
-      if (show_pct_change && !suppress_mean) {
-        if (r$estimate == 0) {
-          rows[[i]]$pct_change <- NA_real_
-        } else if (!is.na(ref_mean_for_pct) && !ref_is_zero) {
-          rows[[i]]$pct_change <- r$estimate / ref_mean_for_pct
-        } else {
-          rows[[i]]$pct_change <- NA_real_
-        }
-      }
-    }
-
-    # ── Step 17: Assemble tibble ────────────────────────────────────────────
-    n_rows <- length(rows)
-    col_vecs <- list()
-
-    # Treatment column
-    col_vecs[[treats_name]] <- vapply(
-      rows,
-      function(r) r$level,
-      character(1L)
-    )
-
-    col_vecs[["estimate"]] <- vapply(
-      rows,
-      function(r) r$estimate,
-      double(1L)
-    )
-
-    if (show_pct_change && !suppress_mean) {
-      col_vecs[["pct_change"]] <- vapply(
-        rows,
-        function(r) {
-          r$pct_change %||% NA_real_
-        },
-        double(1L)
-      )
-    }
-
-    if (show_means && !suppress_mean) {
-      col_vecs[["mean"]] <- vapply(
-        rows,
-        function(r) r$mean,
-        double(1L)
-      )
-    }
-
-    col_vecs[["n"]] <- vapply(
-      rows,
-      function(r) r$n,
-      integer(1L)
-    )
-
-    if (n_weighted) {
-      col_vecs[["n_weighted"]] <- vapply(
-        rows,
-        function(r) r$n_weighted,
-        double(1L)
-      )
-    }
-
-    if (!is.null(variance) && "se" %in% variance) {
-      col_vecs[["se"]] <- vapply(
-        rows,
-        function(r) r$se,
-        double(1L)
-      )
-    }
-
-    if (!is.null(variance) && "ci" %in% variance) {
-      col_vecs[["ci_low"]] <- vapply(
-        rows,
-        function(r) r$ci_low,
-        double(1L)
-      )
-      col_vecs[["ci_high"]] <- vapply(
-        rows,
-        function(r) r$ci_high,
-        double(1L)
-      )
-    }
-
-    col_vecs[["p_value"]] <- vapply(
-      rows,
-      function(r) r$p_value,
-      double(1L)
-    )
-
-    col_vecs[["stars"]] <- vapply(
-      rows,
-      function(r) r$stars,
-      character(1L)
-    )
-
-    groups_df <- data.frame()
-  } else {
-    # ── Grouped case ────────────────────────────────────────────────────────
-    # Build rows per unique group combination
-    if (use_marginaleffects) {
-      # Get unique group combos from slopes
-      unique_group_combos <- unique(
-        result_groups[, group_names, drop = FALSE]
-      )
-    } else {
-      # Should not happen: has_group triggers ME path
-      # Defensive: build from data
-      unique_group_combos <- unique(
-        design@data[domain_mask, group_names, drop = FALSE]
-      )
-    }
-
-    all_rows <- list()
-    all_group_rows <- list()
-
-    for (gi in seq_len(nrow(unique_group_combos))) {
-      gc <- unique_group_combos[gi, , drop = FALSE]
-
-      # Reference row for this group
-      if (show_means) {
-        ref_mask <- domain_mask &
-          (design@data[[treats_name]] == ref_level) &
-          !is.na(design@data[[treats_name]])
-        for (gn in group_names) {
-          ref_mask <- ref_mask &
-            !is.na(design@data[[gn]]) &
-            (design@data[[gn]] == gc[[gn]])
-        }
-        ref_n <- sum(ref_mask)
-        if (!is.null(wt_var)) {
-          ref_nw <- sum(
-            design@data[[wt_var]][ref_mask],
-            na.rm = TRUE
-          )
-        } else {
-          ref_nw <- as.numeric(ref_n)
-        }
-
-        # Get mean for reference in this group
-        if (!is.null(preds_df)) {
-          pred_match <- preds_df[[treats_name]] == ref_level
-          for (gn in group_names) {
-            pred_match <- pred_match &
-              (preds_df[[gn]] == gc[[gn]])
-          }
-          ref_mean <- preds_df$estimate[pred_match][[1L]]
-        } else {
-          ref_mean <- NA_real_
-        }
-
-        ref_row <- list(
-          level = ref_level,
-          estimate = 0,
-          mean = ref_mean,
-          n = as.integer(ref_n),
-          n_weighted = ref_nw,
-          se = NA_real_,
-          ci_low = NA_real_,
-          ci_high = NA_real_,
-          p_value = NA_real_,
-          stars = ""
-        )
-        all_rows <- c(all_rows, list(ref_row))
-        all_group_rows <- c(all_group_rows, list(gc))
-      }
-
-      # Treatment rows for this group
-      group_match <- rep(TRUE, nrow(result_groups))
-      for (gn in group_names) {
-        group_match <- group_match &
-          (result_groups[[gn]] == gc[[gn]])
-      }
-      idx <- which(group_match)
-
-      for (i in idx) {
-        lvl <- result_levels[[i]]
-        lvl_mask <- domain_mask &
-          (design@data[[treats_name]] == lvl) &
-          !is.na(design@data[[treats_name]])
-        for (gn in group_names) {
-          lvl_mask <- lvl_mask &
-            !is.na(design@data[[gn]]) &
-            (design@data[[gn]] == gc[[gn]])
-        }
-        lvl_n <- sum(lvl_mask)
-        if (!is.null(wt_var)) {
-          lvl_nw <- sum(
-            design@data[[wt_var]][lvl_mask],
-            na.rm = TRUE
-          )
-        } else {
-          lvl_nw <- as.numeric(lvl_n)
-        }
-
-        treat_row <- list(
-          level = lvl,
-          estimate = result_estimates[[i]],
-          mean = if (!is.null(result_means)) {
-            result_means[[i]]
-          } else {
-            NA_real_
-          },
-          n = as.integer(lvl_n),
-          n_weighted = lvl_nw,
-          se = result_ses[[i]],
-          ci_low = result_ci_lows[[i]],
-          ci_high = result_ci_highs[[i]],
-          p_value = result_p_values[[i]],
-          stars = ""
-        )
-        all_rows <- c(all_rows, list(treat_row))
-        all_group_rows <- c(all_group_rows, list(gc))
-      }
-    }
-
-    # Small cell warning
-    for (r in all_rows) {
-      if (!is.na(r$n) && r$n > 0L && r$n < min_cell_n) {
-        cli::cli_warn(
-          c(
-            "!" = paste0(
-              "Treatment level {.val {r$level}} has only ",
-              "{r$n} observation{?s} (threshold: {min_cell_n})."
-            )
-          ),
-          class = "surveycore_warning_small_cell"
-        )
-      }
-    }
-
-    # pval_adj: within-group
-    if (!is.null(pval_adj)) {
-      for (gi in seq_len(nrow(unique_group_combos))) {
-        gc <- unique_group_combos[gi, , drop = FALSE]
-        comp_idx <- integer(0)
-        for (ri in seq_along(all_rows)) {
-          if (all_rows[[ri]]$estimate != 0) {
-            grp_match <- TRUE
-            for (gn in group_names) {
-              grp_match <- grp_match &&
-                (all_group_rows[[ri]][[gn]] == gc[[gn]])
-            }
-            if (grp_match) {
-              comp_idx <- c(comp_idx, ri)
-            }
-          }
-        }
-        if (length(comp_idx) > 0L) {
-          pvals <- vapply(
-            all_rows[comp_idx],
-            function(r) r$p_value,
-            double(1L)
-          )
-          adj_pvals <- stats::p.adjust(
-            pvals,
-            method = pval_adj
-          )
-          for (j in seq_along(comp_idx)) {
-            all_rows[[comp_idx[[j]]]]$p_value <-
-              adj_pvals[[j]]
-          }
-        }
-      }
-    }
-
-    # Stars + pct_change
-    for (gi in seq_len(nrow(unique_group_combos))) {
-      gc <- unique_group_combos[gi, , drop = FALSE]
-
-      # Find ref mean for this group
-      ref_mean_for_pct <- NA_real_
-      for (ri in seq_along(all_rows)) {
-        if (all_rows[[ri]]$estimate == 0) {
-          grp_match <- TRUE
-          for (gn in group_names) {
-            grp_match <- grp_match &&
-              (all_group_rows[[ri]][[gn]] == gc[[gn]])
-          }
-          if (grp_match) {
-            ref_mean_for_pct <- all_rows[[ri]]$mean
-            break
-          }
-        }
-      }
-
-      ref_is_zero_g <- !is.na(ref_mean_for_pct) &&
-        abs(ref_mean_for_pct) < .Machine$double.eps * 100
-      if (show_pct_change && !suppress_mean && ref_is_zero_g) {
-        cli::cli_warn(
-          c(
-            "!" = paste0(
-              "Reference group mean is 0; ",
-              "percentage change is undefined."
-            )
-          ),
-          class = "surveycore_warning_pct_change_zero_ref"
-        )
-      }
-    }
-
-    for (i in seq_along(all_rows)) {
-      r <- all_rows[[i]]
-      all_rows[[i]]$stars <- .stars_pval(r$p_value)
-
-      if (show_pct_change && !suppress_mean) {
-        # Find the group's ref mean
-        gc_row <- all_group_rows[[i]]
-        ref_mean_g <- NA_real_
-        for (ri in seq_along(all_rows)) {
-          if (all_rows[[ri]]$estimate == 0) {
-            match_g <- TRUE
-            for (gn in group_names) {
-              match_g <- match_g &&
-                (all_group_rows[[ri]][[gn]] == gc_row[[gn]])
-            }
-            if (match_g) {
-              ref_mean_g <- all_rows[[ri]]$mean
-              break
-            }
-          }
-        }
-
-        ref_g_is_zero <- !is.na(ref_mean_g) &&
-          abs(ref_mean_g) < .Machine$double.eps * 100
-
-        if (r$estimate == 0) {
-          all_rows[[i]]$pct_change <- NA_real_
-        } else if (!is.na(ref_mean_g) && !ref_g_is_zero) {
-          all_rows[[i]]$pct_change <-
-            r$estimate / ref_mean_g
-        } else {
-          all_rows[[i]]$pct_change <- NA_real_
-        }
-      }
-    }
-
-    # Assemble tibble
-    n_rows <- length(all_rows)
-    col_vecs <- list()
-
-    col_vecs[[treats_name]] <- vapply(
-      all_rows,
-      function(r) r$level,
-      character(1L)
-    )
-
-    col_vecs[["estimate"]] <- vapply(
-      all_rows,
-      function(r) r$estimate,
-      double(1L)
-    )
-
-    if (show_pct_change && !suppress_mean) {
-      col_vecs[["pct_change"]] <- vapply(
-        all_rows,
-        function(r) {
-          r$pct_change %||% NA_real_
-        },
-        double(1L)
-      )
-    }
-
-    if (show_means && !suppress_mean) {
-      col_vecs[["mean"]] <- vapply(
-        all_rows,
-        function(r) r$mean,
-        double(1L)
-      )
-    }
-
-    col_vecs[["n"]] <- vapply(
-      all_rows,
-      function(r) r$n,
-      integer(1L)
-    )
-
-    if (n_weighted) {
-      col_vecs[["n_weighted"]] <- vapply(
-        all_rows,
-        function(r) r$n_weighted,
-        double(1L)
-      )
-    }
-
-    if (!is.null(variance) && "se" %in% variance) {
-      col_vecs[["se"]] <- vapply(
-        all_rows,
-        function(r) r$se,
-        double(1L)
-      )
-    }
-
-    if (!is.null(variance) && "ci" %in% variance) {
-      col_vecs[["ci_low"]] <- vapply(
-        all_rows,
-        function(r) r$ci_low,
-        double(1L)
-      )
-      col_vecs[["ci_high"]] <- vapply(
-        all_rows,
-        function(r) r$ci_high,
-        double(1L)
-      )
-    }
-
-    col_vecs[["p_value"]] <- vapply(
-      all_rows,
-      function(r) r$p_value,
-      double(1L)
-    )
-
-    col_vecs[["stars"]] <- vapply(
-      all_rows,
-      function(r) r$stars,
-      character(1L)
-    )
-
-    # Group columns
-    groups_df <- do.call(rbind, all_group_rows)
-    rownames(groups_df) <- NULL
-
-    rows <- all_rows
-  }
+  out <- .build_diffs_output(
+    result              = result,
+    design              = design,
+    treats_name         = treats_name,
+    group_names         = group_names,
+    ref_level           = ref_level,
+    domain_mask         = domain_mask,
+    wt_var              = wt_var,
+    show_means          = show_means,
+    use_marginaleffects = use_marginaleffects,
+    pval_adj            = pval_adj,
+    show_pct_change     = show_pct_change,
+    suppress_mean       = suppress_mean,
+    min_cell_n          = min_cell_n,
+    variance            = variance,
+    n_weighted          = n_weighted
+  )
+  col_vecs  <- out$col_vecs
+  groups_df <- out$groups_df
 
   # ── Step 17a: Apply label_values ──────────────────────────────────────────
-  # Create a temporary df for treats + group labels
   label_df <- data.frame(
     col_vecs[[treats_name]],
     stringsAsFactors = FALSE
@@ -1134,12 +385,9 @@ get_diffs <- function(
   names(label_df) <- treats_name
 
   if (ncol(groups_df) > 0L) {
-    for (gn in group_names) {
-      label_df[[gn]] <- groups_df[[gn]]
-    }
+    for (gn in group_names) label_df[[gn]] <- groups_df[[gn]]
   }
 
-  # Apply labels to treats
   label_df <- .apply_group_labels(
     label_df,
     treats_name,
@@ -1148,23 +396,16 @@ get_diffs <- function(
   )
   col_vecs[[treats_name]] <- label_df[[treats_name]]
 
-  # Apply labels to group columns
   if (ncol(groups_df) > 0L) {
-    label_df_g <- .apply_group_labels(
-      groups_df,
-      group_names,
-      design,
-      label_values
+    groups_df <- .apply_group_labels(
+      groups_df, group_names, design, label_values
     )
-    groups_df <- label_df_g
   }
 
   # ── Step 18: Apply decimals ───────────────────────────────────────────────
-  # Build tibble first so we can use .apply_decimals
   result <- tibble::as_tibble(c(as.list(groups_df), col_vecs))
 
   if (!is.null(decimals)) {
-    # Save pct_change before .apply_decimals rounds everything
     has_pct <- "pct_change" %in% names(result)
     if (has_pct) {
       pct_saved <- result$pct_change
@@ -1207,30 +448,23 @@ get_diffs <- function(
 
   # ── Step 21: Column-level labels ──────────────────────────────────────────
   col_labels <- list(
-    estimate = paste0(
-      "Difference relative to ",
-      ref_level
-    ),
+    estimate   = paste0("Difference relative to ", ref_level),
     pct_change = "% Change",
-    mean = "Mean",
-    n = "N",
+    mean       = "Mean",
+    n          = "N",
     n_weighted = "N (weighted)",
-    se = "Std. Error",
-    ci_low = "Low CI",
-    ci_high = "High CI",
-    p_value = "P-Value",
-    stars = ""
+    se         = "Std. Error",
+    ci_low     = "Low CI",
+    ci_high    = "High CI",
+    p_value    = "P-Value",
+    stars      = ""
   )
-
-  # Broom-style column names
   broom_labels <- list(
     std.error = "Std. Error",
-    conf.low = "Low CI",
+    conf.low  = "Low CI",
     conf.high = "High CI",
-    p.value = "P-Value"
+    p.value   = "P-Value"
   )
-
-  # Treats column label
   treats_label <- design@metadata@variable_labels[[treats_name]]
   if (is.null(treats_label)) {
     treats_label <- treats_name
