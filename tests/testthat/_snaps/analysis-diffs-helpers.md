@@ -15,3 +15,11 @@
       2 Msg A          0.082 0.483   748  0.042   0.122   0.001 "**" 
       3 Msg B          0.103 0.504   751  0.063   0.143   0     "***"
 
+# .extract_clean_estimates() missing intercept error has correct snapshot
+
+    Code
+      .extract_clean_estimates(fit_noint, "treats2", 0.95)
+    Condition
+      Error in `.extract_clean_estimates()`:
+      x Reference row not found in model output. Expected exactly one intercept row.
+
