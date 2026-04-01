@@ -18,7 +18,8 @@
 #   Unified setters (conventions 1/2/3, survey objects + data frames):
 #     set_var_label()            — set label for one or more variables
 #     set_val_labels()           — set value labels for one or more variables
-#     set_question_preface()     — set question preface for one or more variables
+#     set_question_preface()     — set question preface for one or more
+#                                  variables
 #     set_var_note()             — set note for one or more variables
 #     set_universe()             — set universe description for one or more vars
 #     set_missing_codes()        — set missing codes for one or more variables
@@ -45,7 +46,7 @@
         )
       ),
       class = "surveycore_error_not_survey_or_df",
-      call  = call
+      call = call
     )
   }
   invisible(NULL)
@@ -90,7 +91,10 @@
   if (dots_len > 0L && var_provided) {
     cli::cli_abort(
       c(
-        "x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.",
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        ),
         "i" = paste0(
           "Use named {.arg ...} args, a named vector in {.arg ...}, or",
           " {.arg variable} + {.arg {content_arg_name}} \u2014 not a mix."
@@ -106,7 +110,10 @@
     cli::cli_abort(
       c(
         "x" = "{.fn {fn_name}} requires at least one variable-label pair.",
-        "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."
+        "v" = paste0(
+          "Use named {.arg ...} args: ",
+          "{.code {fn_name}(x, age = 'Age in years')}."
+        )
       ),
       class = "surveycore_error_setter_empty",
       call = call
@@ -119,7 +126,10 @@
       cli::cli_warn(
         c(
           "!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.",
-          "i" = "No metadata was set. Did you accidentally filter all variable names out?"
+          "i" = paste0(
+            "No metadata was set. Did you accidentally filter ",
+            "all variable names out?"
+          )
         ),
         class = "surveycore_warning_setter_empty_variables",
         call = call
@@ -133,7 +143,10 @@
             "{.arg variable} has {length(variable)} element{?s} but",
             " {.arg {content_arg_name}} has {length(content)} element{?s}."
           ),
-          "i" = "They must be the same length (one content value per variable name)."
+          "i" = paste0(
+            "They must be the same length ",
+            "(one content value per variable name)."
+          )
         ),
         class = "surveycore_error_setter_mismatched_lengths",
         call = call
@@ -154,18 +167,14 @@
     # character vector (scalar) or named list (vector)
     if (dots_len == 1L) {
       elem <- dots[[1L]]
-      is_named_char_vec <- (
-        is.character(elem) &&
-          !is.null(names(elem)) &&
-          length(elem) > 0L &&
-          all(nzchar(names(elem)))
-      )
-      is_named_list <- (
-        is.list(elem) &&
-          !is.null(names(elem)) &&
-          length(elem) > 0L &&
-          all(nzchar(names(elem)))
-      )
+      is_named_char_vec <- (is.character(elem) &&
+        !is.null(names(elem)) &&
+        length(elem) > 0L &&
+        all(nzchar(names(elem))))
+      is_named_list <- (is.list(elem) &&
+        !is.null(names(elem)) &&
+        length(elem) > 0L &&
+        all(nzchar(names(elem))))
       if (content_type == "scalar" && is_named_char_vec) {
         return(as.list(elem))
       }
@@ -209,13 +218,16 @@
     return(all_cols)
   }
 
-  requested <- unlist(lapply(var_exprs, function(q) {
-    if (rlang::quo_is_symbol(q)) {
-      rlang::as_name(q)
-    } else {
-      rlang::eval_tidy(q)
-    }
-  }), use.names = FALSE)
+  requested <- unlist(
+    lapply(var_exprs, function(q) {
+      if (rlang::quo_is_symbol(q)) {
+        rlang::as_name(q)
+      } else {
+        rlang::eval_tidy(q)
+      }
+    }),
+    use.names = FALSE
+  )
 
   missing <- setdiff(requested, all_cols)
   if (length(missing) > 0L) {
@@ -255,9 +267,12 @@
 
   var_names <- names(result_list)
 
-  switch(format,
+  switch(
+    format,
     "named_vector" = {
-      if (length(var_names) == 0L) return(character(0L))
+      if (length(var_names) == 0L) {
+        return(character(0L))
+      }
       values <- unlist(result_list, use.names = FALSE)
       stats::setNames(values, var_names)
     },
@@ -288,7 +303,10 @@
   if (!format %in% valid_formats) {
     cli::cli_abort(
       c(
-        "x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.",
+        "x" = paste0(
+          "{.fn {fn_name}} received an invalid {.arg format} ",
+          "value {.val {format}}."
+        ),
         "i" = "{.arg format} must be one of {.val {valid_formats}}."
       ),
       class = "surveycore_error_format_invalid"
@@ -302,8 +320,8 @@
   # data_frame: one row per (variable, code) pair
   empty_out <- tibble::tibble(
     variable = character(0L),
-    label    = character(0L),
-    value    = character(0L)
+    label = character(0L),
+    value = character(0L)
   )
 
   if (length(result_list) == 0L) {
@@ -315,11 +333,15 @@
     if (is.null(vec) || length(vec) == 0L) {
       return(NULL)
     }
-    lbl <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    lbl <- if (!is.null(names(vec))) {
+      names(vec)
+    } else {
+      rep(NA_character_, length(vec))
+    }
     tibble::tibble(
       variable = var_name,
-      label    = lbl,
-      value    = as.character(vec)
+      label = lbl,
+      value = as.character(vec)
     )
   })
   rows <- rows[!vapply(rows, is.null, logical(1L))]
@@ -340,8 +362,14 @@
   if (!S7::S7_inherits(x, survey_base)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg x} must be a survey design object, not {.cls {class(x)[[1L]]}}.",
-        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_replicate},",
+        "x" = paste0(
+          "{.arg x} must be a survey design object, not ",
+          "{.cls {class(x)[[1L]]}}."
+        ),
+        "v" = paste0(
+          "Create a survey object with {.fn as_survey}, ",
+          "{.fn as_survey_replicate},"
+        ),
         " " = "or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_not_survey",
@@ -354,7 +382,8 @@
 
 # ── Extractors ────────────────────────────────────────────────────────────────
 
-# Shared fill validator for individual extractors (accepts NULL or NA_character_).
+# Shared fill validator for individual extractors
+# (accepts NULL or NA_character_).
 .check_extractor_fill <- function(fill, fn_name, call) {
   if (!is.null(fill) && !identical(fill, NA_character_)) {
     cli::cli_abort(
@@ -389,7 +418,6 @@
   }
   invisible(NULL)
 }
-
 
 
 #' Extract Variable Labels
@@ -427,7 +455,10 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_var_label"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
   var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
@@ -535,7 +566,10 @@ extract_question_preface <- function(
   fn_name <- "extract_question_preface"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
   var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
@@ -586,7 +620,10 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_var_note"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
   var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
@@ -638,7 +675,10 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_universe"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
   var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
@@ -715,25 +755,33 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
     !vapply(result_list, is.null, logical(1L))
   ]
   empty_out <- tibble::tibble(
-    variable    = character(0L),
+    variable = character(0L),
     description = character(0L),
-    code        = character(0L)
+    code = character(0L)
   )
   if (length(result_list_nonnull) == 0L) {
     return(empty_out)
   }
   rows <- lapply(names(result_list_nonnull), function(var_name) {
     vec <- result_list_nonnull[[var_name]]
-    if (is.null(vec) || length(vec) == 0L) return(NULL)
-    desc <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    if (is.null(vec) || length(vec) == 0L) {
+      return(NULL)
+    }
+    desc <- if (!is.null(names(vec))) {
+      names(vec)
+    } else {
+      rep(NA_character_, length(vec))
+    }
     tibble::tibble(
-      variable    = var_name,
+      variable = var_name,
       description = desc,
-      code        = as.character(vec)
+      code = as.character(vec)
     )
   })
   rows <- rows[!vapply(rows, is.null, logical(1L))]
-  if (length(rows) == 0L) return(empty_out)
+  if (length(rows) == 0L) {
+    return(empty_out)
+  }
   dplyr::bind_rows(rows)
 }
 
@@ -787,23 +835,23 @@ extract_metadata <- function(x, ..., fill = NULL) {
       if (S7::S7_inherits(x, survey_base)) {
         t <- x@metadata@transformations[[v]]
         list(
-          variable_label   = x@metadata@variable_labels[[v]],
-          value_labels     = x@metadata@value_labels[[v]],
+          variable_label = x@metadata@variable_labels[[v]],
+          value_labels = x@metadata@value_labels[[v]],
           question_preface = x@metadata@question_prefaces[[v]],
-          note             = x@metadata@notes[[v]],
-          universe         = x@metadata@universe[[v]],
-          missing_codes    = x@metadata@missing_codes[[v]],
-          transformations  = if (is.null(t)) list() else t
+          note = x@metadata@notes[[v]],
+          universe = x@metadata@universe[[v]],
+          missing_codes = x@metadata@missing_codes[[v]],
+          transformations = if (is.null(t)) list() else t
         )
       } else {
         list(
-          variable_label   = attr(x[[v]], "label",            exact = TRUE),
-          value_labels     = attr(x[[v]], "labels",           exact = TRUE),
+          variable_label = attr(x[[v]], "label", exact = TRUE),
+          value_labels = attr(x[[v]], "labels", exact = TRUE),
           question_preface = attr(x[[v]], "question_preface", exact = TRUE),
-          note             = attr(x[[v]], "note",             exact = TRUE),
-          universe         = attr(x[[v]], "universe",         exact = TRUE),
-          missing_codes    = attr(x[[v]], "missing_codes",    exact = TRUE),
-          transformations  = list()
+          note = attr(x[[v]], "note", exact = TRUE),
+          universe = attr(x[[v]], "universe", exact = TRUE),
+          missing_codes = attr(x[[v]], "missing_codes", exact = TRUE),
+          transformations = list()
         )
       }
     }),
@@ -811,13 +859,23 @@ extract_metadata <- function(x, ..., fill = NULL) {
   )
   if (is.null(fill)) {
     content_fields <- c(
-      "variable_label", "value_labels", "question_preface",
-      "note", "universe", "missing_codes"
+      "variable_label",
+      "value_labels",
+      "question_preface",
+      "note",
+      "universe",
+      "missing_codes"
     )
-    has_meta <- vapply(result, function(entry) {
-      any(!vapply(content_fields, function(f) is.null(entry[[f]]), logical(1L))) ||
-        length(entry$transformations) > 0L
-    }, logical(1L))
+    has_meta <- vapply(
+      result,
+      function(entry) {
+        any(
+          !vapply(content_fields, function(f) is.null(entry[[f]]), logical(1L))
+        ) ||
+          length(entry$transformations) > 0L
+      },
+      logical(1L)
+    )
     result <- result[has_meta]
     if (length(result) == 0L) return(list())
   }
@@ -847,7 +905,7 @@ extract_metadata <- function(x, ..., fill = NULL) {
           )
         ),
         class = "surveycore_error_label_not_scalar",
-        call  = call
+        call = call
       )
     }
   }
@@ -904,13 +962,13 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
 
   # Detect old positional form: set_var_label(x, bare_symbol, "string")
   dot_quos <- rlang::enquos(...)
-  nms      <- names(dot_quos)
+  nms <- names(dot_quos)
   if (
     length(dot_quos) == 2L &&
-    (is.null(nms) ||
-      (!nzchar(if (!is.null(nms[[1L]])) nms[[1L]] else "") &&
-        !nzchar(if (!is.null(nms[[2L]])) nms[[2L]] else ""))) &&
-    rlang::quo_is_symbol(dot_quos[[1L]])
+      (is.null(nms) ||
+        (!nzchar(if (!is.null(nms[[1L]])) nms[[1L]] else "") &&
+          !nzchar(if (!is.null(nms[[2L]])) nms[[2L]] else ""))) &&
+      rlang::quo_is_symbol(dot_quos[[1L]])
   ) {
     val2 <- tryCatch(rlang::eval_tidy(dot_quos[[2L]]), error = function(e) NULL)
     if (is.character(val2) && length(val2) == 1L) {
@@ -922,23 +980,26 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
             " {.code set_var_label(x, var, content)} is no longer supported."
           ),
           "i" = "The new unified setter uses named arguments.",
-          "v" = "Use {.code set_var_label(x, {var_nm2} = {.val {val2}})} instead."
+          "v" = paste0(
+            "Use {.code set_var_label(x, {var_nm2} = {.val {val2}})} ",
+            "instead."
+          )
         ),
         class = "surveycore_error_old_positional_setter",
-        call  = call
+        call = call
       )
     }
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = label,
+    dots = dots,
+    variable = variable,
+    content = label,
     content_arg_name = "label",
-    content_type     = "scalar",
-    fn_name          = "set_var_label",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_var_label",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -946,9 +1007,14 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1005,20 +1071,25 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
 
   # Convention 3 bare-vector exception: wrap scalar atomic vector in a list
   # when length(variable) == 1 and labels is not already a list.
-  if (!is.null(variable) && length(variable) == 1L &&
-    !is.null(labels) && !is.list(labels) && is.atomic(labels)) {
+  if (
+    !is.null(variable) &&
+      length(variable) == 1L &&
+      !is.null(labels) &&
+      !is.list(labels) &&
+      is.atomic(labels)
+  ) {
     labels <- list(labels)
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = labels,
+    dots = dots,
+    variable = variable,
+    content = labels,
     content_arg_name = "labels",
-    content_type     = "vector",
-    fn_name          = "set_val_labels",
-    call             = call
+    content_type = "vector",
+    fn_name = "set_val_labels",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1026,9 +1097,14 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1040,7 +1116,7 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
             "i" = "All elements must have names."
           ),
           class = "surveycore_error_labels_unnamed",
-          call  = call
+          call = call
         )
       }
       var_data <- if (S7::S7_inherits(x, survey_base)) {
@@ -1089,15 +1165,15 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = preface,
+    dots = dots,
+    variable = variable,
+    content = preface,
     content_arg_name = "preface",
-    content_type     = "scalar",
-    fn_name          = "set_question_preface",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_question_preface",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1105,9 +1181,14 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1152,15 +1233,15 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = note,
+    dots = dots,
+    variable = variable,
+    content = note,
     content_arg_name = "note",
-    content_type     = "scalar",
-    fn_name          = "set_var_note",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_var_note",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1168,9 +1249,14 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1214,15 +1300,15 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = universe,
+    dots = dots,
+    variable = variable,
+    content = universe,
     content_arg_name = "universe",
-    content_type     = "scalar",
-    fn_name          = "set_universe",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_universe",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1230,9 +1316,14 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1280,20 +1371,25 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 
   # Convention 3 bare-vector exception: wrap atomic vector in a list
   # when length(variable) == 1 and codes is not already a list.
-  if (!is.null(variable) && length(variable) == 1L &&
-    !is.null(codes) && !is.list(codes) && is.atomic(codes)) {
+  if (
+    !is.null(variable) &&
+      length(variable) == 1L &&
+      !is.null(codes) &&
+      !is.list(codes) &&
+      is.atomic(codes)
+  ) {
     codes <- list(codes)
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = codes,
+    dots = dots,
+    variable = variable,
+    content = codes,
     content_arg_name = "codes",
-    content_type     = "vector",
-    fn_name          = "set_missing_codes",
-    call             = call
+    content_type = "vector",
+    fn_name = "set_missing_codes",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1301,9 +1397,14 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1323,7 +1424,7 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
           )
         ),
         class = "surveycore_error_missing_codes_not_vector",
-        call  = call
+        call = call
       )
     }
     if (S7::S7_inherits(x, survey_base)) {
@@ -1403,11 +1504,11 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 #' @keywords internal
 #' @noRd
 .extract_haven_metadata <- function(data) {
-  var_labels   <- list()
-  val_labels   <- list()
-  q_prefaces   <- list()
-  notes        <- list()
-  universe     <- list()
+  var_labels <- list()
+  val_labels <- list()
+  q_prefaces <- list()
+  notes <- list()
+  universe <- list()
   missing_codes <- list()
 
   for (col_name in names(data)) {
@@ -1469,17 +1570,21 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 
     # ── Missing codes ─────────────────────────────────────────────────────────
     var_missing <- attr(col, "missing_codes", exact = TRUE)
-    if (!is.null(var_missing) && is.atomic(var_missing) && length(var_missing) > 0L) {
+    if (
+      !is.null(var_missing) &&
+        is.atomic(var_missing) &&
+        length(var_missing) > 0L
+    ) {
       missing_codes[[col_name]] <- var_missing
     }
   }
 
   survey_metadata(
-    variable_labels   = var_labels,
-    value_labels      = val_labels,
+    variable_labels = var_labels,
+    value_labels = val_labels,
     question_prefaces = q_prefaces,
-    notes             = notes,
-    universe          = universe,
-    missing_codes     = missing_codes
+    notes = notes,
+    universe = universe,
+    missing_codes = missing_codes
   )
 }

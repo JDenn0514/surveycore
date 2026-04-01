@@ -78,7 +78,7 @@ get_vcov.survey_glm_fit <- function(model, ...) {
 get_predict.survey_glm_fit <- function(model, newdata, ...) {
   pred <- stats::predict(model, new_data = newdata, type = "response")
   data.frame(
-    rowid    = seq_len(nrow(newdata)),
+    rowid = seq_len(nrow(newdata)),
     estimate = as.numeric(pred)
   )
 }

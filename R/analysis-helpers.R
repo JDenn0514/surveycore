@@ -11,7 +11,8 @@
 #   .apply_group_labels()   — convert coded group columns to labelled factors
 #   .build_group_combos()   — unique group value combinations from domain data
 #   .match_group_combo()    — row mask matching one group combination
-#   .degf_taylor()          — Taylor df formula (retained; not called by .degf())
+#   .degf_taylor()          — Taylor df formula (retained; not called by
+#                             .degf())
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
 #   .build_meta()           — assemble .meta list
@@ -22,7 +23,6 @@
 #   .check_unsupported_class() — throw for non-survey-base objects
 #   .add_variance_cols()    — compute requested uncertainty columns
 #   .degf()                 — design degrees of freedom
-
 
 #' Analysis Helper Standards
 #'
@@ -97,15 +97,23 @@ NULL
 # These are the single source of truth for each function's meta_args contract.
 # Adding a new meta field requires updating only the constant here.
 
-FREQS_META_KEYS     <- c("group", "x")
-MEANS_META_KEYS     <- c("group", "x")
-TOTALS_META_KEYS    <- c("group", "x")
-CORR_META_KEYS      <- c("group", "x", "method")
+FREQS_META_KEYS <- c("group", "x")
+MEANS_META_KEYS <- c("group", "x")
+TOTALS_META_KEYS <- c("group", "x")
+CORR_META_KEYS <- c("group", "x", "method")
 QUANTILES_META_KEYS <- c("group", "x", "probs")
-RATIOS_META_KEYS    <- c("group", "numerator", "denominator")
-DIFFS_META_KEYS     <- c(
-  "group", "x", "treats", "covariates", "family", "link",
-  "pval_adj", "estimate_method", "mean_method", "estimate_scale"
+RATIOS_META_KEYS <- c("group", "numerator", "denominator")
+DIFFS_META_KEYS <- c(
+  "group",
+  "x",
+  "treats",
+  "covariates",
+  "family",
+  "link",
+  "pval_adj",
+  "estimate_method",
+  "mean_method",
+  "estimate_scale"
 )
 
 
@@ -135,15 +143,15 @@ DIFFS_META_KEYS     <- c(
     attr(col, "labels", exact = TRUE)
 
   if (is.null(value_labels) && is.factor(col)) {
-    lvls        <- levels(col)
+    lvls <- levels(col)
     value_labels <- stats::setNames(seq_along(lvls), lvls)
     storage.mode(value_labels) <- "integer"
   }
 
   list(
-    variable_label   = variable_label,
+    variable_label = variable_label,
     question_preface = question_preface,
-    value_labels     = value_labels
+    value_labels = value_labels
   )
 }
 
@@ -159,7 +167,9 @@ DIFFS_META_KEYS     <- c(
 #' @return Named list of per-variable metadata lists, named by variable name.
 #' @noRd
 .build_group_meta <- function(design, group_vars) {
-  if (length(group_vars) == 0L) return(list())
+  if (length(group_vars) == 0L) {
+    return(list())
+  }
   meta <- lapply(group_vars, function(gv) .extract_var_meta(design, gv))
   stats::setNames(meta, group_vars)
 }
@@ -188,11 +198,17 @@ DIFFS_META_KEYS     <- c(
 #' @return The (possibly modified) `group_combos` data frame, with coded
 #'   columns replaced by labelled factors where applicable.
 #' @noRd
-.apply_group_labels <- function(group_combos, group_vars, design,
-                                label_values = TRUE) {
-  if (!label_values) return(group_combos)
+.apply_group_labels <- function(
+  group_combos,
+  group_vars,
+  design,
+  label_values = TRUE
+) {
+  if (!label_values) {
+    return(group_combos)
+  }
   for (gv in group_vars) {
-    col     <- group_combos[[gv]]
+    col <- group_combos[[gv]]
     src_col <- design@data[[gv]]
 
     labels <- design@metadata@value_labels[[gv]] %||%
@@ -206,7 +222,7 @@ DIFFS_META_KEYS     <- c(
       # Build a map from haven tagged-NA tag character to label string.
       # Requires haven at runtime; falls back gracefully when not installed:
       # tagged NAs without a resolvable tag remain NA in the factor output.
-      haven_ok      <- requireNamespace("haven", quietly = TRUE)
+      haven_ok <- requireNamespace("haven", quietly = TRUE)
       # Tagged NAs are always doubles (special NaN bit patterns). Build a map
       # from tag character to label string by checking double NA entries in
       # labels. Non-double NA entries (integer NA, etc.) are plain NAs.
@@ -221,31 +237,46 @@ DIFFS_META_KEYS     <- c(
         }
       }
 
-      labeled_col <- vapply(col, function(val) {
-        if (!is.na(val)) {
-          lbl <- label_map[as.character(val)]
-          if (is.na(lbl)) NA_character_ else lbl
-        } else if (haven_ok && is.double(val)) {
-          # Double NA: may be a haven tagged NA — try to resolve to label
-          tag <- haven::na_tag(val)
-          if (!is.na(tag) && !is.null(tagged_na_map[[tag]])) {
-            tagged_na_map[[tag]]
+      labeled_col <- vapply(
+        col,
+        function(val) {
+          if (!is.na(val)) {
+            lbl <- label_map[as.character(val)]
+            if (is.na(lbl)) NA_character_ else lbl
+          } else if (haven_ok && is.double(val)) {
+            # Double NA: may be a haven tagged NA — try to resolve to label
+            tag <- haven::na_tag(val)
+            if (!is.na(tag) && !is.null(tagged_na_map[[tag]])) {
+              tagged_na_map[[tag]]
+            } else {
+              NA_character_
+            }
           } else {
             NA_character_
           }
-        } else {
-          NA_character_
-        }
-      }, character(1L))
+        },
+        character(1L)
+      )
 
       # Build factor levels from label names, excluding plain-NA label entries.
       # Tagged-NA label entries (double NAs with a haven tag) ARE included.
-      is_plain_na_label <- vapply(labels, function(x) {
-        if (!is.na(x)) return(FALSE)
-        if (!haven_ok || !is.double(x)) return(TRUE)
-        is.na(haven::na_tag(x))
-      }, logical(1L))
-      group_combos[[gv]] <- factor(labeled_col, levels = names(labels)[!is_plain_na_label])
+      is_plain_na_label <- vapply(
+        labels,
+        function(x) {
+          if (!is.na(x)) {
+            return(FALSE)
+          }
+          if (!haven_ok || !is.double(x)) {
+            return(TRUE)
+          }
+          is.na(haven::na_tag(x))
+        },
+        logical(1L)
+      )
+      group_combos[[gv]] <- factor(
+        labeled_col,
+        levels = names(labels)[!is_plain_na_label]
+      )
     } else if (is.factor(src_col)) {
       # Re-factor preserving original level order
       group_combos[[gv]] <- factor(as.character(col), levels = levels(src_col))
@@ -275,18 +306,24 @@ DIFFS_META_KEYS     <- c(
 # if either changes. Do not edit one without updating the other.
 .build_group_combos <- function(domain_data, na.rm) {
   if (na.rm) {
-    domain_data <- domain_data[stats::complete.cases(domain_data), , drop = FALSE]
+    domain_data <- domain_data[
+      stats::complete.cases(domain_data),
+      ,
+      drop = FALSE
+    ]
   }
   combos <- unique(domain_data)
-  if (nrow(combos) == 0L) return(combos)
+  if (nrow(combos) == 0L) {
+    return(combos)
+  }
   # Sort: non-NA combos first, NA combos last.
   # Leftmost group variable is the primary sort key.
   # unname() prevents column names from colliding with order()'s named
   # formals (decreasing, method, na.last) if a group var shares a name.
   # rownames reset AFTER subsetting — before would leave non-sequential names.
-  sort_vecs        <- unname(lapply(names(combos), function(v) combos[[v]]))
-  ord              <- do.call(order, c(sort_vecs, list(na.last = TRUE)))
-  combos           <- combos[ord, , drop = FALSE]
+  sort_vecs <- unname(lapply(names(combos), function(v) combos[[v]]))
+  ord <- do.call(order, c(sort_vecs, list(na.last = TRUE)))
+  combos <- combos[ord, , drop = FALSE]
   rownames(combos) <- NULL
   combos
 }
@@ -316,7 +353,7 @@ DIFFS_META_KEYS     <- c(
   match_vec <- rep(TRUE, length(data_cols[[1L]]))
   for (gv in names(combo_row)) {
     gv_col <- data_cols[[gv]]
-    cv     <- combo_row[[gv]]
+    cv <- combo_row[[gv]]
     if (is.na(cv)) {
       match_vec <- match_vec & is.na(gv_col)
     } else {
@@ -347,20 +384,22 @@ DIFFS_META_KEYS     <- c(
 #' @return Numeric(1). Degrees of freedom (non-negative integer).
 #' @noRd
 .degf_taylor <- function(data, vars) {
-  ids_var    <- vars$ids
+  ids_var <- vars$ids
   strata_var <- vars$strata
-  nest       <- isTRUE(vars$nest)
+  nest <- isTRUE(vars$nest)
 
   if (!is.null(strata_var) && !is.null(ids_var)) {
     # Stratified cluster: Σ(n_h - 1) = total_psus - n_strata
-    psu_col    <- as.character(data[[ids_var[[1L]]]])
+    psu_col <- as.character(data[[ids_var[[1L]]]])
     strata_col <- as.character(data[[strata_var]])
     if (nest) {
       # Make PSU IDs globally unique across strata before counting
       psu_col <- paste(strata_col, psu_col, sep = ".")
     }
     n_psus_per_stratum <- tapply(
-      psu_col, strata_col, function(x) length(unique(x))
+      psu_col,
+      strata_col,
+      function(x) length(unique(x))
     )
     sum(n_psus_per_stratum) - length(n_psus_per_stratum)
   } else if (!is.null(ids_var)) {
@@ -392,7 +431,7 @@ DIFFS_META_KEYS     <- c(
 #' @noRd
 .resolve_groups <- function(design, group_expr) {
   from_groups_prop <- design@groups
-  from_arg         <- .resolve_tidy_select(group_expr, design@data)
+  from_arg <- .resolve_tidy_select(group_expr, design@data)
   unique(c(from_groups_prop, from_arg))
 }
 
@@ -440,18 +479,24 @@ DIFFS_META_KEYS     <- c(
 #' @noRd
 .build_meta <- function(design, meta_args) {
   design_type <-
-    if (S7::S7_inherits(design, survey_taylor))      "taylor"
-    else if (S7::S7_inherits(design, survey_replicate))  "replicate"
-    else if (S7::S7_inherits(design, survey_twophase))   "twophase"
-    else if (S7::S7_inherits(design, survey_nonprob)) "calibrated"
-    else cli::cli_abort(
-      c("x" = "Unrecognized design class {.cls {class(design)[1L]}}."),
-      class = "surveycore_error_unsupported_class"
-    )
+    if (S7::S7_inherits(design, survey_taylor)) {
+      "taylor"
+    } else if (S7::S7_inherits(design, survey_replicate)) {
+      "replicate"
+    } else if (S7::S7_inherits(design, survey_twophase)) {
+      "twophase"
+    } else if (S7::S7_inherits(design, survey_nonprob)) {
+      "calibrated"
+    } else {
+      cli::cli_abort(
+        c("x" = "Unrecognized design class {.cls {class(design)[1L]}}."),
+        class = "surveycore_error_unsupported_class"
+      )
+    }
 
   c(
     list(
-      design_type   = design_type,
+      design_type = design_type,
       n_respondents = as.integer(nrow(design@data))
     ),
     meta_args
@@ -529,12 +574,13 @@ DIFFS_META_KEYS     <- c(
   variance,
   conf_level,
   name_style,
-  decimals       = NULL,
-  na.rm          = TRUE,
+  decimals = NULL,
+  na.rm = TRUE,
   valid_variance = c("se", "ci", "var", "cv", "moe", "deff"),
   call = rlang::caller_env()
 ) {
-  # Sync note: spec §V is authoritative — keep in sync if validation logic changes.
+  # Sync note: spec §V is authoritative — keep in sync if validation logic
+  # changes.
   if (!isTRUE(na.rm) && !isFALSE(na.rm)) {
     cli::cli_abort(
       c(
@@ -542,7 +588,7 @@ DIFFS_META_KEYS     <- c(
         "i" = "Got {.obj_type_friendly {na.rm}}."
       ),
       class = "surveycore_error_na_rm_not_logical",
-      call  = call
+      call = call
     )
   }
   if (!is.null(variance)) {
@@ -550,41 +596,54 @@ DIFFS_META_KEYS     <- c(
     if (length(bad_vals) > 0L) {
       cli::cli_abort(
         c(
-          "x" = "{.arg variance} values must be from {.or {.val {valid_variance}}}.",
+          "x" = paste0(
+            "{.arg variance} values must be from ",
+            "{.or {.val {valid_variance}}}."
+          ),
           "i" = "Unknown value{?s}: {.val {bad_vals}}."
         ),
         class = "surveycore_error_invalid_variance_arg",
-        call  = call
+        call = call
       )
     }
   }
-  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
-      conf_level <= 0 || conf_level >= 1) {
+  if (
+    !is.numeric(conf_level) ||
+      length(conf_level) != 1L ||
+      conf_level <= 0 ||
+      conf_level >= 1
+  ) {
     cli::cli_abort(
       c(
-        "x" = "{.arg conf_level} must be a single number strictly between 0 and 1.",
+        "x" = paste0(
+          "{.arg conf_level} must be a single number ",
+          "strictly between 0 and 1."
+        ),
         "i" = "Got {.val {conf_level}}."
       ),
       class = "surveycore_error_invalid_conf_level",
-      call  = call
+      call = call
     )
   }
   if (!name_style %in% c("surveycore", "broom")) {
     cli::cli_abort(
       c(
-        "x" = '{.arg name_style} must be {.val "surveycore"} or {.val "broom"}.',
+        "x" = paste0(
+          '{.arg name_style} must be {.val "surveycore"} ',
+          'or {.val "broom"}.'
+        ),
         "i" = "Got {.val {name_style}}."
       ),
       class = "surveycore_error_invalid_name_style",
-      call  = call
+      call = call
     )
   }
   if (!is.null(decimals)) {
     if (
       !is.numeric(decimals) ||
-      length(decimals) != 1L ||
-      decimals < 0 ||
-      decimals != round(decimals)
+        length(decimals) != 1L ||
+        decimals < 0 ||
+        decimals != round(decimals)
     ) {
       cli::cli_abort(
         c(
@@ -595,7 +654,7 @@ DIFFS_META_KEYS     <- c(
           "i" = "Got {.val {decimals}}."
         ),
         class = "surveycore_error_invalid_decimals",
-        call  = call
+        call = call
       )
     }
   }
@@ -616,7 +675,7 @@ DIFFS_META_KEYS     <- c(
 #'   places.
 #' @noRd
 .apply_decimals <- function(result, decimals) {
-  saved_meta  <- attr(result, ".meta")
+  saved_meta <- attr(result, ".meta")
   saved_class <- class(result)
   for (i in seq_along(result)) {
     if (is.double(result[[i]])) {
@@ -652,34 +711,36 @@ DIFFS_META_KEYS     <- c(
 #'   attribute preserved.
 #' @noRd
 .apply_name_style <- function(result, name_style, exclude = NULL) {
-  if (name_style == "surveycore") return(result)
+  if (name_style == "surveycore") {
+    return(result)
+  }
 
   broom_map <- c(
-    se       = "std.error",
-    ci_low   = "conf.low",
-    ci_high  = "conf.high",
-    p_value  = "p.value",
-    mean     = "estimate",
-    total    = "estimate",
-    pct      = "estimate",
-    r        = "estimate",
-    ratio    = "estimate",
+    se = "std.error",
+    ci_low = "conf.low",
+    ci_high = "conf.high",
+    p_value = "p.value",
+    mean = "estimate",
+    total = "estimate",
+    pct = "estimate",
+    r = "estimate",
+    ratio = "estimate",
     estimate = "estimate",
-    df       = "parameter"
+    df = "parameter"
   )
 
   cols_present <- names(result)
-  to_rename    <- intersect(names(broom_map), cols_present)
+  to_rename <- intersect(names(broom_map), cols_present)
   if (!is.null(exclude)) {
     to_rename <- setdiff(to_rename, exclude)
   }
 
   if (length(to_rename) > 0L) {
-    saved_meta  <- attr(result, ".meta")
+    saved_meta <- attr(result, ".meta")
     saved_class <- class(result)
     names(result)[match(to_rename, names(result))] <- broom_map[to_rename]
     attr(result, ".meta") <- saved_meta
-    class(result)         <- saved_class
+    class(result) <- saved_class
   }
 
   result
@@ -751,7 +812,9 @@ DIFFS_META_KEYS     <- c(
   degf,
   variance
 ) {
-  if (is.null(variance)) return(list())
+  if (is.null(variance)) {
+    return(list())
+  }
 
   out <- list()
 
@@ -764,9 +827,9 @@ DIFFS_META_KEYS     <- c(
   }
 
   if ("cv" %in% variance) {
-    cv       <- se_vec / estimate_vec
+    cv <- se_vec / estimate_vec
     is_undef <- !is.na(estimate_vec) & estimate_vec <= 0
-    n_undef  <- sum(is_undef)
+    n_undef <- sum(is_undef)
     if (n_undef > 0L) {
       cv[is_undef] <- NA_real_
       cli::cli_warn(
@@ -785,11 +848,11 @@ DIFFS_META_KEYS     <- c(
 
   # Compute t_crit once — reused for both ci and moe
   if ("ci" %in% variance || "moe" %in% variance) {
-    t_crit  <- stats::qt((1 + conf_level) / 2, df = degf)
-    ci_low  <- estimate_vec - t_crit * se_vec
+    t_crit <- stats::qt((1 + conf_level) / 2, df = degf)
+    ci_low <- estimate_vec - t_crit * se_vec
     ci_high <- estimate_vec + t_crit * se_vec
     if ("ci" %in% variance) {
-      out$ci_low  <- ci_low
+      out$ci_low <- ci_low
       out$ci_high <- ci_high
     }
     if ("moe" %in% variance) {
@@ -830,7 +893,10 @@ DIFFS_META_KEYS     <- c(
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
-        "x" = "Cannot compute degrees of freedom for {.cls {class(design)[1L]}}."
+        "x" = paste0(
+          "Cannot compute degrees of freedom for ",
+          "{.cls {class(design)[1L]}}."
+        )
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -843,7 +909,7 @@ DIFFS_META_KEYS     <- c(
     )
     max(1L, ncol(rep_mat) - 1L)
   } else if (S7::S7_inherits(design, survey_twophase)) {
-    subset   <- design@data[[design@variables$subset]]
+    subset <- design@data[[design@variables$subset]]
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
   } else {

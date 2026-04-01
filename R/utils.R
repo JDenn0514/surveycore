@@ -244,7 +244,8 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     p2_cols <- if (!is.null(p2)) {
       unlist(p2[!vapply(p2, is.null, logical(1L))], use.names = FALSE)
     } else {
-      character(0L) # nocov — p2 is always a list (as_survey_twophase() and .from_svydesign_twophase() both initialize it)
+      # nocov — p2 is always a list (both constructors initialize it)
+      character(0L)
     }
     unique(c(
       p1$ids,
@@ -426,7 +427,8 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     }
     cluster_j <- clusters_mat[, j]
     units_per_parent <- tapply(
-      cluster_j, parent_j,
+      cluster_j,
+      parent_j,
       function(ids) length(unique(ids))
     )
     sampsize_cols[[j]] <- as.integer(

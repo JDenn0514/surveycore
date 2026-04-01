@@ -19,12 +19,18 @@
 # Variance estimator within one stratum.
 # Adapted from survey:::onestrat.
 .svy_onestrat <- function(
-  x, cluster, nPSU, fpc,
+  x,
+  cluster,
+  nPSU,
+  fpc,
   lonely.psu = "remove",
-  stratum = NULL, stage = 1L
+  stratum = NULL,
+  stage = 1L
 ) {
   stratum_center <- attr(x, "recentering")
-  if (is.null(stratum_center)) stratum_center <- 0 # nocov — always set by .svy_onestage
+  if (is.null(stratum_center)) {
+    stratum_center <- 0
+  } # nocov — always set by .svy_onestage
 
   if (is.null(fpc)) {
     f <- rep(1, NROW(x))
@@ -34,15 +40,17 @@
 
   scale <- if (nPSU > 1L) f * nPSU / (nPSU - 1L) else f
 
-  if (all(f < 1e-7)) return(matrix(0, NCOL(x), NCOL(x)))
+  if (all(f < 1e-7)) {
+    return(matrix(0, NCOL(x), NCOL(x)))
+  }
 
   scale <- scale[!duplicated(cluster)]
-  x     <- rowsum(x, cluster)
+  x <- rowsum(x, cluster)
   nsubset <- nrow(x)
 
-  # nocov start — sampsize is computed post-na.rm filter, so nsubset == nPSU always
+  # nocov start — sampsize computed post-na.rm filter, so nsubset == nPSU always
   if (nsubset < nPSU) {
-    x     <- rbind(x, matrix(0, ncol = ncol(x), nrow = nPSU - nsubset))
+    x <- rbind(x, matrix(0, ncol = ncol(x), nrow = nPSU - nsubset))
     scale <- rep(scale[[1L]], NROW(x))
   }
   # nocov end
@@ -52,7 +60,8 @@
   }
   x <- sweep(x = x, MARGIN = 2L, STATS = stratum_center, FUN = "-")
 
-  # nocov start — by construction nsubset == nPSU, so nsubset == 1 implies nPSU == 1
+  # nocov start — by construction nsubset == nPSU, so nsubset == 1 implies
+  # nPSU == 1
   if (nsubset == 1L && nPSU > 1L) {
     if (lonely.psu == "average") scale <- NA_real_
   }
@@ -65,10 +74,10 @@
   switch(
     lonely.psu,
     certainty = crossprod(x * sqrt(scale)),
-    remove    = crossprod(x * sqrt(scale)),
-    adjust    = crossprod(x * sqrt(scale)),
-    average   = NA_real_ * crossprod(x),
-    fail      = cli::cli_abort(
+    remove = crossprod(x * sqrt(scale)),
+    adjust = crossprod(x * sqrt(scale)),
+    average = NA_real_ * crossprod(x),
+    fail = cli::cli_abort(
       c("x" = "Stratum {.val {stratum}} has only one PSU at stage {stage}."),
       class = "surveycore_error_lonely_psu"
     ),
@@ -82,11 +91,17 @@
 # One stage of the multistage variance calculation (iterates over strata).
 # Adapted from survey:::onestage.
 .svy_onestage <- function(
-  x, strata, clusters, nPSU, fpc,
+  x,
+  strata,
+  clusters,
+  nPSU,
+  fpc,
   lonely.psu = "remove",
   stage = 0L
 ) {
-  if (NROW(x) == 0L) return(matrix(0, NCOL(x), NCOL(x))) # nocov — empty subsets excluded before call
+  if (NROW(x) == 0L) {
+    return(matrix(0, NCOL(x), NCOL(x)))
+  } # nocov — empty subsets excluded before call
 
   if (!is.null(lonely.psu) && lonely.psu == "adjust") {
     n_psus_all <- sum(
@@ -98,44 +113,60 @@
   }
 
   stratvars <- tapply(seq_len(NROW(x)), list(factor(strata)), function(index) {
-    x_sub  <- `attr<-`(x[index, , drop = FALSE], "recentering", recentering)
+    x_sub <- `attr<-`(x[index, , drop = FALSE], "recentering", recentering)
     fpc_sub <- if (is.null(fpc)) NULL else fpc[index]
     .svy_onestrat(
-      x_sub, clusters[index], nPSU[index][[1L]], fpc_sub,
+      x_sub,
+      clusters[index],
+      nPSU[index][[1L]],
+      fpc_sub,
       lonely.psu = lonely.psu,
-      stratum    = strata[index][[1L]],
-      stage      = stage
+      stratum = strata[index][[1L]],
+      stage = stage
     )
   })
 
-  p        <- NCOL(x)
+  p <- NCOL(x)
   # Note: factor(strata) in tapply() above already computes unique levels;
   # nlevels(factor(strata)) would avoid the re-scan, but changing vendored code
   # for this micro-optimisation is not worth the maintenance risk.
-  nstrat   <- length(unique(strata))
+  nstrat <- length(unique(strata))
   nokstrat <- sum(vapply(stratvars, function(m) !any(is.na(m)), logical(1L)))
 
   apply(
     array(unlist(stratvars), c(p, p, length(stratvars))),
-    1:2, sum, na.rm = TRUE
-  ) * nstrat / nokstrat
+    1:2,
+    sum,
+    na.rm = TRUE
+  ) *
+    nstrat /
+    nokstrat
 }
 
 # Recursive multistage variance estimator (pure R; no RCPP path).
 # Adapted from survey:::multistage.
 # nPSUs: per-row PSU count matrix (sampsize); popmat: per-row pop-size matrix.
 .svy_multistage <- function(
-  x, clusters, stratas, nPSUs, popmat,
+  x,
+  clusters,
+  stratas,
+  nPSUs,
+  popmat,
   lonely.psu = "remove",
-  one.stage  = FALSE,
-  stage      = 1L
+  one.stage = FALSE,
+  stage = 1L
 ) {
-  n   <- NROW(x)
+  n <- NROW(x)
   fpc <- if (is.null(popmat)) NULL else popmat[, 1L]
 
   v <- .svy_onestage(
-    x, stratas[, 1L], clusters[, 1L], nPSUs[, 1L], fpc,
-    lonely.psu = lonely.psu, stage = stage
+    x,
+    stratas[, 1L],
+    clusters[, 1L],
+    nPSUs[, 1L],
+    fpc,
+    lonely.psu = lonely.psu,
+    stage = stage
   )
 
   if (!isTRUE(one.stage) && !is.null(popmat) && NCOL(clusters) > 1L) {
@@ -143,15 +174,19 @@
       .svy_multistage(
         x[index, , drop = FALSE],
         clusters[index, -1L, drop = FALSE],
-        stratas[index,  -1L, drop = FALSE],
-        nPSUs[index,    -1L, drop = FALSE],
-        popmat[index,   -1L, drop = FALSE],
+        stratas[index, -1L, drop = FALSE],
+        nPSUs[index, -1L, drop = FALSE],
+        popmat[index, -1L, drop = FALSE],
         lonely.psu = lonely.psu,
-        one.stage  = one.stage - 1L,
-        stage      = stage + 1L
-      ) * nPSUs[index[[1L]], 1L] / popmat[index[[1L]], 1L]
+        one.stage = one.stage - 1L,
+        stage = stage + 1L
+      ) *
+        nPSUs[index[[1L]], 1L] /
+        popmat[index[[1L]], 1L]
     })
-    for (i in seq_along(v.sub)) v <- v + v.sub[[i]]
+    for (i in seq_along(v.sub)) {
+      v <- v + v.sub[[i]]
+    }
   }
 
   dimnames(v) <- list(colnames(x), colnames(x))
@@ -162,16 +197,23 @@
 # Adapted from survey:::svyrecvar.
 # fpcs: list(sampsize = matrix, popsize = matrix or NULL)
 .svy_recvar <- function(
-  x, clusters, stratas, fpcs,
+  x,
+  clusters,
+  stratas,
+  fpcs,
   lonely.psu = "remove",
-  one.stage  = FALSE
+  one.stage = FALSE
 ) {
   x <- as.matrix(x)
   .svy_multistage(
-    x, clusters, stratas,
-    nPSUs  = fpcs[["sampsize"]],
+    x,
+    clusters,
+    stratas,
+    nPSUs = fpcs[["sampsize"]],
     popmat = fpcs[["popsize"]],
-    lonely.psu = lonely.psu, one.stage = one.stage, stage = 1L
+    lonely.psu = lonely.psu,
+    one.stage = one.stage,
+    stage = 1L
   )
 }
 
@@ -206,11 +248,11 @@
   }
 
   list(
-    y        = y,
-    w        = w,
+    y = y,
+    w = w,
     clusters = mats$clusters_mat,
-    stratas  = mats$strata_mat,
-    fpcs     = mats$fpcs
+    stratas = mats$strata_mat,
+    fpcs = mats$fpcs
   )
 }
 
@@ -222,18 +264,20 @@
 # Compute weighted mean and its variance for a single numeric variable.
 # Returns list(mean, var, se).
 .taylor_mean <- function(design, y_col, na.rm = TRUE) {
-  inp        <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
-  x        <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
-  w        <- inp$w
-  psum     <- sum(w)
-  average  <- drop(crossprod(x, w) / psum)   # weighted mean
+  x <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
+  w <- inp$w
+  psum <- sum(w)
+  average <- drop(crossprod(x, w) / psum) # weighted mean
 
   x_centered <- sweep(x, 2L, average)
   v <- .svy_recvar(
     x_centered * w / psum,
-    inp$clusters, inp$stratas, inp$fpcs,
+    inp$clusters,
+    inp$stratas,
+    inp$fpcs,
     lonely.psu = lonely.psu
   )
 
@@ -243,16 +287,18 @@
 # Compute weighted total and its variance for a single numeric variable.
 # Returns list(total, var, se).
 .taylor_total <- function(design, y_col, na.rm = TRUE) {
-  inp        <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
+  inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
-  x     <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
-  w     <- inp$w
-  total <- drop(crossprod(x, w))   # weighted total
+  x <- matrix(inp$y, ncol = 1L, dimnames = list(NULL, y_col))
+  w <- inp$w
+  total <- drop(crossprod(x, w)) # weighted total
 
   v <- .svy_recvar(
     x * w,
-    inp$clusters, inp$stratas, inp$fpcs,
+    inp$clusters,
+    inp$stratas,
+    inp$fpcs,
     lonely.psu = lonely.psu
   )
 
@@ -291,12 +337,12 @@
 #   $n_weighted Pairwise weighted sum
 #' @noRd
 .vcov_pair_taylor <- function(design, x_col, y_col, domain, na.rm = TRUE) {
-  data   <- design@data
-  vars   <- design@variables
+  data <- design@data
+  vars <- design@variables
   n_full <- nrow(data)
-  w      <- data[[vars$weights]]
-  x_all  <- data[[x_col]]
-  y_all  <- data[[y_col]]
+  w <- data[[vars$weights]]
+  x_all <- data[[x_col]]
+  y_all <- data[[y_col]]
 
   # Pair mask: domain AND non-NA for both variables
   if (na.rm) {
@@ -311,41 +357,47 @@
   if (n_d < 2L || W_d <= 0) {
     sigma <- matrix(NA_real_, 3L, 3L)
     return(list(
-      a = NA_real_, b = NA_real_, c = NA_real_,
-      sigma = sigma, n = n_d, n_weighted = W_d
+      a = NA_real_,
+      b = NA_real_,
+      c = NA_real_,
+      sigma = sigma,
+      n = n_d,
+      n_weighted = W_d
     ))
   }
 
   # Weighted means over the pair domain
   x_safe <- ifelse(pair_mask > 0, x_all, 0)
   y_safe <- ifelse(pair_mask > 0, y_all, 0)
-  xbar   <- sum(w * pair_mask * x_safe) / W_d
-  ybar   <- sum(w * pair_mask * y_safe) / W_d
+  xbar <- sum(w * pair_mask * x_safe) / W_d
+  ybar <- sum(w * pair_mask * y_safe) / W_d
 
   # Centered variables (0 for out-of-domain rows)
   cx <- pair_mask * (x_safe - xbar)
   cy <- pair_mask * (y_safe - ybar)
 
   # Variance-covariance estimates
-  a     <- sum(w * cx^2) / W_d
-  b     <- sum(w * cx * cy) / W_d
+  a <- sum(w * cx^2) / W_d
+  b <- sum(w * cx * cy) / W_d
   c_val <- sum(w * cy^2) / W_d
 
   # Linearized influence functions (full-length vectors)
   # infl_j_i = w_i * pair_mask_i * (score_i^2 - estimand) / W_d
-  infl_a   <- w * pair_mask * (cx^2 - a) / W_d
-  infl_b   <- w * pair_mask * (cx * cy - b) / W_d
-  infl_c   <- w * pair_mask * (cy^2 - c_val) / W_d
+  infl_a <- w * pair_mask * (cx^2 - a) / W_d
+  infl_b <- w * pair_mask * (cx * cy - b) / W_d
+  infl_c <- w * pair_mask * (cy^2 - c_val) / W_d
 
   # Build cluster / strata / FPC structure from full dataset
-  mats       <- .build_cluster_matrices(data, vars)
+  mats <- .build_cluster_matrices(data, vars)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- cbind(infl_a, infl_b, infl_c)
   colnames(infl_mat) <- c("a", "b", "c")
   sigma <- .svy_recvar(
     infl_mat,
-    mats$clusters_mat, mats$strata_mat, mats$fpcs,
+    mats$clusters_mat,
+    mats$strata_mat,
+    mats$fpcs,
     lonely.psu = lonely.psu
   )
 

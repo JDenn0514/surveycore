@@ -92,28 +92,33 @@
 get_quantiles <- function(
   design,
   x,
-  probs        = c(0.25, 0.5, 0.75),
-  group        = NULL,
-  variance     = "ci",
-  conf_level   = 0.95,
-  n_weighted   = FALSE,
-  decimals     = NULL,
-  min_cell_n   = 30L,
-  na.rm        = TRUE,
+  probs = c(0.25, 0.5, 0.75),
+  group = NULL,
+  variance = "ci",
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  decimals = NULL,
+  min_cell_n = 30L,
+  na.rm = TRUE,
   label_values = TRUE,
-  label_vars   = TRUE,
-  name_style   = "surveycore"
+  label_vars = TRUE,
+  name_style = "surveycore"
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_quantiles")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
-                        na.rm = na.rm)
+  .validate_shared_args(
+    variance,
+    conf_level,
+    name_style,
+    decimals = decimals,
+    na.rm = na.rm
+  )
 
   if (
     !is.numeric(probs) ||
-    length(probs) == 0L ||
-    any(is.na(probs)) ||
-    any(probs <= 0 | probs >= 1)
+      length(probs) == 0L ||
+      any(is.na(probs)) ||
+      any(probs <= 0 | probs >= 1)
   ) {
     bad_probs <- probs[is.na(probs) | probs <= 0 | probs >= 1]
     cli::cli_abort(
@@ -128,8 +133,8 @@ get_quantiles <- function(
     )
   }
 
-  # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
-  x_quo     <- rlang::enquo(x)
+  # ── Step 2: Resolve variable, groups, domain ────────────────────────────────
+  x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
   x_names <- .resolve_tidy_select(x_quo, design@data)
@@ -145,33 +150,40 @@ get_quantiles <- function(
   }
 
   x_name <- x_names[[1L]]
-  x_col  <- design@data[[x_name]]
+  x_col <- design@data[[x_name]]
 
   if (!is.numeric(x_col)) {
     cli::cli_abort(
       c(
         "x" = "{.arg x} must be numeric, not {.cls {class(x_col)}}.",
-        "i" = "Column {.field {x_name}} cannot be used with {.fn get_quantiles}."
+        "i" = paste0(
+          "Column {.field {x_name}} cannot be used ",
+          "with {.fn get_quantiles}."
+        )
       ),
       class = "surveycore_error_non_numeric_variable"
     )
   }
 
-  group_vars  <- .resolve_groups(design, group_quo)
+  group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf_w      <- .degf_woodruff(design)
+  degf_w <- .degf_woodruff(design)
 
-  # ── Step 3: Single-level warning for group variables ─────────────────────────
+  # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
-      gv_vals   <- design@data[[gv]][domain_mask]
+      gv_vals <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
       if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
+              if (length(uniq_lvls) == 1L) {
+                "({.val {as.character(uniq_lvls[[1L]])}})."
+              } else {
+                "."
+              },
               " Grouped estimates will have a single row per quantile."
             )
           ),
@@ -181,14 +193,14 @@ get_quantiles <- function(
     }
   }
 
-  # ── Step 4: Build group combinations ─────────────────────────────────────────
+  # ── Step 4: Build group combinations ────────────────────────────────────────
   if (length(group_vars) > 0L) {
-    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
-    n_combos     <- nrow(group_combos)
+    n_combos <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
-    n_combos     <- 1L
+    n_combos <- 1L
   }
 
   # ── Step 5: Collect variable metadata ───────────────────────────────────────
@@ -200,19 +212,19 @@ get_quantiles <- function(
   # ── Step 6: Main accumulation loop ──────────────────────────────────────────
   acc_quantile <- character(0)
   acc_estimate <- numeric(0)
-  acc_se       <- numeric(0)
-  acc_ci_low   <- numeric(0)
-  acc_ci_high  <- numeric(0)
-  acc_n        <- integer(0)
-  acc_nw       <- numeric(0)
+  acc_se <- numeric(0)
+  acc_ci_low <- numeric(0)
+  acc_ci_high <- numeric(0)
+  acc_n <- integer(0)
+  acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
 
   small_cell_ns <- integer(0)
 
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
-      combo_row   <- group_combos[ci, , drop = FALSE]
-      data_cols   <- as.list(design@data[group_vars])
+      combo_row <- group_combos[ci, , drop = FALSE]
+      data_cols <- as.list(design@data[group_vars])
       group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
     } else {
@@ -221,8 +233,8 @@ get_quantiles <- function(
 
     # Build active_domain: exclude NAs for quantile computation
     has_na_in_domain <- any(is.na(x_col[active_mask]))
-    active_domain    <- as.numeric(active_mask & !is.na(x_col))
-    n_d_combo        <- as.integer(sum(active_domain > 0))
+    active_domain <- as.numeric(active_mask & !is.na(x_col))
+    n_d_combo <- as.integer(sum(active_domain > 0))
 
     # Small cell check: once per combo (n is the same across all probs)
     if (n_d_combo > 0L && n_d_combo < min_cell_n) {
@@ -236,27 +248,32 @@ get_quantiles <- function(
       if (!na.rm && has_na_in_domain) {
         n_in_mask <- as.integer(sum(active_mask))
         cell <- list(
-          estimate   = NA_real_,
-          se         = NA_real_,
-          ci_low     = NA_real_,
-          ci_high    = NA_real_,
-          se_srs     = NA_real_,
-          n          = n_in_mask,
+          estimate = NA_real_,
+          se = NA_real_,
+          ci_low = NA_real_,
+          ci_high = NA_real_,
+          se_srs = NA_real_,
+          n = n_in_mask,
           n_weighted = NA_real_
         )
       } else {
         cell <- .quantile_woodruff_cell(
-          design, x_col, active_domain, prob, conf_level, degf_w
+          design,
+          x_col,
+          active_domain,
+          prob,
+          conf_level,
+          degf_w
         )
       }
 
       acc_quantile <- c(acc_quantile, prob_labels[[pi]])
       acc_estimate <- c(acc_estimate, cell$estimate)
-      acc_se       <- c(acc_se,       cell$se)
-      acc_ci_low   <- c(acc_ci_low,   cell$ci_low)
-      acc_ci_high  <- c(acc_ci_high,  cell$ci_high)
-      acc_n        <- c(acc_n,        cell$n)
-      acc_nw       <- c(acc_nw,       cell$n_weighted)
+      acc_se <- c(acc_se, cell$se)
+      acc_ci_low <- c(acc_ci_low, cell$ci_low)
+      acc_ci_high <- c(acc_ci_high, cell$ci_high)
+      acc_n <- c(acc_n, cell$n)
+      acc_nw <- c(acc_nw, cell$n_weighted)
 
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -264,7 +281,7 @@ get_quantiles <- function(
     }
   }
 
-  # ── Step 7: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 7: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -279,7 +296,7 @@ get_quantiles <- function(
     )
   }
 
-  # ── Step 8: Build variance column vectors ─────────────────────────────────────
+  # ── Step 8: Build variance column vectors ───────────────────────────────────
   # Quantile CIs use Woodruff back-transformation (asymmetric); SE is derived
   # from the Woodruff CI. Cannot use .add_variance_cols() directly.
   var_cols <- list()
@@ -292,9 +309,9 @@ get_quantiles <- function(
       var_cols$var <- acc_se^2
     }
     if ("cv" %in% variance) {
-      cv       <- acc_se / acc_estimate
+      cv <- acc_se / acc_estimate
       is_undef <- !is.na(acc_estimate) & acc_estimate <= 0
-      n_undef  <- sum(is_undef)
+      n_undef <- sum(is_undef)
       if (n_undef > 0L) {
         cv[is_undef] <- NA_real_
         cli::cli_warn(
@@ -311,7 +328,7 @@ get_quantiles <- function(
       var_cols$cv <- cv
     }
     if ("ci" %in% variance) {
-      var_cols$ci_low  <- acc_ci_low
+      var_cols$ci_low <- acc_ci_low
       var_cols$ci_high <- acc_ci_high
     }
     if ("moe" %in% variance) {
@@ -326,39 +343,44 @@ get_quantiles <- function(
     }
   }
 
-  # ── Step 9: Assemble col_vecs ─────────────────────────────────────────────────
-  col_vecs           <- list()
-  col_vecs$quantile  <- acc_quantile
-  col_vecs$estimate  <- acc_estimate
-  col_vecs           <- c(col_vecs, var_cols)
-  col_vecs$n         <- acc_n
+  # ── Step 9: Assemble col_vecs ───────────────────────────────────────────────
+  col_vecs <- list()
+  col_vecs$quantile <- acc_quantile
+  col_vecs$estimate <- acc_estimate
+  col_vecs <- c(col_vecs, var_cols)
+  col_vecs$n <- acc_n
 
   if (isTRUE(n_weighted)) {
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 10: Build groups_df ──────────────────────────────────────────────────
+  # ── Step 10: Build groups_df ────────────────────────────────────────────────
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
-    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
+    groups_df <- .apply_group_labels(
+      groups_df,
+      group_vars,
+      design,
+      label_values
+    )
   } else {
     groups_df <- data.frame()
   }
 
-  # ── Step 11: Build meta_args ──────────────────────────────────────────────────
+  # ── Step 11: Build meta_args ────────────────────────────────────────────────
   group_meta <- .build_group_meta(design, group_vars)
-  x_list     <- stats::setNames(list(x_meta), x_name)
+  x_list <- stats::setNames(list(x_meta), x_name)
 
   meta_args <- list(
     conf_level = conf_level,
-    call       = match.call(),
-    probs      = probs,
-    group      = group_meta,
-    x          = x_list
+    call = match.call(),
+    probs = probs,
+    group = group_meta,
+    x = x_list
   )
 
-  # ── Step 12: Assemble result ─────────────────────────────────────────────────
+  # ── Step 12: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -368,7 +390,9 @@ get_quantiles <- function(
     QUANTILES_META_KEYS
   )
 
-  # ── Step 13: Apply decimals and name style ────────────────────────────────────
-  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
+  # ── Step 13: Apply decimals and name style ──────────────────────────────────
+  if (!is.null(decimals)) {
+    result <- .apply_decimals(result, decimals)
+  }
   .apply_name_style(result, name_style)
 }

@@ -3,10 +3,10 @@
 # Constructor functions for survey design objects.
 #
 # Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
-#   as_survey()             — creates a survey_taylor object (Taylor series design)
-#   as_survey_replicate()   — creates a survey_replicate object (replicate weights)
-#   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
-#   as_survey_nonprob()     — creates a survey_nonprob object (Phase 2.5 skeleton)
+#   as_survey()           — survey_taylor object (Taylor series linearization)
+#   as_survey_replicate() — survey_replicate object (replicate weights)
+#   as_survey_twophase()  — survey_twophase object (two-phase sampling)
+#   as_survey_nonprob()   — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
@@ -27,7 +27,8 @@
 #'
 #' @param data A `data.frame` containing the survey responses. Must have at
 #'   least one row and unique column names.
-#' @param ids <[`tidy-select`][tidyselect::language]> Cluster (PSU) ID column(s).
+#' @param ids <[`tidy-select`][tidyselect::language]> Cluster (PSU) ID
+#'   column(s).
 #'   For single-stage: `ids = psu`. For multi-stage: `ids = c(psu, ssu)`.
 #'   Omit entirely for simple random sampling.
 #' @param probs <[`tidy-select`][tidyselect::language]> Sampling probability
@@ -145,7 +146,7 @@ as_survey <- function(
   strata_quo <- rlang::enquo(strata)
   fpc_quo <- rlang::enquo(fpc)
 
-  # ── Resolve tidy-select expressions ──────────────────────────────────────────
+  # ── Resolve tidy-select expressions ─────────────────────────────────────────
 
   ids_is_null <- rlang::quo_is_null(ids_quo)
   strata_is_null <- rlang::quo_is_null(strata_quo)
@@ -513,7 +514,7 @@ as_survey <- function(
 }
 
 
-# ── as_survey_replicate ──────────────────────────────────────────────────────────────
+# ── as_survey_replicate ───────────────────────────────────────────────────────
 
 #' Create a Replicate Weights Survey Design
 #'
@@ -560,9 +561,13 @@ as_survey <- function(
 #' Both `weights` and `repweights` support tidy-select syntax:
 #' ```r
 #' # Bare name for weights
-#' as_survey_replicate(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+#' as_survey_replicate(
+#'   df, weights = wt, repweights = starts_with("repwt"), type = "BRR"
+#' )
 #' # c() for explicit replicate columns
-#' as_survey_replicate(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+#' as_survey_replicate(
+#'   df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1"
+#' )
 #' ```
 #'
 #' @section Replicate weight matrix:
@@ -737,7 +742,7 @@ as_survey_replicate <- function(
 }
 
 
-# ── as_survey_twophase ─────────────────────────────────────────────────────────
+# ── as_survey_twophase ────────────────────────────────────────────────────────
 
 #' Create a Two-Phase Survey Design
 #'
@@ -888,7 +893,7 @@ as_survey_twophase <- function(
 
   subset_cols <- tidyselect::eval_select(subset_quo, data)
 
-  # ── Error 21: subset must select exactly one column ──────────────────────────
+  # ── Error 21: subset must select exactly one column ─────────────────────────
 
   if (length(subset_cols) == 0L) {
     cli::cli_abort(
@@ -909,7 +914,7 @@ as_survey_twophase <- function(
   }
   subset_var <- names(subset_cols)
 
-  # ── Error 22: subset column must be logical ──────────────────────────────────
+  # ── Error 22: subset column must be logical ─────────────────────────────────
 
   if (!is.logical(data[[subset_var]])) {
     cli::cli_abort(
@@ -923,7 +928,7 @@ as_survey_twophase <- function(
     )
   }
 
-  # ── Error 23: subset must be non-degenerate ──────────────────────────────────
+  # ── Error 23: subset must be non-degenerate ─────────────────────────────────
 
   subset_vals <- data[[subset_var]]
 
@@ -1013,7 +1018,7 @@ as_survey_twophase <- function(
     )
   }
 
-  # ── Build @variables list ────────────────────────────────────────────────────
+  # ── Build @variables list ───────────────────────────────────────────────────
 
   phase2_vars <- list(
     ids = ids2_vars,
@@ -1034,7 +1039,7 @@ as_survey_twophase <- function(
 
   metadata <- phase1@metadata
 
-  # ── Construct and return survey_twophase object ──────────────────────────────
+  # ── Construct and return survey_twophase object ─────────────────────────────
 
   survey_twophase(
     data = data,
@@ -1075,7 +1080,8 @@ as_survey_twophase <- function(
 #' }
 #'
 #' If your data comes from a probability sample with known design structure,
-#' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()] instead.
+#' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()]
+#' instead.
 #'
 #' @section Variance estimation note:
 #' Standard errors from a `survey_nonprob` object assume simple random

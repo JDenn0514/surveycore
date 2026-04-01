@@ -21,11 +21,16 @@
 # @return Named list: se, se_srs, n_weighted.
 #' @noRd
 .replicate_ratio_cell <- function(
-  design, y_vec, x_vec, domain, ratio_est, total_x
+  design,
+  y_vec,
+  x_vec,
+  domain,
+  ratio_est,
+  total_x
 ) {
   data <- design@data
   vars <- design@variables
-  w    <- data[[vars$weights]]
+  w <- data[[vars$weights]]
 
   n_d <- as.integer(sum(domain))
   N_d <- sum(w * domain)
@@ -38,24 +43,24 @@
   x_safe <- ifelse(domain > 0, x_vec, 0)
 
   # Per-replicate ratios: ratio_r = total_y_r / total_x_r
-  rep_mat   <- as.matrix(data[, vars$repweights, drop = FALSE])
-  rep_T_y   <- as.numeric((y_safe * domain) %*% rep_mat)
-  rep_T_x   <- as.numeric((x_safe * domain) %*% rep_mat)
+  rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
+  rep_T_y <- as.numeric((y_safe * domain) %*% rep_mat)
+  rep_T_x <- as.numeric((x_safe * domain) %*% rep_mat)
   rep_ratio <- ifelse(abs(rep_T_x) > 0, rep_T_y / rep_T_x, NA_real_)
 
   n_rep <- ncol(rep_mat)
   v <- .svy_rep_var(
     rep_ratio,
-    scale   = vars$scale,
+    scale = vars$scale,
     rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
-    mse     = isTRUE(vars$mse),
-    coef    = ratio_est
+    mse = isTRUE(vars$mse),
+    coef = ratio_est
   )
 
   se <- sqrt(max(0, v))
 
   # SRS-equivalent SE for deff: delta method with SRS (unweighted) variance
-  z_dom  <- (y_safe - ratio_est * x_safe)[domain > 0]
+  z_dom <- (y_safe - ratio_est * x_safe)[domain > 0]
   se_srs <- if (n_d >= 2L && abs(total_x) > 0) {
     s2_z <- sum((z_dom - mean(z_dom))^2) / (n_d - 1L)
     N_d * sqrt(s2_z / n_d) / abs(total_x)
@@ -84,7 +89,13 @@
 # @return Named list: se, se_srs, n_weighted.
 #' @noRd
 .delta_ratio_cell <- function(
-  design, y_vec, x_vec, domain, ratio_est, total_x, tmp_col
+  design,
+  y_vec,
+  x_vec,
+  domain,
+  ratio_est,
+  total_x,
+  tmp_col
 ) {
   y_safe <- ifelse(domain > 0, y_vec, 0)
   x_safe <- ifelse(domain > 0, x_vec, 0)
@@ -95,9 +106,8 @@
   design@data[[tmp_col]] <- z_lin
   cell_z <- .total_cell(design, tmp_col, domain)
 
-  se     <- cell_z$se     / abs(total_x)
+  se <- cell_z$se / abs(total_x)
   se_srs <- cell_z$se_srs / abs(total_x)
 
   list(se = se, se_srs = se_srs, n_weighted = cell_z$n_weighted)
 }
-

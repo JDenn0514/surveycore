@@ -18,7 +18,8 @@
 #'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Optional single unquoted
 #'   numeric variable name. When `NULL` (default), estimates the population
-#'   size (sum of weights). When supplied, estimates the weighted sum (sum of w_i * x_i).
+#'   size (sum of weights). When supplied, estimates the weighted sum
+#'   (sum of w_i * x_i).
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Default `NULL`.
 #' @param variance `NULL` or a character vector from `"se"`, `"ci"`, `"var"`,
@@ -93,7 +94,7 @@ get_totals <- function(
     na.rm = na.rm
   )
 
-  # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
+  # ── Step 2: Resolve variable, groups, domain ────────────────────────────────
   x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
@@ -133,7 +134,7 @@ get_totals <- function(
   domain_mask <- .apply_domain(design)
   degf <- Inf # Normal approximation; matches survey::svytotal() default
 
-  # ── Step 3: Single-level warning for group variables ─────────────────────────
+  # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
       gv_vals <- design@data[[gv]][domain_mask]
@@ -157,7 +158,7 @@ get_totals <- function(
     }
   }
 
-  # ── Step 4: Build group combinations ─────────────────────────────────────────
+  # ── Step 4: Build group combinations ────────────────────────────────────────
   if (length(group_vars) > 0L) {
     domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
@@ -217,7 +218,7 @@ get_totals <- function(
     }
   }
 
-  # ── Step 7: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 7: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -232,7 +233,7 @@ get_totals <- function(
     )
   }
 
-  # ── Step 8: Build column vectors ─────────────────────────────────────────────
+  # ── Step 8: Build column vectors ────────────────────────────────────────────
   var_cols <- .add_variance_cols(
     se_vec = acc_se,
     estimate_vec = acc_total,
@@ -254,7 +255,7 @@ get_totals <- function(
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 9: Build groups_df ──────────────────────────────────────────────────
+  # ── Step 9: Build groups_df ─────────────────────────────────────────────────
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
@@ -268,7 +269,7 @@ get_totals <- function(
     groups_df <- data.frame()
   }
 
-  # ── Step 10: Build meta_args ──────────────────────────────────────────────────
+  # ── Step 10: Build meta_args ────────────────────────────────────────────────
   group_meta <- .build_group_meta(design, group_vars)
   x_list <- if (is.null(x_meta)) {
     NULL
@@ -283,7 +284,7 @@ get_totals <- function(
     x = x_list
   )
 
-  # ── Step 11: Assemble result ─────────────────────────────────────────────────
+  # ── Step 11: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -293,7 +294,7 @@ get_totals <- function(
     TOTALS_META_KEYS
   )
 
-  # ── Step 12: Apply decimals and name style ────────────────────────────────────
+  # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
     result <- .apply_decimals(result, decimals)
   }

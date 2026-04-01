@@ -396,7 +396,10 @@ survey_glm_fit <- S7::new_class(
     cli::cli_abort(
       c(
         "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in GLM.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        "i" = paste0(
+          "Use {.fn as_survey}, {.fn as_survey_replicate}, ",
+          "or {.fn as_survey_twophase}."
+        )
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -836,7 +839,10 @@ survey_glm <- function(
   if (length(missing_resp) > 0L) {
     cli::cli_abort(
       c(
-        "x" = "Response variable {.field {missing_resp[1L]}} not found in survey data."
+        "x" = paste0(
+          "Response variable {.field {missing_resp[1L]}} not found ",
+          "in survey data."
+        )
       ),
       class = "surveycore_error_response_not_found"
     )
@@ -879,7 +885,10 @@ survey_glm <- function(
   if (length(missing_preds) > 0L) {
     cli::cli_abort(
       c(
-        "x" = "Predictor {.field {missing_preds[1L]}} not found in survey data.",
+        "x" = paste0(
+          "Predictor {.field {missing_preds[1L]}} not found ",
+          "in survey data."
+        ),
         "i" = paste0(
           "Available columns: ",
           "{.field {head(names(design@data), 10L)}}."
@@ -957,7 +966,10 @@ survey_glm <- function(
     msg_nonpos_x <- if (S7::S7_inherits(design, survey_twophase)) {
       "Calibrated weights contain {n_nonpos} non-positive value(s)."
     } else {
-      "Weight column {.field {wt_var}} contains {n_nonpos} non-positive value(s)."
+      paste0(
+        "Weight column {.field {wt_var}} contains ",
+        "{n_nonpos} non-positive value(s)."
+      )
     }
     cli::cli_warn(
       c(
@@ -1035,7 +1047,8 @@ survey_glm <- function(
     do.call(stats::glm, glm_args)
   }
 
-  # Convergence warning (suppressed when quiet = TRUE; status still in @converged)
+  # Convergence warning (suppressed when quiet = TRUE; status still in
+  # @converged)
   if (!fit$converged && !quiet) {
     cli::cli_warn(
       c(

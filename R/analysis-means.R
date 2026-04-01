@@ -77,24 +77,29 @@
 get_means <- function(
   design,
   x,
-  group        = NULL,
-  variance     = "ci",
-  conf_level   = 0.95,
-  n_weighted   = FALSE,
-  decimals     = NULL,
-  min_cell_n   = 30L,
-  na.rm        = TRUE,
+  group = NULL,
+  variance = "ci",
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  decimals = NULL,
+  min_cell_n = 30L,
+  na.rm = TRUE,
   label_values = TRUE,
-  label_vars   = TRUE,
-  name_style   = "surveycore"
+  label_vars = TRUE,
+  name_style = "surveycore"
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_means")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
-                        na.rm = na.rm)
+  .validate_shared_args(
+    variance,
+    conf_level,
+    name_style,
+    decimals = decimals,
+    na.rm = na.rm
+  )
 
-  # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
-  x_quo     <- rlang::enquo(x)
+  # ── Step 2: Resolve variable, groups, domain ────────────────────────────────
+  x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
   x_names <- .resolve_tidy_select(x_quo, design@data)
@@ -110,7 +115,7 @@ get_means <- function(
   }
 
   x_name <- x_names[[1L]]
-  x_col  <- design@data[[x_name]]
+  x_col <- design@data[[x_name]]
 
   if (!is.numeric(x_col)) {
     cli::cli_abort(
@@ -122,21 +127,25 @@ get_means <- function(
     )
   }
 
-  group_vars  <- .resolve_groups(design, group_quo)
+  group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf        <- Inf  # Normal approximation; matches survey::svymean() default
+  degf <- Inf # Normal approximation; matches survey::svymean() default
 
-  # ── Step 3: Single-level warning for group variables ─────────────────────────
+  # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
-      gv_vals   <- design@data[[gv]][domain_mask]
+      gv_vals <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
       if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
+              if (length(uniq_lvls) == 1L) {
+                "({.val {as.character(uniq_lvls[[1L]])}})."
+              } else {
+                "."
+              },
               " Grouped estimates will have a single row."
             )
           ),
@@ -146,33 +155,33 @@ get_means <- function(
     }
   }
 
-  # ── Step 4: Build group combinations ─────────────────────────────────────────
+  # ── Step 4: Build group combinations ────────────────────────────────────────
   if (length(group_vars) > 0L) {
-    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
-    n_combos     <- nrow(group_combos)
+    n_combos <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
-    n_combos     <- 1L
+    n_combos <- 1L
   }
 
   # ── Step 5: Collect variable metadata ───────────────────────────────────────
   x_meta <- .extract_var_meta(design, x_name)
 
   # ── Step 6: Main accumulation loop ──────────────────────────────────────────
-  acc_mean  <- numeric(0)
-  acc_se    <- numeric(0)
+  acc_mean <- numeric(0)
+  acc_se <- numeric(0)
   acc_sesrs <- numeric(0)
-  acc_n     <- integer(0)
-  acc_nw    <- numeric(0)
+  acc_n <- integer(0)
+  acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
 
   small_cell_ns <- integer(0)
 
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
-      combo_row   <- group_combos[ci, , drop = FALSE]
-      data_cols   <- as.list(design@data[group_vars])
+      combo_row <- group_combos[ci, , drop = FALSE]
+      data_cols <- as.list(design@data[group_vars])
       group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
     } else {
@@ -180,24 +189,24 @@ get_means <- function(
     }
 
     domain <- .mean_domain_vec(active_mask, x_col, na.rm)
-    cell   <- .mean_cell(design, x_name, domain)
+    cell <- .mean_cell(design, x_name, domain)
 
     if (!is.na(cell$n) && cell$n > 0L && cell$n < min_cell_n) {
       small_cell_ns <- c(small_cell_ns, cell$n)
     }
 
-    acc_mean  <- c(acc_mean,  cell$mean)
-    acc_se    <- c(acc_se,    cell$se)
+    acc_mean <- c(acc_mean, cell$mean)
+    acc_se <- c(acc_se, cell$se)
     acc_sesrs <- c(acc_sesrs, cell$se_srs)
-    acc_n     <- c(acc_n,     cell$n)
-    acc_nw    <- c(acc_nw,    cell$n_weighted)
+    acc_n <- c(acc_n, cell$n)
+    acc_nw <- c(acc_nw, cell$n_weighted)
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
     }
   }
 
-  # ── Step 7: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 7: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -212,46 +221,51 @@ get_means <- function(
     )
   }
 
-  # ── Step 8: Build column vectors ─────────────────────────────────────────────
+  # ── Step 8: Build column vectors ────────────────────────────────────────────
   var_cols <- .add_variance_cols(
-    se_vec       = acc_se,
+    se_vec = acc_se,
     estimate_vec = acc_mean,
-    se_srs_vec   = acc_sesrs,
-    conf_level   = conf_level,
-    degf         = degf,
-    variance     = variance
+    se_srs_vec = acc_sesrs,
+    conf_level = conf_level,
+    degf = degf,
+    variance = variance
   )
 
   col_vecs <- list()
   col_vecs$mean <- acc_mean
-  col_vecs      <- c(col_vecs, var_cols)
-  col_vecs$n    <- acc_n
+  col_vecs <- c(col_vecs, var_cols)
+  col_vecs$n <- acc_n
 
   if (isTRUE(n_weighted)) {
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 9: Build groups_df ──────────────────────────────────────────────────
+  # ── Step 9: Build groups_df ─────────────────────────────────────────────────
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
-    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
+    groups_df <- .apply_group_labels(
+      groups_df,
+      group_vars,
+      design,
+      label_values
+    )
   } else {
     groups_df <- data.frame()
   }
 
-  # ── Step 10: Build meta_args ──────────────────────────────────────────────────
+  # ── Step 10: Build meta_args ────────────────────────────────────────────────
   group_meta <- .build_group_meta(design, group_vars)
-  x_list     <- stats::setNames(list(x_meta), x_name)
+  x_list <- stats::setNames(list(x_meta), x_name)
 
   meta_args <- list(
     conf_level = conf_level,
-    call       = match.call(),
-    group      = group_meta,
-    x          = x_list
+    call = match.call(),
+    group = group_meta,
+    x = x_list
   )
 
-  # ── Step 11: Assemble result ─────────────────────────────────────────────────
+  # ── Step 11: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -261,9 +275,9 @@ get_means <- function(
     MEANS_META_KEYS
   )
 
-  # ── Step 12: Apply decimals and name style ────────────────────────────────────
-  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
+  # ── Step 12: Apply decimals and name style ──────────────────────────────────
+  if (!is.null(decimals)) {
+    result <- .apply_decimals(result, decimals)
+  }
   .apply_name_style(result, name_style)
 }
-
-

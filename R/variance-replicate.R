@@ -25,14 +25,16 @@
 # coef: the full-sample estimate (used only when mse = TRUE).
 .svy_rep_var <- function(thetas, scale, rscales, mse = TRUE, coef = NULL) {
   # Drop NA replicates
-  ok  <- !is.na(thetas)
-  if (!any(ok)) cli::cli_abort(
-    c("x" = "All replicates produced NA estimates."),
-    class = "surveycore_error_all_replicates_na"
-  )
+  ok <- !is.na(thetas)
+  if (!any(ok)) {
+    cli::cli_abort(
+      c("x" = "All replicates produced NA estimates."),
+      class = "surveycore_error_all_replicates_na"
+    )
+  }
   if (any(!ok)) {
     rscales <- rscales[ok]
-    thetas  <- thetas[ok]
+    thetas <- thetas[ok]
   }
 
   if (isTRUE(mse)) {
@@ -59,32 +61,38 @@
 #                     using BLAS matrix operations.
 # @return list(stat, var, se) where stat is the full-sample estimate.
 #' @noRd
-.replicate_estimate <- function(design, y_col, na.rm, full_stat_fn, rep_stat_fn) {
+.replicate_estimate <- function(
+  design,
+  y_col,
+  na.rm,
+  full_stat_fn,
+  rep_stat_fn
+) {
   data <- design@data
   vars <- design@variables
 
   y <- data[[y_col]]
-  w <- data[[vars$weights]]    # base/full-sample weights
+  w <- data[[vars$weights]] # base/full-sample weights
 
   if (na.rm) {
-    keep    <- !is.na(y)
-    y       <- y[keep]
-    w       <- w[keep]
+    keep <- !is.na(y)
+    y <- y[keep]
+    w <- w[keep]
     rep_mat <- as.matrix(data[keep, vars$repweights, drop = FALSE])
   } else {
     rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   }
 
-  n_rep    <- ncol(rep_mat)
+  n_rep <- ncol(rep_mat)
   full_est <- full_stat_fn(y, w)
-  rep_ests <- rep_stat_fn(y, rep_mat)   # vectorised; see callers below
+  rep_ests <- rep_stat_fn(y, rep_mat) # vectorised; see callers below
 
   v <- .svy_rep_var(
     rep_ests,
-    scale   = vars$scale,
+    scale = vars$scale,
     rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
-    mse     = isTRUE(vars$mse),
-    coef    = full_est
+    mse = isTRUE(vars$mse),
+    coef = full_est
   )
 
   list(stat = full_est, var = v, se = sqrt(v))
@@ -94,11 +102,13 @@
 # Returns list(mean, var, se).
 .replicate_mean <- function(design, y_col, na.rm = TRUE) {
   res <- .replicate_estimate(
-    design, y_col, na.rm,
+    design,
+    y_col,
+    na.rm,
     full_stat_fn = function(y, w) sum(y * w) / sum(w),
     # BLAS matrix multiply: (y %*% rep_mat) gives row sums, colSums(rep_mat)
     # gives column (replicate) weight sums. Both are O(N*R) with BLAS.
-    rep_stat_fn  = function(y, rep_mat) {
+    rep_stat_fn = function(y, rep_mat) {
       as.numeric(y %*% rep_mat) / colSums(rep_mat)
     }
   )
@@ -109,10 +119,12 @@
 # Returns list(total, var, se).
 .replicate_total <- function(design, y_col, na.rm = TRUE) {
   res <- .replicate_estimate(
-    design, y_col, na.rm,
+    design,
+    y_col,
+    na.rm,
     full_stat_fn = function(y, w) sum(y * w),
     # BLAS matrix multiply: (y %*% rep_mat) gives per-replicate weighted totals.
-    rep_stat_fn  = function(y, rep_mat) as.numeric(y %*% rep_mat)
+    rep_stat_fn = function(y, rep_mat) as.numeric(y %*% rep_mat)
   )
   list(total = res$stat, var = res$var, se = res$se)
 }
@@ -138,11 +150,11 @@
 # @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
 #' @noRd
 .vcov_pair_replicate <- function(design, x_col, y_col, domain, na.rm = TRUE) {
-  data  <- design@data
-  vars  <- design@variables
+  data <- design@data
+  vars <- design@variables
   x_all <- data[[x_col]]
   y_all <- data[[y_col]]
-  w     <- data[[vars$weights]]   # base/full-sample weights
+  w <- data[[vars$weights]] # base/full-sample weights
 
   if (na.rm) {
     pair_mask <- domain * as.numeric(!is.na(x_all) & !is.na(y_all))
@@ -156,8 +168,12 @@
   if (n_d < 2L || W_d <= 0) {
     sigma <- matrix(NA_real_, 3L, 3L)
     return(list(
-      a = NA_real_, b = NA_real_, c = NA_real_,
-      sigma = sigma, n = n_d, n_weighted = W_d
+      a = NA_real_,
+      b = NA_real_,
+      c = NA_real_,
+      sigma = sigma,
+      n = n_d,
+      n_weighted = W_d
     ))
   }
 
@@ -165,51 +181,60 @@
   y_safe <- ifelse(pair_mask > 0, y_all, 0)
 
   # Full-sample variance-covariance estimates
-  xbar  <- sum(w * pair_mask * x_safe) / W_d
-  ybar  <- sum(w * pair_mask * y_safe) / W_d
-  cx    <- pair_mask * (x_safe - xbar)
-  cy    <- pair_mask * (y_safe - ybar)
-  a     <- sum(w * cx^2) / W_d
-  b     <- sum(w * cx * cy) / W_d
+  xbar <- sum(w * pair_mask * x_safe) / W_d
+  ybar <- sum(w * pair_mask * y_safe) / W_d
+  cx <- pair_mask * (x_safe - xbar)
+  cy <- pair_mask * (y_safe - ybar)
+  a <- sum(w * cx^2) / W_d
+  b <- sum(w * cx * cy) / W_d
   c_val <- sum(w * cy^2) / W_d
 
   # Per-replicate estimates of (Var(X), Cov(X,Y), Var(Y))
   rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  n_rep   <- ncol(rep_mat)
+  n_rep <- ncol(rep_mat)
 
   rep_abc <- matrix(NA_real_, nrow = n_rep, ncol = 3L)
   for (r in seq_len(n_rep)) {
-    wr   <- rep_mat[, r]
-    W_r  <- sum(wr * pair_mask)
-    if (W_r <= 0) next
+    wr <- rep_mat[, r]
+    W_r <- sum(wr * pair_mask)
+    if (W_r <= 0) {
+      next
+    }
     xbar_r <- sum(wr * pair_mask * x_safe) / W_r
     ybar_r <- sum(wr * pair_mask * y_safe) / W_r
-    cx_r   <- pair_mask * (x_safe - xbar_r)
-    cy_r   <- pair_mask * (y_safe - ybar_r)
+    cx_r <- pair_mask * (x_safe - xbar_r)
+    cy_r <- pair_mask * (y_safe - ybar_r)
     rep_abc[r, 1L] <- sum(wr * cx_r^2) / W_r
     rep_abc[r, 2L] <- sum(wr * cx_r * cy_r) / W_r
     rep_abc[r, 3L] <- sum(wr * cy_r^2) / W_r
   }
 
   rscales <- if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep)
-  scale   <- vars$scale
-  mse     <- isTRUE(vars$mse)
-  coef    <- c(a, b, c_val)
+  scale <- vars$scale
+  mse <- isTRUE(vars$mse)
+  coef <- c(a, b, c_val)
 
   # 3x3 meta-vcov: sigma[j,k] = scale * sum_r(rscales_r * dev_r[j] * dev_r[k])
   ok <- apply(rep_abc, 1L, function(row) !any(is.na(row)))
   if (!any(ok)) {
     sigma <- matrix(NA_real_, 3L, 3L)
-    return(list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d))
+    return(list(
+      a = a,
+      b = b,
+      c = c_val,
+      sigma = sigma,
+      n = n_d,
+      n_weighted = W_d
+    ))
   }
   if (any(!ok)) {
     rscales <- rscales[ok]
     rep_abc <- rep_abc[ok, , drop = FALSE]
   }
 
-  center   <- if (mse) coef else colMeans(rep_abc[rscales > 0, , drop = FALSE])
+  center <- if (mse) coef else colMeans(rep_abc[rscales > 0, , drop = FALSE])
   diff_mat <- sweep(rep_abc, 2L, center, "-")
-  sigma    <- t(diff_mat * rscales) %*% diff_mat * scale
+  sigma <- t(diff_mat * rscales) %*% diff_mat * scale
 
   list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
 }

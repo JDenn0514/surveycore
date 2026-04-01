@@ -5,9 +5,6 @@
 #
 # Internal helpers: analysis-freqs-helpers.R
 
-
-
-
 # ── get_freqs() ───────────────────────────────────────────────────────────────
 
 #' Weighted Frequency Tables for Categorical Survey Variables
@@ -115,40 +112,45 @@ get_freqs <- function(
   design,
   x,
   ...,
-  group        = NULL,
-  names_to     = "name",
-  values_to    = "value",
-  variance     = NULL,
-  conf_level   = 0.95,
-  n_weighted   = FALSE,
-  decimals     = NULL,
-  min_cell_n   = 30L,
-  na.rm        = TRUE,
+  group = NULL,
+  names_to = "name",
+  values_to = "value",
+  variance = NULL,
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  decimals = NULL,
+  min_cell_n = 30L,
+  na.rm = TRUE,
   label_values = TRUE,
-  label_vars   = TRUE,
-  name_style   = "surveycore"
+  label_vars = TRUE,
+  name_style = "surveycore"
 ) {
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_freqs")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
-                        na.rm = na.rm)
+  .validate_shared_args(
+    variance,
+    conf_level,
+    name_style,
+    decimals = decimals,
+    na.rm = na.rm
+  )
 
   # ── Step 2: Resolve variables, groups, domain ───────────────────────────────
-  x_quo     <- rlang::enquo(x)
+  x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
-  var_names  <- .resolve_tidy_select(x_quo, design@data)
+  var_names <- .resolve_tidy_select(x_quo, design@data)
   group_vars <- .resolve_groups(design, group_quo)
-  domain_mask <- .apply_domain(design)   # logical, full length
-  degf        <- Inf  # Normal approximation; matches survey::svymean() default
+  domain_mask <- .apply_domain(design) # logical, full length
+  degf <- Inf # Normal approximation; matches survey::svymean() default
 
-  n_vars   <- length(var_names)
+  n_vars <- length(var_names)
   is_multi <- n_vars >= 2L
 
   # ── Step 3: Single-level warnings for group variables ───────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
-      gv_vals  <- design@data[[gv]][domain_mask]
+      gv_vals <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
       if (length(uniq_lvls) < 2L) {
         if (length(uniq_lvls) == 0L) {
@@ -183,7 +185,7 @@ get_freqs <- function(
       Negate(is.null),
       lapply(var_names, function(vn) design@metadata@question_prefaces[[vn]])
     )
-    unique_prefaces   <- unique(unlist(non_null_prefaces))
+    unique_prefaces <- unique(unlist(non_null_prefaces))
     if (length(unique_prefaces) > 1L) {
       cli::cli_warn(
         c(
@@ -214,12 +216,12 @@ get_freqs <- function(
   # If no groups, group_combos is a data.frame with 0 columns and 1 row
   # (representing the single "all in-domain rows" group).
   if (length(group_vars) > 0L) {
-    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
-    n_combos     <- nrow(group_combos)
+    n_combos <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
-    n_combos     <- 1L
+    n_combos <- 1L
   }
 
   # ── Step 6: Pre-collect variable metadata ───────────────────────────────────
@@ -228,21 +230,25 @@ get_freqs <- function(
 
   # ── Step 7: Main accumulation loop ──────────────────────────────────────────
   # Parallel vectors for all result rows
-  acc_focal   <- character(0)   # focal column or names_to column
-  acc_values  <- character(0)   # values_to column (multi-var only)
-  acc_pct     <- numeric(0)
-  acc_se      <- numeric(0)
-  acc_sesrs   <- numeric(0)
-  acc_n       <- integer(0)
-  acc_nw      <- numeric(0)
-  acc_grp_rows <- vector("list", 0L)   # list of single-row data.frames
+  acc_focal <- character(0) # focal column or names_to column
+  acc_values <- character(0) # values_to column (multi-var only)
+  acc_pct <- numeric(0)
+  acc_se <- numeric(0)
+  acc_sesrs <- numeric(0)
+  acc_n <- integer(0)
+  acc_nw <- numeric(0)
+  acc_grp_rows <- vector("list", 0L) # list of single-row data.frames
 
-  small_cell_ns <- integer(0)   # for small-cell warning
+  small_cell_ns <- integer(0) # for small-cell warning
 
   for (vn in var_names) {
-    x_col     <- design@data[[vn]]
-    vl        <- x_meta_list[[vn]]$value_labels   # named vector or NULL
-    vl_map    <- if (!is.null(vl)) structure(names(vl), names = as.character(vl)) else NULL
+    x_col <- design@data[[vn]]
+    vl <- x_meta_list[[vn]]$value_labels # named vector or NULL
+    vl_map <- if (!is.null(vl)) {
+      structure(names(vl), names = as.character(vl))
+    } else {
+      NULL
+    }
 
     # domain-only x values for level detection
     x_domain <- x_col[domain_mask]
@@ -276,7 +282,7 @@ get_freqs <- function(
         ),
         class = "surveycore_warning_all_na_freqs"
       )
-      next   # skip this variable; contributes 0 rows
+      next # skip this variable; contributes 0 rows
     }
 
     # ── Display name for multi-var names_to column ────────────────────────────
@@ -292,11 +298,10 @@ get_freqs <- function(
 
     # ── Loop over group combinations ──────────────────────────────────────────
     for (ci in seq_len(n_combos)) {
-
       if (length(group_vars) > 0L) {
         # Build mask: domain AND all group variable values match this combo
-        combo_row   <- group_combos[ci, , drop = FALSE]
-        data_cols   <- as.list(design@data[group_vars])
+        combo_row <- group_combos[ci, , drop = FALSE]
+        data_cols <- as.list(design@data[group_vars])
         group_match <- .match_group_combo(data_cols, combo_row)
         active_mask <- domain_mask & group_match
       } else {
@@ -340,26 +345,26 @@ get_freqs <- function(
 
         # ── Accumulate ────────────────────────────────────────────────────
         if (is_multi) {
-          acc_focal  <- c(acc_focal, vn_display)
+          acc_focal <- c(acc_focal, vn_display)
           acc_values <- c(acc_values, lvl_display)
         } else {
           acc_focal <- c(acc_focal, lvl_display)
         }
 
-        acc_pct   <- c(acc_pct,   cell$pct)
-        acc_se    <- c(acc_se,    cell$se)
+        acc_pct <- c(acc_pct, cell$pct)
+        acc_se <- c(acc_se, cell$se)
         acc_sesrs <- c(acc_sesrs, cell$se_srs)
-        acc_n     <- c(acc_n,     cell$n)
-        acc_nw    <- c(acc_nw,    cell$n_weighted)
+        acc_n <- c(acc_n, cell$n)
+        acc_nw <- c(acc_nw, cell$n_weighted)
 
         if (length(group_vars) > 0L) {
           acc_grp_rows <- c(acc_grp_rows, list(combo_row))
         }
-      }  # end level loop
-    }  # end group combo loop
-  }  # end variable loop
+      } # end level loop
+    } # end group combo loop
+  } # end variable loop
 
-  # ── Step 8: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 8: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -374,15 +379,15 @@ get_freqs <- function(
     )
   }
 
-  # ── Step 9: Build column vectors ─────────────────────────────────────────────
+  # ── Step 9: Build column vectors ────────────────────────────────────────────
   # Variance columns (only requested types)
   var_cols <- .add_variance_cols(
-    se_vec       = acc_se,
+    se_vec = acc_se,
     estimate_vec = acc_pct,
-    se_srs_vec   = acc_sesrs,
-    conf_level   = conf_level,
-    degf         = degf,
-    variance     = variance
+    se_srs_vec = acc_sesrs,
+    conf_level = conf_level,
+    degf = degf,
+    variance = variance
   )
 
   # Assemble col_vecs in canonical column order
@@ -391,14 +396,18 @@ get_freqs <- function(
   if (is_multi) {
     # names_to column: factor with levels in variable supply order
     # (display string order: label if label_vars=TRUE, else raw name)
-    names_to_levels <- vapply(var_names, function(vn) {
-      if (label_vars && !is.null(x_meta_list[[vn]]$variable_label)) {
-        x_meta_list[[vn]]$variable_label
-      } else {
-        vn
-      }
-    }, character(1L))
-    col_vecs[[names_to]]  <- factor(acc_focal,  levels = unique(names_to_levels))
+    names_to_levels <- vapply(
+      var_names,
+      function(vn) {
+        if (label_vars && !is.null(x_meta_list[[vn]]$variable_label)) {
+          x_meta_list[[vn]]$variable_label
+        } else {
+          vn
+        }
+      },
+      character(1L)
+    )
+    col_vecs[[names_to]] <- factor(acc_focal, levels = unique(names_to_levels))
 
     # values_to column: stay as character (mixed variables may have different
     # value label sets; no single factor level set applies across all)
@@ -407,7 +416,9 @@ get_freqs <- function(
     # Single-var: convert NA display back to NA (not "NA" string)
     focal_out <- acc_focal
     is_na_str <- !is.na(acc_focal) & acc_focal == "NA"
-    if (any(is_na_str)) focal_out[is_na_str] <- NA_character_
+    if (any(is_na_str)) {
+      focal_out[is_na_str] <- NA_character_
+    }
 
     # Convert to factor when label_values=TRUE and value labels exist
     vl_single <- x_meta_list[[var_names[[1L]]]]$value_labels
@@ -418,34 +429,39 @@ get_freqs <- function(
   }
 
   col_vecs$pct <- acc_pct
-  col_vecs     <- c(col_vecs, var_cols)
-  col_vecs$n   <- acc_n
+  col_vecs <- c(col_vecs, var_cols)
+  col_vecs$n <- acc_n
 
   if (isTRUE(n_weighted)) {
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 10: Build groups_df ──────────────────────────────────────────────────
+  # ── Step 10: Build groups_df ────────────────────────────────────────────────
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
-    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
+    groups_df <- .apply_group_labels(
+      groups_df,
+      group_vars,
+      design,
+      label_values
+    )
   } else {
     groups_df <- data.frame()
   }
 
-  # ── Step 11: Build meta_args ──────────────────────────────────────────────────
-  group_meta    <- .build_group_meta(design, group_vars)
+  # ── Step 11: Build meta_args ────────────────────────────────────────────────
+  group_meta <- .build_group_meta(design, group_vars)
   required_keys <- FREQS_META_KEYS
 
   meta_args <- list(
     conf_level = conf_level,
-    call       = match.call(),
-    group      = group_meta,
-    x          = x_meta_list
+    call = match.call(),
+    group = group_meta,
+    x = x_meta_list
   )
 
-  # ── Step 12: Assemble result ──────────────────────────────────────────────────
+  # ── Step 12: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -455,7 +471,9 @@ get_freqs <- function(
     required_keys
   )
 
-  # ── Step 13: Apply decimals and name style ────────────────────────────────────
-  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
+  # ── Step 13: Apply decimals and name style ──────────────────────────────────
+  if (!is.null(decimals)) {
+    result <- .apply_decimals(result, decimals)
+  }
   .apply_name_style(result, name_style)
 }

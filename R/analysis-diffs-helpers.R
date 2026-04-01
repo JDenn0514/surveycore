@@ -7,7 +7,6 @@
 # Contents:
 #   .stars_pval() — significance stars from p-values
 
-
 # -- .stars_pval() ------------------------------------------------------------
 #
 # Convert p-values to significance star annotations.
@@ -24,13 +23,17 @@
 # @return Character vector of the same length as p.
 .stars_pval <- function(p) {
   ifelse(
-    is.na(p), "",
+    is.na(p),
+    "",
     ifelse(
-      p < 0.001, "***",
+      p < 0.001,
+      "***",
       ifelse(
-        p < 0.01, "**",
+        p < 0.01,
+        "**",
         ifelse(
-          p < 0.05, "*",
+          p < 0.05,
+          "*",
           ifelse(p < 0.1, ".", "")
         )
       )

@@ -11,7 +11,6 @@
 #   .find_lcp()                — character-level longest common prefix
 #   .trim_to_word_boundary()   — trim an LCP string to the last word boundary
 
-
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
 # Collect a named character vector of variable labels from a survey object.
@@ -26,9 +25,9 @@
       raw <- attr(x@data[[col_name]], "label", exact = TRUE)
       if (
         !is.null(raw) &&
-        is.character(raw) &&
-        length(raw) > 0L &&
-        nzchar(raw[[1L]])
+          is.character(raw) &&
+          length(raw) > 0L &&
+          nzchar(raw[[1L]])
       ) {
         lbl <- raw[[1L]]
       }
@@ -49,9 +48,9 @@
     raw <- attr(x[[col_name]], "label", exact = TRUE)
     if (
       !is.null(raw) &&
-      is.character(raw) &&
-      length(raw) > 0L &&
-      nzchar(raw[[1L]])
+        is.character(raw) &&
+        length(raw) > 0L &&
+        nzchar(raw[[1L]])
     ) {
       result[[col_name]] <- raw[[1L]]
     }
@@ -62,10 +61,16 @@
 
 # Compute the character-level longest common prefix of a character vector.
 .find_lcp <- function(strings) {
-  if (length(strings) == 0L) return("")
-  if (length(strings) == 1L) return(strings[[1L]])
+  if (length(strings) == 0L) {
+    return("")
+  }
+  if (length(strings) == 1L) {
+    return(strings[[1L]])
+  }
   min_len <- min(nchar(strings))
-  if (min_len == 0L) return("")
+  if (min_len == 0L) {
+    return("")
+  }
   ref <- strings[[1L]]
   for (i in seq_len(min_len)) {
     if (!all(substr(strings, i, i) == substr(ref, i, i))) {
@@ -80,12 +85,18 @@
 # Trailing whitespace is stripped first; if no internal whitespace remains,
 # the trimmed string is returned as-is.
 .trim_to_word_boundary <- function(prefix) {
-  if (!nzchar(prefix)) return("")
+  if (!nzchar(prefix)) {
+    return("")
+  }
   trimmed <- trimws(prefix, which = "right")
-  if (!nzchar(trimmed)) return("")
-  spaces     <- gregexpr("\\s", trimmed, perl = TRUE)[[1L]]
+  if (!nzchar(trimmed)) {
+    return("")
+  }
+  spaces <- gregexpr("\\s", trimmed, perl = TRUE)[[1L]]
   last_space <- spaces[[length(spaces)]]
-  if (last_space == -1L) return(trimmed)
+  if (last_space == -1L) {
+    return(trimmed)
+  }
   substr(trimmed, 1L, last_space - 1L)
 }
 
@@ -167,14 +178,14 @@
 #' @export
 infer_question_prefaces <- function(
   x,
-  sep       = c(" - ", "- ", " \u2013 ", ": ", " | "),
-  min_vars  = 2L,
-  lcp_min   = 20L,
+  sep = c(" - ", "- ", " \u2013 ", ": ", " | "),
+  min_vars = 2L,
+  lcp_min = 20L,
   overwrite = FALSE,
-  verbose   = TRUE
+  verbose = TRUE
 ) {
   is_survey <- S7::S7_inherits(x, survey_base)
-  is_df     <- is.data.frame(x)
+  is_df <- is.data.frame(x)
 
   if (!is_survey && !is_df) {
     cli::cli_abort(
@@ -190,16 +201,20 @@ infer_question_prefaces <- function(
 
   # Collect labels as a named character vector (var_name → label text).
   labels <- if (is_survey) .collect_labels_survey(x) else .collect_labels_df(x)
-  if (length(labels) == 0L) return(invisible(x))
+  if (length(labels) == 0L) {
+    return(invisible(x))
+  }
 
   # ── Detection ───────────────────────────────────────────────────────────────
 
   remaining <- names(labels) # var names not yet assigned to a group
-  groups    <- list()        # each entry: list(preface, vars, suffixes)
+  groups <- list() # each entry: list(preface, vars, suffixes)
 
   # Pass 1: separator-based detection
   for (s in sep) {
-    if (length(remaining) == 0L) break
+    if (length(remaining) == 0L) {
+      break
+    }
 
     has_sep <- remaining[
       vapply(
@@ -208,57 +223,85 @@ infer_question_prefaces <- function(
         logical(1L)
       )
     ]
-    if (length(has_sep) < min_vars) next
+    if (length(has_sep) < min_vars) {
+      next
+    }
 
     # For each var with the separator, compute its candidate preface
     # (text before the FIRST occurrence, trimmed).
-    candidate_prefaces <- vapply(has_sep, function(v) {
-      lbl <- labels[[v]]
-      pos <- regexpr(s, lbl, fixed = TRUE)[[1L]]
-      trimws(substr(lbl, 1L, pos - 1L))
-    }, character(1L))
+    candidate_prefaces <- vapply(
+      has_sep,
+      function(v) {
+        lbl <- labels[[v]]
+        pos <- regexpr(s, lbl, fixed = TRUE)[[1L]]
+        trimws(substr(lbl, 1L, pos - 1L))
+      },
+      character(1L)
+    )
 
     # Group vars by identical candidate preface.
     by_preface <- split(has_sep, candidate_prefaces)
 
     for (preface in names(by_preface)) {
       v_group <- by_preface[[preface]]
-      if (length(v_group) < min_vars) next
+      if (length(v_group) < min_vars) {
+        next
+      }
 
-      suffixes <- vapply(v_group, function(v) {
-        lbl <- labels[[v]]
-        pos <- regexpr(s, lbl, fixed = TRUE)[[1L]]
-        trimws(substr(lbl, pos + nchar(s), nchar(lbl)))
-      }, character(1L))
+      suffixes <- vapply(
+        v_group,
+        function(v) {
+          lbl <- labels[[v]]
+          pos <- regexpr(s, lbl, fixed = TRUE)[[1L]]
+          trimws(substr(lbl, pos + nchar(s), nchar(lbl)))
+        },
+        character(1L)
+      )
 
-      groups    <- c(groups, list(list(
-        preface  = preface,
-        vars     = v_group,
-        suffixes = suffixes
-      )))
+      groups <- c(
+        groups,
+        list(list(
+          preface = preface,
+          vars = v_group,
+          suffixes = suffixes
+        ))
+      )
       remaining <- setdiff(remaining, v_group)
     }
   }
 
   # Pass 2: LCP-based detection for remaining labelled variables.
   if (length(remaining) >= 2L) {
-    lcp         <- .find_lcp(unname(labels[remaining]))
+    lcp <- .find_lcp(unname(labels[remaining]))
     lcp_trimmed <- .trim_to_word_boundary(lcp)
     if (nchar(lcp_trimmed) >= lcp_min) {
-      suffixes <- vapply(remaining, function(v) {
-        trimws(substr(labels[[v]], nchar(lcp_trimmed) + 1L, nchar(labels[[v]])))
-      }, character(1L))
-      groups <- c(groups, list(list(
-        preface  = lcp_trimmed,
-        vars     = remaining,
-        suffixes = suffixes
-      )))
+      suffixes <- vapply(
+        remaining,
+        function(v) {
+          trimws(substr(
+            labels[[v]],
+            nchar(lcp_trimmed) + 1L,
+            nchar(labels[[v]])
+          ))
+        },
+        character(1L)
+      )
+      groups <- c(
+        groups,
+        list(list(
+          preface = lcp_trimmed,
+          vars = remaining,
+          suffixes = suffixes
+        ))
+      )
     }
   }
 
-  if (length(groups) == 0L) return(invisible(x))
+  if (length(groups) == 0L) {
+    return(invisible(x))
+  }
 
-  # ── Apply ────────────────────────────────────────────────────────────────────
+  # ── Apply ───────────────────────────────────────────────────────────────────
 
   skipped <- character(0L) # vars skipped due to existing preface + overwrite=F
 
@@ -267,7 +310,7 @@ infer_question_prefaces <- function(
 
     for (i in seq_along(grp$vars)) {
       var_name <- grp$vars[[i]]
-      suffix   <- grp$suffixes[[i]]
+      suffix <- grp$suffixes[[i]]
 
       # Skip if var already has a preface and overwrite = FALSE.
       if (!overwrite) {
@@ -299,10 +342,10 @@ infer_question_prefaces <- function(
       # Write preface and trimmed label.
       if (is_survey) {
         x@metadata@question_prefaces[[var_name]] <- grp$preface
-        x@metadata@variable_labels[[var_name]]   <- suffix
+        x@metadata@variable_labels[[var_name]] <- suffix
       } else {
         attr(x[[var_name]], "question_preface") <- grp$preface
-        attr(x[[var_name]], "label")            <- suffix
+        attr(x[[var_name]], "label") <- suffix
       }
       applied_vars <- c(applied_vars, var_name)
     }

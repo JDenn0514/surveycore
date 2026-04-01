@@ -140,29 +140,31 @@ get_diffs <- function(
   design,
   x,
   treats,
-  group           = NULL,
-  covariates      = NULL,
-  ref_level       = NULL,
+  group = NULL,
+  covariates = NULL,
+  ref_level = NULL,
 
-  pval_adj        = NULL,
-  show_means      = TRUE,
+  pval_adj = NULL,
+  show_means = TRUE,
   show_pct_change = FALSE,
-  scale           = c("ame", "link"),
-  variance        = "ci",
-  conf_level      = 0.95,
-  min_cell_n      = 30L,
-  n_weighted      = FALSE,
-  decimals        = NULL,
-  na.rm           = TRUE,
-  label_values    = TRUE,
-  name_style      = "surveycore",
+  scale = c("ame", "link"),
+  variance = "ci",
+  conf_level = 0.95,
+  min_cell_n = 30L,
+  n_weighted = FALSE,
+  decimals = NULL,
+  na.rm = TRUE,
+  label_values = TRUE,
+  name_style = "surveycore",
   ...
 ) {
   # ── Step 1: Validate shared args ──────────────────────────────────────────
   .validate_shared_args(
-    variance, conf_level, name_style,
-    decimals       = decimals,
-    na.rm          = na.rm,
+    variance,
+    conf_level,
+    name_style,
+    decimals = decimals,
+    na.rm = na.rm,
     valid_variance = c("se", "ci")
   )
 
@@ -170,8 +172,8 @@ get_diffs <- function(
   .check_unsupported_class(design, "get_diffs")
 
   # ── Step 3: Resolve x, treats, group ──────────────────────────────────────
-  x_sym      <- rlang::ensym(x)
-  x_name     <- rlang::as_name(x_sym)
+  x_sym <- rlang::ensym(x)
+  x_name <- rlang::as_name(x_sym)
   treats_sym <- rlang::ensym(treats)
   treats_name <- rlang::as_name(treats_sym)
 
@@ -197,7 +199,7 @@ get_diffs <- function(
     )
   }
 
-  group_quo   <- rlang::enquo(group)
+  group_quo <- rlang::enquo(group)
   group_names <- .resolve_groups(design, group_quo)
 
   # ── Step 4: Validate x is numeric, treats has >= 2 levels ─────────────────
@@ -303,7 +305,8 @@ get_diffs <- function(
 
   # ── Step 7: Relevel + force contr.treatment ───────────────────────────────
   design@data[[treats_name]] <- stats::relevel(
-    design@data[[treats_name]], ref = ref_level
+    design@data[[treats_name]],
+    ref = ref_level
   )
   stats::contrasts(design@data[[treats_name]]) <-
     stats::contr.treatment(
@@ -314,12 +317,14 @@ get_diffs <- function(
   rhs_terms <- treats_name
   if (length(group_names) > 0L) {
     rhs_terms <- paste(
-      c(treats_name, group_names), collapse = " * "
+      c(treats_name, group_names),
+      collapse = " * "
     )
   }
   if (!is.null(covariates)) {
     rhs_terms <- paste(
-      c(rhs_terms, covariates), collapse = " + "
+      c(rhs_terms, covariates),
+      collapse = " + "
     )
   }
   formula <- stats::reformulate(rhs_terms, response = x_name)
@@ -330,9 +335,9 @@ get_diffs <- function(
 
   # ── Step 10: Determine estimation path ────────────────────────────────────
   scale <- match.arg(scale)
-  family_name    <- fit@family$family
+  family_name <- fit@family$family
   has_covariates <- !is.null(covariates)
-  has_group      <- length(group_names) > 0L
+  has_group <- length(group_names) > 0L
 
   use_marginaleffects <- has_covariates ||
     has_group ||
@@ -346,15 +351,15 @@ get_diffs <- function(
   if (!use_marginaleffects) {
     # ── Clean path ──────────────────────────────────────────────────────────
     estimate_method <- "coefficient"
-    mean_method     <- "intercept"
-    estimate_scale  <- "coefficient"
+    mean_method <- "intercept"
+    estimate_scale <- "coefficient"
 
     tidy_result <- clean(
       fit,
-      conf_level        = conf_level,
+      conf_level = conf_level,
       include_reference = TRUE,
-      n                 = TRUE,
-      statistic         = FALSE
+      n = TRUE,
+      statistic = FALSE
     )
 
     # Extract intercept row (reference mean)
@@ -379,33 +384,37 @@ get_diffs <- function(
     treat_df <- tidy_result[treat_mask, , drop = FALSE]
 
     # Extract level names from term column (strip variable prefix)
-    treat_level_names <- vapply(treat_df$term, function(t) {
-      sub(paste0("^", treats_name), "", t)
-    }, character(1L), USE.NAMES = FALSE)
+    treat_level_names <- vapply(
+      treat_df$term,
+      function(t) {
+        sub(paste0("^", treats_name), "", t)
+      },
+      character(1L),
+      USE.NAMES = FALSE
+    )
 
     estimates <- treat_df$estimate
-    ses       <- treat_df$std_error
-    ci_lows   <- treat_df$conf_low
-    ci_highs  <- treat_df$conf_high
-    p_values  <- treat_df$p_value
-    means     <- reference_mean + estimates
+    ses <- treat_df$std_error
+    ci_lows <- treat_df$conf_low
+    ci_highs <- treat_df$conf_high
+    p_values <- treat_df$p_value
+    means <- reference_mean + estimates
 
     result_levels <- treat_level_names
     result_estimates <- estimates
-    result_means     <- means
-    result_ses       <- ses
-    result_ci_lows   <- ci_lows
-    result_ci_highs  <- ci_highs
-    result_p_values  <- p_values
-    result_groups    <- NULL
-
+    result_means <- means
+    result_ses <- ses
+    result_ci_lows <- ci_lows
+    result_ci_highs <- ci_highs
+    result_p_values <- p_values
+    result_groups <- NULL
   } else {
     # ── Marginaleffects path ────────────────────────────────────────────────
     estimate_method <- "avg_slopes"
-    mean_method     <- "avg_predictions"
-    estimate_scale  <- if (scale == "link") "coefficient" else "ame"
+    mean_method <- "avg_predictions"
+    estimate_scale <- if (scale == "link") "coefficient" else "ame"
 
-    p      <- length(stats::coef(fit))
+    p <- length(stats::coef(fit))
     res_df <- max(1, fit@degf - (p - 1L))
     me_type <- if (scale == "link") "link" else "response"
 
@@ -414,18 +423,18 @@ get_diffs <- function(
       slopes <- marginaleffects::avg_slopes(
         fit,
         variables = treats_name,
-        type      = me_type,
-        wts       = fit@weights,
-        df        = res_df
+        type = me_type,
+        wts = fit@weights,
+        df = res_df
       )
     } else {
       slopes <- marginaleffects::avg_slopes(
         fit,
         variables = treats_name,
-        by        = group_names,
-        type      = me_type,
-        wts       = fit@weights,
-        df        = res_df
+        by = group_names,
+        type = me_type,
+        wts = fit@weights,
+        df = res_df
       )
     }
 
@@ -437,18 +446,18 @@ get_diffs <- function(
       if (!has_group) {
         preds <- marginaleffects::avg_predictions(
           fit,
-          by   = treats_name,
+          by = treats_name,
           type = me_type,
-          wts  = fit@weights,
-          df   = res_df
+          wts = fit@weights,
+          df = res_df
         )
       } else {
         preds <- marginaleffects::avg_predictions(
           fit,
-          by   = c(treats_name, group_names),
+          by = c(treats_name, group_names),
           type = me_type,
-          wts  = fit@weights,
-          df   = res_df
+          wts = fit@weights,
+          df = res_df
         )
       }
       preds_df <- as.data.frame(preds)
@@ -456,17 +465,18 @@ get_diffs <- function(
 
     # Extract treatment levels from slopes
     if (!has_group) {
-      result_levels   <- as.character(slopes_df$contrast)
+      result_levels <- as.character(slopes_df$contrast)
       # avg_slopes uses "X - ref" format; extract just the level name
-      result_levels   <- sub(
-        paste0("^(.+) - ", ref_level, "$"), "\\1",
+      result_levels <- sub(
+        paste0("^(.+) - ", ref_level, "$"),
+        "\\1",
         result_levels
       )
       result_estimates <- slopes_df$estimate
-      result_ses       <- slopes_df$std.error
-      result_ci_lows   <- slopes_df$conf.low
-      result_ci_highs  <- slopes_df$conf.high
-      result_p_values  <- slopes_df$p.value
+      result_ses <- slopes_df$std.error
+      result_ci_lows <- slopes_df$conf.low
+      result_ci_highs <- slopes_df$conf.high
+      result_p_values <- slopes_df$p.value
 
       if (!is.null(preds_df)) {
         # Match means from preds
@@ -481,28 +491,29 @@ get_diffs <- function(
         ref_mean_val <- NULL
       }
       result_groups <- NULL
-
     } else {
       # With group: slopes has one row per (contrast, group_combo)
-      result_levels   <- sub(
-        paste0("^(.+) - ", ref_level, "$"), "\\1",
+      result_levels <- sub(
+        paste0("^(.+) - ", ref_level, "$"),
+        "\\1",
         as.character(slopes_df$contrast)
       )
       result_estimates <- slopes_df$estimate
-      result_ses       <- slopes_df$std.error
-      result_ci_lows   <- slopes_df$conf.low
-      result_ci_highs  <- slopes_df$conf.high
-      result_p_values  <- slopes_df$p.value
+      result_ses <- slopes_df$std.error
+      result_ci_lows <- slopes_df$conf.low
+      result_ci_highs <- slopes_df$conf.high
+      result_p_values <- slopes_df$p.value
 
       # Group columns from slopes
-      result_groups <- slopes_df[
-        , group_names, drop = FALSE
+      result_groups <- slopes_df[,
+        group_names,
+        drop = FALSE
       ]
 
       if (!is.null(preds_df)) {
         # Build means lookup: match by treats + groups
         result_means <- numeric(nrow(slopes_df))
-        ref_mean_vals <- list()  # per group combo
+        ref_mean_vals <- list() # per group combo
         for (i in seq_len(nrow(slopes_df))) {
           lvl <- result_levels[[i]]
           pred_match <- preds_df[[treats_name]] == lvl
@@ -515,23 +526,25 @@ get_diffs <- function(
 
         # Get reference means per group combo
         ref_preds <- preds_df[
-          preds_df[[treats_name]] == ref_level, , drop = FALSE
+          preds_df[[treats_name]] == ref_level,
+          ,
+          drop = FALSE
         ]
       } else {
         result_means <- NULL
-        ref_preds    <- NULL
+        ref_preds <- NULL
       }
     }
   }
 
   # ── Step 12: Compute n (domain-aware) ─────────────────────────────────────
   domain_mask <- .apply_domain(design)
-  wt_var      <- design@variables$weights
+  wt_var <- design@variables$weights
 
   # Build the full output by assembling rows
   # We need reference row(s) + treatment rows
   all_treats_levels <- levels(design@data[[treats_name]])
-  non_ref_levels    <- setdiff(all_treats_levels, ref_level)
+  non_ref_levels <- setdiff(all_treats_levels, ref_level)
 
   if (!has_group) {
     # Single-group case: build one set of rows
@@ -547,7 +560,8 @@ get_diffs <- function(
 
         if (!is.null(wt_var)) {
           ref_nw <- sum(
-            design@data[[wt_var]][ref_mask], na.rm = TRUE
+            design@data[[wt_var]][ref_mask],
+            na.rm = TRUE
           )
         } else {
           ref_nw <- as.numeric(ref_n)
@@ -566,16 +580,16 @@ get_diffs <- function(
         }
 
         ref_row <- list(
-          level      = ref_level,
-          estimate   = 0,
-          mean       = ref_mean,
-          n          = as.integer(ref_n),
+          level = ref_level,
+          estimate = 0,
+          mean = ref_mean,
+          n = as.integer(ref_n),
           n_weighted = ref_nw,
-          se         = NA_real_,
-          ci_low     = NA_real_,
-          ci_high    = NA_real_,
-          p_value    = NA_real_,
-          stars      = ""
+          se = NA_real_,
+          ci_low = NA_real_,
+          ci_high = NA_real_,
+          p_value = NA_real_,
+          stars = ""
         )
         rows <- c(rows, list(ref_row))
       }
@@ -590,27 +604,28 @@ get_diffs <- function(
 
         if (!is.null(wt_var)) {
           lvl_nw <- sum(
-            design@data[[wt_var]][lvl_mask], na.rm = TRUE
+            design@data[[wt_var]][lvl_mask],
+            na.rm = TRUE
           )
         } else {
           lvl_nw <- as.numeric(lvl_n)
         }
 
         treat_row <- list(
-          level      = lvl,
-          estimate   = result_estimates[[i]],
-          mean       = if (!is.null(result_means)) {
+          level = lvl,
+          estimate = result_estimates[[i]],
+          mean = if (!is.null(result_means)) {
             result_means[[i]]
           } else {
             NA_real_
           },
-          n          = as.integer(lvl_n),
+          n = as.integer(lvl_n),
           n_weighted = lvl_nw,
-          se         = result_ses[[i]],
-          ci_low     = result_ci_lows[[i]],
-          ci_high    = result_ci_highs[[i]],
-          p_value    = result_p_values[[i]],
-          stars      = ""
+          se = result_ses[[i]],
+          ci_low = result_ci_lows[[i]],
+          ci_high = result_ci_highs[[i]],
+          p_value = result_p_values[[i]],
+          stars = ""
         )
         rows <- c(rows, list(treat_row))
       }
@@ -638,11 +653,14 @@ get_diffs <- function(
     if (!is.null(pval_adj)) {
       # Adjust only comparison rows (not reference)
       comparison_idx <- which(vapply(
-        rows, function(r) r$estimate != 0, logical(1L)
+        rows,
+        function(r) r$estimate != 0,
+        logical(1L)
       ))
       pvals <- vapply(
         rows[comparison_idx],
-        function(r) r$p_value, double(1L)
+        function(r) r$p_value,
+        double(1L)
       )
       adj_pvals <- stats::p.adjust(pvals, method = pval_adj)
       for (j in seq_along(comparison_idx)) {
@@ -702,62 +720,83 @@ get_diffs <- function(
 
     # Treatment column
     col_vecs[[treats_name]] <- vapply(
-      rows, function(r) r$level, character(1L)
+      rows,
+      function(r) r$level,
+      character(1L)
     )
 
     col_vecs[["estimate"]] <- vapply(
-      rows, function(r) r$estimate, double(1L)
+      rows,
+      function(r) r$estimate,
+      double(1L)
     )
 
     if (show_pct_change && !suppress_mean) {
       col_vecs[["pct_change"]] <- vapply(
-        rows, function(r) {
+        rows,
+        function(r) {
           r$pct_change %||% NA_real_
-        }, double(1L)
+        },
+        double(1L)
       )
     }
 
     if (show_means && !suppress_mean) {
       col_vecs[["mean"]] <- vapply(
-        rows, function(r) r$mean, double(1L)
+        rows,
+        function(r) r$mean,
+        double(1L)
       )
     }
 
     col_vecs[["n"]] <- vapply(
-      rows, function(r) r$n, integer(1L)
+      rows,
+      function(r) r$n,
+      integer(1L)
     )
 
     if (n_weighted) {
       col_vecs[["n_weighted"]] <- vapply(
-        rows, function(r) r$n_weighted, double(1L)
+        rows,
+        function(r) r$n_weighted,
+        double(1L)
       )
     }
 
     if (!is.null(variance) && "se" %in% variance) {
       col_vecs[["se"]] <- vapply(
-        rows, function(r) r$se, double(1L)
+        rows,
+        function(r) r$se,
+        double(1L)
       )
     }
 
     if (!is.null(variance) && "ci" %in% variance) {
       col_vecs[["ci_low"]] <- vapply(
-        rows, function(r) r$ci_low, double(1L)
+        rows,
+        function(r) r$ci_low,
+        double(1L)
       )
       col_vecs[["ci_high"]] <- vapply(
-        rows, function(r) r$ci_high, double(1L)
+        rows,
+        function(r) r$ci_high,
+        double(1L)
       )
     }
 
     col_vecs[["p_value"]] <- vapply(
-      rows, function(r) r$p_value, double(1L)
+      rows,
+      function(r) r$p_value,
+      double(1L)
     )
 
     col_vecs[["stars"]] <- vapply(
-      rows, function(r) r$stars, character(1L)
+      rows,
+      function(r) r$stars,
+      character(1L)
     )
 
     groups_df <- data.frame()
-
   } else {
     # ── Grouped case ────────────────────────────────────────────────────────
     # Build rows per unique group combination
@@ -774,8 +813,8 @@ get_diffs <- function(
       )
     }
 
-    all_rows        <- list()
-    all_group_rows  <- list()
+    all_rows <- list()
+    all_group_rows <- list()
 
     for (gi in seq_len(nrow(unique_group_combos))) {
       gc <- unique_group_combos[gi, , drop = FALSE]
@@ -793,7 +832,8 @@ get_diffs <- function(
         ref_n <- sum(ref_mask)
         if (!is.null(wt_var)) {
           ref_nw <- sum(
-            design@data[[wt_var]][ref_mask], na.rm = TRUE
+            design@data[[wt_var]][ref_mask],
+            na.rm = TRUE
           )
         } else {
           ref_nw <- as.numeric(ref_n)
@@ -812,16 +852,16 @@ get_diffs <- function(
         }
 
         ref_row <- list(
-          level      = ref_level,
-          estimate   = 0,
-          mean       = ref_mean,
-          n          = as.integer(ref_n),
+          level = ref_level,
+          estimate = 0,
+          mean = ref_mean,
+          n = as.integer(ref_n),
           n_weighted = ref_nw,
-          se         = NA_real_,
-          ci_low     = NA_real_,
-          ci_high    = NA_real_,
-          p_value    = NA_real_,
-          stars      = ""
+          se = NA_real_,
+          ci_low = NA_real_,
+          ci_high = NA_real_,
+          p_value = NA_real_,
+          stars = ""
         )
         all_rows <- c(all_rows, list(ref_row))
         all_group_rows <- c(all_group_rows, list(gc))
@@ -848,27 +888,28 @@ get_diffs <- function(
         lvl_n <- sum(lvl_mask)
         if (!is.null(wt_var)) {
           lvl_nw <- sum(
-            design@data[[wt_var]][lvl_mask], na.rm = TRUE
+            design@data[[wt_var]][lvl_mask],
+            na.rm = TRUE
           )
         } else {
           lvl_nw <- as.numeric(lvl_n)
         }
 
         treat_row <- list(
-          level      = lvl,
-          estimate   = result_estimates[[i]],
-          mean       = if (!is.null(result_means)) {
+          level = lvl,
+          estimate = result_estimates[[i]],
+          mean = if (!is.null(result_means)) {
             result_means[[i]]
           } else {
             NA_real_
           },
-          n          = as.integer(lvl_n),
+          n = as.integer(lvl_n),
           n_weighted = lvl_nw,
-          se         = result_ses[[i]],
-          ci_low     = result_ci_lows[[i]],
-          ci_high    = result_ci_highs[[i]],
-          p_value    = result_p_values[[i]],
-          stars      = ""
+          se = result_ses[[i]],
+          ci_low = result_ci_lows[[i]],
+          ci_high = result_ci_highs[[i]],
+          p_value = result_p_values[[i]],
+          stars = ""
         )
         all_rows <- c(all_rows, list(treat_row))
         all_group_rows <- c(all_group_rows, list(gc))
@@ -910,10 +951,12 @@ get_diffs <- function(
         if (length(comp_idx) > 0L) {
           pvals <- vapply(
             all_rows[comp_idx],
-            function(r) r$p_value, double(1L)
+            function(r) r$p_value,
+            double(1L)
           )
           adj_pvals <- stats::p.adjust(
-            pvals, method = pval_adj
+            pvals,
+            method = pval_adj
           )
           for (j in seq_along(comp_idx)) {
             all_rows[[comp_idx[[j]]]]$p_value <-
@@ -999,58 +1042,80 @@ get_diffs <- function(
     col_vecs <- list()
 
     col_vecs[[treats_name]] <- vapply(
-      all_rows, function(r) r$level, character(1L)
+      all_rows,
+      function(r) r$level,
+      character(1L)
     )
 
     col_vecs[["estimate"]] <- vapply(
-      all_rows, function(r) r$estimate, double(1L)
+      all_rows,
+      function(r) r$estimate,
+      double(1L)
     )
 
     if (show_pct_change && !suppress_mean) {
       col_vecs[["pct_change"]] <- vapply(
-        all_rows, function(r) {
+        all_rows,
+        function(r) {
           r$pct_change %||% NA_real_
-        }, double(1L)
+        },
+        double(1L)
       )
     }
 
     if (show_means && !suppress_mean) {
       col_vecs[["mean"]] <- vapply(
-        all_rows, function(r) r$mean, double(1L)
+        all_rows,
+        function(r) r$mean,
+        double(1L)
       )
     }
 
     col_vecs[["n"]] <- vapply(
-      all_rows, function(r) r$n, integer(1L)
+      all_rows,
+      function(r) r$n,
+      integer(1L)
     )
 
     if (n_weighted) {
       col_vecs[["n_weighted"]] <- vapply(
-        all_rows, function(r) r$n_weighted, double(1L)
+        all_rows,
+        function(r) r$n_weighted,
+        double(1L)
       )
     }
 
     if (!is.null(variance) && "se" %in% variance) {
       col_vecs[["se"]] <- vapply(
-        all_rows, function(r) r$se, double(1L)
+        all_rows,
+        function(r) r$se,
+        double(1L)
       )
     }
 
     if (!is.null(variance) && "ci" %in% variance) {
       col_vecs[["ci_low"]] <- vapply(
-        all_rows, function(r) r$ci_low, double(1L)
+        all_rows,
+        function(r) r$ci_low,
+        double(1L)
       )
       col_vecs[["ci_high"]] <- vapply(
-        all_rows, function(r) r$ci_high, double(1L)
+        all_rows,
+        function(r) r$ci_high,
+        double(1L)
       )
     }
 
     col_vecs[["p_value"]] <- vapply(
-      all_rows, function(r) r$p_value, double(1L)
+      all_rows,
+      function(r) r$p_value,
+      double(1L)
     )
 
     col_vecs[["stars"]] <- vapply(
-      all_rows, function(r) r$stars, character(1L)
+      all_rows,
+      function(r) r$stars,
+      character(1L)
     )
 
     # Group columns
@@ -1076,14 +1141,20 @@ get_diffs <- function(
 
   # Apply labels to treats
   label_df <- .apply_group_labels(
-    label_df, treats_name, design, label_values
+    label_df,
+    treats_name,
+    design,
+    label_values
   )
   col_vecs[[treats_name]] <- label_df[[treats_name]]
 
   # Apply labels to group columns
   if (ncol(groups_df) > 0L) {
     label_df_g <- .apply_group_labels(
-      groups_df, group_names, design, label_values
+      groups_df,
+      group_names,
+      design,
+      label_values
     )
     groups_df <- label_df_g
   }
@@ -1110,23 +1181,23 @@ get_diffs <- function(
   # ── Step 20: Attach .meta ────────────────────────────────────────────────
   x_meta <- .extract_var_meta(design, x_name)
   treats_meta <- .extract_var_meta(design, treats_name)
-  treats_meta$name      <- treats_name
+  treats_meta$name <- treats_name
   treats_meta$ref_level <- ref_level
   group_meta <- .build_group_meta(design, group_names)
 
   meta_args <- list(
-    conf_level      = conf_level,
-    call            = cl,
-    group           = group_meta,
-    x               = stats::setNames(list(x_meta), x_name),
-    treats          = treats_meta,
-    covariates      = covariates,
-    family          = family_name,
-    link            = fit@family$link,
-    pval_adj        = pval_adj,
+    conf_level = conf_level,
+    call = cl,
+    group = group_meta,
+    x = stats::setNames(list(x_meta), x_name),
+    treats = treats_meta,
+    covariates = covariates,
+    family = family_name,
+    link = fit@family$link,
+    pval_adj = pval_adj,
     estimate_method = estimate_method,
-    mean_method     = mean_method,
-    estimate_scale  = estimate_scale
+    mean_method = mean_method,
+    estimate_scale = estimate_scale
   )
 
   attr(result, ".meta") <- .build_meta(design, meta_args)
@@ -1136,26 +1207,27 @@ get_diffs <- function(
 
   # ── Step 21: Column-level labels ──────────────────────────────────────────
   col_labels <- list(
-    estimate   = paste0(
-      "Difference relative to ", ref_level
+    estimate = paste0(
+      "Difference relative to ",
+      ref_level
     ),
     pct_change = "% Change",
-    mean       = "Mean",
-    n          = "N",
+    mean = "Mean",
+    n = "N",
     n_weighted = "N (weighted)",
-    se         = "Std. Error",
-    ci_low     = "Low CI",
-    ci_high    = "High CI",
-    p_value    = "P-Value",
-    stars      = ""
+    se = "Std. Error",
+    ci_low = "Low CI",
+    ci_high = "High CI",
+    p_value = "P-Value",
+    stars = ""
   )
 
   # Broom-style column names
   broom_labels <- list(
     std.error = "Std. Error",
-    conf.low  = "Low CI",
+    conf.low = "Low CI",
     conf.high = "High CI",
-    p.value   = "P-Value"
+    p.value = "P-Value"
   )
 
   # Treats column label
@@ -1183,8 +1255,11 @@ get_diffs <- function(
 
   # ── Step 22: Set class and return ─────────────────────────────────────────
   class(result) <- c(
-    "survey_diffs", "survey_result",
-    "tbl_df", "tbl", "data.frame"
+    "survey_diffs",
+    "survey_result",
+    "tbl_df",
+    "tbl",
+    "data.frame"
   )
   result
 }

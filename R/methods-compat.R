@@ -10,7 +10,6 @@
 #
 # Class defined in R/core-classes.R
 
-
 # names() for survey design objects
 #
 # Returns the column names of the underlying data frame, enabling IDE

@@ -70,7 +70,8 @@
 #'
 #' @source
 #' National Center for Health Statistics, CDC. NHANES 2017-2018 Continuous
-#' Survey. \url{https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?BeginYear=2017}
+#' Survey.
+#' \url{https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?BeginYear=2017}
 #'
 #' @examples
 #' # All 9,254 participants (interview + exam)
@@ -548,7 +549,8 @@
 #' - **Question preface** (`"question_preface"` attribute): The shared question
 #'   stem for battery items, set on all `smuse_*` columns. Example:
 #'   `attr(pew_npors_2025$smuse_fb, "question_preface")` returns
-#'   `"Please indicate whether or not you ever use the following websites or apps."`.
+#'   `"Please indicate whether or not you ever use the following websites or
+#'   apps."`.
 #'
 #' @source
 #' Pew Research Center. 2025 National Public Opinion Reference Survey.
@@ -739,7 +741,8 @@
 #' }
 #'
 #' @details
-#' **Survey design:** Jackknife replication — use `as_survey_replicate()` with all
+#' **Survey design:** Jackknife replication — use `as_survey_replicate()`
+#' with all
 #' 100 replicate weights:
 #'
 #' ```r
@@ -788,11 +791,13 @@
 #' - **Value labels** (`"labels"` attribute): A named numeric vector mapping
 #'   each code to its meaning. Example:
 #'   `attr(pew_jewish_2020$relconsider_a, "labels")` returns
-#'   `c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2, Refused = 99)`.
+#'   `c("Yes, Consider Myself This" = 1, "No, Do Not Consider Myself This" = 2,
+#'   Refused = 99)`.
 #' - **Question preface** (`"question_preface"` attribute): The shared question
 #'   stem for each battery group. Example:
 #'   `attr(pew_jewish_2020$discrim_a, "question_preface")` returns
-#'   `"Please tell us how much discrimination there is against each of these groups in our society today."`.
+#'   `"Please tell us how much discrimination there is against each of these
+#'   groups in our society today."`.
 #'
 #' @source
 #' Pew Research Center. Jewish Americans in 2020 (Extended Dataset).
@@ -894,7 +899,8 @@
 #' \describe{
 #'   \item{response_id}{Unique respondent ID (integer).}
 #'   \item{start_date}{Interview date (character, `"YYYY-MM-DD"` format).}
-#'   \item{wave_id}{Wave identifier: `"ns20190718"` for all rows in this dataset.}
+#'   \item{wave_id}{Wave identifier: `"ns20190718"` for all rows in this
+#'     dataset.}
 #'   \item{weight}{Raking weight calibrated to ACS demographic targets and
 #'     2016 presidential vote choice. Use for all population-level estimates.}
 #'   \item{right_track}{Country direction: `1` = Right direction,
@@ -920,7 +926,8 @@
 #'     `2` = Republican, `3` = Other.}
 #'   \item{dem_vote_intent}{Democratic primary vote intention. See labels.}
 #'   \item{dem_vote_intent_TEXT}{Write-in for `dem_vote_intent` "other".}
-#'   \item{rank_dems_1}{Top-ranked Democratic presidential candidate. See labels.}
+#'   \item{rank_dems_1}{Top-ranked Democratic presidential candidate.
+#'     See labels.}
 #'   \item{rank_dems_2}{Second-ranked Democratic candidate. See labels.}
 #'   \item{rank_dems_3}{Third-ranked Democratic candidate. See labels.}
 #'   \item{replace_trump}{Wants non-Trump Republican nominee: `1` = Yes,
@@ -1105,7 +1112,8 @@
 #'   \item{medicare_for_all}{Support Medicare-for-All.}
 #'   \item{military_size}{Support reducing the size of the U.S. military.}
 #'   \item{minwage}{Support raising the minimum wage to $15/hour.}
-#'   \item{muslimban}{Support banning people from predominantly Muslim countries.}
+#'   \item{muslimban}{Support banning people from predominantly Muslim
+#'     countries.}
 #'   \item{oil_and_gas}{Support removing barriers to domestic oil and gas
 #'     drilling.}
 #'   \item{reparations}{Support granting reparations to descendants of slaves.}
@@ -1172,7 +1180,8 @@
 #' attr(ns_wave1$group_favorability_blacks, "question_preface")
 #' attr(ns_wave1$news_sources_cnn, "labels")
 #'
-#' # Create a calibrated survey design (correct approach for raked non-prob samples)
+#' # Create a calibrated survey design (correct approach for raked
+#' # non-prob samples)
 #' svy <- as_survey_nonprob(ns_wave1, weights = weight)
 #' get_freqs(svy, pres_approval)
 #'
