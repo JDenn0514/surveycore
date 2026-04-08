@@ -454,13 +454,14 @@ get_diffs <- function(
       preds_df <- as.data.frame(preds)
     }
 
-    # Extract treatment levels from slopes
+    # Extract treatment levels from slopes.
+    # avg_slopes uses "X - ref" format; strip the " - RefLevel" suffix.
+    # Use fixed = TRUE to avoid regex metacharacter issues if ref_level
+    # contains special characters (e.g., ".", "(", ")").
+    ref_suffix <- paste0(" - ", ref_level)
+
     if (!has_group) {
       result_levels   <- as.character(slopes_df$contrast)
-      # avg_slopes uses "X - ref" format; extract just the level name.
-      # Use fixed = TRUE to avoid regex metacharacter issues if ref_level
-      # contains special characters (e.g., ".", "(", ")").
-      ref_suffix <- paste0(" - ", ref_level)
       result_levels <- sub(ref_suffix, "", result_levels, fixed = TRUE)
       result_estimates <- slopes_df$estimate
       result_ses       <- slopes_df$std.error
