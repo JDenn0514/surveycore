@@ -185,11 +185,14 @@
     preds_df <- as.data.frame(preds)
   }
 
-  # Parse level names from "X - ref" contrast format
+  # Parse level names from "X - ref" contrast format.
+  # Use fixed = TRUE to avoid regex metacharacter issues if ref_level
+  # contains special characters (e.g., ".", "(", ")").
+  ref_suffix <- paste0(" - ", ref_level)
   result_levels <- sub(
-    paste0("^(.+) - ", ref_level, "$"),
-    "\\1",
-    as.character(slopes_df$contrast)
+    ref_suffix, "",
+    as.character(slopes_df$contrast),
+    fixed = TRUE
   )
   result_estimates <- slopes_df$estimate
   result_ses       <- slopes_df$std.error
