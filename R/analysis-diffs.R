@@ -457,11 +457,11 @@ get_diffs <- function(
     # Extract treatment levels from slopes
     if (!has_group) {
       result_levels   <- as.character(slopes_df$contrast)
-      # avg_slopes uses "X - ref" format; extract just the level name
-      result_levels   <- sub(
-        paste0("^(.+) - ", ref_level, "$"), "\\1",
-        result_levels
-      )
+      # avg_slopes uses "X - ref" format; extract just the level name.
+      # Use fixed = TRUE to avoid regex metacharacter issues if ref_level
+      # contains special characters (e.g., ".", "(", ")").
+      ref_suffix <- paste0(" - ", ref_level)
+      result_levels <- sub(ref_suffix, "", result_levels, fixed = TRUE)
       result_estimates <- slopes_df$estimate
       result_ses       <- slopes_df$std.error
       result_ci_lows   <- slopes_df$conf.low
@@ -484,9 +484,10 @@ get_diffs <- function(
 
     } else {
       # With group: slopes has one row per (contrast, group_combo)
-      result_levels   <- sub(
-        paste0("^(.+) - ", ref_level, "$"), "\\1",
-        as.character(slopes_df$contrast)
+      result_levels <- sub(
+        ref_suffix, "",
+        as.character(slopes_df$contrast),
+        fixed = TRUE
       )
       result_estimates <- slopes_df$estimate
       result_ses       <- slopes_df$std.error
@@ -943,6 +944,19 @@ get_diffs <- function(
         }
       }
 
+      # Fallback: when show_means = FALSE, reference rows are not in
+      # all_rows. Look up the reference mean from preds_df instead.
+      if (is.na(ref_mean_for_pct) && !is.null(preds_df)) {
+        pred_match_ref <- preds_df[[treats_name]] == ref_level
+        for (gn in group_names) {
+          pred_match_ref <- pred_match_ref &
+            (preds_df[[gn]] == gc[[gn]])
+        }
+        if (any(pred_match_ref)) {
+          ref_mean_for_pct <- preds_df$estimate[pred_match_ref][[1L]]
+        }
+      }
+
       ref_is_zero_g <- !is.na(ref_mean_for_pct) &&
         abs(ref_mean_for_pct) < .Machine$double.eps * 100
       if (show_pct_change && !suppress_mean && ref_is_zero_g) {
@@ -977,6 +991,19 @@ get_diffs <- function(
               ref_mean_g <- all_rows[[ri]]$mean
               break
             }
+          }
+        }
+
+        # Fallback: when show_means = FALSE, reference rows are not in
+        # all_rows. Look up the reference mean from preds_df instead.
+        if (is.na(ref_mean_g) && !is.null(preds_df)) {
+          pred_match_ref2 <- preds_df[[treats_name]] == ref_level
+          for (gn in group_names) {
+            pred_match_ref2 <- pred_match_ref2 &
+              (preds_df[[gn]] == gc_row[[gn]])
+          }
+          if (any(pred_match_ref2)) {
+            ref_mean_g <- preds_df$estimate[pred_match_ref2][[1L]]
           }
         }
 
