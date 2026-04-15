@@ -3,7 +3,7 @@
 **ID:** get-t-test-pairwise
 **Spec:** `plans/spec-get-t-test-pairwise.md` (v0.4, Approved)
 **Decisions:** `plans/decisions-get-t-test-pairwise.md`
-**Status:** Draft
+**Status:** Complete
 
 ---
 
@@ -22,7 +22,7 @@ domain-column mutation (the `..surveycore_domain..` pattern).
 
 ## PR Map
 
-- [ ] PR 1: `feature/get-t-test-pairwise` — implement `get_t_test()`, `get_pairwise()`, print methods, tests, and error-messages update
+- [x] PR 1: `feature/get-t-test-pairwise` — implement `get_t_test()`, `get_pairwise()`, print methods, tests, and error-messages update
 
 ---
 
