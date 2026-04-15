@@ -496,7 +496,7 @@ S7::method(print, survey_nonprob) <- function(
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
   cli::cli_text(
-    "{.cls survey_nonprob} (calibrated / non-probability) [experimental]"
+    "{.cls survey_nonprob} (non-probability) [experimental]"
   )
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
@@ -560,7 +560,7 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
   x <- object
 
   cli::cli_h1("Survey Design Summary")
-  cli::cli_text("Type: calibrated / non-probability [experimental]")
+  cli::cli_text("Type: non-probability [experimental]")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
   wts_var <- x@variables$weights

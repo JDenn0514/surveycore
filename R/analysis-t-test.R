@@ -474,7 +474,7 @@ print.survey_t_test <- function(x, ...) {
     taylor = "Taylor series",
     replicate = "Replicate weights",
     twophase = "Two-phase",
-    calibrated = "Calibrated",
+    nonprob = "Non-probability",
     m$design_type
   )
   n_fmt <- format(m$n_respondents, big.mark = ",")
@@ -842,7 +842,7 @@ print.survey_pairwise <- function(x, ...) {
     taylor = "Taylor series",
     replicate = "Replicate weights",
     twophase = "Two-phase",
-    calibrated = "Calibrated",
+    nonprob = "Non-probability",
     m$design_type
   )
   n_fmt <- format(m$n_respondents, big.mark = ",")

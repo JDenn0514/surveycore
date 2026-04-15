@@ -264,7 +264,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 10
       
     Output
@@ -289,7 +289,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -335,7 +335,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 10
       
       
@@ -368,7 +368,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -401,7 +401,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 10
       
       
@@ -431,7 +431,7 @@
     Message
       
       -- Survey Design Summary -------------------------------------------------------
-      Type: calibrated / non-probability [experimental]
+      Type: non-probability [experimental]
       Sample size: 10
       Weighted N: 10
       

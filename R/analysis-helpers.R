@@ -468,7 +468,7 @@ PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
 #' design object, then prepends them to `meta_args`.
 #'
 #' Valid `design_type` strings: `"taylor"`, `"replicate"`, `"twophase"`,
-#' `"calibrated"`. Downstream code that reads `.meta` branches on these exact
+#' `"nonprob"`. Downstream code that reads `.meta` branches on these exact
 #' strings.
 #'
 #' @param design    A survey design object.
@@ -488,7 +488,7 @@ PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
     } else if (S7::S7_inherits(design, survey_twophase)) {
       "twophase"
     } else if (S7::S7_inherits(design, survey_nonprob)) {
-      "calibrated"
+      "nonprob"
     } else {
       cli::cli_abort(
         c("x" = "Unrecognized design class {.cls {class(design)[1L]}}."),

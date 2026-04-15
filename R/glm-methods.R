@@ -107,7 +107,7 @@ NULL
 # Returns the short design_type string matching Phase 1 .build_meta().
 #
 # @param design A survey_base object.
-# @return One of "taylor", "replicate", "twophase", "calibrated".
+# @return One of "taylor", "replicate", "twophase", "nonprob".
 #' @noRd
 .glm_design_type_string <- function(design) {
   if (S7::S7_inherits(design, survey_taylor)) {
@@ -117,7 +117,7 @@ NULL
   } else if (S7::S7_inherits(design, survey_twophase)) {
     "twophase"
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    "calibrated"
+    "nonprob"
   } else {
     "unknown"
   }

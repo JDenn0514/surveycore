@@ -543,7 +543,7 @@ test_that("get_diffs() works with survey_nonprob design", {
   df <- .make_diffs_data()
   d <- as_survey_nonprob(df, weights = wt)
   result <- get_diffs(d, dv, treats, ref_level = "Control")
-  expect_identical(meta(result)$design_type, "calibrated")
+  expect_identical(meta(result)$design_type, "nonprob")
 })
 
 test_that("get_diffs() domain estimation produces in-domain n counts", {

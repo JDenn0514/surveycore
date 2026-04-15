@@ -19,7 +19,7 @@
 #' @return A named list. Common fields present on every result:
 #' \describe{
 #'   \item{`design_type`}{Character(1). Design class: `"taylor"`,
-#'     `"replicate"`, `"twophase"`, `"srs"`, or `"calibrated"`.}
+#'     `"replicate"`, `"twophase"`, `"srs"`, or `"nonprob"`.}
 #'   \item{`conf_level`}{Numeric(1). Confidence level used (e.g. `0.95`).}
 #'   \item{`call`}{Language. Matched call to the `get_*()` function.}
 #'   \item{`n_respondents`}{Integer(1). Total rows in the design, regardless
@@ -135,7 +135,7 @@ print.survey_diffs <- function(x, ...) {
     taylor = "Taylor series",
     replicate = "Replicate weights",
     twophase = "Two-phase",
-    calibrated = "Calibrated",
+    nonprob = "Non-probability",
     m$design_type
   )
 

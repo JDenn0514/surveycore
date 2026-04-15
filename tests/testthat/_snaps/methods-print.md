@@ -443,7 +443,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 30
       
     Output
@@ -469,7 +469,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 30
       Domain: 30 of 30 rows
       
