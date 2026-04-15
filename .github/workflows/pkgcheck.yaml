@@ -1,7 +1,9 @@
 name: pkgcheck
 
 on:
-  push:
+  workflow_run:
+    workflows: ["R-CMD-check"]
+    types: [completed]
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
@@ -22,3 +24,4 @@ jobs:
           post-to-issue: ${{ github.event_name != 'pull_request' }}
           summary-only: true
           append-to-issue: true
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
