@@ -21,7 +21,7 @@ combination will now compute `pct_change` correctly instead of returning `NA`.
 
 ## PR Map
 
-- [ ] PR 1: `refactor/analysis-diffs-helpers` — Extract `.extract_clean_estimates()`, `.extract_me_estimates()`, `.build_diffs_output()` into `analysis-diffs-helpers.R` and replace inline branches in `get_diffs()`.
+- [x] PR 1: `refactor/analysis-diffs-helpers` — Extract `.extract_clean_estimates()`, `.extract_me_estimates()`, `.build_diffs_output()` into `analysis-diffs-helpers.R` and replace inline branches in `get_diffs()`.
 
 ---
 

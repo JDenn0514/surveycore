@@ -115,6 +115,8 @@ DIFFS_META_KEYS <- c(
   "mean_method",
   "estimate_scale"
 )
+T_TEST_META_KEYS <- c("group", "x", "by")
+PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
 
 
 #' Extract variable metadata from a survey design
