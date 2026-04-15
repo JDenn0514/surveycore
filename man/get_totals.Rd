@@ -25,7 +25,8 @@ get_totals(
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
 numeric variable name. When \code{NULL} (default), estimates the population
-size (sum of weights). When supplied, estimates the weighted sum (sum of w_i * x_i).}
+size (sum of weights). When supplied, estimates the weighted sum
+(sum of w_i * x_i).}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Default \code{NULL}.}
@@ -99,8 +100,10 @@ Other analysis:
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{meta}()}
 }
 \concept{analysis}

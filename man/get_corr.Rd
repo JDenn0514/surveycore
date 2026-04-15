@@ -96,7 +96,8 @@ other columns in both long and wide formats.
 \strong{Long format} columns:
 \itemize{
 \item \verb{[group_cols...]} — group variable columns (when active), first.
-\item \code{var1}, \code{var2} — variable names (or labels when \code{label_vars = TRUE}).
+\item \code{var1}, \code{var2} — variable names (or labels when
+\code{label_vars = TRUE}).
 \item \code{r} — Pearson correlation coefficient.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}.
@@ -141,8 +142,10 @@ Other analysis:
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

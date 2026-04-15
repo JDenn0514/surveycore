@@ -62,6 +62,8 @@ reference:
       - get_quantiles
       - get_ratios
       - get_diffs
+      - get_t_test
+      - get_pairwise
 
   - title: "Regression"
     desc: >

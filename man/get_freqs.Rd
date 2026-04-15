@@ -143,8 +143,10 @@ Other analysis:
 \code{\link{get_corr}()},
 \code{\link{get_diffs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

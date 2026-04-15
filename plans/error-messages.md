@@ -145,6 +145,11 @@ against the messages defined here.
 | 99 | `get_diffs()` | `show_pct_change = TRUE` and ref mean is 0 | WARN | `surveycore_warning_pct_change_zero_ref` | `"Reference group mean is 0; percentage change is undefined."` |
 | 100 | `get_diffs()` | `treats` column not a factor | WARN | `surveycore_warning_treats_coerced` | `"{.field {treats_name}} coerced to factor."` |
 | 101 | S7 validator (`survey_nonprob`) | Weight column has negative values | ERROR | `surveycore_error_weights_negative` | `"x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s)."`, `"i" = "All non-NA weights must be non-negative (>= 0)."`, `"v" = "Remove or replace rows where {.field {weights_var}} is negative."` |
+| T-1 | `get_t_test()` | Model matrix has ≠ 2 columns after fitting (active `by` levels ≠ 2) | ERROR | `surveycore_error_by_not_two_levels` | `"{.arg by} ({.field {by_name}}) must produce exactly 2 active groups, not {n_active}. Filter the design to 2 groups with {.fn surveytidy::filter}, or use {.fn get_pairwise} for k > 2 groups."` |
+| T-2 | `get_t_test()` | `by` is character, integer, or logical — coerced to factor | WARN | `surveycore_warning_by_coerced` | `"{.field {by_name}} coerced to factor. Level order: {.val {levels}}."` |
+| T-3 | `get_t_test()` | After NA removal, one active level of `by` has zero rows (no `group`) | ERROR | `surveycore_error_by_empty_cell` | `"Level {.field {empty_level}} of {.arg by} ({.field {by_name}}) has no non-NA observations. Cannot compute t-test."` |
+| T-3g | `get_t_test()` | Within a group stratum, one active level of `by` has zero rows | ERROR | `surveycore_error_by_empty_cell` | `"In group stratum {.val {group_vals}}, level {.field {empty_level}} of {.arg by} ({.field {by_name}}) has no non-NA observations."` |
+| P-1 | `get_pairwise()` | `by` has < 2 active levels | ERROR | `surveycore_error_by_one_level` | `"{.arg by} ({.field {by_name}}) must have at least 2 active groups, not {n_active}."` |
 
 ---
 
