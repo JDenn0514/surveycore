@@ -165,20 +165,14 @@ test_that("extract_var_label() errors with surveycore_error_format_invalid for i
   )
 })
 
-test_that("extract_var_label() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_var_label() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    extract_var_label(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_var_label(d, nonexistent))
 })
 
-test_that("extract_var_label() result excludes missing var after warning", {
+test_that("extract_var_label() any_of() silently omits missing columns", {
   d <- make_labeled_design()
-  expect_warning(
-    result <- extract_var_label(d, y1, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  result <- extract_var_label(d, any_of(c("y1", "nonexistent")))
   expect_named(result, "y1")
 })
 
@@ -193,11 +187,6 @@ test_that("extract_var_label() errors with surveycore_error_fill_invalid for fil
 test_that("snapshot: extract_var_label() surveycore_error_format_invalid", {
   d <- make_labeled_design()
   expect_snapshot(error = TRUE, extract_var_label(d, format = "tibble"))
-})
-
-test_that("snapshot: extract_var_label() surveycore_warning_var_not_found", {
-  d <- make_labeled_design()
-  expect_snapshot(extract_var_label(d, y1, nonexistent))
 })
 
 
@@ -321,12 +310,9 @@ test_that("extract_question_preface() errors with surveycore_error_format_invali
   )
 })
 
-test_that("extract_question_preface() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_question_preface() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_design()
-  expect_warning(
-    extract_question_preface(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_question_preface(d, nonexistent))
 })
 
 test_that("extract_question_preface() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -401,12 +387,9 @@ test_that("extract_var_note() errors with surveycore_error_format_invalid for in
   )
 })
 
-test_that("extract_var_note() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_var_note() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_design()
-  expect_warning(
-    extract_var_note(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_var_note(d, nonexistent))
 })
 
 test_that("extract_var_note() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -476,12 +459,9 @@ test_that("extract_universe() errors with surveycore_error_format_invalid for in
   )
 })
 
-test_that("extract_universe() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_universe() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    extract_universe(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_universe(d, nonexistent))
 })
 
 test_that("extract_universe() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -2022,48 +2002,6 @@ test_that("snapshot: surveycore_error_setter_mixed_dots message", {
 })
 
 
-# ── .resolve_vars() ───────────────────────────────────────────────────────────
-
-test_that(".resolve_vars() with empty var_exprs returns all column names", {
-  d <- make_design()
-  result <- surveycore:::.resolve_vars(d, var_exprs = list())
-  expect_identical(result, names(d@data))
-})
-
-test_that(".resolve_vars() with specified names returns just those names", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, income)
-  result <- surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  expect_identical(result, c("age", "income"))
-})
-
-test_that(".resolve_vars() warns with surveycore_warning_var_not_found for missing var", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, zzz_missing)
-  expect_warning(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs),
-    class = "surveycore_warning_var_not_found"
-  )
-})
-
-test_that(".resolve_vars() returns only valid names after warning", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, zzz_missing)
-  result <- suppressWarnings(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  )
-  expect_identical(result, "age")
-})
-
-test_that("snapshot: .resolve_vars() surveycore_warning_var_not_found message", {
-  d <- make_design()
-  var_exprs <- rlang::quos(zzz_missing)
-  expect_snapshot(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  )
-})
-
-
 # ── .format_scalar_result() ───────────────────────────────────────────────────
 
 test_that(".format_scalar_result() format = 'named_vector' returns named character vector", {
@@ -2355,14 +2293,9 @@ test_that("extract_metadata() errors with surveycore_error_not_survey_or_df for 
   )
 })
 
-test_that("extract_metadata() warns with surveycore_warning_var_not_found; result skips missing var", {
+test_that("extract_metadata() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    result <- extract_metadata(d, y1, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
-  expect_true("y1" %in% names(result))
-  expect_false("nonexistent" %in% names(result))
+  expect_error(extract_metadata(d, y1, nonexistent))
 })
 
 test_that("extract_metadata() errors with surveycore_error_fill_invalid for fill = NA_character_", {
@@ -2395,4 +2328,33 @@ test_that(".rename_metadata_keys() propagates sata flag through rename", {
   )
   expect_null(d@metadata@sata[["riagendr"]])
   expect_true(isTRUE(d@metadata@sata[["gender"]]))
+})
+
+
+# ── tidyselect support in extract_*() ─────────────────────────────────────────
+
+test_that("extract_var_label() supports starts_with() selector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_var_label(d, starts_with("sdmv"))
+  expect_true(all(startsWith(names(result), "sdmv")))
+})
+
+test_that("extract_question_preface() supports all_of() selector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_question_preface(d, riagendr = "Demographics")
+  result <- extract_question_preface(d, all_of(c("riagendr", "ridageyr")))
+  expect_true("riagendr" %in% names(result))
+})
+
+test_that("extract_var_label() any_of() silently omits missing columns", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_var_label(
+    d,
+    any_of(c("riagendr", "col_that_does_not_exist"))
+  )
+  expect_false("col_that_does_not_exist" %in% names(result))
+  expect_true("riagendr" %in% names(result))
 })

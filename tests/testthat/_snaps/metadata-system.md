@@ -7,17 +7,6 @@
       x `extract_var_label()` received an invalid `format` value "tibble".
       i `format` must be one of "named_vector", "list", and "data_frame".
 
-# snapshot: extract_var_label() surveycore_warning_var_not_found
-
-    Code
-      extract_var_label(d, y1, nonexistent)
-    Condition
-      Warning:
-      ! 1 variable not found in `x` and was skipped: nonexistent.
-    Output
-               y1 
-      "Outcome 1" 
-
 # snapshot: set_var_label() surveycore_error_not_survey_or_df
 
     Code
@@ -462,16 +451,6 @@
       x All `...` arguments must be named when using Convention 1.
       i Got 0 named and 1 unnamed element.
       v Use `set_var_label(x, age = 'Age', income = 'Annual income')` or a fully named vector.
-
-# snapshot: .resolve_vars() surveycore_warning_var_not_found message
-
-    Code
-      surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-    Condition
-      Warning:
-      ! 1 variable not found in `x` and was skipped: zzz_missing.
-    Output
-      character(0)
 
 # snapshot: .format_list_result() surveycore_error_format_invalid message
 

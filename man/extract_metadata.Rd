@@ -9,8 +9,11 @@ extract_metadata(x, ..., fill = NULL)
 \arguments{
 \item{x}{A survey design object or \code{data.frame}.}
 
-\item{...}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable names
-(bare, unquoted). If empty, all variables are included.}
+\item{...}{<\code{\link[tidyselect:language]{tidy-select}}> Variables to query.
+Supports selection helpers: \code{\link[tidyselect:starts_with]{tidyselect::starts_with()}},
+\code{\link[tidyselect:all_of]{tidyselect::all_of()}}, \code{\link[tidyselect:all_of]{tidyselect::any_of()}}, \code{\link[tidyselect:starts_with]{tidyselect::matches()}},
+etc. If empty, returns metadata for all variables. Use
+\code{\link[tidyselect:all_of]{tidyselect::any_of()}} to silently skip missing variable names.}
 
 \item{fill}{\code{NULL} (default) or \code{"include"}. \code{NULL} omits variables that
 have no metadata in any field; \code{"include"} returns all variables
