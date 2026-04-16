@@ -86,6 +86,7 @@ reference:
       - set_var_note
       - set_universe
       - set_missing_codes
+      - set_sata
       - infer_question_prefaces
 
   - title: "Metadata — extractors"
@@ -98,6 +99,7 @@ reference:
       - extract_var_note
       - extract_universe
       - extract_missing_codes
+      - extract_sata
       - extract_metadata
       - survey_weighting_history
 
