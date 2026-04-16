@@ -2381,3 +2381,18 @@ test_that("snapshot: extract_metadata() surveycore_error_fill_invalid", {
   d <- make_labeled_design()
   expect_snapshot(error = TRUE, extract_metadata(d, fill = NA_character_))
 })
+
+
+# ── .rename_metadata_keys() sata integration ───────────────────────────────────
+
+test_that(".rename_metadata_keys() propagates sata flag through rename", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d@metadata@sata[["riagendr"]] <- TRUE
+  d@metadata <- surveycore:::.rename_metadata_keys(
+    d@metadata,
+    c(riagendr = "gender")
+  )
+  expect_null(d@metadata@sata[["riagendr"]])
+  expect_true(isTRUE(d@metadata@sata[["gender"]]))
+})

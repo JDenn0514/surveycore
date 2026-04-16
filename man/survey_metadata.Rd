@@ -11,6 +11,7 @@ survey_metadata(
   notes = list(),
   universe = list(),
   missing_codes = list(),
+  sata = list(),
   transformations = list(),
   weighting_history = list()
 )
@@ -34,6 +35,10 @@ population to which a variable applies.}
 \item{missing_codes}{A named list mapping variable names to atomic
 vectors of missing-value codes
 (e.g., \code{list(age = c(Refused = 99L, DK = 98L))}).}
+
+\item{sata}{A named list mapping variable names to \code{TRUE} for variables
+that are select-all-that-apply (SATA). Only variables explicitly marked
+as SATA appear in this list — absence means the variable is not SATA.}
 
 \item{transformations}{A named list tracking variable transformation
 history (populated automatically during operations).}

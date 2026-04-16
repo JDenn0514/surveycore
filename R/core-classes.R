@@ -38,6 +38,9 @@
 #' @param missing_codes A named list mapping variable names to atomic
 #'   vectors of missing-value codes
 #'   (e.g., `list(age = c(Refused = 99L, DK = 98L))`).
+#' @param sata A named list mapping variable names to `TRUE` for variables
+#'   that are select-all-that-apply (SATA). Only variables explicitly marked
+#'   as SATA appear in this list — absence means the variable is not SATA.
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
@@ -88,6 +91,10 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     missing_codes = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    sata = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
