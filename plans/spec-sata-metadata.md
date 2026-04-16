@@ -1,8 +1,8 @@
 # Spec: SATA Metadata Property & Variable Type Detection
 
-**Version:** 0.1 (draft)
-**Date:** 2026-03-20
-**Status:** Draft — pending review
+**Version:** 1.0 (approved)
+**Date:** 2026-04-16
+**Status:** Approved — ready for implementation
 **Package:** surveycore
 **Branch ID:** `sata-metadata`
 
@@ -11,7 +11,7 @@
 ## Document Purpose
 
 This is the source of truth for the `sata` (select-all-that-apply) metadata
-property and the `detect_question_type()` helper function. Together they let
+property and the `classify_question_type()` helper function. Together they let
 downstream code (analysis functions, export functions) distinguish three common
 survey variable patterns: single-response, select-all-that-apply (SATA), and
 battery/grid — without guessing.
@@ -27,7 +27,7 @@ battery/grid — without guessing.
 | `sata` property on `survey_metadata` | Named logical list storing per-variable SATA flags |
 | `set_sata()` | Setter: mark variables as SATA (or unmark) |
 | `extract_sata()` | Getter: retrieve SATA status for variables |
-| `detect_question_type()` | Classify variables into `"single"`, `"sata"`, or `"battery"` using `question_preface` + `sata` metadata |
+| `classify_question_type()` | Classify variables into `"single"`, `"sata"`, or `"battery"` using `question_preface` + `sata` metadata |
 | Metadata lifecycle integration | `sata` propagated through `select()`, `rename()`, `mutate()`, `filter()` — same as all other per-variable metadata |
 | `.extract_var_meta()` integration | Analysis helper includes `sata` in per-variable metadata output |
 
@@ -36,7 +36,7 @@ battery/grid — without guessing.
 - Export functions (`export_topline()`, `export_crosstab()`) — separate spec
 - Auto-detection of SATA from data patterns or SPSS metadata — future enhancement
 - Changes to `get_freqs()` output format — `get_freqs()` already works; the
-  export functions consume its output and use `detect_question_type()` to
+  export functions consume its output and use `classify_question_type()` to
   decide rendering
 - `infer_sata()` analogous to `infer_question_prefaces()` — future enhancement
 
@@ -55,13 +55,54 @@ No new files. All changes go into existing files:
 
 ```
 R/core-classes.R          — add `sata` property to survey_metadata
-R/core-metadata.R         — add set_sata(), extract_sata(), detect_question_type()
+R/core-metadata.R         — add set_sata(), extract_sata(), classify_question_type()
 R/core-validators.R       — add "sata" to .rename_metadata_keys()
 R/analysis-helpers.R      — add sata to .extract_var_meta() output
+R/utils.R                 — add .get_data_for_select() helper (used by set_sata() and extract_sata())
 tests/testthat/
   test-metadata-system.R  — tests for set_sata(), extract_sata()
-  test-sata-detection.R   — tests for detect_question_type()  [NEW file]
+  test-sata-detection.R   — tests for classify_question_type()  [NEW file]
 ```
+
+### Internal helpers
+
+**`.get_data_for_select(x)`** — Returns the data frame to pass to `tidyselect::eval_select()`.
+Used by both `set_sata()` and `extract_sata()` for tidy-select `...` resolution.
+
+```r
+.get_data_for_select <- function(x) {
+  if (is.data.frame(x)) x else x@data
+}
+```
+
+Lives in `R/utils.R` (two call sites: `set_sata()` + `extract_sata()`). Not exported.
+
+**`.format_logical_result(result, var_names, format)`** — Formats a named logical vector
+into the output format requested by `extract_sata()`. Used only by `extract_sata()` —
+**not** a replacement for `.format_scalar_result()`, which handles character extractors.
+
+```r
+.format_logical_result <- function(result, format) {
+  # result: named logical vector (names = variable names, values = TRUE/FALSE)
+  # format: one of "named_vector", "list", "data_frame"
+  switch(format,
+    named_vector = result,
+    list         = as.list(result),
+    data_frame   = tibble::tibble(
+      variable = names(result),
+      sata     = unname(result)
+    )
+  )
+}
+```
+
+Empty input returns `logical(0)` (named_vector), `list()` (list), or a zero-row tibble
+(data_frame). Lives in `R/core-metadata.R` (used only by `extract_sata()`). Not exported.
+
+`extract_sata()` does **not** use `.check_extractor_fill()` (which only accepts
+`NULL`/`NA_character_`) or `.format_scalar_result()` (which returns `character(0)` for
+empty results). Fill validation is inline: `fill` must be `TRUE`, `FALSE`, or `NULL`;
+any other value errors with `surveycore_error_sata_not_logical`.
 
 ### Integration touchpoints (surveytidy — no changes required if pattern holds)
 
@@ -176,9 +217,12 @@ design |> set_sata(variable = sata_vars, sata = FALSE)  # unmark several
 4. Both `...` and `variable` provided: error (class
    `surveycore_error_sata_ambiguous_input`).
 5. Neither `...` nor `variable` provided: error (class
-   `surveycore_error_sata_no_vars`).
-6. `sata` argument is not a scalar logical: error (class
-   `surveycore_error_sata_not_logical`).
+   `surveycore_error_sata_no_vars`). `variable = character(0)` is treated
+   as "not provided" and triggers the same error — an empty character vector
+   almost certainly indicates a logic error in the calling code.
+6. `sata` argument is not a non-NA scalar logical (i.e., not `TRUE` or `FALSE`):
+   error (class `surveycore_error_sata_not_logical`). `NA` is explicitly
+   rejected — it has no meaningful interpretation as a SATA flag.
 7. Returns `invisible(x)` — setter convention.
 
 ### Tidy-select resolution
@@ -202,7 +246,7 @@ survey objects.
 |-----------|-------|-------------|---------|
 | Both `...` and `variable` provided | ERROR | `surveycore_error_sata_ambiguous_input` | `"Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
 | Neither `...` nor `variable` provided | ERROR | `surveycore_error_sata_no_vars` | `"{.fn set_sata} requires at least one variable name."` |
-| `sata` is not scalar logical | ERROR | `surveycore_error_sata_not_logical` | `"{.arg sata} must be {.code TRUE} or {.code FALSE}, not {.cls {class(sata)[[1L]]}} of length {length(sata)}."` |
+| `sata` is not a non-NA scalar logical | ERROR | `surveycore_error_sata_not_logical` | `"{.arg sata} must be {.code TRUE} or {.code FALSE}."` |
 | Variable not found in `x` | WARN | `surveycore_warning_var_not_found` | `"Variable {.field {var_name}} not found in {.arg x} and was skipped."` (reuses existing class) |
 
 ---
@@ -250,7 +294,11 @@ returns only labeled variables.
 ### Behavior rules
 
 1. When specific variables are requested via `...`: return their SATA status.
-   Variables not in `@metadata@sata` get the `fill` value.
+   Variables not in `@metadata@sata` get the `fill` value. When `fill = NULL`,
+   variables not marked SATA are **omitted from the result** entirely —
+   regardless of format. For example, `extract_sata(d, news_tv, news_online,
+   fill = NULL)` where only `news_tv` is SATA returns `c(news_tv = TRUE)`,
+   with `news_online` absent from the output.
 2. When `...` is empty and `fill = FALSE`: return all columns with their SATA
    status (dense view).
 3. When `...` is empty and `fill = NULL`: return only columns marked
@@ -260,16 +308,38 @@ returns only labeled variables.
 5. For data frames: reads `attr(x[[var]], "sata", exact = TRUE)`.
 6. Return is visible (getter convention).
 
+### Tidy-select resolution
+
+`...` is resolved via `tidyselect::eval_select()` using `.get_data_for_select(x)`,
+matching `set_sata()`. This allows `starts_with()`, `matches()`, `all_of()`, and
+other tidyselect helpers:
+
+```r
+# Internal resolution
+pos <- tidyselect::eval_select(rlang::expr(c(...)), data = .get_data_for_select(x))
+var_names <- names(pos)
+```
+
+When `...` is empty, `var_names` is `NULL` and the no-`...` branch (rules 2–3)
+is taken.
+
+### Fill validation
+
+`extract_sata()` does **not** use `.check_extractor_fill()`. Fill is validated
+inline: `fill` must be `TRUE`, `FALSE`, or `NULL`. Any other value (including
+`NA`) errors with `surveycore_error_sata_not_logical`.
+
 ### Error table
 
 | Condition | Level | Error Class | Message |
 |-----------|-------|-------------|---------|
+| `fill` is not `TRUE`, `FALSE`, or `NULL` | ERROR | `surveycore_error_sata_not_logical` | `"{.arg fill} must be {.code TRUE}, {.code FALSE}, or {.code NULL}."` |
 | Invalid `format` | ERROR | `surveycore_error_format_invalid` | (reuses existing class/message) |
 | Variable not found | WARN | `surveycore_warning_var_not_found` | (reuses existing class/message) |
 
 ---
 
-## VI. `detect_question_type()` — Variable Type Classifier
+## VI. `classify_question_type()` — Variable Type Classifier
 
 ### Purpose
 
@@ -280,7 +350,7 @@ detection logic described in the export design notes.
 ### Signature
 
 ```r
-detect_question_type(x, ...)
+classify_question_type(x, ..., variable = NULL)
 ```
 
 ### Argument table
@@ -288,7 +358,10 @@ detect_question_type(x, ...)
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
 | `x` | survey object or `data.frame` | (required) | The object containing the variables |
-| `...` | bare variable names | (required) | Variables to classify. At least one required. |
+| `...` | bare variable names | (none) | Variables to classify. Supports tidyselect helpers. |
+| `variable` | `character` | `NULL` | Alternative: character vector of variable names. For programmatic use (e.g., export functions). |
+
+At least one variable must be provided via `...` or `variable`. Providing both is an error.
 
 ### Output contract
 
@@ -303,7 +376,7 @@ Returns a tibble with class `c("tbl_df", "tbl", "data.frame")` containing:
 
 ### Classification logic
 
-For each variable in `...`:
+For each variable in `...` (or `variable` when provided programmatically):
 
 1. Extract `question_preface` from metadata (or column attribute for data frames).
 2. Extract `sata` status from metadata (or column attribute).
@@ -331,7 +404,7 @@ A warning is issued (see error table).
 Groups are numbered sequentially in order of first appearance in `...`:
 
 ```r
-detect_question_type(d, q1, news_tv, news_online, worry_econ, worry_crime)
+classify_question_type(d, q1, news_tv, news_online, worry_econ, worry_crime)
 # variable       question_preface                type      group
 # q1             NA                              single        1
 # news_tv        "Where do you get your news?"   sata          2
@@ -343,22 +416,32 @@ detect_question_type(d, q1, news_tv, news_online, worry_econ, worry_crime)
 ### Behavior rules
 
 1. `x` must be a survey object or data frame (validated with
-   `.check_is_survey_or_df()`).
-2. At least one variable must be provided in `...`. Error if empty.
+   `.check_is_survey_or_df(x, call = rlang::caller_env())`).
+   The `call =` argument is required for correct error attribution.
+2. At least one variable must be provided — via `...` or `variable`. Both
+   provided simultaneously is an error. Neither provided is an error.
+   `variable = character(0)` is treated as "not provided" → same error.
 3. Variables not found in `x` produce a warning and are omitted from the output.
 4. If all requested variables are not found, return a zero-row tibble.
 5. Variables with no `question_preface` always get `type = "single"` regardless
    of `sata` status. A variable marked `sata = TRUE` but with no shared
    `question_preface` is classified as `"single"` with a warning.
+6. For survey objects: `question_preface` and `sata` are read from
+   `x@metadata@question_prefaces[[var]]` and `x@metadata@sata[[var]]`
+   respectively (absent = `NULL` / `FALSE`).
+   For data frames: `question_preface` is read from
+   `attr(x[[var]], "question_preface", exact = TRUE)` and `sata` from
+   `attr(x[[var]], "sata", exact = TRUE)`.
 
 ### Error table
 
 | Condition | Level | Error Class | Message |
 |-----------|-------|-------------|---------|
 | `x` is not survey or data frame | ERROR | `surveycore_error_not_survey_or_df` | (reuses existing) |
-| No variables provided in `...` | ERROR | `surveycore_error_detect_no_vars` | `"{.fn detect_question_type} requires at least one variable name in {.arg ...}."` |
+| Both `...` and `variable` provided | ERROR | `surveycore_error_detect_ambiguous_input` | `"Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| No variables provided (`...` empty and `variable` NULL/empty) | ERROR | `surveycore_error_detect_no_vars` | `"{.fn classify_question_type} requires at least one variable name."` |
 | Variable not found | WARN | `surveycore_warning_var_not_found` | (reuses existing) |
-| SATA variable has no shared `question_preface` | WARN | `surveycore_warning_sata_no_preface` | `"Variable {.field {var_name}} is marked SATA but has no shared {.code question_preface} with other variables in {.arg ...}. Classified as {.val single}."` |
+| SATA variable has no shared `question_preface` | WARN | `surveycore_warning_sata_no_preface` | `"Variable {.field {var_name}} is marked SATA but has no shared {.code question_preface} with other variables. Classified as {.val single}."` |
 | Mixed SATA status within a `question_preface` group | WARN | `surveycore_warning_sata_mixed_group` | `"Variables sharing {.code question_preface} {.val {preface}} have mixed SATA status. Treating entire group as {.val sata}. Use {.fn set_sata} to mark all variables in the group."` |
 
 ---
@@ -428,23 +511,28 @@ are renamed.
 - `extract_sata()` on data frame reads column attributes
 - Roundtrip: `set_sata()` then `extract_sata()` recovers the flags
 
-**Error paths:**
+**Error paths** (each requires dual pattern: `expect_error(class = ...)` +
+`expect_snapshot(error = TRUE)`; warnings use `expect_warning(class = ...)`):
 
 - `set_sata()` with both `...` and `variable` → `surveycore_error_sata_ambiguous_input`
 - `set_sata()` with neither `...` nor `variable` → `surveycore_error_sata_no_vars`
 - `set_sata()` with `sata` not scalar logical → `surveycore_error_sata_not_logical`
 - `set_sata()` with non-existent variable → warning `surveycore_warning_var_not_found`
+- `extract_sata()` with invalid `fill` (e.g., `fill = "x"`) → `surveycore_error_sata_not_logical`
 - `extract_sata()` with invalid format → `surveycore_error_format_invalid`
 
 **Edge cases:**
 
 - `set_sata()` on variable already marked SATA (idempotent)
 - `set_sata(sata = FALSE)` on variable not marked (no-op, no warning)
+- `set_sata(sata = NA)` → `surveycore_error_sata_not_logical`
+- `variable = character(0)` → `surveycore_error_sata_no_vars`
 - `extract_sata()` with no `...` on object with no SATA metadata → all FALSE
 - `extract_sata()` with no `...` and `fill = NULL` on object with no SATA → empty result
+- `extract_sata(d, var1, var2, fill = NULL)` where only `var1` is SATA → result contains only `var1`, `var2` is omitted
 - Survey object with zero SATA variables: `length(x@metadata@sata) == 0L`
 
-### `test-sata-detection.R` — `detect_question_type()`
+### `test-sata-detection.R` — `classify_question_type()`
 
 **Happy path:**
 
@@ -455,9 +543,11 @@ are renamed.
 - Group numbering is sequential by first appearance
 - Output tibble has correct columns and types
 
-**Error paths:**
+**Error paths** (each requires dual pattern: `expect_error(class = ...)` +
+`expect_snapshot(error = TRUE)`):
 
-- No variables in `...` → `surveycore_error_detect_no_vars`
+- No variables provided (empty `...`, `NULL`/empty `variable`) → `surveycore_error_detect_no_vars`
+- Both `...` and `variable` provided → `surveycore_error_detect_ambiguous_input`
 - Non-survey, non-data-frame input → `surveycore_error_not_survey_or_df`
 
 **Edge cases:**
@@ -467,7 +557,7 @@ are renamed.
 - Mixed SATA/non-SATA in same `question_preface` group → `type = "sata"` + warning
 - All requested variables not found → zero-row tibble
 - Variables with same `question_preface` but only one requested → `type = "single"` (grouping is among requested vars only)
-- Data frame input (no survey object) → works via column attributes
+- Data frame input (no survey object) → works via `attr(col, "question_preface", exact = TRUE)` and `attr(col, "sata", exact = TRUE)`; classifies correctly
 
 ### `.rename_metadata_keys()` integration test
 
@@ -487,7 +577,7 @@ are renamed.
 - [ ] `sata` property exists on `survey_metadata` with `list()` default
 - [ ] `set_sata()` exported and documented with `@family metadata`
 - [ ] `extract_sata()` exported and documented with `@family metadata`
-- [ ] `detect_question_type()` exported and documented with `@family metadata`
+- [ ] `classify_question_type()` exported and documented with `@family metadata`
 - [ ] `.rename_metadata_keys()` includes `sata`
 - [ ] `.extract_var_meta()` returns `sata` key
 - [ ] All error classes added to `plans/error-messages.md`
@@ -502,10 +592,10 @@ are renamed.
 
 ### For `export_topline()` / `export_crosstab()` (future spec)
 
-These functions will call `detect_question_type()` to determine rendering
+These functions will call `classify_question_type()` to determine rendering
 format. They depend on:
 
-1. `detect_question_type()` returning a tibble with `variable`, `type`, and
+1. `classify_question_type()` returning a tibble with `variable`, `type`, and
    `group` columns
 2. `type` values being exactly `"single"`, `"sata"`, or `"battery"`
 3. Group numbers being consistent (same `question_preface` → same group)
@@ -514,7 +604,7 @@ format. They depend on:
 
 The `.meta$x` entries will include `sata = TRUE/FALSE` via the updated
 `.extract_var_meta()`. Export functions can read this directly without
-calling `detect_question_type()` when working from `get_freqs()` output.
+calling `classify_question_type()` when working from `get_freqs()` output.
 
 ### For surveytidy (follow-up)
 

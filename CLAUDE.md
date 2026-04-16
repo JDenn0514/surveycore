@@ -21,8 +21,8 @@ functions may be added but the existing structure will not change in breaking wa
 | Two-phase variance | ✅ Complete | v0.2.x |
 | Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
 | Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
-| Pairwise tests (`get_pairwise()`) | 🔜 Planned | See `plans/spec-get-pairwise.md` |
-| SATA metadata (`set_sata()`, `detect_question_type()`) | 🔜 Planned | See `plans/spec-sata-metadata.md` |
+| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | 🔄 In Review | PR #88; see `plans/spec-get-t-test-pairwise.md` |
+| SATA metadata (`set_sata()`, `classify_question_type()`) | 🔜 Planned | See `plans/spec-sata-metadata.md` |
 
 ---
 
@@ -93,7 +93,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/spec-get-pairwise.md` — spec for `get_pairwise()` (not yet implemented)
+- `plans/spec-get-t-test-pairwise.md` — spec for `get_t_test()` + `get_pairwise()` (in review, PR #88)
 - `plans/spec-sata-metadata.md` — spec for SATA metadata properties (not yet implemented)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
