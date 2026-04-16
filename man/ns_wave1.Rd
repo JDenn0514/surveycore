@@ -10,7 +10,8 @@ A data frame with approximately 6,250 rows and 171 variables
 \describe{
 \item{response_id}{Unique respondent ID (integer).}
 \item{start_date}{Interview date (character, \code{"YYYY-MM-DD"} format).}
-\item{wave_id}{Wave identifier: \code{"ns20190718"} for all rows in this dataset.}
+\item{wave_id}{Wave identifier: \code{"ns20190718"} for all rows in this
+dataset.}
 \item{weight}{Raking weight calibrated to ACS demographic targets and
 2016 presidential vote choice. Use for all population-level estimates.}
 \item{right_track}{Country direction: \code{1} = Right direction,
@@ -36,7 +37,8 @@ A data frame with approximately 6,250 rows and 171 variables
 \code{2} = Republican, \code{3} = Other.}
 \item{dem_vote_intent}{Democratic primary vote intention. See labels.}
 \item{dem_vote_intent_TEXT}{Write-in for \code{dem_vote_intent} "other".}
-\item{rank_dems_1}{Top-ranked Democratic presidential candidate. See labels.}
+\item{rank_dems_1}{Top-ranked Democratic presidential candidate.
+See labels.}
 \item{rank_dems_2}{Second-ranked Democratic candidate. See labels.}
 \item{rank_dems_3}{Third-ranked Democratic candidate. See labels.}
 \item{replace_trump}{Wants non-Trump Republican nominee: \code{1} = Yes,
@@ -221,7 +223,8 @@ money internationally.}
 \item{medicare_for_all}{Support Medicare-for-All.}
 \item{military_size}{Support reducing the size of the U.S. military.}
 \item{minwage}{Support raising the minimum wage to $15/hour.}
-\item{muslimban}{Support banning people from predominantly Muslim countries.}
+\item{muslimban}{Support banning people from predominantly Muslim
+countries.}
 \item{oil_and_gas}{Support removing barriers to domestic oil and gas
 drilling.}
 \item{reparations}{Support granting reparations to descendants of slaves.}
@@ -349,7 +352,8 @@ attr(ns_wave1$group_favorability_blacks, "label")
 attr(ns_wave1$group_favorability_blacks, "question_preface")
 attr(ns_wave1$news_sources_cnn, "labels")
 
-# Create a calibrated survey design (correct approach for raked non-prob samples)
+# Create a calibrated survey design (correct approach for raked
+# non-prob samples)
 svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
 

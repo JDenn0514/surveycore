@@ -178,7 +178,8 @@ contain Jewish respondents. The dataset carries 100 jackknife replicate
 weights alongside the main weight.
 }
 \details{
-\strong{Survey design:} Jackknife replication — use \code{as_survey_replicate()} with all
+\strong{Survey design:} Jackknife replication — use \code{as_survey_replicate()}
+with all
 100 replicate weights:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey_replicate(

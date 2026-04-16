@@ -39,7 +39,8 @@ examined.}
 }
 \source{
 National Center for Health Statistics, CDC. NHANES 2017-2018 Continuous
-Survey. \url{https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?BeginYear=2017}
+Survey.
+\url{https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?BeginYear=2017}
 }
 \usage{
 nhanes_2017

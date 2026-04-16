@@ -18,7 +18,8 @@ as_survey(
 \item{data}{A \code{data.frame} containing the survey responses. Must have at
 least one row and unique column names.}
 
-\item{ids}{<\code{\link[tidyselect:language]{tidy-select}}> Cluster (PSU) ID column(s).
+\item{ids}{<\code{\link[tidyselect:language]{tidy-select}}> Cluster (PSU) ID
+column(s).
 For single-stage: \code{ids = psu}. For multi-stage: \code{ids = c(psu, ssu)}.
 Omit entirely for simple random sampling.}
 

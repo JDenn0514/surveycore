@@ -72,9 +72,13 @@ interface for weight and replicate-weight columns.
 Both \code{weights} and \code{repweights} support tidy-select syntax:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{# Bare name for weights
-as_survey_replicate(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+as_survey_replicate(
+  df, weights = wt, repweights = starts_with("repwt"), type = "BRR"
+)
 # c() for explicit replicate columns
-as_survey_replicate(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+as_survey_replicate(
+  df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1"
+)
 }\if{html}{\out{</div>}}
 }
 
