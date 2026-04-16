@@ -101,6 +101,7 @@ reference:
       - extract_missing_codes
       - extract_sata
       - extract_metadata
+      - classify_question_type
       - survey_weighting_history
 
   - title: "Conversion"
