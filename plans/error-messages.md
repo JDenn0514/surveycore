@@ -150,6 +150,9 @@ against the messages defined here.
 | T-3 | `get_t_test()` | After NA removal, one active level of `by` has zero rows (no `group`) | ERROR | `surveycore_error_by_empty_cell` | `"Level {.field {empty_level}} of {.arg by} ({.field {by_name}}) has no non-NA observations. Cannot compute t-test."` |
 | T-3g | `get_t_test()` | Within a group stratum, one active level of `by` has zero rows | ERROR | `surveycore_error_by_empty_cell` | `"In group stratum {.val {group_vals}}, level {.field {empty_level}} of {.arg by} ({.field {by_name}}) has no non-NA observations."` |
 | P-1 | `get_pairwise()` | `by` has < 2 active levels | ERROR | `surveycore_error_by_one_level` | `"{.arg by} ({.field {by_name}}) must have at least 2 active groups, not {n_active}."` |
+| S-1 | `set_sata()`, `extract_sata()` | Both `...` and `variable` provided | ERROR | `surveycore_error_sata_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| S-2 | `set_sata()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_sata_no_vars` | `"x" = "{.fn set_sata} requires at least one variable name."` |
+| S-3 | `set_sata()`, `extract_sata()` | `sata` / `fill` is not a valid logical scalar (`TRUE`/`FALSE`; `NULL` also accepted for `fill`) | ERROR | `surveycore_error_sata_not_logical` | Setter: `"x" = "{.arg sata} must be {.code TRUE} or {.code FALSE}."` / Extractor: `"x" = "{.arg fill} must be {.code TRUE}, {.code FALSE}, or {.code NULL}."` |
 
 ---
 
