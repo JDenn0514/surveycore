@@ -38,6 +38,7 @@ extract_question_preface(d, happy)
 \code{\link[=extract_question_preface]{extract_question_preface()}} to retrieve a preface
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

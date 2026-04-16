@@ -45,6 +45,7 @@ extract_universe(d, ridageyr, format = "data_frame")
 \code{\link[=set_universe]{set_universe()}} to set a universe description
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

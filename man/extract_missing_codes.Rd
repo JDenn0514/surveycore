@@ -46,6 +46,7 @@ extract_missing_codes(d, ridageyr, format = "data_frame")
 \code{\link[=set_missing_codes]{set_missing_codes()}} to set missing value codes
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_question_preface}()},
 \code{\link{extract_sata}()},

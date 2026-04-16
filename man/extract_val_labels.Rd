@@ -44,6 +44,7 @@ extract_val_labels(d, riagendr, format = "data_frame")
 \code{\link[=set_val_labels]{set_val_labels()}} to set value labels
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

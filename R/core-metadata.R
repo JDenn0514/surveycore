@@ -1692,6 +1692,233 @@ extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
 }
 
 
+# ── classify_question_type() — variable type classifier ──────────────────────
+
+#' Classify Variable Question Types
+#'
+#' Groups variables by their shared `question_preface` metadata and classifies
+#' each group as one of `"single"`, `"sata"`, or `"battery"`. This is the single
+#' source of truth used by downstream export functions to decide how to render
+#' each question.
+#'
+#' The classification rules, applied per requested variable:
+#'
+#' 1. If the variable has no `question_preface`, or is the only requested
+#'    variable sharing its preface, `type = "single"`.
+#' 2. If a `question_preface` is shared by 2+ requested variables and at least
+#'    one is flagged via [set_sata()], all variables in that group get
+#'    `type = "sata"`.
+#' 3. Otherwise (shared preface, no SATA flag), all variables in the group
+#'    get `type = "battery"`.
+#'
+#' Group numbers are assigned sequentially by first appearance in the input.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to classify.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. Cannot be combined
+#'   with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#'
+#' @return A tibble with columns:
+#' - `variable` (character) — variable name
+#' - `question_preface` (character) — the preface, or `NA` if none
+#' - `type` (character) — one of `"single"`, `"sata"`, or `"battery"`
+#' - `group` (integer) — group id; variables with the same non-NA preface
+#'   share a group
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_question_preface(d, riagendr = "Demographics",
+#'                              ridageyr = "Demographics")
+#' d <- set_sata(d, riagendr, ridageyr)
+#' classify_question_type(d, riagendr, ridageyr, bpxsy1)
+#'
+#' @seealso [set_sata()], [extract_sata()], [set_question_preface()]
+#' @family metadata
+#' @export
+classify_question_type <- function(x, ..., variable = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_detect_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && (!var_used || length(variable) == 0L)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.fn classify_question_type} requires at least one variable name."
+        )
+      ),
+      class = "surveycore_error_detect_no_vars",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  }
+
+  empty_out <- tibble::tibble(
+    variable = character(0L),
+    question_preface = character(0L),
+    type = character(0L),
+    group = integer(0L)
+  )
+  if (length(var_names) == 0L) {
+    return(empty_out)
+  }
+
+  # Extract preface + sata for each requested variable
+  is_survey <- S7::S7_inherits(x, survey_base)
+  prefaces <- vapply(
+    var_names,
+    function(v) {
+      raw <- if (is_survey) {
+        x@metadata@question_prefaces[[v]]
+      } else {
+        attr(x[[v]], "question_preface", exact = TRUE)
+      }
+      if (is.null(raw) || !is.character(raw) || length(raw) == 0L) {
+        NA_character_
+      } else {
+        raw[[1L]]
+      }
+    },
+    character(1L)
+  )
+  sata_flags <- vapply(
+    var_names,
+    function(v) {
+      raw <- if (is_survey) {
+        x@metadata@sata[[v]]
+      } else {
+        attr(x[[v]], "sata", exact = TRUE)
+      }
+      isTRUE(raw)
+    },
+    logical(1L)
+  )
+
+  # Group numbering: sequential by first appearance of each non-NA preface.
+  # Variables with NA preface each get their own unique group (one row each).
+  # Variables that share a non-NA preface share a group number.
+  group_ids <- integer(length(var_names))
+  preface_to_group <- list()
+  next_group <- 1L
+  for (i in seq_along(var_names)) {
+    p <- prefaces[[i]]
+    if (is.na(p)) {
+      group_ids[[i]] <- next_group
+      next_group <- next_group + 1L
+    } else {
+      existing <- preface_to_group[[p]]
+      if (is.null(existing)) {
+        preface_to_group[[p]] <- next_group
+        group_ids[[i]] <- next_group
+        next_group <- next_group + 1L
+      } else {
+        group_ids[[i]] <- existing
+      }
+    }
+  }
+
+  # Classify each group
+  types <- character(length(var_names))
+  for (g in unique(group_ids)) {
+    idx <- which(group_ids == g)
+    group_prefs <- prefaces[idx]
+    group_sata <- sata_flags[idx]
+    if (length(idx) == 1L) {
+      # Singleton group
+      types[[idx]] <- "single"
+      # Edge case: SATA-flagged with a preface but no peers → warn
+      if (isTRUE(group_sata[[1L]]) && !is.na(group_prefs[[1L]])) {
+        var_name <- var_names[[idx]]
+        cli::cli_warn(
+          c(
+            "!" = paste0(
+              "Variable {.field {var_name}} is marked SATA but has no",
+              " shared {.code question_preface} with other variables.",
+              " Classified as {.val single}."
+            )
+          ),
+          class = "surveycore_warning_sata_no_preface",
+          call = call
+        )
+      }
+    } else {
+      # Shared-preface group: sata if any flag is TRUE, else battery
+      if (any(group_sata)) {
+        types[idx] <- "sata"
+        if (!all(group_sata)) {
+          preface <- group_prefs[[1L]]
+          cli::cli_warn(
+            c(
+              "!" = paste0(
+                "Variables sharing {.code question_preface} {.val {preface}}",
+                " have mixed SATA status. Treating entire group as",
+                " {.val sata}. Use {.fn set_sata} to mark all variables",
+                " in the group."
+              )
+            ),
+            class = "surveycore_warning_sata_mixed_group",
+            call = call
+          )
+        }
+      } else {
+        types[idx] <- "battery"
+      }
+    }
+  }
+
+  # Renumber groups to ensure contiguous 1..n in first-appearance order
+  # (they already are by construction, but unname for cleanliness).
+  tibble::tibble(
+    variable = unname(var_names),
+    question_preface = unname(prefaces),
+    type = types,
+    group = group_ids
+  )
+}
+
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 #' Validate Value Labels Against Observed Data Values

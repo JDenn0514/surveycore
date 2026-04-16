@@ -39,6 +39,7 @@ extract_var_note(d, age)
 \code{\link[=extract_var_note]{extract_var_note()}} to retrieve a note
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

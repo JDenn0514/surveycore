@@ -99,6 +99,7 @@ attr(df$discrim_a, "question_preface") # "Please rate discrimination"
 }
 \seealso{
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

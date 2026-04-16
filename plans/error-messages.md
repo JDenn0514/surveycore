@@ -153,6 +153,10 @@ against the messages defined here.
 | S-1 | `set_sata()`, `extract_sata()` | Both `...` and `variable` provided | ERROR | `surveycore_error_sata_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
 | S-2 | `set_sata()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_sata_no_vars` | `"x" = "{.fn set_sata} requires at least one variable name."` |
 | S-3 | `set_sata()`, `extract_sata()` | `sata` / `fill` is not a valid logical scalar (`TRUE`/`FALSE`; `NULL` also accepted for `fill`) | ERROR | `surveycore_error_sata_not_logical` | Setter: `"x" = "{.arg sata} must be {.code TRUE} or {.code FALSE}."` / Extractor: `"x" = "{.arg fill} must be {.code TRUE}, {.code FALSE}, or {.code NULL}."` |
+| D-1 | `classify_question_type()` | Both `...` and `variable` provided | ERROR | `surveycore_error_detect_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| D-2 | `classify_question_type()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_detect_no_vars` | `"x" = "{.fn classify_question_type} requires at least one variable name."` |
+| D-3 | `classify_question_type()` | SATA variable has no shared `question_preface` with other requested variables | WARN | `surveycore_warning_sata_no_preface` | `"!" = "Variable {.field {var_name}} is marked SATA but has no shared {.code question_preface} with other variables. Classified as {.val single}."` |
+| D-4 | `classify_question_type()` | Mixed SATA status within a `question_preface` group | WARN | `surveycore_warning_sata_mixed_group` | `"!" = "Variables sharing {.code question_preface} {.val {preface}} have mixed SATA status. Treating entire group as {.val sata}. Use {.fn set_sata} to mark all variables in the group."` |
 
 ---
 
