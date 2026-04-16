@@ -914,3 +914,18 @@ test_that("test_invariants() passes for survey_nonprob with zero weights", {
   obj@data <- new_data
   expect_no_error(test_invariants(obj))
 })
+
+
+# ── survey_metadata sata property ─────────────────────────────────────────────
+
+test_that("survey_metadata has a sata property with list() default", {
+  m <- survey_metadata()
+  expect_true(S7::S7_inherits(m, survey_metadata))
+  expect_identical(m@sata, list())
+  expect_identical(length(m@sata), 0L)
+})
+
+test_that("survey_metadata sata accepts a named list", {
+  m <- survey_metadata(sata = list(news_tv = TRUE, news_online = TRUE))
+  expect_identical(m@sata$news_tv, TRUE)
+})

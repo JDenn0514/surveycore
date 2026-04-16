@@ -458,6 +458,7 @@ NULL
     rename_map
   )
   metadata@notes <- .rename_list_keys(metadata@notes, rename_map)
+  metadata@sata <- .rename_list_keys(metadata@sata, rename_map)
   metadata@transformations <- .rename_list_keys(
     metadata@transformations,
     rename_map

@@ -491,3 +491,14 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     fpcs = fpcs
   )
 }
+
+
+# ── .get_data_for_select() ────────────────────────────────────────────────────
+#
+# Returns the data frame to pass to tidyselect::eval_select().
+# For data frames, returns x directly. For survey objects, returns x@data.
+# Two confirmed call sites: set_sata() and extract_sata().
+#' @noRd
+.get_data_for_select <- function(x) {
+  if (is.data.frame(x)) x else x@data
+}
