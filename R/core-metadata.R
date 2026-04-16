@@ -203,49 +203,6 @@
   dots
 }
 
-# .resolve_vars(x, var_exprs, call)
-# Resolves the `...` quosures for extractor functions. If var_exprs is empty,
-# returns all column names. Otherwise evaluates bare symbols and character
-# expressions; warns and skips variables not found.
-.resolve_vars <- function(
-  x,
-  var_exprs,
-  call = rlang::caller_env()
-) {
-  all_cols <- .get_data_cols(x)
-
-  if (length(var_exprs) == 0L) {
-    return(all_cols)
-  }
-
-  requested <- unlist(
-    lapply(var_exprs, function(q) {
-      if (rlang::quo_is_symbol(q)) {
-        rlang::as_name(q)
-      } else {
-        rlang::eval_tidy(q)
-      }
-    }),
-    use.names = FALSE
-  )
-
-  missing <- setdiff(requested, all_cols)
-  if (length(missing) > 0L) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "{length(missing)} variable{?s} not found in {.arg x}",
-          " and {?was/were} skipped: {.field {missing}}."
-        )
-      ),
-      class = "surveycore_warning_var_not_found",
-      call = call
-    )
-  }
-
-  intersect(requested, all_cols)
-}
-
 # .format_scalar_result(result_list, format, col_name, empty_value)
 # Converts a named list of character scalars to the requested output format.
 # empty_value = NULL omits NULL entries; empty_value = NA_character_ replaces
@@ -426,8 +383,11 @@
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no label:
@@ -461,7 +421,14 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
     call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -482,8 +449,11 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"list"` (default) or
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no labels:
@@ -510,7 +480,14 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -534,8 +511,11 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
 #' object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no preface:
@@ -572,7 +552,14 @@ extract_question_preface <- function(
     call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -593,8 +580,11 @@ extract_question_preface <- function(
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no note:
@@ -626,7 +616,14 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
     call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -647,8 +644,11 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
 #' survey design object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no universe:
@@ -681,7 +681,14 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
     call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -702,8 +709,11 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
 #' design object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"list"` (default) or
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no codes:
@@ -732,7 +742,14 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -793,8 +810,11 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
 #' building codebooks.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, all variables are included.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param fill `NULL` (default) or `"include"`. `NULL` omits variables that
 #'   have no metadata in any field; `"include"` returns all variables
 #'   regardless.
@@ -829,7 +849,14 @@ extract_metadata <- function(x, ..., fill = NULL) {
     )
   }
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
