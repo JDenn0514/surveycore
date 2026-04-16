@@ -479,3 +479,78 @@
       x `extract_metadata()` does not accept `fill = NA`.
       i Valid values for `extract_metadata()`: "NULL" (omit empty) or "\"include\"" (return all).
 
+# set_sata() errors when x is not a survey or data frame
+
+    Code
+      set_sata(list(a = 1), a)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# set_sata() errors when both ... and variable provided
+
+    Code
+      set_sata(d, riagendr, variable = "ridageyr")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# set_sata() errors when neither ... nor variable provided
+
+    Code
+      set_sata(d)
+    Condition
+      Error:
+      x `set_sata()` requires at least one variable name.
+
+# set_sata() errors when sata = NA
+
+    Code
+      set_sata(d, riagendr, sata = NA)
+    Condition
+      Error:
+      x `sata` must be `TRUE` or `FALSE`.
+
+# set_sata() errors when sata = 'yes' (non-logical)
+
+    Code
+      set_sata(d, riagendr, sata = "yes")
+    Condition
+      Error:
+      x `sata` must be `TRUE` or `FALSE`.
+
+# extract_sata() errors when x is not a survey or data frame
+
+    Code
+      extract_sata(list(a = 1))
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_sata() errors when fill = TRUE
+
+    Code
+      extract_sata(d, fill = TRUE)
+    Condition
+      Error:
+      x `fill` must be `FALSE` or `NULL`.
+
+# extract_sata() errors when fill = 'x' (invalid)
+
+    Code
+      extract_sata(d, fill = "x")
+    Condition
+      Error:
+      x `fill` must be `FALSE` or `NULL`.
+
+# extract_sata() errors when format is invalid
+
+    Code
+      extract_sata(d, format = "tibble")
+    Condition
+      Error:
+      x `extract_sata()` received an invalid `format` value "tibble".
+      i `format` must be one of "named_vector", "list", and "data_frame".
+

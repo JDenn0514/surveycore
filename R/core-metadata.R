@@ -310,6 +310,24 @@
   dplyr::bind_rows(rows)
 }
 
+# .format_logical_result(result, format)
+# Converts a named logical vector into the format requested by extract_sata().
+# - "named_vector": returns the input vector as-is (empty: logical(0)).
+# - "list": as.list(result) (empty: list()).
+# - "data_frame": tibble with columns `variable` and `sata`
+#   (empty: zero-row tibble with both columns typed).
+.format_logical_result <- function(result, format) {
+  switch(
+    format,
+    "named_vector" = result,
+    "list" = as.list(result),
+    "data_frame" = tibble::tibble(
+      variable = names(result),
+      sata = unname(result)
+    )
+  )
+}
+
 
 # ── Input check helper ────────────────────────────────────────────────────────
 
@@ -1461,6 +1479,216 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
     }
   }
   invisible(x)
+}
+
+
+# ── SATA (Select-All-That-Apply) setter/getter ────────────────────────────────
+
+#' Set SATA (Select-All-That-Apply) Flag
+#'
+#' Marks one or more variables as select-all-that-apply (SATA) in a survey
+#' design object or a data frame. Unlike the other unified setters (which map
+#' variable names to heterogeneous content), `set_sata()` applies a single
+#' logical flag to all listed variables, so it uses a simplified two-convention
+#' pattern.
+#'
+#' **Convention A (tidy-select `...`)** — recommended:
+#' ```r
+#' design |> set_sata(news_tv, news_online, news_radio)
+#' design |> set_sata(starts_with("news_"))
+#' ```
+#'
+#' **Convention B (`variable` = character vector)** — programmatic:
+#' ```r
+#' sata_vars <- c("news_tv", "news_online", "news_radio")
+#' design |> set_sata(variable = sata_vars)
+#' ```
+#'
+#' Setting `sata = FALSE` unmarks the listed variables.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to mark.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. Cannot be combined
+#'   with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#' @param sata `logical(1)`. `TRUE` (default) marks variables as SATA; `FALSE`
+#'   removes the SATA flag. `NA` is not accepted.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_sata(d, riagendr, ridageyr)
+#' d <- set_sata(d, riagendr, sata = FALSE)
+#'
+#' @seealso [extract_sata()] to retrieve SATA flags
+#' @family metadata
+#' @export
+set_sata <- function(x, ..., variable = NULL, sata = TRUE) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  if (!is.logical(sata) || length(sata) != 1L || is.na(sata)) {
+    cli::cli_abort(
+      c("x" = "{.arg sata} must be {.code TRUE} or {.code FALSE}."),
+      class = "surveycore_error_sata_not_logical",
+      call = call
+    )
+  }
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_sata_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && (!var_used || length(variable) == 0L)) {
+    cli::cli_abort(
+      c("x" = "{.fn set_sata} requires at least one variable name."),
+      class = "surveycore_error_sata_no_vars",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  }
+
+  for (v in var_names) {
+    if (S7::S7_inherits(x, survey_base)) {
+      if (isTRUE(sata)) {
+        x@metadata@sata[[v]] <- TRUE
+      } else {
+        x@metadata@sata[[v]] <- NULL
+      }
+    } else {
+      attr(x[[v]], "sata") <- if (isTRUE(sata)) TRUE else NULL
+    }
+  }
+
+  invisible(x)
+}
+
+
+#' Extract SATA (Select-All-That-Apply) Flags
+#'
+#' Returns the SATA status for one or more variables in a survey design object
+#' or a data frame.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. If empty, returns
+#'   SATA status for all columns of `x`.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill `FALSE` (default) or `NULL`. Controls how unmarked variables
+#'   are reported. `FALSE` includes them in the result with value `FALSE`
+#'   (dense view); `NULL` omits them (sparse view). `TRUE` and other values
+#'   are rejected.
+#'
+#' @return
+#' - `"named_vector"` (default): named logical vector. Empty: `logical(0)`.
+#' - `"list"`: named list of logical scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` (character) and `sata`
+#'   (logical). Empty: zero-row tibble.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_sata(d, riagendr)
+#' extract_sata(d, riagendr)
+#' extract_sata(d, fill = NULL)
+#'
+#' @seealso [set_sata()] to set SATA flags
+#' @family metadata
+#' @export
+extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  if (!is.null(fill) && !identical(fill, FALSE)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg fill} must be {.code FALSE} or {.code NULL}."
+        )
+      ),
+      class = "surveycore_error_sata_not_logical",
+      call = call
+    )
+  }
+
+  .check_extractor_format(
+    format,
+    "extract_sata",
+    c("named_vector", "list", "data_frame"),
+    call
+  )
+
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
+
+  result <- stats::setNames(
+    vapply(
+      var_names,
+      function(v) {
+        raw <- if (S7::S7_inherits(x, survey_base)) {
+          x@metadata@sata[[v]]
+        } else {
+          attr(x[[v]], "sata", exact = TRUE)
+        }
+        isTRUE(raw)
+      },
+      logical(1L)
+    ),
+    var_names
+  )
+
+  if (is.null(fill)) {
+    result <- result[result]
+  }
+
+  .format_logical_result(result, format)
 }
 
 
