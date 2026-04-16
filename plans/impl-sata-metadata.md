@@ -26,7 +26,7 @@ SATA functions (PR 3) so the pattern is established before it is followed.
 - [x] PR 1: `feature/sata-property` — Add `sata` property to `survey_metadata`, `.get_data_for_select()` helper, and update `.rename_metadata_keys()`
 - [x] PR 2: `feature/extract-tidyselect` — Migrate all seven `extract_*()` functions from `.resolve_vars()` to `tidyselect::eval_select()`
 - [x] PR 3: `feature/set-extract-sata` — Implement `set_sata()` and `extract_sata()` with `.format_logical_result()`
-- [ ] PR 4: `feature/classify-question-type` — Implement `classify_question_type()` and update `.extract_var_meta()`
+- [x] PR 4: `feature/classify-question-type` — Implement `classify_question_type()` and update `.extract_var_meta()`
 
 ---
 
