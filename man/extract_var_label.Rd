@@ -46,6 +46,7 @@ extract_var_label(d, fill = NA_character_)
 \code{\link[=set_var_label]{set_var_label()}} to set a variable label
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

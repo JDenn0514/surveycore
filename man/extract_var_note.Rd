@@ -44,6 +44,7 @@ extract_var_note(d, age)
 \code{\link[=set_var_note]{set_var_note()}} to set a note
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

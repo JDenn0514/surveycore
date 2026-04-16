@@ -130,8 +130,8 @@ PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
 #'
 #' @param design   A survey design object.
 #' @param var_name Character(1). Column name in `design@data`.
-#' @return Named list with keys `variable_label`, `question_preface`, and
-#'   `value_labels`.
+#' @return Named list with keys `variable_label`, `question_preface`,
+#'   `value_labels`, and `sata`.
 #' @noRd
 .extract_var_meta <- function(design, var_name) {
   col <- design@data[[var_name]]
@@ -150,10 +150,13 @@ PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
     storage.mode(value_labels) <- "integer"
   }
 
+  sata <- isTRUE(design@metadata@sata[[var_name]])
+
   list(
     variable_label = variable_label,
     question_preface = question_preface,
-    value_labels = value_labels
+    value_labels = value_labels,
+    sata = sata
   )
 }
 

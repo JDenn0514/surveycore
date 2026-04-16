@@ -49,6 +49,7 @@ d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
 \code{\link[=extract_val_labels]{extract_val_labels()}} to retrieve value labels
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},

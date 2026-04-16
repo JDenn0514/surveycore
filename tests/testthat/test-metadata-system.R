@@ -2636,3 +2636,16 @@ test_that("extract_sata() errors when format is invalid", {
   )
   expect_snapshot(error = TRUE, extract_sata(d, format = "tibble"))
 })
+
+
+# ── .extract_var_meta() integration with sata metadata ───────────────────────
+
+test_that(".extract_var_meta() includes sata key in output", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  meta_sata    <- surveycore:::.extract_var_meta(d, "riagendr")
+  meta_no_sata <- surveycore:::.extract_var_meta(d, "ridageyr")
+  expect_true(meta_sata$sata)
+  expect_false(meta_no_sata$sata)
+})

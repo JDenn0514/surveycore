@@ -44,6 +44,7 @@ extract_question_preface(d, happy)
 \code{\link[=set_question_preface]{set_question_preface()}} to set a question preface
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_sata}()},

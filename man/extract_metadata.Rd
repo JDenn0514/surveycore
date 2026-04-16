@@ -39,6 +39,7 @@ extract_metadata(d, fill = "include")
 }
 \seealso{
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
 \code{\link{extract_sata}()},

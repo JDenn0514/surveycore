@@ -46,6 +46,7 @@ extract_sata(d, fill = NULL)
 \code{\link[=set_sata]{set_sata()}} to set SATA flags
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
