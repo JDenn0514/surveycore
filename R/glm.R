@@ -130,6 +130,12 @@ NULL
 #' @param converged Logical; whether IRLS converged.
 #' @param call The `survey_glm()` call (language object or `NULL`).
 #' @param fit_ Internal raw `stats::glm()` result; `NULL` after serialisation.
+#' @param term_assign Integer vector: `attr(model.matrix(fit_), "assign")`
+#'   captured at fit time. Maps design-matrix columns to formula terms (0 =
+#'   intercept; positive values index `attr(terms(formula), "term.labels")`).
+#'   Required by `get_anova()`'s serialization-safe Wald path (spec §3.3.1):
+#'   after `@fit_` is stripped via `saveRDS()`, the term-to-column map
+#'   survives in this slot. Default `integer(0)`.
 #'
 #' @return A `survey_glm_fit` object.
 #'
@@ -161,7 +167,8 @@ survey_glm_fit <- S7::new_class(
     df_residual = S7::new_property(S7::class_numeric),
     converged = S7::new_property(S7::class_logical),
     call = S7::new_property(default = NULL),
-    fit_ = S7::new_property(default = NULL)
+    fit_ = S7::new_property(default = NULL),
+    term_assign = S7::new_property(S7::class_integer, default = integer(0))
   ),
   validator = function(self) {
     p <- length(self@coefficients)
@@ -1152,6 +1159,7 @@ survey_glm <- function(
     df_residual = as.numeric(fit$df.residual),
     converged = isTRUE(fit$converged),
     call = match.call(),
-    fit_ = fit
+    fit_ = fit,
+    term_assign = as.integer(attr(stats::model.matrix(fit), "assign"))
   )
 }

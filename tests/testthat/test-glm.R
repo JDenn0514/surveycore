@@ -509,6 +509,51 @@ test_that("survey_glm_fit validator: rejects non-formula in formula slot (condit
 })
 
 # ---------------------------------------------------------------------------
+# @term_assign property (spec-get-anova §IX, §3.3.1)
+# ---------------------------------------------------------------------------
+
+test_that("survey_glm_fit has @term_assign integer property, default integer(0)", {
+  d <- .glm_taylor()
+  args <- .minimal_fit_args(d)
+  # Do not set term_assign — rely on the default.
+  fit <- do.call(survey_glm_fit, args)
+  expect_type(fit@term_assign, "integer")
+  expect_identical(fit@term_assign, integer(0))
+})
+
+test_that("survey_glm_fit validator rejects non-integer @term_assign", {
+  d <- .glm_taylor()
+  args <- .minimal_fit_args(d)
+  args$term_assign <- c(0, 1, 1) # numeric, not integer
+  expect_error(do.call(survey_glm_fit, args))
+})
+
+test_that("survey_glm() populates @term_assign from model.matrix assign attribute", {
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2 + y3)
+  expected <- attr(stats::model.matrix(fit@fit_), "assign")
+  expect_type(fit@term_assign, "integer")
+  expect_identical(fit@term_assign, as.integer(expected))
+  # Multi-term fit: assign includes 0 (intercept) and at least two distinct
+  # positive term indices.
+  expect_true(length(unique(fit@term_assign)) >= 3L)
+})
+
+test_that("survey_glm_fit @term_assign survives saveRDS() roundtrip", {
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2 + y3)
+  # Simulate the post-serialization state: @fit_ is stripped, but
+  # @term_assign must persist so Wald can recover the term-to-column map.
+  fit@fit_ <- NULL
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp), add = TRUE)
+  saveRDS(fit, tmp)
+  restored <- readRDS(tmp)
+  expect_false(identical(restored@term_assign, integer(0)))
+  expect_identical(restored@term_assign, fit@term_assign)
+})
+
+# ---------------------------------------------------------------------------
 # §9.4 Edge cases for survey_glm() (not clean() — those come in PR 4)
 # ---------------------------------------------------------------------------
 
