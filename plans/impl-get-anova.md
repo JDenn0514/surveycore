@@ -27,7 +27,7 @@ changes (`@term_assign`, vendored saddlepoint) from the ANOVA surface itself.
   `.saddle()`, `.pchisqsum_sad()`, `.pFsum_sad()` from
   `survey/R/pchisqsum.R` @ 4.4-8 into `R/variance-vendored-saddlepoint.R`;
   parity tests vs `survey::pchisqsum()` / `survey::pFsum()` at `1e-10`.
-- [ ] **PR C** — `feature/get-anova`: implement `get_anova()`,
+- [x] **PR C** — `feature/get-anova`: implement `get_anova()`,
   `anova.survey_glm_fit()`, `print.survey_anova()`, internal helpers
   (`.reg_term_test()`, `.anova_sequential()`, `.refit_drop_terms()`,
   `.anova_compare()`, `.anova_design_label()`, `.anova_design_df_string()`),
