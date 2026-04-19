@@ -64,6 +64,7 @@ reference:
       - get_diffs
       - get_t_test
       - get_pairwise
+      - get_anova
 
   - title: "Regression"
     desc: >
