@@ -85,6 +85,7 @@ get_pairwise(gss_design, age, by = sex)
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_corr}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},

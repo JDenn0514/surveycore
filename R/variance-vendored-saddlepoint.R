@@ -90,6 +90,16 @@
   if (lower.tail) {
     sad <- 1 - sad
   }
+  if (any(is.na(sad))) {
+    cli::cli_warn(
+      c(
+        "!" = "Saddlepoint p-value failed; falling back to the Satterthwaite approximation.",
+        "i" = "The Satterthwaite reference is exact only when all misspecification eigenvalues are equal.",
+        "v" = "Inspect {.code meta(result)$terms[[i]]$lambda} and consider {.code test = \"Chisq\"} with a large sample."
+      ),
+      class = "surveycore_warning_saddlepoint_fallback"
+    )
+  }
   ifelse(is.na(sad), guess, sad)
 }
 
@@ -146,6 +156,15 @@
     } else {
       rval <- s
     }
+  } else {
+    cli::cli_warn(
+      c(
+        "!" = "Saddlepoint p-value failed; falling back to the Satterthwaite F approximation.",
+        "i" = "The Satterthwaite reference is exact only when all misspecification eigenvalues are equal.",
+        "v" = "Inspect {.code meta(result)$terms[[i]]$lambda} and consider {.code test = \"Chisq\"} with a large sample."
+      ),
+      class = "surveycore_warning_saddlepoint_fallback"
+    )
   }
   rval
 }

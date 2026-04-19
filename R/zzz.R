@@ -137,6 +137,12 @@
     envir = asNamespace("stats")
   )
   registerS3method(
+    "anova",
+    "surveycore::survey_glm_fit",
+    anova.survey_glm_fit,
+    envir = asNamespace("stats")
+  )
+  registerS3method(
     "getCall",
     "surveycore::survey_glm_fit",
     getCall.survey_glm_fit,

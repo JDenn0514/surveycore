@@ -117,6 +117,7 @@ DIFFS_META_KEYS <- c(
 )
 T_TEST_META_KEYS <- c("group", "x", "by")
 PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
+ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
 
 #' Extract variable metadata from a survey design
@@ -630,6 +631,29 @@ PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
       call = call
     )
   }
+  .validate_decimals_namestyle(decimals, name_style, call = call)
+  invisible(TRUE)
+}
+
+# Validate `decimals` and `name_style` arguments.
+#
+# Shared between `.validate_shared_args()` (for the `get_*()` family) and
+# `get_anova()` (which does not use `variance`, `conf_level`, or `na.rm`).
+# Error classes `surveycore_error_invalid_decimals` and
+# `surveycore_error_invalid_name_style` are reused from rows 45b and 46 of
+# `plans/error-messages.md`.
+#
+# @param decimals Integer(1) or `NULL`.
+# @param name_style Character(1) — one of `"surveycore"`, `"broom"`.
+# @param call Caller environment for error attribution.
+# @return `invisible(TRUE)` on success; errors otherwise.
+# @keywords internal
+# @noRd
+.validate_decimals_namestyle <- function(
+  decimals,
+  name_style,
+  call = rlang::caller_env()
+) {
   if (!name_style %in% c("surveycore", "broom")) {
     cli::cli_abort(
       c(

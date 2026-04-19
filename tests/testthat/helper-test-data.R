@@ -751,3 +751,100 @@ test_glm_tidy_invariants <- function(result) {
   }
   invisible(result)
 }
+
+# ------------------------------------------------------------------------------
+# .testhelper_clobber_domain()
+# ------------------------------------------------------------------------------
+
+#' Mutate the `..surveycore_domain..` column on a fit's design
+#'
+#' Test-only helper. Used to construct the A-20 trigger in get_anova() tests:
+#' fit a full model, then rewrite the stored design's domain indicator so the
+#' reduced-fit defensive assertion in `.refit_drop_terms()` fires.
+#'
+#' The S7 property slots are read-only by default; this helper chains
+#' `S7::set_props()` on both the design and the fit to replace the @data slot
+#' on the design, then re-attach the modified design to the fit.
+#'
+#' @param fit A `survey_glm_fit` whose design has a `..surveycore_domain..`
+#'   column (e.g. from `update_design()` / `filter()`).
+#' @param value Logical vector of length `nrow(fit@design@data)` — the new
+#'   domain indicator values.
+#' @return The `survey_glm_fit` with `@design@data$..surveycore_domain..`
+#'   set to `value`.
+#' @keywords internal
+.testhelper_clobber_domain <- function(fit, value) {
+  df <- fit@design@data
+  df[["..surveycore_domain.."]] <- value
+  new_design <- S7::set_props(fit@design, data = df)
+  S7::set_props(fit, design = new_design)
+}
+
+# ------------------------------------------------------------------------------
+# make_replicate_nonconverger()
+# ------------------------------------------------------------------------------
+
+#' Build a replicate design / fit pair that triggers A-19 on refit
+#'
+#' 50-row dataset with a binary factor whose rare level appears in exactly one
+#' PSU. JK1-style replicate weights with `n_strata = n_psu` (each PSU its own
+#' stratum) mean the rare-level PSU is fully dropped in one replicate. A
+#' binomial(logit) GLM where the rare level is the only positive case
+#' guarantees quasi-separation on the dropped replicate — deterministic across
+#' BLAS libraries.
+#'
+#' Returned list:
+#'   - `design` : a `survey_replicate` object
+#'   - `formula`: a formula whose reduced-fit refit will exhibit
+#'                replicate non-convergence
+#'
+#' @param seed Random seed. Default 42.
+#' @return A named list with elements `design` and `formula`.
+#' @keywords internal
+make_replicate_nonconverger <- function(seed = 42L) {
+  set.seed(seed)
+  n <- 50L
+  n_psu <- 10L
+  psu_id <- rep(seq_len(n_psu), each = n %/% n_psu)
+  # rare: level "B" only on PSU 1; all other PSUs get level "A"
+  rare <- ifelse(psu_id == 1L, "B", "A")
+  rare <- factor(rare, levels = c("A", "B"))
+  # y: binary, all positives concentrated in PSU 1 (quasi-separation)
+  y <- as.integer(psu_id == 1L)
+  cov <- rnorm(n)
+  wt <- rep(1, n)
+  # JK1 replicate weights: one replicate per PSU, drop that PSU.
+  repwts <- matrix(wt, nrow = n, ncol = n_psu)
+  for (r in seq_len(n_psu)) {
+    mask <- psu_id == r
+    if (any(mask)) {
+      # Scale up non-dropped PSUs so sum(weights) matches across replicates.
+      scale <- sum(wt) / sum(wt[!mask])
+      repwts[mask, r] <- 0
+      repwts[!mask, r] <- wt[!mask] * scale
+    }
+  }
+  repwt_df <- as.data.frame(repwts)
+  names(repwt_df) <- paste0("repwt_", seq_len(n_psu))
+  df <- cbind(
+    data.frame(
+      psu = paste0("psu_", psu_id),
+      y = y,
+      rare = rare,
+      cov = cov,
+      wt = wt,
+      stringsAsFactors = FALSE
+    ),
+    repwt_df
+  )
+  design <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(names(repwt_df)),
+    type = "JK1"
+  )
+  list(
+    design = design,
+    formula = y ~ rare + cov
+  )
+}
