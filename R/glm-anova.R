@@ -631,53 +631,13 @@
 }
 
 
-# -- get_anova() ---------------------------------------------------------------
+# -- .get_anova_single() -------------------------------------------------------
 
-#' Design-Based Analysis of Variance for Survey GLM Fits
-#'
-#' Rao-Scott design-based ANOVA for [survey_glm()] fits. Supports the four
-#' method x test combinations shared with `survey::anova.svyglm()`: Rao-Scott
-#' working-LRT with F or Chisq reference, and design-based Wald with F or
-#' Chisq reference. Sequential mode tests each term in the formula by right-
-#' to-left drop; comparison mode tests the added terms between two nested
-#' fits.
-#'
-#' @param model A [survey_glm_fit] object.
-#' @param model2 Optional second [survey_glm_fit]. When supplied, `get_anova()`
-#'   runs in nested-comparison mode (one result row); otherwise it runs in
-#'   sequential mode (one row per term).
-#' @param method Character(1). `"LRT"` (default) or `"Wald"`.
-#' @param test Character(1). `"F"` (default) or `"Chisq"` reference
-#'   distribution.
-#' @param null Numeric or `NULL`. Hypothesized value for the tested
-#'   coefficients (Wald only). Ignored in LRT mode (errors if non-NULL).
-#' @param tolerance Numeric(1). Reciprocal-condition-number threshold for the
-#'   naive-covariance near-singular gate in the Rao-Scott LRT. Default
-#'   `sqrt(.Machine$double.eps)`.
-#' @param decimals Integer(1) or `NULL`. Round double output columns.
-#' @param label_vars Logical(1). When `TRUE`, compose term-row labels from
-#'   `@metadata@variable_labels` for the `term` column. Default `TRUE`.
-#' @param name_style Character(1). `"surveycore"` (default) or `"broom"`.
-#'
-#' @return A `survey_anova` tibble with columns `term`, `statistic`, `df`,
-#'   `ddf`, `deff`, `p_value`, `stars` and a `.meta` attribute.
-#'
-#' @examples
-#' # Filter to complete cases on modeled columns so the sequential refit
-#' # operates on the same rows as the full model (required by the LRT).
-#' gss_cc <- gss_2024[
-#'   stats::complete.cases(gss_2024[, c("age", "sex", "educ")]),
-#' ]
-#' gss_design <- as_survey(
-#'   gss_cc, ids = vpsu, weights = wtssps,
-#'   strata = vstrat, nest = TRUE
-#' )
-#' fit <- survey_glm(gss_design, age ~ sex + educ)
-#' get_anova(fit)
-#'
-#' @family analysis
-#' @export
-get_anova <- function(
+# Internal single-fit / two-fit kernel. The exported `get_anova()` lives in
+# `R/glm-anova-dispatch.R` and routes here after resolving the polymorphic
+# `object` argument. Callers inject `call` so surface errors/metadata report
+# the user-visible `get_anova()` call, not the internal helper.
+.get_anova_single <- function(
   model,
   model2 = NULL,
   method = c("LRT", "Wald"),
@@ -686,9 +646,10 @@ get_anova <- function(
   tolerance = sqrt(.Machine$double.eps),
   decimals = NULL,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  call = NULL
 ) {
-  cl <- match.call()
+  cl <- call %||% match.call()
 
   # 1. Validate `model`
   if (!S7::S7_inherits(model, survey_glm_fit)) {
@@ -696,7 +657,8 @@ get_anova <- function(
       c(
         "x" = "{.arg model} must be a {.cls survey_glm_fit} object, not {.cls {class(model)[1]}}."
       ),
-      class = "surveycore_error_not_glm_fit"
+      class = "surveycore_error_not_glm_fit",
+      call = cl
     )
   }
 
@@ -706,7 +668,8 @@ get_anova <- function(
       c(
         "x" = "{.arg model2} must be a {.cls survey_glm_fit} object, not {.cls {class(model2)[1]}}."
       ),
-      class = "surveycore_error_not_glm_fit"
+      class = "surveycore_error_not_glm_fit",
+      call = cl
     )
   }
 
@@ -721,7 +684,8 @@ get_anova <- function(
         "x" = "{.arg null} is only valid with {.code method = \"Wald\"}.",
         "v" = "Set {.code method = \"Wald\"} to test a non-zero null hypothesis."
       ),
-      class = "surveycore_error_null_with_lrt"
+      class = "surveycore_error_null_with_lrt",
+      call = cl
     )
   }
   if (!is.null(null) && !is.numeric(null)) {
@@ -730,7 +694,8 @@ get_anova <- function(
         "x" = "{.arg null} must be numeric or {.code NULL}.",
         "i" = "Got {.cls {class(null)[1]}}."
       ),
-      class = "surveycore_error_null_length_mismatch"
+      class = "surveycore_error_null_length_mismatch",
+      call = cl
     )
   }
 
@@ -746,7 +711,8 @@ get_anova <- function(
         "i" = "Sequential LRT needs {.field model@fit_}.",
         "v" = "Re-fit the model in the current R session. Sequential Wald is unaffected and remains serialization-safe."
       ),
-      class = "surveycore_error_lrt_requires_fit_object"
+      class = "surveycore_error_lrt_requires_fit_object",
+      call = cl
     )
   }
 
@@ -761,7 +727,8 @@ get_anova <- function(
           "i" = "The reference distribution cannot be calibrated at this ddf and the p-value is not well-defined for either {.val F} or {.val Chisq} tests.",
           "v" = "Fit a simpler model (fewer coefficients) or use a design with more primary sampling units."
         ),
-        class = "surveycore_error_insufficient_df_for_anova"
+        class = "surveycore_error_insufficient_df_for_anova",
+        call = cl
       )
     }
   }
@@ -794,7 +761,8 @@ get_anova <- function(
         "i" = "Got {.cls {class(tolerance)[1]}} of length {length(tolerance)}: {.val {tolerance}}.",
         "v" = "Use the default {.code sqrt(.Machine$double.eps)}, or supply any {.val 0}-or-positive numeric scalar."
       ),
-      class = "surveycore_error_invalid_tolerance"
+      class = "surveycore_error_invalid_tolerance",
+      call = cl
     )
   }
 
@@ -1048,7 +1016,6 @@ anova.survey_glm_fit <- function(
   if (length(others) == 0L) {
     get_anova(
       object,
-      model2 = NULL,
       method = method,
       test = test,
       null = null
@@ -1058,8 +1025,7 @@ anova.survey_glm_fit <- function(
       S7::S7_inherits(others[[1L]], survey_glm_fit)
   ) {
     get_anova(
-      object,
-      model2 = others[[1L]],
+      list(object, others[[1L]]),
       method = method,
       test = test,
       null = null
