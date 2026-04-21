@@ -11,7 +11,7 @@ All five surveycore design classes are supported."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,8 @@ All five surveycore design classes are supported.</p>
 <span>  start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  etastart <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mustart <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  quiet <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -119,6 +120,14 @@ model frame variables; survey weights are validated separately.</p></dd>
 <dd><p>A list of GLM control parameters passed to
 <code><a href="https://rdrr.io/r/stats/glm.control.html" class="external-link">stats::glm.control()</a></code>.</p></dd>
 
+
+<dt id="arg-quiet">quiet<a class="anchor" aria-label="anchor" href="#arg-quiet"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, suppresses convergence warnings emitted by
+<code>survey_glm()</code> and its internal replicate-weight refitting loop.
+Convergence status is always stored in <code>fit@converged</code> regardless of this
+setting, so non-convergence can still be detected programmatically.
+Default <code>FALSE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -128,7 +137,7 @@ model frame variables; survey weights are validated separately.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Variance estimation:</strong> Uses the Binder (1983) sandwich estimator, which
 decomposes into per-observation score vectors passed to the Phase 0
-variance machinery. The bread <code>(X'W̃X)⁻¹</code> accounts for IRLS working
+variance machinery. The bread <code>(X'WX)^(-1)</code> accounts for IRLS working
 weights and is correct for all GLM families including binomial and
 Poisson.</p>
 <p><strong><code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family:</strong> Wraps the <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code> call in
@@ -139,6 +148,62 @@ that fires for every survey-weighted binomial model.</p>
 estimation uses the full design for correct design-based SEs.</p>
 <p><strong>Multinomial response:</strong> <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind()</a></code> on the LHS of <code>formula</code> is not
 supported. Multinomial logistic regression is deferred to a later phase.</p>
+<p><strong>Formula to model matrix:</strong> <code>survey_glm()</code> passes the formula to
+<code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code> via <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code>. Factor and character predictors
+are dummy-coded using <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix()</a></code> default contrasts (treatment coding:
+first level as reference). Numeric predictors enter as-is. Interaction
+terms (<code>:</code>, <code>*</code>) and inline transformations (<code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code>, <code><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I()</a></code>) are supported
+as in any standard R formula. The resulting model matrix is <code>n x p</code> where
+<code>p</code> is the number of coefficients including the intercept.</p>
+<p><strong>Predictor variable types:</strong> Predictors may be numeric, integer, logical,
+factor, or character. Character predictors are coerced to factor by
+<code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code>. Ordered factors use polynomial contrasts by
+default. All other R types (list columns, complex, raw) will produce an
+error from <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code>.</p>
+<p><strong>Input assumptions:</strong> surveycore assumes (1) each row of <code>design@data</code>
+represents one sampled unit; (2) survey weights are positive and finite
+for all rows (validated at construction time); (3) the model formula
+variables are columns of <code>design@data</code>; (4) the design is correctly
+specified before calling <code>survey_glm()</code>. No centering, scaling, or
+other pre-processing is applied to predictor variables beyond what the
+formula specifies.</p>
+<p><strong>Data transformations:</strong> No automatic transformation is applied to
+predictor or response variables. Factor encoding is handled by
+<code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code> using the active contrasts. Link function
+transformations (e.g. <code>log</code> link in <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>) are applied by the
+family object, not by surveycore. To apply custom transformations, use
+<code><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I()</a></code> or <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> etc. inside the formula.</p>
+<p><strong>Row and column names:</strong> The coefficient vector returned in
+<code>fit@coefficients</code> carries the names produced by <code><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">stats::model.matrix()</a></code>
+(e.g. <code>"(Intercept)"</code>, <code>"sexFemale"</code>, <code>"age"</code>). <code>fit@vcov</code> carries the
+same names on rows and columns. <code>model.frame.survey_glm_fit()</code> returns the
+model frame with row names matching the rows used in fitting (i.e. the
+row names of <code>design@data</code> after applying <code>na.action</code>). Rows excluded by
+<code>na.action = na.omit</code> do not appear in the model frame.</p>
+<p><strong>Missing values:</strong> <code>na.action</code> controls handling of <code>NA</code> in model frame
+variables (predictors and response). <code>na.omit</code> (default) silently drops
+rows with any <code>NA</code>; the variance estimator uses the full design for
+correct sandwich SEs. <code>na.fail</code> stops with an informative error listing
+all variables containing <code>NA</code> and the row count for each. Survey weights
+are validated separately at construction time and must not contain <code>NA</code>.</p>
+<p><strong>Performance:</strong> Runtime scales as O(<em>n</em> · <em>p</em>²) for the score matrix
+computation and O(<em>p</em>³) for the bread matrix (solve). For Taylor designs,
+variance estimation adds O(<em>n</em> · <em>H</em> · <em>p</em>²) where <em>H</em> is the number of
+strata. For replicate designs it adds O(<em>R</em> · <em>n</em> · <em>p</em>) where <em>R</em> is the
+number of replicates. The dominant cost for large <em>n</em> is typically the
+<code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code> IRLS fit (O(<em>n</em> · <em>p</em>² · <em>I</em>) per IRLS iteration).</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Binder, D.A. (1983) On the variances of asymptotically normal estimators
+from complex surveys. <em>International Statistical Review</em>
+<b>51</b>(3), 279–292.</p>
+<p>Binder, D.A. (1991) Use of estimating functions for interval estimation
+from complex surveys. <em>Proceedings of the American Statistical
+Association, Section on Survey Research Methods</em>, 34–42.</p>
+<p>Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
+<em>Journal of the Royal Statistical Society: Series B</em>
+<b>76</b>(2), 431–452.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

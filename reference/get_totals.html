@@ -13,7 +13,7 @@ labelling."><meta property="og:image" content="https://jdenn0514.github.io/surve
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,7 +58,10 @@ labelling.</p>
 <span>  na.rm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_vars <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  name_style <span class="op">=</span> <span class="st">"surveycore"</span></span>
+<span>  name_style <span class="op">=</span> <span class="st">"surveycore"</span>,</span>
+<span>  <span class="va">...</span>,</span>
+<span>  .id <span class="op">=</span> <span class="st">".survey"</span>,</span>
+<span>  .on_missing <span class="op">=</span> <span class="st">"error"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -74,7 +77,8 @@ labelling.</p>
 <dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Optional single unquoted
 numeric variable name. When <code>NULL</code> (default), estimates the population
-size (<code>Σ w_i</code>). When supplied, estimates the weighted sum (<code>Σ w_i × x_i</code>).</p></dd>
+size (sum of weights). When supplied, estimates the weighted sum
+(sum of w_i * x_i).</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
@@ -128,6 +132,23 @@ variable is <code>NA</code> are collected into their own group row in the output
 <dt id="arg-name-style">name_style<a class="anchor" aria-label="anchor" href="#arg-name-style"></a></dt>
 <dd><p><code>"surveycore"</code> (default) or <code>"broom"</code>.</p></dd>
 
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Unused. Reserved so that <code>.id</code> and <code>.on_missing</code> remain
+named-only when a <code>survey_collection</code> is passed as <code>design</code>.</p></dd>
+
+
+<dt id="arg--id">.id<a class="anchor" aria-label="anchor" href="#arg--id"></a></dt>
+<dd><p>Character(1). Column name used to identify each survey when
+<code>design</code> is a <code><a href="survey_collection.html">survey_collection</a></code>. Default <code>".survey"</code>. Ignored when
+<code>design</code> is a single survey.</p></dd>
+
+
+<dt id="arg--on-missing">.on_missing<a class="anchor" aria-label="anchor" href="#arg--on-missing"></a></dt>
+<dd><p><code>"error"</code> (default) or <code>"skip"</code>. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when <code>design</code> is a single survey.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -143,12 +164,15 @@ variable is <code>NA</code> are collected into their own group row in the output
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other analysis:
 <code><a href="clean.html">clean()</a></code>,
+<code><a href="get_anova.html">get_anova()</a></code>,
 <code><a href="get_corr.html">get_corr()</a></code>,
 <code><a href="get_diffs.html">get_diffs()</a></code>,
 <code><a href="get_freqs.html">get_freqs()</a></code>,
 <code><a href="get_means.html">get_means()</a></code>,
+<code><a href="get_pairwise.html">get_pairwise()</a></code>,
 <code><a href="get_quantiles.html">get_quantiles()</a></code>,
 <code><a href="get_ratios.html">get_ratios()</a></code>,
+<code><a href="get_t_test.html">get_t_test()</a></code>,
 <code><a href="meta.html">meta()</a></code></p></div>
     </div>
 

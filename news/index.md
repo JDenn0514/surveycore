@@ -1,5 +1,129 @@
 # Changelog
 
+## surveycore 0.7.0
+
+### Breaking changes
+
+- [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)’s
+  first argument is now `object` and dispatches on class. The former
+  `model2` positional argument has been removed —
+  `get_anova(fit1, fit2)` must now be written
+  `get_anova(list(fit1, fit2))`. The S3 `anova(fit1, fit2)` interface is
+  unchanged.
+
+### New functions
+
+#### Design-based group comparisons
+
+- [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md)
+  performs a design-based two-sample t-test comparing group means for a
+  numeric outcome across two levels of a `by` variable. Returns a
+  `survey_t_test` tibble with estimate, per-group means and cell sizes,
+  CI, t-statistic, df, p-value, and significance stars. Supports
+  optional stratification via `group` (one row per stratum) and matches
+  [`survey::svyttest()`](https://rdrr.io/pkg/survey/man/svyttest.html)
+  at tolerance 1e-10 for point estimates and test statistics.
+- [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)
+  computes all k(k−1)/2 pairwise t-tests across the levels of a factor,
+  with multiple-comparison p-value adjustment via any
+  [`stats::p.adjust()`](https://rdrr.io/r/stats/p.adjust.html) method
+  (`"holm"` by default, or `"none"`). Adjustment is applied separately
+  within each `group` stratum when stratified. Returns a
+  `survey_pairwise` tibble with one row per pair.
+
+#### Design-based ANOVA
+
+- [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
+  computes Rao-Scott design-based ANOVA for `survey_glm_fit` objects,
+  supporting both Wald and LRT tests with F or Chi-squared reference
+  distributions. Three dispatch branches:
+  - `get_anova(<survey_glm_fit>)` — sequential term-by-term anova
+    (matches `anova.svyglm()` semantics).
+  - `get_anova(<list<survey_glm_fit>>)` — chained pairwise comparison
+    across `k` nested fits, returning `k − 1` rows.
+  - `get_anova(<survey_base>, formula = ...)` — fits the model
+    internally via
+    [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+    and runs sequential anova on the fit; extra `...` are forwarded to
+    [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md).
+    Matches
+    [`survey::regTermTest()`](https://rdrr.io/pkg/survey/man/regTermTest.html)
+    at tolerance 1e-8 on statistics and 1e-6 on p-values.
+- `anova(fit)` on a `survey_glm_fit` now dispatches to
+  [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
+  via a registered S3 method.
+- [`plot()`](https://rdrr.io/r/graphics/plot.default.html) on a
+  `survey_glm_fit` produces a dot-and-whisker coefficient plot with
+  design-based Wald confidence intervals.
+
+#### Select-all-that-apply (SATA) metadata
+
+- [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md)
+  marks one or more variables on a survey design (or data frame) as
+  select-all-that-apply. Accepts either tidy-select `...` or a
+  `variable` character vector; setting `sata = FALSE` removes the flag.
+  Idempotent on already-flagged variables.
+- [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md)
+  returns SATA status as a named logical vector (default), a list, or a
+  data frame. `fill = FALSE` yields a dense view (unmarked variables
+  reported as `FALSE`); `fill = NULL` returns only flagged variables.
+- [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)
+  classifies a set of requested variables into `"single"`, `"sata"`, or
+  `"battery"` by grouping them on shared `question_preface` metadata and
+  honoring per-variable SATA flags. Group numbers are assigned in order
+  of first appearance. Warns when a lone SATA-flagged variable has no
+  preface mate, or when a preface group has mixed SATA flags.
+
+#### Survey collections
+
+- `survey_collection` is a new S7 container holding an ordered,
+  uniquely-named list of `survey_base` objects — useful for wave-to-wave
+  analyses, panel studies, or any workflow that compares estimates
+  across multiple designs.
+- [`as_survey_collection()`](https://jdenn0514.github.io/surveycore/reference/as_survey_collection.md)
+  constructs a collection from named (`wave1 = d1, wave2 = d2`) or bare
+  (`d1, d2`) arguments; duplicate names are repaired by appending `_1`,
+  `_2`, … with a warning showing the rename mapping.
+- [`add_survey()`](https://jdenn0514.github.io/surveycore/reference/add_survey.md)
+  and
+  [`remove_survey()`](https://jdenn0514.github.io/surveycore/reference/remove_survey.md)
+  return new collections with surveys appended or removed; the original
+  is unchanged.
+- All nine `get_*()` analysis functions
+  ([`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+  [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+  [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+  [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
+  [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
+  [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md))
+  now dispatch over a `survey_collection`, iterating across surveys and
+  returning a single combined tibble. Two new named-only control args on
+  each function: `.id = ".survey"` names the identifier column, and
+  `.on_missing = c("error", "skip")` controls behavior when a requested
+  variable is absent from a survey. Regression functions
+  ([`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
+  [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md))
+  do not support collection dispatch and raise an explicit error
+  pointing users to [`lapply()`](https://rdrr.io/r/base/lapply.html).
+
+### Other improvements
+
+- [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  gains a `quiet =` argument to suppress convergence warnings.
+- `extract_*()` metadata functions now accept tidyselect helpers
+  (`starts_with()`, `all_of()`, `any_of()`, `matches()`) in place of
+  bare name lists.
+
+### Bug fixes
+
+- [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
+  now correctly computes `pct_change` when `show_means = FALSE` is
+  combined with grouped marginal effects and `show_pct_change = TRUE`
+  (previously returned `NA`).
+
 ## surveycore 0.6.2
 
 ### Bug fixes

@@ -20,7 +20,10 @@ get_totals(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 ```
 
@@ -35,8 +38,8 @@ get_totals(
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
   Optional single unquoted numeric variable name. When `NULL` (default),
-  estimates the population size (`Σ w_i`). When supplied, estimates the
-  weighted sum (`Σ w_i × x_i`).
+  estimates the population size (sum of weights). When supplied,
+  estimates the weighted sum (sum of w_i \* x_i).
 
 - group:
 
@@ -90,6 +93,24 @@ get_totals(
 
   `"surveycore"` (default) or `"broom"`.
 
+- ...:
+
+  Unused. Reserved so that `.id` and `.on_missing` remain named-only
+  when a `survey_collection` is passed as `design`.
+
+- .id:
+
+  Character(1). Column name used to identify each survey when `design`
+  is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  Default `".survey"`. Ignored when `design` is a single survey.
+
+- .on_missing:
+
+  `"error"` (default) or `"skip"`. How to handle surveys in a collection
+  that lack one of the requested NSE variables. Ignored when `design` is
+  a single survey.
+
 ## Value
 
 A `survey_totals` tibble (also inheriting `survey_result`). Columns:
@@ -111,12 +132,15 @@ The variable name (or `NULL` for no-variable mode) is in
 
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
+[`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+[`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 
 ## Examples

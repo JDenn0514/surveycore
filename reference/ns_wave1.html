@@ -15,7 +15,7 @@ and 2016 presidential vote choice."><meta property="og:image" content="https://j
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,8 @@ and 2016 presidential vote choice.</p>
 <dd><p>Interview date (character, <code>"YYYY-MM-DD"</code> format).</p></dd>
 
 <dt>wave_id</dt>
-<dd><p>Wave identifier: <code>"ns20190718"</code> for all rows in this dataset.</p></dd>
+<dd><p>Wave identifier: <code>"ns20190718"</code> for all rows in this
+dataset.</p></dd>
 
 <dt>weight</dt>
 <dd><p>Raking weight calibrated to ACS demographic targets and
@@ -118,7 +119,8 @@ and 2016 presidential vote choice.</p>
 <dd><p>Write-in for <code>dem_vote_intent</code> "other".</p></dd>
 
 <dt>rank_dems_1</dt>
-<dd><p>Top-ranked Democratic presidential candidate. See labels.</p></dd>
+<dd><p>Top-ranked Democratic presidential candidate.
+See labels.</p></dd>
 
 <dt>rank_dems_2</dt>
 <dd><p>Second-ranked Democratic candidate. See labels.</p></dd>
@@ -557,7 +559,8 @@ money internationally.</p></dd>
 <dd><p>Support raising the minimum wage to $15/hour.</p></dd>
 
 <dt>muslimban</dt>
-<dd><p>Support banning people from predominantly Muslim countries.</p></dd>
+<dd><p>Support banning people from predominantly Muslim
+countries.</p></dd>
 
 <dt>oil_and_gas</dt>
 <dd><p>Support removing barriers to domestic oil and gas
@@ -725,7 +728,8 @@ Meetings, Social Statistics Section.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Yes  No </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   1   2 </span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Create a calibrated survey design (correct approach for raked non-prob samples)</span></span></span>
+<span class="r-in"><span><span class="co"># Create a calibrated survey design (correct approach for raked</span></span></span>
+<span class="r-in"><span><span class="co"># non-prob samples)</span></span></span>
 <span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">svy</span>, <span class="va">pres_approval</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 5 × 3</span></span>

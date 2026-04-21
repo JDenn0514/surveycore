@@ -14,9 +14,12 @@ It provides S7-based survey design objects with:
   [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
   and [`srvyr::tbl_svy`](http://gdfe.co/srvyr/reference/tbl_svy.md)
 
+For a side-by-side comparison with `survey` and `srvyr`, see
+[`vignette("surveycore-vs-survey")`](https://jdenn0514.github.io/surveycore/articles/surveycore-vs-survey.md).
+
 ## Installation
 
-``` r
+``` R
 # From CRAN:
 install.packages("surveycore")
 
@@ -60,9 +63,45 @@ pak::pak("JDenn0514/surveycore")
   [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md),
   [`from_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.md)
 
+## Who is this for?
+
+surveycore is intended for:
+
+- **Survey researchers and methodologists** who analyse complex
+  probability samples and need design-consistent variance estimates
+  (stratified, clustered, replicate-weight, and two-phase designs).
+- **Social scientists, epidemiologists, and public health researchers**
+  working with population surveys such as NHANES, ACS, GSS, or custom
+  organizational surveys.
+- **R users who want a tidyverse-compatible interface** for the survey
+  analysis workflows currently served by `survey` and `srvyr`.
+
+The software is designed to analyse **rectangular survey microdata**:
+one row per respondent, numeric or categorical outcome variables, and
+either explicit survey weights or a design specification (ids, strata,
+FPC). It supports:
+
+- Data frames, tibbles, and data.table objects as input.
+- Variables with haven-style variable labels and value labels (e.g. from
+  `.xpt` or `.sav` files read with `haven`).
+- Grouped analyses (via `surveytidy::group_by()`).
+
+Each analysis function accepts specific types of outcome variables:
+
+| Function                                                                               | Accepts                                                        |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)         | Categorical or coded integer variables                         |
+| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)         | Numeric variables                                              |
+| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)       | Numeric variables                                              |
+| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)           | Pairs of numeric variables                                     |
+| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Numeric variables                                              |
+| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)       | Two numeric variables (numerator / denominator)                |
+| [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)         | A categorical grouping variable + one or more numeric outcomes |
+| [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)       | Numeric or binary response, numeric or categorical predictors  |
+
 ## Basic usage
 
-``` r
+``` R
 library(surveycore)
 
 # ── Simple SRS design ──────────────────────────────────────────────────────────
@@ -112,7 +151,7 @@ get_totals(d, income)
 
 ## Complex survey designs
 
-``` r
+``` R
 # ── Replicate weights (BRR) ───────────────────────────────────────────────────
 df_rep <- data.frame(
   y = rnorm(20),
@@ -156,7 +195,7 @@ d_rep
 surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
-``` r
+``` R
 d2 <- set_var_label(d, income = "Annual household income (USD)")
 d2 <- set_var_label(d2, age = "Respondent age in years")
 
@@ -170,7 +209,7 @@ extract_var_label(d2, age)
 
 ## Conversion to/from survey and srvyr
 
-``` r
+``` R
 # To survey::svydesign
 svy <- as_svydesign(d)
 class(svy)
@@ -194,8 +233,33 @@ built around it:
 - **surveywts** — calibration and post-stratification for survey
   weights. Coming soon.
 
+## Development status
+
+The package API is stable. The core classes, constructors, and analysis
+functions
+([`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+through
+[`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md))
+are not expected to change in breaking ways. New analysis functions may
+be added in future releases. See `NEWS.md` for the full changelog.
+
+## Code of Conduct
+
+Please note that the surveycore project is released with a [Contributor
+Code of
+Conduct](https://jdenn0514.github.io/surveycore/CODE_OF_CONDUCT.html).
+By contributing to this project, you agree to abide by its terms.
+
 ## License
 
 GPL-3. Variance estimation code vendored from the
 [`survey`](https://cran.r-project.org/package=survey) package (Thomas
 Lumley, GPL-2/GPL-3) — see `VENDORED.md` for full attribution.
+
+## References
+
+Lumley T (2004). “Analysis of Complex Survey Samples.” *Journal of
+Statistical Software*, **9**(1), 1–19.
+
+Lumley T (2010). *Complex Surveys: A Guide to Analysis Using R*. John
+Wiley and Sons.

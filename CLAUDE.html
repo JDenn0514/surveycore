@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,32 +35,44 @@
 <p><strong>Part of the <a href="../survey-standards/ECOSYSTEM.html">surveyverse ecosystem</a> — see there for ecosystem vision, architecture, and how surveycore relates to other packages.</strong></p>
 <p>surveycore is the foundation package of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for <code>survey</code> and <code>srvyr</code>. It provides S7-based survey design objects, a metadata/label system, and vendored variance estimation code. License: GPL-3.</p>
 <hr><div class="section level2">
-<h2 id="current-phase-status">Current Phase Status<a class="anchor" aria-label="anchor" href="#current-phase-status"></a></h2>
-<table class="table"><colgroup><col width="31%"><col width="36%"><col width="31%"></colgroup><thead><tr class="header"><th>Phase</th>
+<h2 id="implementation-status">Implementation Status<a class="anchor" aria-label="anchor" href="#implementation-status"></a></h2>
+<p>The package API is stable. All core functionality is complete. New analysis functions may be added but the existing structure will not change in breaking ways.</p>
+<table class="table"><colgroup><col width="42%"><col width="30%"><col width="26%"></colgroup><thead><tr class="header"><th>Component</th>
 <th>Status</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td>Phase 0 — S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
+</tr></thead><tbody><tr class="odd"><td>S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
 <td>✅ Complete</td>
-<td>Tagged v0.1.0</td>
-</tr><tr class="even"><td>Phase 0.5 — surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
+<td>v0.1.0</td>
+</tr><tr class="even"><td>surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
 <td>✅ Complete</td>
 <td>Separate <code>surveytidy</code> package</td>
-</tr><tr class="odd"><td>Prereq PR 1 — SRS support (originally <code>survey_srs</code>, now absorbed into <code>survey_taylor</code>)</td>
+</tr><tr class="odd"><td>SRS support</td>
 <td>✅ Complete</td>
-<td>
-<code>survey_srs</code> removed; SRS is <code>survey_taylor</code> with no ids/strata</td>
-</tr><tr class="even"><td>Phase 0.75 — Two-phase variance vendoring (<code>feature/variance-twophase</code>)</td>
+<td>Absorbed into <code>survey_taylor</code>; no ids/strata</td>
+</tr><tr class="even"><td>Two-phase variance</td>
 <td>✅ Complete</td>
-<td>Required before Phase 1</td>
-</tr><tr class="odd"><td>Phase 1 — Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
+<td>v0.2.x</td>
+</tr><tr class="odd"><td>Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
 <td>✅ Complete</td>
-<td>Core functions on main (v0.3.0); nested <code>.meta</code> + group label refactor merged to develop (PR #22–23)</td>
-</tr><tr class="even"><td>Phase 2 — Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
-<td>🔜 Next</td>
-<td>See <code>plans/phase-2-glm-formal-specification.md</code>
+<td>v0.3.0</td>
+</tr><tr class="even"><td>Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
+<td>✅ Complete</td>
+<td>v0.6.x</td>
+</tr><tr class="odd"><td>T-tests and pairwise (<code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>)</td>
+<td>🔄 In Review</td>
+<td>PR #88; see <code>plans/spec-get-t-test-pairwise.md</code>
 </td>
-</tr></tbody></table><p><strong>Next action:</strong> Begin Phase 2 — Regression. Spec at <code>plans/phase-2-glm-formal-specification.md</code>.</p>
-<hr></div>
+</tr><tr class="even"><td>SATA metadata (<code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/classify_question_type.html">classify_question_type()</a></code>)</td>
+<td>✅ Complete</td>
+<td>PRs #89, #90, #91, #92</td>
+</tr><tr class="odd"><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code>anova.survey_glm_fit()</code>)</td>
+<td>✅ Complete</td>
+<td>PRs #93, #94, #95, #96</td>
+</tr><tr class="even"><td>
+<code>survey_collection</code> container + <code>get_*()</code> dispatch</td>
+<td>✅ Complete</td>
+<td>PRs #97, #98</td>
+</tr></tbody></table><hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
 <ul><li>S7 classes: <code>survey_base</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_nonprob</code>
@@ -128,21 +140,19 @@
 <ul><li>
 <code>plans/error-messages.md</code> — canonical error/warning class names and CLI message templates</li>
 <li>
-<code>archive/phase-2/spec-phase-2.md</code> — authoritative Phase 2 spec (regression)</li>
+<code>plans/spec-get-t-test-pairwise.md</code> — spec for <code><a href="reference/get_t_test.html">get_t_test()</a></code> + <code><a href="reference/get_pairwise.html">get_pairwise()</a></code> (in review, PR #88)</li>
 <li>
-<code>archive/phase-2/decisions-phase-2.md</code> — pre-implementation review decisions for Phase 2</li>
+<code>archive/sata-metadata/</code> — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)</li>
 <li>
-<code>archive/phase-2/impl-phase-2.md</code> — Phase 2 implementation plan</li>
+<code>archive/get-anova/</code> — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)</li>
 <li>
-<code>archive/phase-1/</code> — Phase 1 docs (spec, impl plan, decisions, reviews — all complete)</li>
+<code>archive/get-anova-polymorphic/</code> — polymorphic <code>object</code> dispatch for <code><a href="reference/get_anova.html">get_anova()</a></code> (shipped; PR #96)</li>
 <li>
-<code>archive/survey-srs/survey-srs-formal-specification.md</code> — historical spec for removed <code>survey_srs</code> class (now absorbed into <code>survey_taylor</code>)</li>
+<code>archive/survey-collection/</code> — <code>survey_collection</code> container + <code>get_*()</code> dispatch spec, plan, and decisions (shipped; PRs #97, #98)</li>
 <li>
-<code>archive/</code> — completed phase docs (Phase 0 spec, Phase 0 impl plan, Phase 0.5 context, multi-stage)</li>
+<code>archive/</code> — completed phase docs (specs, impl plans, decisions — all historical)</li>
 <li>
 <code>.claude/rules/</code> — code style, testing standards, R package conventions, GitHub strategy</li>
-<li>
-<code>.claude/projects/-Users-jacobdennen-surveycore/memory/MEMORY-phase0.md</code> — Phase 0 implementation details (archived)</li>
 </ul></div>
 </div>
 

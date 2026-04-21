@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,71 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.7.0" id="surveycore-070">surveycore 0.7.0<a class="anchor" aria-label="anchor" href="#surveycore-070"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-7-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-7-0"></a></h3>
+<ul><li>
+<code><a href="../reference/get_anova.html">get_anova()</a></code>’s first argument is now <code>object</code> and dispatches on class. The former <code>model2</code> positional argument has been removed — <code>get_anova(fit1, fit2)</code> must now be written <code>get_anova(list(fit1, fit2))</code>. The S3 <code>anova(fit1, fit2)</code> interface is unchanged.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-functions-0-7-0">New functions<a class="anchor" aria-label="anchor" href="#new-functions-0-7-0"></a></h3>
+<div class="section level4">
+<h4 id="design-based-group-comparisons-0-7-0">Design-based group comparisons<a class="anchor" aria-label="anchor" href="#design-based-group-comparisons-0-7-0"></a></h4>
+<ul><li>
+<code><a href="../reference/get_t_test.html">get_t_test()</a></code> performs a design-based two-sample t-test comparing group means for a numeric outcome across two levels of a <code>by</code> variable. Returns a <code>survey_t_test</code> tibble with estimate, per-group means and cell sizes, CI, t-statistic, df, p-value, and significance stars. Supports optional stratification via <code>group</code> (one row per stratum) and matches <code><a href="https://rdrr.io/pkg/survey/man/svyttest.html" class="external-link">survey::svyttest()</a></code> at tolerance 1e-10 for point estimates and test statistics.</li>
+<li>
+<code><a href="../reference/get_pairwise.html">get_pairwise()</a></code> computes all k(k−1)/2 pairwise t-tests across the levels of a factor, with multiple-comparison p-value adjustment via any <code><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">stats::p.adjust()</a></code> method (<code>"holm"</code> by default, or <code>"none"</code>). Adjustment is applied separately within each <code>group</code> stratum when stratified. Returns a <code>survey_pairwise</code> tibble with one row per pair.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="design-based-anova-0-7-0">Design-based ANOVA<a class="anchor" aria-label="anchor" href="#design-based-anova-0-7-0"></a></h4>
+<ul><li>
+<code><a href="../reference/get_anova.html">get_anova()</a></code> computes Rao-Scott design-based ANOVA for <code>survey_glm_fit</code> objects, supporting both Wald and LRT tests with F or Chi-squared reference distributions. Three dispatch branches:
+<ul><li>
+<code>get_anova(&lt;survey_glm_fit&gt;)</code> — sequential term-by-term anova (matches <code>anova.svyglm()</code> semantics).</li>
+<li>
+<code>get_anova(&lt;list&lt;survey_glm_fit&gt;&gt;)</code> — chained pairwise comparison across <code>k</code> nested fits, returning <code>k − 1</code> rows.</li>
+<li>
+<code>get_anova(&lt;survey_base&gt;, formula = ...)</code> — fits the model internally via <code><a href="../reference/survey_glm.html">survey_glm()</a></code> and runs sequential anova on the fit; extra <code>...</code> are forwarded to <code><a href="../reference/survey_glm.html">survey_glm()</a></code>. Matches <code><a href="https://rdrr.io/pkg/survey/man/regTermTest.html" class="external-link">survey::regTermTest()</a></code> at tolerance 1e-8 on statistics and 1e-6 on p-values.</li>
+</ul></li>
+<li>
+<code>anova(fit)</code> on a <code>survey_glm_fit</code> now dispatches to <code><a href="../reference/get_anova.html">get_anova()</a></code> via a registered S3 method.</li>
+<li>
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> on a <code>survey_glm_fit</code> produces a dot-and-whisker coefficient plot with design-based Wald confidence intervals.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="select-all-that-apply-sata-metadata-0-7-0">Select-all-that-apply (SATA) metadata<a class="anchor" aria-label="anchor" href="#select-all-that-apply-sata-metadata-0-7-0"></a></h4>
+<ul><li>
+<code><a href="../reference/set_sata.html">set_sata()</a></code> marks one or more variables on a survey design (or data frame) as select-all-that-apply. Accepts either tidy-select <code>...</code> or a <code>variable</code> character vector; setting <code>sata = FALSE</code> removes the flag. Idempotent on already-flagged variables.</li>
+<li>
+<code><a href="../reference/extract_sata.html">extract_sata()</a></code> returns SATA status as a named logical vector (default), a list, or a data frame. <code>fill = FALSE</code> yields a dense view (unmarked variables reported as <code>FALSE</code>); <code>fill = NULL</code> returns only flagged variables.</li>
+<li>
+<code><a href="../reference/classify_question_type.html">classify_question_type()</a></code> classifies a set of requested variables into <code>"single"</code>, <code>"sata"</code>, or <code>"battery"</code> by grouping them on shared <code>question_preface</code> metadata and honoring per-variable SATA flags. Group numbers are assigned in order of first appearance. Warns when a lone SATA-flagged variable has no preface mate, or when a preface group has mixed SATA flags.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="survey-collections-0-7-0">Survey collections<a class="anchor" aria-label="anchor" href="#survey-collections-0-7-0"></a></h4>
+<ul><li>
+<code>survey_collection</code> is a new S7 container holding an ordered, uniquely-named list of <code>survey_base</code> objects — useful for wave-to-wave analyses, panel studies, or any workflow that compares estimates across multiple designs.</li>
+<li>
+<code><a href="../reference/as_survey_collection.html">as_survey_collection()</a></code> constructs a collection from named (<code>wave1 = d1, wave2 = d2</code>) or bare (<code>d1, d2</code>) arguments; duplicate names are repaired by appending <code>_1</code>, <code>_2</code>, … with a warning showing the rename mapping.</li>
+<li>
+<code><a href="../reference/add_survey.html">add_survey()</a></code> and <code><a href="../reference/remove_survey.html">remove_survey()</a></code> return new collections with surveys appended or removed; the original is unchanged.</li>
+<li>All nine <code>get_*()</code> analysis functions (<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>, <code><a href="../reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="../reference/get_ratios.html">get_ratios()</a></code>, <code><a href="../reference/get_corr.html">get_corr()</a></code>, <code><a href="../reference/get_diffs.html">get_diffs()</a></code>, <code><a href="../reference/get_t_test.html">get_t_test()</a></code>, <code><a href="../reference/get_pairwise.html">get_pairwise()</a></code>) now dispatch over a <code>survey_collection</code>, iterating across surveys and returning a single combined tibble. Two new named-only control args on each function: <code>.id = ".survey"</code> names the identifier column, and <code>.on_missing = c("error", "skip")</code> controls behavior when a requested variable is absent from a survey. Regression functions (<code><a href="../reference/survey_glm.html">survey_glm()</a></code>, <code><a href="../reference/get_anova.html">get_anova()</a></code>) do not support collection dispatch and raise an explicit error pointing users to <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>.</li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="other-improvements-0-7-0">Other improvements<a class="anchor" aria-label="anchor" href="#other-improvements-0-7-0"></a></h3>
+<ul><li>
+<code><a href="../reference/survey_glm.html">survey_glm()</a></code> gains a <code>quiet =</code> argument to suppress convergence warnings.</li>
+<li>
+<code>extract_*()</code> metadata functions now accept tidyselect helpers (<code>starts_with()</code>, <code>all_of()</code>, <code>any_of()</code>, <code>matches()</code>) in place of bare name lists.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-7-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-7-0"></a></h3>
+<ul><li>
+<code><a href="../reference/get_diffs.html">get_diffs()</a></code> now correctly computes <code>pct_change</code> when <code>show_means = FALSE</code> is combined with grouped marginal effects and <code>show_pct_change = TRUE</code> (previously returned <code>NA</code>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.2" id="surveycore-062">surveycore 0.6.2<a class="anchor" aria-label="anchor" href="#surveycore-062"></a></h2>
 <div class="section level3">

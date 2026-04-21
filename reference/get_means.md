@@ -19,7 +19,10 @@ get_means(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 ```
 
@@ -96,6 +99,24 @@ get_means(
   `"surveycore"` (default) or `"broom"`. When `"broom"`, renames `mean`
   → `estimate`, `se` → `std.error`, etc.
 
+- ...:
+
+  Unused. Reserved so that `.id` and `.on_missing` remain named-only
+  when a `survey_collection` is passed as `design`.
+
+- .id:
+
+  Character(1). Column name used to identify each survey when `design`
+  is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  Default `".survey"`. Ignored when `design` is a single survey.
+
+- .on_missing:
+
+  `"error"` (default) or `"skip"`. How to handle surveys in a collection
+  that lack one of the requested NSE variables. Ignored when `design` is
+  a single survey.
+
 ## Value
 
 A `survey_means` tibble (also inheriting `survey_result`). Columns:
@@ -119,11 +140,14 @@ metadata.
 
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
+[`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+[`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+[`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 

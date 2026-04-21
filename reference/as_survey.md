@@ -116,6 +116,17 @@ and convert it with
     )
     d <- from_svydesign(d_survey)
 
+## References
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1991) *Model Assisted
+Survey Sampling*. Springer.
+
+Lumley, T. (2004) Analysis of complex survey samples. *Journal of
+Statistical Software* **9**(1), 1–19.
+
+Lumley, T. (2010) *Complex Surveys: A Guide to Analysis Using R*. John
+Wiley and Sons.
+
 ## See also
 
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)

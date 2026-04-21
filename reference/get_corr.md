@@ -22,7 +22,10 @@ get_corr(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 ```
 
@@ -51,7 +54,7 @@ get_corr(
   variable pair with inference statistics. Wide format returns the
   correlation matrix (`r` values only — no variance or inference
   columns). When `group` is active, group columns are prepended in both
-  formats.
+  formats. Case-sensitive.
 
 - redundant:
 
@@ -70,7 +73,7 @@ get_corr(
 
   `NULL` or a character vector of one or more of `"se"`, `"ci"`,
   `"var"`, `"cv"`, `"moe"`, `"deff"`. Default `"ci"`. CI bounds use the
-  Fisher Z transform (guaranteeing bounds in (−1, 1)). Only applies to
+  Fisher Z transform (guaranteeing bounds in (-1, 1)). Only applies to
   long format.
 
 - conf_level:
@@ -119,6 +122,24 @@ get_corr(
   `"surveycore"` (default) or `"broom"`. When `"broom"`, renames `r` →
   `estimate`, `se` → `std.error`, etc. Only affects long format.
 
+- ...:
+
+  Unused. Reserved so that `.id` and `.on_missing` remain named-only
+  when a `survey_collection` is passed as `design`.
+
+- .id:
+
+  Character(1). Column name used to identify each survey when `design`
+  is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  Default `".survey"`. Ignored when `design` is a single survey.
+
+- .on_missing:
+
+  `"error"` (default) or `"skip"`. How to handle surveys in a collection
+  that lack one of the requested NSE variables. Ignored when `design` is
+  a single survey.
+
 ## Value
 
 A `survey_corr` tibble (also inheriting `survey_result`).
@@ -162,11 +183,14 @@ Use `meta(result)` to access design type, variable labels, and `method`
 
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
+[`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+[`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 

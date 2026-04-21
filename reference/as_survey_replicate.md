@@ -50,6 +50,7 @@ as_survey_replicate(
   (balanced repeated replication), `"Fay"` (Fay's method, a modified
   BRR), `"bootstrap"`, `"ACS"` (used in American Community Survey),
   `"successive-difference"`, or `"other"` (user-specified scale).
+  Case-sensitive.
 
 - scale:
 
@@ -75,7 +76,7 @@ as_survey_replicate(
 
   Character. How `fpc` is interpreted: `"fraction"` (sampling fraction,
   0–1) or `"correction"` (multiplier for the replicate variance).
-  Default `"fraction"`.
+  Default `"fraction"`. Case-sensitive.
 
 - mse:
 
@@ -92,9 +93,13 @@ A `survey_replicate` object.
 Both `weights` and `repweights` support tidy-select syntax:
 
     # Bare name for weights
-    as_survey_replicate(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+    as_survey_replicate(
+      df, weights = wt, repweights = starts_with("repwt"), type = "BRR"
+    )
     # c() for explicit replicate columns
-    as_survey_replicate(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+    as_survey_replicate(
+      df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1"
+    )
 
 ## Replicate weight matrix
 
@@ -114,6 +119,17 @@ roughly `nrow * n_replicates * 8` bytes per call (~363 MB for ACS
 Wyoming × 80). If you are estimating many variables, this is repeated
 for each call. This behaviour matches the `survey` package reference
 implementation.
+
+## References
+
+Judkins, D.R. (1990) Fay's method for variance estimation. *Journal of
+the American Statistical Association* **85**(410), 895–904.
+
+Canty, A.J. and Davison, A.C. (1999) Resampling-based variance
+estimation for labour force surveys. *The Statistician* **48**(3),
+379–391.
+
+Shao, J. and Tu, D. (1995) *The Jackknife and Bootstrap*. Springer.
 
 ## See also
 

@@ -13,7 +13,7 @@ model metadata."><meta property="og:image" content="https://jdenn0514.github.io/
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,8 @@ model metadata.</p>
 <span>  df_residual <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  converged <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
 <span>  call <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  fit_ <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  fit_ <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  term_assign <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -75,7 +76,7 @@ model metadata.</p>
 
 
 <dt id="arg-vcov">vcov<a class="anchor" aria-label="anchor" href="#arg-vcov"></a></dt>
-<dd><p><code>p × p</code> design-based variance-covariance matrix.</p></dd>
+<dd><p><code>p x p</code> design-based variance-covariance matrix.</p></dd>
 
 
 <dt id="arg-fitted-values">fitted_values<a class="anchor" aria-label="anchor" href="#arg-fitted-values"></a></dt>
@@ -138,6 +139,15 @@ Used for the deviance display; <strong>not</strong> the design-based residual df
 
 <dt id="arg-fit-">fit_<a class="anchor" aria-label="anchor" href="#arg-fit-"></a></dt>
 <dd><p>Internal raw <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code> result; <code>NULL</code> after serialisation.</p></dd>
+
+
+<dt id="arg-term-assign">term_assign<a class="anchor" aria-label="anchor" href="#arg-term-assign"></a></dt>
+<dd><p>Integer vector: <code>attr(model.matrix(fit_), "assign")</code>
+captured at fit time. Maps design-matrix columns to formula terms (0 =
+intercept; positive values index <code>attr(terms(formula), "term.labels")</code>).
+Required by <code><a href="get_anova.html">get_anova()</a></code>'s serialization-safe Wald path (spec §3.3.1):
+after <code>@fit_</code> is stripped via <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>, the term-to-column map
+survives in this slot. Default <code>integer(0)</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

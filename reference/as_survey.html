@@ -13,7 +13,7 @@ correction. Uses a tidy-select interface for all design variable arguments."><me
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,7 +67,8 @@ least one row and unique column names.</p></dd>
 
 
 <dt id="arg-ids">ids<a class="anchor" aria-label="anchor" href="#arg-ids"></a></dt>
-<dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Cluster (PSU) ID column(s).
+<dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Cluster (PSU) ID
+column(s).
 For single-stage: <code>ids = psu</code>. For multi-stage: <code>ids = c(psu, ssu)</code>.
 Omit entirely for simple random sampling.</p></dd>
 
@@ -150,6 +151,15 @@ with <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="extern
 <span>  pps <span class="op">=</span> <span class="st">"brewer"</span>, data <span class="op">=</span> <span class="va">mydata</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_svydesign.html">from_svydesign</a></span><span class="op">(</span><span class="va">d_survey</span><span class="op">)</span></span></code></pre><p></p></div>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
+<em>Model Assisted Survey Sampling</em>. Springer.</p>
+<p>Lumley, T. (2004) Analysis of complex survey samples.
+<em>Journal of Statistical Software</em> <b>9</b>(1), 1–19.</p>
+<p>Lumley, T. (2010) <em>Complex Surveys: A Guide to Analysis Using R</em>.
+John Wiley and Sons.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

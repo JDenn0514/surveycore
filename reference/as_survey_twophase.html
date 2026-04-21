@@ -13,7 +13,7 @@ for all Phase 2 design variable arguments."><meta property="og:image" content="h
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@ values (non-degenerate).</p></dd>
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>Character. Variance estimation method for combining Phase 1
 and Phase 2 variability. One of <code>"full"</code> (default), <code>"approx"</code>, or
-<code>"simple"</code>. See Details.</p></dd>
+<code>"simple"</code>. Case-sensitive. See Details.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -129,6 +129,19 @@ Phase 1 has PSU cluster variables, because this understates variance for
 clustered designs.</p></li>
 </ul></div>
 
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+<em>Model Assisted Survey Sampling</em>. Springer.</p>
+<p>Breslow, N.E. and Chatterjee, N. (1999) Design and analysis of two-phase
+studies with binary outcome applied to Wilms tumour prognosis.
+<em>Applied Statistics</em> <b>48</b>, 457–468.</p>
+<p>Breslow, N., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulick, M.
+(2009) Improved Horvitz-Thompson estimation of model parameters from
+two-phase stratified samples: applications in epidemiology.
+<em>Statistics in Biosciences</em>.
+<a href="https://doi.org/10.1007/s12561-009-9001-6" class="external-link">doi:10.1007/s12561-009-9001-6</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

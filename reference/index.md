@@ -17,6 +17,24 @@ interface — bare column names, no formula syntax.
 - [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
   : Update Design Variables on an Existing Survey Object
 
+## Survey collections
+
+Group multiple survey designs into a single container for joint analysis
+(e.g., waves of a panel study).
+
+- [`as_survey_collection()`](https://jdenn0514.github.io/surveycore/reference/as_survey_collection.md)
+  : Create a Collection of Survey Designs
+
+- [`add_survey()`](https://jdenn0514.github.io/surveycore/reference/add_survey.md)
+  :
+
+  Add Surveys to a `survey_collection`
+
+- [`remove_survey()`](https://jdenn0514.github.io/surveycore/reference/remove_survey.md)
+  :
+
+  Remove Surveys from a `survey_collection`
+
 ## Estimation
 
 Compute weighted estimates with design-correct standard errors.
@@ -37,6 +55,12 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Ratio Estimation
 - [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
   : Treatment Effect Estimation for Survey Designs
+- [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md)
+  : Design-Based Two-Sample T-Test for Survey Designs
+- [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)
+  : All-Pairs Pairwise T-Tests for Survey Designs
+- [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
+  : Design-Based Analysis of Variance for Survey GLM Fits
 
 ## Regression
 
@@ -69,6 +93,8 @@ argument.
   : Set Universe Description(s)
 - [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md)
   : Set Missing Code(s)
+- [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md)
+  : Set SATA (Select-All-That-Apply) Flag
 - [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
   : Infer Question Prefaces from Variable Labels
 
@@ -88,8 +114,12 @@ Retrieve metadata for one or more variables.
   : Extract Universe Descriptions
 - [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
   : Extract Missing Value Codes
+- [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md)
+  : Extract SATA (Select-All-That-Apply) Flags
 - [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
   : Extract All Metadata for Variables
+- [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)
+  : Classify Variable Question Types
 - [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
   : Extract the Weighting History from a Survey Object
 
@@ -125,6 +155,8 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
   : Calibrated / Non-Probability Survey Design
 - [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   : Survey Metadata Container
+- [`survey_collection()`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md)
+  : Multi-Survey Container
 
 ## Utilities
 

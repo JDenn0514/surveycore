@@ -66,7 +66,7 @@ as_survey_twophase(
 
   Character. Variance estimation method for combining Phase 1 and Phase
   2 variability. One of `"full"` (default), `"approx"`, or `"simple"`.
-  See Details.
+  Case-sensitive. See Details.
 
 ## Value
 
@@ -90,6 +90,21 @@ A `survey_twophase` object.
   Phase 1. Only valid when Phase 1 is a census (no sampling). Issues a
   warning when Phase 1 has PSU cluster variables, because this
   understates variance for clustered designs.
+
+## References
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992) *Model Assisted
+Survey Sampling*. Springer.
+
+Breslow, N.E. and Chatterjee, N. (1999) Design and analysis of two-phase
+studies with binary outcome applied to Wilms tumour prognosis. *Applied
+Statistics* **48**, 457–468.
+
+Breslow, N., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulick,
+M. (2009) Improved Horvitz-Thompson estimation of model parameters from
+two-phase stratified samples: applications in epidemiology. *Statistics
+in Biosciences*.
+[doi:10.1007/s12561-009-9001-6](https://doi.org/10.1007/s12561-009-9001-6)
 
 ## See also
 

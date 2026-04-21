@@ -17,7 +17,8 @@ survey_glm(
   start = NULL,
   etastart = NULL,
   mustart = NULL,
-  control = list()
+  control = list(),
+  quiet = FALSE
 )
 ```
 
@@ -88,6 +89,14 @@ survey_glm(
   A list of GLM control parameters passed to
   [`stats::glm.control()`](https://rdrr.io/r/stats/glm.control.html).
 
+- quiet:
+
+  Logical. If `TRUE`, suppresses convergence warnings emitted by
+  `survey_glm()` and its internal replicate-weight refitting loop.
+  Convergence status is always stored in `fit@converged` regardless of
+  this setting, so non-convergence can still be detected
+  programmatically. Default `FALSE`.
+
 ## Value
 
 A
@@ -98,7 +107,7 @@ S7 object.
 
 **Variance estimation:** Uses the Binder (1983) sandwich estimator,
 which decomposes into per-observation score vectors passed to the Phase
-0 variance machinery. The bread `(X'W̃X)⁻¹` accounts for IRLS working
+0 variance machinery. The bread `(X'WX)^(-1)` accounts for IRLS working
 weights and is correct for all GLM families including binomial and
 Poisson.
 
@@ -115,6 +124,80 @@ estimation uses the full design for correct design-based SEs.
 **Multinomial response:** [`cbind()`](https://rdrr.io/r/base/cbind.html)
 on the LHS of `formula` is not supported. Multinomial logistic
 regression is deferred to a later phase.
+
+**Formula to model matrix:** `survey_glm()` passes the formula to
+[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html) via
+[`stats::glm()`](https://rdrr.io/r/stats/glm.html). Factor and character
+predictors are dummy-coded using
+[`model.matrix()`](https://rdrr.io/r/stats/model.matrix.html) default
+contrasts (treatment coding: first level as reference). Numeric
+predictors enter as-is. Interaction terms (`:`, `*`) and inline
+transformations ([`log()`](https://rdrr.io/r/base/Log.html),
+[`I()`](https://rdrr.io/r/base/AsIs.html)) are supported as in any
+standard R formula. The resulting model matrix is `n x p` where `p` is
+the number of coefficients including the intercept.
+
+**Predictor variable types:** Predictors may be numeric, integer,
+logical, factor, or character. Character predictors are coerced to
+factor by
+[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html).
+Ordered factors use polynomial contrasts by default. All other R types
+(list columns, complex, raw) will produce an error from
+[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html).
+
+**Input assumptions:** surveycore assumes (1) each row of `design@data`
+represents one sampled unit; (2) survey weights are positive and finite
+for all rows (validated at construction time); (3) the model formula
+variables are columns of `design@data`; (4) the design is correctly
+specified before calling `survey_glm()`. No centering, scaling, or other
+pre-processing is applied to predictor variables beyond what the formula
+specifies.
+
+**Data transformations:** No automatic transformation is applied to
+predictor or response variables. Factor encoding is handled by
+[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html)
+using the active contrasts. Link function transformations (e.g. `log`
+link in [`poisson()`](https://rdrr.io/r/stats/family.html)) are applied
+by the family object, not by surveycore. To apply custom
+transformations, use [`I()`](https://rdrr.io/r/base/AsIs.html) or
+[`log()`](https://rdrr.io/r/base/Log.html) etc. inside the formula.
+
+**Row and column names:** The coefficient vector returned in
+`fit@coefficients` carries the names produced by
+[`stats::model.matrix()`](https://rdrr.io/r/stats/model.matrix.html)
+(e.g. `"(Intercept)"`, `"sexFemale"`, `"age"`). `fit@vcov` carries the
+same names on rows and columns. `model.frame.survey_glm_fit()` returns
+the model frame with row names matching the rows used in fitting (i.e.
+the row names of `design@data` after applying `na.action`). Rows
+excluded by `na.action = na.omit` do not appear in the model frame.
+
+**Missing values:** `na.action` controls handling of `NA` in model frame
+variables (predictors and response). `na.omit` (default) silently drops
+rows with any `NA`; the variance estimator uses the full design for
+correct sandwich SEs. `na.fail` stops with an informative error listing
+all variables containing `NA` and the row count for each. Survey weights
+are validated separately at construction time and must not contain `NA`.
+
+**Performance:** Runtime scales as O(*n* · *p*²) for the score matrix
+computation and O(*p*³) for the bread matrix (solve). For Taylor
+designs, variance estimation adds O(*n* · *H* · *p*²) where *H* is the
+number of strata. For replicate designs it adds O(*R* · *n* · *p*) where
+*R* is the number of replicates. The dominant cost for large *n* is
+typically the [`stats::glm()`](https://rdrr.io/r/stats/glm.html) IRLS
+fit (O(*n* · *p*² · *I*) per IRLS iteration).
+
+## References
+
+Binder, D.A. (1983) On the variances of asymptotically normal estimators
+from complex surveys. *International Statistical Review* **51**(3),
+279–292.
+
+Binder, D.A. (1991) Use of estimating functions for interval estimation
+from complex surveys. *Proceedings of the American Statistical
+Association, Section on Survey Research Methods*, 34–42.
+
+Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
+*Journal of the Royal Statistical Society: Series B* **76**(2), 431–452.
 
 ## See also
 

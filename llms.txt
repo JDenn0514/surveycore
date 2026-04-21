@@ -14,9 +14,12 @@ It provides S7-based survey design objects with:
   [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html)
   and [`srvyr::tbl_svy`](http://gdfe.co/srvyr/reference/tbl_svy.md)
 
+For a side-by-side comparison with `survey` and `srvyr`, see
+[`vignette("surveycore-vs-survey")`](https://jdenn0514.github.io/surveycore/articles/surveycore-vs-survey.md).
+
 ## Installation
 
-``` r
+``` R
 # From CRAN:
 install.packages("surveycore")
 
@@ -60,9 +63,45 @@ pak::pak("JDenn0514/surveycore")
   [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md),
   [`from_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.md)
 
+## Who is this for?
+
+surveycore is intended for:
+
+- **Survey researchers and methodologists** who analyse complex
+  probability samples and need design-consistent variance estimates
+  (stratified, clustered, replicate-weight, and two-phase designs).
+- **Social scientists, epidemiologists, and public health researchers**
+  working with population surveys such as NHANES, ACS, GSS, or custom
+  organizational surveys.
+- **R users who want a tidyverse-compatible interface** for the survey
+  analysis workflows currently served by `survey` and `srvyr`.
+
+The software is designed to analyse **rectangular survey microdata**:
+one row per respondent, numeric or categorical outcome variables, and
+either explicit survey weights or a design specification (ids, strata,
+FPC). It supports:
+
+- Data frames, tibbles, and data.table objects as input.
+- Variables with haven-style variable labels and value labels (e.g. from
+  `.xpt` or `.sav` files read with `haven`).
+- Grouped analyses (via `surveytidy::group_by()`).
+
+Each analysis function accepts specific types of outcome variables:
+
+| Function                                                                               | Accepts                                                        |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)         | Categorical or coded integer variables                         |
+| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)         | Numeric variables                                              |
+| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)       | Numeric variables                                              |
+| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)           | Pairs of numeric variables                                     |
+| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Numeric variables                                              |
+| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)       | Two numeric variables (numerator / denominator)                |
+| [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)         | A categorical grouping variable + one or more numeric outcomes |
+| [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)       | Numeric or binary response, numeric or categorical predictors  |
+
 ## Basic usage
 
-``` r
+``` R
 library(surveycore)
 
 # ── Simple SRS design ──────────────────────────────────────────────────────────
@@ -112,7 +151,7 @@ get_totals(d, income)
 
 ## Complex survey designs
 
-``` r
+``` R
 # ── Replicate weights (BRR) ───────────────────────────────────────────────────
 df_rep <- data.frame(
   y = rnorm(20),
@@ -156,7 +195,7 @@ d_rep
 surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
-``` r
+``` R
 d2 <- set_var_label(d, income = "Annual household income (USD)")
 d2 <- set_var_label(d2, age = "Respondent age in years")
 
@@ -170,7 +209,7 @@ extract_var_label(d2, age)
 
 ## Conversion to/from survey and srvyr
 
-``` r
+``` R
 # To survey::svydesign
 svy <- as_svydesign(d)
 class(svy)
@@ -194,11 +233,36 @@ built around it:
 - **surveywts** — calibration and post-stratification for survey
   weights. Coming soon.
 
+## Development status
+
+The package API is stable. The core classes, constructors, and analysis
+functions
+([`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+through
+[`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md))
+are not expected to change in breaking ways. New analysis functions may
+be added in future releases. See `NEWS.md` for the full changelog.
+
+## Code of Conduct
+
+Please note that the surveycore project is released with a [Contributor
+Code of
+Conduct](https://jdenn0514.github.io/surveycore/CODE_OF_CONDUCT.html).
+By contributing to this project, you agree to abide by its terms.
+
 ## License
 
 GPL-3. Variance estimation code vendored from the
 [`survey`](https://cran.r-project.org/package=survey) package (Thomas
 Lumley, GPL-2/GPL-3) — see `VENDORED.md` for full attribution.
+
+## References
+
+Lumley T (2004). “Analysis of Complex Survey Samples.” *Journal of
+Statistical Software*, **9**(1), 1–19.
+
+Lumley T (2010). *Complex Surveys: A Guide to Analysis Using R*. John
+Wiley and Sons.
 
 # Package index
 
@@ -218,6 +282,24 @@ interface — bare column names, no formula syntax.
   Design
 - [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
   : Update Design Variables on an Existing Survey Object
+
+## Survey collections
+
+Group multiple survey designs into a single container for joint analysis
+(e.g., waves of a panel study).
+
+- [`as_survey_collection()`](https://jdenn0514.github.io/surveycore/reference/as_survey_collection.md)
+  : Create a Collection of Survey Designs
+
+- [`add_survey()`](https://jdenn0514.github.io/surveycore/reference/add_survey.md)
+  :
+
+  Add Surveys to a `survey_collection`
+
+- [`remove_survey()`](https://jdenn0514.github.io/surveycore/reference/remove_survey.md)
+  :
+
+  Remove Surveys from a `survey_collection`
 
 ## Estimation
 
@@ -239,6 +321,12 @@ Compute weighted estimates with design-correct standard errors.
   : Survey-Weighted Ratio Estimation
 - [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
   : Treatment Effect Estimation for Survey Designs
+- [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md)
+  : Design-Based Two-Sample T-Test for Survey Designs
+- [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)
+  : All-Pairs Pairwise T-Tests for Survey Designs
+- [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
+  : Design-Based Analysis of Variance for Survey GLM Fits
 
 ## Regression
 
@@ -271,6 +359,8 @@ argument.
   : Set Universe Description(s)
 - [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md)
   : Set Missing Code(s)
+- [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md)
+  : Set SATA (Select-All-That-Apply) Flag
 - [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
   : Infer Question Prefaces from Variable Labels
 
@@ -290,8 +380,12 @@ Retrieve metadata for one or more variables.
   : Extract Universe Descriptions
 - [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
   : Extract Missing Value Codes
+- [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md)
+  : Extract SATA (Select-All-That-Apply) Flags
 - [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
   : Extract All Metadata for Variables
+- [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)
+  : Classify Variable Question Types
 - [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
   : Extract the Weighting History from a Survey Object
 
@@ -327,6 +421,8 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
   : Calibrated / Non-Probability Survey Design
 - [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   : Survey Metadata Container
+- [`survey_collection()`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md)
+  : Multi-Survey Container
 
 ## Utilities
 

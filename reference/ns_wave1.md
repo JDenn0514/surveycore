@@ -852,7 +852,8 @@ attr(ns_wave1$news_sources_cnn, "labels")
 #> Yes  No 
 #>   1   2 
 
-# Create a calibrated survey design (correct approach for raked non-prob samples)
+# Create a calibrated survey design (correct approach for raked
+# non-prob samples)
 svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
 #> # A tibble: 5 × 3

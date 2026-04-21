@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,6 +74,36 @@
         </dt>
         <dd>Update Design Variables on an Existing Survey Object</dd>
       </dl></div><div class="section level2">
+      <h2 id="survey-collections">Survey collections<a class="anchor" aria-label="anchor" href="#survey-collections"></a></h2>
+
+      <div class="section-desc"><p>Group multiple survey designs into a single container for joint analysis (e.g., waves of a panel study).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="as_survey_collection.html">as_survey_collection()</a></code>
+
+        </dt>
+        <dd>Create a Collection of Survey Designs</dd>
+
+        <dt>
+
+          <code><a href="add_survey.html">add_survey()</a></code>
+
+        </dt>
+        <dd>Add Surveys to a <code>survey_collection</code></dd>
+
+        <dt>
+
+          <code><a href="remove_survey.html">remove_survey()</a></code>
+
+        </dt>
+        <dd>Remove Surveys from a <code>survey_collection</code></dd>
+      </dl></div><div class="section level2">
       <h2 id="estimation">Estimation<a class="anchor" aria-label="anchor" href="#estimation"></a></h2>
 
       <div class="section-desc"><p>Compute weighted estimates with design-correct standard errors.</p></div>
@@ -138,6 +168,27 @@
 
         </dt>
         <dd>Treatment Effect Estimation for Survey Designs</dd>
+
+        <dt>
+
+          <code><a href="get_t_test.html">get_t_test()</a></code>
+
+        </dt>
+        <dd>Design-Based Two-Sample T-Test for Survey Designs</dd>
+
+        <dt>
+
+          <code><a href="get_pairwise.html">get_pairwise()</a></code>
+
+        </dt>
+        <dd>All-Pairs Pairwise T-Tests for Survey Designs</dd>
+
+        <dt>
+
+          <code><a href="get_anova.html">get_anova()</a></code>
+
+        </dt>
+        <dd>Design-Based Analysis of Variance for Survey GLM Fits</dd>
       </dl></div><div class="section level2">
       <h2 id="regression">Regression<a class="anchor" aria-label="anchor" href="#regression"></a></h2>
 
@@ -222,6 +273,13 @@
 
         <dt>
 
+          <code><a href="set_sata.html">set_sata()</a></code>
+
+        </dt>
+        <dd>Set SATA (Select-All-That-Apply) Flag</dd>
+
+        <dt>
+
           <code><a href="infer_question_prefaces.html">infer_question_prefaces()</a></code>
 
         </dt>
@@ -280,10 +338,24 @@
 
         <dt>
 
+          <code><a href="extract_sata.html">extract_sata()</a></code>
+
+        </dt>
+        <dd>Extract SATA (Select-All-That-Apply) Flags</dd>
+
+        <dt>
+
           <code><a href="extract_metadata.html">extract_metadata()</a></code>
 
         </dt>
         <dd>Extract All Metadata for Variables</dd>
+
+        <dt>
+
+          <code><a href="classify_question_type.html">classify_question_type()</a></code>
+
+        </dt>
+        <dd>Classify Variable Question Types</dd>
 
         <dt>
 
@@ -379,6 +451,13 @@
 
         </dt>
         <dd>Survey Metadata Container</dd>
+
+        <dt>
+
+          <code><a href="survey_collection.html">survey_collection()</a></code>
+
+        </dt>
+        <dd>Multi-Survey Container</dd>
       </dl></div><div class="section level2">
       <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a></h2>
 

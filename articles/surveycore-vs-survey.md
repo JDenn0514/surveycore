@@ -454,7 +454,7 @@ ns_sc
 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
 
-    #> <survey_nonprob> (calibrated / non-probability) [experimental]
+    #> <survey_nonprob> (non-probability) [experimental]
 
     #> Sample size: 6422
 

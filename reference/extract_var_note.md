@@ -17,9 +17,15 @@ extract_var_note(x, ..., format = "named_vector", fill = NULL)
 
 - ...:
 
-  \<[`data-masked`](https://rlang.r-lib.org/reference/args_data_masking.html)\>
-  Variable names (bare, unquoted). If empty, metadata for all variables
-  is returned.
+  \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
+  Variables to query. Supports selection helpers:
+  [`tidyselect::starts_with()`](https://tidyselect.r-lib.org/reference/starts_with.html),
+  [`tidyselect::all_of()`](https://tidyselect.r-lib.org/reference/all_of.html),
+  [`tidyselect::any_of()`](https://tidyselect.r-lib.org/reference/all_of.html),
+  [`tidyselect::matches()`](https://tidyselect.r-lib.org/reference/starts_with.html),
+  etc. If empty, returns metadata for all variables. Use
+  [`tidyselect::any_of()`](https://tidyselect.r-lib.org/reference/all_of.html)
+  to silently skip missing variable names.
 
 - format:
 
@@ -48,15 +54,18 @@ extract_var_note(x, ..., format = "named_vector", fill = NULL)
 to set a note
 
 Other metadata:
+[`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md),
 [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
 [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+[`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md),
 [`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
 [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
+[`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md),
 [`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
 [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),

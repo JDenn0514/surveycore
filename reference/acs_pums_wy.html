@@ -13,7 +13,7 @@ file — ideal for fast tests and examples."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,316 +51,43 @@ file — ideal for fast tests and examples.</p>
 
     <div class="section level2">
     <h2 id="format">Format<a class="anchor" aria-label="anchor" href="#format"></a></h2>
-    <p>A data frame with 5,962 rows and 96 variables. Variables
-<code>pwgtp1</code>–<code>pwgtp80</code> are eighty successive difference replicate weights for
-variance estimation; the remaining 16 variables are:</p><dl><dt>puma</dt>
-<dd><p>Public Use Microdata Area code. Use as the cluster ID (PSU)
-for variance estimation.</p></dd>
-
-<dt>st</dt>
-<dd><p>State FIPS code (all <code>56</code> = Wyoming).</p></dd>
-
-<dt>pwgtp</dt>
-<dd><p>Person weight. Represents the number of people in the
-Wyoming population that this record represents.</p></dd>
-
-<dt>agep</dt>
-<dd><p>Age (0–99 years).</p></dd>
-
-<dt>sex</dt>
-<dd><p>Sex: <code>1</code> = male, <code>2</code> = female.</p></dd>
-
-<dt>rac1p</dt>
-<dd><p>Recoded detailed race: <code>1</code> = White alone, <code>2</code> = Black or
-African American alone, <code>3</code> = American Indian alone, <code>6</code> = Asian alone,
-<code>9</code> = Two or more races.</p></dd>
-
-<dt>hisp</dt>
-<dd><p>Recoded Hispanic origin: <code>01</code> = Not Spanish/Hispanic/Latino;
-<code>02</code>–<code>24</code> = specific Hispanic origin.</p></dd>
-
-<dt>schl</dt>
-<dd><p>Educational attainment (24 categories): <code>01</code> = no schooling,
-<code>16</code> = regular high school diploma, <code>21</code> = bachelor's degree,
-<code>24</code> = doctorate degree.</p></dd>
-
-<dt>esr</dt>
-<dd><p>Employment status recode: <code>1</code> = civilian employed at work,
-<code>2</code> = civilian employed with job but not at work, <code>3</code> = unemployed,
-<code>4</code> = Armed Forces at work, <code>5</code> = Armed Forces not at work,
-<code>6</code> = Not in labor force.</p></dd>
-
-<dt>pincp</dt>
-<dd><p>Total person income in the past 12 months (dollars, signed;
+    <p>A data frame with 5,962 rows and 96 variables.
+Columns <code>pwgtp1</code> through <code>pwgtp80</code> are the 80 successive difference
+replicate weights for variance estimation; the remaining 16 variables are:</p><ul><li><p><code>puma</code>: Public Use Microdata Area code. Use as the cluster ID (PSU)
+for variance estimation.</p></li>
+<li><p><code>st</code>: State FIPS code (all 56 = Wyoming).</p></li>
+<li><p><code>pwgtp</code>: Person weight. Represents the number of people in the
+Wyoming population that this record represents.</p></li>
+<li><p><code>agep</code>: Age (0–99 years).</p></li>
+<li><p><code>sex</code>: Sex (1 = male, 2 = female).</p></li>
+<li><p><code>rac1p</code>: Recoded detailed race (1 = White alone, 2 = Black or African
+American alone, 3 = American Indian alone, 6 = Asian alone,
+9 = Two or more races).</p></li>
+<li><p><code>hisp</code>: Recoded Hispanic origin (01 = Not Spanish/Hispanic/Latino;
+02–24 = specific Hispanic origin).</p></li>
+<li><p><code>schl</code>: Educational attainment (24 categories: 01 = no schooling,
+16 = regular high school diploma, 21 = bachelor's degree,
+24 = doctorate degree).</p></li>
+<li><p><code>esr</code>: Employment status recode (1 = civilian employed at work,
+2 = civilian employed with job but not at work, 3 = unemployed,
+4 = Armed Forces at work, 5 = Armed Forces not at work,
+6 = Not in labor force).</p></li>
+<li><p><code>pincp</code>: Total person income in the past 12 months (dollars, signed;
 negative values indicate a net loss). Multiply by <code>adjinc / 1e6</code> to
-adjust to constant dollars.</p></dd>
-
-<dt>wagp</dt>
-<dd><p>Wages or salary income in the past 12 months (dollars).
-<code>NA</code> if not applicable.</p></dd>
-
-<dt>hicov</dt>
-<dd><p>Health insurance coverage: <code>1</code> = with health insurance,
-<code>2</code> = without health insurance.</p></dd>
-
-<dt>dis</dt>
-<dd><p>Disability recode: <code>1</code> = with a disability, <code>2</code> = without a
-disability.</p></dd>
-
-<dt>povpip</dt>
-<dd><p>Income-to-poverty ratio (0–501; <code>501</code> means 501% or more).</p></dd>
-
-<dt>wkhp</dt>
-<dd><p>Usual hours worked per week in the past 12 months. <code>NA</code> if
-not in the labor force.</p></dd>
-
-<dt>adjinc</dt>
-<dd><p>Adjustment factor for income and earnings. Divide by
+adjust to constant dollars.</p></li>
+<li><p><code>wagp</code>: Wages or salary income in the past 12 months (dollars).
+<code>NA</code> if not applicable.</p></li>
+<li><p><code>hicov</code>: Health insurance coverage (1 = with health insurance,
+2 = without health insurance).</p></li>
+<li><p><code>dis</code>: Disability recode (1 = with a disability, 2 = without a
+disability).</p></li>
+<li><p><code>povpip</code>: Income-to-poverty ratio (0–501; 501 means 501% or more).</p></li>
+<li><p><code>wkhp</code>: Usual hours worked per week in the past 12 months. <code>NA</code> if
+not in the labor force.</p></li>
+<li><p><code>adjinc</code>: Adjustment factor for income and earnings. Divide by
 1,000,000 and multiply income variables to convert to 2022 constant
-dollars.</p></dd>
-
-<dt>pwgtp1</dt>
-<dd><p>Successive difference replicate weight 1 of 80.</p></dd>
-
-<dt>pwgtp2</dt>
-<dd><p>Successive difference replicate weight 2 of 80.</p></dd>
-
-<dt>pwgtp3</dt>
-<dd><p>Successive difference replicate weight 3 of 80.</p></dd>
-
-<dt>pwgtp4</dt>
-<dd><p>Successive difference replicate weight 4 of 80.</p></dd>
-
-<dt>pwgtp5</dt>
-<dd><p>Successive difference replicate weight 5 of 80.</p></dd>
-
-<dt>pwgtp6</dt>
-<dd><p>Successive difference replicate weight 6 of 80.</p></dd>
-
-<dt>pwgtp7</dt>
-<dd><p>Successive difference replicate weight 7 of 80.</p></dd>
-
-<dt>pwgtp8</dt>
-<dd><p>Successive difference replicate weight 8 of 80.</p></dd>
-
-<dt>pwgtp9</dt>
-<dd><p>Successive difference replicate weight 9 of 80.</p></dd>
-
-<dt>pwgtp10</dt>
-<dd><p>Successive difference replicate weight 10 of 80.</p></dd>
-
-<dt>pwgtp11</dt>
-<dd><p>Successive difference replicate weight 11 of 80.</p></dd>
-
-<dt>pwgtp12</dt>
-<dd><p>Successive difference replicate weight 12 of 80.</p></dd>
-
-<dt>pwgtp13</dt>
-<dd><p>Successive difference replicate weight 13 of 80.</p></dd>
-
-<dt>pwgtp14</dt>
-<dd><p>Successive difference replicate weight 14 of 80.</p></dd>
-
-<dt>pwgtp15</dt>
-<dd><p>Successive difference replicate weight 15 of 80.</p></dd>
-
-<dt>pwgtp16</dt>
-<dd><p>Successive difference replicate weight 16 of 80.</p></dd>
-
-<dt>pwgtp17</dt>
-<dd><p>Successive difference replicate weight 17 of 80.</p></dd>
-
-<dt>pwgtp18</dt>
-<dd><p>Successive difference replicate weight 18 of 80.</p></dd>
-
-<dt>pwgtp19</dt>
-<dd><p>Successive difference replicate weight 19 of 80.</p></dd>
-
-<dt>pwgtp20</dt>
-<dd><p>Successive difference replicate weight 20 of 80.</p></dd>
-
-<dt>pwgtp21</dt>
-<dd><p>Successive difference replicate weight 21 of 80.</p></dd>
-
-<dt>pwgtp22</dt>
-<dd><p>Successive difference replicate weight 22 of 80.</p></dd>
-
-<dt>pwgtp23</dt>
-<dd><p>Successive difference replicate weight 23 of 80.</p></dd>
-
-<dt>pwgtp24</dt>
-<dd><p>Successive difference replicate weight 24 of 80.</p></dd>
-
-<dt>pwgtp25</dt>
-<dd><p>Successive difference replicate weight 25 of 80.</p></dd>
-
-<dt>pwgtp26</dt>
-<dd><p>Successive difference replicate weight 26 of 80.</p></dd>
-
-<dt>pwgtp27</dt>
-<dd><p>Successive difference replicate weight 27 of 80.</p></dd>
-
-<dt>pwgtp28</dt>
-<dd><p>Successive difference replicate weight 28 of 80.</p></dd>
-
-<dt>pwgtp29</dt>
-<dd><p>Successive difference replicate weight 29 of 80.</p></dd>
-
-<dt>pwgtp30</dt>
-<dd><p>Successive difference replicate weight 30 of 80.</p></dd>
-
-<dt>pwgtp31</dt>
-<dd><p>Successive difference replicate weight 31 of 80.</p></dd>
-
-<dt>pwgtp32</dt>
-<dd><p>Successive difference replicate weight 32 of 80.</p></dd>
-
-<dt>pwgtp33</dt>
-<dd><p>Successive difference replicate weight 33 of 80.</p></dd>
-
-<dt>pwgtp34</dt>
-<dd><p>Successive difference replicate weight 34 of 80.</p></dd>
-
-<dt>pwgtp35</dt>
-<dd><p>Successive difference replicate weight 35 of 80.</p></dd>
-
-<dt>pwgtp36</dt>
-<dd><p>Successive difference replicate weight 36 of 80.</p></dd>
-
-<dt>pwgtp37</dt>
-<dd><p>Successive difference replicate weight 37 of 80.</p></dd>
-
-<dt>pwgtp38</dt>
-<dd><p>Successive difference replicate weight 38 of 80.</p></dd>
-
-<dt>pwgtp39</dt>
-<dd><p>Successive difference replicate weight 39 of 80.</p></dd>
-
-<dt>pwgtp40</dt>
-<dd><p>Successive difference replicate weight 40 of 80.</p></dd>
-
-<dt>pwgtp41</dt>
-<dd><p>Successive difference replicate weight 41 of 80.</p></dd>
-
-<dt>pwgtp42</dt>
-<dd><p>Successive difference replicate weight 42 of 80.</p></dd>
-
-<dt>pwgtp43</dt>
-<dd><p>Successive difference replicate weight 43 of 80.</p></dd>
-
-<dt>pwgtp44</dt>
-<dd><p>Successive difference replicate weight 44 of 80.</p></dd>
-
-<dt>pwgtp45</dt>
-<dd><p>Successive difference replicate weight 45 of 80.</p></dd>
-
-<dt>pwgtp46</dt>
-<dd><p>Successive difference replicate weight 46 of 80.</p></dd>
-
-<dt>pwgtp47</dt>
-<dd><p>Successive difference replicate weight 47 of 80.</p></dd>
-
-<dt>pwgtp48</dt>
-<dd><p>Successive difference replicate weight 48 of 80.</p></dd>
-
-<dt>pwgtp49</dt>
-<dd><p>Successive difference replicate weight 49 of 80.</p></dd>
-
-<dt>pwgtp50</dt>
-<dd><p>Successive difference replicate weight 50 of 80.</p></dd>
-
-<dt>pwgtp51</dt>
-<dd><p>Successive difference replicate weight 51 of 80.</p></dd>
-
-<dt>pwgtp52</dt>
-<dd><p>Successive difference replicate weight 52 of 80.</p></dd>
-
-<dt>pwgtp53</dt>
-<dd><p>Successive difference replicate weight 53 of 80.</p></dd>
-
-<dt>pwgtp54</dt>
-<dd><p>Successive difference replicate weight 54 of 80.</p></dd>
-
-<dt>pwgtp55</dt>
-<dd><p>Successive difference replicate weight 55 of 80.</p></dd>
-
-<dt>pwgtp56</dt>
-<dd><p>Successive difference replicate weight 56 of 80.</p></dd>
-
-<dt>pwgtp57</dt>
-<dd><p>Successive difference replicate weight 57 of 80.</p></dd>
-
-<dt>pwgtp58</dt>
-<dd><p>Successive difference replicate weight 58 of 80.</p></dd>
-
-<dt>pwgtp59</dt>
-<dd><p>Successive difference replicate weight 59 of 80.</p></dd>
-
-<dt>pwgtp60</dt>
-<dd><p>Successive difference replicate weight 60 of 80.</p></dd>
-
-<dt>pwgtp61</dt>
-<dd><p>Successive difference replicate weight 61 of 80.</p></dd>
-
-<dt>pwgtp62</dt>
-<dd><p>Successive difference replicate weight 62 of 80.</p></dd>
-
-<dt>pwgtp63</dt>
-<dd><p>Successive difference replicate weight 63 of 80.</p></dd>
-
-<dt>pwgtp64</dt>
-<dd><p>Successive difference replicate weight 64 of 80.</p></dd>
-
-<dt>pwgtp65</dt>
-<dd><p>Successive difference replicate weight 65 of 80.</p></dd>
-
-<dt>pwgtp66</dt>
-<dd><p>Successive difference replicate weight 66 of 80.</p></dd>
-
-<dt>pwgtp67</dt>
-<dd><p>Successive difference replicate weight 67 of 80.</p></dd>
-
-<dt>pwgtp68</dt>
-<dd><p>Successive difference replicate weight 68 of 80.</p></dd>
-
-<dt>pwgtp69</dt>
-<dd><p>Successive difference replicate weight 69 of 80.</p></dd>
-
-<dt>pwgtp70</dt>
-<dd><p>Successive difference replicate weight 70 of 80.</p></dd>
-
-<dt>pwgtp71</dt>
-<dd><p>Successive difference replicate weight 71 of 80.</p></dd>
-
-<dt>pwgtp72</dt>
-<dd><p>Successive difference replicate weight 72 of 80.</p></dd>
-
-<dt>pwgtp73</dt>
-<dd><p>Successive difference replicate weight 73 of 80.</p></dd>
-
-<dt>pwgtp74</dt>
-<dd><p>Successive difference replicate weight 74 of 80.</p></dd>
-
-<dt>pwgtp75</dt>
-<dd><p>Successive difference replicate weight 75 of 80.</p></dd>
-
-<dt>pwgtp76</dt>
-<dd><p>Successive difference replicate weight 76 of 80.</p></dd>
-
-<dt>pwgtp77</dt>
-<dd><p>Successive difference replicate weight 77 of 80.</p></dd>
-
-<dt>pwgtp78</dt>
-<dd><p>Successive difference replicate weight 78 of 80.</p></dd>
-
-<dt>pwgtp79</dt>
-<dd><p>Successive difference replicate weight 79 of 80.</p></dd>
-
-<dt>pwgtp80</dt>
-<dd><p>Successive difference replicate weight 80 of 80.</p></dd>
-
-
-</dl></div>
+dollars.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="source">Source<a class="anchor" aria-label="anchor" href="#source"></a></h2>
     <p>U.S. Census Bureau. 2022 ACS 1-Year PUMS.

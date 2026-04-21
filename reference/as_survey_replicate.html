@@ -15,7 +15,7 @@ interface for weight and replicate-weight columns."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,7 +89,7 @@ jackknife), <code>"JK2"</code> (delete-1 jackknife, stratified), <code>"JKn"</co
 jackknife with varying replication counts), <code>"BRR"</code> (balanced repeated
 replication), <code>"Fay"</code> (Fay's method, a modified BRR), <code>"bootstrap"</code>,
 <code>"ACS"</code> (used in American Community Survey), <code>"successive-difference"</code>,
-or <code>"other"</code> (user-specified scale).</p></dd>
+or <code>"other"</code> (user-specified scale). Case-sensitive.</p></dd>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
@@ -115,7 +115,7 @@ adjust the variance estimator. <code>NULL</code> means no FPC correction.</p></d
 <dt id="arg-fpctype">fpctype<a class="anchor" aria-label="anchor" href="#arg-fpctype"></a></dt>
 <dd><p>Character. How <code>fpc</code> is interpreted: <code>"fraction"</code> (sampling
 fraction, 0–1) or <code>"correction"</code> (multiplier for the replicate variance).
-Default <code>"fraction"</code>.</p></dd>
+Default <code>"fraction"</code>. Case-sensitive.</p></dd>
 
 
 <dt id="arg-mse">mse<a class="anchor" aria-label="anchor" href="#arg-mse"></a></dt>
@@ -134,9 +134,13 @@ when computing variance). Recommended for most designs.</p></dd>
 
 <p>Both <code>weights</code> and <code>repweights</code> support tidy-select syntax:</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="co"># Bare name for weights</span></span>
-<span><span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span><span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>, repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"repwt"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"BRR"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
+<span>  <span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>, repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"repwt"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"BRR"</span></span>
+<span><span class="op">)</span></span>
 <span><span class="co"># c() for explicit replicate columns</span></span>
-<span><span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span><span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>, repweights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rep1</span>, <span class="va">rep2</span>, <span class="va">rep3</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"JK1"</span><span class="op">)</span></span></code></pre><p></p></div>
+<span><span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
+<span>  <span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>, repweights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">rep1</span>, <span class="va">rep2</span>, <span class="va">rep3</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"JK1"</span></span>
+<span><span class="op">)</span></span></code></pre><p></p></div>
     </div>
     <div class="section level2">
     <h2 id="replicate-weight-matrix">Replicate weight matrix<a class="anchor" aria-label="anchor" href="#replicate-weight-matrix"></a></h2>
@@ -157,6 +161,15 @@ designs (e.g., ACS PUMS with 500k+ rows × 80 replicates), this is roughly
 <code>nrow * n_replicates * 8</code> bytes per call (~363 MB for ACS Wyoming × 80).
 If you are estimating many variables, this is repeated for each call.
 This behaviour matches the <code>survey</code> package reference implementation.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Judkins, D.R. (1990) Fay's method for variance estimation.
+<em>Journal of the American Statistical Association</em>
+<b>85</b>(410), 895–904.</p>
+<p>Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
+<p>Shao, J. and Tu, D. (1995) <em>The Jackknife and Bootstrap</em>. Springer.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

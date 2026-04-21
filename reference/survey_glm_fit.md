@@ -25,7 +25,8 @@ survey_glm_fit(
   df_residual = integer(0),
   converged = logical(0),
   call = NULL,
-  fit_ = NULL
+  fit_ = NULL,
+  term_assign = integer(0)
 )
 ```
 
@@ -37,7 +38,7 @@ survey_glm_fit(
 
 - vcov:
 
-  `p × p` design-based variance-covariance matrix.
+  `p x p` design-based variance-covariance matrix.
 
 - fitted_values:
 
@@ -108,6 +109,17 @@ survey_glm_fit(
 
   Internal raw [`stats::glm()`](https://rdrr.io/r/stats/glm.html)
   result; `NULL` after serialisation.
+
+- term_assign:
+
+  Integer vector: `attr(model.matrix(fit_), "assign")` captured at fit
+  time. Maps design-matrix columns to formula terms (0 = intercept;
+  positive values index `attr(terms(formula), "term.labels")`). Required
+  by
+  [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)'s
+  serialization-safe Wald path (spec §3.3.1): after `@fit_` is stripped
+  via [`saveRDS()`](https://rdrr.io/r/base/readRDS.html), the
+  term-to-column map survives in this slot. Default `integer(0)`.
 
 ## Value
 

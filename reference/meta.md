@@ -29,7 +29,7 @@ A named list. Common fields present on every result:
 - `design_type`:
 
   Character(1). Design class: `"taylor"`, `"replicate"`, `"twophase"`,
-  `"srs"`, or `"calibrated"`.
+  `"srs"`, or `"nonprob"`.
 
 - `conf_level`:
 
@@ -85,12 +85,15 @@ use `attr(result, ".meta")` directly.
 
 Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
+[`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md),
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
+[`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
 
 ## Examples
