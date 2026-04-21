@@ -62,6 +62,14 @@
 #'   `"surveycore"` (default) or `"broom"` (renames `se` to `std.error`,
 #'   `ci_low` to `conf.low`, `ci_high` to `conf.high`, `p_value` to
 #'   `p.value`, `df` to `parameter`). `t_stat` is not renamed.
+#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#'   named-only when a `survey_collection` is passed as `design`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @return A `survey_t_test` tibble (also inheriting `survey_result`).
 #'   Columns: group columns (when active), `level_a`, `level_b`,
@@ -91,8 +99,23 @@ get_t_test <- function(
   decimals = NULL,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_t_test,
+      design,
+      x = {{ x }},
+      by = {{ by }},
+      group = {{ group }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # Step 1: Validate design class
   .check_unsupported_class(design, "get_t_test")
 
@@ -537,6 +560,14 @@ print.survey_t_test <- function(x, ...) {
 #' @param label_vars Logical(1). Accepted for API uniformity; no visible
 #'   effect. Default `TRUE`.
 #' @param name_style Character(1). `"surveycore"` (default) or `"broom"`.
+#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#'   named-only when a `survey_collection` is passed as `design`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @return A `survey_pairwise` tibble (also inheriting `survey_result`).
 #'   Columns: group columns (when active), `level_a`, `level_b`,
@@ -567,8 +598,23 @@ get_pairwise <- function(
   decimals = NULL,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_pairwise,
+      design,
+      x = {{ x }},
+      by = {{ by }},
+      group = {{ group }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # Step 1: Validate design class
   .check_unsupported_class(design, "get_pairwise")
 

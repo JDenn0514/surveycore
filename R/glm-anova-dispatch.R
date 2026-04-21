@@ -99,6 +99,19 @@ get_anova <- function(
   label_vars = TRUE,
   name_style = "surveycore"
 ) {
+  if (S7::S7_inherits(object, survey_collection)) {
+    fn_name <- "get_anova"
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} does not yet support {.cls survey_collection} inputs.",
+        "i" = paste0(
+          "Run {.fn {fn_name}} on each survey individually, or see ",
+          "{.topic survey_collection} for the current dispatch coverage."
+        )
+      ),
+      class = "surveycore_error_collection_not_supported_by_fn"
+    )
+  }
   cl <- match.call()
 
   has_formula_args <-

@@ -19,7 +19,10 @@ get_corr(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -86,6 +89,17 @@ labels are unset.}
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}. When \code{"broom"},
 renames \code{r} → \code{estimate}, \code{se} → \code{std.error}, etc. Only affects long
 format.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+named-only when a \code{survey_collection} is passed as \code{design}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_corr} tibble (also inheriting \code{survey_result}).

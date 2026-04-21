@@ -145,7 +145,23 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   if (rlang::quo_is_null(expr)) {
     return(NULL)
   }
-  names(tidyselect::eval_select(expr, data))
+  tryCatch(
+    names(tidyselect::eval_select(expr, data)),
+    vctrs_error_subscript_oob = function(cnd) {
+      missing <- cnd$i
+      if (is.null(missing)) {
+        missing <- conditionMessage(cnd)
+      }
+      have <- names(data)
+      cli::cli_abort(
+        c(
+          "x" = "Variable{?s} {.val {missing}} not found in survey data.",
+          "i" = "Available: {.val {have}}."
+        ),
+        class = "surveycore_error_variable_not_found"
+      )
+    }
+  )
 }
 
 # Resolve a tidy-select quosure that must select EXACTLY ONE column.

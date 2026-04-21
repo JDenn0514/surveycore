@@ -19,7 +19,9 @@ get_freqs(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -79,6 +81,14 @@ to the raw variable name when no label is set.}
 
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}. When \code{"broom"},
 renames \code{pct} → \code{estimate}, \code{se} → \code{std.error}, etc.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_freqs} tibble (also inheriting \code{survey_result}). Columns:
