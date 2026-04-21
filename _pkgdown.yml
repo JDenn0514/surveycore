@@ -50,6 +50,15 @@ reference:
       - as_survey_nonprob
       - update_design
 
+  - title: "Survey collections"
+    desc: >
+      Group multiple survey designs into a single container for joint
+      analysis (e.g., waves of a panel study).
+    contents:
+      - as_survey_collection
+      - add_survey
+      - remove_survey
+
   - title: "Estimation"
     desc: >
       Compute weighted estimates with design-correct standard errors.
@@ -125,6 +134,7 @@ reference:
       - survey_twophase
       - survey_nonprob
       - survey_metadata
+      - survey_collection
 
   - title: "Utilities"
     desc: Internal helpers exported for use in extension packages.

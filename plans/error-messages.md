@@ -181,6 +181,17 @@ against the messages defined here.
 | D-3 | `classify_question_type()` | SATA variable has no shared `question_preface` with other requested variables | WARN | `surveycore_warning_sata_no_preface` | `"!" = "Variable {.field {var_name}} is marked SATA but has no shared {.code question_preface} with other variables. Classified as {.val single}."` |
 | D-4 | `classify_question_type()` | Mixed SATA status within a `question_preface` group | WARN | `surveycore_warning_sata_mixed_group` | `"!" = "Variables sharing {.code question_preface} {.val {preface}} have mixed SATA status. Treating entire group as {.val sata}. Use {.fn set_sata} to mark all variables in the group."` |
 
+### survey_collection rows (PR 1)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| C1 | S7 validator (`survey_collection`) | Empty collection, or `@surveys` has unnamed / NA-named / empty-named elements | ERROR | `surveycore_error_collection_empty` | Empty: `"Collection must contain at least one survey."` / Unnamed: `"All surveys in the collection must be named."` (validator text; not CLI-formatted) |
+| C2 | S7 validator (`survey_collection`, backstop only) | Duplicate names (via direct `survey_collection(surveys = ...)` bypass) | ERROR | `surveycore_error_collection_duplicate_name` | `"Collection names must be unique. Duplicates: {.field {dupes}}"` |
+| C2a | `as_survey_collection()` / `add_survey()` | Duplicate names repaired via `_N` suffix | WARNING | `surveycore_warning_collection_duplicate_name_repaired` | `"!" = "Collection names must be unique; repaired {length(renames)} name{?s} by suffixing: {.code {fmt_mapping}}."` |
+| C3 | `as_survey_collection()` / `add_survey()` | Unnamed non-symbol argument | ERROR | `surveycore_error_collection_unnamed_expr` | `"x" = "All arguments must be named or passed as bare symbols.", "i" = "Position {.val {i}} is an unnamed expression."` |
+| C4 | S7 validator (`survey_collection`) | Non-`survey_base` element | ERROR | `surveycore_error_collection_bad_element` | `"All elements must inherit from {.cls survey_base}. Bad: {.field {bad}}"` (validator text; not CLI-formatted) |
+| C8 | `remove_survey()` | Name(s) not found in the collection | ERROR | `surveycore_error_collection_name_not_found` | `"x" = "Survey {.val {missing}} not found in collection.", "i" = "Available: {.val {have}}."` |
+
 ---
 
 ## Notes on Typed Errors
@@ -237,5 +248,6 @@ Which test files cover which error table rows:
 | `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
+| `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8 |
 | `test-glm-anova-numerical.R` | numerical parity tests vs `survey` package (no new error rows) |
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
