@@ -21,7 +21,7 @@
 | `@variables` absent keys | All keys always present; unspecified values as `NULL` |
 | Setter return values | `invisible(x)` |
 | Getter return values | Visible (no `invisible()`) |
-| Argument order | `x`/`data` first → required NSE → required scalar → optional NSE → optional scalar → `...` |
+| Argument order | `x`/`data` first → required NSE → required scalar → optional NSE → optional scalar → `...` → named-only control args |
 | Internal helper placement | Inline if used in 1 file; `07-utils.R` if used in 2+ files |
 | Dispatch rule | `S7::method()` for extending existing generics; plain function + `S7::S7_inherits()` for surveycore-owned generics |
 | Error structure | `"x"` + `"i"` + optional `"v"` bullets; `class=` on every `cli_abort()` |
@@ -343,6 +343,12 @@ Full precedence:
 4. Optional NSE/tidy-select arguments (`ids = NULL`, `weights = NULL`, etc.)
 5. Optional scalar control arguments (`nest = FALSE`, `mse = TRUE`, `validate = TRUE`)
 6. `...`
+7. **Named-only control args** — optional args that callers MUST supply by
+   name go after `...`. R's argument-matching rule forces named supply for
+   any parameter after `...`, which is the tidyverse idiom for control
+   flags like `.id`, `.on_missing`, `group`, `names_to`, `values_to`.
+   Examples: `get_freqs(design, x, ..., group, names_to, values_to, variance)`;
+   `get_means(coll, y, ..., .id = ".survey", .on_missing = "error")`.
 
 ```r
 # as_survey_rep: data (1), weights (2, required), repweights (2, required),

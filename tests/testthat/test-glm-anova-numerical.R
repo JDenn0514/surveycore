@@ -218,7 +218,7 @@ test_that("get_anova() Taylor comparison LRT/F matches regTermTest() [numerical]
   fit_b_sc <- survey_glm(sc, bpxsy1 ~ ridageyr + riagendr)
   fit_b_sv <- survey::svyglm(bpxsy1 ~ ridageyr + riagendr, design = sv)
 
-  r_sc <- get_anova(fit_s_sc, fit_b_sc, method = "LRT", test = "F")
+  r_sc <- get_anova(list(fit_s_sc, fit_b_sc), method = "LRT", test = "F")
   # Oracle: test dropping riagendr from the full model.
   r_sv <- survey::regTermTest(fit_b_sv, "riagendr", method = "LRT")
 
@@ -255,7 +255,7 @@ test_that("get_anova() Taylor comparison Wald/Chisq matches regTermTest() [numer
   fit_b_sc <- survey_glm(sc, bpxsy1 ~ ridageyr + riagendr)
   fit_b_sv <- survey::svyglm(bpxsy1 ~ ridageyr + riagendr, design = sv)
 
-  r_sc <- get_anova(fit_s_sc, fit_b_sc, method = "Wald", test = "Chisq")
+  r_sc <- get_anova(list(fit_s_sc, fit_b_sc), method = "Wald", test = "Chisq")
   r_sv <- survey::regTermTest(
     fit_b_sv,
     "riagendr",

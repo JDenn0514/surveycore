@@ -1,3 +1,25 @@
+# surveycore (development version)
+
+## Breaking changes
+
+* `get_anova()` now dispatches on `object`'s class rather than accepting an
+  explicit `model2` argument. The first argument may be a `survey_glm_fit`
+  (sequential anova), a list of `survey_glm_fit` objects (chained pairwise
+  comparisons, `length(object) - 1` rows), or a `survey_base` design plus a
+  `formula` (fits internally via `survey_glm()` then runs sequential anova).
+  The former positional form `get_anova(fit1, fit2)` must now be written
+  `get_anova(list(fit1, fit2))`. S3 `anova(fit1, fit2)` continues to work.
+
+## New features
+
+* `get_anova()` accepts a list of `survey_glm_fit` objects, returning one row
+  per consecutive pair — e.g., `get_anova(list(fit1, fit2, fit3))` produces
+  two rows (fit1 vs fit2, fit2 vs fit3). Mirrors `stats::anova(fit1, fit2, fit3)`.
+* `get_anova()` accepts a survey design and formula directly, fitting the
+  model internally: `get_anova(design, y ~ x1 + x2)` is equivalent to
+  `get_anova(survey_glm(design, y ~ x1 + x2))`. Extra `...` are forwarded
+  to `survey_glm()`.
+
 # surveycore 0.6.2
 
 ## Bug fixes

@@ -1,10 +1,11 @@
-# get_anova() rejects non-survey_glm_fit input (A-1)
+# get_anova() rejects non-survey_glm_fit input (A-23)
 
     Code
       get_anova("not a fit")
     Condition
       Error in `get_anova()`:
-      x `model` must be a <survey_glm_fit> object, not <character>.
+      x `object` must be a <survey_glm_fit>, a list of <survey_glm_fit> objects, or a survey design.
+      i Got <character>.
 
 # get_anova() rejects null with method='LRT' (A-4)
 
@@ -109,7 +110,7 @@
 # get_anova() errors when models are not nested (A-2)
 
     Code
-      get_anova(fit_a, fit_b)
+      get_anova(list(fit_a, fit_b))
     Condition
       Error in `.anova_compare()`:
       x Models are not symbolically nested.
@@ -119,7 +120,7 @@
 # get_anova() errors when responses differ (A-3)
 
     Code
-      get_anova(fit_y1, fit_y3)
+      get_anova(list(fit_y1, fit_y3))
     Condition
       Error in `.anova_compare()`:
       x Models have different response variables.
@@ -128,7 +129,7 @@
 # get_anova() errors when @data differs (A-5, case a)
 
     Code
-      get_anova(fit_1, fit_2)
+      get_anova(list(fit_1, fit_2))
     Condition
       Error in `.anova_compare()`:
       x Models were fit on designs with different @data or @variables slots.
@@ -153,10 +154,10 @@
       x anova() on <survey_glm_fit> accepts at most one additional <survey_glm_fit> model.
       i Got 1 extra argument(s).
 
-# get_anova(fit, fit) errors with identical term sets (A-16)
+# get_anova(list(fit, fit)) errors with identical term sets (A-16)
 
     Code
-      get_anova(fit, fit)
+      get_anova(list(fit, fit))
     Condition
       Error in `.anova_compare()`:
       x Both models have identical term sets; there are no terms to test.

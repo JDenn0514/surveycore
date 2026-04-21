@@ -350,10 +350,10 @@ test_that("get_anova() runs on SRS (survey_taylor with no ids/strata)", {
 # 3. ERROR PATHS — sequential mode
 # ═══════════════════════════════════════════════════════════════════════════
 
-test_that("get_anova() rejects non-survey_glm_fit input (A-1)", {
+test_that("get_anova() rejects non-survey_glm_fit input (A-23)", {
   expect_error(
     get_anova("not a fit"),
-    class = "surveycore_error_not_glm_fit"
+    class = "surveycore_error_anova_object_invalid"
   )
   expect_snapshot(error = TRUE, get_anova("not a fit"))
 })
@@ -720,7 +720,7 @@ test_that("get_anova() comparison mode returns 1-row survey_anova tibble", {
   d <- .anova_taylor()
   fit_small <- survey_glm(d, y1 ~ y2)
   fit_big <- survey_glm(d, y1 ~ y2 + y3)
-  r <- get_anova(fit_small, fit_big)
+  r <- get_anova(list(fit_small, fit_big))
   expect_s3_class(r, "survey_anova")
   expect_equal(nrow(r), 1L)
 })
@@ -729,8 +729,8 @@ test_that("get_anova() comparison mode is argument-order invariant", {
   d <- .anova_taylor()
   fit_small <- survey_glm(d, y1 ~ y2)
   fit_big <- survey_glm(d, y1 ~ y2 + y3)
-  r1 <- get_anova(fit_small, fit_big)
-  r2 <- get_anova(fit_big, fit_small)
+  r1 <- get_anova(list(fit_small, fit_big))
+  r2 <- get_anova(list(fit_big, fit_small))
   expect_equal(r1$statistic, r2$statistic, tolerance = 1e-10)
   expect_equal(r1$p_value, r2$p_value, tolerance = 1e-10)
   expect_identical(r1$term, r2$term)
@@ -740,7 +740,7 @@ test_that("get_anova() comparison term column reads 'added | base'", {
   d <- .anova_taylor()
   fit_small <- survey_glm(d, y1 ~ y2)
   fit_big <- survey_glm(d, y1 ~ y2 + y3 + grp)
-  r <- get_anova(fit_small, fit_big)
+  r <- get_anova(list(fit_small, fit_big))
   # Added terms: y3, grp; base: y2
   expect_match(r$term, "\\|")
   expect_match(r$term, "y3")
@@ -748,12 +748,12 @@ test_that("get_anova() comparison term column reads 'added | base'", {
   expect_match(r$term, "y2")
 })
 
-test_that("anova(fit1, fit2) S3 method matches get_anova(fit1, fit2)", {
+test_that("anova(fit1, fit2) S3 method matches get_anova(list(fit1, fit2))", {
   d <- .anova_taylor()
   fit_small <- survey_glm(d, y1 ~ y2)
   fit_big <- survey_glm(d, y1 ~ y2 + y3)
   r_s3 <- anova(fit_small, fit_big)
-  r_get <- get_anova(fit_small, fit_big)
+  r_get <- get_anova(list(fit_small, fit_big))
   expect_equal(r_s3$statistic, r_get$statistic, tolerance = 1e-10)
   expect_equal(r_s3$p_value, r_get$p_value, tolerance = 1e-10)
   expect_identical(r_s3$term, r_get$term)
@@ -765,7 +765,7 @@ test_that("get_anova() comparison runs on survey_taylor", {
   designs <- make_all_designs()
   fit_s <- survey_glm(designs$taylor, y1 ~ y2)
   fit_b <- survey_glm(designs$taylor, y1 ~ y2 + y3)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   expect_equal(nrow(r), 1L)
 })
 
@@ -773,7 +773,7 @@ test_that("get_anova() comparison runs on survey_replicate", {
   designs <- make_all_designs()
   fit_s <- survey_glm(designs$replicate, y1 ~ y2)
   fit_b <- survey_glm(designs$replicate, y1 ~ y2 + y3)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   expect_equal(nrow(r), 1L)
 })
 
@@ -781,7 +781,7 @@ test_that("get_anova() comparison runs on survey_twophase", {
   designs <- make_all_designs()
   fit_s <- survey_glm(designs$twophase, y1 ~ y2)
   fit_b <- survey_glm(designs$twophase, y1 ~ y2 + y3)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   expect_equal(nrow(r), 1L)
 })
 
@@ -790,7 +790,7 @@ test_that("get_anova() comparison runs on survey_nonprob (A-14 fires)", {
   fit_s <- survey_glm(designs$calibrated, y1 ~ y2)
   fit_b <- survey_glm(designs$calibrated, y1 ~ y2 + y3)
   expect_warning(
-    r <- get_anova(fit_s, fit_b),
+    r <- get_anova(list(fit_s, fit_b)),
     class = "surveycore_warning_nonprob_inference"
   )
   expect_equal(nrow(r), 1L)
@@ -800,7 +800,7 @@ test_that("get_anova() comparison runs on SRS", {
   designs <- make_all_designs()
   fit_s <- survey_glm(designs$srs, y1 ~ y2)
   fit_b <- survey_glm(designs$srs, y1 ~ y2 + y3)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   expect_equal(nrow(r), 1L)
 })
 
@@ -813,10 +813,10 @@ test_that("get_anova() errors when models are not nested (A-2)", {
   fit_a <- survey_glm(d, y1 ~ y2)
   fit_b <- survey_glm(d, y1 ~ y3)
   expect_error(
-    get_anova(fit_a, fit_b),
+    get_anova(list(fit_a, fit_b)),
     class = "surveycore_error_models_not_nested"
   )
-  expect_snapshot(error = TRUE, get_anova(fit_a, fit_b))
+  expect_snapshot(error = TRUE, get_anova(list(fit_a, fit_b)))
 })
 
 test_that("get_anova() errors when responses differ (A-3)", {
@@ -824,10 +824,10 @@ test_that("get_anova() errors when responses differ (A-3)", {
   fit_y1 <- survey_glm(d, y1 ~ y2)
   fit_y3 <- survey_glm(d, y3 ~ y2)
   expect_error(
-    get_anova(fit_y1, fit_y3),
+    get_anova(list(fit_y1, fit_y3)),
     class = "surveycore_error_response_mismatch"
   )
-  expect_snapshot(error = TRUE, get_anova(fit_y1, fit_y3))
+  expect_snapshot(error = TRUE, get_anova(list(fit_y1, fit_y3)))
 })
 
 test_that("get_anova() errors when @data differs (A-5, case a)", {
@@ -836,10 +836,10 @@ test_that("get_anova() errors when @data differs (A-5, case a)", {
   fit_1 <- survey_glm(d1, y1 ~ y2)
   fit_2 <- survey_glm(d2, y1 ~ y2 + y3)
   expect_error(
-    get_anova(fit_1, fit_2),
+    get_anova(list(fit_1, fit_2)),
     class = "surveycore_error_design_mismatch"
   )
-  expect_snapshot(error = TRUE, get_anova(fit_1, fit_2))
+  expect_snapshot(error = TRUE, get_anova(list(fit_1, fit_2)))
 })
 
 test_that("get_anova() does NOT error when only @metadata@transformations differ (A-5, case b)", {
@@ -853,7 +853,7 @@ test_that("get_anova() does NOT error when only @metadata@transformations differ
   fit_1 <- survey_glm(d1, y1 ~ y2)
   fit_2 <- survey_glm(d2, y1 ~ y2 + y3)
   # Should succeed — A-5 must not fire
-  expect_no_error(get_anova(fit_1, fit_2))
+  expect_no_error(get_anova(list(fit_1, fit_2)))
 })
 
 test_that("anova(fit, fit2, fit3) errors with A-7 (too many extras)", {
@@ -885,7 +885,7 @@ test_that("get_anova() comparison LRT errors when either fit_ is NULL (A-11)", {
   # Strip fit_ from big model
   fit_b_stripped <- S7::set_props(fit_b, fit_ = NULL)
   expect_error(
-    get_anova(fit_s, fit_b_stripped, method = "LRT"),
+    get_anova(list(fit_s, fit_b_stripped), method = "LRT"),
     class = "surveycore_error_lrt_requires_fit_object"
   )
 })
@@ -897,7 +897,7 @@ test_that("get_anova() comparison Wald errors when either fit_ is NULL (A-11, Is
   fit_s_stripped <- S7::set_props(fit_s, fit_ = NULL)
   # Wald comparison mode ALSO reaches into @fit_ for the n-invariance check
   expect_error(
-    get_anova(fit_s_stripped, fit_b, method = "Wald"),
+    get_anova(list(fit_s_stripped, fit_b), method = "Wald"),
     class = "surveycore_error_lrt_requires_fit_object"
   )
 })
@@ -911,19 +911,19 @@ test_that("get_anova() comparison errors on row-identifier mismatch (A-12)", {
   fit_s <- survey_glm(d, y1 ~ y2)
   fit_b <- survey_glm(d, y1 ~ y2 + y3_missing)
   expect_error(
-    get_anova(fit_s, fit_b),
+    get_anova(list(fit_s, fit_b)),
     class = "surveycore_error_n_mismatch"
   )
 })
 
-test_that("get_anova(fit, fit) errors with identical term sets (A-16)", {
+test_that("get_anova(list(fit, fit)) errors with identical term sets (A-16)", {
   d <- .anova_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
   expect_error(
-    get_anova(fit, fit),
+    get_anova(list(fit, fit)),
     class = "surveycore_error_identical_term_sets"
   )
-  expect_snapshot(error = TRUE, get_anova(fit, fit))
+  expect_snapshot(error = TRUE, get_anova(list(fit, fit)))
 })
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -934,7 +934,7 @@ test_that("get_anova() comparison .meta$terms[[1]]$added_terms is verbatim setdi
   d <- .anova_taylor()
   fit_s <- survey_glm(d, y1 ~ y2)
   fit_b <- survey_glm(d, y1 ~ y2 + y3 + grp)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   m <- meta(r)
   added <- m$terms[[1L]]$added_terms
   expect_type(added, "character")
@@ -945,7 +945,7 @@ test_that("get_anova() comparison .meta$model2 is present with same shape as mod
   d <- .anova_taylor()
   fit_s <- survey_glm(d, y1 ~ y2)
   fit_b <- survey_glm(d, y1 ~ y2 + y3)
-  r <- get_anova(fit_s, fit_b)
+  r <- get_anova(list(fit_s, fit_b))
   m <- meta(r)
   expect_true("model2" %in% names(m))
   expect_true(all(c("formula", "family", "link", "n_obs", "coefficients") %in% names(m$model2)))
