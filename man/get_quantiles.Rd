@@ -17,7 +17,10 @@ get_quantiles(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -70,6 +73,17 @@ effect on \code{get_quantiles()} output. Default \code{TRUE}.}
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}. When \code{"broom"},
 renames \code{se} → \code{std.error}, \code{ci_low} → \code{conf.low},
 \code{ci_high} → \code{conf.high}. The \code{estimate} column is unchanged.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+named-only when a \code{survey_collection} is passed as \code{design}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_quantiles} tibble (also inheriting \code{survey_result}).
@@ -117,11 +131,14 @@ position measures. \emph{Journal of the American Statistical Association},
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_corr}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

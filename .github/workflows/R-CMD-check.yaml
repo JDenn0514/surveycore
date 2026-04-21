@@ -13,6 +13,7 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    continue-on-error: ${{ matrix.config.allow_failure }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -20,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,  r: 'release',  build-args: 'character(0)', extra-check-args: ''}
-          - {os: ubuntu-latest,  r: 'devel',    http-user-agent: 'release', build-args: 'character(0)', extra-check-args: ''}
-          - {os: windows-latest, r: 'release',  build-args: 'character(0)', extra-check-args: ''}
-          - {os: macos-latest,   r: 'release',  build-args: 'character(0)', extra-check-args: ''}
+          - {os: ubuntu-latest,  r: 'release', allow_failure: false, build-args: 'character(0)', extra-check-args: ''}
+          - {os: ubuntu-latest,  r: 'devel',   allow_failure: true,  http-user-agent: 'release', build-args: 'character(0)', extra-check-args: ''}
+          - {os: windows-latest, r: 'release', allow_failure: false, build-args: 'character(0)', extra-check-args: ''}
+          - {os: macos-latest,   r: 'release', allow_failure: false, build-args: 'character(0)', extra-check-args: ''}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

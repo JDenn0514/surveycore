@@ -3,7 +3,7 @@
 # update_design(): update design variables on an existing survey object.
 # Covers error-messages.md row 36 (cli_inform on update).
 
-# ── Internal helper ────────────────────────────────────────────────────────────
+# ── Internal helper ───────────────────────────────────────────────────────────
 
 # Resolve a tidy-select argument for update_design().
 # Returns NULL if quo is NULL (no update requested).
@@ -30,7 +30,7 @@
 }
 
 
-# ── update_design ──────────────────────────────────────────────────────────────
+# ── update_design ─────────────────────────────────────────────────────────────
 
 #' Update Design Variables on an Existing Survey Object
 #'
@@ -94,7 +94,7 @@ update_design <- function(
   fpc_quo <- rlang::enquo(fpc)
   repweights_quo <- rlang::enquo(repweights)
 
-  # ── Dispatch by class ────────────────────────────────────────────────────────
+  # ── Dispatch by class ───────────────────────────────────────────────────────
 
   if (S7::S7_inherits(x, survey_taylor)) {
     changed_vars <- character(0L)
@@ -196,7 +196,7 @@ update_design <- function(
     )
   }
 
-  # ── Inform message when variables changed (error-messages.md row 36) ─────────
+  # ── Inform message when variables changed (error-messages.md row 36) ────────
   if (length(changed_vars) > 0L) {
     cli::cli_inform(
       c(

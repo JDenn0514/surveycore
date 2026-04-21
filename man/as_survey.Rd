@@ -18,7 +18,8 @@ as_survey(
 \item{data}{A \code{data.frame} containing the survey responses. Must have at
 least one row and unique column names.}
 
-\item{ids}{<\code{\link[tidyselect:language]{tidy-select}}> Cluster (PSU) ID column(s).
+\item{ids}{<\code{\link[tidyselect:language]{tidy-select}}> Cluster (PSU) ID
+column(s).
 For single-stage: \code{ids = psu}. For multi-stage: \code{ids = c(psu, ssu)}.
 Omit entirely for simple random sampling.}
 
@@ -116,6 +117,16 @@ exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
                   strata = sdmvstra, nest = TRUE)
 
+}
+\references{
+Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
+\emph{Model Assisted Survey Sampling}. Springer.
+
+Lumley, T. (2004) Analysis of complex survey samples.
+\emph{Journal of Statistical Software} \bold{9}(1), 1--19.
+
+Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
+John Wiley and Sons.
 }
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs,

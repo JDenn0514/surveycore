@@ -29,8 +29,14 @@
   } else {
     cli::cli_abort(
       c(
-        "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_corr}.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        "x" = paste0(
+          "Unsupported design class {.cls {class(design)[[1L]]}} ",
+          "in {.fn get_corr}."
+        ),
+        "i" = paste0(
+          "Use {.fn as_survey}, {.fn as_survey_replicate}, ",
+          "or {.fn as_survey_twophase}."
+        )
       ),
       class = "surveycore_error_unsupported_class"
     )
@@ -51,8 +57,8 @@
 # @param na.rm   Logical.
 # @return Named list: a, b, c, sigma (3x3), n, n_weighted.
 .vcov_pair_calibrated <- function(design, x_col, y_col, domain, na.rm = TRUE) {
-  data  <- design@data
-  vars  <- design@variables
+  data <- design@data
+  vars <- design@variables
   x_all <- data[[x_col]]
   y_all <- data[[y_col]]
 
@@ -67,21 +73,25 @@
   if (n_d < 2L) {
     sigma <- matrix(NA_real_, 3L, 3L)
     return(list(
-      a = NA_real_, b = NA_real_, c = NA_real_,
-      sigma = sigma, n = n_d, n_weighted = 0
+      a = NA_real_,
+      b = NA_real_,
+      c = NA_real_,
+      sigma = sigma,
+      n = n_d,
+      n_weighted = 0
     ))
   }
 
   w_sub <- data[[vars$weights]][idx]
   x_sub <- x_all[idx]
   y_sub <- y_all[idx]
-  W_d   <- sum(w_sub)
-  xbar  <- sum(w_sub * x_sub) / W_d
-  ybar  <- sum(w_sub * y_sub) / W_d
-  cx    <- x_sub - xbar
-  cy    <- y_sub - ybar
-  a     <- sum(w_sub * cx^2) / W_d
-  b     <- sum(w_sub * cx * cy) / W_d
+  W_d <- sum(w_sub)
+  xbar <- sum(w_sub * x_sub) / W_d
+  ybar <- sum(w_sub * y_sub) / W_d
+  cx <- x_sub - xbar
+  cy <- y_sub - ybar
+  a <- sum(w_sub * cx^2) / W_d
+  b <- sum(w_sub * cx * cy) / W_d
   c_val <- sum(w_sub * cy^2) / W_d
 
   # HT influence functions: infl_j_i = w_i * g_j_i / W_d
@@ -161,7 +171,8 @@
 # ── .corr_build_matrix_col_vecs() ────────────────────────────────────────────
 #
 # Build the r-matrix column vectors for one group combo (or the ungrouped case).
-# Returns a named list: variable col + one named col per focal variable (r values).
+# Returns a named list: variable col + one named col per focal variable
+# (r values).
 # Does NOT call .make_result_tibble() — caller assembles across all combos
 # and calls .make_result_tibble() once.
 #
@@ -170,8 +181,10 @@
 #
 # @param x_names       Character vector of focal variable names.
 # @param display_names Named character vector mapping x_names → display labels.
-# @param pairs_i       Integer vector of first-variable indices (lower triangle).
-# @param pairs_j       Integer vector of second-variable indices (lower triangle).
+# @param pairs_i       Integer vector of first-variable indices
+#                      (lower triangle).
+# @param pairs_j       Integer vector of second-variable indices
+#                      (lower triangle).
 # @param pair_results  List of per-pair result lists from .corr_pair_result().
 # @param diagonal      Logical: include diagonal (r = 1) in matrix.
 # @return Named list: list(variable = ..., "ColName1" = ..., ...).

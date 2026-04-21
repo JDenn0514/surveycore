@@ -19,7 +19,10 @@ get_corr(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -37,7 +40,8 @@ variable(s). Combined with any grouping set by \code{group_by()}. Default
 \item{format}{\code{"long"} (default) or \code{"wide"}. Long format returns one row
 per variable pair with inference statistics. Wide format returns the
 correlation matrix (\code{r} values only — no variance or inference columns).
-When \code{group} is active, group columns are prepended in both formats.}
+When \code{group} is active, group columns are prepended in both formats.
+Case-sensitive.}
 
 \item{redundant}{Logical. If \code{FALSE} (default), each pair appears once
 (lower triangle: pairs where var1 precedes var2 in input order). If
@@ -51,7 +55,7 @@ excluded (diagonal is \code{NA} in wide format). If \code{TRUE}, self-correlatio
 
 \item{variance}{\code{NULL} or a character vector of one or more of \code{"se"},
 \code{"ci"}, \code{"var"}, \code{"cv"}, \code{"moe"}, \code{"deff"}. Default \code{"ci"}. CI bounds
-use the Fisher Z transform (guaranteeing bounds in (−1, 1)). Only
+use the Fisher Z transform (guaranteeing bounds in (-1, 1)). Only
 applies to long format.}
 
 \item{conf_level}{Numeric scalar in (0, 1). Default \code{0.95}.}
@@ -85,6 +89,17 @@ labels are unset.}
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}. When \code{"broom"},
 renames \code{r} → \code{estimate}, \code{se} → \code{std.error}, etc. Only affects long
 format.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+named-only when a \code{survey_collection} is passed as \code{design}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_corr} tibble (also inheriting \code{survey_result}).
@@ -95,7 +110,8 @@ other columns in both long and wide formats.
 \strong{Long format} columns:
 \itemize{
 \item \verb{[group_cols...]} — group variable columns (when active), first.
-\item \code{var1}, \code{var2} — variable names (or labels when \code{label_vars = TRUE}).
+\item \code{var1}, \code{var2} — variable names (or labels when
+\code{label_vars = TRUE}).
 \item \code{r} — Pearson correlation coefficient.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}.
@@ -137,11 +153,14 @@ get_corr(d, x = c(ridageyr, bpxsy1),
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

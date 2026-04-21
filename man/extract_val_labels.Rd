@@ -9,8 +9,11 @@ extract_val_labels(x, ..., format = "list", fill = NULL)
 \arguments{
 \item{x}{A survey design object or \code{data.frame}.}
 
-\item{...}{<\code{\link[rlang:args_data_masking]{data-masked}}> Variable names
-(bare, unquoted). If empty, metadata for all variables is returned.}
+\item{...}{<\code{\link[tidyselect:language]{tidy-select}}> Variables to query.
+Supports selection helpers: \code{\link[tidyselect:starts_with]{tidyselect::starts_with()}},
+\code{\link[tidyselect:all_of]{tidyselect::all_of()}}, \code{\link[tidyselect:all_of]{tidyselect::any_of()}}, \code{\link[tidyselect:starts_with]{tidyselect::matches()}},
+etc. If empty, returns metadata for all variables. Use
+\code{\link[tidyselect:all_of]{tidyselect::any_of()}} to silently skip missing variable names.}
 
 \item{format}{\code{character(1)}. Output format: \code{"list"} (default) or
 \code{"data_frame"}. \code{"named_vector"} is not valid for this function.}
@@ -41,15 +44,18 @@ extract_val_labels(d, riagendr, format = "data_frame")
 \code{\link[=set_val_labels]{set_val_labels()}} to set value labels
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_sata}()},
 \code{\link{extract_universe}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
 \code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
+\code{\link{set_sata}()},
 \code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
 \code{\link{set_var_label}()},

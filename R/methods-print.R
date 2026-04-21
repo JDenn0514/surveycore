@@ -14,7 +14,6 @@
 # See plans/surveycore-phase0-formal-specification.md Section VIII for
 # the full output format specification.
 
-
 # ── Internal helpers ────────────────────────────────────────────────────────
 
 # Return the subset of @data to display, converted to tibble for printing.
@@ -37,7 +36,8 @@
 #' @noRd
 .print_hidden_note <- function(design_vars, data_shown) {
   hidden <- setdiff(design_vars, names(data_shown))
-  if (length(hidden) > 0L) { # nocov start — only set by surveytidy
+  if (length(hidden) > 0L) {
+    # nocov start — only set by surveytidy
     cli::cli_text("")
     cli::cli_bullets(c(
       "i" = "Design variables preserved but hidden: {.field {hidden}}.",
@@ -50,10 +50,10 @@
 # Format weight distribution as bulleted list lines.
 #' @noRd
 .print_weight_distribution <- function(wts) {
-  wt_min  <- round(min(wts, na.rm = TRUE), 2L)
-  wt_max  <- round(max(wts, na.rm = TRUE), 2L)
+  wt_min <- round(min(wts, na.rm = TRUE), 2L)
+  wt_max <- round(max(wts, na.rm = TRUE), 2L)
   wt_mean <- round(mean(wts, na.rm = TRUE), 2L)
-  wt_cv   <- if (length(wts[!is.na(wts)]) > 1L) {
+  wt_cv <- if (length(wts[!is.na(wts)]) > 1L) {
     round(stats::sd(wts, na.rm = TRUE) / mean(wts, na.rm = TRUE), 3L)
   } else {
     NA_real_
@@ -72,16 +72,18 @@
 # @return invisible(NULL)
 # @noRd
 .print_domain_info <- function(x) {
-  if (!SURVEYCORE_DOMAIN_COL %in% names(x@data)) return(invisible(NULL))
+  if (!SURVEYCORE_DOMAIN_COL %in% names(x@data)) {
+    return(invisible(NULL))
+  }
 
   if (S7::S7_inherits(x, survey_twophase)) {
     ph2_mask <- x@data[[x@variables$subset]]
     n_domain <- sum(x@data[[SURVEYCORE_DOMAIN_COL]][ph2_mask], na.rm = TRUE)
-    n_total  <- sum(ph2_mask, na.rm = TRUE)
+    n_total <- sum(ph2_mask, na.rm = TRUE)
     cli::cli_text("Domain: {.val {n_domain}} of {.val {n_total}} Phase 2 rows")
   } else {
     n_domain <- sum(x@data[[SURVEYCORE_DOMAIN_COL]], na.rm = TRUE)
-    n_total  <- nrow(x@data)
+    n_total <- nrow(x@data)
     cli::cli_text("Domain: {.val {n_domain}} of {.val {n_total}} row{?s}")
   }
   invisible(NULL)
@@ -105,13 +107,13 @@
 # Class defined in R/00-s7-classes.R
 S7::method(print, survey_taylor) <- function(
   x,
-  n             = 10L,
-  design_info   = FALSE,
-  weights_info  = FALSE,
-  strata_info   = FALSE,
-  cluster_info  = FALSE,
+  n = 10L,
+  design_info = FALSE,
+  weights_info = FALSE,
+  strata_info = FALSE,
+  cluster_info = FALSE,
   metadata_info = FALSE,
-  full          = FALSE,
+  full = FALSE,
   ...
 ) {
   if (full) {
@@ -130,7 +132,7 @@ S7::method(print, survey_taylor) <- function(
   }
 
   if (weights_info) {
-    wts        <- x@data[[x@variables$weights]]
+    wts <- x@data[[x@variables$weights]]
     weighted_n <- round(sum(wts, na.rm = TRUE))
     cli::cli_text("Weighted N: {.val {weighted_n}}")
   }
@@ -246,13 +248,13 @@ S7::method(print, survey_taylor) <- function(
 # Class defined in R/00-s7-classes.R
 S7::method(print, survey_replicate) <- function(
   x,
-  n             = 10L,
-  design_info   = FALSE,
-  weights_info  = FALSE,
-  strata_info   = FALSE,
-  cluster_info  = FALSE,
+  n = 10L,
+  design_info = FALSE,
+  weights_info = FALSE,
+  strata_info = FALSE,
+  cluster_info = FALSE,
   metadata_info = FALSE,
-  full          = FALSE,
+  full = FALSE,
   ...
 ) {
   if (full) {
@@ -275,7 +277,7 @@ S7::method(print, survey_replicate) <- function(
   }
 
   if (weights_info) {
-    wts        <- x@data[[x@variables$weights]]
+    wts <- x@data[[x@variables$weights]]
     weighted_n <- round(sum(wts, na.rm = TRUE))
     cli::cli_text("Weighted N: {.val {weighted_n}}")
   }
@@ -287,7 +289,12 @@ S7::method(print, survey_replicate) <- function(
 
     wts_var <- x@variables$weights
     cli::cli_bullets(c("*" = "Weights: {.field {wts_var}}"))
-    cli::cli_bullets(c("*" = "Replicates: {n_reps} {toupper(x@variables$type)} replicate weight column(s)"))
+    cli::cli_bullets(c(
+      "*" = paste0(
+        "Replicates: {n_reps} {toupper(x@variables$type)} ",
+        "replicate weight column(s)"
+      )
+    ))
     cli::cli_bullets(c("*" = "Scale: {.val {x@variables$scale}}"))
     cli::cli_bullets(c("*" = "MSE: {.val {isTRUE(x@variables$mse)}}"))
 
@@ -346,13 +353,13 @@ S7::method(print, survey_replicate) <- function(
 # Class defined in R/00-s7-classes.R
 S7::method(print, survey_twophase) <- function(
   x,
-  n             = 10L,
-  design_info   = FALSE,
-  weights_info  = FALSE,
-  strata_info   = FALSE,
-  cluster_info  = FALSE,
+  n = 10L,
+  design_info = FALSE,
+  weights_info = FALSE,
+  strata_info = FALSE,
+  cluster_info = FALSE,
   metadata_info = FALSE,
-  full          = FALSE,
+  full = FALSE,
   ...
 ) {
   if (full) {
@@ -361,8 +368,8 @@ S7::method(print, survey_twophase) <- function(
   }
 
   subset_var <- x@variables$subset
-  n_total    <- nrow(x@data)
-  n_phase2   <- if (!is.null(subset_var) && subset_var %in% names(x@data)) {
+  n_total <- nrow(x@data)
+  n_phase2 <- if (!is.null(subset_var) && subset_var %in% names(x@data)) {
     sum(x@data[[subset_var]], na.rm = TRUE)
   } else {
     NA_integer_
@@ -442,7 +449,10 @@ S7::method(print, survey_twophase) <- function(
     character(0L)
   }
   design_vars_all <- unique(c(
-    p1$ids, p1$weights, p1$strata, p1$fpc,
+    p1$ids,
+    p1$weights,
+    p1$strata,
+    p1$fpc,
     p2_cols,
     subset_var
   ))
@@ -467,24 +477,27 @@ S7::method(print, survey_twophase) <- function(
 # Class defined in R/00-s7-classes.R
 S7::method(print, survey_nonprob) <- function(
   x,
-  n             = 10L,
-  design_info   = FALSE,
-  weights_info  = FALSE,
+  n = 10L,
+  design_info = FALSE,
+  weights_info = FALSE,
   metadata_info = FALSE,
-  full          = FALSE,
+  full = FALSE,
   ...
 ) {
   if (full) {
     design_info <- weights_info <- metadata_info <- TRUE
   }
 
-  # Hoist weight extraction once; used by header and weight-distribution sections
-  wts     <- x@data[[x@variables$weights]]
+  # Hoist weight extraction once; used by header and weight-distribution
+  # sections
+  wts <- x@data[[x@variables$weights]]
   wts_var <- x@variables$weights
 
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
-  cli::cli_text("{.cls survey_nonprob} (calibrated / non-probability) [experimental]")
+  cli::cli_text(
+    "{.cls survey_nonprob} (non-probability) [experimental]"
+  )
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
 
@@ -547,11 +560,11 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
   x <- object
 
   cli::cli_h1("Survey Design Summary")
-  cli::cli_text("Type: calibrated / non-probability [experimental]")
+  cli::cli_text("Type: non-probability [experimental]")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
-  wts_var    <- x@variables$weights
-  wts        <- x@data[[wts_var]]
+  wts_var <- x@variables$weights
+  wts <- x@data[[wts_var]]
   weighted_n <- round(sum(wts, na.rm = TRUE))
   cli::cli_text("Weighted N: {.val {weighted_n}}")
 
@@ -565,7 +578,7 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
 
   cli::cli_text("")
   n_labeled <- length(x@metadata@variable_labels)
-  n_total   <- ncol(x@data)
+  n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
 
   invisible(x)
@@ -585,8 +598,8 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
   cli::cli_text("Type: Taylor series linearization")
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
-  wts_var    <- x@variables$weights
-  wts        <- x@data[[wts_var]]
+  wts_var <- x@variables$weights
+  wts <- x@data[[wts_var]]
   weighted_n <- round(sum(wts, na.rm = TRUE))
   cli::cli_text("Weighted N: {.val {weighted_n}}")
 
@@ -619,7 +632,7 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
 
   cli::cli_text("")
   n_labeled <- length(x@metadata@variable_labels)
-  n_total   <- ncol(x@data)
+  n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
 
   invisible(x)
@@ -643,8 +656,8 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
   )
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
-  wts_var    <- x@variables$weights
-  wts        <- x@data[[wts_var]]
+  wts_var <- x@variables$weights
+  wts <- x@data[[wts_var]]
   weighted_n <- round(sum(wts, na.rm = TRUE))
   cli::cli_text("Weighted N: {.val {weighted_n}}")
 
@@ -662,7 +675,7 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
 
   cli::cli_text("")
   n_labeled <- length(x@metadata@variable_labels)
-  n_total   <- ncol(x@data)
+  n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
 
   invisible(x)
@@ -679,8 +692,8 @@ S7::method(summary, survey_twophase) <- function(object, ...) {
   x <- object
 
   subset_var <- x@variables$subset
-  n_total    <- nrow(x@data)
-  n_phase2   <- if (!is.null(subset_var) && subset_var %in% names(x@data)) {
+  n_total <- nrow(x@data)
+  n_phase2 <- if (!is.null(subset_var) && subset_var %in% names(x@data)) {
     sum(x@data[[subset_var]], na.rm = TRUE)
   } else {
     NA_integer_
@@ -709,7 +722,7 @@ S7::method(summary, survey_twophase) <- function(object, ...) {
     cli::cli_text("Strata: none")
   }
   if (!is.null(p1$weights)) {
-    p1_wts    <- x@data[[p1$weights]]
+    p1_wts <- x@data[[p1$weights]]
     weighted_n <- round(sum(p1_wts, na.rm = TRUE))
     cli::cli_text("Weights: {.field {p1$weights}}")
     cli::cli_text("Weighted N: {.val {weighted_n}}")
@@ -733,3 +746,53 @@ S7::method(summary, survey_twophase) <- function(object, ...) {
 
   invisible(x)
 }
+
+
+# ── print.survey_collection ────────────────────────────────────────────────
+#
+# Class defined in R/core-classes.R.
+# Format (spec §3.5):
+#   A survey_collection with {n} survey{?s}:
+#     "{name}": {class_name}, {rows} rows, {vars} variables
+# Abbreviation: when length(x) > 20, print first 10 + "  ... and {N} more"
+# + last 3.
+
+.fmt_collection_line <- function(nm, s) {
+  rows <- format(nrow(s@data), big.mark = ",")
+  vars <- format(ncol(s@data), big.mark = ",")
+  cls <- sub("^[^:]+::", "", class(s)[[1L]])
+  cli::cli_text(
+    "  {.val {nm}}: {cls}, {rows} rows, {vars} variables"
+  )
+}
+
+S7::method(print, survey_collection) <- function(x, ...) {
+  surveys <- x@surveys
+  n <- length(surveys)
+  cli::cli_text("A {.cls survey_collection} with {n} survey{?s}:")
+
+  nms <- names(surveys)
+  if (n <= 20L) {
+    for (i in seq_len(n)) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+  } else {
+    for (i in seq_len(10L)) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+    cli::cli_text("  ... and {n - 13L} more")
+    tail_idx <- seq.int(n - 2L, n)
+    for (i in tail_idx) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+  }
+  invisible(x)
+}
+
+
+# ── [[, length, names methods for survey_collection ──────────────────────────
+# Class defined in R/core-classes.R.
+
+S7::method(`[[`, survey_collection) <- function(x, i) x@surveys[[i]]
+S7::method(length, survey_collection) <- function(x) length(x@surveys)
+S7::method(names, survey_collection) <- function(x) names(x@surveys)

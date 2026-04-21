@@ -16,7 +16,7 @@
 #
 # Error classes match plans/error-messages.md exactly.
 
-# ── survey_metadata ────────────────────────────────────────────────────────────
+# ── survey_metadata ───────────────────────────────────────────────────────────
 
 #' Survey Metadata Container
 #'
@@ -38,6 +38,9 @@
 #' @param missing_codes A named list mapping variable names to atomic
 #'   vectors of missing-value codes
 #'   (e.g., `list(age = c(Refused = 99L, DK = 98L))`).
+#' @param sata A named list mapping variable names to `TRUE` for variables
+#'   that are select-all-that-apply (SATA). Only variables explicitly marked
+#'   as SATA appear in this list — absence means the variable is not SATA.
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
@@ -91,6 +94,10 @@ survey_metadata <- S7::new_class(
       S7::class_list,
       default = quote(list())
     ),
+    sata = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
     transformations = S7::new_property(
       S7::class_list,
       default = quote(list())
@@ -107,7 +114,7 @@ survey_metadata <- S7::new_class(
 )
 
 
-# ── survey_base ────────────────────────────────────────────────────────────────
+# ── survey_base ───────────────────────────────────────────────────────────────
 
 #' Abstract Base Survey Design Class
 #'
@@ -162,7 +169,7 @@ survey_base <- S7::new_class(
 )
 
 
-# ── survey_taylor ──────────────────────────────────────────────────────────────
+# ── survey_taylor ─────────────────────────────────────────────────────────────
 
 #' Taylor Series Linearization Survey Design
 #'
@@ -327,7 +334,7 @@ survey_taylor <- S7::new_class(
 )
 
 
-# ── survey_replicate ───────────────────────────────────────────────────────────
+# ── survey_replicate ──────────────────────────────────────────────────────────
 
 #' Replicate Weights Survey Design
 #'
@@ -476,7 +483,7 @@ survey_replicate <- S7::new_class(
 )
 
 
-# ── survey_twophase ────────────────────────────────────────────────────────────
+# ── survey_twophase ───────────────────────────────────────────────────────────
 
 #' Two-Phase Survey Design
 #'
@@ -622,6 +629,106 @@ survey_twophase <- S7::new_class(
 )
 
 
+# ── survey_collection ─────────────────────────────────────────────────────────
+
+#' Multi-Survey Container
+#'
+#' An S7 container that holds multiple independent `survey_base` objects
+#' (e.g., multiple waves of a panel or cross-sectional series) for
+#' comparative analysis. Create with [as_survey_collection()].
+#'
+#' @details
+#' `survey_collection` deliberately does **not** inherit from
+#' [survey_base]. This prevents collection-of-collections nesting: a
+#' `survey_collection` passed as an element of another collection fails
+#' the element-type check automatically.
+#'
+#' Each element of `@surveys` is an independent `survey_base` subclass
+#' object (e.g., `survey_taylor`, `survey_replicate`, `survey_twophase`,
+#' `survey_nonprob`). Mixed-type collections are allowed — the collection
+#' never combines designs, so heterogeneous classes cannot produce an
+#' invalid state.
+#'
+#' @section Properties:
+#' \describe{
+#'   \item{`surveys`}{A fully named list of `survey_base` objects.
+#'     Length \eqn{\geq 1}. Names are unique, non-`NA`, and non-empty.}
+#' }
+#'
+#' @param surveys A named list of `survey_base` objects.
+#'
+#' @return A `survey_collection` object.
+#' @usage survey_collection(surveys = list())
+#'
+#' @examples
+#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#' coll <- survey_collection(surveys = list(gss = d1))
+#' length(coll)
+#' names(coll)
+#'
+#' @seealso [as_survey_collection()] to build a collection from survey
+#'   objects; [add_survey()] / [remove_survey()] to mutate an existing
+#'   collection.
+#' @family collections
+#' @export
+survey_collection <- S7::new_class(
+  "survey_collection",
+  properties = list(
+    surveys = S7::class_list
+  ),
+  validator = function(self) {
+    # C1 — empty list
+    if (length(self@surveys) == 0L) {
+      cli::cli_abort(
+        c("x" = "Collection must contain at least one survey."),
+        class = "surveycore_error_collection_empty"
+      )
+    }
+
+    # C1 — missing / empty / NA names
+    nms <- names(self@surveys)
+    if (is.null(nms) || any(nms == "") || any(is.na(nms))) {
+      cli::cli_abort(
+        c("x" = "All surveys in the collection must be named."),
+        class = "surveycore_error_collection_empty"
+      )
+    }
+
+    # C2 — duplicate names (backstop; constructors repair)
+    if (anyDuplicated(nms) > 0L) {
+      dups <- unique(nms[duplicated(nms)])
+      cli::cli_abort(
+        c(
+          "x" = "Collection names must be unique.",
+          "i" = "Duplicate name{?s}: {.val {dups}}."
+        ),
+        class = "surveycore_error_collection_duplicate_name"
+      )
+    }
+
+    # C4 — every element must inherit survey_base
+    not_surveys <- !vapply(
+      self@surveys,
+      function(x) S7::S7_inherits(x, survey_base),
+      logical(1L)
+    )
+    if (any(not_surveys)) {
+      bad <- nms[not_surveys]
+      cli::cli_abort(
+        c(
+          "x" = "All elements must inherit from {.cls survey_base}.",
+          "i" = "Bad element{?s}: {.val {bad}}."
+        ),
+        class = "surveycore_error_collection_bad_element"
+      )
+    }
+
+    NULL
+  }
+)
+
+
 # ── survey_nonprob ──────────────────────────────────────────────────────────
 
 #' Calibrated / Non-Probability Survey Design
@@ -642,7 +749,8 @@ survey_twophase <- S7::new_class(
 #' (same assumption as [as_survey()] with weights only).
 #'
 #' @section Non-probability samples:
-#' Unlike [as_survey()], [as_survey_replicate()], and [as_survey_twophase()], this
+#' Unlike [as_survey()], [as_survey_replicate()], and [as_survey_twophase()],
+#' this
 #' class does **not** assume a probability sampling design. Standard errors
 #' produced from a `survey_nonprob` object rest on a model-assisted SRS
 #' assumption, which is consistent with common practice for calibrated
@@ -706,15 +814,23 @@ survey_nonprob <- S7::new_class(
     if (!is.null(weights_var) && !weights_var %in% names(self@data)) {
       cli::cli_abort(
         c(
-          "x" = "Weight column {.field {weights_var}} not found in {.arg data}.",
-          "i" = "This is an internal consistency error in the {.cls survey_nonprob} object.",
-          "v" = "Use {.fn as_survey_nonprob} instead of calling the constructor directly."
+          "x" = paste0(
+            "Weight column {.field {weights_var}} not found in {.arg data}."
+          ),
+          "i" = paste0(
+            "This is an internal consistency error in the ",
+            "{.cls survey_nonprob} object."
+          ),
+          "v" = paste0(
+            "Use {.fn as_survey_nonprob} instead of calling the ",
+            "constructor directly."
+          )
         ),
         class = "surveycore_error_design_var_missing"
       )
     }
 
-    # ── Weight column must be numeric and have at least one valid value ────────
+    # ── Weight column must be numeric and have at least one valid value ───────
     if (!is.null(weights_var) && weights_var %in% names(self@data)) {
       wt_col <- self@data[[weights_var]]
 
@@ -723,7 +839,10 @@ survey_nonprob <- S7::new_class(
           c(
             "x" = "Weight column {.field {weights_var}} must be numeric.",
             "i" = "Got {.cls {class(wt_col)}}.",
-            "v" = "Convert with {.code as.numeric({.field {weights_var}})} before calling {.fn as_survey_nonprob}."
+            "v" = paste0(
+              "Convert with {.code as.numeric({.field {weights_var}})} ",
+              "before calling {.fn as_survey_nonprob}."
+            )
           ),
           class = "surveycore_error_weights_not_numeric"
         )
@@ -734,8 +853,14 @@ survey_nonprob <- S7::new_class(
         cli::cli_abort(
           c(
             "x" = "Weight column {.field {weights_var}} has no non-NA values.",
-            "i" = "All weights are {.val NA} \u2014 no valid weights for estimation.",
-            "v" = "Check {.field {weights_var}} for missing data before calling {.fn as_survey_nonprob}."
+            "i" = paste0(
+              "All weights are {.val NA} \u2014 no valid weights ",
+              "for estimation."
+            ),
+            "v" = paste0(
+              "Check {.field {weights_var}} for missing data before ",
+              "calling {.fn as_survey_nonprob}."
+            )
           ),
           class = "surveycore_error_weights_all_zero"
         )
@@ -746,9 +871,15 @@ survey_nonprob <- S7::new_class(
       if (n_neg > 0L) {
         cli::cli_abort(
           c(
-            "x" = "Weight column {.field {weights_var}} has {n_neg} negative value(s).",
+            "x" = paste0(
+              "Weight column {.field {weights_var}} has ",
+              "{n_neg} negative value(s)."
+            ),
             "i" = "All non-NA weights must be non-negative (>= 0).",
-            "v" = "Remove or replace rows where {.field {weights_var}} is negative."
+            "v" = paste0(
+              "Remove or replace rows where ",
+              "{.field {weights_var}} is negative."
+            )
           ),
           class = "surveycore_error_weights_negative"
         )
@@ -758,9 +889,14 @@ survey_nonprob <- S7::new_class(
       if (!any(non_na > 0)) {
         cli::cli_abort(
           c(
-            "x" = "Weight column {.field {weights_var}} has no positive values.",
+            "x" = paste0(
+              "Weight column {.field {weights_var}} has no positive values."
+            ),
             "i" = "At least one non-NA weight must be greater than 0.",
-            "v" = "Check that {.field {weights_var}} contains valid survey weights."
+            "v" = paste0(
+              "Check that {.field {weights_var}} contains valid ",
+              "survey weights."
+            )
           ),
           class = "surveycore_error_weights_all_zero"
         )

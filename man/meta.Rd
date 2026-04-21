@@ -18,7 +18,7 @@ meta(x, ...)
 A named list. Common fields present on every result:
 \describe{
 \item{\code{design_type}}{Character(1). Design class: \code{"taylor"},
-\code{"replicate"}, \code{"twophase"}, \code{"srs"}, or \code{"calibrated"}.}
+\code{"replicate"}, \code{"twophase"}, \code{"srs"}, or \code{"nonprob"}.}
 \item{\code{conf_level}}{Numeric(1). Confidence level used (e.g. \code{0.95}).}
 \item{\code{call}}{Language. Matched call to the \verb{get_*()} function.}
 \item{\code{n_respondents}}{Integer(1). Total rows in the design, regardless
@@ -75,12 +75,15 @@ meta(result)$conf_level     # 0.95
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_corr}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()}
 }
 \concept{analysis}

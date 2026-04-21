@@ -9,7 +9,6 @@
 # Both directions require the external package to be installed.
 # Errors use surveycore_error_pkg_not_installed when the package is absent.
 
-
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 # Build a one-sided formula from a character vector of column names.
@@ -20,7 +19,9 @@
 #   NULL            → NULL
 #' @noRd
 .to_formula <- function(vars) {
-  if (is.null(vars) || length(vars) == 0L) return(NULL)
+  if (is.null(vars) || length(vars) == 0L) {
+    return(NULL)
+  }
   stats::reformulate(vars)
 }
 
@@ -86,10 +87,10 @@ as_svydesign <- function(x) {
 # survey_taylor → survey::svydesign
 #' @noRd
 .as_svydesign_taylor <- function(x) {
-  ids_var     <- x@variables$ids
-  strata_var  <- x@variables$strata
+  ids_var <- x@variables$ids
+  strata_var <- x@variables$strata
   weights_var <- x@variables$weights
-  fpc_var     <- x@variables$fpc
+  fpc_var <- x@variables$fpc
 
   ids_formula <- if (!is.null(ids_var) && length(ids_var) > 0L) {
     .to_formula(ids_var)
@@ -98,12 +99,12 @@ as_svydesign <- function(x) {
   }
 
   survey::svydesign(
-    ids     = ids_formula,
-    strata  = .to_formula(strata_var),
+    ids = ids_formula,
+    strata = .to_formula(strata_var),
     weights = .to_formula(weights_var),
-    fpc     = .to_formula(fpc_var),
-    data    = x@data,
-    nest    = isTRUE(x@variables$nest)
+    fpc = .to_formula(fpc_var),
+    data = x@data,
+    nest = isTRUE(x@variables$nest)
   )
 }
 
@@ -111,10 +112,14 @@ as_svydesign <- function(x) {
 # survey_replicate → survey::svrepdesign
 #' @noRd
 .as_svydesign_replicate <- function(x) {
-  wts_var  <- x@variables$weights
+  wts_var <- x@variables$weights
   rep_vars <- x@variables$repweights
-  fpc_var  <- x@variables$fpc
-  fpctype  <- if (!is.null(x@variables$fpctype)) x@variables$fpctype else "fraction"
+  fpc_var <- x@variables$fpc
+  fpctype <- if (!is.null(x@variables$fpctype)) {
+    x@variables$fpctype
+  } else {
+    "fraction"
+  }
 
   # BRR and Fay do not use a separate scale factor — survey::svrepdesign()
   # warns if scale is passed for those types.
@@ -125,15 +130,15 @@ as_svydesign <- function(x) {
   }
 
   survey::svrepdesign(
-    weights    = x@data[[wts_var]],
+    weights = x@data[[wts_var]],
     repweights = x@data[, rep_vars, drop = FALSE],
-    type       = x@variables$type,
-    scale      = scale_arg,
-    rscales    = x@variables$rscales,
-    mse        = isTRUE(x@variables$mse),
-    fpc        = if (!is.null(fpc_var)) x@data[[fpc_var]] else NULL,
-    fpctype    = fpctype,
-    data       = x@data
+    type = x@variables$type,
+    scale = scale_arg,
+    rscales = x@variables$rscales,
+    mse = isTRUE(x@variables$mse),
+    fpc = if (!is.null(fpc_var)) x@data[[fpc_var]] else NULL,
+    fpctype = fpctype,
+    data = x@data
   )
 }
 
@@ -141,29 +146,29 @@ as_svydesign <- function(x) {
 # survey_twophase → survey::twophase
 #' @noRd
 .as_svydesign_twophase <- function(x) {
-  p1         <- x@variables$phase1
-  p2         <- x@variables$phase2
+  p1 <- x@variables$phase1
+  p2 <- x@variables$phase2
   subset_var <- x@variables$subset
-  method     <- if (!is.null(x@variables$method)) x@variables$method else "full"
+  method <- if (!is.null(x@variables$method)) x@variables$method else "full"
 
   # Phase 1 formulas
-  p1_id      <- if (!is.null(p1$ids) && length(p1$ids) > 0L) {
+  p1_id <- if (!is.null(p1$ids) && length(p1$ids) > 0L) {
     .to_formula(p1$ids)
   } else {
     ~1
   }
-  p1_strata  <- .to_formula(p1$strata)
+  p1_strata <- .to_formula(p1$strata)
   p1_weights <- .to_formula(p1$weights)
-  p1_fpc     <- .to_formula(p1$fpc)
+  p1_fpc <- .to_formula(p1$fpc)
 
   # Phase 2 formulas (usually NULL or ~1 for simple cases)
-  p2_id     <- if (!is.null(p2) && !is.null(p2$ids) && length(p2$ids) > 0L) {
+  p2_id <- if (!is.null(p2) && !is.null(p2$ids) && length(p2$ids) > 0L) {
     .to_formula(p2$ids)
   } else {
     ~1
   }
   p2_strata <- if (!is.null(p2)) .to_formula(p2$strata) else NULL
-  p2_fpc    <- if (!is.null(p2)) .to_formula(p2$fpc)    else NULL
+  p2_fpc <- if (!is.null(p2)) .to_formula(p2$fpc) else NULL
 
   # method="full" derives phase 2 weights from the phase 1 design and rejects
   # an explicit weights argument.  For "simple" and "approx" we pass phase 1
@@ -171,13 +176,13 @@ as_svydesign <- function(x) {
   weights_arg <- if (method == "full") NULL else list(p1_weights, NULL)
 
   survey::twophase(
-    id      = list(p1_id,     p2_id),
-    strata  = list(p1_strata, p2_strata),
+    id = list(p1_id, p2_id),
+    strata = list(p1_strata, p2_strata),
     weights = weights_arg,
-    fpc     = list(p1_fpc,    p2_fpc),
-    data    = x@data,
-    subset  = .to_formula(subset_var),
-    method  = method
+    fpc = list(p1_fpc, p2_fpc),
+    data = x@data,
+    subset = .to_formula(subset_var),
+    method = method
   )
 }
 
@@ -255,7 +260,9 @@ as_tbl_svy <- function(x) {
 #   NULL         → NULL
 #' @noRd
 .vars_from_formula <- function(f) {
-  if (is.null(f)) return(NULL)
+  if (is.null(f)) {
+    return(NULL)
+  }
   vars <- tryCatch(all.vars(f), error = function(e) character(0L))
   if (length(vars) == 0L) NULL else vars
 }
@@ -267,15 +274,20 @@ as_tbl_svy <- function(x) {
 # design objects that do not preserve the original column name.
 #' @noRd
 .find_col_by_value <- function(data, vals) {
-  if (is.null(vals) || length(vals) == 0L) return(NULL) # nocov — callers always pass non-NULL
+  if (is.null(vals) || length(vals) == 0L) {
+    return(NULL)
+  } # nocov — callers always pass non-NULL
   for (nm in names(data)) {
     col <- data[[nm]]
-    if ((is.numeric(col) || is.logical(col)) &&
+    if (
+      (is.numeric(col) || is.logical(col)) &&
         length(col) == length(vals) &&
         isTRUE(all.equal(
-          as.numeric(col), as.numeric(vals),
+          as.numeric(col),
+          as.numeric(vals),
           check.attributes = FALSE
-        ))) {
+        ))
+    ) {
       return(nm)
     }
   }
@@ -360,11 +372,11 @@ from_svydesign <- function(x) {
     tryCatch(.vars_from_formula(x$call[[nm]]), error = function(e) NULL)
   }
 
-  ids_var    <- .call_vars("ids")
+  ids_var <- .call_vars("ids")
   strata_var <- .call_vars("strata")
-  fpc_raw    <- .call_vars("fpc")
-  fpc_var    <- if (!is.null(fpc_raw)) fpc_raw[[1L]] else NULL
-  nest       <- tryCatch(isTRUE(x$call$nest), error = function(e) FALSE)
+  fpc_raw <- .call_vars("fpc")
+  fpc_var <- if (!is.null(fpc_raw)) fpc_raw[[1L]] else NULL
+  nest <- tryCatch(isTRUE(x$call$nest), error = function(e) FALSE)
 
   # Weight column: try the call formula first, then value-matching.
   weights_var <- .call_vars("weights")
@@ -377,19 +389,19 @@ from_svydesign <- function(x) {
   }
 
   variables <- list(
-    ids            = ids_var,
-    weights        = weights_var,
-    strata         = strata_var,
-    fpc            = fpc_var,
-    nest           = nest,
+    ids = ids_var,
+    weights = weights_var,
+    strata = strata_var,
+    fpc = fpc_var,
+    nest = nest,
     probs_provided = FALSE,
-    visible_vars   = NULL
+    visible_vars = NULL
   )
 
   survey_taylor(
-    data      = data,
+    data = data,
     variables = variables,
-    metadata  = survey_metadata()
+    metadata = survey_metadata()
   )
 }
 
@@ -397,7 +409,7 @@ from_svydesign <- function(x) {
 # svyrep.design → survey_replicate
 #' @noRd
 .from_svydesign_replicate <- function(x) {
-  data     <- as.data.frame(x$variables)
+  data <- as.data.frame(x$variables)
   rep_cols <- colnames(x$repweights)
 
   # Weight column: find by matching pweights to data columns.
@@ -408,22 +420,22 @@ from_svydesign <- function(x) {
   }
 
   variables <- list(
-    weights        = weights_var,
-    repweights     = rep_cols,
-    type           = x$type,
-    scale          = x$scale,
-    rscales        = x$rscales,
-    mse            = isTRUE(x$mse),
-    fpc            = NULL,
-    fpctype        = "fraction",
+    weights = weights_var,
+    repweights = rep_cols,
+    type = x$type,
+    scale = x$scale,
+    rscales = x$rscales,
+    mse = isTRUE(x$mse),
+    fpc = NULL,
+    fpctype = "fraction",
     probs_provided = FALSE,
-    visible_vars   = NULL
+    visible_vars = NULL
   )
 
   survey_replicate(
-    data      = data,
+    data = data,
     variables = variables,
-    metadata  = survey_metadata()
+    metadata = survey_metadata()
   )
 }
 
@@ -432,7 +444,7 @@ from_svydesign <- function(x) {
 #' @noRd
 .from_svydesign_twophase <- function(x) {
   # Convert the phase 1 full design to survey_taylor.
-  phase1_sc  <- .from_svydesign_taylor(x$phase1$full)
+  phase1_sc <- .from_svydesign_taylor(x$phase1$full)
   phase1_data <- phase1_sc@data
 
   # Locate the subset column by matching x$subset to logical columns in data.
@@ -445,14 +457,19 @@ from_svydesign <- function(x) {
   # Derive method: check x$method first, fall back to class-based inference.
   # survey::twophase() never stores x$method — the branch below is defensive
   # for survey-compatible packages that may set it explicitly. # nocov start
-  method <- if (!is.null(x$method) && x$method %in% c("full", "approx", "simple")) {
+  method <- if (
+    !is.null(x$method) && x$method %in% c("full", "approx", "simple")
+  ) {
     x$method # nocov end
   } else if (inherits(x, "twophase2")) {
     "full"
   } else {
     cli::cli_warn(
       c(
-        "!" = "Could not determine two-phase variance method from the survey object.",
+        "!" = paste0(
+          "Could not determine two-phase variance method ",
+          "from the survey object."
+        ),
         "i" = 'Defaulting to {.val "approx"}.'
       ),
       class = "surveycore_warning_twophase_method_unknown"
@@ -468,9 +485,9 @@ from_svydesign <- function(x) {
   )
 
   survey_twophase(
-    data      = phase1_data,
+    data = phase1_data,
     variables = variables,
-    metadata  = survey_metadata()
+    metadata = survey_metadata()
   )
 }
 

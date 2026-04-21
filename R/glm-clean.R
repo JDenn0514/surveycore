@@ -15,7 +15,6 @@
 #
 # Spec: plans/spec-phase-2.md §VI
 
-
 # ── .glm_term_type() ──────────────────────────────────────────────────────────
 #
 # Classify a term label as one of:
@@ -28,12 +27,20 @@
 # @return Character(1) type string.
 #' @noRd
 .glm_term_type <- function(term_label, mf) {
-  if (identical(term_label, "(Intercept)")) return("intercept")
-  if (grepl(":", term_label, fixed = TRUE)) return("interaction")
+  if (identical(term_label, "(Intercept)")) {
+    return("intercept")
+  }
+  if (grepl(":", term_label, fixed = TRUE)) {
+    return("interaction")
+  }
   if (term_label %in% names(mf)) {
     col <- mf[[term_label]]
-    if (is.ordered(col)) return("ordered_factor")
-    if (is.factor(col))  return("factor")
+    if (is.ordered(col)) {
+      return("ordered_factor")
+    }
+    if (is.factor(col)) {
+      return("factor")
+    }
     return("continuous")
   }
   return("transformation")
@@ -45,7 +52,8 @@
 # Find the factor level name for a coefficient name. Uses exact match via
 # paste0(var_name, l) == coef_name — no string prefix removal (per spec §6.3).
 #
-# @param coef_name Character(1): coefficient name from model matrix, e.g. "sexMale".
+# @param coef_name Character(1): coefficient name from model matrix,
+#                  e.g. "sexMale".
 # @param var_name  Character(1): the bare variable name, e.g. "sex".
 # @param lvls      Character vector of factor levels.
 # @return Character(1): the level name, or NA_character_ if not found.
@@ -106,8 +114,13 @@
 # @param interaction_sep Character(1): separator.
 # @return Character(1): interaction label.
 #' @noRd
-.glm_interaction_label <- function(coef_name, term_label, mf, design,
-                                   interaction_sep) {
+.glm_interaction_label <- function(
+  coef_name,
+  term_label,
+  mf,
+  design,
+  interaction_sep
+) {
   comps_term <- strsplit(term_label, ":", fixed = TRUE)[[1L]]
   comps_coef <- strsplit(coef_name, ":", fixed = TRUE)[[1L]]
 
@@ -116,19 +129,25 @@
     return(coef_name)
   }
 
-  pieces <- mapply(function(tc, cc) {
-    if (tc %in% names(mf)) {
-      col <- mf[[tc]]
-      if (is.factor(col) || is.ordered(col)) {
-        lvl <- .glm_find_level(cc, tc, levels(col))
-        if (!is.na(lvl)) .glm_value_label_for(design, tc, lvl) else cc
+  pieces <- mapply(
+    function(tc, cc) {
+      if (tc %in% names(mf)) {
+        col <- mf[[tc]]
+        if (is.factor(col) || is.ordered(col)) {
+          lvl <- .glm_find_level(cc, tc, levels(col))
+          if (!is.na(lvl)) .glm_value_label_for(design, tc, lvl) else cc
+        } else {
+          .glm_var_label_for(design, tc)
+        }
       } else {
-        .glm_var_label_for(design, tc)
+        tc # transformation component
       }
-    } else {
-      tc  # transformation component
-    }
-  }, comps_term, comps_coef, SIMPLIFY = TRUE, USE.NAMES = FALSE)
+    },
+    comps_term,
+    comps_coef,
+    SIMPLIFY = TRUE,
+    USE.NAMES = FALSE
+  )
 
   paste(pieces, collapse = interaction_sep)
 }
@@ -165,19 +184,24 @@
   if (term_type == "interaction") {
     comps_term <- strsplit(term_label, ":", fixed = TRUE)[[1L]]
     comps_coef <- strsplit(coef_name, ":", fixed = TRUE)[[1L]]
-    masks <- mapply(function(tc, cc) {
-      if (tc %in% names(mf)) {
-        col <- mf[[tc]]
-        if (is.factor(col) || is.ordered(col)) {
-          lvl <- .glm_find_level(cc, tc, levels(col))
-          if (!is.na(lvl)) mf[[tc]] == lvl else !is.na(mf[[tc]])
+    masks <- mapply(
+      function(tc, cc) {
+        if (tc %in% names(mf)) {
+          col <- mf[[tc]]
+          if (is.factor(col) || is.ordered(col)) {
+            lvl <- .glm_find_level(cc, tc, levels(col))
+            if (!is.na(lvl)) mf[[tc]] == lvl else !is.na(mf[[tc]])
+          } else {
+            !is.na(mf[[tc]])
+          }
         } else {
-          !is.na(mf[[tc]])
+          rep(TRUE, nrow(mf))
         }
-      } else {
-        rep(TRUE, nrow(mf))
-      }
-    }, comps_term, comps_coef, SIMPLIFY = FALSE)
+      },
+      comps_term,
+      comps_coef,
+      SIMPLIFY = FALSE
+    )
     combined <- Reduce("&", masks)
     return(as.integer(sum(combined, na.rm = TRUE)))
   }
@@ -200,10 +224,18 @@
 # @param tt              Terms object.
 # @return Named list with all 15 required keys.
 #' @noRd
-.build_glm_meta <- function(model, conf_level, call, include_reference,
-                             exponentiate, mf, mm, tt) {
-  design      <- model@design
-  term_labels <- attr(tt, "term.labels")  # excludes intercept
+.build_glm_meta <- function(
+  model,
+  conf_level,
+  call,
+  include_reference,
+  exponentiate,
+  mf,
+  mm,
+  tt
+) {
+  design <- model@design
+  term_labels <- attr(tt, "term.labels") # excludes intercept
 
   # Predictor variables: bare column names in mf (no interactions or transforms)
   pred_vars <- term_labels[term_labels %in% names(mf)]
@@ -216,12 +248,18 @@
     col <- mf[[v]]
 
     var_lbl <- design@metadata@variable_labels[[v]]
-    if (is.null(var_lbl) || is.na(var_lbl)) var_lbl <- v
+    if (is.null(var_lbl) || is.na(var_lbl)) {
+      var_lbl <- v
+    }
 
     var_class <- class(col)[[1L]]
-    var_type  <- if (is.ordered(col))     "ordered"
-                 else if (is.factor(col)) "categorical"
-                 else                     "continuous"
+    var_type <- if (is.ordered(col)) {
+      "ordered"
+    } else if (is.factor(col)) {
+      "categorical"
+    } else {
+      "continuous"
+    }
 
     var_nlevels <- if (is.factor(col)) length(levels(col)) else NULL
 
@@ -244,32 +282,32 @@
     val_labels_val <- design@metadata@value_labels[[v]]
 
     vars_meta[[v]] <- list(
-      var_label       = var_lbl,
-      var_class       = var_class,
-      var_type        = var_type,
-      var_nlevels     = var_nlevels,
-      contrasts       = contr_val,
+      var_label = var_lbl,
+      var_class = var_class,
+      var_type = var_type,
+      var_nlevels = var_nlevels,
+      contrasts = contr_val,
       reference_level = ref_lev,
-      value_labels    = val_labels_val
+      value_labels = val_labels_val
     )
   }
 
   list(
-    formula           = model@formula,
-    family            = model@family$family,
-    link              = model@family$link,
-    design_type       = .glm_design_type_string(model@design),
-    conf_level        = conf_level,
-    call              = call,
-    group_names       = character(0L),
-    group_labels      = NULL,
-    n_observations    = as.integer(nrow(mm)),
-    n_weighted        = sum(model@weights),
-    degf              = model@degf,
-    exponentiate      = exponentiate,
+    formula = model@formula,
+    family = model@family$family,
+    link = model@family$link,
+    design_type = .glm_design_type_string(model@design),
+    conf_level = conf_level,
+    call = call,
+    group_names = character(0L),
+    group_labels = NULL,
+    n_observations = as.integer(nrow(mm)),
+    n_weighted = sum(model@weights),
+    degf = model@degf,
+    exponentiate = exponentiate,
     include_reference = include_reference,
-    converged         = model@converged,
-    variables         = vars_meta
+    converged = model@converged,
+    variables = vars_meta
   )
 }
 
@@ -318,12 +356,12 @@
 #' @export
 clean <- function(
   model,
-  conf_level        = 0.95,
+  conf_level = 0.95,
   include_reference = TRUE,
-  n                 = FALSE,
-  statistic         = TRUE,
-  exponentiate      = FALSE,
-  interaction_sep   = " * ",
+  n = FALSE,
+  statistic = TRUE,
+  exponentiate = FALSE,
+  interaction_sep = " * ",
   ...
 ) {
   # ── Validation ────────────────────────────────────────────────────────────
@@ -343,10 +381,10 @@ clean <- function(
 
   if (
     !is.numeric(conf_level) ||
-    length(conf_level) != 1L ||
-    is.na(conf_level) ||
-    conf_level <= 0 ||
-    conf_level >= 1
+      length(conf_level) != 1L ||
+      is.na(conf_level) ||
+      conf_level <= 0 ||
+      conf_level >= 1
   ) {
     cli::cli_abort(
       c(
@@ -366,7 +404,8 @@ clean <- function(
         c(
           "!" = paste0(
             "{.arg exponentiate = TRUE} with a non-log link ",
-            "({.val {model@family$link}}) may produce uninterpretable estimates."
+            "({.val {model@family$link}}) may produce ",
+            "uninterpretable estimates."
           )
         ),
         class = "surveycore_warning_exponentiate_nonlog"
@@ -380,25 +419,25 @@ clean <- function(
 
   # ── Model components ──────────────────────────────────────────────────────
 
-  fit         <- model@fit_
-  mf          <- stats::model.frame(fit)
-  mm          <- stats::model.matrix(fit)
-  tt          <- stats::terms(fit)
+  fit <- model@fit_
+  mf <- stats::model.frame(fit)
+  mm <- stats::model.matrix(fit)
+  tt <- stats::terms(fit)
   term_labels <- c("(Intercept)", attr(tt, "term.labels"))
-  mm_assign   <- attr(mm, "assign")
-  coef_names  <- names(model@coefficients)
-  estimates   <- model@coefficients
-  se_vec      <- sqrt(diag(model@vcov))
-  p           <- length(estimates)
-  design      <- model@design
+  mm_assign <- attr(mm, "assign")
+  coef_names <- names(model@coefficients)
+  estimates <- model@coefficients
+  se_vec <- sqrt(diag(model@vcov))
+  p <- length(estimates)
+  design <- model@design
 
   # CIs for all estimated coefficients
   ci_mat <- .glm_confint(estimates, se_vec, model@degf, p, conf_level)
 
   # t-statistics and p-values (log scale, unaffected by exponentiate)
-  df_t  <- max(1, model@degf - (p - 1L))
+  df_t <- max(1, model@degf - (p - 1L))
   tstat <- estimates / se_vec
-  pval  <- 2 * stats::pt(-abs(tstat), df = df_t)
+  pval <- 2 * stats::pt(-abs(tstat), df = df_t)
 
   # ── Build rows ────────────────────────────────────────────────────────────
 
@@ -408,40 +447,45 @@ clean <- function(
 
   for (term_idx in unique_terms) {
     term_label <- term_labels[[term_idx + 1L]]
-    term_type  <- .glm_term_type(term_label, mf)
+    term_type <- .glm_term_type(term_label, mf)
 
     # Indices of coefficients for this term in the model matrix
     coef_idx <- which(mm_assign == term_idx)
 
     # Reference row(s) for unordered factors (inserted before estimated rows)
     if (identical(term_type, "factor") && include_reference) {
-      var_name   <- term_label
-      ref_levels <- setdiff(levels(mf[[var_name]]),
-                            colnames(stats::contrasts(mf[[var_name]])))
+      var_name <- term_label
+      ref_levels <- setdiff(
+        levels(mf[[var_name]]),
+        colnames(stats::contrasts(mf[[var_name]]))
+      )
       for (ref_lev in ref_levels) {
-        ref_term    <- paste0(var_name, ref_lev)
+        ref_term <- paste0(var_name, ref_lev)
         ref_var_lbl <- .glm_var_label_for(design, var_name)
-        ref_lbl     <- .glm_value_label_for(design, var_name, ref_lev)
-        ref_n_obs   <- if (n) {
+        ref_lbl <- .glm_value_label_for(design, var_name, ref_lev)
+        ref_n_obs <- if (n) {
           as.integer(sum(mf[[var_name]] == ref_lev, na.rm = TRUE))
         } else {
           NULL
         }
 
-        rows <- c(rows, list(list(
-          term          = ref_term,
-          variable      = var_name,
-          var_label     = ref_var_lbl,
-          label         = ref_lbl,
-          reference_row = TRUE,
-          estimate      = NA_real_,
-          std_error     = NA_real_,
-          statistic_val = NA_real_,
-          p_value       = NA_real_,
-          conf_low      = NA_real_,
-          conf_high     = NA_real_,
-          n_obs         = ref_n_obs
-        )))
+        rows <- c(
+          rows,
+          list(list(
+            term = ref_term,
+            variable = var_name,
+            var_label = ref_var_lbl,
+            label = ref_lbl,
+            reference_row = TRUE,
+            estimate = NA_real_,
+            std_error = NA_real_,
+            statistic_val = NA_real_,
+            p_value = NA_real_,
+            conf_low = NA_real_,
+            conf_high = NA_real_,
+            n_obs = ref_n_obs
+          ))
+        )
       }
     }
 
@@ -452,41 +496,41 @@ clean <- function(
 
       # Determine variable, var_label, label
       if (identical(term_type, "intercept")) {
-        var_nm  <- "(Intercept)"
+        var_nm <- "(Intercept)"
         var_lbl <- NA_character_
-        lbl     <- "(Intercept)"
-
+        lbl <- "(Intercept)"
       } else if (identical(term_type, "continuous")) {
-        var_nm  <- term_label
+        var_nm <- term_label
         var_lbl <- .glm_var_label_for(design, var_nm)
-        lbl     <- var_lbl
-
+        lbl <- var_lbl
       } else if (identical(term_type, "factor")) {
-        var_nm   <- term_label
-        var_lbl  <- .glm_var_label_for(design, var_nm)
+        var_nm <- term_label
+        var_lbl <- .glm_var_label_for(design, var_nm)
         lvl_name <- .glm_find_level(cn, var_nm, levels(mf[[var_nm]]))
-        lbl      <- if (!is.na(lvl_name)) {
+        lbl <- if (!is.na(lvl_name)) {
           .glm_value_label_for(design, var_nm, lvl_name)
         } else {
-          cn  # fallback
+          cn # fallback
         }
-
       } else if (identical(term_type, "ordered_factor")) {
-        var_nm  <- term_label
+        var_nm <- term_label
         var_lbl <- .glm_var_label_for(design, var_nm)
-        lbl     <- cn  # polynomial contrast names kept as-is
-
+        lbl <- cn # polynomial contrast names kept as-is
       } else if (identical(term_type, "interaction")) {
-        var_nm  <- term_label
+        var_nm <- term_label
         var_lbl <- NA_character_
-        lbl     <- .glm_interaction_label(cn, term_label, mf, design,
-                                          interaction_sep)
-
+        lbl <- .glm_interaction_label(
+          cn,
+          term_label,
+          mf,
+          design,
+          interaction_sep
+        )
       } else {
         # transformation
-        var_nm  <- term_label
+        var_nm <- term_label
         var_lbl <- NA_character_
-        lbl     <- cn
+        lbl <- cn
       }
 
       # n_obs (only computed when n = TRUE)
@@ -496,20 +540,23 @@ clean <- function(
         NULL
       }
 
-      rows <- c(rows, list(list(
-        term          = cn,
-        variable      = var_nm,
-        var_label     = var_lbl,
-        label         = lbl,
-        reference_row = FALSE,
-        estimate      = estimates[[ci]],
-        std_error     = se_vec[[ci]],
-        statistic_val = tstat[[ci]],
-        p_value       = pval[[ci]],
-        conf_low      = ci_mat[[ci, "lower"]],
-        conf_high     = ci_mat[[ci, "upper"]],
-        n_obs         = n_obs_val
-      )))
+      rows <- c(
+        rows,
+        list(list(
+          term = cn,
+          variable = var_nm,
+          var_label = var_lbl,
+          label = lbl,
+          reference_row = FALSE,
+          estimate = estimates[[ci]],
+          std_error = se_vec[[ci]],
+          statistic_val = tstat[[ci]],
+          p_value = pval[[ci]],
+          conf_low = ci_mat[[ci, "lower"]],
+          conf_high = ci_mat[[ci, "upper"]],
+          n_obs = n_obs_val
+        ))
+      )
     }
   }
 
@@ -518,35 +565,39 @@ clean <- function(
   nr <- length(rows)
 
   result_df <- tibble::tibble(
-    term          = vapply(rows, `[[`, character(1L), "term"),
-    variable      = vapply(rows, `[[`, character(1L), "variable"),
-    var_label     = vapply(rows, `[[`, character(1L), "var_label"),
-    label         = vapply(rows, `[[`, character(1L), "label"),
-    reference_row = vapply(rows, `[[`, logical(1L),   "reference_row"),
-    estimate      = vapply(rows, `[[`, double(1L),    "estimate"),
-    std_error     = vapply(rows, `[[`, double(1L),    "std_error")
+    term = vapply(rows, `[[`, character(1L), "term"),
+    variable = vapply(rows, `[[`, character(1L), "variable"),
+    var_label = vapply(rows, `[[`, character(1L), "var_label"),
+    label = vapply(rows, `[[`, character(1L), "label"),
+    reference_row = vapply(rows, `[[`, logical(1L), "reference_row"),
+    estimate = vapply(rows, `[[`, double(1L), "estimate"),
+    std_error = vapply(rows, `[[`, double(1L), "std_error")
   )
 
   if (statistic) {
     result_df$statistic <- vapply(rows, `[[`, double(1L), "statistic_val")
   }
 
-  result_df$p_value   <- vapply(rows, `[[`, double(1L), "p_value")
-  result_df$conf_low  <- vapply(rows, `[[`, double(1L), "conf_low")
+  result_df$p_value <- vapply(rows, `[[`, double(1L), "p_value")
+  result_df$conf_low <- vapply(rows, `[[`, double(1L), "conf_low")
   result_df$conf_high <- vapply(rows, `[[`, double(1L), "conf_high")
 
   if (n) {
-    result_df$n_obs <- vapply(rows, function(r) {
-      v <- r$n_obs
-      if (is.null(v)) NA_integer_ else v
-    }, integer(1L))
+    result_df$n_obs <- vapply(
+      rows,
+      function(r) {
+        v <- r$n_obs
+        if (is.null(v)) NA_integer_ else v
+      },
+      integer(1L)
+    )
   }
 
   # ── exponentiate ─────────────────────────────────────────────────────────
 
   if (exponentiate) {
-    result_df$estimate  <- exp(result_df$estimate)
-    result_df$conf_low  <- exp(result_df$conf_low)
+    result_df$estimate <- exp(result_df$estimate)
+    result_df$conf_low <- exp(result_df$conf_low)
     result_df$conf_high <- exp(result_df$conf_high)
     # std_error left on log scale per broom convention
   }
@@ -554,14 +605,20 @@ clean <- function(
   # ── .meta and class ───────────────────────────────────────────────────────
 
   meta_list <- .build_glm_meta(
-    model, conf_level, cl, include_reference, exponentiate, mf, mm, tt
+    model,
+    conf_level,
+    cl,
+    include_reference,
+    exponentiate,
+    mf,
+    mm,
+    tt
   )
 
   structure(
     result_df,
     .meta = meta_list,
-    class = c("survey_glm_tidy", "survey_result",
-              "tbl_df", "tbl", "data.frame")
+    class = c("survey_glm_tidy", "survey_result", "tbl_df", "tbl", "data.frame")
   )
 }
 
@@ -574,11 +631,16 @@ clean <- function(
 # exponentiate uses the same name in both.
 #
 #' @noRd
-tidy.survey_glm_fit <- function(x, conf.int = TRUE, conf.level = 0.95,
-                                exponentiate = FALSE, ...) {
+tidy.survey_glm_fit <- function(
+  x,
+  conf.int = TRUE,
+  conf.level = 0.95,
+  exponentiate = FALSE,
+  ...
+) {
   clean(
-    model        = x,
-    conf_level   = conf.level,
+    model = x,
+    conf_level = conf.level,
     exponentiate = exponentiate,
     ...
   )

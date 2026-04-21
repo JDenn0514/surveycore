@@ -18,7 +18,8 @@
 #   Unified setters (conventions 1/2/3, survey objects + data frames):
 #     set_var_label()            — set label for one or more variables
 #     set_val_labels()           — set value labels for one or more variables
-#     set_question_preface()     — set question preface for one or more variables
+#     set_question_preface()     — set question preface for one or more
+#                                  variables
 #     set_var_note()             — set note for one or more variables
 #     set_universe()             — set universe description for one or more vars
 #     set_missing_codes()        — set missing codes for one or more variables
@@ -45,7 +46,7 @@
         )
       ),
       class = "surveycore_error_not_survey_or_df",
-      call  = call
+      call = call
     )
   }
   invisible(NULL)
@@ -90,7 +91,10 @@
   if (dots_len > 0L && var_provided) {
     cli::cli_abort(
       c(
-        "x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.",
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        ),
         "i" = paste0(
           "Use named {.arg ...} args, a named vector in {.arg ...}, or",
           " {.arg variable} + {.arg {content_arg_name}} \u2014 not a mix."
@@ -106,7 +110,10 @@
     cli::cli_abort(
       c(
         "x" = "{.fn {fn_name}} requires at least one variable-label pair.",
-        "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."
+        "v" = paste0(
+          "Use named {.arg ...} args: ",
+          "{.code {fn_name}(x, age = 'Age in years')}."
+        )
       ),
       class = "surveycore_error_setter_empty",
       call = call
@@ -119,7 +126,10 @@
       cli::cli_warn(
         c(
           "!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.",
-          "i" = "No metadata was set. Did you accidentally filter all variable names out?"
+          "i" = paste0(
+            "No metadata was set. Did you accidentally filter ",
+            "all variable names out?"
+          )
         ),
         class = "surveycore_warning_setter_empty_variables",
         call = call
@@ -133,7 +143,10 @@
             "{.arg variable} has {length(variable)} element{?s} but",
             " {.arg {content_arg_name}} has {length(content)} element{?s}."
           ),
-          "i" = "They must be the same length (one content value per variable name)."
+          "i" = paste0(
+            "They must be the same length ",
+            "(one content value per variable name)."
+          )
         ),
         class = "surveycore_error_setter_mismatched_lengths",
         call = call
@@ -154,18 +167,14 @@
     # character vector (scalar) or named list (vector)
     if (dots_len == 1L) {
       elem <- dots[[1L]]
-      is_named_char_vec <- (
-        is.character(elem) &&
-          !is.null(names(elem)) &&
-          length(elem) > 0L &&
-          all(nzchar(names(elem)))
-      )
-      is_named_list <- (
-        is.list(elem) &&
-          !is.null(names(elem)) &&
-          length(elem) > 0L &&
-          all(nzchar(names(elem)))
-      )
+      is_named_char_vec <- (is.character(elem) &&
+        !is.null(names(elem)) &&
+        length(elem) > 0L &&
+        all(nzchar(names(elem))))
+      is_named_list <- (is.list(elem) &&
+        !is.null(names(elem)) &&
+        length(elem) > 0L &&
+        all(nzchar(names(elem))))
       if (content_type == "scalar" && is_named_char_vec) {
         return(as.list(elem))
       }
@@ -194,46 +203,6 @@
   dots
 }
 
-# .resolve_vars(x, var_exprs, call)
-# Resolves the `...` quosures for extractor functions. If var_exprs is empty,
-# returns all column names. Otherwise evaluates bare symbols and character
-# expressions; warns and skips variables not found.
-.resolve_vars <- function(
-  x,
-  var_exprs,
-  call = rlang::caller_env()
-) {
-  all_cols <- .get_data_cols(x)
-
-  if (length(var_exprs) == 0L) {
-    return(all_cols)
-  }
-
-  requested <- unlist(lapply(var_exprs, function(q) {
-    if (rlang::quo_is_symbol(q)) {
-      rlang::as_name(q)
-    } else {
-      rlang::eval_tidy(q)
-    }
-  }), use.names = FALSE)
-
-  missing <- setdiff(requested, all_cols)
-  if (length(missing) > 0L) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "{length(missing)} variable{?s} not found in {.arg x}",
-          " and {?was/were} skipped: {.field {missing}}."
-        )
-      ),
-      class = "surveycore_warning_var_not_found",
-      call = call
-    )
-  }
-
-  intersect(requested, all_cols)
-}
-
 # .format_scalar_result(result_list, format, col_name, empty_value)
 # Converts a named list of character scalars to the requested output format.
 # empty_value = NULL omits NULL entries; empty_value = NA_character_ replaces
@@ -255,9 +224,12 @@
 
   var_names <- names(result_list)
 
-  switch(format,
+  switch(
+    format,
     "named_vector" = {
-      if (length(var_names) == 0L) return(character(0L))
+      if (length(var_names) == 0L) {
+        return(character(0L))
+      }
       values <- unlist(result_list, use.names = FALSE)
       stats::setNames(values, var_names)
     },
@@ -288,7 +260,10 @@
   if (!format %in% valid_formats) {
     cli::cli_abort(
       c(
-        "x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.",
+        "x" = paste0(
+          "{.fn {fn_name}} received an invalid {.arg format} ",
+          "value {.val {format}}."
+        ),
         "i" = "{.arg format} must be one of {.val {valid_formats}}."
       ),
       class = "surveycore_error_format_invalid"
@@ -302,8 +277,8 @@
   # data_frame: one row per (variable, code) pair
   empty_out <- tibble::tibble(
     variable = character(0L),
-    label    = character(0L),
-    value    = character(0L)
+    label = character(0L),
+    value = character(0L)
   )
 
   if (length(result_list) == 0L) {
@@ -315,11 +290,15 @@
     if (is.null(vec) || length(vec) == 0L) {
       return(NULL)
     }
-    lbl <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    lbl <- if (!is.null(names(vec))) {
+      names(vec)
+    } else {
+      rep(NA_character_, length(vec))
+    }
     tibble::tibble(
       variable = var_name,
-      label    = lbl,
-      value    = as.character(vec)
+      label = lbl,
+      value = as.character(vec)
     )
   })
   rows <- rows[!vapply(rows, is.null, logical(1L))]
@@ -331,6 +310,24 @@
   dplyr::bind_rows(rows)
 }
 
+# .format_logical_result(result, format)
+# Converts a named logical vector into the format requested by extract_sata().
+# - "named_vector": returns the input vector as-is (empty: logical(0)).
+# - "list": as.list(result) (empty: list()).
+# - "data_frame": tibble with columns `variable` and `sata`
+#   (empty: zero-row tibble with both columns typed).
+.format_logical_result <- function(result, format) {
+  switch(
+    format,
+    "named_vector" = result,
+    "list" = as.list(result),
+    "data_frame" = tibble::tibble(
+      variable = names(result),
+      sata = unname(result)
+    )
+  )
+}
+
 
 # ── Input check helper ────────────────────────────────────────────────────────
 
@@ -340,8 +337,14 @@
   if (!S7::S7_inherits(x, survey_base)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg x} must be a survey design object, not {.cls {class(x)[[1L]]}}.",
-        "v" = "Create a survey object with {.fn as_survey}, {.fn as_survey_replicate},",
+        "x" = paste0(
+          "{.arg x} must be a survey design object, not ",
+          "{.cls {class(x)[[1L]]}}."
+        ),
+        "v" = paste0(
+          "Create a survey object with {.fn as_survey}, ",
+          "{.fn as_survey_replicate},"
+        ),
         " " = "or {.fn as_survey_twophase}."
       ),
       class = "surveycore_error_not_survey",
@@ -354,7 +357,8 @@
 
 # ── Extractors ────────────────────────────────────────────────────────────────
 
-# Shared fill validator for individual extractors (accepts NULL or NA_character_).
+# Shared fill validator for individual extractors
+# (accepts NULL or NA_character_).
 .check_extractor_fill <- function(fill, fn_name, call) {
   if (!is.null(fill) && !identical(fill, NA_character_)) {
     cli::cli_abort(
@@ -391,15 +395,17 @@
 }
 
 
-
 #' Extract Variable Labels
 #'
 #' Returns variable labels for one or more variables in a survey design object
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no label:
@@ -427,10 +433,20 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_var_label"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -451,8 +467,11 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"list"` (default) or
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no labels:
@@ -479,7 +498,14 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -503,8 +529,11 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
 #' object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no preface:
@@ -535,10 +564,20 @@ extract_question_preface <- function(
   fn_name <- "extract_question_preface"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -559,8 +598,11 @@ extract_question_preface <- function(
 #' or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no note:
@@ -586,10 +628,20 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_var_note"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -610,8 +662,11 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
 #' survey design object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"named_vector"` (default),
 #'   `"list"`, or `"data_frame"`.
 #' @param fill Scalar or `NULL`. How to handle variables with no universe:
@@ -638,10 +693,20 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
   fn_name <- "extract_universe"
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(
-    format, fn_name, c("named_vector", "list", "data_frame"), call
+    format,
+    fn_name,
+    c("named_vector", "list", "data_frame"),
+    call
   )
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -662,8 +727,11 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
 #' design object or data frame.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, metadata for all variables is returned.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param format `character(1)`. Output format: `"list"` (default) or
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no codes:
@@ -692,7 +760,14 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
   .check_extractor_fill(fill, fn_name, call)
   .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result_list <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
@@ -715,25 +790,33 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
     !vapply(result_list, is.null, logical(1L))
   ]
   empty_out <- tibble::tibble(
-    variable    = character(0L),
+    variable = character(0L),
     description = character(0L),
-    code        = character(0L)
+    code = character(0L)
   )
   if (length(result_list_nonnull) == 0L) {
     return(empty_out)
   }
   rows <- lapply(names(result_list_nonnull), function(var_name) {
     vec <- result_list_nonnull[[var_name]]
-    if (is.null(vec) || length(vec) == 0L) return(NULL)
-    desc <- if (!is.null(names(vec))) names(vec) else rep(NA_character_, length(vec))
+    if (is.null(vec) || length(vec) == 0L) {
+      return(NULL)
+    }
+    desc <- if (!is.null(names(vec))) {
+      names(vec)
+    } else {
+      rep(NA_character_, length(vec))
+    }
     tibble::tibble(
-      variable    = var_name,
+      variable = var_name,
       description = desc,
-      code        = as.character(vec)
+      code = as.character(vec)
     )
   })
   rows <- rows[!vapply(rows, is.null, logical(1L))]
-  if (length(rows) == 0L) return(empty_out)
+  if (length(rows) == 0L) {
+    return(empty_out)
+  }
   dplyr::bind_rows(rows)
 }
 
@@ -745,8 +828,11 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
 #' building codebooks.
 #'
 #' @param x A survey design object or `data.frame`.
-#' @param ... <[`data-masked`][rlang::args_data_masking]> Variable names
-#'   (bare, unquoted). If empty, all variables are included.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns metadata for all variables. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
 #' @param fill `NULL` (default) or `"include"`. `NULL` omits variables that
 #'   have no metadata in any field; `"include"` returns all variables
 #'   regardless.
@@ -781,29 +867,36 @@ extract_metadata <- function(x, ..., fill = NULL) {
     )
   }
   .check_is_survey_or_df(x, call = call)
-  var_names <- .resolve_vars(x, rlang::enquos(...), call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
   result <- stats::setNames(
     lapply(var_names, function(v) {
       if (S7::S7_inherits(x, survey_base)) {
         t <- x@metadata@transformations[[v]]
         list(
-          variable_label   = x@metadata@variable_labels[[v]],
-          value_labels     = x@metadata@value_labels[[v]],
+          variable_label = x@metadata@variable_labels[[v]],
+          value_labels = x@metadata@value_labels[[v]],
           question_preface = x@metadata@question_prefaces[[v]],
-          note             = x@metadata@notes[[v]],
-          universe         = x@metadata@universe[[v]],
-          missing_codes    = x@metadata@missing_codes[[v]],
-          transformations  = if (is.null(t)) list() else t
+          note = x@metadata@notes[[v]],
+          universe = x@metadata@universe[[v]],
+          missing_codes = x@metadata@missing_codes[[v]],
+          transformations = if (is.null(t)) list() else t
         )
       } else {
         list(
-          variable_label   = attr(x[[v]], "label",            exact = TRUE),
-          value_labels     = attr(x[[v]], "labels",           exact = TRUE),
+          variable_label = attr(x[[v]], "label", exact = TRUE),
+          value_labels = attr(x[[v]], "labels", exact = TRUE),
           question_preface = attr(x[[v]], "question_preface", exact = TRUE),
-          note             = attr(x[[v]], "note",             exact = TRUE),
-          universe         = attr(x[[v]], "universe",         exact = TRUE),
-          missing_codes    = attr(x[[v]], "missing_codes",    exact = TRUE),
-          transformations  = list()
+          note = attr(x[[v]], "note", exact = TRUE),
+          universe = attr(x[[v]], "universe", exact = TRUE),
+          missing_codes = attr(x[[v]], "missing_codes", exact = TRUE),
+          transformations = list()
         )
       }
     }),
@@ -811,13 +904,23 @@ extract_metadata <- function(x, ..., fill = NULL) {
   )
   if (is.null(fill)) {
     content_fields <- c(
-      "variable_label", "value_labels", "question_preface",
-      "note", "universe", "missing_codes"
+      "variable_label",
+      "value_labels",
+      "question_preface",
+      "note",
+      "universe",
+      "missing_codes"
     )
-    has_meta <- vapply(result, function(entry) {
-      any(!vapply(content_fields, function(f) is.null(entry[[f]]), logical(1L))) ||
-        length(entry$transformations) > 0L
-    }, logical(1L))
+    has_meta <- vapply(
+      result,
+      function(entry) {
+        any(
+          !vapply(content_fields, function(f) is.null(entry[[f]]), logical(1L))
+        ) ||
+          length(entry$transformations) > 0L
+      },
+      logical(1L)
+    )
     result <- result[has_meta]
     if (length(result) == 0L) return(list())
   }
@@ -847,7 +950,7 @@ extract_metadata <- function(x, ..., fill = NULL) {
           )
         ),
         class = "surveycore_error_label_not_scalar",
-        call  = call
+        call = call
       )
     }
   }
@@ -904,13 +1007,13 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
 
   # Detect old positional form: set_var_label(x, bare_symbol, "string")
   dot_quos <- rlang::enquos(...)
-  nms      <- names(dot_quos)
+  nms <- names(dot_quos)
   if (
     length(dot_quos) == 2L &&
-    (is.null(nms) ||
-      (!nzchar(if (!is.null(nms[[1L]])) nms[[1L]] else "") &&
-        !nzchar(if (!is.null(nms[[2L]])) nms[[2L]] else ""))) &&
-    rlang::quo_is_symbol(dot_quos[[1L]])
+      (is.null(nms) ||
+        (!nzchar(if (!is.null(nms[[1L]])) nms[[1L]] else "") &&
+          !nzchar(if (!is.null(nms[[2L]])) nms[[2L]] else ""))) &&
+      rlang::quo_is_symbol(dot_quos[[1L]])
   ) {
     val2 <- tryCatch(rlang::eval_tidy(dot_quos[[2L]]), error = function(e) NULL)
     if (is.character(val2) && length(val2) == 1L) {
@@ -922,23 +1025,26 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
             " {.code set_var_label(x, var, content)} is no longer supported."
           ),
           "i" = "The new unified setter uses named arguments.",
-          "v" = "Use {.code set_var_label(x, {var_nm2} = {.val {val2}})} instead."
+          "v" = paste0(
+            "Use {.code set_var_label(x, {var_nm2} = {.val {val2}})} ",
+            "instead."
+          )
         ),
         class = "surveycore_error_old_positional_setter",
-        call  = call
+        call = call
       )
     }
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = label,
+    dots = dots,
+    variable = variable,
+    content = label,
     content_arg_name = "label",
-    content_type     = "scalar",
-    fn_name          = "set_var_label",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_var_label",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -946,9 +1052,14 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1005,20 +1116,25 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
 
   # Convention 3 bare-vector exception: wrap scalar atomic vector in a list
   # when length(variable) == 1 and labels is not already a list.
-  if (!is.null(variable) && length(variable) == 1L &&
-    !is.null(labels) && !is.list(labels) && is.atomic(labels)) {
+  if (
+    !is.null(variable) &&
+      length(variable) == 1L &&
+      !is.null(labels) &&
+      !is.list(labels) &&
+      is.atomic(labels)
+  ) {
     labels <- list(labels)
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = labels,
+    dots = dots,
+    variable = variable,
+    content = labels,
     content_arg_name = "labels",
-    content_type     = "vector",
-    fn_name          = "set_val_labels",
-    call             = call
+    content_type = "vector",
+    fn_name = "set_val_labels",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1026,9 +1142,14 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1040,7 +1161,7 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
             "i" = "All elements must have names."
           ),
           class = "surveycore_error_labels_unnamed",
-          call  = call
+          call = call
         )
       }
       var_data <- if (S7::S7_inherits(x, survey_base)) {
@@ -1089,15 +1210,15 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = preface,
+    dots = dots,
+    variable = variable,
+    content = preface,
     content_arg_name = "preface",
-    content_type     = "scalar",
-    fn_name          = "set_question_preface",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_question_preface",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1105,9 +1226,14 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1152,15 +1278,15 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = note,
+    dots = dots,
+    variable = variable,
+    content = note,
     content_arg_name = "note",
-    content_type     = "scalar",
-    fn_name          = "set_var_note",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_var_note",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1168,9 +1294,14 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1214,15 +1345,15 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = universe,
+    dots = dots,
+    variable = variable,
+    content = universe,
     content_arg_name = "universe",
-    content_type     = "scalar",
-    fn_name          = "set_universe",
-    call             = call
+    content_type = "scalar",
+    fn_name = "set_universe",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1230,9 +1361,14 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1280,20 +1416,25 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 
   # Convention 3 bare-vector exception: wrap atomic vector in a list
   # when length(variable) == 1 and codes is not already a list.
-  if (!is.null(variable) && length(variable) == 1L &&
-    !is.null(codes) && !is.list(codes) && is.atomic(codes)) {
+  if (
+    !is.null(variable) &&
+      length(variable) == 1L &&
+      !is.null(codes) &&
+      !is.list(codes) &&
+      is.atomic(codes)
+  ) {
     codes <- list(codes)
   }
 
-  dots  <- rlang::list2(...)
+  dots <- rlang::list2(...)
   pairs <- .parse_setter_input(
-    dots             = dots,
-    variable         = variable,
-    content          = codes,
+    dots = dots,
+    variable = variable,
+    content = codes,
     content_arg_name = "codes",
-    content_type     = "vector",
-    fn_name          = "set_missing_codes",
-    call             = call
+    content_type = "vector",
+    fn_name = "set_missing_codes",
+    call = call
   )
 
   all_cols <- .get_data_cols(x)
@@ -1301,9 +1442,14 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
     content <- pairs[[var_name]]
     if (!var_name %in% all_cols) {
       cli::cli_warn(
-        c("!" = "Variable {.field {var_name}} not found in {.arg x} and was skipped."),
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
         class = "surveycore_warning_var_not_found",
-        call  = call
+        call = call
       )
       next
     }
@@ -1323,7 +1469,7 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
           )
         ),
         class = "surveycore_error_missing_codes_not_vector",
-        call  = call
+        call = call
       )
     }
     if (S7::S7_inherits(x, survey_base)) {
@@ -1333,6 +1479,443 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
     }
   }
   invisible(x)
+}
+
+
+# ── SATA (Select-All-That-Apply) setter/getter ────────────────────────────────
+
+#' Set SATA (Select-All-That-Apply) Flag
+#'
+#' Marks one or more variables as select-all-that-apply (SATA) in a survey
+#' design object or a data frame. Unlike the other unified setters (which map
+#' variable names to heterogeneous content), `set_sata()` applies a single
+#' logical flag to all listed variables, so it uses a simplified two-convention
+#' pattern.
+#'
+#' **Convention A (tidy-select `...`)** — recommended:
+#' ```r
+#' design |> set_sata(news_tv, news_online, news_radio)
+#' design |> set_sata(starts_with("news_"))
+#' ```
+#'
+#' **Convention B (`variable` = character vector)** — programmatic:
+#' ```r
+#' sata_vars <- c("news_tv", "news_online", "news_radio")
+#' design |> set_sata(variable = sata_vars)
+#' ```
+#'
+#' Setting `sata = FALSE` unmarks the listed variables.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to mark.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. Cannot be combined
+#'   with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#' @param sata `logical(1)`. `TRUE` (default) marks variables as SATA; `FALSE`
+#'   removes the SATA flag. `NA` is not accepted.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_sata(d, riagendr, ridageyr)
+#' d <- set_sata(d, riagendr, sata = FALSE)
+#'
+#' @seealso [extract_sata()] to retrieve SATA flags
+#' @family metadata
+#' @export
+set_sata <- function(x, ..., variable = NULL, sata = TRUE) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  if (!is.logical(sata) || length(sata) != 1L || is.na(sata)) {
+    cli::cli_abort(
+      c("x" = "{.arg sata} must be {.code TRUE} or {.code FALSE}."),
+      class = "surveycore_error_sata_not_logical",
+      call = call
+    )
+  }
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_sata_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && (!var_used || length(variable) == 0L)) {
+    cli::cli_abort(
+      c("x" = "{.fn set_sata} requires at least one variable name."),
+      class = "surveycore_error_sata_no_vars",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  }
+
+  for (v in var_names) {
+    if (S7::S7_inherits(x, survey_base)) {
+      if (isTRUE(sata)) {
+        x@metadata@sata[[v]] <- TRUE
+      } else {
+        x@metadata@sata[[v]] <- NULL
+      }
+    } else {
+      attr(x[[v]], "sata") <- if (isTRUE(sata)) TRUE else NULL
+    }
+  }
+
+  invisible(x)
+}
+
+
+#' Extract SATA (Select-All-That-Apply) Flags
+#'
+#' Returns the SATA status for one or more variables in a survey design object
+#' or a data frame.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. If empty, returns
+#'   SATA status for all columns of `x`.
+#' @param format `character(1)`. Output format: `"named_vector"` (default),
+#'   `"list"`, or `"data_frame"`.
+#' @param fill `FALSE` (default) or `NULL`. Controls how unmarked variables
+#'   are reported. `FALSE` includes them in the result with value `FALSE`
+#'   (dense view); `NULL` omits them (sparse view). `TRUE` and other values
+#'   are rejected.
+#'
+#' @return
+#' - `"named_vector"` (default): named logical vector. Empty: `logical(0)`.
+#' - `"list"`: named list of logical scalars. Empty: `list()`.
+#' - `"data_frame"`: tibble with columns `variable` (character) and `sata`
+#'   (logical). Empty: zero-row tibble.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_sata(d, riagendr)
+#' extract_sata(d, riagendr)
+#' extract_sata(d, fill = NULL)
+#'
+#' @seealso [set_sata()] to set SATA flags
+#' @family metadata
+#' @export
+extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  if (!is.null(fill) && !identical(fill, FALSE)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg fill} must be {.code FALSE} or {.code NULL}."
+        )
+      ),
+      class = "surveycore_error_sata_not_logical",
+      call = call
+    )
+  }
+
+  .check_extractor_format(
+    format,
+    "extract_sata",
+    c("named_vector", "list", "data_frame"),
+    call
+  )
+
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
+
+  result <- stats::setNames(
+    vapply(
+      var_names,
+      function(v) {
+        raw <- if (S7::S7_inherits(x, survey_base)) {
+          x@metadata@sata[[v]]
+        } else {
+          attr(x[[v]], "sata", exact = TRUE)
+        }
+        isTRUE(raw)
+      },
+      logical(1L)
+    ),
+    var_names
+  )
+
+  if (is.null(fill)) {
+    result <- result[result]
+  }
+
+  .format_logical_result(result, format)
+}
+
+
+# ── classify_question_type() — variable type classifier ──────────────────────
+
+#' Classify Variable Question Types
+#'
+#' Groups variables by their shared `question_preface` metadata and classifies
+#' each group as one of `"single"`, `"sata"`, or `"battery"`. This is the single
+#' source of truth used by downstream export functions to decide how to render
+#' each question.
+#'
+#' The classification rules, applied per requested variable:
+#'
+#' 1. If the variable has no `question_preface`, or is the only requested
+#'    variable sharing its preface, `type = "single"`.
+#' 2. If a `question_preface` is shared by 2+ requested variables and at least
+#'    one is flagged via [set_sata()], all variables in that group get
+#'    `type = "sata"`.
+#' 3. Otherwise (shared preface, no SATA flag), all variables in the group
+#'    get `type = "battery"`.
+#'
+#' Group numbers are assigned sequentially by first appearance in the input.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to classify.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], etc. Cannot be combined
+#'   with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#'
+#' @return A tibble with columns:
+#' - `variable` (character) — variable name
+#' - `question_preface` (character) — the preface, or `NA` if none
+#' - `type` (character) — one of `"single"`, `"sata"`, or `"battery"`
+#' - `group` (integer) — group id; variables with the same non-NA preface
+#'   share a group
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_question_preface(d, riagendr = "Demographics",
+#'                              ridageyr = "Demographics")
+#' d <- set_sata(d, riagendr, ridageyr)
+#' classify_question_type(d, riagendr, ridageyr, bpxsy1)
+#'
+#' @seealso [set_sata()], [extract_sata()], [set_question_preface()]
+#' @family metadata
+#' @export
+classify_question_type <- function(x, ..., variable = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_detect_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && (!var_used || length(variable) == 0L)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.fn classify_question_type} requires at least one variable name."
+        )
+      ),
+      class = "surveycore_error_detect_no_vars",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  }
+
+  empty_out <- tibble::tibble(
+    variable = character(0L),
+    question_preface = character(0L),
+    type = character(0L),
+    group = integer(0L)
+  )
+  if (length(var_names) == 0L) {
+    return(empty_out)
+  }
+
+  # Extract preface + sata for each requested variable
+  is_survey <- S7::S7_inherits(x, survey_base)
+  prefaces <- vapply(
+    var_names,
+    function(v) {
+      raw <- if (is_survey) {
+        x@metadata@question_prefaces[[v]]
+      } else {
+        attr(x[[v]], "question_preface", exact = TRUE)
+      }
+      if (is.null(raw) || !is.character(raw) || length(raw) == 0L) {
+        NA_character_
+      } else {
+        raw[[1L]]
+      }
+    },
+    character(1L)
+  )
+  sata_flags <- vapply(
+    var_names,
+    function(v) {
+      raw <- if (is_survey) {
+        x@metadata@sata[[v]]
+      } else {
+        attr(x[[v]], "sata", exact = TRUE)
+      }
+      isTRUE(raw)
+    },
+    logical(1L)
+  )
+
+  # Group numbering: sequential by first appearance of each non-NA preface.
+  # Variables with NA preface each get their own unique group (one row each).
+  # Variables that share a non-NA preface share a group number.
+  group_ids <- integer(length(var_names))
+  preface_to_group <- list()
+  next_group <- 1L
+  for (i in seq_along(var_names)) {
+    p <- prefaces[[i]]
+    if (is.na(p)) {
+      group_ids[[i]] <- next_group
+      next_group <- next_group + 1L
+    } else {
+      existing <- preface_to_group[[p]]
+      if (is.null(existing)) {
+        preface_to_group[[p]] <- next_group
+        group_ids[[i]] <- next_group
+        next_group <- next_group + 1L
+      } else {
+        group_ids[[i]] <- existing
+      }
+    }
+  }
+
+  # Classify each group
+  types <- character(length(var_names))
+  for (g in unique(group_ids)) {
+    idx <- which(group_ids == g)
+    group_prefs <- prefaces[idx]
+    group_sata <- sata_flags[idx]
+    if (length(idx) == 1L) {
+      # Singleton group
+      types[[idx]] <- "single"
+      # Edge case: SATA-flagged with a preface but no peers → warn
+      if (isTRUE(group_sata[[1L]]) && !is.na(group_prefs[[1L]])) {
+        var_name <- var_names[[idx]]
+        cli::cli_warn(
+          c(
+            "!" = paste0(
+              "Variable {.field {var_name}} is marked SATA but has no",
+              " shared {.code question_preface} with other variables.",
+              " Classified as {.val single}."
+            )
+          ),
+          class = "surveycore_warning_sata_no_preface",
+          call = call
+        )
+      }
+    } else {
+      # Shared-preface group: sata if any flag is TRUE, else battery
+      if (any(group_sata)) {
+        types[idx] <- "sata"
+        if (!all(group_sata)) {
+          preface <- group_prefs[[1L]]
+          cli::cli_warn(
+            c(
+              "!" = paste0(
+                "Variables sharing {.code question_preface} {.val {preface}}",
+                " have mixed SATA status. Treating entire group as",
+                " {.val sata}. Use {.fn set_sata} to mark all variables",
+                " in the group."
+              )
+            ),
+            class = "surveycore_warning_sata_mixed_group",
+            call = call
+          )
+        }
+      } else {
+        types[idx] <- "battery"
+      }
+    }
+  }
+
+  # Renumber groups to ensure contiguous 1..n in first-appearance order
+  # (they already are by construction, but unname for cleanliness).
+  tibble::tibble(
+    variable = unname(var_names),
+    question_preface = unname(prefaces),
+    type = types,
+    group = group_ids
+  )
 }
 
 
@@ -1403,11 +1986,11 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 #' @keywords internal
 #' @noRd
 .extract_haven_metadata <- function(data) {
-  var_labels   <- list()
-  val_labels   <- list()
-  q_prefaces   <- list()
-  notes        <- list()
-  universe     <- list()
+  var_labels <- list()
+  val_labels <- list()
+  q_prefaces <- list()
+  notes <- list()
+  universe <- list()
   missing_codes <- list()
 
   for (col_name in names(data)) {
@@ -1469,17 +2052,21 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 
     # ── Missing codes ─────────────────────────────────────────────────────────
     var_missing <- attr(col, "missing_codes", exact = TRUE)
-    if (!is.null(var_missing) && is.atomic(var_missing) && length(var_missing) > 0L) {
+    if (
+      !is.null(var_missing) &&
+        is.atomic(var_missing) &&
+        length(var_missing) > 0L
+    ) {
       missing_codes[[col_name]] <- var_missing
     }
   }
 
   survey_metadata(
-    variable_labels   = var_labels,
-    value_labels      = val_labels,
+    variable_labels = var_labels,
+    value_labels = val_labels,
     question_prefaces = q_prefaces,
-    notes             = notes,
-    universe          = universe,
-    missing_codes     = missing_codes
+    notes = notes,
+    universe = universe,
+    missing_codes = missing_codes
   )
 }

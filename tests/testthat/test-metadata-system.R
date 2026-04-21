@@ -165,20 +165,14 @@ test_that("extract_var_label() errors with surveycore_error_format_invalid for i
   )
 })
 
-test_that("extract_var_label() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_var_label() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    extract_var_label(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_var_label(d, nonexistent))
 })
 
-test_that("extract_var_label() result excludes missing var after warning", {
+test_that("extract_var_label() any_of() silently omits missing columns", {
   d <- make_labeled_design()
-  expect_warning(
-    result <- extract_var_label(d, y1, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  result <- extract_var_label(d, any_of(c("y1", "nonexistent")))
   expect_named(result, "y1")
 })
 
@@ -193,11 +187,6 @@ test_that("extract_var_label() errors with surveycore_error_fill_invalid for fil
 test_that("snapshot: extract_var_label() surveycore_error_format_invalid", {
   d <- make_labeled_design()
   expect_snapshot(error = TRUE, extract_var_label(d, format = "tibble"))
-})
-
-test_that("snapshot: extract_var_label() surveycore_warning_var_not_found", {
-  d <- make_labeled_design()
-  expect_snapshot(extract_var_label(d, y1, nonexistent))
 })
 
 
@@ -321,12 +310,9 @@ test_that("extract_question_preface() errors with surveycore_error_format_invali
   )
 })
 
-test_that("extract_question_preface() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_question_preface() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_design()
-  expect_warning(
-    extract_question_preface(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_question_preface(d, nonexistent))
 })
 
 test_that("extract_question_preface() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -401,12 +387,9 @@ test_that("extract_var_note() errors with surveycore_error_format_invalid for in
   )
 })
 
-test_that("extract_var_note() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_var_note() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_design()
-  expect_warning(
-    extract_var_note(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_var_note(d, nonexistent))
 })
 
 test_that("extract_var_note() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -476,12 +459,9 @@ test_that("extract_universe() errors with surveycore_error_format_invalid for in
   )
 })
 
-test_that("extract_universe() warns with surveycore_warning_var_not_found for missing var", {
+test_that("extract_universe() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    extract_universe(d, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
+  expect_error(extract_universe(d, nonexistent))
 })
 
 test_that("extract_universe() errors with surveycore_error_fill_invalid for fill = 'include'", {
@@ -2022,48 +2002,6 @@ test_that("snapshot: surveycore_error_setter_mixed_dots message", {
 })
 
 
-# ── .resolve_vars() ───────────────────────────────────────────────────────────
-
-test_that(".resolve_vars() with empty var_exprs returns all column names", {
-  d <- make_design()
-  result <- surveycore:::.resolve_vars(d, var_exprs = list())
-  expect_identical(result, names(d@data))
-})
-
-test_that(".resolve_vars() with specified names returns just those names", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, income)
-  result <- surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  expect_identical(result, c("age", "income"))
-})
-
-test_that(".resolve_vars() warns with surveycore_warning_var_not_found for missing var", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, zzz_missing)
-  expect_warning(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs),
-    class = "surveycore_warning_var_not_found"
-  )
-})
-
-test_that(".resolve_vars() returns only valid names after warning", {
-  d <- make_design()
-  var_exprs <- rlang::quos(age, zzz_missing)
-  result <- suppressWarnings(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  )
-  expect_identical(result, "age")
-})
-
-test_that("snapshot: .resolve_vars() surveycore_warning_var_not_found message", {
-  d <- make_design()
-  var_exprs <- rlang::quos(zzz_missing)
-  expect_snapshot(
-    surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-  )
-})
-
-
 # ── .format_scalar_result() ───────────────────────────────────────────────────
 
 test_that(".format_scalar_result() format = 'named_vector' returns named character vector", {
@@ -2355,14 +2293,9 @@ test_that("extract_metadata() errors with surveycore_error_not_survey_or_df for 
   )
 })
 
-test_that("extract_metadata() warns with surveycore_warning_var_not_found; result skips missing var", {
+test_that("extract_metadata() errors for bare nonexistent column (tidyselect behavior)", {
   d <- make_labeled_design()
-  expect_warning(
-    result <- extract_metadata(d, y1, nonexistent),
-    class = "surveycore_warning_var_not_found"
-  )
-  expect_true("y1" %in% names(result))
-  expect_false("nonexistent" %in% names(result))
+  expect_error(extract_metadata(d, y1, nonexistent))
 })
 
 test_that("extract_metadata() errors with surveycore_error_fill_invalid for fill = NA_character_", {
@@ -2380,4 +2313,339 @@ test_that("snapshot: extract_metadata() surveycore_error_not_survey_or_df", {
 test_that("snapshot: extract_metadata() surveycore_error_fill_invalid", {
   d <- make_labeled_design()
   expect_snapshot(error = TRUE, extract_metadata(d, fill = NA_character_))
+})
+
+
+# ── .rename_metadata_keys() sata integration ───────────────────────────────────
+
+test_that(".rename_metadata_keys() propagates sata flag through rename", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d@metadata@sata[["riagendr"]] <- TRUE
+  d@metadata <- surveycore:::.rename_metadata_keys(
+    d@metadata,
+    c(riagendr = "gender")
+  )
+  expect_null(d@metadata@sata[["riagendr"]])
+  expect_true(isTRUE(d@metadata@sata[["gender"]]))
+})
+
+
+# ── tidyselect support in extract_*() ─────────────────────────────────────────
+
+test_that("extract_var_label() supports starts_with() selector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_var_label(d, starts_with("sdmv"))
+  expect_true(all(startsWith(names(result), "sdmv")))
+})
+
+test_that("extract_question_preface() supports all_of() selector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_question_preface(d, riagendr = "Demographics")
+  result <- extract_question_preface(d, all_of(c("riagendr", "ridageyr")))
+  expect_true("riagendr" %in% names(result))
+})
+
+test_that("extract_var_label() any_of() silently omits missing columns", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_var_label(
+    d,
+    any_of(c("riagendr", "col_that_does_not_exist"))
+  )
+  expect_false("col_that_does_not_exist" %in% names(result))
+  expect_true("riagendr" %in% names(result))
+})
+
+
+# ── set_sata() — happy path ────────────────────────────────────────────────
+
+test_that("set_sata() marks variables as SATA on a survey object", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr, ridageyr)
+  expect_true(isTRUE(d@metadata@sata[["riagendr"]]))
+  expect_true(isTRUE(d@metadata@sata[["ridageyr"]]))
+})
+
+test_that("set_sata() marks variables as SATA on a plain data frame", {
+  df <- data.frame(
+    a = 1:5, b = 1:5, c = 1:5,
+    stringsAsFactors = FALSE
+  )
+  df <- set_sata(df, a, b)
+  expect_true(isTRUE(attr(df$a, "sata", exact = TRUE)))
+  expect_true(isTRUE(attr(df$b, "sata", exact = TRUE)))
+  expect_null(attr(df$c, "sata", exact = TRUE))
+})
+
+test_that("set_sata() works with tidy-select starts_with()", {
+  df <- data.frame(
+    news_tv = 1:5, news_online = 1:5, news_radio = 1:5, other = 1:5,
+    stringsAsFactors = FALSE
+  )
+  df <- set_sata(df, starts_with("news_"))
+  expect_true(isTRUE(attr(df$news_tv, "sata", exact = TRUE)))
+  expect_true(isTRUE(attr(df$news_online, "sata", exact = TRUE)))
+  expect_true(isTRUE(attr(df$news_radio, "sata", exact = TRUE)))
+  expect_null(attr(df$other, "sata", exact = TRUE))
+})
+
+test_that("set_sata() Convention B: variable = character vector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, variable = c("riagendr", "ridageyr"))
+  expect_true(isTRUE(d@metadata@sata[["riagendr"]]))
+  expect_true(isTRUE(d@metadata@sata[["ridageyr"]]))
+})
+
+test_that("set_sata(sata = FALSE) removes SATA flag from survey object", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr, ridageyr)
+  d <- set_sata(d, riagendr, sata = FALSE)
+  expect_null(d@metadata@sata[["riagendr"]])
+  expect_true(isTRUE(d@metadata@sata[["ridageyr"]]))
+})
+
+test_that("set_sata() on already-SATA variable is idempotent (no error)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  expect_silent(d <- set_sata(d, riagendr))
+  expect_true(isTRUE(d@metadata@sata[["riagendr"]]))
+})
+
+test_that("set_sata(sata = FALSE) on non-SATA variable is a no-op", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_silent(d <- set_sata(d, riagendr, sata = FALSE))
+  expect_null(d@metadata@sata[["riagendr"]])
+  expect_identical(length(d@metadata@sata), 0L)
+})
+
+test_that("set_sata() returns invisible(x)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_invisible(set_sata(d, riagendr))
+})
+
+
+# ── set_sata() — error paths ───────────────────────────────────────────────
+
+test_that("set_sata() errors when x is not a survey or data frame", {
+  expect_error(
+    set_sata(list(a = 1), a),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, set_sata(list(a = 1), a))
+})
+
+test_that("set_sata() errors when both ... and variable provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_sata(d, riagendr, variable = "ridageyr"),
+    class = "surveycore_error_sata_ambiguous_input"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_sata(d, riagendr, variable = "ridageyr")
+  )
+})
+
+test_that("set_sata() errors when neither ... nor variable provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_sata(d),
+    class = "surveycore_error_sata_no_vars"
+  )
+  expect_snapshot(error = TRUE, set_sata(d))
+})
+
+test_that("set_sata() errors when sata = NA", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_sata(d, riagendr, sata = NA),
+    class = "surveycore_error_sata_not_logical"
+  )
+  expect_snapshot(error = TRUE, set_sata(d, riagendr, sata = NA))
+})
+
+test_that("set_sata() errors when sata = 'yes' (non-logical)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_sata(d, riagendr, sata = "yes"),
+    class = "surveycore_error_sata_not_logical"
+  )
+  expect_snapshot(error = TRUE, set_sata(d, riagendr, sata = "yes"))
+})
+
+test_that("set_sata(variable = character(0)) errors like no-vars", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_sata(d, variable = character(0)),
+    class = "surveycore_error_sata_no_vars"
+  )
+})
+
+test_that("set_sata() warns for non-existent variable (variable = path)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    set_sata(d, variable = c("riagendr", "not_a_column")),
+    class = "surveycore_warning_var_not_found"
+  )
+})
+
+
+# ── extract_sata() — happy path ────────────────────────────────────────────
+
+test_that("extract_sata() returns TRUE for marked variables", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  result <- extract_sata(d, riagendr)
+  expect_identical(result, c(riagendr = TRUE))
+})
+
+test_that("extract_sata() returns FALSE for unmarked variables (default fill)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_sata(d, riagendr, ridageyr)
+  expect_identical(result, c(riagendr = FALSE, ridageyr = FALSE))
+})
+
+test_that("extract_sata() fill = NULL returns only marked variables", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  result <- extract_sata(d, riagendr, ridageyr, fill = NULL)
+  expect_identical(result, c(riagendr = TRUE))
+  expect_false("ridageyr" %in% names(result))
+})
+
+test_that("extract_sata() format = 'data_frame' returns correct tibble", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  result <- extract_sata(d, riagendr, ridageyr, format = "data_frame")
+  expect_true(inherits(result, "tbl_df"))
+  expect_named(result, c("variable", "sata"))
+  expect_identical(result$variable, c("riagendr", "ridageyr"))
+  expect_identical(result$sata, c(TRUE, FALSE))
+})
+
+test_that("extract_sata() format = 'list' returns correct list", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  result <- extract_sata(d, riagendr, ridageyr, format = "list")
+  expect_identical(result, list(riagendr = TRUE, ridageyr = FALSE))
+})
+
+test_that("extract_sata() on data frame reads column attributes", {
+  df <- data.frame(
+    a = 1:5, b = 1:5, c = 1:5,
+    stringsAsFactors = FALSE
+  )
+  df <- set_sata(df, a, b)
+  result <- extract_sata(df, a, b, c)
+  expect_identical(result, c(a = TRUE, b = TRUE, c = FALSE))
+})
+
+test_that("extract_sata() empty ... + fill = FALSE returns dense result", {
+  df <- data.frame(a = 1:3, b = 1:3, stringsAsFactors = FALSE)
+  df <- set_sata(df, a)
+  result <- extract_sata(df)
+  expect_identical(result, c(a = TRUE, b = FALSE))
+})
+
+test_that("extract_sata() empty ... + fill = NULL returns sparse result", {
+  df <- data.frame(a = 1:3, b = 1:3, stringsAsFactors = FALSE)
+  df <- set_sata(df, a)
+  result <- extract_sata(df, fill = NULL)
+  expect_identical(result, c(a = TRUE))
+})
+
+test_that("extract_sata() with named vars + fill = NULL omits non-SATA vars", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  result <- extract_sata(d, riagendr, ridageyr, fill = NULL)
+  expect_identical(result, c(riagendr = TRUE))
+})
+
+test_that("roundtrip: set_sata() then extract_sata() recovers flags", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr, ridageyr)
+  result <- extract_sata(d, riagendr, ridageyr)
+  expect_identical(result, c(riagendr = TRUE, ridageyr = TRUE))
+})
+
+test_that("survey object with zero SATA variables: length(x@metadata@sata) == 0L", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_identical(length(d@metadata@sata), 0L)
+})
+
+
+# ── extract_sata() — error paths ──────────────────────────────────────────
+
+test_that("extract_sata() errors when x is not a survey or data frame", {
+  expect_error(
+    extract_sata(list(a = 1)),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, extract_sata(list(a = 1)))
+})
+
+test_that("extract_sata() errors when fill = TRUE", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    extract_sata(d, fill = TRUE),
+    class = "surveycore_error_sata_not_logical"
+  )
+  expect_snapshot(error = TRUE, extract_sata(d, fill = TRUE))
+})
+
+test_that("extract_sata() errors when fill = 'x' (invalid)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    extract_sata(d, fill = "x"),
+    class = "surveycore_error_sata_not_logical"
+  )
+  expect_snapshot(error = TRUE, extract_sata(d, fill = "x"))
+})
+
+test_that("extract_sata() errors when format is invalid", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    extract_sata(d, format = "tibble"),
+    class = "surveycore_error_format_invalid"
+  )
+  expect_snapshot(error = TRUE, extract_sata(d, format = "tibble"))
+})
+
+
+# ── .extract_var_meta() integration with sata metadata ───────────────────────
+
+test_that(".extract_var_meta() includes sata key in output", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_sata(d, riagendr)
+  meta_sata    <- surveycore:::.extract_var_meta(d, "riagendr")
+  meta_no_sata <- surveycore:::.extract_var_meta(d, "ridageyr")
+  expect_true(meta_sata$sata)
+  expect_false(meta_no_sata$sata)
 })

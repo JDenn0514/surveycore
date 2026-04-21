@@ -20,13 +20,14 @@ survey_glm_fit(
   df_residual = integer(0),
   converged = logical(0),
   call = NULL,
-  fit_ = NULL
+  fit_ = NULL,
+  term_assign = integer(0)
 )
 }
 \arguments{
 \item{coefficients}{Named numeric vector of length \code{p}.}
 
-\item{vcov}{\verb{p × p} design-based variance-covariance matrix.}
+\item{vcov}{\verb{p x p} design-based variance-covariance matrix.}
 
 \item{fitted_values}{Numeric vector of length \code{n} (response scale).}
 
@@ -61,6 +62,13 @@ Used for the deviance display; \strong{not} the design-based residual df.}
 \item{call}{The \code{survey_glm()} call (language object or \code{NULL}).}
 
 \item{fit_}{Internal raw \code{stats::glm()} result; \code{NULL} after serialisation.}
+
+\item{term_assign}{Integer vector: \code{attr(model.matrix(fit_), "assign")}
+captured at fit time. Maps design-matrix columns to formula terms (0 =
+intercept; positive values index \code{attr(terms(formula), "term.labels")}).
+Required by \code{get_anova()}'s serialization-safe Wald path (spec §3.3.1):
+after \verb{@fit_} is stripped via \code{saveRDS()}, the term-to-column map
+survives in this slot. Default \code{integer(0)}.}
 }
 \value{
 A \code{survey_glm_fit} object.

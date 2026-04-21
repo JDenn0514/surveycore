@@ -673,3 +673,59 @@ test_that("print.survey_taylor shows single FPC line for 1-stage design", {
   expect_true(any(grepl("FPC: fpc$", out)))
   expect_false(any(grepl("FPC \\(stage", out)))
 })
+
+
+# ── print.survey_collection ──────────────────────────────────────────────────
+
+test_that("print.survey_collection snapshot: small 3-survey collection", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df1 <- make_survey_data(n = 1200L, n_psu = 20L, n_strata = 4L, seed = 31L)
+  df2 <- make_survey_data(n = 1500L, n_psu = 30L, n_strata = 5L, seed = 32L)
+  df3 <- make_survey_data(n = 2000L, n_psu = 20L, n_strata = 4L, seed = 33L)
+  d1 <- suppressMessages(suppressWarnings(
+    as_survey(df1, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  ))
+  d2 <- suppressMessages(suppressWarnings(
+    as_survey(df2, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  ))
+  d3 <- suppressMessages(suppressWarnings(
+    as_survey(df3, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  ))
+  coll <- as_survey_collection(
+    "2017-18" = d1,
+    "2019-20" = d2,
+    "2021-22" = d3
+  )
+  expect_snapshot(print(coll))
+})
+
+test_that("print.survey_collection snapshot: length-25 abbreviation", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- lapply(seq_len(25L), function(i) {
+    df <- make_survey_data(
+      n = 40L,
+      n_psu = 8L,
+      n_strata = 2L,
+      seed = 100L + i
+    )
+    suppressMessages(suppressWarnings(
+      as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+    ))
+  })
+  names(designs) <- paste0("wave_", sprintf("%02d", seq_len(25L)))
+  coll <- do.call(
+    as_survey_collection,
+    designs
+  )
+  expect_snapshot(print(coll))
+})
+
+test_that("print.survey_collection snapshot: length-1 pluralisation", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 41L)
+  d <- suppressMessages(suppressWarnings(
+    as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  ))
+  coll <- as_survey_collection(only = d)
+  expect_snapshot(print(coll))
+})

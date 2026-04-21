@@ -57,7 +57,8 @@ each replicate — will be implemented in Phase 2.5 alongside the
 
 \section{Non-probability samples}{
 
-Unlike \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, and \code{\link[=as_survey_twophase]{as_survey_twophase()}}, this
+Unlike \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, and \code{\link[=as_survey_twophase]{as_survey_twophase()}},
+this
 class does \strong{not} assume a probability sampling design. Standard errors
 produced from a \code{survey_nonprob} object rest on a model-assisted SRS
 assumption, which is consistent with common practice for calibrated

@@ -18,7 +18,8 @@
 #'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Optional single unquoted
 #'   numeric variable name. When `NULL` (default), estimates the population
-#'   size (`Σ w_i`). When supplied, estimates the weighted sum (`Σ w_i × x_i`).
+#'   size (sum of weights). When supplied, estimates the weighted sum
+#'   (sum of w_i * x_i).
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Default `NULL`.
 #' @param variance `NULL` or a character vector from `"se"`, `"ci"`, `"var"`,
@@ -41,6 +42,14 @@
 #' @param label_values Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`.
+#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#'   named-only when a `survey_collection` is passed as `design`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @return A `survey_totals` tibble (also inheriting `survey_result`). Columns:
 #' \itemize{
@@ -81,8 +90,22 @@ get_totals <- function(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_totals,
+      design,
+      x = {{ x }},
+      group = {{ group }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_totals")
   .validate_shared_args(
@@ -93,7 +116,7 @@ get_totals <- function(
     na.rm = na.rm
   )
 
-  # ── Step 2: Resolve variable, groups, domain ─────────────────────────────────
+  # ── Step 2: Resolve variable, groups, domain ────────────────────────────────
   x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
@@ -133,7 +156,7 @@ get_totals <- function(
   domain_mask <- .apply_domain(design)
   degf <- Inf # Normal approximation; matches survey::svytotal() default
 
-  # ── Step 3: Single-level warning for group variables ─────────────────────────
+  # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
       gv_vals <- design@data[[gv]][domain_mask]
@@ -157,7 +180,7 @@ get_totals <- function(
     }
   }
 
-  # ── Step 4: Build group combinations ─────────────────────────────────────────
+  # ── Step 4: Build group combinations ────────────────────────────────────────
   if (length(group_vars) > 0L) {
     domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
@@ -217,7 +240,7 @@ get_totals <- function(
     }
   }
 
-  # ── Step 7: Small-cell warning ───────────────────────────────────────────────
+  # ── Step 7: Small-cell warning ──────────────────────────────────────────────
   n_small <- length(small_cell_ns)
   if (n_small > 0L) {
     cli::cli_warn(
@@ -232,7 +255,7 @@ get_totals <- function(
     )
   }
 
-  # ── Step 8: Build column vectors ─────────────────────────────────────────────
+  # ── Step 8: Build column vectors ────────────────────────────────────────────
   var_cols <- .add_variance_cols(
     se_vec = acc_se,
     estimate_vec = acc_total,
@@ -254,7 +277,7 @@ get_totals <- function(
     col_vecs$n_weighted <- acc_nw
   }
 
-  # ── Step 9: Build groups_df ──────────────────────────────────────────────────
+  # ── Step 9: Build groups_df ─────────────────────────────────────────────────
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
@@ -268,7 +291,7 @@ get_totals <- function(
     groups_df <- data.frame()
   }
 
-  # ── Step 10: Build meta_args ──────────────────────────────────────────────────
+  # ── Step 10: Build meta_args ────────────────────────────────────────────────
   group_meta <- .build_group_meta(design, group_vars)
   x_list <- if (is.null(x_meta)) {
     NULL
@@ -283,7 +306,7 @@ get_totals <- function(
     x = x_list
   )
 
-  # ── Step 11: Assemble result ─────────────────────────────────────────────────
+  # ── Step 11: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -293,7 +316,7 @@ get_totals <- function(
     TOTALS_META_KEYS
   )
 
-  # ── Step 12: Apply decimals and name style ────────────────────────────────────
+  # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
     result <- .apply_decimals(result, decimals)
   }

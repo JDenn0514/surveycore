@@ -45,12 +45,12 @@
 # @return Numeric(1): the weighted p-th quantile.
 #' @noRd
 .wtd_qs <- function(x, w, p) {
-  n    <- length(x)
-  ii   <- order(x)
-  x    <- x[ii]
+  n <- length(x)
+  ii <- order(x)
+  x <- x[ii]
   cumw <- cumsum(w[ii])
-  sw   <- cumw[n]          # sum(w) — last element after cumsum
-  pos  <- .last(cumw <= p * sw)
+  sw <- cumw[n] # sum(w) — last element after cumsum
+  pos <- .last(cumw <= p * sw)
   wlow <- p - cumw[pos] / sw
   if (wlow <= 0 || pos == n) x[pos] else x[pos + 1L]
 }
@@ -76,7 +76,10 @@
   if (S7::S7_inherits(design, survey_taylor)) {
     max(1, .degf_taylor(design@data, design@variables))
   } else if (S7::S7_inherits(design, survey_replicate)) {
-    rep_mat <- as.matrix(design@data[, design@variables$repweights, drop = FALSE])
+    rep_mat <- as.matrix(design@data[,
+      design@variables$repweights,
+      drop = FALSE
+    ])
     max(1L, ncol(rep_mat) - 1L)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     subset <- design@data[[design@variables$subset]]
@@ -105,9 +108,9 @@
 #' @noRd
 .get_quantile_weights <- function(design) {
   if (S7::S7_inherits(design, survey_twophase)) {
-    subset   <- design@data[[design@variables$subset]]
+    subset <- design@data[[design@variables$subset]]
     pi2_full <- .compute_phase2_probs(design, subset)
-    w_full   <- design@data[[design@variables$phase1$weights]]
+    w_full <- design@data[[design@variables$phase1$weights]]
     w_full / pi2_full
   } else {
     design@data[[design@variables$weights]]
@@ -145,27 +148,32 @@
 # @return Named list: estimate, se, ci_low, ci_high, se_srs, n, n_weighted.
 #' @noRd
 .quantile_woodruff_cell <- function(
-  design, y_all, active_domain, prob, conf_level, degf_w
+  design,
+  y_all,
+  active_domain,
+  prob,
+  conf_level,
+  degf_w
 ) {
-  dom_idx  <- active_domain > 0
-  n_d      <- as.integer(sum(dom_idx))
-  w_full   <- .get_quantile_weights(design)
+  dom_idx <- active_domain > 0
+  n_d <- as.integer(sum(dom_idx))
+  w_full <- .get_quantile_weights(design)
 
   if (n_d == 0L) {
     return(list(
-      estimate   = NA_real_,
-      se         = NA_real_,
-      ci_low     = NA_real_,
-      ci_high    = NA_real_,
-      se_srs     = NA_real_,
-      n          = 0L,
+      estimate = NA_real_,
+      se = NA_real_,
+      ci_low = NA_real_,
+      ci_high = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
       n_weighted = 0
     ))
   }
 
   y_domain <- y_all[dom_idx]
   w_domain <- w_full[dom_idx]
-  N_d      <- sum(w_domain)
+  N_d <- sum(w_domain)
 
   # ── Weighted quantile ────────────────────────────────────────────────────
   qhat <- .wtd_qs(y_domain, w_domain, prob)
@@ -173,47 +181,46 @@
   # ── Woodruff: CDF indicator column ───────────────────────────────────────
   # z_i = I(y_i <= qhat) for in-domain rows; 0 for out-of-domain rows.
   # NAs in y_all are treated as > qhat (z_i = 0).
-  z_full  <- as.numeric(!is.na(y_all) & dom_idx & (y_all <= qhat))
+  z_full <- as.numeric(!is.na(y_all) & dom_idx & (y_all <= qhat))
   tmp_col <- "..surveycore_quantile_cdf.."
   design@data[[tmp_col]] <- z_full
 
   # ── SE of the CDF proportion via existing mean cell functions ────────────
-  cell  <- .mean_cell(design, tmp_col, active_domain)
+  cell <- .mean_cell(design, tmp_col, active_domain)
   p_hat <- cell$mean
-  se_p  <- cell$se
+  se_p <- cell$se
 
   if (is.na(p_hat) || is.na(se_p)) {
     return(list(
-      estimate   = qhat,
-      se         = NA_real_,
-      ci_low     = NA_real_,
-      ci_high    = NA_real_,
-      se_srs     = NA_real_,
-      n          = n_d,
+      estimate = qhat,
+      se = NA_real_,
+      ci_low = NA_real_,
+      ci_high = NA_real_,
+      se_srs = NA_real_,
+      n = n_d,
       n_weighted = N_d
     ))
   }
 
   # ── Woodruff back-transformation ─────────────────────────────────────────
   # Use t critical value with design df (finite df matches survey::svyquantile).
-  z_crit  <- stats::qt((1 + conf_level) / 2, df = degf_w)
-  p_low   <- max(0, p_hat - z_crit * se_p)
-  p_high  <- min(1, p_hat + z_crit * se_p)
-  ci_low  <- .wtd_qs(y_domain, w_domain, p_low)
+  z_crit <- stats::qt((1 + conf_level) / 2, df = degf_w)
+  p_low <- max(0, p_hat - z_crit * se_p)
+  p_high <- min(1, p_hat + z_crit * se_p)
+  ci_low <- .wtd_qs(y_domain, w_domain, p_low)
   ci_high <- .wtd_qs(y_domain, w_domain, p_high)
-  se_q    <- (ci_high - ci_low) / (2 * z_crit)
+  se_q <- (ci_high - ci_low) / (2 * z_crit)
 
   list(
-    estimate   = qhat,
-    se         = se_q,
-    ci_low     = ci_low,
-    ci_high    = ci_high,
-    se_srs     = NA_real_,  # DEFF for quantiles requires a kernel density
-                            # estimate at the quantile point (Woodruff SRS
-                            # approximation; see survey::svyquantile(deff=TRUE)).
-                            # Not implemented — deff is always NA.
-    n          = n_d,
+    estimate = qhat,
+    se = se_q,
+    ci_low = ci_low,
+    ci_high = ci_high,
+    se_srs = NA_real_, # DEFF for quantiles requires a kernel density
+    # estimate at the quantile point (Woodruff SRS
+    # approximation; see survey::svyquantile(deff=TRUE)).
+    # Not implemented — deff is always NA.
+    n = n_d,
     n_weighted = N_d
   )
 }
-

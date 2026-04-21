@@ -23,7 +23,9 @@ get_diffs(
   na.rm = TRUE,
   label_values = TRUE,
   name_style = "surveycore",
-  ...
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -69,7 +71,7 @@ suppression (see Details). Default \code{FALSE}.}
 
 \item{scale}{Character(1). \code{"ame"} (default): average marginal effects
 on the response scale. \code{"link"}: coefficients on the link scale.
-For Gaussian/identity models, both are identical.}
+For Gaussian/identity models, both are identical. Case-sensitive.}
 
 \item{variance}{\code{NULL} or a character vector of one or more of \code{"se"},
 \code{"ci"}. Controls which uncertainty columns appear. Default \code{"ci"}.}
@@ -101,6 +103,14 @@ etc. The \code{mean} column is excluded from renaming.}
 
 \item{...}{Passed to \code{\link[=survey_glm]{survey_glm()}}. Common uses:
 \code{family = quasibinomial()}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_diffs} tibble (also inheriting \code{survey_result}).
@@ -181,11 +191,14 @@ get_diffs(d, dv, arm, show_pct_change = TRUE, pval_adj = "BH")
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_corr}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{get_totals}()},
 \code{\link{meta}()}
 }

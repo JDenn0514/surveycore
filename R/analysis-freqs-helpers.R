@@ -10,7 +10,6 @@
 #   .calibrated_freq_cell()  — HT proportion variance (survey_nonprob)
 #   .freq_cell()             — dispatcher
 
-
 # ── .get_levels() ─────────────────────────────────────────────────────────────
 #
 # Return unique levels for a variable column, preserving factor level order
@@ -27,8 +26,8 @@
 
   if (is.factor(x_col)) {
     # Factor: use declared level order; drop levels not present in data
-    all_lvls  <- levels(x_col)
-    present   <- unique(as.character(x_col[!is.na(x_col)]))
+    all_lvls <- levels(x_col)
+    present <- unique(as.character(x_col[!is.na(x_col)]))
     kept_lvls <- all_lvls[all_lvls %in% present]
     if (!na.rm && has_na) {
       c(kept_lvls, NA_character_)
@@ -53,39 +52,47 @@
 # one cell using the ratio (domain estimation) approach.
 #
 # @param design  A survey_taylor object.
-# @param num     Numeric vector (0/1): rows in the cell (level AND domain/group).
+# @param num     Numeric vector (0/1): rows in the cell
+#                (level AND domain/group).
 # @param denom   Numeric vector (0/1): rows in the group/domain (denominator).
 #
 # @return Named list: pct, se, se_srs, n (unweighted cell count), n_weighted.
 .taylor_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
-  n    <- nrow(data)
-  w    <- data[[vars$weights]]
+  n <- nrow(data)
+  w <- data[[vars$weights]]
 
-  N_d    <- sum(w * denom)
-  n_g    <- as.integer(sum(denom))   # unweighted group/domain count
+  N_d <- sum(w * denom)
+  n_g <- as.integer(sum(denom)) # unweighted group/domain count
 
   if (n_g == 0L || N_d <= 0) {
     return(list(
-      pct = NA_real_, se = NA_real_, se_srs = NA_real_, n = 0L, n_weighted = 0
+      pct = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
+      n_weighted = 0
     ))
   }
 
-  Y      <- sum(w * num)
-  p      <- Y / N_d
+  Y <- sum(w * num)
+  p <- Y / N_d
   n_cell <- as.integer(sum(num))
 
   # Linearized influence: u_i = num_i - p * denom_i
   u <- num - p * denom
 
   # Build cluster / strata / FPC matrices (full dataset, multi-stage aware)
-  mats       <- .build_cluster_matrices(data, vars)
+  mats <- .build_cluster_matrices(data, vars)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, "prop"))
-  v        <- .svy_recvar(
-    infl_mat, mats$clusters_mat, mats$strata_mat, mats$fpcs,
+  v <- .svy_recvar(
+    infl_mat,
+    mats$clusters_mat,
+    mats$strata_mat,
+    mats$fpcs,
     lonely.psu = lonely.psu
   )
 
@@ -97,10 +104,10 @@
   }
 
   list(
-    pct        = p,
-    se         = se,
-    se_srs     = se_srs,
-    n          = n_cell,
+    pct = p,
+    se = se,
+    se_srs = se_srs,
+    n = n_cell,
     n_weighted = Y
   )
 }
@@ -118,34 +125,38 @@
 .replicate_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
-  w    <- data[[vars$weights]]   # full-sample base weights
+  w <- data[[vars$weights]] # full-sample base weights
 
   N_d <- sum(w * denom)
   n_g <- as.integer(sum(denom))
 
   if (n_g == 0L || N_d <= 0) {
     return(list(
-      pct = NA_real_, se = NA_real_, se_srs = NA_real_, n = 0L, n_weighted = 0
+      pct = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
+      n_weighted = 0
     ))
   }
 
-  Y      <- sum(w * num)
-  p      <- Y / N_d
+  Y <- sum(w * num)
+  p <- Y / N_d
   n_cell <- as.integer(sum(num))
 
   # Per-replicate proportions using BLAS matrix operations
   rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
-  rep_N_d <- as.numeric(denom %*% rep_mat)   # weighted domain size per replicate
-  rep_Y   <- as.numeric(num   %*% rep_mat)   # weighted cell count per replicate
-  rep_p   <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
+  rep_N_d <- as.numeric(denom %*% rep_mat) # weighted domain size per replicate
+  rep_Y <- as.numeric(num %*% rep_mat) # weighted cell count per replicate
+  rep_p <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
 
   n_rep <- ncol(rep_mat)
   v <- .svy_rep_var(
     rep_p,
-    scale   = vars$scale,
+    scale = vars$scale,
     rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
-    mse     = isTRUE(vars$mse),
-    coef    = p
+    mse = isTRUE(vars$mse),
+    coef = p
   )
 
   se <- sqrt(max(0, v))
@@ -156,10 +167,10 @@
   }
 
   list(
-    pct        = p,
-    se         = se,
-    se_srs     = se_srs,
-    n          = n_cell,
+    pct = p,
+    se = se,
+    se_srs = se_srs,
+    n = n_cell,
     n_weighted = Y
   )
 }
@@ -177,41 +188,45 @@
 #
 # @return Named list: pct, se, se_srs, n, n_weighted.
 .twophase_freq_cell <- function(design, num, denom) {
-  data     <- design@data
+  data <- design@data
   ph1_vars <- design@variables$phase1
-  subset   <- data[[design@variables$subset]]  # logical, full length
+  subset <- data[[design@variables$subset]] # logical, full length
 
-  w_full   <- data[[ph1_vars$weights]]
+  w_full <- data[[ph1_vars$weights]]
   pi2_full <- .compute_phase2_probs(design, subset)
-  cal_wt   <- w_full / pi2_full
+  cal_wt <- w_full / pi2_full
 
   # Restrict to Phase 2 rows
-  num_ph2   <- num[subset]
+  num_ph2 <- num[subset]
   denom_ph2 <- denom[subset]
-  cal_ph2   <- cal_wt[subset]
+  cal_ph2 <- cal_wt[subset]
 
   n_g <- as.integer(sum(denom_ph2))
   N_d <- sum(cal_ph2 * denom_ph2)
 
   if (n_g == 0L || N_d <= 0) {
     return(list(
-      pct = NA_real_, se = NA_real_, se_srs = NA_real_, n = 0L, n_weighted = 0
+      pct = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
+      n_weighted = 0
     ))
   }
 
-  Y      <- sum(cal_ph2 * num_ph2)
-  p      <- Y / N_d
+  Y <- sum(cal_ph2 * num_ph2)
+  p <- Y / N_d
   n_cell <- as.integer(sum(num_ph2))
 
   # Full-length influence vector (0 for Phase 1-only rows)
-  n_total   <- nrow(data)
+  n_total <- nrow(data)
   influence <- numeric(n_total)
-  ph2_idx   <- which(subset)
+  ph2_idx <- which(subset)
   influence[ph2_idx] <- cal_ph2 * (num_ph2 - p * denom_ph2) / N_d
 
   lonely.psu <- getOption("survey.lonely.psu", "remove")
-  v_raw      <- .twophasevar(influence, design, lonely.psu)
-  v_scalar   <- if (is.matrix(v_raw)) drop(v_raw)[1L, 1L] else as.numeric(v_raw)
+  v_raw <- .twophasevar(influence, design, lonely.psu)
+  v_scalar <- if (is.matrix(v_raw)) drop(v_raw)[1L, 1L] else as.numeric(v_raw)
 
   se <- sqrt(max(0, v_scalar))
   se_srs <- if (n_g >= 2L && p > 0 && p < 1) {
@@ -221,10 +236,10 @@
   }
 
   list(
-    pct        = p,
-    se         = se,
-    se_srs     = se_srs,
-    n          = n_cell,
+    pct = p,
+    se = se,
+    se_srs = se_srs,
+    n = n_cell,
     n_weighted = Y
   )
 }
@@ -246,44 +261,50 @@
 .calibrated_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
-  w    <- data[[vars$weights]]
+  w <- data[[vars$weights]]
 
-  n_g    <- as.integer(sum(denom))
-  N_d    <- sum(w * denom)
+  n_g <- as.integer(sum(denom))
+  N_d <- sum(w * denom)
   n_cell <- as.integer(sum(num))
-  Y      <- sum(w * num)
-  p      <- if (N_d > 0) Y / N_d else NA_real_
+  Y <- sum(w * num)
+  p <- if (N_d > 0) Y / N_d else NA_real_
 
   if (n_g == 0L || N_d <= 0) {
     return(list(
-      pct = NA_real_, se = NA_real_, se_srs = NA_real_,
-      n = 0L, n_weighted = 0
+      pct = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
+      n_weighted = 0
     ))
   }
 
   if (n_g < 2L) {
     return(list(
-      pct = p, se = NA_real_, se_srs = NA_real_,
-      n = n_cell, n_weighted = Y
+      pct = p,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = n_cell,
+      n_weighted = Y
     ))
   }
 
   # HT variance: n/(n-1) * sum(z_i^2), z_i = w_i*(I_i - p)/N_d
   # Only rows in the denominator domain contribute
-  idx   <- denom > 0
+  idx <- denom > 0
   w_sub <- w[idx]
-  I_sub <- (num / denom)[idx]  # 0/1 indicator within domain
-  z     <- w_sub * (I_sub - p) / N_d
+  I_sub <- (num / denom)[idx] # 0/1 indicator within domain
+  z <- w_sub * (I_sub - p) / N_d
   var_p <- (n_g / (n_g - 1L)) * sum(z^2)
-  se    <- sqrt(max(0, var_p))
+  se <- sqrt(max(0, var_p))
 
   se_srs <- if (p > 0 && p < 1) sqrt(p * (1 - p) / n_g) else 0
 
   list(
-    pct        = p,
-    se         = se,
-    se_srs     = se_srs,
-    n          = n_cell,
+    pct = p,
+    se = se,
+    se_srs = se_srs,
+    n = n_cell,
     n_weighted = Y
   )
 }

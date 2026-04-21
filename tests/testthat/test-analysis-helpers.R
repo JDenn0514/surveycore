@@ -369,10 +369,10 @@ test_that(".build_meta() returns design_type = 'taylor' for SRS-style design", {
   expect_identical(meta$design_type, "taylor")
 })
 
-test_that(".build_meta() returns design_type = 'calibrated' for survey_nonprob", {
+test_that(".build_meta() returns design_type = 'nonprob' for survey_nonprob", {
   designs <- make_all_designs(seed = 42L)
   meta <- .build_meta(designs$calibrated, list(conf_level = 0.95))
-  expect_identical(meta$design_type, "calibrated")
+  expect_identical(meta$design_type, "nonprob")
 })
 
 test_that(".build_meta() returns n_respondents = nrow(design@data) as integer", {
@@ -778,11 +778,12 @@ test_that(".extract_var_meta() returns all-NULL list for plain numeric column", 
   expect_type(result, "list")
   expect_identical(
     names(result),
-    c("variable_label", "question_preface", "value_labels")
+    c("variable_label", "question_preface", "value_labels", "sata")
   )
   expect_null(result$variable_label)
   expect_null(result$question_preface)
   expect_null(result$value_labels)
+  expect_false(result$sata)
 })
 
 test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {

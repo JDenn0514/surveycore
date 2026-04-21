@@ -58,6 +58,14 @@
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
 #'   renames `ratio` → `estimate`, `se` → `std.error`, `ci_low` →
 #'   `conf.low`, `ci_high` → `conf.high`.
+#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#'   named-only when a `survey_collection` is passed as `design`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @return A `survey_ratios` tibble (also inheriting `survey_result`).
 #' \itemize{
@@ -92,34 +100,57 @@ get_ratios <- function(
   design,
   numerator,
   denominator,
-  group        = NULL,
-  variance     = "ci",
-  conf_level   = 0.95,
-  n_weighted   = FALSE,
-  decimals     = NULL,
-  min_cell_n   = 30L,
-  na.rm        = TRUE,
+  group = NULL,
+  variance = "ci",
+  conf_level = 0.95,
+  n_weighted = FALSE,
+  decimals = NULL,
+  min_cell_n = 30L,
+  na.rm = TRUE,
   label_values = TRUE,
-  label_vars   = TRUE,
-  name_style   = "surveycore"
+  label_vars = TRUE,
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_ratios,
+      design,
+      numerator = {{ numerator }},
+      denominator = {{ denominator }},
+      group = {{ group }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_ratios")
-  .validate_shared_args(variance, conf_level, name_style, decimals = decimals,
-                        na.rm = na.rm)
+  .validate_shared_args(
+    variance,
+    conf_level,
+    name_style,
+    decimals = decimals,
+    na.rm = na.rm
+  )
 
   # ── Step 2: Resolve variables, groups, domain ─────────────────────────────
-  num_quo   <- rlang::enquo(numerator)
+  num_quo <- rlang::enquo(numerator)
   denom_quo <- rlang::enquo(denominator)
   group_quo <- rlang::enquo(group)
 
-  num_names   <- .resolve_tidy_select(num_quo,   design@data)
+  num_names <- .resolve_tidy_select(num_quo, design@data)
   denom_names <- .resolve_tidy_select(denom_quo, design@data)
 
   if (length(num_names) != 1L) {
     cli::cli_abort(
       c(
-        "x" = "{.fn get_ratios} requires exactly one {.arg numerator} variable.",
+        "x" = paste0(
+          "{.fn get_ratios} requires exactly one ",
+          "{.arg numerator} variable."
+        ),
         "i" = "{.arg numerator} resolved to {length(num_names)} variable{?s}."
       ),
       class = "surveycore_error_wrong_variable_count"
@@ -140,10 +171,10 @@ get_ratios <- function(
     )
   }
 
-  num_name   <- num_names[[1L]]
+  num_name <- num_names[[1L]]
   denom_name <- denom_names[[1L]]
-  y_col      <- design@data[[num_name]]
-  x_col      <- design@data[[denom_name]]
+  y_col <- design@data[[num_name]]
+  x_col <- design@data[[denom_name]]
 
   if (!is.numeric(y_col)) {
     cli::cli_abort(
@@ -167,9 +198,9 @@ get_ratios <- function(
     )
   }
 
-  group_vars  <- .resolve_groups(design, group_quo)
+  group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf        <- Inf  # Normal approximation; matches survey::svyratio() default
+  degf <- Inf # Normal approximation; matches survey::svyratio() default
 
   # Flag for replicate dispatch
   is_replicate <- S7::S7_inherits(design, survey_replicate)
@@ -177,14 +208,18 @@ get_ratios <- function(
   # ── Step 3: Single-level warning for group variables ──────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
-      gv_vals   <- design@data[[gv]][domain_mask]
+      gv_vals <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
       if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
           c(
             "!" = paste0(
               "Grouping variable {.field {gv}} has only one observed level ",
-              if (length(uniq_lvls) == 1L) "({.val {as.character(uniq_lvls[[1L]])}})." else ".",
+              if (length(uniq_lvls) == 1L) {
+                "({.val {as.character(uniq_lvls[[1L]])}})."
+              } else {
+                "."
+              },
               " Grouped estimates will have a single row."
             )
           ),
@@ -196,33 +231,33 @@ get_ratios <- function(
 
   # ── Step 4: Build group combinations ──────────────────────────────────────
   if (length(group_vars) > 0L) {
-    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
-    n_combos     <- nrow(group_combos)
+    n_combos <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
-    n_combos     <- 1L
+    n_combos <- 1L
   }
 
   # ── Step 5: Collect variable metadata ─────────────────────────────────────
-  num_meta   <- .extract_var_meta(design, num_name)
+  num_meta <- .extract_var_meta(design, num_name)
   denom_meta <- .extract_var_meta(design, denom_name)
 
   # ── Step 6: Main accumulation loop ────────────────────────────────────────
-  acc_ratio  <- numeric(0)
-  acc_se     <- numeric(0)
+  acc_ratio <- numeric(0)
+  acc_se <- numeric(0)
   acc_se_srs <- numeric(0)
-  acc_n      <- integer(0)
-  acc_nw     <- numeric(0)
+  acc_n <- integer(0)
+  acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
 
   small_cell_ns <- integer(0)
-  tmp_col       <- "..surveycore_ratio_lin.."
+  tmp_col <- "..surveycore_ratio_lin.."
 
   for (ci in seq_len(n_combos)) {
     if (length(group_vars) > 0L) {
-      combo_row   <- group_combos[ci, , drop = FALSE]
-      data_cols   <- as.list(design@data[group_vars])
+      combo_row <- group_combos[ci, , drop = FALSE]
+      data_cols <- as.list(design@data[group_vars])
       group_match <- .match_group_combo(data_cols, combo_row)
       active_mask <- domain_mask & group_match
     } else {
@@ -231,7 +266,7 @@ get_ratios <- function(
 
     # n: count of rows where BOTH numerator AND denominator are non-NA
     na_either <- is.na(y_col) | is.na(x_col)
-    n_cell    <- as.integer(sum(active_mask & !na_either))
+    n_cell <- as.integer(sum(active_mask & !na_either))
 
     # Small-cell check
     if (n_cell > 0L && n_cell < min_cell_n) {
@@ -246,7 +281,7 @@ get_ratios <- function(
     }
 
     # Compute denominator total (for zero check + ratio point estimate)
-    cell_x  <- .total_cell(design, denom_name, domain_vec)
+    cell_x <- .total_cell(design, denom_name, domain_vec)
     total_x <- cell_x$total
 
     # All denominator values zero → error
@@ -257,7 +292,10 @@ get_ratios <- function(
             "All values of the denominator ({.field {denom_name}}) are zero. ",
             "Cannot compute ratio."
           ),
-          "i" = "Provide a denominator variable with at least one non-zero value."
+          "i" = paste0(
+            "Provide a denominator variable with at least ",
+            "one non-zero value."
+          )
         ),
         class = "surveycore_error_ratio_zero_denominator"
       )
@@ -265,11 +303,11 @@ get_ratios <- function(
 
     # Empty cell or NA propagation (na.rm = FALSE with NAs present)
     if (is.na(total_x)) {
-      acc_ratio  <- c(acc_ratio,  NA_real_)
-      acc_se     <- c(acc_se,     NA_real_)
+      acc_ratio <- c(acc_ratio, NA_real_)
+      acc_se <- c(acc_se, NA_real_)
       acc_se_srs <- c(acc_se_srs, NA_real_)
-      acc_n      <- c(acc_n,      n_cell)
-      acc_nw     <- c(acc_nw,     NA_real_)
+      acc_n <- c(acc_n, n_cell)
+      acc_nw <- c(acc_nw, NA_real_)
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
       }
@@ -277,27 +315,38 @@ get_ratios <- function(
     }
 
     # Compute numerator total and ratio estimate
-    cell_y    <- .total_cell(design, num_name, domain_vec)
-    total_y   <- cell_y$total
+    cell_y <- .total_cell(design, num_name, domain_vec)
+    total_y <- cell_y$total
     ratio_est <- total_y / total_x
 
     # SE dispatch: replicate uses direct per-replicate ratios;
     # all other classes use the delta method via .total_cell().
     if (is_replicate) {
       se_result <- .replicate_ratio_cell(
-        design, y_col, x_col, domain_vec, ratio_est, total_x
+        design,
+        y_col,
+        x_col,
+        domain_vec,
+        ratio_est,
+        total_x
       )
     } else {
       se_result <- .delta_ratio_cell(
-        design, y_col, x_col, domain_vec, ratio_est, total_x, tmp_col
+        design,
+        y_col,
+        x_col,
+        domain_vec,
+        ratio_est,
+        total_x,
+        tmp_col
       )
     }
 
-    acc_ratio  <- c(acc_ratio,  ratio_est)
-    acc_se     <- c(acc_se,     se_result$se)
+    acc_ratio <- c(acc_ratio, ratio_est)
+    acc_se <- c(acc_se, se_result$se)
     acc_se_srs <- c(acc_se_srs, se_result$se_srs)
-    acc_n      <- c(acc_n,      n_cell)
-    acc_nw     <- c(acc_nw,     cell_x$n_weighted)
+    acc_n <- c(acc_n, n_cell)
+    acc_nw <- c(acc_nw, cell_x$n_weighted)
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -321,19 +370,19 @@ get_ratios <- function(
 
   # ── Step 8: Build variance columns ────────────────────────────────────────
   var_cols <- .add_variance_cols(
-    se_vec       = acc_se,
+    se_vec = acc_se,
     estimate_vec = acc_ratio,
-    se_srs_vec   = acc_se_srs,
-    conf_level   = conf_level,
-    degf         = degf,
-    variance     = variance
+    se_srs_vec = acc_se_srs,
+    conf_level = conf_level,
+    degf = degf,
+    variance = variance
   )
 
   # ── Step 9: Assemble col_vecs ─────────────────────────────────────────────
-  col_vecs        <- list()
-  col_vecs$ratio  <- acc_ratio
-  col_vecs        <- c(col_vecs, var_cols)
-  col_vecs$n      <- acc_n
+  col_vecs <- list()
+  col_vecs$ratio <- acc_ratio
+  col_vecs <- c(col_vecs, var_cols)
+  col_vecs$n <- acc_n
 
   if (isTRUE(n_weighted)) {
     col_vecs$n_weighted <- acc_nw
@@ -343,7 +392,12 @@ get_ratios <- function(
   if (length(group_vars) > 0L && length(acc_grp_rows) > 0L) {
     groups_df <- do.call(rbind, acc_grp_rows)
     rownames(groups_df) <- NULL
-    groups_df <- .apply_group_labels(groups_df, group_vars, design, label_values)
+    groups_df <- .apply_group_labels(
+      groups_df,
+      group_vars,
+      design,
+      label_values
+    )
   } else {
     groups_df <- data.frame()
   }
@@ -352,10 +406,10 @@ get_ratios <- function(
   group_meta <- .build_group_meta(design, group_vars)
 
   meta_args <- list(
-    conf_level  = conf_level,
-    call        = match.call(),
-    group       = group_meta,
-    numerator   = c(list(name = num_name),   num_meta),
+    conf_level = conf_level,
+    call = match.call(),
+    group = group_meta,
+    numerator = c(list(name = num_name), num_meta),
     denominator = c(list(name = denom_name), denom_meta)
   )
 
@@ -370,6 +424,8 @@ get_ratios <- function(
   )
 
   # ── Step 13: Apply decimals and name style ────────────────────────────────
-  if (!is.null(decimals)) result <- .apply_decimals(result, decimals)
+  if (!is.null(decimals)) {
+    result <- .apply_decimals(result, decimals)
+  }
   .apply_name_style(result, name_style)
 }

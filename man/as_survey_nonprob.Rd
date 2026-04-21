@@ -57,7 +57,8 @@ weights for reproducibility
 }
 
 If your data comes from a probability sample with known design structure,
-use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, or \code{\link[=as_survey_twophase]{as_survey_twophase()}} instead.
+use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, or \code{\link[=as_survey_twophase]{as_survey_twophase()}}
+instead.
 }
 
 \section{Variance estimation note}{

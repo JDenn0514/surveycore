@@ -7,17 +7,6 @@
       x `extract_var_label()` received an invalid `format` value "tibble".
       i `format` must be one of "named_vector", "list", and "data_frame".
 
-# snapshot: extract_var_label() surveycore_warning_var_not_found
-
-    Code
-      extract_var_label(d, y1, nonexistent)
-    Condition
-      Warning:
-      ! 1 variable not found in `x` and was skipped: nonexistent.
-    Output
-               y1 
-      "Outcome 1" 
-
 # snapshot: set_var_label() surveycore_error_not_survey_or_df
 
     Code
@@ -463,16 +452,6 @@
       i Got 0 named and 1 unnamed element.
       v Use `set_var_label(x, age = 'Age', income = 'Annual income')` or a fully named vector.
 
-# snapshot: .resolve_vars() surveycore_warning_var_not_found message
-
-    Code
-      surveycore:::.resolve_vars(d, var_exprs = var_exprs)
-    Condition
-      Warning:
-      ! 1 variable not found in `x` and was skipped: zzz_missing.
-    Output
-      character(0)
-
 # snapshot: .format_list_result() surveycore_error_format_invalid message
 
     Code
@@ -499,4 +478,79 @@
       Error:
       x `extract_metadata()` does not accept `fill = NA`.
       i Valid values for `extract_metadata()`: "NULL" (omit empty) or "\"include\"" (return all).
+
+# set_sata() errors when x is not a survey or data frame
+
+    Code
+      set_sata(list(a = 1), a)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# set_sata() errors when both ... and variable provided
+
+    Code
+      set_sata(d, riagendr, variable = "ridageyr")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# set_sata() errors when neither ... nor variable provided
+
+    Code
+      set_sata(d)
+    Condition
+      Error:
+      x `set_sata()` requires at least one variable name.
+
+# set_sata() errors when sata = NA
+
+    Code
+      set_sata(d, riagendr, sata = NA)
+    Condition
+      Error:
+      x `sata` must be `TRUE` or `FALSE`.
+
+# set_sata() errors when sata = 'yes' (non-logical)
+
+    Code
+      set_sata(d, riagendr, sata = "yes")
+    Condition
+      Error:
+      x `sata` must be `TRUE` or `FALSE`.
+
+# extract_sata() errors when x is not a survey or data frame
+
+    Code
+      extract_sata(list(a = 1))
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_sata() errors when fill = TRUE
+
+    Code
+      extract_sata(d, fill = TRUE)
+    Condition
+      Error:
+      x `fill` must be `FALSE` or `NULL`.
+
+# extract_sata() errors when fill = 'x' (invalid)
+
+    Code
+      extract_sata(d, fill = "x")
+    Condition
+      Error:
+      x `fill` must be `FALSE` or `NULL`.
+
+# extract_sata() errors when format is invalid
+
+    Code
+      extract_sata(d, format = "tibble")
+    Condition
+      Error:
+      x `extract_sata()` received an invalid `format` value "tibble".
+      i `format` must be one of "named_vector", "list", and "data_frame".
 

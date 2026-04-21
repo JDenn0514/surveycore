@@ -443,7 +443,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 30
       
     Output
@@ -469,7 +469,7 @@
     Message
       
       -- Survey Design ---------------------------------------------------------------
-      <survey_nonprob> (calibrated / non-probability) [experimental]
+      <survey_nonprob> (non-probability) [experimental]
       Sample size: 30
       Domain: 30 of 30 rows
       
@@ -555,4 +555,43 @@
        9 psu_1 stratum_1   365 11.6   48.1 -0.164      0 B     psu_1_s4    10
       10 psu_1 stratum_1   365  9.75  65.8  0.370      0 C     psu_1_s5    10
       # i 190 more rows
+
+# print.survey_collection snapshot: small 3-survey collection
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 3 surveys:
+      "2017-18": survey_taylor, 1,200 rows, 8 variables
+      "2019-20": survey_taylor, 1,500 rows, 8 variables
+      "2021-22": survey_taylor, 2,000 rows, 8 variables
+
+# print.survey_collection snapshot: length-25 abbreviation
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 25 surveys:
+      "wave_01": survey_taylor, 40 rows, 8 variables
+      "wave_02": survey_taylor, 40 rows, 8 variables
+      "wave_03": survey_taylor, 40 rows, 8 variables
+      "wave_04": survey_taylor, 40 rows, 8 variables
+      "wave_05": survey_taylor, 40 rows, 8 variables
+      "wave_06": survey_taylor, 40 rows, 8 variables
+      "wave_07": survey_taylor, 40 rows, 8 variables
+      "wave_08": survey_taylor, 40 rows, 8 variables
+      "wave_09": survey_taylor, 40 rows, 8 variables
+      "wave_10": survey_taylor, 40 rows, 8 variables
+      ... and 12 more
+      "wave_23": survey_taylor, 40 rows, 8 variables
+      "wave_24": survey_taylor, 40 rows, 8 variables
+      "wave_25": survey_taylor, 40 rows, 8 variables
+
+# print.survey_collection snapshot: length-1 pluralisation
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 1 survey:
+      "only": survey_taylor, 50 rows, 8 variables
 

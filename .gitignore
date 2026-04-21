@@ -10,6 +10,9 @@
 *.tar.gz
 Rplots.pdf
 
+# autotest generated problem files
+tests/testthat/_problems/
+
 # Large raw data files — re-download with data-raw/download-*.R
 data-raw/brfss/LLCP2023.XPT
 data-raw/brfss/LLCP2023XPT.zip

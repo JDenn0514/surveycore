@@ -11,6 +11,7 @@ survey_metadata(
   notes = list(),
   universe = list(),
   missing_codes = list(),
+  sata = list(),
   transformations = list(),
   weighting_history = list()
 )
@@ -34,6 +35,10 @@ population to which a variable applies.}
 \item{missing_codes}{A named list mapping variable names to atomic
 vectors of missing-value codes
 (e.g., \code{list(age = c(Refused = 99L, DK = 98L))}).}
+
+\item{sata}{A named list mapping variable names to \code{TRUE} for variables
+that are select-all-that-apply (SATA). Only variables explicitly marked
+as SATA appear in this list — absence means the variable is not SATA.}
 
 \item{transformations}{A named list tracking variable transformation
 history (populated automatically during operations).}
@@ -70,9 +75,11 @@ m@value_labels$sex
 }
 \seealso{
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_sata}()},
 \code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
@@ -80,6 +87,7 @@ Other metadata:
 \code{\link{infer_question_prefaces}()},
 \code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
+\code{\link{set_sata}()},
 \code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
 \code{\link{set_var_label}()},

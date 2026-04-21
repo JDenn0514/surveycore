@@ -16,7 +16,10 @@ get_totals(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -25,7 +28,8 @@ get_totals(
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
 numeric variable name. When \code{NULL} (default), estimates the population
-size (\verb{Σ w_i}). When supplied, estimates the weighted sum (\verb{Σ w_i × x_i}).}
+size (sum of weights). When supplied, estimates the weighted sum
+(sum of w_i * x_i).}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Default \code{NULL}.}
@@ -58,6 +62,17 @@ variable is \code{NA} are collected into their own group row in the output
 \item{label_vars}{Logical. Accepted for API uniformity. Default \code{TRUE}.}
 
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+named-only when a \code{survey_collection} is passed as \code{design}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_totals} tibble (also inheriting \code{survey_result}). Columns:
@@ -95,12 +110,15 @@ get_totals(d, agep, group = sex)
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
+\code{\link{get_anova}()},
 \code{\link{get_corr}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
+\code{\link{get_pairwise}()},
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
+\code{\link{get_t_test}()},
 \code{\link{meta}()}
 }
 \concept{analysis}

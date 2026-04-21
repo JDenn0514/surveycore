@@ -330,8 +330,14 @@
   } else {
     cli::cli_abort(
       c(
-        "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_totals}.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        "x" = paste0(
+          "Unsupported design class {.cls {class(design)[[1L]]}} ",
+          "in {.fn get_totals}."
+        ),
+        "i" = paste0(
+          "Use {.fn as_survey}, {.fn as_survey_replicate}, ",
+          "or {.fn as_survey_twophase}."
+        )
       ),
       class = "surveycore_error_unsupported_class"
     )

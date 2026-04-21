@@ -22,6 +22,29 @@
 #' Return `invisible(TRUE)` on success; call [cli::cli_abort()] or
 #' [cli::cli_warn()] on failure.
 #'
+#' @srrstats {G2.0} Constructors assert that named design columns (ids,
+#'   weights, strata, fpc) are present in the supplied data frame and that
+#'   each resolves to a valid column via tidyselect before object construction.
+#'
+#' @srrstats {G2.1} Type assertions are implemented here: weights must be
+#'   numeric and positive; FPC must be numeric and non-missing; strata and
+#'   ids must refer to columns that exist in @data.
+#'
+#' @srrstats {G2.1a} @param documentation for all constructor arguments states
+#'   accepted data types (e.g. numeric for weights, character or factor for
+#'   strata).
+#'
+#' @srrstats {G2.13} Pre-processing checks for missing values in design
+#'   variables: NA weights cause surveycore_error_weights_na; NA FPC values
+#'   cause surveycore_error_fpc_na.
+#'
+#' @srrstats {G2.14a} Validators error on missing values in design variables
+#'   (weights, FPC) that must be fully observed for variance estimation.
+#'
+#' @srrstats {G2.15} No function passes data to base routines with a default
+#'   na.rm = FALSE. All calls to mean(), sum(), var(), and similar functions
+#'   use explicit na.rm = TRUE or receive pre-filtered data.
+#'
 #' @name validators
 #' @keywords internal
 #' @noRd
@@ -30,7 +53,8 @@ NULL
 
 # ── .validate_data_frame ──────────────────────────────────────────────────────
 
-# Validates the `data` argument shared by as_survey(), as_survey_replicate(), and
+# Validates the `data` argument shared by as_survey(), as_survey_replicate(),
+# and
 # as_survey_nonprob() (Layer 3, errors 1–4 from error-messages.md).
 # Returns invisible(TRUE) on success; calls cli_abort()/cli_warn() otherwise.
 #' @noRd
@@ -76,7 +100,12 @@ NULL
   # Error 4: single-row data cannot support variance estimation
   if (nrow(data) == 1L) {
     cli::cli_abort(
-      c("x" = "{.arg data} has only 1 row. A survey design requires at least 2 observations."),
+      c(
+        "x" = paste0(
+          "{.arg data} has only 1 row. A survey design requires ",
+          "at least 2 observations."
+        )
+      ),
       class = "surveycore_error_single_row",
       call = call
     )
@@ -86,7 +115,7 @@ NULL
 }
 
 
-# ── .validate_weights ──────────────────────────────────────────────────────────
+# ── .validate_weights ─────────────────────────────────────────────────────────
 
 # Validates that `weights_var` column exists in `data`, is numeric, and has
 # all non-NA values strictly positive (with the all-zero/all-missing case
@@ -123,9 +152,15 @@ NULL
   if (length(non_na) == 0L || all(non_na == 0)) {
     cli::cli_abort(
       c(
-        "x" = "All values in weight column {.field {weights_var}} are zero or missing.",
+        "x" = paste0(
+          "All values in weight column {.field {weights_var}} ",
+          "are zero or missing."
+        ),
         "i" = "No valid (non-NA, positive) weights found.",
-        "v" = "Check {.field {weights_var}} for data issues or supply a different column."
+        "v" = paste0(
+          "Check {.field {weights_var}} for data issues or ",
+          "supply a different column."
+        )
       ),
       class = "surveycore_error_weights_all_zero"
     )
@@ -136,9 +171,15 @@ NULL
   if (n_bad > 0L) {
     cli::cli_abort(
       c(
-        "x" = "Weight column {.field {weights_var}} has {n_bad} non-positive value(s).",
+        "x" = paste0(
+          "Weight column {.field {weights_var}} has ",
+          "{n_bad} non-positive value(s)."
+        ),
         "i" = "All non-NA weights must be strictly greater than 0.",
-        "v" = "Remove or replace rows where {.field {weights_var}} is 0 or negative."
+        "v" = paste0(
+          "Remove or replace rows where {.field {weights_var}} ",
+          "is 0 or negative."
+        )
       ),
       class = "surveycore_error_weights_nonpositive"
     )
@@ -148,7 +189,7 @@ NULL
 }
 
 
-# ── .validate_design_vars ──────────────────────────────────────────────────────
+# ── .validate_design_vars ─────────────────────────────────────────────────────
 
 # Validates that all column names in `vars` exist in `data` and are atomic
 # (not list-columns). Pass `vars = NULL` or `vars = character(0)` to no-op.
@@ -235,7 +276,7 @@ NULL
 }
 
 
-# ── .validate_repweights ───────────────────────────────────────────────────────
+# ── .validate_repweights ──────────────────────────────────────────────────────
 
 # Validates that all columns in `repweights_vars` exist in `data` and are
 # numeric. Pass `repweights_vars = NULL` or `repweights_vars = character(0)`
@@ -291,7 +332,7 @@ NULL
 }
 
 
-# ── .validate_psu_strata ───────────────────────────────────────────────────────
+# ── .validate_psu_strata ──────────────────────────────────────────────────────
 
 # Issues a warning if any PSU (first stage of `ids`) appears in more than one
 # stratum. Pass `ids = NULL` or `strata = NULL` to no-op. This check is skipped
@@ -325,7 +366,7 @@ NULL
 }
 
 
-# ── .validate_rscales ──────────────────────────────────────────────────────────
+# ── .validate_rscales ─────────────────────────────────────────────────────────
 
 # Validates that `rscales` has exactly `n_rep` elements, matching the number
 # of replicate weight columns. Pass `rscales = NULL` to no-op.
@@ -351,7 +392,7 @@ NULL
 }
 
 
-# ── .update_design_var_names ───────────────────────────────────────────────────
+# ── .update_design_var_names ──────────────────────────────────────────────────
 
 # Updates design variable name references in a `@variables` list according to
 # `rename_map`. Returns the updated list. Intended for use by rename methods,
@@ -360,7 +401,8 @@ NULL
 #
 # `variables`:  the `@variables` list from a survey design object.
 # `rename_map`: named character vector where names are old column names and
-#               values are the corresponding new names (e.g., c(old_wt = "weight")).
+#               values are the corresponding new names
+#               (e.g., c(old_wt = "weight")).
 #' @noRd
 .update_design_var_names <- function(variables, rename_map) {
   vars <- variables
@@ -388,7 +430,7 @@ NULL
 }
 
 
-# ── .rename_metadata_keys ──────────────────────────────────────────────────────
+# ── .rename_metadata_keys ─────────────────────────────────────────────────────
 
 # Renames keys (variable names) in all metadata list properties to stay in
 # sync after a column rename. Called alongside .update_design_var_names().
@@ -416,6 +458,7 @@ NULL
     rename_map
   )
   metadata@notes <- .rename_list_keys(metadata@notes, rename_map)
+  metadata@sata <- .rename_list_keys(metadata@sata, rename_map)
   metadata@transformations <- .rename_list_keys(
     metadata@transformations,
     rename_map
@@ -425,7 +468,7 @@ NULL
 }
 
 
-# ── .delete_metadata_col ───────────────────────────────────────────────────────
+# ── .delete_metadata_col ──────────────────────────────────────────────────────
 
 # Deletes per-column metadata for `col` from every @metadata slot.
 # Used by surveytidy's select() when a column is dropped from a survey design.

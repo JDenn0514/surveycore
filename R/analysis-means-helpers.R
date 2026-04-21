@@ -135,7 +135,8 @@
   # Per-replicate domain means
   rep_mat <- as.matrix(data[, vars$repweights, drop = FALSE])
   rep_N_d <- as.numeric(domain %*% rep_mat) # weighted domain size per replicate
-  rep_Y <- as.numeric((y_safe * domain) %*% rep_mat) # weighted sum per replicate
+  # weighted sum per replicate
+  rep_Y <- as.numeric((y_safe * domain) %*% rep_mat)
   rep_p <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
 
   n_rep <- ncol(rep_mat)
@@ -228,7 +229,8 @@
 # ── .calibrated_mean_cell() ───────────────────────────────────────────────────
 #
 # Domain estimation of a weighted mean for calibrated (non-probability) designs.
-# Uses the HT Taylor linearization variance (matching survey::svydesign(ids=~1)):
+# Uses the HT Taylor linearization variance
+# (matching survey::svydesign(ids=~1)):
 #   z_i = w_i * (y_i - ybar_w) / N_hat
 #   Var(ybar_w) = n/(n-1) * sum(z_i^2)
 #              = n/(n-1) * sum(w_i^2 * (y_i - ybar_w)^2) / N_hat^2
@@ -305,8 +307,14 @@
   } else {
     cli::cli_abort(
       c(
-        "x" = "Unsupported design class {.cls {class(design)[[1L]]}} in {.fn get_means}.",
-        "i" = "Use {.fn as_survey}, {.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        "x" = paste0(
+          "Unsupported design class {.cls {class(design)[[1L]]}} ",
+          "in {.fn get_means}."
+        ),
+        "i" = paste0(
+          "Use {.fn as_survey}, {.fn as_survey_replicate}, ",
+          "or {.fn as_survey_twophase}."
+        )
       ),
       class = "surveycore_error_unsupported_class"
     )

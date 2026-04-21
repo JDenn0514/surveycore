@@ -37,9 +37,11 @@ extract_metadata(d, age)
 }
 \seealso{
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_sata}()},
 \code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
@@ -47,6 +49,7 @@ Other metadata:
 \code{\link{infer_question_prefaces}()},
 \code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
+\code{\link{set_sata}()},
 \code{\link{set_val_labels}()},
 \code{\link{set_var_label}()},
 \code{\link{set_var_note}()},

@@ -3,10 +3,10 @@
 # Constructor functions for survey design objects.
 #
 # Functions defined here (Phase 0, steps 5–7 + Phase 2.5 skeleton):
-#   as_survey()             — creates a survey_taylor object (Taylor series design)
-#   as_survey_replicate()   — creates a survey_replicate object (replicate weights)
-#   as_survey_twophase()    — creates a survey_twophase object (two-phase sampling)
-#   as_survey_nonprob()     — creates a survey_nonprob object (Phase 2.5 skeleton)
+#   as_survey()           — survey_taylor object (Taylor series linearization)
+#   as_survey_replicate() — survey_replicate object (replicate weights)
+#   as_survey_twophase()  — survey_twophase object (two-phase sampling)
+#   as_survey_nonprob()   — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
 #   Layer 1 — S7 class validators      (R/00-s7-classes.R)
@@ -27,7 +27,8 @@
 #'
 #' @param data A `data.frame` containing the survey responses. Must have at
 #'   least one row and unique column names.
-#' @param ids <[`tidy-select`][tidyselect::language]> Cluster (PSU) ID column(s).
+#' @param ids <[`tidy-select`][tidyselect::language]> Cluster (PSU) ID
+#'   column(s).
 #'   For single-stage: `ids = psu`. For multi-stage: `ids = c(psu, ssu)`.
 #'   Omit entirely for simple random sampling.
 #' @param probs <[`tidy-select`][tidyselect::language]> Sampling probability
@@ -107,6 +108,16 @@
 #' d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
 #'                   strata = sdmvstra, nest = TRUE)
 #'
+#' @references
+#' Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
+#' \emph{Model Assisted Survey Sampling}. Springer.
+#'
+#' Lumley, T. (2004) Analysis of complex survey samples.
+#' \emph{Journal of Statistical Software} \bold{9}(1), 1--19.
+#'
+#' Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
+#' John Wiley and Sons.
+#'
 #' @seealso
 #'   [as_survey_replicate()] for replicate-weight designs,
 #'   [as_survey_twophase()] for two-phase designs,
@@ -135,7 +146,7 @@ as_survey <- function(
   strata_quo <- rlang::enquo(strata)
   fpc_quo <- rlang::enquo(fpc)
 
-  # ── Resolve tidy-select expressions ──────────────────────────────────────────
+  # ── Resolve tidy-select expressions ─────────────────────────────────────────
 
   ids_is_null <- rlang::quo_is_null(ids_quo)
   strata_is_null <- rlang::quo_is_null(strata_quo)
@@ -503,7 +514,7 @@ as_survey <- function(
 }
 
 
-# ── as_survey_replicate ──────────────────────────────────────────────────────────────
+# ── as_survey_replicate ───────────────────────────────────────────────────────
 
 #' Create a Replicate Weights Survey Design
 #'
@@ -525,7 +536,7 @@ as_survey <- function(
 #'   jackknife with varying replication counts), `"BRR"` (balanced repeated
 #'   replication), `"Fay"` (Fay's method, a modified BRR), `"bootstrap"`,
 #'   `"ACS"` (used in American Community Survey), `"successive-difference"`,
-#'   or `"other"` (user-specified scale).
+#'   or `"other"` (user-specified scale). Case-sensitive.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
 #'   the number of replicates: `(R-1)/R` for jackknife methods, `1/4` for
@@ -539,7 +550,7 @@ as_survey <- function(
 #'   adjust the variance estimator. `NULL` means no FPC correction.
 #' @param fpctype Character. How `fpc` is interpreted: `"fraction"` (sampling
 #'   fraction, 0–1) or `"correction"` (multiplier for the replicate variance).
-#'   Default `"fraction"`.
+#'   Default `"fraction"`. Case-sensitive.
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
@@ -550,9 +561,13 @@ as_survey <- function(
 #' Both `weights` and `repweights` support tidy-select syntax:
 #' ```r
 #' # Bare name for weights
-#' as_survey_replicate(df, weights = wt, repweights = starts_with("repwt"), type = "BRR")
+#' as_survey_replicate(
+#'   df, weights = wt, repweights = starts_with("repwt"), type = "BRR"
+#' )
 #' # c() for explicit replicate columns
-#' as_survey_replicate(df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1")
+#' as_survey_replicate(
+#'   df, weights = wt, repweights = c(rep1, rep2, rep3), type = "JK1"
+#' )
 #' ```
 #'
 #' @section Replicate weight matrix:
@@ -585,6 +600,16 @@ as_survey <- function(
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
 #'   type       = "JK1"
 #' )
+#'
+#' @references
+#' Judkins, D.R. (1990) Fay's method for variance estimation.
+#' \emph{Journal of the American Statistical Association}
+#' \bold{85}(410), 895--904.
+#'
+#' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+#' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+#'
+#' Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
@@ -717,7 +742,7 @@ as_survey_replicate <- function(
 }
 
 
-# ── as_survey_twophase ─────────────────────────────────────────────────────────
+# ── as_survey_twophase ────────────────────────────────────────────────────────
 
 #' Create a Two-Phase Survey Design
 #'
@@ -748,7 +773,7 @@ as_survey_replicate <- function(
 #'   values (non-degenerate).
 #' @param method Character. Variance estimation method for combining Phase 1
 #'   and Phase 2 variability. One of `"full"` (default), `"approx"`, or
-#'   `"simple"`. See Details.
+#'   `"simple"`. Case-sensitive. See Details.
 #'
 #' @details
 #' ## Variance methods
@@ -798,6 +823,20 @@ as_survey_replicate <- function(
 #'   subset  = in_phase2,
 #'   method  = "full"
 #' )
+#'
+#' @references
+#' Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+#' \emph{Model Assisted Survey Sampling}. Springer.
+#'
+#' Breslow, N.E. and Chatterjee, N. (1999) Design and analysis of two-phase
+#' studies with binary outcome applied to Wilms tumour prognosis.
+#' \emph{Applied Statistics} \bold{48}, 457--468.
+#'
+#' Breslow, N., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulick, M.
+#' (2009) Improved Horvitz-Thompson estimation of model parameters from
+#' two-phase stratified samples: applications in epidemiology.
+#' \emph{Statistics in Biosciences}.
+#' \doi{10.1007/s12561-009-9001-6}
 #'
 #' @seealso
 #'   [as_survey()] for Taylor series designs,
@@ -854,7 +893,7 @@ as_survey_twophase <- function(
 
   subset_cols <- tidyselect::eval_select(subset_quo, data)
 
-  # ── Error 21: subset must select exactly one column ──────────────────────────
+  # ── Error 21: subset must select exactly one column ─────────────────────────
 
   if (length(subset_cols) == 0L) {
     cli::cli_abort(
@@ -875,7 +914,7 @@ as_survey_twophase <- function(
   }
   subset_var <- names(subset_cols)
 
-  # ── Error 22: subset column must be logical ──────────────────────────────────
+  # ── Error 22: subset column must be logical ─────────────────────────────────
 
   if (!is.logical(data[[subset_var]])) {
     cli::cli_abort(
@@ -889,7 +928,7 @@ as_survey_twophase <- function(
     )
   }
 
-  # ── Error 23: subset must be non-degenerate ──────────────────────────────────
+  # ── Error 23: subset must be non-degenerate ─────────────────────────────────
 
   subset_vals <- data[[subset_var]]
 
@@ -979,7 +1018,7 @@ as_survey_twophase <- function(
     )
   }
 
-  # ── Build @variables list ────────────────────────────────────────────────────
+  # ── Build @variables list ───────────────────────────────────────────────────
 
   phase2_vars <- list(
     ids = ids2_vars,
@@ -1000,7 +1039,7 @@ as_survey_twophase <- function(
 
   metadata <- phase1@metadata
 
-  # ── Construct and return survey_twophase object ──────────────────────────────
+  # ── Construct and return survey_twophase object ─────────────────────────────
 
   survey_twophase(
     data = data,
@@ -1041,7 +1080,8 @@ as_survey_twophase <- function(
 #' }
 #'
 #' If your data comes from a probability sample with known design structure,
-#' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()] instead.
+#' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()]
+#' instead.
 #'
 #' @section Variance estimation note:
 #' Standard errors from a `survey_nonprob` object assume simple random
@@ -1145,4 +1185,77 @@ as_survey_nonprob <- function(
     calibration = calibration,
     call = call
   )
+}
+
+
+# ── as_survey_collection() ────────────────────────────────────────────────────
+
+#' Create a Collection of Survey Designs
+#'
+#' Builds a [survey_collection] from one or more survey design objects for
+#' comparative analysis across waves, cross-sections, or sub-populations.
+#' Each element is stored independently — designs are never combined, and
+#' variance estimation is never re-specified.
+#'
+#' @details
+#' Arguments may be passed with explicit names (`"wave1" = d1`) or as bare
+#' symbols (`d1`, auto-named to `"d1"`). An unnamed argument that is not a
+#' bare symbol (e.g., an inline `as_survey(...)` call) raises
+#' `surveycore_error_collection_unnamed_expr` — name such arguments
+#' explicitly.
+#'
+#' Duplicate names are repaired by appending `_1`, `_2`, … to subsequent
+#' occurrences (first occurrence preserved). When any rename occurs,
+#' a `surveycore_warning_collection_duplicate_name_repaired` warning is
+#' emitted showing the `original -> repaired` mapping.
+#'
+#' @param ... One or more `survey_base` objects, passed with explicit names
+#'   or as bare symbols. At least one argument is required.
+#'
+#' @return A `survey_collection` object containing the supplied surveys.
+#'
+#' @examples
+#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#' d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#'
+#' # Explicit names
+#' coll <- as_survey_collection("2020" = d1, "2024" = d2)
+#' names(coll)
+#'
+#' # Bare-symbol auto-naming
+#' coll2 <- as_survey_collection(d1, d2)
+#' names(coll2)
+#'
+#' @seealso [survey_collection], [add_survey()], [remove_survey()]
+#' @family collections
+#' @export
+as_survey_collection <- function(...) {
+  quosures <- rlang::enquos(...)
+
+  if (length(quosures) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "At least one survey must be supplied.",
+        "v" = paste0(
+          "Call with one or more {.cls survey_base} objects, e.g. ",
+          "{.code as_survey_collection(wave1 = d1, wave2 = d2)}."
+        )
+      ),
+      class = "surveycore_error_collection_empty"
+    )
+  }
+
+  caller_names <- .resolve_caller_names(quosures)
+  repair <- .repair_collection_names(caller_names)
+
+  if (length(repair$mapping) > 0L) {
+    .warn_duplicate_name_repair(repair$mapping)
+  }
+
+  surveys <- lapply(quosures, rlang::eval_tidy)
+  names(surveys) <- repair$repaired
+
+  survey_collection(surveys = surveys)
 }

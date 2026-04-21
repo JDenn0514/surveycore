@@ -43,7 +43,7 @@ values (non-degenerate).}
 
 \item{method}{Character. Variance estimation method for combining Phase 1
 and Phase 2 variability. One of \code{"full"} (default), \code{"approx"}, or
-\code{"simple"}. See Details.}
+\code{"simple"}. Case-sensitive. See Details.}
 }
 \value{
 A \code{survey_twophase} object.
@@ -101,6 +101,20 @@ d2b <- as_survey_twophase(
   method  = "full"
 )
 
+}
+\references{
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+\emph{Model Assisted Survey Sampling}. Springer.
+
+Breslow, N.E. and Chatterjee, N. (1999) Design and analysis of two-phase
+studies with binary outcome applied to Wilms tumour prognosis.
+\emph{Applied Statistics} \bold{48}, 457--468.
+
+Breslow, N., Lumley, T., Ballantyne, C.M., Chambless, L.E. and Kulick, M.
+(2009) Improved Horvitz-Thompson estimation of model parameters from
+two-phase stratified samples: applications in epidemiology.
+\emph{Statistics in Biosciences}.
+\doi{10.1007/s12561-009-9001-6}
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for Taylor series designs,

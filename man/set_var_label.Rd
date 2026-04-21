@@ -56,9 +56,11 @@ d <- set_var_label(d, bpxsy1 = "Systolic BP (1st reading)",
 \code{\link[=extract_var_label]{extract_var_label()}} to retrieve a label
 
 Other metadata: 
+\code{\link{classify_question_type}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_sata}()},
 \code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
@@ -66,6 +68,7 @@ Other metadata:
 \code{\link{infer_question_prefaces}()},
 \code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
+\code{\link{set_sata}()},
 \code{\link{set_universe}()},
 \code{\link{set_val_labels}()},
 \code{\link{set_var_note}()},
