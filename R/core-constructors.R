@@ -1186,3 +1186,76 @@ as_survey_nonprob <- function(
     call = call
   )
 }
+
+
+# ── as_survey_collection() ────────────────────────────────────────────────────
+
+#' Create a Collection of Survey Designs
+#'
+#' Builds a [survey_collection] from one or more survey design objects for
+#' comparative analysis across waves, cross-sections, or sub-populations.
+#' Each element is stored independently — designs are never combined, and
+#' variance estimation is never re-specified.
+#'
+#' @details
+#' Arguments may be passed with explicit names (`"wave1" = d1`) or as bare
+#' symbols (`d1`, auto-named to `"d1"`). An unnamed argument that is not a
+#' bare symbol (e.g., an inline `as_survey(...)` call) raises
+#' `surveycore_error_collection_unnamed_expr` — name such arguments
+#' explicitly.
+#'
+#' Duplicate names are repaired by appending `_1`, `_2`, … to subsequent
+#' occurrences (first occurrence preserved). When any rename occurs,
+#' a `surveycore_warning_collection_duplicate_name_repaired` warning is
+#' emitted showing the `original -> repaired` mapping.
+#'
+#' @param ... One or more `survey_base` objects, passed with explicit names
+#'   or as bare symbols. At least one argument is required.
+#'
+#' @return A `survey_collection` object containing the supplied surveys.
+#'
+#' @examples
+#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#' d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#'
+#' # Explicit names
+#' coll <- as_survey_collection("2020" = d1, "2024" = d2)
+#' names(coll)
+#'
+#' # Bare-symbol auto-naming
+#' coll2 <- as_survey_collection(d1, d2)
+#' names(coll2)
+#'
+#' @seealso [survey_collection], [add_survey()], [remove_survey()]
+#' @family collections
+#' @export
+as_survey_collection <- function(...) {
+  quosures <- rlang::enquos(...)
+
+  if (length(quosures) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "At least one survey must be supplied.",
+        "v" = paste0(
+          "Call with one or more {.cls survey_base} objects, e.g. ",
+          "{.code as_survey_collection(wave1 = d1, wave2 = d2)}."
+        )
+      ),
+      class = "surveycore_error_collection_empty"
+    )
+  }
+
+  caller_names <- .resolve_caller_names(quosures)
+  repair <- .repair_collection_names(caller_names)
+
+  if (length(repair$mapping) > 0L) {
+    .warn_duplicate_name_repair(repair$mapping)
+  }
+
+  surveys <- lapply(quosures, rlang::eval_tidy)
+  names(surveys) <- repair$repaired
+
+  survey_collection(surveys = surveys)
+}

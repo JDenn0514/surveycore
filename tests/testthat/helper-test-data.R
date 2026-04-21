@@ -400,6 +400,68 @@ test_invariants <- function(design) {
 }
 
 # ------------------------------------------------------------------------------
+# test_collection_invariants()
+# ------------------------------------------------------------------------------
+
+#' Assert all formal invariants on a survey_collection object
+#'
+#' Call this as the FIRST assertion in every test_that() block that creates
+#' a survey_collection. Enforces the five invariants from
+#' plans/spec-survey-collection.md §3.2.
+#'
+#' @param coll A survey_collection object.
+#' @return Returns coll invisibly on success. Throws testthat failure on any
+#'   violated invariant.
+#' @keywords internal
+test_collection_invariants <- function(coll) {
+  # Invariant 1: inherits survey_collection
+  testthat::expect_true(
+    S7::S7_inherits(coll, survey_collection),
+    label = "inherits from survey_collection"
+  )
+
+  # Invariant 2: @surveys is a list of length >= 1
+  testthat::expect_true(is.list(coll@surveys))
+  testthat::expect_gte(length(coll@surveys), 1L)
+
+  # Invariant 3: fully named, no empty, no NA, no duplicates
+  nms <- names(coll@surveys)
+  testthat::expect_false(is.null(nms), label = "@surveys has names")
+  testthat::expect_false(
+    any(nms == ""),
+    label = "@surveys has no empty names"
+  )
+  testthat::expect_false(
+    any(is.na(nms)),
+    label = "@surveys has no NA names"
+  )
+  testthat::expect_equal(
+    anyDuplicated(nms),
+    0L,
+    label = "@surveys has no duplicate names"
+  )
+
+  # Invariant 4: every element inherits survey_base
+  elem_ok <- vapply(
+    coll@surveys,
+    function(x) S7::S7_inherits(x, survey_base),
+    logical(1L)
+  )
+  testthat::expect_true(
+    all(elem_ok),
+    label = "every element inherits survey_base"
+  )
+
+  # Invariant 5: the collection itself does NOT inherit survey_base
+  testthat::expect_false(
+    S7::S7_inherits(coll, survey_base),
+    label = "survey_collection does NOT inherit survey_base"
+  )
+
+  invisible(coll)
+}
+
+# ------------------------------------------------------------------------------
 # test_result_invariants()
 # ------------------------------------------------------------------------------
 

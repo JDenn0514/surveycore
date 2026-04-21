@@ -746,3 +746,53 @@ S7::method(summary, survey_twophase) <- function(object, ...) {
 
   invisible(x)
 }
+
+
+# ── print.survey_collection ────────────────────────────────────────────────
+#
+# Class defined in R/core-classes.R.
+# Format (spec §3.5):
+#   A survey_collection with {n} survey{?s}:
+#     "{name}": {class_name}, {rows} rows, {vars} variables
+# Abbreviation: when length(x) > 20, print first 10 + "  ... and {N} more"
+# + last 3.
+
+.fmt_collection_line <- function(nm, s) {
+  rows <- format(nrow(s@data), big.mark = ",")
+  vars <- format(ncol(s@data), big.mark = ",")
+  cls <- sub("^[^:]+::", "", class(s)[[1L]])
+  cli::cli_text(
+    "  {.val {nm}}: {cls}, {rows} rows, {vars} variables"
+  )
+}
+
+S7::method(print, survey_collection) <- function(x, ...) {
+  surveys <- x@surveys
+  n <- length(surveys)
+  cli::cli_text("A {.cls survey_collection} with {n} survey{?s}:")
+
+  nms <- names(surveys)
+  if (n <= 20L) {
+    for (i in seq_len(n)) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+  } else {
+    for (i in seq_len(10L)) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+    cli::cli_text("  ... and {n - 13L} more")
+    tail_idx <- seq.int(n - 2L, n)
+    for (i in tail_idx) {
+      .fmt_collection_line(nms[[i]], surveys[[i]])
+    }
+  }
+  invisible(x)
+}
+
+
+# ── [[, length, names methods for survey_collection ──────────────────────────
+# Class defined in R/core-classes.R.
+
+S7::method(`[[`, survey_collection) <- function(x, i) x@surveys[[i]]
+S7::method(length, survey_collection) <- function(x) length(x@surveys)
+S7::method(names, survey_collection) <- function(x) names(x@surveys)
