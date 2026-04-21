@@ -1,24 +1,47 @@
-# surveycore (development version)
+# surveycore 0.7.0
 
 ## Breaking changes
 
-* `get_anova()` now dispatches on `object`'s class rather than accepting an
-  explicit `model2` argument. The first argument may be a `survey_glm_fit`
-  (sequential anova), a list of `survey_glm_fit` objects (chained pairwise
-  comparisons, `length(object) - 1` rows), or a `survey_base` design plus a
-  `formula` (fits internally via `survey_glm()` then runs sequential anova).
-  The former positional form `get_anova(fit1, fit2)` must now be written
-  `get_anova(list(fit1, fit2))`. S3 `anova(fit1, fit2)` continues to work.
+* `get_anova()`'s first argument is now `object` and dispatches on class. The former `model2` positional argument has been removed — `get_anova(fit1, fit2)` must now be written `get_anova(list(fit1, fit2))`. The S3 `anova(fit1, fit2)` interface is unchanged.
 
-## New features
+## New functions
 
-* `get_anova()` accepts a list of `survey_glm_fit` objects, returning one row
-  per consecutive pair — e.g., `get_anova(list(fit1, fit2, fit3))` produces
-  two rows (fit1 vs fit2, fit2 vs fit3). Mirrors `stats::anova(fit1, fit2, fit3)`.
-* `get_anova()` accepts a survey design and formula directly, fitting the
-  model internally: `get_anova(design, y ~ x1 + x2)` is equivalent to
-  `get_anova(survey_glm(design, y ~ x1 + x2))`. Extra `...` are forwarded
-  to `survey_glm()`.
+### Design-based group comparisons
+
+* `get_t_test()` performs a design-based two-sample t-test comparing group means for a numeric outcome across two levels of a `by` variable. Returns a `survey_t_test` tibble with estimate, per-group means and cell sizes, CI, t-statistic, df, p-value, and significance stars. Supports optional stratification via `group` (one row per stratum) and matches `survey::svyttest()` at tolerance 1e-10 for point estimates and test statistics.
+* `get_pairwise()` computes all k(k−1)/2 pairwise t-tests across the levels of a factor, with multiple-comparison p-value adjustment via any `stats::p.adjust()` method (`"holm"` by default, or `"none"`). Adjustment is applied separately within each `group` stratum when stratified. Returns a `survey_pairwise` tibble with one row per pair.
+
+### Design-based ANOVA
+
+* `get_anova()` computes Rao-Scott design-based ANOVA for `survey_glm_fit` objects, supporting both Wald and LRT tests with F or Chi-squared reference distributions. Three dispatch branches:
+  - `get_anova(<survey_glm_fit>)` — sequential term-by-term anova (matches `anova.svyglm()` semantics).
+  - `get_anova(<list<survey_glm_fit>>)` — chained pairwise comparison across `k` nested fits, returning `k − 1` rows.
+  - `get_anova(<survey_base>, formula = ...)` — fits the model internally via `survey_glm()` and runs sequential anova on the fit; extra `...` are forwarded to `survey_glm()`.
+  Matches `survey::regTermTest()` at tolerance 1e-8 on statistics and 1e-6 on p-values.
+* `anova(fit)` on a `survey_glm_fit` now dispatches to `get_anova()` via a registered S3 method.
+* `plot()` on a `survey_glm_fit` produces a dot-and-whisker coefficient plot with design-based Wald confidence intervals.
+
+### Select-all-that-apply (SATA) metadata
+
+* `set_sata()` marks one or more variables on a survey design (or data frame) as select-all-that-apply. Accepts either tidy-select `...` or a `variable` character vector; setting `sata = FALSE` removes the flag. Idempotent on already-flagged variables.
+* `extract_sata()` returns SATA status as a named logical vector (default), a list, or a data frame. `fill = FALSE` yields a dense view (unmarked variables reported as `FALSE`); `fill = NULL` returns only flagged variables.
+* `classify_question_type()` classifies a set of requested variables into `"single"`, `"sata"`, or `"battery"` by grouping them on shared `question_preface` metadata and honoring per-variable SATA flags. Group numbers are assigned in order of first appearance. Warns when a lone SATA-flagged variable has no preface mate, or when a preface group has mixed SATA flags.
+
+### Survey collections
+
+* `survey_collection` is a new S7 container holding an ordered, uniquely-named list of `survey_base` objects — useful for wave-to-wave analyses, panel studies, or any workflow that compares estimates across multiple designs.
+* `as_survey_collection()` constructs a collection from named (`wave1 = d1, wave2 = d2`) or bare (`d1, d2`) arguments; duplicate names are repaired by appending `_1`, `_2`, … with a warning showing the rename mapping.
+* `add_survey()` and `remove_survey()` return new collections with surveys appended or removed; the original is unchanged.
+* All nine `get_*()` analysis functions (`get_means()`, `get_totals()`, `get_freqs()`, `get_quantiles()`, `get_ratios()`, `get_corr()`, `get_diffs()`, `get_t_test()`, `get_pairwise()`) now dispatch over a `survey_collection`, iterating across surveys and returning a single combined tibble. Two new named-only control args on each function: `.id = ".survey"` names the identifier column, and `.on_missing = c("error", "skip")` controls behavior when a requested variable is absent from a survey. Regression functions (`survey_glm()`, `get_anova()`) do not support collection dispatch and raise an explicit error pointing users to `lapply()`.
+
+## Other improvements
+
+* `survey_glm()` gains a `quiet =` argument to suppress convergence warnings.
+* `extract_*()` metadata functions now accept tidyselect helpers (`starts_with()`, `all_of()`, `any_of()`, `matches()`) in place of bare name lists.
+
+## Bug fixes
+
+* `get_diffs()` now correctly computes `pct_change` when `show_means = FALSE` is combined with grouped marginal effects and `show_pct_change = TRUE` (previously returned `NA`).
 
 # surveycore 0.6.2
 
