@@ -192,6 +192,20 @@ against the messages defined here.
 | C4 | S7 validator (`survey_collection`) | Non-`survey_base` element | ERROR | `surveycore_error_collection_bad_element` | `"All elements must inherit from {.cls survey_base}. Bad: {.field {bad}}"` (validator text; not CLI-formatted) |
 | C8 | `remove_survey()` | Name(s) not found in the collection | ERROR | `surveycore_error_collection_name_not_found` | `"x" = "Survey {.val {missing}} not found in collection.", "i" = "Available: {.val {have}}."` |
 
+### survey_collection rows (PR 2 — dispatch)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| C5 | `.dispatch_over_collection()` | Survey missing variable, `.on_missing = "error"` | ERROR | `surveycore_error_collection_missing_var` | `"x" = "Survey {.val {nm}} in the collection is missing a required variable.", "i" = "Original error: {conditionMessage(cnd)}", "v" = "Set {.code .on_missing = \"skip\"} to drop surveys missing the variable."` (wraps the per-survey condition as `parent`) |
+| C6 | `.dispatch_over_collection()` | All surveys skipped | ERROR | `surveycore_error_collection_all_skipped` | `"x" = "No surveys in the collection contained the requested variable."` |
+| C7 | `.dispatch_over_collection()` | `.id` collides with analysis-function column | ERROR | `surveycore_error_collection_id_collision` | `"x" = "{.arg .id} value {.val {id_name}} conflicts with a column produced by the analysis function.", "v" = "Pass a different {.arg .id}, e.g. {.code .id = \"wave\"}."` (bind `id_name <- .id` locally before the call for readability) |
+| C9 | `.dispatch_over_collection()` | Informational: surveys skipped | MESSAGE | `surveycore_message_collection_skipped_surveys` | `"i" = "Skipped {length(skipped)} survey{?s} missing the requested variable: {.val {skipped}}."` |
+| C10 | Every `get_*()` in spec §4.2 | Tidy-selected variable(s) not present in `@data` | ERROR | `surveycore_error_variable_not_found` | `"x" = "Variable{?s} {.val {missing}} not found in survey data.", "i" = "Available: {.val {have}}."` (pre-check runs before tidyselect; `parent = NULL`) |
+| C11 | `.warn_on_meta_divergence()` | Per-survey `.meta` value_labels / variable_label / question_preface differ across surveys for the same variable (closed set — see spec §4.1.1) | WARNING | `surveycore_warning_collection_meta_divergence` | `"!" = "Per-survey metadata diverges for {length(divergent_vars)} variable{?s}: {.field {divergent_vars}}.", "i" = "The top-level {.code .meta} reflects only the first survey. Per-survey metadata is preserved under {.code attr(result, \".meta\")$per_survey}.", "i" = "Downstream helpers (e.g., {.fn clean}, {.fn gt}) should consult {.code $per_survey} for accurate per-row labeling."` |
+| C12 | `survey_glm()` / `get_anova()` | Called on a `survey_collection` | ERROR | `surveycore_error_collection_not_supported_by_fn` | `"x" = "{.fn {fn_name}} does not yet support {.cls survey_collection} inputs.", "i" = "Run {.fn {fn_name}} on each survey individually, or see {.topic survey_collection} for the current dispatch coverage."` |
+| C13 | `.dispatch_over_collection()` | `.id` is not a single non-empty, non-NA character string | ERROR | `surveycore_error_collection_invalid_id` | `"x" = "{.arg .id} must be a single non-empty, non-NA character string.", "i" = "Got {.cls {class(.id)[1]}} of length {.val {length(.id)}}."` |
+| C14 | `.dispatch_over_collection()` | `dplyr::bind_rows()` fails because per-survey results have incompatible types for a shared column | ERROR | `surveycore_error_collection_bind_type_mismatch` | `"x" = "Cannot combine per-survey results: column type mismatch.", "i" = "Each survey must produce compatible types for shared columns.", "i" = "Original error: {conditionMessage(cnd)}"` (wraps the underlying `vctrs` error as `parent`) |
+
 ---
 
 ## Notes on Typed Errors
@@ -249,5 +263,6 @@ Which test files cover which error table rows:
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
 | `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8 |
+| `test-survey-collection-dispatch.R` | C5, C6, C7, C9, C10, C11, C12, C13, C14 |
 | `test-glm-anova-numerical.R` | numerical parity tests vs `survey` package (no new error rows) |
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |

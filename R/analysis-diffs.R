@@ -70,6 +70,12 @@
 #'   etc. The `mean` column is excluded from renaming.
 #' @param ... Passed to [survey_glm()]. Common uses:
 #'   `family = quasibinomial()`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @details
 #' ## Estimation Paths
@@ -156,8 +162,23 @@ get_diffs <- function(
   na.rm = TRUE,
   label_values = TRUE,
   name_style = "surveycore",
-  ...
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_diffs,
+      design,
+      x = {{ x }},
+      treats = {{ treats }},
+      group = {{ group }},
+      covariates = {{ covariates }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # ── Step 1: Validate shared args ──────────────────────────────────────────
   .validate_shared_args(
     variance,

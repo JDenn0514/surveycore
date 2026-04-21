@@ -51,6 +51,14 @@
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
 #'   renames `se` → `std.error`, `ci_low` → `conf.low`,
 #'   `ci_high` → `conf.high`. The `estimate` column is unchanged.
+#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#'   named-only when a `survey_collection` is passed as `design`.
+#' @param .id Character(1). Column name used to identify each survey when
+#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
+#'   `design` is a single survey.
+#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
+#'   in a collection that lack one of the requested NSE variables. Ignored
+#'   when `design` is a single survey.
 #'
 #' @return A `survey_quantiles` tibble (also inheriting `survey_result`).
 #' \itemize{
@@ -102,8 +110,22 @@ get_quantiles <- function(
   na.rm = TRUE,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    return(.dispatch_over_collection(
+      get_quantiles,
+      design,
+      x = {{ x }},
+      group = {{ group }},
+      ...,
+      .id = .id,
+      .on_missing = .on_missing
+    ))
+  }
   # ── Step 1: Validate ────────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_quantiles")
   .validate_shared_args(

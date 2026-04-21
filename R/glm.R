@@ -742,6 +742,19 @@ survey_glm <- function(
   control = list(),
   quiet = FALSE
 ) {
+  if (S7::S7_inherits(design, survey_collection)) {
+    fn_name <- "survey_glm"
+    cli::cli_abort(
+      c(
+        "x" = "{.fn {fn_name}} does not yet support {.cls survey_collection} inputs.",
+        "i" = paste0(
+          "Run {.fn {fn_name}} on each survey individually, or see ",
+          "{.topic survey_collection} for the current dispatch coverage."
+        )
+      ),
+      class = "surveycore_error_collection_not_supported_by_fn"
+    )
+  }
   # ── Step 1: Validate inputs ────────────────────────────────────────────────
   .check_unsupported_class(design, "survey_glm")
 

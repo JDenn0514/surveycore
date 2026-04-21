@@ -31,7 +31,7 @@ surface (helper, pre-checks, per-function branches, `survey_glm()` /
   precedent PR 2 can cite. **Already shipped in PR #96 (commit `76e8a34`,
   `feat(analysis)!: polymorphic object arg for get_anova()`); no separate
   PR needed.**
-- [ ] **PR 2** — `feature/survey-collection-dispatch` — Add
+- [x] **PR 2** — `feature/survey-collection-dispatch` — Add
   `.dispatch_over_collection()`, `.warn_on_meta_divergence()`, pre-checks
   raising `surveycore_error_variable_not_found` in every `get_*()` listed in
   §4.2, the three-line dispatch branch plus `.id` / `.on_missing` params in

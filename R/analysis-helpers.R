@@ -806,6 +806,47 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 }
 
 
+#' Pre-check that requested variables are present in `design@data`
+#'
+#' Called in each `get_*()` after tidy-select resolution but before any
+#' data-frame subsetting. Raises `surveycore_error_variable_not_found` (C10)
+#' when one or more resolved variable names are absent from
+#' `names(design@data)`. Gives `.dispatch_over_collection()` a stable,
+#' surveycore-owned error class to `tryCatch` on, so per-survey missing-variable
+#' behavior can be governed by `.on_missing`.
+#'
+#' The pre-check covers every declared NSE argument (spec §III.4), not only
+#' the focal `x`. The full set of args resolved into `var_names` for each
+#' function is enumerated in spec §4.2.
+#'
+#' @param design    A `survey_base` object.
+#' @param var_names Character vector of column names that must be present.
+#'   Typically built from the tidy-select resolutions of every NSE arg the
+#'   function declares. `NULL` entries are the caller's responsibility —
+#'   drop them before passing.
+#' @return `invisible(TRUE)` on success. Otherwise raises
+#'   `surveycore_error_variable_not_found` with `parent = NULL` (see
+#'   `plans/error-messages.md` row C10).
+#' @noRd
+.precheck_vars_present <- function(design, var_names) {
+  if (length(var_names) == 0L) {
+    return(invisible(TRUE))
+  }
+  missing <- var_names[!var_names %in% names(design@data)]
+  if (length(missing) == 0L) {
+    return(invisible(TRUE))
+  }
+  have <- names(design@data)
+  cli::cli_abort(
+    c(
+      "x" = "Variable{?s} {.val {missing}} not found in survey data.",
+      "i" = "Available: {.val {have}}."
+    ),
+    class = "surveycore_error_variable_not_found"
+  )
+}
+
+
 #' Compute and add requested uncertainty columns to a result list
 #'
 #' Computes uncertainty measures from a vector of standard errors and returns

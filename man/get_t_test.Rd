@@ -16,7 +16,10 @@ get_t_test(
   decimals = NULL,
   label_values = TRUE,
   label_vars = TRUE,
-  name_style = "surveycore"
+  name_style = "surveycore",
+  ...,
+  .id = ".survey",
+  .on_missing = "error"
 )
 }
 \arguments{
@@ -66,6 +69,17 @@ visible effect because column names are fixed. Default \code{TRUE}.}
 \code{"surveycore"} (default) or \code{"broom"} (renames \code{se} to \code{std.error},
 \code{ci_low} to \code{conf.low}, \code{ci_high} to \code{conf.high}, \code{p_value} to
 \code{p.value}, \code{df} to \code{parameter}). \code{t_stat} is not renamed.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+named-only when a \code{survey_collection} is passed as \code{design}.}
+
+\item{.id}{Character(1). Column name used to identify each survey when
+\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
+\code{design} is a single survey.}
+
+\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
+in a collection that lack one of the requested NSE variables. Ignored
+when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_t_test} tibble (also inheriting \code{survey_result}).
