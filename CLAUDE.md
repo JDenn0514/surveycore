@@ -23,7 +23,7 @@ functions may be added but the existing structure will not change in breaking wa
 | Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
 | T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | 🔄 In Review | PR #88; see `plans/spec-get-t-test-pairwise.md` |
 | SATA metadata (`set_sata()`, `classify_question_type()`) | ✅ Complete | PRs #89, #90, #91, #92 |
-| Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95 |
+| Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
 
 ---
 
@@ -97,5 +97,6 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `plans/spec-get-t-test-pairwise.md` — spec for `get_t_test()` + `get_pairwise()` (in review, PR #88)
 - `archive/sata-metadata/` — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)
 - `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
+- `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
