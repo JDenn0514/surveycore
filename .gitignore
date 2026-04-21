@@ -24,3 +24,8 @@ vignettes/*_files/
 
 # Internal SOPs — not part of the package
 SOPs/
+
+# Pipeline workflow runs — per-request artifacts, not part of the package
+.surveycore-workspace/
+/doc/
+/Meta/
