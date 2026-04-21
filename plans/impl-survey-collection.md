@@ -24,11 +24,13 @@ surface (helper, pre-checks, per-function branches, `survey_glm()` /
   S7 class, `as_survey_collection()` constructor, `add_survey()` /
   `remove_survey()` mutators, `print` / `[[` / `length` / `names` methods,
   and the full test suite for the container (no estimation dispatch yet).
-- [ ] **PR 2a** — `chore/code-style-named-only-carve-out` — Append the
+- [x] **PR 2a** — `chore/code-style-named-only-carve-out` — Append the
   "named-only control args go after `...`" carve-out to
   `.claude/rules/code-style.md §4` (spec §4.3). Tiny, reviewable in
   isolation; merges before PR 2 so the code-style rule is a merged
-  precedent PR 2 can cite.
+  precedent PR 2 can cite. **Already shipped in PR #96 (commit `76e8a34`,
+  `feat(analysis)!: polymorphic object arg for get_anova()`); no separate
+  PR needed.**
 - [ ] **PR 2** — `feature/survey-collection-dispatch` — Add
   `.dispatch_over_collection()`, `.warn_on_meta_divergence()`, pre-checks
   raising `surveycore_error_variable_not_found` in every `get_*()` listed in
