@@ -1,10 +1,12 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+Local macOS (arm64, R 4.5 release): 0 errors | 0 warnings | 0 notes.
 
-Checked on:
-- macOS (arm64, R 4.5 release)
-- win-builder R-devel (via `devtools::check_win_devel()`)
+win-builder R-devel: 1 NOTE, containing only the standard "New submission"
+flag and a possibly-misspelled-word flag on "surveyverse" in the Description
+field. "surveyverse" is the ecosystem name for the family of packages this
+package is the foundation of (https://github.com/JDenn0514/surveycore and
+related repositories); it is spelled correctly.
 
 ## URL notes
 
