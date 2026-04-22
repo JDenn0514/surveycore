@@ -163,6 +163,18 @@
       tidy.survey_glm_fit,
       envir = asNamespace("broom")
     )
+    registerS3method(
+      "tidy",
+      "survey_variance",
+      tidy.survey_variance,
+      envir = asNamespace("broom")
+    )
+    registerS3method(
+      "glance",
+      "survey_variance",
+      glance.survey_variance,
+      envir = asNamespace("broom")
+    )
   }
 
   # Phase 2: marginaleffects extension (conditional)

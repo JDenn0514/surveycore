@@ -67,6 +67,7 @@ reference:
       - get_freqs
       - get_means
       - get_totals
+      - get_variance
       - get_corr
       - get_quantiles
       - get_ratios

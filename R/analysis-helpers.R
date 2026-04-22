@@ -91,21 +91,29 @@ NULL
 # ── Meta-key constants ────────────────────────────────────────────────────────
 #
 # Required meta_args keys for each get_*() function. Pass the appropriate
-# constant to .make_result_tibble() as required_meta_keys. The new nested
+# constant to .make_result_tibble() as required_meta_keys. The nested
 # structure uses "group" and "x" (or "numerator"/"denominator" for ratios)
 # as top-level keys, replacing the old flat key sets.
 # These are the single source of truth for each function's meta_args contract.
 # Adding a new meta field requires updating only the constant here.
+#
+# FAMILY_META_KEYS is the shared base for the seven analysis functions that
+# share the "group + x" nested shape. Per-function constants derive from it
+# by concatenating additional keys. get_ratios() and get_anova() have
+# distinct shapes and are defined independently.
 
-FREQS_META_KEYS <- c("group", "x")
-MEANS_META_KEYS <- c("group", "x")
-TOTALS_META_KEYS <- c("group", "x")
-CORR_META_KEYS <- c("group", "x", "method")
-QUANTILES_META_KEYS <- c("group", "x", "probs")
-RATIOS_META_KEYS <- c("group", "numerator", "denominator")
+FAMILY_META_KEYS <- c("group", "x")
+
+FREQS_META_KEYS <- FAMILY_META_KEYS
+MEANS_META_KEYS <- FAMILY_META_KEYS
+TOTALS_META_KEYS <- FAMILY_META_KEYS
+VARIANCE_META_KEYS <- FAMILY_META_KEYS
+CORR_META_KEYS <- c(FAMILY_META_KEYS, "method")
+QUANTILES_META_KEYS <- c(FAMILY_META_KEYS, "probs")
+T_TEST_META_KEYS <- c(FAMILY_META_KEYS, "by")
+PAIRWISE_META_KEYS <- c(FAMILY_META_KEYS, "by", "pval_adj")
 DIFFS_META_KEYS <- c(
-  "group",
-  "x",
+  FAMILY_META_KEYS,
   "treats",
   "covariates",
   "family",
@@ -115,8 +123,7 @@ DIFFS_META_KEYS <- c(
   "mean_method",
   "estimate_scale"
 )
-T_TEST_META_KEYS <- c("group", "x", "by")
-PAIRWISE_META_KEYS <- c("group", "x", "by", "pval_adj")
+RATIOS_META_KEYS <- c("group", "numerator", "denominator")
 ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
 
@@ -754,6 +761,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     pct = "estimate",
     r = "estimate",
     ratio = "estimate",
+    variance = "estimate",
     estimate = "estimate",
     df = "parameter"
   )

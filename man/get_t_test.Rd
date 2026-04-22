@@ -115,6 +115,7 @@ Other analysis:
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
 \code{\link{get_totals}()},
+\code{\link{get_variance}()},
 \code{\link{meta}()}
 }
 \concept{analysis}
