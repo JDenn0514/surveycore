@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Getting Started with surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.7.0/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
     </div>
 
@@ -66,11 +66,10 @@
 <p><code>surveycore</code> gives you a (mostly) complete workflow for
 survey data analysis. This vignette is designed to give you a quick
 overview of the main functionality present in this package. It is
-comprised of three main sections:</p>
+comprised of two main sections:</p>
 <ol style="list-style-type: decimal">
 <li><p>Creating survey objects</p></li>
 <li><p>Conducting simple analysis</p></li>
-<li><p>Using <code>surveytidy</code> for data manipulation</p></li>
 </ol>
 <p><strong>Quick PSA before jumping in:</strong></p>
 <p><code>surveycore</code> was built as an alternative to
@@ -488,45 +487,89 @@ would calculate it like this:</p>
 correlations between two or more continuous variables. Confidence
 intervals use the Fisher Z transformation, guaranteeing bounds in (−1,
 1).</p>
-<p>Let’s look at approval for Trump and Biden, but first we’ll do some
-quick data cleaning using the <code>surveytidy</code> package (I’ll go
-more in-depth later showing what this package can do).</p>
+<p>Let’s look at approval for Trump and Biden. First we clean the
+underlying data frame — dropping rows with missing values and removing
+“Not sure” responses (coded <code>999</code>) — then rebuild the survey
+object.</p>
 <div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># drop NAs</span></span>
-<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># remove "Not sure" responses (coded 999)</span></span>
-<span>  <span class="fu">filter_out</span><span class="op">(</span><span class="va">cand_favorability_trump</span> <span class="op">==</span> <span class="fl">999</span> <span class="op">|</span> <span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># calculate correlations</span></span>
-<span>  <span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ns_wave1_clean</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">)</span>,</span>
+<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span><span class="op">)</span>,</span>
+<span>    <span class="va">cand_favorability_trump</span> <span class="op">!=</span> <span class="fl">999</span>,</span>
+<span>    <span class="va">cand_favorability_biden</span> <span class="op">!=</span> <span class="fl">999</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">ns_wave1_clean_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1_clean</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
+<span>  <span class="va">ns_wave1_clean_svy</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
+<span><span class="co">#&gt;   var1         var2           r ci_low ci_high p_value statistic    df     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Donald Trump Joe Biden -<span style="color: #BB0000;">0.495</span> -<span style="color: #BB0000;">0.524</span>  -<span style="color: #BB0000;">0.464</span>       0     -<span style="color: #BB0000;">41.3</span>  <span style="text-decoration: underline;">5</span>276  <span style="text-decoration: underline;">5</span>278</span></span></code></pre>
 <p>Next, let’s look at favorability across multiple variables.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># filter out any respondents who said "Not sure"</span></span>
-<span>  <span class="fu">filter_out</span><span class="op">(</span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">if_any</a></span><span class="op">(</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>,</span>
-<span>      <span class="op">~</span> <span class="va">.x</span> <span class="op">==</span> <span class="fl">999</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fav_vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"cand_favorability_trump"</span>, <span class="st">"cand_favorability_biden"</span>,</span>
+<span>  <span class="st">"cand_favorability_harris"</span>, <span class="st">"cand_favorability_sanders"</span>,</span>
+<span>  <span class="st">"cand_favorability_warren"</span>, <span class="st">"cand_favorability_buttigieg"</span>,</span>
+<span>  <span class="st">"cand_favorability_pence"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ns_wave1_multi</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">if_all</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of</a></span><span class="op">(</span><span class="va">fav_vars</span><span class="op">)</span>, <span class="op">~</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">.x</span> <span class="op">!=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">ns_wave1_multi_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1_multi</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
+<span>  <span class="va">ns_wave1_multi_svy</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 36 × 9</span></span></span>
+<span><span class="co">#&gt;    var1         var2          r   ci_low ci_high   p_value statistic    df     n</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Donald Trump Barack…  0.044<span style="text-decoration: underline;">1</span>  2.50<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span>  0.085<span style="text-decoration: underline;">5</span> 2.11<span style="color: #949494;">e</span><span style="color: #BB0000;">-  2</span>     2.31   <span style="text-decoration: underline;">2</span>734  <span style="text-decoration: underline;">2</span>736</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Donald Trump Alexan…  0.131   8.29<span style="color: #949494;">e</span><span style="color: #BB0000;">-2</span>  0.179  5.30<span style="color: #949494;">e</span><span style="color: #BB0000;">- 12</span>     6.93   <span style="text-decoration: underline;">2</span>737  <span style="text-decoration: underline;">2</span>739</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Donald Trump Joe Bi… -<span style="color: #BB0000;">0.519</span>  -<span style="color: #BB0000;">5.56</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> -<span style="color: #BB0000;">0.479</span>  4.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-189</span>   -<span style="color: #BB0000;">31.8</span>    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Donald Trump Kamala… -<span style="color: #BB0000;">0.604</span>  -<span style="color: #BB0000;">6.34</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> -<span style="color: #BB0000;">0.572</span>  5.40<span style="color: #949494;">e</span><span style="color: #BB0000;">-273</span>   -<span style="color: #BB0000;">39.7</span>    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Donald Trump Pete B… -<span style="color: #BB0000;">0.526</span>  -<span style="color: #BB0000;">5.63</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> -<span style="color: #BB0000;">0.487</span>  4.03<span style="color: #949494;">e</span><span style="color: #BB0000;">-195</span>   -<span style="color: #BB0000;">32.4</span>    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Donald Trump Elizab… -<span style="color: #BB0000;">0.582</span>  -<span style="color: #BB0000;">6.13</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> -<span style="color: #BB0000;">0.549</span>  7.02<span style="color: #949494;">e</span><span style="color: #BB0000;">-249</span>   -<span style="color: #BB0000;">37.5</span>    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Donald Trump Bernie… -<span style="color: #BB0000;">0.526</span>  -<span style="color: #BB0000;">5.64</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span> -<span style="color: #BB0000;">0.486</span>  1.36<span style="color: #949494;">e</span><span style="color: #BB0000;">-195</span>   -<span style="color: #BB0000;">32.4</span>    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Donald Trump Mike P…  0.779   7.64<span style="color: #949494;">e</span><span style="color: #BB0000;">-1</span>  0.793  0   <span style="color: #949494;"> </span>        65.1    <span style="text-decoration: underline;">2</span>746  <span style="text-decoration: underline;">2</span>748</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Barack Obama Alexan…  0.017<span style="text-decoration: underline;">9</span> -<span style="color: #BB0000;">2.16</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-2</span>  0.057<span style="text-decoration: underline;">4</span> 3.50<span style="color: #949494;">e</span><span style="color: #BB0000;">-  1</span>     0.935  <span style="text-decoration: underline;">2</span>726  <span style="text-decoration: underline;">2</span>728</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Barack Obama Joe Bi…  0.021<span style="text-decoration: underline;">8</span> -<span style="color: #BB0000;">7.00</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span>  0.044<span style="text-decoration: underline;">4</span> 2.53<span style="color: #949494;">e</span><span style="color: #BB0000;">-  1</span>     1.14   <span style="text-decoration: underline;">2</span>734  <span style="text-decoration: underline;">2</span>736</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 26 more rows</span></span></span></code></pre>
 <p>The output defaults to a long version where each row is a unique
 variable pair. It shows the correlation in <code>r</code>, the
 confidence intervals, p-values, and other relevant information.</p>
 <p>Switch to wide format for a more familiar correlation-matrix
 layout:</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># filter out any respondents who said "Not sure"</span></span>
-<span>  <span class="fu">filter_out</span><span class="op">(</span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">if_any</a></span><span class="op">(</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>,</span>
-<span>      <span class="op">~</span> <span class="va">.x</span> <span class="op">==</span> <span class="fl">999</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>, format <span class="op">=</span> <span class="st">"wide"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
+<span>  <span class="va">ns_wave1_multi_svy</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>,</span>
+<span>  format <span class="op">=</span> <span class="st">"wide"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 10</span></span></span>
+<span><span class="co">#&gt;   variable      `Donald Trump` `Barack Obama` Alexandria Ocasio-Co…¹ `Joe Biden`</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Donald Trump         <span style="color: #BB0000;">NA</span>             0.044<span style="text-decoration: underline;">1</span>                  0.131      -<span style="color: #BB0000;">0.519</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Barack Obama          0.044<span style="text-decoration: underline;">1</span>       <span style="color: #BB0000;">NA</span>                       0.017<span style="text-decoration: underline;">9</span>      0.021<span style="text-decoration: underline;">8</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Alexandria O…         0.131         0.017<span style="text-decoration: underline;">9</span>                 <span style="color: #BB0000;">NA</span>          -<span style="color: #BB0000;">0.045</span><span style="color: #BB0000; text-decoration: underline;">6</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Joe Biden            -<span style="color: #BB0000;">0.519</span>         0.021<span style="text-decoration: underline;">8</span>                 -<span style="color: #BB0000;">0.045</span><span style="color: #BB0000; text-decoration: underline;">6</span>     <span style="color: #BB0000;">NA</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Kamala Harris        -<span style="color: #BB0000;">0.604</span>         0.021<span style="text-decoration: underline;">4</span>                 -<span style="color: #BB0000;">0.042</span><span style="color: #BB0000; text-decoration: underline;">5</span>      0.690 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> Pete Buttigi…        -<span style="color: #BB0000;">0.526</span>        -<span style="color: #BB0000;">0.043</span><span style="color: #BB0000; text-decoration: underline;">7</span>                 -<span style="color: #BB0000;">0.025</span><span style="color: #BB0000; text-decoration: underline;">8</span>      0.692 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> Elizabeth Wa…        -<span style="color: #BB0000;">0.582</span>        -<span style="color: #BB0000;">0.051</span><span style="color: #BB0000; text-decoration: underline;">1</span>                 -<span style="color: #BB0000;">0.018</span><span style="color: #BB0000; text-decoration: underline;">4</span>      0.677 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> Bernie Sande…        -<span style="color: #BB0000;">0.526</span>        -<span style="color: #BB0000;">0.005</span><span style="color: #BB0000; text-decoration: underline;">08</span>                -<span style="color: #BB0000;">0.022</span><span style="color: #BB0000; text-decoration: underline;">5</span>      0.667 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> Mike Pence            0.779         0.005<span style="text-decoration: underline;">38</span>                 0.100      -<span style="color: #BB0000;">0.387</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ abbreviated name: ¹​`Alexandria Ocasio-Cortez`</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: `Kamala Harris` &lt;dbl&gt;, `Pete Buttigieg` &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   `Elizabeth Warren` &lt;dbl&gt;, `Bernie Sanders` &lt;dbl&gt;, `Mike Pence` &lt;dbl&gt;</span></span></span></code></pre>
 <hr>
 </div>
 <div class="section level3">
@@ -546,17 +589,16 @@ ratio of Trump’s aggregate favorability score to Biden’s. A ratio less
 than 1 means Trump’s aggregate score is lower — i.e., he is viewed more
 favorably on average; a ratio greater than 1 means Biden is viewed more
 favorably.</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># drop NAs</span></span>
-<span>  <span class="fu">drop_na</span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># remove people who don't know enough about Trump or Biden</span></span>
-<span>  <span class="fu">filter_out</span><span class="op">(</span><span class="va">cand_favorability_trump</span> <span class="op">==</span> <span class="fl">999</span> <span class="op">|</span> <span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># get the ratio of favorability</span></span>
-<span>  <span class="fu"><a href="../reference/get_ratios.html">get_ratios</a></span><span class="op">(</span></span>
-<span>    numerator <span class="op">=</span> <span class="va">cand_favorability_trump</span>,</span>
-<span>    denominator <span class="op">=</span> <span class="va">cand_favorability_biden</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_ratios.html">get_ratios</a></span><span class="op">(</span></span>
+<span>  <span class="va">ns_wave1_clean_svy</span>,</span>
+<span>  numerator <span class="op">=</span> <span class="va">cand_favorability_trump</span>,</span>
+<span>  denominator <span class="op">=</span> <span class="va">cand_favorability_biden</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;   ratio ci_low ci_high     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  1.16   1.12    1.20  <span style="text-decoration: underline;">5</span>278</span></span></code></pre>
 <hr>
 </div>
 <div class="section level3">
@@ -569,7 +611,7 @@ intervals are derived by inverting the weighted CDF rather than assuming
 normality, so they are generally <strong>asymmetric</strong> around the
 estimate and always respect the range of the data. By default, it
 calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))</span></span>
 <span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 5</span></span></span>
@@ -583,14 +625,14 @@ calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
 </h4>
 <p>Pass any numeric vector to <code>probs</code>. For the median
 alone:</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> p50            47     46      49  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
 <p>For deciles of age:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 5</span></span></span>
 <span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
@@ -613,7 +655,7 @@ alone:</p>
 computing estimates separately within levels of a categorical variable.
 Pass a bare column name or multiple using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. For example,
 we’ll look at Trump consideration by party identification.</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">consider_trump</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 12 × 4</span></span></span>
 <span><span class="co">#&gt;    pid3           consider_trump    pct     n</span></span>
@@ -677,7 +719,7 @@ You can request any combination of:</p>
 <p>The <code>conf_level</code> argument controls the confidence level
 for <code>"ci"</code> and <code>"moe"</code>. The default is
 <code>0.95</code>; for a 90% CI:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_svy</span>,</span>
 <span>  <span class="va">age</span>,</span>
@@ -703,7 +745,7 @@ populations. In this example, we’re looking at the proportion
 (<code>pct</code>), the number of people from the sample
 (<code>n</code>), and the estimated population size
 (<code>n_weighted</code>) of Jewish- Americans in each age category.</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span>, <span class="va">age4cat</span>, n_weighted <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   age4cat      pct     n n_weighted</span></span>
@@ -713,94 +755,6 @@ populations. In this example, we’re looking at the proportion
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 50-64     0.231   <span style="text-decoration: underline;">1</span>431   2<span style="text-decoration: underline;">300</span>014.</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 65+       0.241   <span style="text-decoration: underline;">2</span>336   2<span style="text-decoration: underline;">406</span>454.</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> No Answer 0.022<span style="text-decoration: underline;">0</span>   130    <span style="text-decoration: underline;">218</span>962.</span></span></code></pre>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="using-surveytidy">Using <code>surveytidy</code><a class="anchor" aria-label="anchor" href="#using-surveytidy"></a>
-</h2>
-<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"jacobdennen/surveytidy"</span><span class="op">)</span></span></code></pre></div>
-<p>All analysis functions make it easy to pipe in the survey design as
-well. This allows you to manipulate the data with dplyr-like verbs from
-the <code>surveytidy</code> package. We briefly saw an example of this
-earlier when looking at correlations. The <code>surveytidy</code>
-package provides dplyr verbs like: <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>,
-<code>select()</code>, <code>mutate()</code>, <code>group_by()</code>,
-<code>rename()</code>, and a few others that work directly on survey
-objects. We’ll show a few of those in play with the Nationscape data
-again.</p>
-<p>We’ll rename the variable for Biden’s favorability, then create a new
-one where we add 1 to it, and then select the relevant columns to
-compare.</p>
-<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># rename the variable</span></span>
-<span>  <span class="fu">rename</span><span class="op">(</span>fav_biden <span class="op">=</span> <span class="va">cand_favorability_biden</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># let's start with a simple example of adding 1 to favorability of Biden</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span>fav_biden_1 <span class="op">=</span> <span class="va">fav_biden</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># now let's look at the results</span></span>
-<span>  <span class="fu">select</span><span class="op">(</span><span class="va">fav_biden</span>, <span class="va">fav_biden_1</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="grouped-analysis-with-group_by">Grouped analysis with <code>group_by()</code><a class="anchor" aria-label="anchor" href="#grouped-analysis-with-group_by"></a>
-</h3>
-<p>Now let’s do a slightly more in-depth example. We’re going to look at
-how people view Trump by age group. First, let’s create the necessary
-variables.</p>
-<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">&lt;-</span> <span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># rename trump favorability</span></span>
-<span>  <span class="fu">rename</span><span class="op">(</span>fav_trump <span class="op">=</span> <span class="va">cand_favorability_trump</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">mutate</span><span class="op">(</span></span>
-<span>    <span class="co"># convert favorability of Trump to a 3 level factor</span></span>
-<span>    fav_trump_f3 <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/recode-and-replace-values.html" class="external-link">recode_values</a></span><span class="op">(</span></span>
-<span>      <span class="va">fav_trump</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span> <span class="op">~</span> <span class="st">"Favorable"</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span> <span class="op">~</span> <span class="st">"Unfavorable"</span>,</span>
-<span>      <span class="fl">999</span> <span class="op">~</span> <span class="st">"Haven't heard enough"</span></span>
-<span>    <span class="op">)</span>,</span>
-<span>    age_f4 <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
-<span>      <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">30</span> <span class="op">~</span> <span class="st">"18-29"</span>,</span>
-<span>      <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">50</span> <span class="op">~</span> <span class="st">"30-49"</span>,</span>
-<span>      <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">65</span> <span class="op">~</span> <span class="st">"50-64"</span>,</span>
-<span>      <span class="va">age</span> <span class="op">&gt;</span> <span class="fl">64</span> <span class="op">~</span> <span class="st">"65+"</span>,</span>
-<span>      .default <span class="op">=</span> <span class="cn">NA_character_</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span> <span class="fu">select</span><span class="op">(</span><span class="va">fav_trump</span>, <span class="va">fav_trump_f3</span>, <span class="va">age</span>, <span class="va">age_f4</span><span class="op">)</span></span></code></pre></div>
-<p>Now let’s look at the grouped frequencies. So far, we’ve used the
-<code>group</code> argument, but we can also <code>group_by()</code>
-from surveytidy. Looking below, we can see that they return identical
-results.</p>
-<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">age_f4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">fav_trump_f3</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">fav_trump_f3</span>, group <span class="op">=</span> <span class="va">age_f4</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="using-filter-for-domain-estimation">Using <code>filter()</code> for domain estimation<a class="anchor" aria-label="anchor" href="#using-filter-for-domain-estimation"></a>
-</h3>
-<p>It is very common in survey analysis to calculate results among
-subgroups. For example, you may be interested in knowing how people
-under 30 view Trump. One way is to do what we just did, use
-<code>group_by()</code> on an age category. A simpler method is using
-the <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> and <code>filter_out()</code> functions from
-surveytidy. For example:</p>
-<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># keep only people under 30 in the domain</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&lt;</span> <span class="fl">30</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="co"># calculate frequencies</span></span>
-<span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">fav_trump_f3</span><span class="op">)</span></span></code></pre></div>
-<p>As you can see, the results are the same as those calculated via
-<code>group_by()</code> and <code>group</code>. That’s because the
-method for estimating subpopulation results is the same in both.</p>
-<p>For more information on domain estimation, a vignette on surveytidy’s
-website will be up shortly.</p>
 <hr>
 </div>
 </div>

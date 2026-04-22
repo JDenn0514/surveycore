@@ -2,14 +2,12 @@
 
 `surveycore` gives you a (mostly) complete workflow for survey data
 analysis. This vignette is designed to give you a quick overview of the
-main functionality present in this package. It is comprised of three
-main sections:
+main functionality present in this package. It is comprised of two main
+sections:
 
 1.  Creating survey objects
 
 2.  Conducting simple analysis
-
-3.  Using `surveytidy` for data manipulation
 
 **Quick PSA before jumping in:**
 
@@ -503,34 +501,69 @@ estimates survey-weighted Pearson correlations between two or more
 continuous variables. Confidence intervals use the Fisher Z
 transformation, guaranteeing bounds in (−1, 1).
 
-Let’s look at approval for Trump and Biden, but first we’ll do some
-quick data cleaning using the `surveytidy` package (I’ll go more
-in-depth later showing what this package can do).
+Let’s look at approval for Trump and Biden. First we clean the
+underlying data frame — dropping rows with missing values and removing
+“Not sure” responses (coded `999`) — then rebuild the survey object.
 
 ``` r
-ns_wave1_svy |>
-  # drop NAs
-  drop_na(cand_favorability_trump, cand_favorability_biden) |>
-  # remove "Not sure" responses (coded 999)
-  filter_out(cand_favorability_trump == 999 | cand_favorability_biden == 999) |>
-  # calculate correlations
-  get_corr(c(cand_favorability_trump, cand_favorability_biden))
+ns_wave1_clean <- ns_wave1 |>
+  dplyr::filter(
+    !is.na(cand_favorability_trump),
+    !is.na(cand_favorability_biden),
+    cand_favorability_trump != 999,
+    cand_favorability_biden != 999
+  )
+
+ns_wave1_clean_svy <- as_survey_nonprob(ns_wave1_clean, weights = weight)
+
+get_corr(
+  ns_wave1_clean_svy,
+  c(cand_favorability_trump, cand_favorability_biden)
+)
 ```
+
+    #> # A tibble: 1 × 9
+    #>   var1         var2           r ci_low ci_high p_value statistic    df     n
+    #>   <fct>        <fct>      <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
+    #> 1 Donald Trump Joe Biden -0.495 -0.524  -0.464       0     -41.3  5276  5278
 
 Next, let’s look at favorability across multiple variables.
 
 ``` r
-ns_wave1_svy |>
-  drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
-  # filter out any respondents who said "Not sure"
-  filter_out(
-    dplyr::if_any(
-      c(cand_favorability_trump:cand_favorability_pence),
-      ~ .x == 999
-    )
-  ) |>
-  get_corr(c(cand_favorability_trump:cand_favorability_pence))
+fav_vars <- c(
+  "cand_favorability_trump", "cand_favorability_biden",
+  "cand_favorability_harris", "cand_favorability_sanders",
+  "cand_favorability_warren", "cand_favorability_buttigieg",
+  "cand_favorability_pence"
+)
+
+ns_wave1_multi <- ns_wave1 |>
+  dplyr::filter(
+    dplyr::if_all(dplyr::all_of(fav_vars), ~ !is.na(.x) & .x != 999)
+  )
+
+ns_wave1_multi_svy <- as_survey_nonprob(ns_wave1_multi, weights = weight)
+
+get_corr(
+  ns_wave1_multi_svy,
+  c(cand_favorability_trump:cand_favorability_pence)
+)
 ```
+
+    #> # A tibble: 36 × 9
+    #>    var1         var2          r   ci_low ci_high   p_value statistic    df     n
+    #>    <fct>        <fct>     <dbl>    <dbl>   <dbl>     <dbl>     <dbl> <int> <int>
+    #>  1 Donald Trump Barack…  0.0441  2.50e-3  0.0855 2.11e-  2     2.31   2734  2736
+    #>  2 Donald Trump Alexan…  0.131   8.29e-2  0.179  5.30e- 12     6.93   2737  2739
+    #>  3 Donald Trump Joe Bi… -0.519  -5.56e-1 -0.479  4.31e-189   -31.8    2746  2748
+    #>  4 Donald Trump Kamala… -0.604  -6.34e-1 -0.572  5.40e-273   -39.7    2746  2748
+    #>  5 Donald Trump Pete B… -0.526  -5.63e-1 -0.487  4.03e-195   -32.4    2746  2748
+    #>  6 Donald Trump Elizab… -0.582  -6.13e-1 -0.549  7.02e-249   -37.5    2746  2748
+    #>  7 Donald Trump Bernie… -0.526  -5.64e-1 -0.486  1.36e-195   -32.4    2746  2748
+    #>  8 Donald Trump Mike P…  0.779   7.64e-1  0.793  0            65.1    2746  2748
+    #>  9 Barack Obama Alexan…  0.0179 -2.16e-2  0.0574 3.50e-  1     0.935  2726  2728
+    #> 10 Barack Obama Joe Bi…  0.0218 -7.00e-4  0.0444 2.53e-  1     1.14   2734  2736
+    #> # ℹ 26 more rows
 
 The output defaults to a long version where each row is a unique
 variable pair. It shows the correlation in `r`, the confidence
@@ -539,17 +572,28 @@ intervals, p-values, and other relevant information.
 Switch to wide format for a more familiar correlation-matrix layout:
 
 ``` r
-ns_wave1_svy |>
-  drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
-  # filter out any respondents who said "Not sure"
-  filter_out(
-    dplyr::if_any(
-      c(cand_favorability_trump:cand_favorability_pence),
-      ~ .x == 999
-    )
-  ) |>
-  get_corr(c(cand_favorability_trump:cand_favorability_pence), format = "wide")
+get_corr(
+  ns_wave1_multi_svy,
+  c(cand_favorability_trump:cand_favorability_pence),
+  format = "wide"
+)
 ```
+
+    #> # A tibble: 9 × 10
+    #>   variable      `Donald Trump` `Barack Obama` Alexandria Ocasio-Co…¹ `Joe Biden`
+    #>   <chr>                  <dbl>          <dbl>                  <dbl>       <dbl>
+    #> 1 Donald Trump         NA             0.0441                  0.131      -0.519 
+    #> 2 Barack Obama          0.0441       NA                       0.0179      0.0218
+    #> 3 Alexandria O…         0.131         0.0179                 NA          -0.0456
+    #> 4 Joe Biden            -0.519         0.0218                 -0.0456     NA     
+    #> 5 Kamala Harris        -0.604         0.0214                 -0.0425      0.690 
+    #> 6 Pete Buttigi…        -0.526        -0.0437                 -0.0258      0.692 
+    #> 7 Elizabeth Wa…        -0.582        -0.0511                 -0.0184      0.677 
+    #> 8 Bernie Sande…        -0.526        -0.00508                -0.0225      0.667 
+    #> 9 Mike Pence            0.779         0.00538                 0.100      -0.387 
+    #> # ℹ abbreviated name: ¹​`Alexandria Ocasio-Cortez`
+    #> # ℹ 5 more variables: `Kamala Harris` <dbl>, `Pete Buttigieg` <dbl>,
+    #> #   `Elizabeth Warren` <dbl>, `Bernie Sanders` <dbl>, `Mike Pence` <dbl>
 
 ------------------------------------------------------------------------
 
@@ -576,17 +620,17 @@ favorably on average; a ratio greater than 1 means Biden is viewed more
 favorably.
 
 ``` r
-ns_wave1_svy |>
-  # drop NAs
-  drop_na(cand_favorability_trump, cand_favorability_biden) |>
-  # remove people who don't know enough about Trump or Biden
-  filter_out(cand_favorability_trump == 999 | cand_favorability_biden == 999) |>
-  # get the ratio of favorability
-  get_ratios(
-    numerator = cand_favorability_trump,
-    denominator = cand_favorability_biden
-  )
+get_ratios(
+  ns_wave1_clean_svy,
+  numerator = cand_favorability_trump,
+  denominator = cand_favorability_biden
+)
 ```
+
+    #> # A tibble: 1 × 4
+    #>   ratio ci_low ci_high     n
+    #>   <dbl>  <dbl>   <dbl> <int>
+    #> 1  1.16   1.12    1.20  5278
 
 ------------------------------------------------------------------------
 
@@ -736,104 +780,6 @@ get_freqs(pew_jewish_svy, age4cat, n_weighted = TRUE)
     #> 3 50-64     0.231   1431   2300014.
     #> 4 65+       0.241   2336   2406454.
     #> 5 No Answer 0.0220   130    218962.
-
-------------------------------------------------------------------------
-
-## Using `surveytidy`
-
-``` r
-pak::pak("jacobdennen/surveytidy")
-```
-
-All analysis functions make it easy to pipe in the survey design as
-well. This allows you to manipulate the data with dplyr-like verbs from
-the `surveytidy` package. We briefly saw an example of this earlier when
-looking at correlations. The `surveytidy` package provides dplyr verbs
-like: [`filter()`](https://rdrr.io/r/stats/filter.html), `select()`,
-`mutate()`, `group_by()`, `rename()`, and a few others that work
-directly on survey objects. We’ll show a few of those in play with the
-Nationscape data again.
-
-We’ll rename the variable for Biden’s favorability, then create a new
-one where we add 1 to it, and then select the relevant columns to
-compare.
-
-``` r
-ns_wave1_svy |>
-  # rename the variable
-  rename(fav_biden = cand_favorability_biden) |>
-  # let's start with a simple example of adding 1 to favorability of Biden
-  mutate(fav_biden_1 = fav_biden + 1) |>
-  # now let's look at the results
-  select(fav_biden, fav_biden_1)
-```
-
-### Grouped analysis with `group_by()`
-
-Now let’s do a slightly more in-depth example. We’re going to look at
-how people view Trump by age group. First, let’s create the necessary
-variables.
-
-``` r
-ns_wave1_svy <- ns_wave1_svy |>
-  # rename trump favorability
-  rename(fav_trump = cand_favorability_trump) |>
-  mutate(
-    # convert favorability of Trump to a 3 level factor
-    fav_trump_f3 = dplyr::recode_values(
-      fav_trump,
-      c(1:2) ~ "Favorable",
-      c(3:4) ~ "Unfavorable",
-      999 ~ "Haven't heard enough"
-    ),
-    age_f4 = dplyr::case_when(
-      age < 30 ~ "18-29",
-      age < 50 ~ "30-49",
-      age < 65 ~ "50-64",
-      age > 64 ~ "65+",
-      .default = NA_character_
-    )
-  )
-
-ns_wave1_svy |> select(fav_trump, fav_trump_f3, age, age_f4)
-```
-
-Now let’s look at the grouped frequencies. So far, we’ve used the
-`group` argument, but we can also `group_by()` from surveytidy. Looking
-below, we can see that they return identical results.
-
-``` r
-ns_wave1_svy |>
-  group_by(age_f4) |>
-  get_freqs(fav_trump_f3)
-
-ns_wave1_svy |>
-  get_freqs(fav_trump_f3, group = age_f4)
-```
-
-### Using `filter()` for domain estimation
-
-It is very common in survey analysis to calculate results among
-subgroups. For example, you may be interested in knowing how people
-under 30 view Trump. One way is to do what we just did, use `group_by()`
-on an age category. A simpler method is using the
-[`filter()`](https://rdrr.io/r/stats/filter.html) and `filter_out()`
-functions from surveytidy. For example:
-
-``` r
-ns_wave1_svy |>
-  # keep only people under 30 in the domain
-  filter(age < 30) |>
-  # calculate frequencies
-  get_freqs(fav_trump_f3)
-```
-
-As you can see, the results are the same as those calculated via
-`group_by()` and `group`. That’s because the method for estimating
-subpopulation results is the same in both.
-
-For more information on domain estimation, a vignette on surveytidy’s
-website will be up shortly.
 
 ------------------------------------------------------------------------
 
