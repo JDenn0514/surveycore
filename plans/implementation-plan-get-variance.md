@@ -16,7 +16,7 @@ rule. PR 2 consumes PR 1's helpers; it does not re-author them.
 
 ## PR map
 
-- [ ] **PR 1: feature/get-variance-core** — Ship the full `get_variance()` public API with Taylor + replicate dispatch, the `FAMILY_META_KEYS` refactor, the `survey_variance` print method, the broom adapter rename, and the full non-dispatch-specific test suite.
+- [x] **PR 1: feature/get-variance-core** — Ship the full `get_variance()` public API with Taylor + replicate dispatch, the `FAMILY_META_KEYS` refactor, the `survey_variance` print method, the broom adapter rename, and the full non-dispatch-specific test suite.
 
   - **Tasks** (2–5 min each, TDD sub-steps explicit)
 
