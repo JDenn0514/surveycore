@@ -299,12 +299,177 @@
 }
 
 
+# ── .twophase_variance_cell() ─────────────────────────────────────────────────
+#
+# Two-phase domain variance of variance. Builds the score z_i on the Phase 2
+# rows (using the calibrated weights w_full / pi2_full) and runs the score's
+# weighted-mean influence function through .twophasevar().
+#
+# Rows that are Phase 1 only (subset = FALSE) contribute zero influence: they
+# are excluded from `n`, the weighted mean of the score, and the influence
+# vector. This matches .twophase_mean_cell()'s treatment of the mean.
+#
+# @param design  A survey_twophase object.
+# @param y_col   Character: variable name.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: variance, se, se_srs, n, n_weighted.
+.twophase_variance_cell <- function(design, y_col, domain) {
+  data <- design@data
+  ph1_vars <- design@variables$phase1
+  subset <- data[[design@variables$subset]] # logical, full length
+
+  w_full <- data[[ph1_vars$weights]]
+  pi2_full <- .compute_phase2_probs(design, subset)
+  cal_wt_full <- w_full / pi2_full
+
+  # Restrict to Phase 2 rows
+  dom_ph2 <- domain[subset]
+  cal_ph2 <- cal_wt_full[subset]
+  y_ph2 <- data[[y_col]][subset]
+
+  sc <- .score_variance(y_ph2, cal_ph2, dom_ph2)
+  n_d <- sc$n_d
+
+  if (n_d == 0L || !is.finite(sc$W) || sc$W <= 0) {
+    return(list(
+      variance = NaN,
+      se = NaN,
+      se_srs = NaN,
+      n = 0L,
+      n_weighted = 0
+    ))
+  }
+
+  if (n_d < 2L) {
+    return(list(
+      variance = NaN,
+      se = NaN,
+      se_srs = NaN,
+      n = n_d,
+      n_weighted = sc$W
+    ))
+  }
+
+  v_hat <- sc$v_hat
+  W <- sc$W
+  score_ph2 <- sc$score
+  active_num_ph2 <- as.numeric(sc$active)
+
+  # Influence of the weighted mean of the score on Phase 2 rows:
+  #   u_i = cal_wt_i * active_i * (score_i - v_hat) / W
+  # Embed in the full-length vector with 0 on Phase 1-only rows.
+  infl_ph2 <- cal_ph2 * active_num_ph2 * (score_ph2 - v_hat) / W
+  n_total <- nrow(data)
+  influence <- numeric(n_total)
+  ph2_idx <- which(subset)
+  influence[ph2_idx] <- infl_ph2
+
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
+  v_raw <- .twophasevar(influence, design, lonely.psu)
+  v_scalar <- if (is.matrix(v_raw)) drop(v_raw)[1L] else as.numeric(v_raw)
+
+  se <- sqrt(max(0, v_scalar))
+
+  # SRS-equivalent SE for design effect: treat the score as an ordinary
+  # variable under SRS sampling of size n_d.
+  sc_active <- score_ph2[sc$active]
+  score_mean <- mean(sc_active)
+  se_srs <- if (n_d >= 2L) {
+    s2 <- sum((sc_active - score_mean)^2) / (n_d - 1L)
+    sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    variance = v_hat,
+    se = se,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = W
+  )
+}
+
+
+# ── .nonprob_variance_cell() ──────────────────────────────────────────────────
+#
+# Non-probability (calibrated) domain variance of variance. Uses the HT
+# Taylor linearization of the weighted mean of the score, matching
+# survey::svydesign(ids=~1)'s treatment of svyvar():
+#   z_i = a_i * (y_i - ybar_d)^2 * n/(n-1)
+#   Var(V_hat) = n/(n-1) * sum(w_i^2 * (z_i - V_hat)^2) / W^2
+# where W = sum(w_i * a_i) and the sum runs over active rows.
+#
+# Zero-weight rows are excluded from `n`, the weighted mean, and the variance
+# calculation (via .score_variance()'s active-mask which requires w > 0).
+#
+# @param design  A survey_nonprob object.
+# @param y_col   Character: variable name.
+# @param domain  Numeric 0/1 vector (full length).
+# @return Named list: variance, se, se_srs, n, n_weighted.
+.nonprob_variance_cell <- function(design, y_col, domain) {
+  data <- design@data
+  vars <- design@variables
+  w <- data[[vars$weights]]
+  y_all <- data[[y_col]]
+
+  sc <- .score_variance(y_all, w, domain)
+  n_d <- sc$n_d
+
+  if (n_d == 0L || !is.finite(sc$W) || sc$W <= 0) {
+    return(list(
+      variance = NaN,
+      se = NaN,
+      se_srs = NaN,
+      n = 0L,
+      n_weighted = 0
+    ))
+  }
+
+  if (n_d < 2L) {
+    return(list(
+      variance = NaN,
+      se = NaN,
+      se_srs = NaN,
+      n = n_d,
+      n_weighted = sc$W
+    ))
+  }
+
+  v_hat <- sc$v_hat
+  W <- sc$W
+  active <- sc$active
+  w_sub <- w[active]
+  score_sub <- sc$score[active]
+
+  # HT Taylor linearization of the weighted mean:
+  #   Var(V_hat) = n/(n-1) * sum(w_i^2 * (z_i - V_hat)^2) / W^2
+  var_vhat <- (n_d / (n_d - 1L)) * sum(w_sub^2 * (score_sub - v_hat)^2) / W^2
+  se <- sqrt(max(0, var_vhat))
+
+  score_mean <- mean(score_sub)
+  se_srs <- if (n_d >= 2L) {
+    s2 <- sum((score_sub - score_mean)^2) / (n_d - 1L)
+    sqrt(s2 / n_d)
+  } else {
+    0
+  }
+
+  list(
+    variance = v_hat,
+    se = se,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = W
+  )
+}
+
+
 # ── .variance_cell() ──────────────────────────────────────────────────────────
 #
 # Dispatch to the correct per-cell variance estimator by design class.
-# PR 1 supports survey_taylor and survey_replicate only; survey_twophase
-# and survey_nonprob raise surveycore_error_unsupported_class and are
-# implemented in PR 2.
+# Supports survey_taylor, survey_replicate, survey_twophase, and
+# survey_nonprob.
 #
 # @param design  Any survey design object.
 # @param y_col   Character: variable name.
@@ -315,21 +480,10 @@
     .taylor_variance_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_variance_cell(design, y_col, domain)
-  } else if (
-    S7::S7_inherits(design, survey_twophase) ||
-      S7::S7_inherits(design, survey_nonprob)
-  ) {
-    # Deferred to PR 2.
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.fn get_variance} does not yet support ",
-          "{.cls {class(design)[[1L]]}}."
-        ),
-        "i" = "Twophase and nonprob dispatch ships in a follow-up release."
-      ),
-      class = "surveycore_error_unsupported_class"
-    )
+  } else if (S7::S7_inherits(design, survey_twophase)) {
+    .twophase_variance_cell(design, y_col, domain)
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
+    .nonprob_variance_cell(design, y_col, domain)
   } else {
     cli::cli_abort(
       c(
