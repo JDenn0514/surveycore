@@ -128,7 +128,7 @@ rule. PR 2 consumes PR 1's helpers; it does not re-author them.
 
   - **Pipeline split**: recommended
 
-- [ ] **PR 2: feature/get-variance-twophase-nonprob-collection** — Extend `.variance_cell()` to cover `survey_twophase` and `survey_nonprob`; wire `survey_collection` dispatch through `.dispatch_over_collection()`; add the numerical parity tests and collection edge-case coverage that PR 1 did not ship.
+- [x] **PR 2: feature/get-variance-twophase-nonprob-collection** — Extend `.variance_cell()` to cover `survey_twophase` and `survey_nonprob`; wire `survey_collection` dispatch through `.dispatch_over_collection()`; add the numerical parity tests and collection edge-case coverage that PR 1 did not ship.
 
   - **Tasks** (2–5 min each, TDD sub-steps explicit)
 
