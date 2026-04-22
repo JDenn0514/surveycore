@@ -180,6 +180,8 @@ against the messages defined here.
 | D-2 | `classify_question_type()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_detect_no_vars` | `"x" = "{.fn classify_question_type} requires at least one variable name."` |
 | D-3 | `classify_question_type()` | SATA variable has no shared `question_preface` with other requested variables | WARN | `surveycore_warning_sata_no_preface` | `"!" = "Variable {.field {var_name}} is marked SATA but has no shared {.code question_preface} with other variables. Classified as {.val single}."` |
 | D-4 | `classify_question_type()` | Mixed SATA status within a `question_preface` group | WARN | `surveycore_warning_sata_mixed_group` | `"!" = "Variables sharing {.code question_preface} {.val {preface}} have mixed SATA status. Treating entire group as {.val sata}. Use {.fn set_sata} to mark all variables in the group."` |
+| V-1 | `get_variance()` | All values of a focal variable are `NA` in the active domain (per-variable, after `na.rm`) | WARN | `surveycore_warning_variance_all_na` | `"!" = "All values of {.field {var}} are {.code NA} in the active domain. Returning {.code NaN} with {.code n = 0}."` |
+| V-2 | `get_variance()` | Focal variable has fewer than 2 non-NA observations (with positive weight) in the active domain | WARN | `surveycore_warning_variance_insufficient_n` | `"!" = "{.field {var}} has {n} non-NA observation{?s} in the active domain; variance requires at least 2. Returning {.code NaN}."` |
 
 ### survey_collection rows (PR 1)
 
