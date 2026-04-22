@@ -1,3 +1,14 @@
+# surveycore (development version)
+
+## New functions
+
+* `get_variance()` computes design-based finite-population variance estimates for one or more numeric variables in a survey design, matching `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_variance` tibble with point estimate, SE, CI, CV, MOE, design effect (`deff`), and cell sizes. Supports grouping (via `group =` and `group_by()`), per-variable `na_handling = "pairwise"` (default) or `"listwise"`, `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Taylor (`survey_taylor`) and replicate-weight (`survey_replicate`) dispatch ship in this release; twophase, nonprob, and `survey_collection` dispatch ship in a follow-up.
+
+## New warning classes
+
+* `surveycore_warning_variance_all_na` — fired when every row of the active domain is `NA` on the focal variable.
+* `surveycore_warning_variance_insufficient_n` — fired when the focal variable has fewer than two non-`NA` observations in the active domain (variance is undefined).
+
 # surveycore 0.7.0
 
 ## Breaking changes
