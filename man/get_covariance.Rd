@@ -45,7 +45,8 @@ appears once in supply order (lower-triangle). If \code{TRUE}, both
 
 \item{diagonal}{Logical. If \code{FALSE} (default), self-pairs \verb{(x, x)} are
 excluded. If \code{TRUE}, one self-pair per variable is emitted with
-\verb{covariance = Var̂(x)} (the design-based variance — \strong{not} \code{1}).}
+\verb{covariance = \eqn{\widehat{\mathrm{Var}}(x)}{Var_hat(x)}} (the
+design-based variance -- \strong{not} \code{1}).}
 
 \item{variance}{\code{NULL} or a character vector of one or more of \code{"se"},
 \code{"ci"}, \code{"var"}, \code{"cv"}, \code{"moe"}, \code{"deff"}. Default \code{"ci"}.}

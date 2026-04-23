@@ -62,7 +62,8 @@
 #'   `(A, B)` and `(B, A)` are emitted.
 #' @param diagonal Logical. If `FALSE` (default), self-pairs `(x, x)` are
 #'   excluded. If `TRUE`, one self-pair per variable is emitted with
-#'   `covariance = Var̂(x)` (the design-based variance — **not** `1`).
+#'   `covariance = \eqn{\widehat{\mathrm{Var}}(x)}{Var_hat(x)}` (the
+#'   design-based variance -- **not** `1`).
 #' @param variance `NULL` or a character vector of one or more of `"se"`,
 #'   `"ci"`, `"var"`, `"cv"`, `"moe"`, `"deff"`. Default `"ci"`.
 #' @param conf_level Numeric scalar in `(0, 1)`. Default `0.95`.
