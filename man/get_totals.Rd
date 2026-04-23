@@ -112,6 +112,7 @@ Other analysis:
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},
+\code{\link{get_covariance}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
