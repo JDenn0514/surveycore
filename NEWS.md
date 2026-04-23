@@ -3,11 +3,15 @@
 ## New functions
 
 * `get_variance()` computes design-based finite-population variance estimates for one or more numeric variables in a survey design, matching `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_variance` tibble with point estimate, SE, CI, CV, MOE, design effect (`deff`), and cell sizes. Supports grouping (via `group =` and `group_by()`), per-variable `na_handling = "pairwise"` (default) or `"listwise"`, `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Dispatches over `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`, and `survey_collection` designs.
+* `get_covariance()` computes design-based finite-population covariance estimates for all unordered pairs drawn from one or more numeric variables in a survey design, matching the off-diagonal entries of `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_covariance` tibble with covariance, SE, CI, CV, MOE, design effect (`deff`), and pairwise cell sizes. Pearson-only, pairwise-complete NA handling. Supports grouping (via `group =` and `group_by()`), `redundant = TRUE` to include both `(x, y)` and `(y, x)` orderings, `diagonal = TRUE` to include `(x, x)` self-pairs (which equal `get_variance(x)` exactly at `1e-10`), `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Dispatches over `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`, and `survey_collection` designs.
 
 ## New warning classes
 
 * `surveycore_warning_variance_all_na` — fired when every row of the active domain is `NA` on the focal variable.
 * `surveycore_warning_variance_insufficient_n` — fired when the focal variable has fewer than two non-`NA` observations in the active domain (variance is undefined).
+* `surveycore_warning_covariance_all_na` — fired when every row of the active domain is `NA` on at least one variable in the pair.
+* `surveycore_warning_covariance_insufficient_n` — fired when a pair has fewer than two pairwise-complete observations in the active domain (covariance is undefined).
+* `surveycore_warning_covariance_non_numeric` — fired when one or more variables passed via `x` are non-numeric and silently dropped from the pair list.
 
 # surveycore 0.7.0
 

@@ -109,6 +109,7 @@ MEANS_META_KEYS <- FAMILY_META_KEYS
 TOTALS_META_KEYS <- FAMILY_META_KEYS
 VARIANCE_META_KEYS <- FAMILY_META_KEYS
 CORR_META_KEYS <- c(FAMILY_META_KEYS, "method")
+COVARIANCE_META_KEYS <- c(FAMILY_META_KEYS, "method")
 QUANTILES_META_KEYS <- c(FAMILY_META_KEYS, "probs")
 T_TEST_META_KEYS <- c(FAMILY_META_KEYS, "by")
 PAIRWISE_META_KEYS <- c(FAMILY_META_KEYS, "by", "pval_adj")
@@ -762,6 +763,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     r = "estimate",
     ratio = "estimate",
     variance = "estimate",
+    covariance = "estimate",
     estimate = "estimate",
     df = "parameter"
   )

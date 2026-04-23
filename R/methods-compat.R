@@ -45,3 +45,25 @@ glance.survey_variance <- function(x, ...) {
     n_vars = length(unique(x$name))
   )
 }
+
+
+# ── broom tidy / glance for survey_covariance ────────────────────────────────
+#
+# Same minimal shim pattern as `survey_variance`. Registered in zzz.R under
+# the broom generics. tidy() returns the result as a plain tibble; glance()
+# returns a 1-row summary with row count and unique-pair count.
+
+# @keywords internal
+# @noRd
+tidy.survey_covariance <- function(x, ...) {
+  tibble::as_tibble(x)
+}
+
+# @keywords internal
+# @noRd
+glance.survey_covariance <- function(x, ...) {
+  tibble::tibble(
+    n_rows = nrow(x),
+    n_pairs = nrow(x)
+  )
+}
