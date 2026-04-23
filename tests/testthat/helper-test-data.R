@@ -462,6 +462,30 @@ test_collection_invariants <- function(coll) {
 }
 
 # ------------------------------------------------------------------------------
+# test_collection_groups_invariant()
+# ------------------------------------------------------------------------------
+
+#' Assert the uniform-grouping invariant across a survey_collection
+#'
+#' Every member's `@groups` must be `identical()` to `coll@groups`. Call this
+#' as the second assertion (after `test_invariants(coll)`) in every
+#' `test_that()` block that constructs a `survey_collection`.
+#'
+#' @param coll A `survey_collection` object.
+#' @return Invisibly `coll`. Throws testthat failure on any violation.
+#' @keywords internal
+test_collection_groups_invariant <- function(coll) {
+  for (nm in names(coll@surveys)) {
+    testthat::expect_identical(
+      coll@surveys[[nm]]@groups,
+      coll@groups,
+      label = paste0("member ", nm, "@groups matches coll@groups")
+    )
+  }
+  invisible(coll)
+}
+
+# ------------------------------------------------------------------------------
 # test_result_invariants()
 # ------------------------------------------------------------------------------
 
