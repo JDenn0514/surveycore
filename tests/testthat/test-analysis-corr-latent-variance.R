@@ -324,16 +324,16 @@ test_that(".corr_replicate_variance_latent() emits PC-12 when 0 < n_failed <= 0.
     class = "surveycore_warning_polychoric_replicate_convergence"
   )
   expect_gt(out$n_failed, 0L)
-  expect_snapshot(
-    .corr_replicate_variance_latent(
+  expect_snapshot({
+    invisible(.corr_replicate_variance_latent(
       d,
       method = "polychoric",
       vec_a = d@data$o1,
       vec_b = d@data$o2,
       active_domain = active,
       rho_hat_full = fit$rho
-    )
-  )
+    ))
+  })
 })
 
 test_that(".corr_replicate_variance_latent() raises PC-8 when failure > 20%", {
@@ -636,15 +636,14 @@ test_that(".corr_latent_pair() emits PC-13 for an unordered factor input", {
     class = "surveycore_warning_polychoric_unordered_factor"
   )
   expect_snapshot({
-    withCallingHandlers(
+    invisible(withCallingHandlers(
       .corr_latent_pair(d, "o1", "o2", method = "polychoric"),
       surveycore_warning_polychoric_unordered_factor = function(w) {
         message(conditionMessage(w))
         invokeRestart("muffleWarning")
       },
       warning = function(w) invokeRestart("muffleWarning")
-    )
-    NULL
+    ))
   })
 })
 
