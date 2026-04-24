@@ -228,6 +228,7 @@ against the messages defined here.
 | C11 | `.warn_on_meta_divergence()` | Per-survey `.meta` value_labels / variable_label / question_preface differ across surveys for the same variable (closed set — see spec §4.1.1) | WARNING | `surveycore_warning_collection_meta_divergence` | `"!" = "Per-survey metadata diverges for {length(divergent_vars)} variable{?s}: {.field {divergent_vars}}.", "i" = "The top-level {.code .meta} reflects only the first survey. Per-survey metadata is preserved under {.code attr(result, \".meta\")$per_survey}.", "i" = "Downstream helpers (e.g., {.fn clean}, {.fn gt}) should consult {.code $per_survey} for accurate per-row labeling."` |
 | C12 | `survey_glm()` / `get_anova()` | Called on a `survey_collection` | ERROR | `surveycore_error_collection_not_supported_by_fn` | `"x" = "{.fn {fn_name}} does not yet support {.cls survey_collection} inputs.", "i" = "Run {.fn {fn_name}} on each survey individually, or see {.topic survey_collection} for the current dispatch coverage."` |
 | C13 | `.dispatch_over_collection()` | `.id` is not a single non-empty, non-NA character string | ERROR | `surveycore_error_collection_invalid_id` | `"x" = "{.arg .id} must be a single non-empty, non-NA character string.", "i" = "Got {.cls {class(.id)[1]}} of length {.val {length(.id)}}."` |
+| C15 | S7 validator (`survey_collection`) / `as_survey_collection()` / `.dispatch_over_collection()` / `set_collection_if_missing_var()` | `if_missing_var` / `.if_missing_var` is not a length-1 character string in `c("error", "skip")` | ERROR | `surveycore_error_collection_invalid_if_missing_var` | `"x" = "{.arg {arg_name}} must be one of {.val \"error\"} or {.val \"skip\"}.", "i" = "Got {.cls {class(value)[[1L]]}} of length {.val {length(value)}}: {.val {value}}."` (where `arg_name` is `.if_missing_var` at the constructor / dispatcher / setter call sites and `if_missing_var` at the S7 validator branch) |
 | C14 | `.dispatch_over_collection()` | `dplyr::bind_rows()` fails because per-survey results have incompatible types for a shared column | ERROR | `surveycore_error_collection_bind_type_mismatch` | `"x" = "Cannot combine per-survey results: column type mismatch.", "i" = "Each survey must produce compatible types for shared columns.", "i" = "Original error: {conditionMessage(cnd)}"` (wraps the underlying `vctrs` error as `parent`) |
 
 ### survey_collection uniform grouping (collection-uniform-groups)
@@ -300,7 +301,7 @@ Which test files cover which error table rows:
 | `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
-| `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8 |
+| `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8, C15 |
 | `test-survey-collection-dispatch.R` | C5, C6, C7, C9, C10, C11, C12, C13, C14 |
 | `test-glm-anova-numerical.R` | numerical parity tests vs `survey` package (no new error rows) |
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
