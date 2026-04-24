@@ -75,32 +75,8 @@ make_unit_weight_design <- function(
 
 # Hand-computed two-step polyserial MLE (Cox 1974; Mannan 2025 §5.1) —
 # the strict oracle surveycore's .corr_polyserial_mle() targets at 1e-6.
-# Duplicated from tests/testthat/test-analysis-corr-latent-primitives.R so
-# this test file is self-contained (helper-*.R is outside the PR 3 write
-# surface). polycor::polyserial(ML = TRUE) uses a joint MLE that is
-# mathematically distinct from Cox's two-step and is NOT a valid oracle
-# for the public API.
-.hand_polyserial_twostep <- function(ord, cont) {
-  n <- length(ord)
-  k <- length(unique(ord))
-  marginal <- cumsum(tabulate(ord, nbins = k)) / n
-  thresholds <- stats::qnorm(marginal[-length(marginal)])
-  mu <- mean(cont)
-  sig <- sqrt(mean((cont - mu)^2))
-  z <- (cont - mu) / sig
-  loglik <- function(rho) {
-    denom <- sqrt(1 - rho^2)
-    t_full <- c(-Inf, thresholds, Inf)
-    p <- mapply(function(zi, mi) {
-      u_hi <- (t_full[mi + 1L] - rho * zi) / denom
-      u_lo <- (t_full[mi] - rho * zi) / denom
-      stats::pnorm(u_hi) - stats::pnorm(u_lo)
-    }, z, ord)
-    sum(log(p))
-  }
-  fit <- stats::optimize(loglik, c(-1 + 1e-6, 1 - 1e-6), maximum = TRUE)
-  fit$maximum
-}
+# .hand_polyserial_twostep() — the strict polyserial oracle — lives in
+# helper-test-data.R (shared with test-analysis-corr-latent-primitives.R).
 
 # Hand-computed oracle polyserial fixture matching PR 1's
 # make_polyserial_pair (rho = 0.5, n = 500, k_ord = 3, seed = 21).

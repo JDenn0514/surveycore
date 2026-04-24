@@ -63,7 +63,8 @@
   - `.corr_taylor_variance_latent(design, if_z, active_domain)` — plugs the z-scale influence function into the existing `survey_taylor` infrastructure (the same variance machinery used by the Pearson `.vcov_pair_taylor()` path), returning `var_z`.
   - `.corr_replicate_variance_latent(design, method, vec_a, vec_b, active_domain, rho_hat_full)` — iterates replicate weight columns; per replicate, re-estimates thresholds and ρ; computes `Var(ζ̂)` using the design's scale and rscales; returns `list(var_z, n_failed, n_ok, rhos_by_replicate)`; surfaces `surveycore_warning_polychoric_replicate_convergence` or `surveycore_error_replicate_convergence_failure` as appropriate.
   - `.corr_fisher_ci(rho_hat, se_z, conf_level)` — the polychoric / polyserial CI construction uses the existing `.corr_fisher_ci(rho_hat, se_z, conf_level)` helper in `R/analysis-corr-helpers.R` (no duplicate implementation is permitted). Same Fisher-z → tanh back-transform → truncate-to-[−1, 1] pipeline used by the Pearson branch.
-  - `.corr_detect_boundary_rho(rho_hat, eps = 1e-6)` — returns `logical(1)` TRUE if `abs(rho_hat) > 1 - eps`. Used at both the PC-9 emission site (always, for either design class) and the PC-14 emission site (Taylor path only). Contract: no side effects; deterministic; single-scalar input/output.
+  - `.corr_detect_boundary_rho(rho_hat, eps = 1e-4)` — returns `logical(1)` TRUE if `abs(rho_hat) > 1 - eps`. Used at both the PC-9 emission site (always, for either design class) and the PC-14 emission site (Taylor path only). Contract: no side effects; deterministic; single-scalar input/output.
+    - **Amended 2026-04-24 (decisions.md D1)**: default `eps` is `1e-4`, not the originally-drafted `1e-6`. The optimizer in `.corr_polychoric_mle()` is clamped to `(-1 + 1e-6, 1 - 1e-6)` and `stats::optimize()` uses tolerance `.Machine$double.eps^0.25 ≈ 1.22e-4`, so the MLE stops ~4.2e-5 short of ±1. A detector at `1e-6` would never fire; a detector at `1e-4` fires on optimizations that genuinely land at the rail.
 
 - **Functions modified**:
   - `get_corr(design, x, group = NULL, format = ..., redundant = ..., diagonal = ..., variance = ..., conf_level = ..., n_weighted = ..., decimals = ..., min_cell_n = ..., na.rm = ..., label_values = ..., label_vars = ..., name_style = ..., method = "pearson", ..., .id = ".survey", .on_missing = "error")` — adds `method` as the last optional scalar argument before `...`. Default `"pearson"`; matched internally via `match.arg(method, c("pearson", "polychoric", "polyserial"))`. Passing a non-matching value is a user error (standard `match.arg` signal).
@@ -137,12 +138,12 @@
 
   | Warning class | Condition |
   |---|---|
-  | `surveycore_warning_polychoric_boundary_rho` (PC-9) | ρ̂ for any pair lies within ε = 1e-6 of ±1. |
+  | `surveycore_warning_polychoric_boundary_rho` (PC-9) | ρ̂ for any pair lies within ε = 1e-4 of ±1 (amended 2026-04-24; see D1 disposition). |
   | `surveycore_warning_polychoric_zero_count_level` (PC-10) | An interior ordinal level has zero weight in the active domain and is dropped before threshold estimation. |
   | `surveycore_warning_polychoric_sparse_cell` (PC-11) | Any observed cell has modeled probability < 1e-12 at the MLE; the log-likelihood floor was active at the optimum. |
   | `surveycore_warning_polychoric_replicate_convergence` (PC-12) | Some replicates failed but ≤ 20 %. |
   | `surveycore_warning_polychoric_unordered_factor` (PC-13) | A selected variable is an unordered `factor` (not `ordered`); `levels()` order is used. |
-  | `surveycore_warning_polychoric_taylor_boundary_wide_ci` (PC-14) | `survey_taylor` path and ρ̂ within ε = 1e-6 of ±1 (same tolerance as PC-9) — the numerical-IF CI is structurally wide. |
+  | `surveycore_warning_polychoric_taylor_boundary_wide_ci` (PC-14) | `survey_taylor` path and ρ̂ within ε = 1e-4 of ±1 (amended 2026-04-24; see D1 disposition) (same tolerance as PC-9) — the numerical-IF CI is structurally wide. |
   | Pre-existing warning classes (`surveycore_warning_small_cell`, `surveycore_warning_cv_undefined`, `surveycore_warning_single_level`) | Unchanged. |
 
 - **Edge cases**:
