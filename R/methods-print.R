@@ -771,6 +771,10 @@ S7::method(print, survey_collection) <- function(x, ...) {
   n <- length(surveys)
   cli::cli_text("A {.cls survey_collection} with {n} survey{?s}:")
 
+  if (length(x@groups) > 0L) {
+    cli::cli_text("Groups: {.field {x@groups}}")
+  }
+
   nms <- names(surveys)
   if (n <= 20L) {
     for (i in seq_len(n)) {
@@ -792,6 +796,13 @@ S7::method(print, survey_collection) <- function(x, ...) {
 
 # ── [[, length, names methods for survey_collection ──────────────────────────
 # Class defined in R/core-classes.R.
+#
+# Note on `[[<-`: no `[[<-` method is registered. `S7::method("[[<-", ...)`
+# registers the method in the S3methods metadata with the function object
+# (rather than a character name) in the method column, which trips
+# `R CMD check`'s `checkReplaceFuns` coercion path and surfaces as a
+# spurious WARNING. Use `add_survey()` / `remove_survey()` to mutate the
+# collection instead.
 
 S7::method(`[[`, survey_collection) <- function(x, i) x@surveys[[i]]
 S7::method(length, survey_collection) <- function(x) length(x@surveys)

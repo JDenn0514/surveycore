@@ -1211,6 +1211,26 @@ as_survey_nonprob <- function(
 #'
 #' @param ... One or more `survey_base` objects, passed with explicit names
 #'   or as bare symbols. At least one argument is required.
+#' @param group <[`tidy-select`][tidyselect::language]> Grouping variable(s)
+#'   to apply uniformly across every member survey. Accepts bare names
+#'   (`region`, `c(region, stratum)`), `all_of()`, etc. When supplied and
+#'   resolving to a non-empty character vector, the named columns must exist
+#'   in every member's `@data`; they are propagated onto each member's
+#'   `@groups` and set as `coll@groups`. If a member already carries a
+#'   non-empty `@groups` that differs from the resolved target, the target
+#'   takes precedence and a
+#'   `surveycore_warning_collection_group_overridden` warning is emitted
+#'   (one per divergent member). When missing or resolving to an empty
+#'   vector (`NULL`, `character(0)`, `c()`, `all_of(character(0))`), the
+#'   collection adopts the members' uniform `@groups` if they are all
+#'   identical, or errors `surveycore_error_collection_group_divergent`
+#'   if they differ. Default: missing (adopt-from-members).
+#' @param .id Character(1). Identifier column name used when dispatching
+#'   analysis functions across the collection. Default `".survey"`.
+#'   Stored on the collection for later consumption by `.dispatch_over_collection()`.
+#' @param .on_missing Character(1), either `"error"` (default) or `"skip"`.
+#'   Controls how dispatched `get_*()` functions behave when a member is
+#'   missing a requested variable. Stored on the collection for later use.
 #'
 #' @return A `survey_collection` object containing the supplied surveys.
 #'
@@ -1228,10 +1248,19 @@ as_survey_nonprob <- function(
 #' coll2 <- as_survey_collection(d1, d2)
 #' names(coll2)
 #'
+#' # Uniform grouping across members
+#' coll3 <- as_survey_collection(d1, d2, group = vstrat)
+#' coll3@groups
+#'
 #' @seealso [survey_collection], [add_survey()], [remove_survey()]
 #' @family collections
 #' @export
-as_survey_collection <- function(...) {
+as_survey_collection <- function(
+  ...,
+  group,
+  .id = ".survey",
+  .on_missing = "error"
+) {
   quosures <- rlang::enquos(...)
 
   if (length(quosures) == 0L) {
@@ -1257,5 +1286,132 @@ as_survey_collection <- function(...) {
   surveys <- lapply(quosures, rlang::eval_tidy)
   names(surveys) <- repair$repaired
 
-  survey_collection(surveys = surveys)
+  # Resolve target @groups vector (Decision 4 / spec §IV.behavior.2).
+  group_quo <- rlang::enquo(group)
+  group_supplied <- !rlang::quo_is_missing(group_quo)
+
+  if (group_supplied) {
+    # Resolve tidy-select against the FIRST member's @data, then verify
+    # every other member has those columns.
+    first_member <- surveys[[1L]]
+    target <- tryCatch(
+      tidyselect::eval_select(group_quo, data = first_member@data),
+      error = function(e) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Column (from {.arg group}) not found in member ",
+              "{.val {names(surveys)[[1L]]}}."
+            ),
+            "i" = "Members: {.val {names(surveys)}}.",
+            "i" = "Original error: {conditionMessage(e)}"
+          ),
+          class = "surveycore_error_collection_group_var_not_found",
+          parent = e
+        )
+      }
+    )
+    target <- names(target)
+    # Empty resolution collapses to adopt-from-members branch.
+    if (length(target) == 0L) {
+      group_supplied <- FALSE
+    }
+  }
+
+  if (group_supplied) {
+    # Validate every OTHER member has all named columns in its @data.
+    for (idx in seq_along(surveys)[-1L]) {
+      member <- surveys[[idx]]
+      member_name <- names(surveys)[[idx]]
+      missing_cols <- setdiff(target, names(member@data))
+      if (length(missing_cols) > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Column {.field {missing_cols[[1L]]}} (from {.arg group}) ",
+              "not found in member {.val {member_name}}."
+            ),
+            "i" = "Members: {.val {names(surveys)}}."
+          ),
+          class = "surveycore_error_collection_group_var_not_found"
+        )
+      }
+    }
+
+    # Three sub-cases per member (Decision 4).
+    for (idx in seq_along(surveys)) {
+      member <- surveys[[idx]]
+      member_name <- names(surveys)[[idx]]
+      member_groups <- member@groups
+      if (length(member_groups) == 0L || identical(member_groups, target)) {
+        # Silent propagate (empty) or no-op (identical).
+        surveys[[idx]]@groups <- target
+      } else {
+        # Non-empty divergent: propagate + warn (one per member).
+        cli::cli_warn(
+          c(
+            "!" = paste0(
+              "Member {.val {member_name}} had @groups ",
+              "{.val {member_groups}}; overriding with {.val {target}}."
+            ),
+            "i" = paste0(
+              "The {.arg group} argument to {.fn as_survey_collection} ",
+              "takes precedence over pre-existing member grouping."
+            ),
+            "i" = paste0(
+              "If this was unintentional, call {.fn surveytidy::ungroup} ",
+              "on the member first, or omit {.arg group} to adopt from ",
+              "members."
+            )
+          ),
+          class = "surveycore_warning_collection_group_overridden"
+        )
+        surveys[[idx]]@groups <- target
+      }
+    }
+  } else {
+    # Adopt-from-members branch. Scan all member @groups. If identical
+    # (including all-empty), adopt. If divergent, error G2.
+    first_groups <- surveys[[1L]]@groups
+    divergent <- FALSE
+    for (idx in seq_along(surveys)[-1L]) {
+      if (!identical(surveys[[idx]]@groups, first_groups)) {
+        divergent <- TRUE
+        break
+      }
+    }
+    if (divergent) {
+      # Summarize divergence for the message.
+      member_groups_list <- lapply(surveys, function(s) s@groups)
+      summary_strs <- vapply(
+        seq_along(surveys),
+        function(idx) {
+          g <- member_groups_list[[idx]]
+          if (length(g) == 0L) {
+            paste0(names(surveys)[[idx]], ": <empty>")
+          } else {
+            paste0(names(surveys)[[idx]], ": ", paste(g, collapse = ", "))
+          }
+        },
+        character(1L)
+      )
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Member surveys have different @groups, and no {.arg group} ",
+            "was supplied."
+          ),
+          "i" = "Found: {.val {summary_strs}}.",
+          "v" = paste0(
+            "Supply {.arg group} explicitly, or ungroup members first via ",
+            "{.fn surveytidy::ungroup}."
+          )
+        ),
+        class = "surveycore_error_collection_group_divergent"
+      )
+    }
+    target <- first_groups
+  }
+
+  survey_collection(surveys = surveys, groups = target)
 }

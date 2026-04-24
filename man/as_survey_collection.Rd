@@ -4,11 +4,34 @@
 \alias{as_survey_collection}
 \title{Create a Collection of Survey Designs}
 \usage{
-as_survey_collection(...)
+as_survey_collection(..., group, .id = ".survey", .on_missing = "error")
 }
 \arguments{
 \item{...}{One or more \code{survey_base} objects, passed with explicit names
 or as bare symbols. At least one argument is required.}
+
+\item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Grouping variable(s)
+to apply uniformly across every member survey. Accepts bare names
+(\code{region}, \code{c(region, stratum)}), \code{all_of()}, etc. When supplied and
+resolving to a non-empty character vector, the named columns must exist
+in every member's \verb{@data}; they are propagated onto each member's
+\verb{@groups} and set as \code{coll@groups}. If a member already carries a
+non-empty \verb{@groups} that differs from the resolved target, the target
+takes precedence and a
+\code{surveycore_warning_collection_group_overridden} warning is emitted
+(one per divergent member). When missing or resolving to an empty
+vector (\code{NULL}, \code{character(0)}, \code{c()}, \code{all_of(character(0))}), the
+collection adopts the members' uniform \verb{@groups} if they are all
+identical, or errors \code{surveycore_error_collection_group_divergent}
+if they differ. Default: missing (adopt-from-members).}
+
+\item{.id}{Character(1). Identifier column name used when dispatching
+analysis functions across the collection. Default \code{".survey"}.
+Stored on the collection for later consumption by \code{.dispatch_over_collection()}.}
+
+\item{.on_missing}{Character(1), either \code{"error"} (default) or \code{"skip"}.
+Controls how dispatched \verb{get_*()} functions behave when a member is
+missing a requested variable. Stored on the collection for later use.}
 }
 \value{
 A \code{survey_collection} object containing the supplied surveys.
@@ -44,6 +67,10 @@ names(coll)
 # Bare-symbol auto-naming
 coll2 <- as_survey_collection(d1, d2)
 names(coll2)
+
+# Uniform grouping across members
+coll3 <- as_survey_collection(d1, d2, group = vstrat)
+coll3@groups
 
 }
 \seealso{

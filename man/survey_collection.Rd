@@ -4,10 +4,13 @@
 \alias{survey_collection}
 \title{Multi-Survey Container}
 \usage{
-survey_collection(surveys = list())
+survey_collection(surveys = list(), groups = character(0))
 }
 \arguments{
 \item{surveys}{A named list of \code{survey_base} objects.}
+
+\item{groups}{Character vector of grouping variable names. Every member's
+\verb{@groups} must be \code{identical()} to this value. Default \code{character(0)}.}
 }
 \value{
 A \code{survey_collection} object.
@@ -34,6 +37,10 @@ invalid state.
 \describe{
 \item{\code{surveys}}{A fully named list of \code{survey_base} objects.
 Length \eqn{\geq 1}. Names are unique, non-\code{NA}, and non-empty.}
+\item{\code{groups}}{A character vector of grouping variable names
+applied uniformly across every member survey. Default
+\code{character(0)} (ungrouped). When non-empty, every member's
+\verb{@groups} is asserted \code{identical()} to this value.}
 }
 }
 

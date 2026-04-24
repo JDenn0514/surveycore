@@ -1,5 +1,17 @@
 # surveycore (development version)
 
+## Breaking changes
+
+* Constructing a `survey_collection` from member surveys with divergent `@groups` now errors `surveycore_error_collection_group_divergent`. Previously, a mixed-grouping collection would dispatch analysis functions per-survey and stitch a patchwork of grouped and ungrouped rows together with `bind_rows()` — violating the pseudo-data.frame mental model. All members must either share `@groups` or the caller must supply `group =` explicitly.
+
+## New features
+
+### Uniform grouping on `survey_collection`
+
+* `survey_collection` gains a `@groups` property (`character(0)` by default). Every member survey's `@groups` is asserted `identical()` to the collection's value by the class validator — a uniform-grouping invariant that guarantees dispatched `get_*()` results share a single grouping structure.
+* `as_survey_collection()` gains a `group =` argument that accepts tidy-select column names (bare, `c()`, `all_of()`). Missing or empty-resolved `group =` (including `NULL`, `character(0)`, `c()`, `all_of(character(0))`) adopts the members' uniform `@groups` or errors on divergence; a supplied non-empty `group =` overrides any pre-existing member `@groups` and emits a typed `surveycore_warning_collection_group_overridden` per divergent member.
+* `add_survey()` and `remove_survey()` now preserve `coll@groups` across mutation: a grouped collection propagates its `@groups` onto any empty-grouped new member and errors on divergent-grouped members (`surveycore_error_collection_group_conflict`); removal keeps the collection-level grouping.
+
 ## New functions
 
 * `get_variance()` computes design-based finite-population variance estimates for one or more numeric variables in a survey design, matching `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_variance` tibble with point estimate, SE, CI, CV, MOE, design effect (`deff`), and cell sizes. Supports grouping (via `group =` and `group_by()`), per-variable `na_handling = "pairwise"` (default) or `"listwise"`, `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Dispatches over `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`, and `survey_collection` designs.

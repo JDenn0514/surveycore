@@ -1,6 +1,10 @@
 # R/survey-collection.R
 #
 # Feature-group file for survey_collection mutators and internal helpers.
+#   - .check_groups_match()        — equality-only @groups check used by
+#                                     the S7 validator and [[<- setter
+#   - .propagate_or_match()        — @groups propagation / equality used by
+#                                     as_survey_collection() and add_survey()
 #   - .repair_collection_names()   — duplicate-name repair algorithm (§3.3.1)
 #   - .resolve_caller_names()      — shared name resolution for constructor
 #                                     and add_survey() (§3.3)
@@ -9,6 +13,97 @@
 #
 # The dispatch helpers `.dispatch_over_collection()` and
 # `.warn_on_meta_divergence()` will be appended to this file in PR 2.
+
+
+# ── .check_groups_match() ─────────────────────────────────────────────────────
+
+#' Assert two @groups vectors are identical (order-sensitive)
+#'
+#' Equality-only check used by the S7 `survey_collection` validator to enforce
+#' invariant G1 (every member's `@groups` is `identical()` to
+#' `coll@groups`). Order-sensitive; `character(0) == character(0)` matches.
+#'
+#' @param candidate_groups  character. `@groups` of the incoming survey.
+#' @param target_groups     character. `@groups` of the receiving collection.
+#' @param error_class       character(1). Error class thrown on mismatch
+#'   (currently always `"surveycore_error_collection_groups_invariant"`).
+#' @param context           character(1) or `NULL`. Member name used in the
+#'   error message.
+#'
+#' @return `TRUE` invisibly on match; errors with `error_class` otherwise.
+#' @keywords internal
+#' @noRd
+.check_groups_match <- function(
+  candidate_groups,
+  target_groups,
+  error_class,
+  context = NULL
+) {
+  if (identical(candidate_groups, target_groups)) {
+    return(invisible(TRUE))
+  }
+  cli::cli_abort(
+    c(
+      "x" = paste0(
+        "Member {.val {context}} has @groups {.val {candidate_groups}}, ",
+        "collection has {.val {target_groups}}."
+      )
+    ),
+    class = error_class
+  )
+}
+
+
+# ── .propagate_or_match() ─────────────────────────────────────────────────────
+
+#' Resolve candidate groups against a target: propagate when empty, else match
+#'
+#' Used by `as_survey_collection()` (adopt-from-members branch) and
+#' `add_survey()` (grouped-collection branch). Returns the groups to apply to
+#' the member, or errors on a non-empty mismatch. The caller is responsible
+#' for assigning the returned value to `member@groups`.
+#'
+#' @param candidate_groups  character. `@groups` of the incoming survey.
+#' @param target_groups     character. `@groups` of the receiving collection.
+#' @param name              character(1). Member name for the error message.
+#' @param error_class       character(1). Error class thrown on non-empty
+#'   mismatch (e.g., `"surveycore_error_collection_group_conflict"`).
+#' @return character. Groups to assign to the member (`target_groups` when
+#'   propagating; `candidate_groups` when already identical). Errors on
+#'   non-empty mismatch.
+#' @keywords internal
+#' @noRd
+.propagate_or_match <- function(
+  candidate_groups,
+  target_groups,
+  name,
+  error_class
+) {
+  if (length(candidate_groups) == 0L) {
+    return(target_groups)
+  }
+  if (identical(candidate_groups, target_groups)) {
+    return(candidate_groups)
+  }
+  cli::cli_abort(
+    c(
+      "x" = paste0(
+        "Cannot add survey {.val {name}}: {.arg @groups} differs from ",
+        "collection."
+      ),
+      "i" = paste0(
+        "Collection: {.val {target_groups}}; survey: {.val ",
+        "{candidate_groups}}."
+      ),
+      "v" = paste0(
+        "Ungroup the survey via {.fn surveytidy::ungroup} before adding, ",
+        "or group the collection to match."
+      )
+    ),
+    class = error_class
+  )
+}
+
 
 # ── .repair_collection_names() ────────────────────────────────────────────────
 
@@ -193,8 +288,51 @@ add_survey <- function(.collection, ...) {
     seq.int(length(existing_names) + 1L, length(combined_names))
   ]
 
+  # Decision 2 — per-new-survey @groups propagation. Build the full
+  # validated member list first; the single final survey_collection() call
+  # at the end gives atomicity (any error aborts before any mutation).
+  coll_groups <- .collection@groups
+  if (length(coll_groups) == 0L) {
+    # Ungrouped-coll branch: any non-empty new @groups is a conflict (G4).
+    for (idx in seq_along(new_surveys)) {
+      new <- new_surveys[[idx]]
+      if (length(new@groups) > 0L) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Cannot add survey {.val {names(new_surveys)[[idx]]}}: ",
+              "{.arg @groups} differs from collection."
+            ),
+            "i" = paste0(
+              "Collection: {.val {coll_groups}}; survey: ",
+              "{.val {new@groups}}."
+            ),
+            "v" = paste0(
+              "Ungroup the survey via {.fn surveytidy::ungroup} before ",
+              "adding, or group the collection to match."
+            )
+          ),
+          class = "surveycore_error_collection_group_conflict"
+        )
+      }
+    }
+  } else {
+    # Grouped-coll branch: propagate empty or match; error on non-empty
+    # mismatch. .propagate_or_match() encapsulates both sub-cases.
+    for (idx in seq_along(new_surveys)) {
+      new <- new_surveys[[idx]]
+      resolved <- .propagate_or_match(
+        candidate_groups = new@groups,
+        target_groups = coll_groups,
+        name = names(new_surveys)[[idx]],
+        error_class = "surveycore_error_collection_group_conflict"
+      )
+      new_surveys[[idx]]@groups <- resolved
+    }
+  }
+
   combined_list <- c(.collection@surveys, new_surveys)
-  survey_collection(surveys = combined_list)
+  survey_collection(surveys = combined_list, groups = coll_groups)
 }
 
 
@@ -262,7 +400,7 @@ remove_survey <- function(x, name) {
 
   keep <- setdiff(existing, name)
   new_list <- x@surveys[keep]
-  survey_collection(surveys = new_list)
+  survey_collection(surveys = new_list, groups = x@groups)
 }
 
 
@@ -297,6 +435,17 @@ remove_survey <- function(x, name) {
 #' missing variables per `.on_missing`, row-binds the per-survey results,
 #' prepends a `.id` identifier column, and carries over per-survey `.meta`
 #' under `$per_survey`. See spec §4.1.
+#'
+#' @section Collection grouping:
+#' Per-survey `@groups` is guaranteed uniform (`identical()` to
+#' `collection@groups`) by the class invariant enforced in
+#' `R/core-classes.R` (validator rules G1 / G1b / G1c). That means
+#' `.resolve_groups()` inside each `get_*()` call (see
+#' `R/analysis-helpers.R:441` — `unique(c(from_groups_prop, from_arg))`)
+#' automatically sees the collection-level grouping without any dispatch-
+#' layer branching. Any call-site `group =` quosure stacks with the
+#' collection's groups (Decision 5); that behavior is a consequence of
+#' the invariant + existing dispatch, not a separate code path.
 #'
 #' @param fn          The `get_*()` function being dispatched.
 #' @param collection  A `survey_collection`.
