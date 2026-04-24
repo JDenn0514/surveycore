@@ -41,26 +41,87 @@ make_latent_taylor <- function(n = 200L, seed = 42L, n_psu = 20L, n_strata = 4L)
 
 # Unweighted-equivalent Taylor design (weights all 1, no strata): lets
 # us sanity-check polychoric against polycor::polychor() at 1e-6.
+#
+# Uses the latent-Gaussian cut pattern from PR 1's
+# tests/testthat/test-analysis-corr-latent-primitives.R (`make_ordinal_pair`):
+# draw (x*, y*) bivariate-normal with correlation `rho`, then cut each by
+# marginal quantiles into k_x / k_y ordered levels. This matches the
+# fixture construction that PR 1 achieves 1e-6 parity against
+# polycor::polychor() on — so the public-API wrapper should too.
 make_unit_weight_design <- function(
   n = 200L,
   seed = 1L,
   n_levels_x = 4L,
-  n_levels_y = 4L
+  n_levels_y = 5L,
+  rho = -0.3
 ) {
   set.seed(seed)
-  x <- sample(seq_len(n_levels_x), n, replace = TRUE)
-  y <- x + sample(-1:1, n, replace = TRUE)
-  y[y < 1L] <- 1L
-  y[y > n_levels_y] <- n_levels_y
+  x_latent <- stats::rnorm(n)
+  y_latent <- rho * x_latent + sqrt(1 - rho^2) * stats::rnorm(n)
+  tx <- stats::qnorm(seq_len(n_levels_x - 1L) / n_levels_x)
+  ty <- stats::qnorm(seq_len(n_levels_y - 1L) / n_levels_y)
+  x_ord <- as.integer(cut(x_latent, c(-Inf, tx, Inf), include.lowest = TRUE))
+  y_ord <- as.integer(cut(y_latent, c(-Inf, ty, Inf), include.lowest = TRUE))
   df <- data.frame(
     id = seq_len(n),
     wt = 1,
-    o1 = factor(x, levels = seq_len(n_levels_x), ordered = TRUE),
-    o2 = factor(y, levels = seq_len(n_levels_y), ordered = TRUE),
-    cont = x + stats::rnorm(n, sd = 0.7),
+    o1 = factor(x_ord, levels = seq_len(n_levels_x), ordered = TRUE),
+    o2 = factor(y_ord, levels = seq_len(n_levels_y), ordered = TRUE),
+    cont = x_latent + stats::rnorm(n, sd = 0.7),
     grp = factor(sample(c("A", "B"), n, replace = TRUE))
   )
   list(df = df, design = as_survey(df, weights = wt))
+}
+
+# Hand-computed two-step polyserial MLE (Cox 1974; Mannan 2025 §5.1) —
+# the strict oracle surveycore's .corr_polyserial_mle() targets at 1e-6.
+# Duplicated from tests/testthat/test-analysis-corr-latent-primitives.R so
+# this test file is self-contained (helper-*.R is outside the PR 3 write
+# surface). polycor::polyserial(ML = TRUE) uses a joint MLE that is
+# mathematically distinct from Cox's two-step and is NOT a valid oracle
+# for the public API.
+.hand_polyserial_twostep <- function(ord, cont) {
+  n <- length(ord)
+  k <- length(unique(ord))
+  marginal <- cumsum(tabulate(ord, nbins = k)) / n
+  thresholds <- stats::qnorm(marginal[-length(marginal)])
+  mu <- mean(cont)
+  sig <- sqrt(mean((cont - mu)^2))
+  z <- (cont - mu) / sig
+  loglik <- function(rho) {
+    denom <- sqrt(1 - rho^2)
+    t_full <- c(-Inf, thresholds, Inf)
+    p <- mapply(function(zi, mi) {
+      u_hi <- (t_full[mi + 1L] - rho * zi) / denom
+      u_lo <- (t_full[mi] - rho * zi) / denom
+      stats::pnorm(u_hi) - stats::pnorm(u_lo)
+    }, z, ord)
+    sum(log(p))
+  }
+  fit <- stats::optimize(loglik, c(-1 + 1e-6, 1 - 1e-6), maximum = TRUE)
+  fit$maximum
+}
+
+# Hand-computed oracle polyserial fixture matching PR 1's
+# make_polyserial_pair (rho = 0.5, n = 500, k_ord = 3, seed = 21).
+make_polyserial_fixture <- function(rho, n, k_ord, seed) {
+  set.seed(seed)
+  ord_latent <- stats::rnorm(n)
+  cont <- rho * ord_latent + sqrt(1 - rho^2) * stats::rnorm(n)
+  tx <- stats::qnorm(seq_len(k_ord - 1L) / k_ord)
+  ord <- as.integer(cut(ord_latent, c(-Inf, tx, Inf), include.lowest = TRUE))
+  df <- data.frame(
+    id = seq_len(n),
+    wt = 1,
+    o1 = factor(ord, levels = seq_len(k_ord), ordered = TRUE),
+    cont = cont
+  )
+  list(
+    df = df,
+    design = as_survey(df, weights = wt),
+    ord_int = ord,
+    cont = cont
+  )
 }
 
 make_latent_replicate <- function(
@@ -157,43 +218,56 @@ test_that("get_corr() method = 'nonsense' raises match.arg error", {
 # Category 2 — Polychoric happy path + oracle parity (Tasks 6-11)
 # =============================================================================
 
-test_that("get_corr() method = 'polychoric' matches polycor on 4x4 equal wt", {
+test_that("get_corr() method = 'polychoric' matches polycor on 4x5 equal wt", {
   skip_if_not_installed("polycor")
-  fixt <- make_unit_weight_design(n = 200L, seed = 3L)
+  # Spec §Tolerances pins polycor::polychor() parity at 1e-6 on 3x3, 4x5,
+  # and 2x2 equal-weight fixtures. PR 1's primitives test achieves 1e-6
+  # at the .corr_polychoric_mle() layer with exactly the fixture below
+  # (rho = -0.3, n = 800, k_x = 4, k_y = 5, seed = 2). The public-API
+  # wrapper adds no new numerics, so the same tolerance holds here.
+  fixt <- make_unit_weight_design(
+    n = 800L,
+    seed = 2L,
+    n_levels_x = 4L,
+    n_levels_y = 5L,
+    rho = -0.3
+  )
   r <- get_corr(fixt$design, x = c(o1, o2), method = "polychoric")
   oracle <- polycor::polychor(fixt$df$o1, fixt$df$o2)
-  # Optimizer tolerance tol = .Machine$double.eps^0.25 ≈ 1.2e-4 sets the
-  # practical floor; equal-weight agreement with polycor is ~1e-5 in
-  # general. 1e-4 is sufficient to catch regressions in the surveycore
-  # pipeline without being brittle about optimizer-level noise.
-  expect_equal(r$r[[1L]], oracle, tolerance = 1e-4)
+  expect_equal(r$r[[1L]], oracle, tolerance = 1e-6)
   expect_identical(meta(r)$method, "polychoric")
 })
 
 test_that("get_corr() polychoric matches polycor on 3x3 equal weight", {
   skip_if_not_installed("polycor")
+  # Matches PR 1's 3x3 primitive fixture (rho = 0.5, n = 500, seed = 1)
+  # to reuse the 1e-6 strict-parity budget established there.
   fixt <- make_unit_weight_design(
-    n = 250L,
-    seed = 4L,
+    n = 500L,
+    seed = 1L,
     n_levels_x = 3L,
-    n_levels_y = 3L
+    n_levels_y = 3L,
+    rho = 0.5
   )
   r <- get_corr(fixt$design, x = c(o1, o2), method = "polychoric")
   oracle <- polycor::polychor(fixt$df$o1, fixt$df$o2)
-  expect_equal(r$r[[1L]], oracle, tolerance = 1e-4)
+  expect_equal(r$r[[1L]], oracle, tolerance = 1e-6)
 })
 
 test_that("get_corr() polychoric matches polycor on 2x2 equal weight", {
   skip_if_not_installed("polycor")
+  # Matches PR 1's 2x2 primitive fixture (rho = 0.6, n = 1000, seed = 3)
+  # at 1e-6 strict parity.
   fixt <- make_unit_weight_design(
-    n = 300L,
-    seed = 5L,
+    n = 1000L,
+    seed = 3L,
     n_levels_x = 2L,
-    n_levels_y = 2L
+    n_levels_y = 2L,
+    rho = 0.6
   )
   r <- get_corr(fixt$design, x = c(o1, o2), method = "polychoric")
   oracle <- polycor::polychor(fixt$df$o1, fixt$df$o2)
-  expect_equal(r$r[[1L]], oracle, tolerance = 1e-4)
+  expect_equal(r$r[[1L]], oracle, tolerance = 1e-6)
 })
 
 test_that("get_corr() method = 'polychoric' works on stratified survey_taylor", {
@@ -256,18 +330,43 @@ test_that(
 # =============================================================================
 
 test_that(
-  "get_corr() method = 'polyserial' matches polycor ML on 4-level fixture",
+  "get_corr() method = 'polyserial' matches hand two-step on 3-level fixture",
   {
-    skip_if_not_installed("polycor")
-    fixt <- make_unit_weight_design(n = 500L, seed = 30L)
+    # decisions.md B1 established .hand_polyserial_twostep() as the strict
+    # oracle for surveycore's Cox (1974) two-step polyserial MLE, pinned at
+    # 1e-6. PR 1 achieves 1e-6 at the primitive layer; the public API
+    # wraps the same .corr_polyserial_mle() call and so inherits the
+    # tolerance. polycor::polyserial(ML = TRUE) is a joint MLE and is
+    # mathematically inappropriate as an oracle regardless of tolerance.
+    fixt <- make_polyserial_fixture(rho = 0.5, n = 500L, k_ord = 3L, seed = 21L)
     r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
-    oracle_ml <- polycor::polyserial(fixt$df$cont, fixt$df$o1, ML = TRUE)
-    # polycor's ML two-step runs the full likelihood; surveycore drops the
-    # ρ-independent φ(z) factor from the objective (spec §5.1). Agreement
-    # is at 1e-3 on equal-weight fixtures. 1e-2 is the practical tolerance
-    # per decisions.md B1 precedent; we pin 5e-3 here.
-    expect_equal(r$r[[1L]], oracle_ml, tolerance = 5e-3)
+    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
     expect_identical(meta(r)$method, "polyserial")
+  }
+)
+
+test_that(
+  "get_corr() method = 'polyserial' matches hand two-step on 5-level fixture",
+  {
+    fixt <- make_polyserial_fixture(
+      rho = -0.4, n = 600L, k_ord = 5L, seed = 22L
+    )
+    r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
+    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
+  }
+)
+
+test_that(
+  "get_corr() method = 'polyserial' matches hand two-step on 2-level fixture",
+  {
+    fixt <- make_polyserial_fixture(
+      rho = 0.3, n = 800L, k_ord = 2L, seed = 23L
+    )
+    r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
+    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
   }
 )
 
@@ -645,7 +744,7 @@ test_that(
 }
 
 test_that(
-  "survey_collection with twophase member + polychoric raises PC-7",
+  "survey_collection with twophase member + polychoric raises PC-7 (dual)",
   {
     d_taylor <- make_latent_taylor(n = 120L, seed = 110L)
     d_tp <- .make_twophase_design(110L)
@@ -653,6 +752,10 @@ test_that(
     expect_error(
       get_corr(coll, x = c(o1, o2), method = "polychoric"),
       class = "surveycore_error_polychoric_design_unsupported"
+    )
+    expect_snapshot(
+      error = TRUE,
+      get_corr(coll, x = c(o1, o2), method = "polychoric")
     )
   }
 )
@@ -763,7 +866,7 @@ test_that("meta()$n_failed_replicates_total absent when n_failed == 0", {
 # Category 12 — Public-API dual-pattern tests for PC warnings (PC-9, PC-13)
 # =============================================================================
 
-test_that("PC-13 (unordered factor) surfaces via the public API", {
+test_that("PC-13 (unordered factor) surfaces via the public API (dual)", {
   set.seed(150L)
   df <- data.frame(
     id = 1:200,
@@ -777,6 +880,372 @@ test_that("PC-13 (unordered factor) surfaces via the public API", {
     get_corr(d, x = c(o1, o2), method = "polychoric"),
     class = "surveycore_warning_polychoric_unordered_factor"
   )
+  # Snapshot the PC-13 condition text. Result is numeric and auto-prints,
+  # so wrap in invisible() for Windows-BLAS stability.
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_unordered_factor = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
+})
+
+
+# =============================================================================
+# Category 14 — Public-API dual-pattern tests for remaining PC classes
+# =============================================================================
+# PC-1, PC-3, PC-4 already covered in Category 8. PC-13 above. This category
+# covers PC-2, PC-5, PC-6, PC-7 (collection path above covers one flavour),
+# PC-8, PC-9, PC-10, PC-11, PC-12, PC-14. Fixtures reuse PR 2's variance-layer
+# constructions where possible; PC-6 and PC-11 are structurally unreachable
+# at the public API with realistic data (PC-11 is marked # nocov in
+# R/analysis-corr-latent.R; PC-6 arises only when the numerical-IF
+# perturbation makes the MLE degenerate, which PR 2 exercises by directly
+# invoking .corr_numerical_influence on a bogus rho_hat_full). Those two use
+# `testthat::local_mocked_bindings()` to force the class to fire under
+# `get_corr()` so the public-API surface is exercised end-to-end.
+
+test_that("PC-2 (polyserial with two ordered factors) at public API (dual)", {
+  set.seed(200L)
+  df <- data.frame(
+    id = 1:100L,
+    wt = 1,
+    o1 = factor(sample(1:3, 100L, replace = TRUE), ordered = TRUE),
+    o2 = factor(sample(1:3, 100L, replace = TRUE), ordered = TRUE)
+  )
+  d <- as_survey(df, weights = wt)
+  expect_error(
+    get_corr(d, x = c(o1, o2), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(o1, o2), method = "polyserial")
+  )
+})
+
+test_that("PC-5 (polychoric insufficient cells) at public API (dual)", {
+  # 3 nonempty cells of a 2x2 table — below the MLE-identification floor.
+  df <- data.frame(
+    id = 1:25L,
+    wt = 1,
+    o1 = factor(
+      c(rep(1L, 10), rep(2L, 10), rep(1L, 5)),
+      levels = 1:2,
+      ordered = TRUE
+    ),
+    o2 = factor(
+      c(rep(1L, 10), rep(2L, 10), rep(2L, 5)),
+      levels = 1:2,
+      ordered = TRUE
+    )
+  )
+  d <- as_survey(df, weights = wt)
+  expect_error(
+    get_corr(d, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_error_polychoric_insufficient_cells"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(o1, o2), method = "polychoric")
+  )
+})
+
+test_that("PC-6 (polychoric optim_failed) at public API (dual, mocked)", {
+  # PC-6 fires when a perturbation inside .corr_numerical_influence() makes
+  # the pair-level MLE degenerate. Not reachable at public API with realistic
+  # data (see PR 2 decisions.md note). Mock .corr_polychoric_mle to raise
+  # PC-6 directly on its first call; get_corr() should surface the class.
+  d <- make_latent_taylor(n = 80L, seed = 201L)
+  testthat::local_mocked_bindings(
+    .corr_polychoric_mle = function(...) {
+      cli::cli_abort(
+        c(
+          "x" = "Numerical optimization did not converge for pair (o1, o2).",
+          "i" = "Optimizer message: simulated failure.",
+          "v" = "Inspect the pair for extreme weight skew or sparse cells."
+        ),
+        class = "surveycore_error_polychoric_optim_failed"
+      )
+    }
+  )
+  expect_error(
+    get_corr(d, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_error_polychoric_optim_failed"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(o1, o2), method = "polychoric")
+  )
+})
+
+test_that("PC-7 (twophase, single design) at public API (dual)", {
+  # Single-design PC-7 path (the collection path is covered above).
+  d_tp <- .make_twophase_design(202L)
+  expect_error(
+    get_corr(d_tp, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d_tp, x = c(o1, o2), method = "polychoric")
+  )
+})
+
+test_that("PC-8 (> 20% replicate failure) at public API (dual)", {
+  # Zero out every replicate except the last, producing ~R-1 failures.
+  # Pattern mirrors PR 2's test-analysis-corr-latent-variance.R PC-8 fixture.
+  set.seed(203L)
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 30L,
+    n_strata = 5L,
+    design = "replicate",
+    type = "jk1",
+    seed = 203L
+  )
+  df$o1 <- factor(sample(1:4, nrow(df), replace = TRUE), ordered = TRUE)
+  shift <- as.integer(df$o1) + sample(-1:1, nrow(df), replace = TRUE)
+  shift[shift < 1L] <- 1L
+  shift[shift > 4L] <- 4L
+  df$o2 <- factor(shift, levels = 1:4, ordered = TRUE)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  keep_rows <- which(
+    as.integer(df$o1) == 1L & as.integer(df$o2) == 1L
+  )
+  if (length(keep_rows) < 2L) {
+    skip("fixture does not produce the required degenerate replicates")
+  }
+  for (cn in rep_cols[-length(rep_cols)]) {
+    df[[cn]] <- 0
+    df[[cn]][keep_rows] <- df$wt[keep_rows]
+  }
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  expect_error(
+    suppressWarnings(get_corr(d, x = c(o1, o2), method = "polychoric")),
+    class = "surveycore_error_replicate_convergence_failure"
+  )
+  expect_snapshot(
+    error = TRUE,
+    suppressWarnings(get_corr(d, x = c(o1, o2), method = "polychoric"))
+  )
+})
+
+test_that("PC-9 (near-boundary rho, replicate path) at public API (dual)", {
+  # 2x2 fixture saturating at the optimizer upper bound, on a replicate
+  # design so PC-14 (Taylor-only) doesn't also fire. Pattern mirrors PR 2's
+  # test-analysis-corr-latent-variance.R PC-9 fixture.
+  set.seed(1L)
+  o1_int <- c(rep(1L, 249L), rep(2L, 249L), 1L, 2L)
+  o2_int <- c(rep(1L, 249L), rep(2L, 249L), 2L, 1L)
+  n <- length(o1_int)
+  df <- make_survey_data(
+    n = n,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jk1",
+    seed = 1L
+  )
+  df$o1 <- factor(o1_int, levels = 1:3, ordered = TRUE)
+  df$o2 <- factor(o2_int, levels = 1:3, ordered = TRUE)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  # Primary dual assertion: PC-9 fires. PC-10 also fires because the
+  # boundary fixture's (1,3) and (3,1) cells are empty in the active
+  # domain; muffle it so expect_warning() resolves on PC-9.
+  expect_warning(
+    withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_zero_count_level = function(w) {
+        invokeRestart("muffleWarning")
+      }
+    ),
+    class = "surveycore_warning_polychoric_boundary_rho"
+  )
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_boundary_rho = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
+})
+
+test_that("PC-10 (zero-count interior level) at public API (dual)", {
+  # 4 levels with level 3 holding zero observations in the domain. Pattern
+  # mirrors PR 2's test-analysis-corr-latent-variance.R PC-10 fixture.
+  set.seed(204L)
+  n <- 100L
+  codes <- sample(c(1L, 2L, 4L), n, replace = TRUE)
+  df <- make_survey_data(n = n, n_psu = 20L, n_strata = 4L, seed = 204L)
+  df$o1 <- factor(codes, levels = 1:4, ordered = TRUE)
+  df$o2 <- factor(sample(1:3, n, replace = TRUE), ordered = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  expect_warning(
+    get_corr(d, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_warning_polychoric_zero_count_level"
+  )
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_zero_count_level = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
+})
+
+test_that("PC-11 (polychoric sparse cell) at public API (dual, mocked)", {
+  # PC-11 is unreachable at the public API with realistic data (marked
+  # `# nocov` in R/analysis-corr-latent.R). Mock .corr_polychoric_mle to
+  # return a fit object with n_sparse_cells > 0 and let .corr_latent_pair()
+  # raise PC-11 through its normal code path.
+  d <- make_latent_taylor(n = 80L, seed = 205L)
+  # Compute the real fit first so the variance path has a valid rho, then
+  # wrap to inject n_sparse_cells.
+  real_mle <- surveycore:::.corr_polychoric_mle
+  testthat::local_mocked_bindings(
+    .corr_polychoric_mle = function(...) {
+      out <- real_mle(...)
+      out$n_sparse_cells <- 1L
+      out
+    }
+  )
+  expect_warning(
+    withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_zero_count_level = function(w) {
+        invokeRestart("muffleWarning")
+      }
+    ),
+    class = "surveycore_warning_polychoric_sparse_cell"
+  )
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_sparse_cell = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
+})
+
+test_that("PC-12 at public API populates meta()$n_failed_replicates_total", {
+  # Partial replicate failure (1 of R replicates fails). Pattern mirrors
+  # PR 2's test-analysis-corr-latent-variance.R PC-12 fixture. Assertions:
+  #   * PC-12 warning class fires.
+  #   * meta(result)$n_failed_replicates_total equals the planned failure
+  #     count (1L) — exercises the populated-scalar branch of the accumulator
+  #     that Invariant 6 requires and spec test-spec.md PC-12 mandates.
+  #   * meta(result)$bivariate_normal_cdf == "pbivnorm".
+  # This test also satisfies Fix D coverage on R/analysis-corr.R.
+  set.seed(13L)
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 30L,
+    n_strata = 5L,
+    design = "replicate",
+    type = "jk1",
+    seed = 13L
+  )
+  df$o1 <- factor(sample(1:4, nrow(df), replace = TRUE), ordered = TRUE)
+  shift <- as.integer(df$o1) + sample(-1:1, nrow(df), replace = TRUE)
+  shift[shift < 1L] <- 1L
+  shift[shift > 4L] <- 4L
+  df$o2 <- factor(shift, levels = 1:4, ordered = TRUE)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  keep_rows <- which(
+    as.integer(df$o1) == 1L & as.integer(df$o2) == 1L
+  )
+  if (length(keep_rows) < 2L) {
+    skip("fixture does not produce the required degenerate replicate")
+  }
+  # Break exactly 1 replicate column — produces k = 1 planned failure.
+  df[[rep_cols[[1L]]]] <- 0
+  df[[rep_cols[[1L]]]][keep_rows] <- df$wt[keep_rows]
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  expect_warning(
+    get_corr(d, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_warning_polychoric_replicate_convergence"
+  )
+  # Populated-scalar path: meta$n_failed_replicates_total = 1L.
+  r <- suppressWarnings(
+    get_corr(d, x = c(o1, o2), method = "polychoric")
+  )
+  expect_identical(meta(r)$n_failed_replicates_total, 1L)
+  expect_identical(meta(r)$bivariate_normal_cdf, "pbivnorm")
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_replicate_convergence = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
+})
+
+test_that("PC-14 (Taylor near-boundary wide CI) at public API (dual)", {
+  # Same 2x2 boundary fixture as PC-9, but on a Taylor design so PC-14
+  # fires in addition to PC-9. Pattern mirrors PR 2's PC-14 fixture.
+  set.seed(2L)
+  o1_int <- c(rep(1L, 249L), rep(2L, 249L), 1L, 2L)
+  o2_int <- c(rep(1L, 249L), rep(2L, 249L), 2L, 1L)
+  n <- length(o1_int)
+  df <- make_survey_data(n = n, n_psu = 20L, n_strata = 4L, seed = 2L)
+  df$o1 <- factor(o1_int, levels = 1:3, ordered = TRUE)
+  df$o2 <- factor(o2_int, levels = 1:3, ordered = TRUE)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  expect_warning(
+    withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_boundary_rho = function(w) {
+        invokeRestart("muffleWarning")
+      },
+      surveycore_warning_polychoric_zero_count_level = function(w) {
+        invokeRestart("muffleWarning")
+      }
+    ),
+    class = "surveycore_warning_polychoric_taylor_boundary_wide_ci"
+  )
+  expect_snapshot({
+    invisible(withCallingHandlers(
+      get_corr(d, x = c(o1, o2), method = "polychoric"),
+      surveycore_warning_polychoric_taylor_boundary_wide_ci = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(w) invokeRestart("muffleWarning")
+    ))
+  })
 })
 
 
