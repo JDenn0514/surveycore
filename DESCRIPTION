@@ -41,6 +41,7 @@ Suggests:
     lifecycle (>= 1.0.0),
     broom (>= 1.0.0),
     polycor (>= 0.8.0),
+    jtools (>= 2.2.0),
     covr,
     knitr,
     rmarkdown
