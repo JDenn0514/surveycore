@@ -28,6 +28,7 @@ Imports:
     tibble (>= 3.1.0),
     dplyr (>= 1.1.0),
     marginaleffects (>= 0.18.0),
+    pbivnorm (>= 0.6.0),
     stats,
     graphics
 Suggests:
@@ -39,6 +40,7 @@ Suggests:
     haven (>= 2.5.0),
     lifecycle (>= 1.0.0),
     broom (>= 1.0.0),
+    polycor (>= 0.8.0),
     covr,
     knitr,
     rmarkdown
