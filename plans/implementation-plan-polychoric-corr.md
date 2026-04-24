@@ -108,6 +108,8 @@ There is no concurrent-PR file overlap because no two PRs run concurrently.
 
 ### PR 2: `feature/polychoric-corr-variance-paths`
 
+- [x] Merged in #108 (`cf1d2a3`) on 2026-04-24.
+
 **One-line goal**: Add the design-aware variance paths — numerical-influence-function Taylor variance and per-replicate loop — plus the pair-level dispatcher that composes primitives + variance + CI. Still no user-facing API change.
 
 **Error / warning classes owned by this PR**: PC-7 (design unsupported — dispatcher level), PC-8 (replicate convergence failure), PC-9 (boundary ρ̂), PC-12 (replicate partial convergence), PC-14 (Taylor boundary wide CI). Also the dispatcher-level re-raises of PC-1, PC-2, PC-3, PC-4, PC-5, PC-6, PC-10, PC-11, PC-13 (all propagated from PR 1's helpers, with dispatcher-level integration tests).
