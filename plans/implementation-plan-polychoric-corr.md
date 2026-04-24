@@ -23,6 +23,8 @@ There is no concurrent-PR file overlap because no two PRs run concurrently.
 
 ### PR 1: `feature/polychoric-corr-estimator-primitives`
 
+- [x] Merged in #107 (`0a7197f`) on 2026-04-24.
+
 **One-line goal**: Add internal MLE primitives (threshold estimation, polychoric / polyserial log-likelihoods, MLEs, ordinal detection, polyserial canonicalization) in a new file, with unit tests against the `polycor` oracle. No user-facing API change.
 
 **Error / warning classes owned by this PR**: PC-1, PC-2, PC-3, PC-4, PC-5, PC-6, PC-10, PC-11, PC-13 (all emission sites that live inside the primitives — i.e. threshold estimation, canonicalization, and MLE). The dispatcher-layer re-raises in PR 3 reuse these same classes from this PR's error table.
