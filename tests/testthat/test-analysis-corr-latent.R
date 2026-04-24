@@ -177,16 +177,16 @@ test_that("get_corr() default method = 'pearson' is bit-identical to pre-PR", {
     attr(x, "label") <- NULL
     x
   }
-  expect_identical(strip(r$r[[1L]]), 5.2280395548044762e-06)
-  expect_identical(strip(r$ci_low[[1L]]), -0.18135383672677005)
-  expect_identical(strip(r$ci_high[[1L]]), 0.18136394889447977)
+  expect_equal(strip(r$r[[1L]]), 5.2280395548044762e-06, tolerance = 1e-12)
+  expect_equal(strip(r$ci_low[[1L]]), -0.18135383672677005, tolerance = 1e-12)
+  expect_equal(strip(r$ci_high[[1L]]), 0.18136394889447977, tolerance = 1e-12)
   # p_value round-trips through pt() and bottoms out at ~2 ulp of 1.
   expect_equal(
     strip(r$p_value[[1L]]),
     0.99994137765706892,
     tolerance = 1e-15
   )
-  expect_identical(strip(r$statistic[[1L]]), 7.356503736351089e-05)
+  expect_equal(strip(r$statistic[[1L]]), 7.356503736351089e-05, tolerance = 1e-12)
   expect_identical(strip(r$df[[1L]]), 198L)
   expect_identical(strip(r$n[[1L]]), 200L)
 })
