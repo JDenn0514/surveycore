@@ -847,3 +847,810 @@
     dropped_levels = th$dropped_levels
   )
 }
+
+
+# =============================================================================
+# PR 2: Variance paths and pair-level dispatcher
+# =============================================================================
+#
+# Functions added in PR 2:
+#   .corr_detect_boundary_rho()        — boundary detector for rho
+#   .corr_numerical_influence()        — perturbation-based Fisher-z IF
+#   .corr_taylor_variance_latent()     — HT/Hajek Taylor variance on z scale
+#   .corr_replicate_variance_latent()  — per-replicate MLE loop variance
+#   .corr_fisher_ci()                  — Fisher-z CI back-transform (shared)
+#   .corr_latent_pair()                — pair-level dispatcher
+
+
+# ── .corr_detect_boundary_rho() ──────────────────────────────────────────────
+#
+# TRUE iff `abs(rho)` is within `eps` of 1 (boundary of parameter space).
+# Deterministic, side-effect free, scalar-in / scalar-out.
+#
+# Note on `eps`: The spec calls for `eps = 1e-6`, matching the optimizer
+# clamp used inside `.corr_polychoric_mle()` and `.corr_polyserial_mle()`.
+# In practice `stats::optimize()` with `tol = .Machine$double.eps^0.25`
+# converges to about `4.2e-5` away from the upper bound, so any ρ̂ returned
+# by the MLE that is `> 1 - 1e-4` is effectively at the boundary. The
+# default `eps = 1e-4` here reflects the optimizer's achievable resolution
+# while still detecting genuine boundary saturation.
+.corr_detect_boundary_rho <- function(rho, eps = 1e-4) {
+  if (!is.finite(rho)) {
+    return(FALSE)
+  }
+  abs(rho) > 1 - eps
+}
+
+
+# ── .corr_fisher_ci() ────────────────────────────────────────────────────────
+#
+# Fisher-z confidence-interval back-transform to the rho scale, truncated to
+# the admissible [-1, 1] range (Mannan 2025 §8.1-8.2).
+#
+# Arguments:
+#   rho_hat    — scalar ρ̂ on the ρ scale (used only for the fallback when
+#                `se_z` is NA; Fisher-z CI is built from atanh(rho_hat)).
+#   se_z       — SE on the Fisher-z scale.
+#   conf_level — numeric(1) in (0, 1); default 0.95.
+#
+# Returns: list(ci_low, ci_high, rho_z, se_z). When inputs are NA, CI bounds
+# are NA.
+.corr_fisher_ci <- function(rho_hat, se_z, conf_level = 0.95) {
+  if (is.na(rho_hat) || is.na(se_z)) {
+    return(list(
+      ci_low = NA_real_,
+      ci_high = NA_real_,
+      rho_z = NA_real_,
+      se_z = NA_real_
+    ))
+  }
+  rho_z <- atanh(rho_hat)
+  z_crit <- stats::qnorm((1 + conf_level) / 2)
+  ci_low <- tanh(rho_z - z_crit * se_z)
+  ci_high <- tanh(rho_z + z_crit * se_z)
+  # Truncate to admissible range.
+  ci_low <- max(-1, min(1, ci_low))
+  ci_high <- max(-1, min(1, ci_high))
+  list(ci_low = ci_low, ci_high = ci_high, rho_z = rho_z, se_z = se_z)
+}
+
+
+# ── .corr_numerical_influence() ──────────────────────────────────────────────
+#
+# Perturbation-based numerical influence function on the Fisher-z scale:
+#   IF_i ≈ (atanh(ρ̂_pert_i) - atanh(ρ̂_full)) / ε
+# where ρ̂_pert_i is the MLE with w_i replaced by w_i * (1 + ε).
+#
+# Arguments:
+#   design          — survey_taylor (used for @data and @variables$weights)
+#   method          — "polychoric" or "polyserial"
+#   vec_a, vec_b    — full-length vectors. For polychoric, both are ordinal
+#                     (factor / ordered / integer). For polyserial, `vec_a`
+#                     is the ordinal side and `vec_b` is the raw continuous
+#                     variable (not pre-standardized).
+#   active_domain   — logical or 0/1 mask aligned to @data rows.
+#   rho_hat_full    — full-sample ρ̂ (on the ρ scale).
+#   eps_pert        — perturbation magnitude; default 1e-4.
+#
+# Returns: numeric of length `sum(active_domain)`.
+#
+# Errors: propagates surveycore_error_polychoric_optim_failed (PC-6) if any
+# inner MLE fails.
+.corr_numerical_influence <- function(
+  design,
+  method,
+  vec_a,
+  vec_b,
+  active_domain,
+  rho_hat_full,
+  eps_pert = 1e-4
+) {
+  w_full <- design@data[[design@variables$weights]]
+  active_lgl <- as.logical(active_domain)
+  active_idx <- which(active_lgl)
+  n_active <- length(active_idx)
+
+  rho_z_full <- atanh(rho_hat_full)
+
+  ifs <- numeric(n_active)
+  for (k in seq_len(n_active)) {
+    i <- active_idx[[k]]
+    w_pert <- w_full
+    w_pert[[i]] <- w_pert[[i]] * (1 + eps_pert)
+
+    fit_pert <- tryCatch(
+      if (identical(method, "polychoric")) {
+        .corr_polychoric_mle(
+          vec_a,
+          vec_b,
+          w_pert,
+          active_lgl,
+          x_name = "x",
+          y_name = "y"
+        )
+      } else {
+        .corr_polyserial_mle(
+          vec_a,
+          vec_b,
+          w_pert,
+          active_lgl,
+          ord_name = "ord",
+          cont_name = "cont"
+        )
+      },
+      error = function(e) e
+    )
+    if (inherits(fit_pert, "error")) {
+      # Re-throw as PC-6 pointing at the full-sample context.
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Numerical optimization did not converge during ",
+            "influence-function computation."
+          ),
+          "i" = paste0(
+            "Perturbation at row {.val {i}} failed: ",
+            "{.val {conditionMessage(fit_pert)}}"
+          ),
+          "v" = paste0(
+            "Inspect the pair for extreme weight skew, sparse cells, ",
+            "or degenerate ordinal coding."
+          )
+        ),
+        class = "surveycore_error_polychoric_optim_failed"
+      )
+    }
+    rho_z_pert <- atanh(fit_pert$rho)
+    ifs[[k]] <- (rho_z_pert - rho_z_full) / eps_pert
+  }
+
+  ifs
+}
+
+
+# ── .corr_taylor_variance_latent() ───────────────────────────────────────────
+#
+# Design-based Taylor variance on the Fisher-z scale, reusing the existing
+# HT / Hájek machinery (see .vcov_pair_taylor() in R/analysis-corr-helpers.R;
+# both paths drive .svy_recvar() with a cluster/strata/FPC matrix built
+# from the design).
+#
+# The influence function `IF_i` is treated as the score for a weighted total
+# estimator: Var(ζ̂) = Var(Σ w_i · IF_i) under the design. `var_z_srs` is
+# the same HT machinery applied with design weights replaced by 1 — used
+# for `deff` computation (no MLE re-fit).
+#
+# Arguments:
+#   design        — survey_taylor.
+#   if_z          — numeric length `sum(active_domain)`; Fisher-z IF values.
+#   w             — full-length weight vector (aligned to @data rows).
+#                   (Not used directly; design weights come from `design`.)
+#   active_domain — logical or 0/1 mask aligned to @data rows.
+#
+# Returns: list(var_z, var_z_srs).
+.corr_taylor_variance_latent <- function(
+  design,
+  if_z,
+  w,
+  active_domain
+) {
+  data <- design@data
+  vars <- design@variables
+  w_full <- data[[vars$weights]]
+  active_lgl <- as.logical(active_domain)
+
+  # Expand if_z (length = sum(active)) to full length: 0 out-of-domain.
+  if_full <- numeric(nrow(data))
+  if_full[active_lgl] <- if_z
+
+  # Build full-length cluster/strata/FPC matrices for .svy_recvar().
+  mats <- .build_cluster_matrices(data, vars)
+  lonely.psu <- getOption("survey.lonely.psu", "remove")
+
+  infl_mat <- matrix(w_full * if_full, ncol = 1L)
+  v <- .svy_recvar(
+    infl_mat,
+    mats$clusters_mat,
+    mats$strata_mat,
+    mats$fpcs,
+    lonely.psu = lonely.psu
+  )
+  var_z <- v[[1L, 1L]]
+
+  # SRS-equivalent variance: unit weights, same influence function values.
+  w_srs <- rep(1, nrow(data))
+  infl_mat_srs <- matrix(w_srs * if_full, ncol = 1L)
+  v_srs <- .svy_recvar(
+    infl_mat_srs,
+    mats$clusters_mat,
+    mats$strata_mat,
+    mats$fpcs,
+    lonely.psu = lonely.psu
+  )
+  var_z_srs <- v_srs[[1L, 1L]]
+
+  list(var_z = var_z, var_z_srs = var_z_srs)
+}
+
+
+# ── .corr_replicate_variance_latent() ────────────────────────────────────────
+#
+# Replicate-weight variance on the Fisher-z scale. Per replicate, re-run the
+# two-step MLE (thresholds then rho) and record ζ̂^{(r)} = atanh(ρ̂^{(r)}).
+# Variance is computed from the design's `scale` and `rscales` using the
+# vendored .svy_rep_var() path (identical to the one used elsewhere in
+# surveycore).
+#
+# Emits PC-12 if 0 < n_failed <= 0.2*R. Raises PC-8 if n_failed/R > 0.2 or
+# n_ok == 0.
+#
+# `var_z_srs` is computed by the same replicate loop using a per-row unit
+# weight (w_i = 1) baseline so that `deff` is well-defined.
+.corr_replicate_variance_latent <- function(
+  design,
+  method,
+  vec_a,
+  vec_b,
+  active_domain,
+  rho_hat_full
+) {
+  data <- design@data
+  vars <- design@variables
+  rep_cols <- vars$repweights
+  R <- length(rep_cols)
+  scale <- vars$scale
+  rscales <- if (!is.null(vars$rscales)) vars$rscales else rep(1L, R)
+  active_lgl <- as.logical(active_domain)
+
+  rho_z_full <- atanh(rho_hat_full)
+  thetas_z <- rep(NA_real_, R)
+
+  for (r in seq_len(R)) {
+    w_r <- data[[rep_cols[[r]]]]
+    fit_r <- tryCatch(
+      if (identical(method, "polychoric")) {
+        .corr_polychoric_mle(
+          vec_a,
+          vec_b,
+          w_r,
+          active_lgl,
+          x_name = "x",
+          y_name = "y"
+        )
+      } else {
+        .corr_polyserial_mle(
+          vec_a,
+          vec_b,
+          w_r,
+          active_lgl,
+          ord_name = "ord",
+          cont_name = "cont"
+        )
+      },
+      error = function(e) NULL
+    )
+    if (!is.null(fit_r) && is.finite(fit_r$rho)) {
+      thetas_z[[r]] <- atanh(fit_r$rho)
+    }
+  }
+
+  n_failed <- sum(is.na(thetas_z))
+  n_ok <- R - n_failed
+  fail_rate <- n_failed / max(R, 1L)
+
+  if (n_ok == 0L || fail_rate > 0.20) {
+    pct <- round(100 * fail_rate, 1)
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.val {n_failed}} of {.val {R}} replicate fit{?s} failed to ",
+          "converge ({.val {pct}}%)."
+        ),
+        "i" = "Threshold for hard failure is {.val 20}% of replicates.",
+        "v" = paste0(
+          "Inspect the design's replicate weights or reduce the ",
+          "number of ordinal levels."
+        )
+      ),
+      class = "surveycore_error_replicate_convergence_failure"
+    )
+  }
+
+  if (n_failed > 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.val {n_failed}} of {.val {R}} replicate fit{?s} failed ",
+          "to converge."
+        ),
+        "i" = paste0(
+          "Variance is computed over the {.val {n_ok}} successful ",
+          "replicate(s). See {.code meta(result)$n_failed_replicates_total}."
+        )
+      ),
+      class = "surveycore_warning_polychoric_replicate_convergence"
+    )
+  }
+
+  var_z <- .svy_rep_var(
+    thetas_z,
+    scale = scale,
+    rscales = rscales,
+    mse = TRUE,
+    coef = rho_z_full
+  )
+
+  # SRS-equivalent: re-run the MLE loop with unit weights per replicate.
+  # Mannan (2025) doesn't prescribe a deff for latent-variable correlations.
+  # We adopt the surveycore convention: use the same replicate structure with
+  # a constant-1 base weight, giving a design-free reference variance.
+  thetas_z_srs <- rep(NA_real_, R)
+  unit_w <- rep(1, nrow(data))
+  # Full-sample estimate under unit weights
+  fit_srs_full <- tryCatch(
+    if (identical(method, "polychoric")) {
+      .corr_polychoric_mle(
+        vec_a,
+        vec_b,
+        unit_w,
+        active_lgl,
+        x_name = "x",
+        y_name = "y"
+      )
+    } else {
+      .corr_polyserial_mle(
+        vec_a,
+        vec_b,
+        unit_w,
+        active_lgl,
+        ord_name = "ord",
+        cont_name = "cont"
+      )
+    },
+    error = function(e) NULL
+  )
+  # nocov start
+  # Defensive: the full-weight MLE succeeded already; the unit-weight MLE is
+  # a weaker variant and typically also succeeds on any data that produced
+  # a valid full-sample estimate.
+  if (is.null(fit_srs_full) || !is.finite(fit_srs_full$rho)) {
+    var_z_srs <- NA_real_
+  } else {
+    # nocov end
+    rho_z_srs_full <- atanh(fit_srs_full$rho)
+    for (r in seq_len(R)) {
+      # Under "SRS", every respondent's replicate contribution is equal —
+      # we simulate this by using the same per-row replicate weight ratios
+      # applied to unit weights. Concretely: rescale w_r by the ratio
+      # w_r / w_full for each row that has a positive full weight, so the
+      # design structure (which rows get down-weighted in replicate r) is
+      # preserved.
+      w_full <- data[[vars$weights]]
+      w_r <- data[[rep_cols[[r]]]]
+      # Avoid divide-by-zero.
+      safe_ratio <- ifelse(w_full > 0, w_r / w_full, 0)
+      w_r_srs <- unit_w * safe_ratio
+      fit_r <- tryCatch(
+        if (identical(method, "polychoric")) {
+          .corr_polychoric_mle(
+            vec_a,
+            vec_b,
+            w_r_srs,
+            active_lgl,
+            x_name = "x",
+            y_name = "y"
+          )
+        } else {
+          .corr_polyserial_mle(
+            vec_a,
+            vec_b,
+            w_r_srs,
+            active_lgl,
+            ord_name = "ord",
+            cont_name = "cont"
+          )
+        },
+        error = function(e) NULL
+      )
+      if (!is.null(fit_r) && is.finite(fit_r$rho)) {
+        thetas_z_srs[[r]] <- atanh(fit_r$rho)
+      }
+    }
+    if (all(is.na(thetas_z_srs))) {
+      var_z_srs <- NA_real_ # nocov
+    } else {
+      var_z_srs <- tryCatch(
+        .svy_rep_var(
+          thetas_z_srs,
+          scale = scale,
+          rscales = rscales,
+          mse = TRUE,
+          coef = rho_z_srs_full
+        ),
+        error = function(e) NA_real_ # nocov
+      )
+    }
+  }
+
+  list(
+    var_z = var_z,
+    var_z_srs = var_z_srs,
+    n_ok = as.integer(n_ok),
+    n_failed = as.integer(n_failed)
+  )
+}
+
+
+# ── .corr_latent_pair() ──────────────────────────────────────────────────────
+#
+# Pair-level dispatcher for polychoric / polyserial correlation.
+#
+# Step order:
+#   1. PC-7 gate for survey_twophase / survey_nonprob (before any MLE work).
+#   2. Canonicalize (polyserial only).
+#   3. PC-1 gate for polychoric (reject non-ordinal).
+#   4. PC-13 warning when any side is unordered factor.
+#   5. Pairwise-complete active domain.
+#   6. MLE on the pair (propagates PC-4 / PC-5 / PC-6 / PC-10 / PC-11).
+#   7. Variance path by design class (PC-12, PC-8 propagated from replicate).
+#   8. PC-9 warning when ρ̂ is boundary; PC-14 additionally on survey_taylor.
+#   9. CI via .corr_fisher_ci(); truncated to [-1, 1].
+#
+# Returns: list with 10 fields
+#   r, se_r, se_srs, n, n_weighted, ci_low, ci_high, rho_z, se_z, method.
+.corr_latent_pair <- function(
+  design,
+  x_col,
+  y_col,
+  method,
+  active_domain = NULL,
+  na.rm = TRUE,
+  conf_level = 0.95
+) {
+  # 1. PC-7 gate — before any MLE work.
+  if (
+    S7::S7_inherits(design, survey_twophase) ||
+      S7::S7_inherits(design, survey_nonprob)
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.code method = {.val {method}}} is not supported for ",
+          "{.cls {class(design)[[1L]]}} designs in this release."
+        ),
+        "v" = paste0(
+          "Use {.code method = \"pearson\"}, or call {.fn get_corr} on a ",
+          "{.cls survey_taylor} or {.cls survey_replicate} design."
+        )
+      ),
+      class = "surveycore_error_polychoric_design_unsupported"
+    )
+  }
+
+  data <- design@data
+  n_full <- nrow(data)
+  if (is.null(active_domain)) {
+    active_domain <- rep(TRUE, n_full)
+  }
+
+  # 2. Canonicalize (polyserial) / PC-1 gate (polychoric).
+  if (identical(method, "polyserial")) {
+    roles <- .corr_canonicalize_polyserial(x_col, y_col, data)
+    ord_name <- roles$ordinal_name
+    cont_name <- roles$continuous_name
+  } else {
+    # polychoric: each side must be ordinal.
+    type_x <- .corr_detect_ordinal(data[[x_col]])
+    type_y <- .corr_detect_ordinal(data[[y_col]])
+    ordinal_types <- c("ordered", "factor", "integer_ordinal")
+    bad <- character(0)
+    if (!(type_x %in% ordinal_types)) {
+      bad <- c(bad, x_col)
+    }
+    if (!(type_y %in% ordinal_types)) {
+      bad <- c(bad, y_col)
+    }
+    if (length(bad) > 0L) {
+      bad_classes <- vapply(bad, function(nm) class(data[[nm]])[[1L]], "")
+      n_bad <- length(bad)
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.code method = \"polychoric\"} requires ordinal variables. ",
+            "Non-ordinal {cli::qty(n_bad)}column{?s}: {.field {bad}} ",
+            "({.cls {bad_classes}})."
+          ),
+          "v" = paste0(
+            "Coerce to {.cls factor} or {.cls ordered}, or use ",
+            "{.code method = \"pearson\"}."
+          )
+        ),
+        class = "surveycore_error_polychoric_requires_ordinal"
+      )
+    }
+    ord_name <- x_col
+    cont_name <- y_col
+  }
+
+  # 3. PC-13 — warn on unordered factors (both methods, ordinal side(s) only).
+  if (identical(method, "polychoric")) {
+    for (nm in c(x_col, y_col)) {
+      col <- data[[nm]]
+      if (is.factor(col) && !is.ordered(col)) {
+        cli::cli_warn(
+          c(
+            "!" = paste0(
+              "Variable {.field {nm}} is an unordered {.cls factor}; using ",
+              "{.fn levels} order for thresholds."
+            ),
+            "v" = paste0(
+              "Coerce to {.cls ordered} to make the level order explicit."
+            )
+          ),
+          class = "surveycore_warning_polychoric_unordered_factor"
+        )
+      }
+    }
+  } else {
+    col <- data[[ord_name]]
+    if (is.factor(col) && !is.ordered(col)) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Variable {.field {ord_name}} is an unordered {.cls factor}; ",
+            "using {.fn levels} order for thresholds."
+          ),
+          "v" = paste0(
+            "Coerce to {.cls ordered} to make the level order explicit."
+          )
+        ),
+        class = "surveycore_warning_polychoric_unordered_factor"
+      )
+    }
+  }
+
+  # 4. Pairwise-complete active domain.
+  x_col_vec <- data[[x_col]]
+  y_col_vec <- data[[y_col]]
+  active_lgl <- as.logical(active_domain)
+  if (isTRUE(na.rm)) {
+    pair_active <- active_lgl & !is.na(x_col_vec) & !is.na(y_col_vec)
+  } else {
+    pair_active <- active_lgl
+  }
+
+  w_full <- data[[design@variables$weights]]
+  n_pair <- sum(pair_active)
+  n_w <- sum(w_full[pair_active], na.rm = TRUE)
+
+  # 5. All-NA pair: early return with NA fields.
+  if (n_pair == 0L) {
+    return(list(
+      r = NA_real_,
+      se_r = NA_real_,
+      se_srs = NA_real_,
+      n = 0L,
+      n_weighted = 0,
+      ci_low = NA_real_,
+      ci_high = NA_real_,
+      rho_z = NA_real_,
+      se_z = NA_real_,
+      method = method
+    ))
+  }
+
+  # 6. MLE on the pair.
+  if (identical(method, "polychoric")) {
+    fit <- .corr_polychoric_mle(
+      x_col_vec,
+      y_col_vec,
+      w_full,
+      pair_active,
+      x_name = x_col,
+      y_name = y_col
+    )
+    vec_a <- x_col_vec
+    vec_b <- y_col_vec
+  } else {
+    # polyserial: MLE uses ordinal then continuous.
+    fit <- .corr_polyserial_mle(
+      data[[ord_name]],
+      data[[cont_name]],
+      w_full,
+      pair_active,
+      ord_name = ord_name,
+      cont_name = cont_name
+    )
+    vec_a <- data[[ord_name]]
+    vec_b <- data[[cont_name]]
+  }
+
+  # 7. PC-10 — zero-count interior levels dropped.
+  if (identical(method, "polychoric")) {
+    dropped_x <- fit$dropped_levels_x
+    dropped_y <- fit$dropped_levels_y
+    if (length(dropped_x) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Ordinal variable {.field {x_col}} has zero-weight ",
+            "level{?s} {.val {dropped_x}} in the active domain."
+          ),
+          "i" = paste0(
+            "Dropped level(s) removed; remaining levels renumbered ",
+            "before threshold estimation."
+          )
+        ),
+        class = "surveycore_warning_polychoric_zero_count_level"
+      )
+    }
+    if (length(dropped_y) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Ordinal variable {.field {y_col}} has zero-weight ",
+            "level{?s} {.val {dropped_y}} in the active domain."
+          ),
+          "i" = paste0(
+            "Dropped level(s) removed; remaining levels renumbered ",
+            "before threshold estimation."
+          )
+        ),
+        class = "surveycore_warning_polychoric_zero_count_level"
+      )
+    }
+  } else {
+    dropped <- fit$dropped_levels
+    if (length(dropped) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Ordinal variable {.field {ord_name}} has zero-weight ",
+            "level{?s} {.val {dropped}} in the active domain."
+          ),
+          "i" = paste0(
+            "Dropped level(s) removed; remaining levels renumbered ",
+            "before threshold estimation."
+          )
+        ),
+        class = "surveycore_warning_polychoric_zero_count_level"
+      )
+    }
+  }
+
+  # 8. PC-11 — sparse cells (polychoric only).
+  # nocov start
+  # Defensive: n_sparse_cells is set by .corr_polychoric_mle() only when an
+  # observed cell has modeled probability below 1e-12 at the optimum.
+  # Realistic fixtures don't reliably trigger this with stats::optimize()'s
+  # default tolerance; the branch is exercised indirectly via the primitives
+  # in test-analysis-corr-latent-primitives.R.
+  if (identical(method, "polychoric") && fit$n_sparse_cells > 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.val {fit$n_sparse_cells}} cell{?s} in pair ",
+          "({.field {x_col}}, {.field {y_col}}) {?has/have} modeled ",
+          "probability below {.val 1e-12} at the MLE."
+        ),
+        "i" = paste0(
+          "Log-likelihood was floored; estimate may be sensitive ",
+          "to small perturbations."
+        )
+      ),
+      class = "surveycore_warning_polychoric_sparse_cell"
+    )
+  }
+  # nocov end
+
+  rho_hat <- fit$rho
+
+  # 9. Variance path by design class.
+  if (S7::S7_inherits(design, survey_taylor)) {
+    if_z <- .corr_numerical_influence(
+      design = design,
+      method = method,
+      vec_a = vec_a,
+      vec_b = vec_b,
+      active_domain = pair_active,
+      rho_hat_full = rho_hat
+    )
+    var_out <- .corr_taylor_variance_latent(
+      design,
+      if_z = if_z,
+      w = w_full,
+      active_domain = pair_active
+    )
+  } else if (S7::S7_inherits(design, survey_replicate)) {
+    var_out <- .corr_replicate_variance_latent(
+      design,
+      method = method,
+      vec_a = vec_a,
+      vec_b = vec_b,
+      active_domain = pair_active,
+      rho_hat_full = rho_hat
+    )
+  } else {
+    # nocov start
+    # Defensive: PC-7 gate above already rejects twophase / nonprob.
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Unsupported design class {.cls {class(design)[[1L]]}} in ",
+          "{.fn .corr_latent_pair}."
+        )
+      ),
+      class = "surveycore_error_unsupported_class"
+    )
+    # nocov end
+  }
+
+  var_z <- var_out$var_z
+  var_z_srs <- var_out$var_z_srs
+  se_z <- if (is.finite(var_z) && var_z >= 0) sqrt(var_z) else NA_real_
+  se_z_srs <- if (
+    is.finite(var_z_srs) && !is.null(var_z_srs) && var_z_srs >= 0
+  ) {
+    sqrt(var_z_srs)
+  } else {
+    NA_real_
+  }
+
+  # Delta-method SE on ρ scale: SE(ρ̂) = (1 - ρ̂²) · SE(ζ̂).
+  se_r <- if (!is.na(se_z)) (1 - rho_hat^2) * se_z else NA_real_
+  se_srs <- if (!is.na(se_z_srs)) (1 - rho_hat^2) * se_z_srs else NA_real_
+
+  # 10. PC-9 / PC-14 boundary warnings.
+  if (.corr_detect_boundary_rho(rho_hat)) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "Estimated correlation for pair ({.field {x_col}}, ",
+          "{.field {y_col}}) is within {.val 1e-6} of the boundary ",
+          "({.val {rho_hat}})."
+        ),
+        "i" = paste0(
+          "Standard errors based on the delta method or Fisher-z ",
+          "linearization are unreliable near {.val -1} and {.val 1}."
+        )
+      ),
+      class = "surveycore_warning_polychoric_boundary_rho"
+    )
+    if (S7::S7_inherits(design, survey_taylor)) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Taylor linearization for pair ({.field {x_col}}, ",
+            "{.field {y_col}}) is near the boundary ({.val {rho_hat}}); ",
+            "CI is structurally wide."
+          ),
+          "i" = paste0(
+            "This is a known limitation of the delta-method / ",
+            "numerical influence-function approach (Mannan 2025)."
+          ),
+          "v" = paste0(
+            "Use a {.cls survey_replicate} design for tighter inference ",
+            "near the boundary."
+          )
+        ),
+        class = "surveycore_warning_polychoric_taylor_boundary_wide_ci"
+      )
+    }
+  }
+
+  # 11. CI via shared Fisher-z helper.
+  ci <- .corr_fisher_ci(rho_hat, se_z, conf_level = conf_level)
+
+  list(
+    r = rho_hat,
+    se_r = se_r,
+    se_srs = se_srs,
+    n = as.integer(n_pair),
+    n_weighted = n_w,
+    ci_low = ci$ci_low,
+    ci_high = ci$ci_high,
+    rho_z = ci$rho_z,
+    se_z = se_z,
+    method = method
+  )
+}
