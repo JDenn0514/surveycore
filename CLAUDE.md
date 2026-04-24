@@ -100,5 +100,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
 - `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)
 - `archive/survey-collection/` — `survey_collection` container + `get_*()` dispatch spec, plan, and decisions (shipped; PRs #97, #98)
+- `archive/get-covariance/` — `get_covariance()` spec, plan, decisions, and test spec (shipped; PR #105)
+- `archive/collection-uniform-groups/` — uniform `@groups` enforcement across `survey_collection` (shipped; PR #106)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
