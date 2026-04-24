@@ -28,6 +28,9 @@ SOPs/
 # Pipeline workspace — per-request runtime artifacts
 .surveycore-workspace/
 
+# Claude Code harness runtime lock (session-local)
+.claude/scheduled_tasks.lock
+
 # Vignette build artifacts (local devtools::build_vignettes output)
 doc/
 Meta/
