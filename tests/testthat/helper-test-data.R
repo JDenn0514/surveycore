@@ -934,3 +934,42 @@ make_replicate_nonconverger <- function(seed = 42L) {
     formula = y ~ rare + cov
   )
 }
+
+# ------------------------------------------------------------------------------
+# .hand_polyserial_twostep() — strict two-step MLE oracle for polyserial tests
+# ------------------------------------------------------------------------------
+
+#' Hand-computed two-step MLE oracle for polyserial correlation
+#'
+#' `polycor::polyserial()` uses either a joint MLE (`ML = TRUE`) or Drasgow's
+#' approximation (`ML = FALSE`); neither matches the two-step Cox (1974) /
+#' Mannan 2025 §5.1 construction that surveycore's `.corr_polyserial_mle()`
+#' implements. This helper is the hand-computed two-step MLE — the exact
+#' mathematical oracle our implementation targets at 1e-6.
+#'
+#' @param ord integer vector of ordinal codes (1..K)
+#' @param cont numeric continuous vector
+#' @return ρ̂ from the two-step MLE
+#' @keywords internal
+#' @noRd
+.hand_polyserial_twostep <- function(ord, cont) {
+  n <- length(ord)
+  k <- length(unique(ord))
+  marginal <- cumsum(tabulate(ord, nbins = k)) / n
+  thresholds <- stats::qnorm(marginal[-length(marginal)])
+  mu <- mean(cont)
+  sig <- sqrt(mean((cont - mu)^2))
+  z <- (cont - mu) / sig
+  loglik <- function(rho) {
+    denom <- sqrt(1 - rho^2)
+    t_full <- c(-Inf, thresholds, Inf)
+    p <- mapply(function(zi, mi) {
+      u_hi <- (t_full[mi + 1L] - rho * zi) / denom
+      u_lo <- (t_full[mi] - rho * zi) / denom
+      stats::pnorm(u_hi) - stats::pnorm(u_lo)
+    }, z, ord)
+    sum(log(p))
+  }
+  fit <- stats::optimize(loglik, c(-1 + 1e-6, 1 - 1e-6), maximum = TRUE)
+  fit$maximum
+}

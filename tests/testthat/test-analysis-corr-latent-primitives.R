@@ -571,33 +571,8 @@ make_polyserial_pair <- function(rho, n, k_ord, seed = 42) {
   data.frame(ord = ord, cont = cont)
 }
 
-# Hand-computed two-step polyserial MLE (Cox 1974; Mannan 2025) — the strict
-# oracle our implementation targets at 1e-6. polycor::polyserial() differs by
-# design: ML=TRUE optimizes thresholds jointly, ML=FALSE uses Drasgow's
-# fast approximation; neither is bit-identical to Cox's two-step. Hand
-# reference covers the strict 1e-6 parity; polycor comparison covers the
-# weaker "in the right neighborhood" gate.
-.hand_polyserial_twostep <- function(ord, cont) {
-  n <- length(ord)
-  k <- length(unique(ord))
-  marginal <- cumsum(tabulate(ord, nbins = k)) / n
-  thresholds <- stats::qnorm(marginal[-length(marginal)])
-  mu <- mean(cont)
-  sig <- sqrt(mean((cont - mu)^2))
-  z <- (cont - mu) / sig
-  loglik <- function(rho) {
-    denom <- sqrt(1 - rho^2)
-    t_full <- c(-Inf, thresholds, Inf)
-    p <- mapply(function(zi, mi) {
-      u_hi <- (t_full[mi + 1L] - rho * zi) / denom
-      u_lo <- (t_full[mi] - rho * zi) / denom
-      stats::pnorm(u_hi) - stats::pnorm(u_lo)
-    }, z, ord)
-    sum(log(p))
-  }
-  fit <- stats::optimize(loglik, c(-1 + 1e-6, 1 - 1e-6), maximum = TRUE)
-  fit$maximum
-}
+# .hand_polyserial_twostep() — the strict oracle our implementation targets at
+# 1e-6 — lives in helper-test-data.R and is loaded automatically.
 
 test_that(".corr_polyserial_mle() matches two-step MLE on 3-level fixture", {
   d <- make_polyserial_pair(rho = 0.5, n = 500, k_ord = 3, seed = 21)
