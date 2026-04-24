@@ -182,6 +182,8 @@ There is no concurrent-PR file overlap because no two PRs run concurrently.
 
 ### PR 3: `feature/polychoric-corr-api-wiring`
 
+- [x] Merged in #109 (`897ade3`) on 2026-04-24.
+
 **One-line goal**: Wire the `method` argument into the exported `get_corr()`, update roxygen / NEWS / docs, add integration tests covering format, grouping, variance-column selection, collection dispatch, and edge cases.
 
 **Error / warning classes owned by this PR**: integration-level re-validation of PC-1 through PC-14 via the public API. No new classes introduced at this layer. Pre-existing classes (`surveycore_error_insufficient_variables`, `surveycore_error_invalid_variance_arg`, `surveycore_warning_corr_non_numeric`, `surveycore_warning_small_cell`, `surveycore_warning_cv_undefined`, `surveycore_warning_single_level`) must remain functional when `method = "pearson"` (regression guard).
