@@ -26,6 +26,15 @@ pkgdown build is slow (2–5 min). Tester MAY skip gate 7 when the PR's write su
 
 Skip is logged in `audit.md` Profile gates table with `SKIPPED — scope`.
 
+**Hard rule — no skip when exports change.** If the PR adds, removes, or
+renames any exported function (i.e., `NAMESPACE` diff is non-empty),
+pkgdown MUST run — no exception. `_pkgdown.yml` reference-index
+completeness is enforced ONLY by `pkgdown::build_site()`; `R CMD check
+--as-cran` does not catch missing-topic errors. A skipped pkgdown gate on
+an export-changing PR has shipped a broken pkgdown CI cycle in the past
+(see `prs/pr-1-collection-id-if-missing-var-class/shipper.md` for the
+post-mortem).
+
 ## Pre-approved NOTEs
 
 These NOTEs do NOT block:
@@ -85,6 +94,12 @@ Builder MUST follow these during implementation (from `rules/r-package-conventio
 7. Cap parallel workers at 2 in examples/tests; expose `cores`/`nthreads` for user control
 8. Run `devtools::document()` before committing roxygen changes
 9. Use `requireNamespace("pkg", quietly = TRUE)` not `installed.packages()`
+10. **When adding a new exported function, also add it to the matching
+    section's `contents:` block in `_pkgdown.yml`.** Pkgdown enforces
+    that every exported function appears in the reference index;
+    omission breaks CI. If no existing section fits, create a new
+    titled section near related functions. Add `_pkgdown.yml` to the
+    PR's write surface.
 
 Builder's `implementation.md` should note compliance at the bottom:
 
