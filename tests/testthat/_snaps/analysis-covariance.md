@@ -149,7 +149,7 @@
       Error in `.dispatch_over_collection()`:
       x Survey "w2" in the collection is missing a required variable.
       i Original error: x Variable "focal" not found in survey data. i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
-      v Set `.on_missing = "skip"` to drop surveys missing the variable.
+      v Set `.if_missing_var = "skip"` to drop surveys missing the variable.
       Caused by error in `value[[3L]]()`:
       x Variable "focal" not found in survey data.
       i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".

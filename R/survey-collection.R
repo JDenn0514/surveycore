@@ -1,6 +1,8 @@
 # R/survey-collection.R
 #
 # Feature-group file for survey_collection mutators and internal helpers.
+#   - .validate_collection_id()              — shared @id validator
+#   - .validate_collection_if_missing_var()  — shared @if_missing_var validator
 #   - .check_groups_match()        — equality-only @groups check used by
 #                                     the S7 validator and [[<- setter
 #   - .propagate_or_match()        — @groups propagation / equality used by
@@ -10,9 +12,100 @@
 #                                     and add_survey() (§3.3)
 #   - add_survey()                 — append surveys to a collection (§3.7)
 #   - remove_survey()              — drop surveys from a collection (§3.7)
-#
-# The dispatch helpers `.dispatch_over_collection()` and
-# `.warn_on_meta_divergence()` will be appended to this file in PR 2.
+#   - set_collection_id()          — exported setter for @id
+#   - set_collection_if_missing_var() — exported setter for @if_missing_var
+#   - .dispatch_over_collection()  — dispatch helper for collection-aware get_*()
+#   - .warn_on_meta_divergence()   — divergence warning helper
+
+
+# ── .validate_collection_id() ─────────────────────────────────────────────────
+
+#' Validate a `survey_collection` `@id` value
+#'
+#' Shared validator used by the S7 class validator, `as_survey_collection()`,
+#' `.dispatch_over_collection()` (post-resolution), and `set_collection_id()`.
+#' Centralises the "single non-empty non-NA character string" check so all
+#' five call sites raise the same error class with consistent CLI prose.
+#'
+#' @param value    The candidate `@id` value.
+#' @param arg_name Character(1). The user-facing argument label to render
+#'   in the error message: `"id"` from the S7 validator and the setter,
+#'   `".id"` from the constructor and the dispatcher.
+#'
+#' @return `invisible(value)` on success. Raises
+#'   `surveycore_error_collection_invalid_id` on failure.
+#'
+#' @keywords internal
+#' @noRd
+.validate_collection_id <- function(value, arg_name) {
+  if (
+    !is.character(value) ||
+      length(value) != 1L ||
+      is.na(value) ||
+      !nzchar(value)
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg {arg_name}} must be a single non-empty, non-NA ",
+          "character string."
+        ),
+        "i" = paste0(
+          "Got {.cls {class(value)[[1L]]}} of length ",
+          "{.val {length(value)}}: {.val {value}}."
+        )
+      ),
+      class = "surveycore_error_collection_invalid_id"
+    )
+  }
+  invisible(value)
+}
+
+
+# ── .validate_collection_if_missing_var() ─────────────────────────────────────
+
+#' Validate a `survey_collection` `@if_missing_var` value
+#'
+#' Shared validator used by the S7 class validator,
+#' `as_survey_collection()`, `.dispatch_over_collection()` (post-resolution),
+#' and `set_collection_if_missing_var()`. Centralises the
+#' "length-1 character string in c(\"error\", \"skip\")" check so all five
+#' call sites raise the same error class with consistent CLI prose.
+#'
+#' @param value    The candidate `@if_missing_var` value.
+#' @param arg_name Character(1). The user-facing argument label to render
+#'   in the error message: `"if_missing_var"` from the S7 validator and
+#'   the setter, `".if_missing_var"` from the constructor and the
+#'   dispatcher.
+#'
+#' @return `invisible(value)` on success. Raises
+#'   `surveycore_error_collection_invalid_if_missing_var` on failure.
+#'
+#' @keywords internal
+#' @noRd
+.validate_collection_if_missing_var <- function(value, arg_name) {
+  if (
+    !is.character(value) ||
+      length(value) != 1L ||
+      is.na(value) ||
+      !(value %in% c("error", "skip"))
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg {arg_name}} must be one of {.val {\"error\"}} or ",
+          "{.val {\"skip\"}}."
+        ),
+        "i" = paste0(
+          "Got {.cls {class(value)[[1L]]}} of length ",
+          "{.val {length(value)}}: {.val {value}}."
+        )
+      ),
+      class = "surveycore_error_collection_invalid_if_missing_var"
+    )
+  }
+  invisible(value)
+}
 
 
 # ── .check_groups_match() ─────────────────────────────────────────────────────
@@ -332,7 +425,12 @@ add_survey <- function(.collection, ...) {
   }
 
   combined_list <- c(.collection@surveys, new_surveys)
-  survey_collection(surveys = combined_list, groups = coll_groups)
+  survey_collection(
+    surveys = combined_list,
+    groups = coll_groups,
+    id = .collection@id,
+    if_missing_var = .collection@if_missing_var
+  )
 }
 
 
@@ -400,7 +498,115 @@ remove_survey <- function(x, name) {
 
   keep <- setdiff(existing, name)
   new_list <- x@surveys[keep]
-  survey_collection(surveys = new_list, groups = x@groups)
+  survey_collection(
+    surveys = new_list,
+    groups = x@groups,
+    id = x@id,
+    if_missing_var = x@if_missing_var
+  )
+}
+
+
+# ── set_collection_id() ───────────────────────────────────────────────────────
+
+#' Set the Identifier Column on a `survey_collection`
+#'
+#' Updates the `@id` property of a `survey_collection`. The new value is
+#' the column name `.dispatch_over_collection()` injects when an analysis
+#' function (`get_means()`, `get_freqs()`, etc.) is dispatched across the
+#' collection without an explicit per-call `.id`.
+#'
+#' @details
+#' Setting the same value as the existing `@id` returns the collection
+#' unchanged (no error, no warning). All other invariants on the
+#' collection (`@surveys`, `@groups`, `@if_missing_var`) are preserved.
+#'
+#' Pipes naturally with the rest of the collection API:
+#' \preformatted{coll |> set_collection_id("wave") |> get_means(y1)}
+#'
+#' @param x  A [survey_collection].
+#' @param id Character(1). The new identifier column name. Must be
+#'   non-`NA` and non-empty.
+#'
+#' @return The modified `survey_collection`, invisibly.
+#'
+#' @examples
+#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#' coll <- as_survey_collection(a = d1)
+#' coll <- set_collection_id(coll, "wave")
+#' coll@id
+#'
+#' @family collections
+#' @export
+set_collection_id <- function(x, id) {
+  if (!S7::S7_inherits(x, survey_collection)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg x} must be a {.cls survey_collection}, not ",
+          "{.cls {class(x)[[1L]]}}."
+        )
+      ),
+      class = "surveycore_error_not_survey_collection"
+    )
+  }
+  .validate_collection_id(id, "id")
+  x@id <- id
+  invisible(x)
+}
+
+
+# ── set_collection_if_missing_var() ───────────────────────────────────────────
+
+#' Set the Missing-Variable Behaviour on a `survey_collection`
+#'
+#' Updates the `@if_missing_var` property of a `survey_collection`. The
+#' new value is the per-call default `.dispatch_over_collection()` uses
+#' when an analysis function (`get_means()`, `get_freqs()`, etc.) is
+#' dispatched across the collection without an explicit per-call
+#' `.if_missing_var`.
+#'
+#' @details
+#' Setting the same value as the existing `@if_missing_var` returns the
+#' collection unchanged (no error, no warning). All other invariants on
+#' the collection (`@surveys`, `@groups`, `@id`) are preserved.
+#'
+#' Pipes naturally with the rest of the collection API:
+#' \preformatted{coll |> set_collection_if_missing_var("skip") |> get_means(y1)}
+#'
+#' @param x A [survey_collection].
+#' @param if_missing_var Character(1), one of `c("error", "skip")`.
+#'   When `"skip"`, member surveys missing a requested variable are
+#'   dropped from the dispatched result; when `"error"`, the dispatcher
+#'   aborts.
+#'
+#' @return The modified `survey_collection`, invisibly.
+#'
+#' @examples
+#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+#'                 strata = vstrat, nest = TRUE)
+#' coll <- as_survey_collection(a = d1)
+#' coll <- set_collection_if_missing_var(coll, "skip")
+#' coll@if_missing_var
+#'
+#' @family collections
+#' @export
+set_collection_if_missing_var <- function(x, if_missing_var) {
+  if (!S7::S7_inherits(x, survey_collection)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg x} must be a {.cls survey_collection}, not ",
+          "{.cls {class(x)[[1L]]}}."
+        )
+      ),
+      class = "surveycore_error_not_survey_collection"
+    )
+  }
+  .validate_collection_if_missing_var(if_missing_var, "if_missing_var")
+  x@if_missing_var <- if_missing_var
+  invisible(x)
 }
 
 
@@ -432,9 +638,9 @@ remove_survey <- function(x, name) {
 #' Dispatch a `get_*()` analysis function across every survey in a collection
 #'
 #' Runs `fn(survey, ...)` for each survey in `collection@surveys`, handles
-#' missing variables per `.on_missing`, row-binds the per-survey results,
-#' prepends a `.id` identifier column, and carries over per-survey `.meta`
-#' under `$per_survey`. See spec §4.1.
+#' missing variables per the resolved `.if_missing_var`, row-binds the
+#' per-survey results, prepends the resolved `.id` identifier column, and
+#' carries over per-survey `.meta` under `$per_survey`. See spec §4.1.
 #'
 #' @section Collection grouping:
 #' Per-survey `@groups` is guaranteed uniform (`identical()` to
@@ -447,15 +653,35 @@ remove_survey <- function(x, name) {
 #' collection's groups (Decision 5); that behavior is a consequence of
 #' the invariant + existing dispatch, not a separate code path.
 #'
+#' @section Precedence resolution:
+#' Both `.id` and `.if_missing_var` follow the same two-tier rule:
+#' a non-`NULL` value at the analysis-function call site beats the
+#' value stored on the collection's `@id` / `@if_missing_var` property.
+#' Because the S7 class validator guarantees both stored properties are
+#' always valid, no third fallback tier is required.
+#'
+#' \describe{
+#'   \item{`.id = NULL` (default)}{resolves to `collection@id`.}
+#'   \item{`.id = "wave"`}{overrides the stored value; column name is
+#'     `"wave"` regardless of `collection@id`.}
+#'   \item{`.if_missing_var = NULL` (default)}{resolves to
+#'     `collection@if_missing_var`.}
+#'   \item{`.if_missing_var = "skip"`}{overrides the stored value
+#'     for this call only.}
+#' }
+#'
 #' @param fn          The `get_*()` function being dispatched.
 #' @param collection  A `survey_collection`.
 #' @param ...         Forwarded to `fn()`. NSE args must be forwarded with
 #'   `{{ }}` at the dispatch-branch call site.
-#' @param .id         Column name for the survey identifier.
-#' @param .on_missing `"error"` (default) or `"skip"` — behavior when a
-#'   survey is missing a requested variable.
-#' @return A tibble (same S3 class as the per-survey results) with `.id`
-#'   prepended and `.meta` carried over.
+#' @param .id Character(1) or `NULL`. When non-`NULL`, the column name for
+#'   the survey identifier; when `NULL`, the dispatcher resolves to
+#'   `collection@id`.
+#' @param .if_missing_var Character(1) in `c("error", "skip")` or `NULL`.
+#'   When non-`NULL`, the per-call missing-variable behaviour; when
+#'   `NULL`, the dispatcher resolves to `collection@if_missing_var`.
+#' @return A tibble (same S3 class as the per-survey results) with the
+#'   resolved `.id` column prepended and `.meta` carried over.
 #'
 #' @keywords internal
 #' @noRd
@@ -463,27 +689,28 @@ remove_survey <- function(x, name) {
   fn,
   collection,
   ...,
-  .id = ".survey",
-  .on_missing = c("error", "skip")
+  .id = NULL,
+  .if_missing_var = NULL
 ) {
-  if (
-    !is.character(.id) ||
-      length(.id) != 1L ||
-      is.na(.id) ||
-      !nzchar(.id)
-  ) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg .id} must be a single non-empty, non-NA character ",
-          "string. Got {.cls {class(.id)[1]}} of length {.val {length(.id)}}."
-        )
-      ),
-      class = "surveycore_error_collection_invalid_id"
-    )
-  }
+  # Two-tier precedence: call-site non-NULL beats stored property.
+  resolved_id <- .id %||% collection@id
+  resolved_if_missing_var <- .if_missing_var %||% collection@if_missing_var
 
-  .on_missing <- rlang::arg_match(.on_missing)
+  # Single post-resolution validation gate. The S7 class validator
+  # guarantees stored properties are valid, so this only catches
+  # invalid call-site values; it would also catch a corrupted
+  # collection (defensive but cheap).
+  .validate_collection_id(resolved_id, ".id")
+  .validate_collection_if_missing_var(
+    resolved_if_missing_var,
+    ".if_missing_var"
+  )
+
+  # Track whether the resolved id came from the call-site or the stored
+  # property; the id_collision hint surfaces `set_collection_id()` only
+  # when the user reached the collision via the stored property.
+  id_from_stored <- is.null(.id)
+
   nms <- names(collection@surveys)
 
   results <- list()
@@ -492,7 +719,7 @@ remove_survey <- function(x, name) {
     r <- tryCatch(
       fn(collection@surveys[[nm]], ...),
       surveycore_error_variable_not_found = function(cnd) {
-        if (.on_missing == "skip") {
+        if (resolved_if_missing_var == "skip") {
           skipped <<- c(skipped, nm)
           NULL
         } else {
@@ -504,8 +731,8 @@ remove_survey <- function(x, name) {
               ),
               "i" = "Original error: {conditionMessage(cnd)}",
               "v" = paste0(
-                "Set {.code .on_missing = \"skip\"} to drop surveys ",
-                "missing the variable."
+                "Set {.code .if_missing_var = \"skip\"} to drop ",
+                "surveys missing the variable."
               )
             ),
             class = "surveycore_error_collection_missing_var",
@@ -541,24 +768,33 @@ remove_survey <- function(x, name) {
   }
 
   first_cols <- names(results[[1L]])
-  if (.id %in% first_cols) {
-    id_name <- .id
+  if (resolved_id %in% first_cols) {
+    id_name <- resolved_id
+    if (id_from_stored) {
+      v_bullet <- paste0(
+        "Pass a different {.arg .id} to override (e.g., ",
+        "{.code .id = \"wave\"}) or update the stored property via ",
+        "{.fn set_collection_id}."
+      )
+    } else {
+      v_bullet <- paste0(
+        "Pass a different {.arg .id}, e.g. {.code .id = \"wave\"}."
+      )
+    }
     cli::cli_abort(
       c(
         "x" = paste0(
           "{.arg .id} value {.val {id_name}} conflicts with a column ",
           "produced by the analysis function."
         ),
-        "v" = paste0(
-          "Pass a different {.arg .id}, e.g. {.code .id = \"wave\"}."
-        )
+        "v" = v_bullet
       ),
       class = "surveycore_error_collection_id_collision"
     )
   }
 
   for (nm in names(results)) {
-    results[[nm]][[.id]] <- nm
+    results[[nm]][[resolved_id]] <- nm
   }
 
   out <- tryCatch(
@@ -591,7 +827,7 @@ remove_survey <- function(x, name) {
     }
   )
 
-  out <- out[, c(.id, setdiff(names(out), .id))]
+  out <- out[, c(resolved_id, setdiff(names(out), resolved_id))]
 
   first_meta <- attr(results[[1L]], ".meta")
   per_survey_meta <- lapply(results, function(r) attr(r, ".meta"))

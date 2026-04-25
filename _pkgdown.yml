@@ -58,6 +58,8 @@ reference:
       - as_survey_collection
       - add_survey
       - remove_survey
+      - set_collection_id
+      - set_collection_if_missing_var
 
   - title: "Estimation"
     desc: >

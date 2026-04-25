@@ -657,14 +657,36 @@ survey_twophase <- S7::new_class(
 #'     applied uniformly across every member survey. Default
 #'     `character(0)` (ungrouped). When non-empty, every member's
 #'     `@groups` is asserted `identical()` to this value.}
+#'   \item{`id`}{Character(1). Identifier column name injected by
+#'     `.dispatch_over_collection()` when a `get_*()` is called on the
+#'     collection. Default `".survey"`. Stored on the collection and
+#'     consumed as the per-call default; a non-`NULL` `.id` at the
+#'     analysis-function call site overrides this stored value.
+#'     Mutate via [set_collection_id()].}
+#'   \item{`if_missing_var`}{Character(1), one of `c("error", "skip")`.
+#'     Default `"error"`. Controls how dispatched `get_*()` functions
+#'     behave when a member is missing a requested variable. Stored on
+#'     the collection and consumed as the per-call default; a non-`NULL`
+#'     `.if_missing_var` at the analysis-function call site overrides
+#'     this stored value. Mutate via [set_collection_if_missing_var()].}
 #' }
 #'
 #' @param surveys A named list of `survey_base` objects.
 #' @param groups Character vector of grouping variable names. Every member's
 #'   `@groups` must be `identical()` to this value. Default `character(0)`.
+#' @param id Character(1). Identifier column name used when dispatching
+#'   analysis functions across the collection. Default `".survey"`.
+#' @param if_missing_var Character(1), one of `c("error", "skip")`. Default
+#'   `"error"`. Controls how dispatched `get_*()` functions behave when a
+#'   member survey is missing a requested variable.
 #'
 #' @return A `survey_collection` object.
-#' @usage survey_collection(surveys = list(), groups = character(0))
+#' @usage survey_collection(
+#'   surveys = list(),
+#'   groups = character(0),
+#'   id = ".survey",
+#'   if_missing_var = "error"
+#' )
 #'
 #' @examples
 #' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
@@ -685,9 +707,27 @@ survey_collection <- S7::new_class(
     groups = S7::new_property(
       S7::class_character,
       default = quote(character(0))
+    ),
+    id = S7::new_property(
+      S7::class_character,
+      default = ".survey"
+    ),
+    if_missing_var = S7::new_property(
+      S7::class_character,
+      default = "error"
     )
   ),
   validator = function(self) {
+    # C13 — @id well-formed (length-1, character, non-NA, non-empty).
+    # Run before C1/C2/C4/G1 so the most descriptive error fires first
+    # when multiple invariants would otherwise trigger.
+    .validate_collection_id(self@id, "id")
+
+    # C15 — @if_missing_var well-formed (length-1, character, non-NA,
+    # in c("error", "skip")). Run after @id so the @id error has
+    # precedence when both are simultaneously invalid.
+    .validate_collection_if_missing_var(self@if_missing_var, "if_missing_var")
+
     # C1 — empty list
     if (length(self@surveys) == 0L) {
       cli::cli_abort(

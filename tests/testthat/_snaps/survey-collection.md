@@ -27,3 +27,54 @@
       x Name not found in collection: "nope".
       i Available: "a" and "b".
 
+# as_survey_collection() rejects .id = NA_character_
+
+    Code
+      as_survey_collection(a = s$d1, .id = NA_character_)
+    Condition
+      Error in `.validate_collection_id()`:
+      x `.id` must be a single non-empty, non-NA character string.
+      i Got <character> of length 1: NA.
+
+# as_survey_collection() rejects .if_missing_var = "warn"
+
+    Code
+      as_survey_collection(a = s$d1, .if_missing_var = "warn")
+    Condition
+      Error in `.validate_collection_if_missing_var()`:
+      x `.if_missing_var` must be one of "error" or "skip".
+      i Got <character> of length 1: "warn".
+
+# print() renders id: and if_missing_var: at defaults
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 1 survey:
+      id: ".survey"
+      if_missing_var: "error"
+      "a": survey_taylor, 40 rows, 8 variables
+
+# print() renders id: and if_missing_var: at non-default values
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 2 surveys:
+      id: "wave"
+      if_missing_var: "skip"
+      "y2018": survey_taylor, 40 rows, 8 variables
+      "y2020": survey_taylor, 60 rows, 8 variables
+
+# print() renders id and if_missing_var lines exactly once on multi-member
+
+    Code
+      print(coll)
+    Message
+      A <survey_collection> with 3 surveys:
+      id: ".survey"
+      if_missing_var: "error"
+      "a": survey_taylor, 40 rows, 8 variables
+      "b": survey_taylor, 60 rows, 8 variables
+      "c": survey_taylor, 80 rows, 8 variables
+

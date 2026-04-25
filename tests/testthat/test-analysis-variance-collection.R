@@ -179,13 +179,12 @@ test_that("C7: .id collision with an existing result column aborts", {
   )
 })
 
-test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
+test_that("C13: .id rejects empty, NA, non-char, wrong length", {
+  # NOTE: as of PR `feature/collection-id-if-missing-var-class`, `.id = NULL`
+  # is a sentinel for "use the stored property" rather than an invalid value.
+  # The other four invalid shapes still error.
   coll <- .make_variance_collection()
 
-  expect_error(
-    get_variance(coll, y1, .id = NULL),
-    class = "surveycore_error_collection_invalid_id"
-  )
   expect_error(
     get_variance(coll, y1, .id = ""),
     class = "surveycore_error_collection_invalid_id"
@@ -202,7 +201,7 @@ test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
     get_variance(coll, y1, .id = 1L),
     class = "surveycore_error_collection_invalid_id"
   )
-  expect_snapshot(error = TRUE, get_variance(coll, y1, .id = NULL))
+  expect_snapshot(error = TRUE, get_variance(coll, y1, .id = NA_character_))
 })
 
 test_that("C10: tidy-selected variable absent on single design raises variable_not_found", {
