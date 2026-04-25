@@ -29,9 +29,10 @@ and `NEWS.md` only; everything else is disjoint.
 
 ## PR map
 
-- [ ] PR 1: `feature/collection-id-if-missing-var-class` — Class properties,
+- [x] PR 1: `feature/collection-id-if-missing-var-class` — Class properties,
       validator helpers, constructor wiring, dispatcher precedence, two new
       setters, print-method rendering, preservation across mutators.
+      Merged as #111 (commit `9a272b8`).
 - [ ] PR 2: `feature/collection-if-missing-var-rename` — Wide rename of
       `.on_missing` → `.if_missing_var` across 11 analysis functions and
       every pinned snapshot.
