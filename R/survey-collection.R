@@ -93,8 +93,8 @@
     cli::cli_abort(
       c(
         "x" = paste0(
-          "{.arg {arg_name}} must be one of {.val \"error\"} or ",
-          "{.val \"skip\"}."
+          "{.arg {arg_name}} must be one of {.val {\"error\"}} or ",
+          "{.val {\"skip\"}}."
         ),
         "i" = paste0(
           "Got {.cls {class(value)[[1L]]}} of length ",

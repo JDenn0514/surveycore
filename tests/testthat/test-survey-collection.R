@@ -427,3 +427,595 @@ test_that(".resolve_caller_names() handles NULL names on quosures list", {
   expect_identical(out, "x")
 })
 
+
+# ── §C13/C15 — validator helpers ───────────────────────────────────────────
+
+test_that(".validate_collection_id() returns invisible(value) on success", {
+  r <- withVisible(.validate_collection_id("ok", "id"))
+  expect_false(r$visible)
+  expect_identical(r$value, "ok")
+})
+
+test_that(".validate_collection_id() rejects NA character", {
+  expect_error(
+    .validate_collection_id(NA_character_, "id"),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that(".validate_collection_id() rejects empty string", {
+  expect_error(
+    .validate_collection_id("", "id"),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that(".validate_collection_id() rejects length > 1", {
+  expect_error(
+    .validate_collection_id(c("a", "b"), "id"),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that(".validate_collection_id() rejects non-character (integer)", {
+  expect_error(
+    .validate_collection_id(1L, "id"),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that(".validate_collection_id() rejects NULL (length 0)", {
+  expect_error(
+    .validate_collection_id(NULL, "id"),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that(".validate_collection_if_missing_var() returns invisible(value)", {
+  r <- withVisible(
+    .validate_collection_if_missing_var("skip", "if_missing_var")
+  )
+  expect_false(r$visible)
+  expect_identical(r$value, "skip")
+})
+
+test_that(".validate_collection_if_missing_var() accepts \"error\"", {
+  expect_identical(
+    .validate_collection_if_missing_var("error", "if_missing_var"),
+    "error"
+  )
+})
+
+test_that(".validate_collection_if_missing_var() rejects NA", {
+  expect_error(
+    .validate_collection_if_missing_var(NA_character_, "if_missing_var"),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that(".validate_collection_if_missing_var() rejects \"warn\"", {
+  expect_error(
+    .validate_collection_if_missing_var("warn", "if_missing_var"),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that(".validate_collection_if_missing_var() rejects length > 1", {
+  expect_error(
+    .validate_collection_if_missing_var(
+      c("error", "skip"),
+      "if_missing_var"
+    ),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that(".validate_collection_if_missing_var() rejects non-character", {
+  expect_error(
+    .validate_collection_if_missing_var(TRUE, "if_missing_var"),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+
+# ── §C13/C15 — S7 class property defaults ─────────────────────────────────
+
+test_that("survey_collection() default @id is \".survey\"", {
+  s <- .coll_surveys()
+  coll <- survey_collection(surveys = list(a = s$d1))
+  test_collection_invariants(coll)
+  expect_identical(coll@id, ".survey")
+})
+
+test_that("survey_collection() default @if_missing_var is \"error\"", {
+  s <- .coll_surveys()
+  coll <- survey_collection(surveys = list(a = s$d1))
+  test_collection_invariants(coll)
+  expect_identical(coll@if_missing_var, "error")
+})
+
+test_that("survey_collection() round-trips non-default @id and @if_missing_var", {
+  s <- .coll_surveys()
+  coll <- survey_collection(
+    surveys = list(a = s$d1),
+    id = "wave",
+    if_missing_var = "skip"
+  )
+  test_collection_invariants(coll)
+  expect_identical(coll@id, "wave")
+  expect_identical(coll@if_missing_var, "skip")
+})
+
+
+# ── §C13/C15 — S7 class validator ─────────────────────────────────────────
+
+test_that("survey_collection() S7 validator rejects bad @id (NA)", {
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(surveys = list(a = s$d1), id = NA_character_),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("survey_collection() S7 validator rejects bad @id (empty)", {
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(surveys = list(a = s$d1), id = ""),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("survey_collection() S7 validator rejects bad @id (length>1)", {
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(surveys = list(a = s$d1), id = c("a", "b")),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("survey_collection() S7 validator rejects bad @if_missing_var (NA)", {
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(
+      surveys = list(a = s$d1),
+      if_missing_var = NA_character_
+    ),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("survey_collection() S7 validator rejects bad @if_missing_var (\"warn\")", {
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(
+      surveys = list(a = s$d1),
+      if_missing_var = "warn"
+    ),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("survey_collection() S7 validator: @id error fires before @if_missing_var", {
+  # Ordering test: when both are simultaneously invalid, the @id error
+  # has precedence (validator branches run id-first).
+  s <- .coll_surveys()
+  expect_error(
+    survey_collection(
+      surveys = list(a = s$d1),
+      id = NA_character_,
+      if_missing_var = "warn"
+    ),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+
+# ── §C13/C15 — as_survey_collection() happy paths ─────────────────────────
+
+test_that("as_survey_collection() default .id is \".survey\"", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_identical(coll@id, ".survey")
+})
+
+test_that("as_survey_collection() default .if_missing_var is \"error\"", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_identical(coll@if_missing_var, "error")
+})
+
+test_that("as_survey_collection() stores explicit .id on @id", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2, .id = "wave")
+  expect_identical(coll@id, "wave")
+})
+
+test_that("as_survey_collection() stores explicit .if_missing_var", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(
+    a = s$d1,
+    b = s$d2,
+    .if_missing_var = "skip"
+  )
+  expect_identical(coll@if_missing_var, "skip")
+})
+
+test_that("as_survey_collection() stores both .id and .if_missing_var", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(
+    a = s$d1,
+    b = s$d2,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  expect_identical(coll@id, "wave")
+  expect_identical(coll@if_missing_var, "skip")
+})
+
+test_that("as_survey_collection() accepts mixed default + explicit", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2, .id = "wave")
+  expect_identical(coll@id, "wave")
+  expect_identical(coll@if_missing_var, "error")
+})
+
+
+# ── §C13/C15 — as_survey_collection() error paths (Layer 3 dual pattern) ──
+
+test_that("as_survey_collection() rejects .id = NA_character_", {
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(a = s$d1, .id = NA_character_),
+    class = "surveycore_error_collection_invalid_id"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_collection(a = s$d1, .id = NA_character_)
+  )
+})
+
+test_that("as_survey_collection() rejects .id = c(\"a\", \"b\")", {
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(a = s$d1, .id = c("a", "b")),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("as_survey_collection() rejects .id = \"\"", {
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(a = s$d1, .id = ""),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("as_survey_collection() rejects .if_missing_var = \"warn\"", {
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(a = s$d1, .if_missing_var = "warn"),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_collection(a = s$d1, .if_missing_var = "warn")
+  )
+})
+
+test_that("as_survey_collection() rejects .if_missing_var = NA_character_", {
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(
+      a = s$d1,
+      .if_missing_var = NA_character_
+    ),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("as_survey_collection() does not silently ignore .on_missing", {
+  # Spec: the silent no-op .on_missing argument has been removed. The
+  # constructor surfaces R's positional-argument-mismatch path when the
+  # caller still supplies the old name.
+  s <- .coll_surveys()
+  expect_error(
+    as_survey_collection(a = s$d1, .on_missing = "skip")
+  )
+})
+
+
+# ── §C15 — set_collection_id() ────────────────────────────────────────────
+
+test_that("set_collection_id() updates @id and returns invisible(x)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  r <- withVisible(set_collection_id(coll, "wave"))
+  expect_false(r$visible)
+  expect_identical(r$value@id, "wave")
+})
+
+test_that("set_collection_id() preserves @surveys, @groups, @if_missing_var", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2, .if_missing_var = "skip")
+  coll2 <- set_collection_id(coll, "wave")
+  expect_identical(names(coll2), names(coll))
+  expect_identical(coll2@groups, coll@groups)
+  expect_identical(coll2@if_missing_var, "skip")
+})
+
+test_that("set_collection_id() is idempotent", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  coll2 <- set_collection_id(coll, coll@id)
+  expect_identical(coll2@id, coll@id)
+  expect_identical(names(coll2), names(coll))
+})
+
+test_that("set_collection_id() rejects non-survey_collection input", {
+  s <- .coll_surveys()
+  expect_error(
+    set_collection_id(s$d1, "wave"),
+    class = "surveycore_error_not_survey_collection"
+  )
+  expect_error(
+    set_collection_id(list(), "wave"),
+    class = "surveycore_error_not_survey_collection"
+  )
+})
+
+test_that("set_collection_id() rejects bad id (NA)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_id(coll, NA_character_),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("set_collection_id() rejects bad id (empty)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_id(coll, ""),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("set_collection_id() rejects bad id (length > 1)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_id(coll, c("a", "b")),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+test_that("set_collection_id() rejects bad id (integer)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_id(coll, 1L),
+    class = "surveycore_error_collection_invalid_id"
+  )
+})
+
+
+# ── §C15 — set_collection_if_missing_var() ────────────────────────────────
+
+test_that("set_collection_if_missing_var() updates and returns invisible", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  r <- withVisible(set_collection_if_missing_var(coll, "skip"))
+  expect_false(r$visible)
+  expect_identical(r$value@if_missing_var, "skip")
+})
+
+test_that("set_collection_if_missing_var() preserves other properties", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2, .id = "wave")
+  coll2 <- set_collection_if_missing_var(coll, "skip")
+  expect_identical(names(coll2), names(coll))
+  expect_identical(coll2@groups, coll@groups)
+  expect_identical(coll2@id, "wave")
+})
+
+test_that("set_collection_if_missing_var() is idempotent", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  coll2 <- set_collection_if_missing_var(coll, coll@if_missing_var)
+  expect_identical(coll2@if_missing_var, coll@if_missing_var)
+})
+
+test_that("set_collection_if_missing_var() rejects non-collection input", {
+  s <- .coll_surveys()
+  expect_error(
+    set_collection_if_missing_var(s$d1, "skip"),
+    class = "surveycore_error_not_survey_collection"
+  )
+})
+
+test_that("set_collection_if_missing_var() rejects bad value (NA)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_if_missing_var(coll, NA_character_),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("set_collection_if_missing_var() rejects bad value (\"warn\")", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_if_missing_var(coll, "warn"),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("set_collection_if_missing_var() rejects length > 1", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_if_missing_var(coll, c("error", "skip")),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+test_that("set_collection_if_missing_var() rejects non-character", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_error(
+    set_collection_if_missing_var(coll, TRUE),
+    class = "surveycore_error_collection_invalid_if_missing_var"
+  )
+})
+
+
+# ── §C15 — preservation across mutators ───────────────────────────────────
+
+test_that("add_survey() preserves @id and @if_missing_var (append one)", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(
+    a = s$d1,
+    b = s$d2,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  coll2 <- add_survey(coll, c = s$d3)
+  expect_identical(coll2@id, coll@id)
+  expect_identical(coll2@if_missing_var, coll@if_missing_var)
+})
+
+test_that("add_survey() preserves @id and @if_missing_var (append zero)", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(
+    a = s$d1,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  coll2 <- add_survey(coll)
+  expect_identical(coll2@id, coll@id)
+  expect_identical(coll2@if_missing_var, coll@if_missing_var)
+})
+
+test_that("add_survey() preserves @id and @if_missing_var (multiple)", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(
+    a = s$d1,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  coll2 <- add_survey(coll, b = s$d2, c = s$d3)
+  expect_identical(coll2@id, "wave")
+  expect_identical(coll2@if_missing_var, "skip")
+})
+
+test_that("add_survey() preserves @id under name-repair", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(
+    a = s$d1,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  expect_warning(
+    coll2 <- add_survey(coll, "a" = s$d2),
+    class = "surveycore_warning_collection_duplicate_name_repaired"
+  )
+  expect_identical(coll2@id, "wave")
+  expect_identical(coll2@if_missing_var, "skip")
+})
+
+test_that("remove_survey() preserves @id and @if_missing_var (one)", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(
+    a = s$d1,
+    b = s$d2,
+    c = s$d3,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  coll2 <- remove_survey(coll, "b")
+  expect_identical(coll2@id, "wave")
+  expect_identical(coll2@if_missing_var, "skip")
+})
+
+test_that("remove_survey() preserves @id and @if_missing_var (multiple)", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(
+    a = s$d1,
+    b = s$d2,
+    c = s$d3,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  coll2 <- remove_survey(coll, c("a", "c"))
+  expect_identical(coll2@id, "wave")
+  expect_identical(coll2@if_missing_var, "skip")
+})
+
+
+# ── §D8 — print snapshots ─────────────────────────────────────────────────
+
+test_that("print() renders id: and if_missing_var: at defaults", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1)
+  expect_snapshot(print(coll))
+})
+
+test_that("print() renders id: and if_missing_var: at non-default values", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(
+    "y2018" = s$d1,
+    "y2020" = s$d2,
+    .id = "wave",
+    .if_missing_var = "skip"
+  )
+  expect_snapshot(print(coll))
+})
+
+test_that("print() renders id and if_missing_var lines exactly once on multi-member", {
+  s <- .coll_surveys3()
+  coll <- as_survey_collection(a = s$d1, b = s$d2, c = s$d3)
+  expect_snapshot(print(coll))
+})
+
+
+# ── set_collection_id() then dispatch reflects new @id ────────────────────
+
+test_that("set_collection_id() then get_means(.id = NULL) reflects new id", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  coll2 <- set_collection_id(coll, "wave")
+  res <- get_means(coll2, y1, .id = NULL)
+  expect_identical(names(res)[[1L]], "wave")
+})
+
+test_that("set_collection_if_missing_var(\"skip\") flips dispatch behavior", {
+  # Two surveys; only w1 has the focal variable. Default if_missing_var is
+  # "error", so plain dispatch errors. After setting "skip", dispatch
+  # succeeds (with a skip-message) and returns just w1. Direct dispatcher
+  # call avoids the PR-1 bridge collision (analysis-function signatures
+  # still expose .on_missing in PR 1).
+  surveys <- list(
+    w1 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df$focal <- rnorm(nrow(df))
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    },
+    w2 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    }
+  )
+  coll <- do.call(as_survey_collection, surveys)
+  coll <- set_collection_if_missing_var(coll, "skip")
+  result <- suppressMessages(
+    .dispatch_over_collection(
+      get_means,
+      coll,
+      x = focal,
+      .if_missing_var = NULL
+    )
+  )
+  expect_setequal(unique(result$.survey), "w1")
+})

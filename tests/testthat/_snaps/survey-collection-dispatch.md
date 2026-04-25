@@ -99,3 +99,12 @@
       1 w1          1      1       1    60
       2 w2          1      1       1    60
 
+# id_collision hint mentions set_collection_id() under stored .id
+
+    Code
+      get_means(coll, y1, .id = NULL)
+    Condition
+      Error in `.dispatch_over_collection()`:
+      x `.id` value "mean" conflicts with a column produced by the analysis function.
+      v Pass a different `.id` to override (e.g., `.id = "wave"`) or update the stored property via `set_collection_id()`.
+
