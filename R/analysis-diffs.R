@@ -70,12 +70,16 @@
 #'   etc. The `mean` column is excluded from renaming.
 #' @param ... Passed to [survey_glm()]. Common uses:
 #'   `family = quasibinomial()`.
-#' @param .id Character(1). Column name used to identify each survey when
-#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
-#'   `design` is a single survey.
-#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
-#'   in a collection that lack one of the requested NSE variables. Ignored
-#'   when `design` is a single survey.
+#' @param .id Character(1) or `NULL`. Column name used to identify each
+#'   survey when `design` is a [`survey_collection`]. For collection inputs,
+#'   `NULL` (the default) resolves to the collection's stored `@id` property.
+#'   Pass a non-`NULL` value to override. Ignored when `design` is a single
+#'   survey.
+#' @param .if_missing_var `"error"`, `"skip"`, or `NULL`. How to handle
+#'   surveys in a collection that lack one of the requested NSE variables.
+#'   For collection inputs, `NULL` (the default) resolves to the collection's
+#'   stored `@if_missing_var` property. Pass a non-`NULL` value to override.
+#'   Ignored when `design` is a single survey.
 #'
 #' @details
 #' ## Estimation Paths
@@ -163,8 +167,8 @@ get_diffs <- function(
   label_values = TRUE,
   name_style = "surveycore",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 ) {
   if (S7::S7_inherits(design, survey_collection)) {
     return(.dispatch_over_collection(
@@ -176,7 +180,7 @@ get_diffs <- function(
       covariates = {{ covariates }},
       ...,
       .id = .id,
-      .if_missing_var = .on_missing
+      .if_missing_var = .if_missing_var
     ))
   }
   # ── Step 1: Validate shared args ──────────────────────────────────────────

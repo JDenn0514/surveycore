@@ -24,8 +24,8 @@ get_diffs(
   label_values = TRUE,
   name_style = "surveycore",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 )
 }
 \arguments{
@@ -104,13 +104,17 @@ etc. The \code{mean} column is excluded from renaming.}
 \item{...}{Passed to \code{\link[=survey_glm]{survey_glm()}}. Common uses:
 \code{family = quasibinomial()}.}
 
-\item{.id}{Character(1). Column name used to identify each survey when
-\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
-\code{design} is a single survey.}
+\item{.id}{Character(1) or \code{NULL}. Column name used to identify each
+survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
+\code{NULL} (the default) resolves to the collection's stored \verb{@id} property.
+Pass a non-\code{NULL} value to override. Ignored when \code{design} is a single
+survey.}
 
-\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
-in a collection that lack one of the requested NSE variables. Ignored
-when \code{design} is a single survey.}
+\item{.if_missing_var}{\code{"error"}, \code{"skip"}, or \code{NULL}. How to handle
+surveys in a collection that lack one of the requested NSE variables.
+For collection inputs, \code{NULL} (the default) resolves to the collection's
+stored \verb{@if_missing_var} property. Pass a non-\code{NULL} value to override.
+Ignored when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_diffs} tibble (also inheriting \code{survey_result}).
