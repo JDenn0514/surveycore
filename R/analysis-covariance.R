@@ -165,7 +165,7 @@ get_covariance <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .on_missing = .on_missing
+      .if_missing_var = .on_missing
     ))
   }
 

@@ -107,7 +107,7 @@ get_means <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .on_missing = .on_missing
+      .if_missing_var = .on_missing
     ))
   }
   # ── Step 1: Validate ────────────────────────────────────────────────────────

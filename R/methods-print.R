@@ -775,6 +775,11 @@ S7::method(print, survey_collection) <- function(x, ...) {
     cli::cli_text("Groups: {.field {x@groups}}")
   }
 
+  # Always render the per-call dispatch defaults — even when at their
+  # built-in defaults — so users see the resolution rules in effect.
+  cli::cli_text("id: {.val {x@id}}")
+  cli::cli_text("if_missing_var: {.val {x@if_missing_var}}")
+
   nms <- names(surveys)
   if (n <= 20L) {
     for (i in seq_len(n)) {

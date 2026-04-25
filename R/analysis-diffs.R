@@ -176,7 +176,7 @@ get_diffs <- function(
       covariates = {{ covariates }},
       ...,
       .id = .id,
-      .on_missing = .on_missing
+      .if_missing_var = .on_missing
     ))
   }
   # ── Step 1: Validate shared args ──────────────────────────────────────────

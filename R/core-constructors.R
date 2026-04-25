@@ -1226,11 +1226,20 @@ as_survey_nonprob <- function(
 #'   identical, or errors `surveycore_error_collection_group_divergent`
 #'   if they differ. Default: missing (adopt-from-members).
 #' @param .id Character(1). Identifier column name used when dispatching
-#'   analysis functions across the collection. Default `".survey"`.
-#'   Stored on the collection for later consumption by `.dispatch_over_collection()`.
-#' @param .on_missing Character(1), either `"error"` (default) or `"skip"`.
-#'   Controls how dispatched `get_*()` functions behave when a member is
-#'   missing a requested variable. Stored on the collection for later use.
+#'   analysis functions across the collection. Default `".survey"`. Stored
+#'   on the returned collection's `@id` property and used as the default
+#'   by `.dispatch_over_collection()` when a per-call `.id` is not
+#'   supplied (i.e., when an analysis function is called with `.id = NULL`).
+#'   Mutate via [set_collection_id()].
+#' @param .if_missing_var Character(1), one of `c("error", "skip")`.
+#'   Default `"error"`. Stored on the returned collection's
+#'   `@if_missing_var` property and used as the default by
+#'   `.dispatch_over_collection()` when a per-call `.if_missing_var` is
+#'   not supplied (i.e., when an analysis function is called with
+#'   `.if_missing_var = NULL`). When `"skip"`, member surveys missing
+#'   a requested variable are dropped from the dispatched result;
+#'   when `"error"`, the dispatcher aborts. Mutate via
+#'   [set_collection_if_missing_var()].
 #'
 #' @return A `survey_collection` object containing the supplied surveys.
 #'
@@ -1259,8 +1268,15 @@ as_survey_collection <- function(
   ...,
   group,
   .id = ".survey",
-  .on_missing = "error"
+  .if_missing_var = "error"
 ) {
+  # Validate the new arguments before resolving anything else, so user-
+  # facing errors fire early with the same error classes the S7 validator
+  # would raise. Both helpers are pure and cheap; the S7 validator runs
+  # them again defensively after construction.
+  .validate_collection_id(.id, ".id")
+  .validate_collection_if_missing_var(.if_missing_var, ".if_missing_var")
+
   quosures <- rlang::enquos(...)
 
   if (length(quosures) == 0L) {
@@ -1413,5 +1429,10 @@ as_survey_collection <- function(
     target <- first_groups
   }
 
-  survey_collection(surveys = surveys, groups = target)
+  survey_collection(
+    surveys = surveys,
+    groups = target,
+    id = .id,
+    if_missing_var = .if_missing_var
+  )
 }
