@@ -712,12 +712,12 @@ test_that(
 )
 
 test_that(
-  "survey_collection with twophase + .on_missing = 'skip' still raises PC-7",
+  "survey_collection with twophase + .if_missing_var = 'skip' still raises PC-7",
   {
-    # Note: the collection's `.on_missing` hook catches
+    # Note: the collection's `.if_missing_var` hook catches
     # surveycore_error_variable_not_found only. PC-7 is a distinct class and
     # propagates through the dispatcher to the caller regardless of
-    # `.on_missing`. (This matches the `.dispatch_over_collection()`
+    # `.if_missing_var`. (This matches the `.dispatch_over_collection()`
     # contract in R/survey-collection.R; altering it is out of scope for
     # PR 3.)
     d_taylor <- make_latent_taylor(n = 120L, seed = 120L)
@@ -725,7 +725,7 @@ test_that(
     coll <- as_survey_collection(w1 = d_taylor, w2 = d_tp)
     expect_error(
       get_corr(coll, x = c(o1, o2), method = "polychoric",
-        .on_missing = "skip"),
+        .if_missing_var = "skip"),
       class = "surveycore_error_polychoric_design_unsupported"
     )
   }

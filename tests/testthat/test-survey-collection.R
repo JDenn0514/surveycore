@@ -993,9 +993,7 @@ test_that("set_collection_id() then get_means(.id = NULL) reflects new id", {
 test_that("set_collection_if_missing_var(\"skip\") flips dispatch behavior", {
   # Two surveys; only w1 has the focal variable. Default if_missing_var is
   # "error", so plain dispatch errors. After setting "skip", dispatch
-  # succeeds (with a skip-message) and returns just w1. Direct dispatcher
-  # call avoids the PR-1 bridge collision (analysis-function signatures
-  # still expose .on_missing in PR 1).
+  # succeeds (with a skip-message) and returns just w1.
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)

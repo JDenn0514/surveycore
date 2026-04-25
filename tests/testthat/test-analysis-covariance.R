@@ -1128,7 +1128,7 @@ test_that("get_covariance() collection .meta$collection$surveys records contribu
 # Category 24: Collection error paths (C5/C6/C7/C13)
 # ---------------------------------------------------------------------------
 
-test_that("get_covariance() collection: .on_missing='error' aborts when var missing", {
+test_that("get_covariance() collection: .if_missing_var='error' aborts when var missing", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -1142,16 +1142,16 @@ test_that("get_covariance() collection: .on_missing='error' aborts when var miss
   )
   coll <- do.call(as_survey_collection, surveys)
   expect_error(
-    get_covariance(coll, c(focal, y1), .on_missing = "error"),
+    get_covariance(coll, c(focal, y1), .if_missing_var = "error"),
     class = "surveycore_error_collection_missing_var"
   )
   expect_snapshot(
     error = TRUE,
-    get_covariance(coll, c(focal, y1), .on_missing = "error")
+    get_covariance(coll, c(focal, y1), .if_missing_var = "error")
   )
 })
 
-test_that("get_covariance() collection: .on_missing='skip' with all missing aborts", {
+test_that("get_covariance() collection: .if_missing_var='skip' with all missing aborts", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -1164,12 +1164,12 @@ test_that("get_covariance() collection: .on_missing='skip' with all missing abor
   )
   coll <- do.call(as_survey_collection, surveys)
   expect_error(
-    get_covariance(coll, c(focal, y1), .on_missing = "skip"),
+    get_covariance(coll, c(focal, y1), .if_missing_var = "skip"),
     class = "surveycore_error_collection_all_skipped"
   )
   expect_snapshot(
     error = TRUE,
-    get_covariance(coll, c(focal, y1), .on_missing = "skip")
+    get_covariance(coll, c(focal, y1), .if_missing_var = "skip")
   )
 })
 
@@ -1210,7 +1210,7 @@ test_that("get_covariance() per-survey path raises variable_not_found (C10)", {
 # Category 25: Collection skip / divergence / length-1
 # ---------------------------------------------------------------------------
 
-test_that("get_covariance() collection: .on_missing='skip' emits message", {
+test_that("get_covariance() collection: .if_missing_var='skip' emits message", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -1224,7 +1224,7 @@ test_that("get_covariance() collection: .on_missing='skip' emits message", {
   )
   coll <- do.call(as_survey_collection, surveys)
   expect_message(
-    get_covariance(coll, c(focal, y1), .on_missing = "skip"),
+    get_covariance(coll, c(focal, y1), .if_missing_var = "skip"),
     class = "surveycore_message_collection_skipped_surveys"
   )
 })

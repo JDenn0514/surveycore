@@ -141,10 +141,10 @@
         <fct> <fct>      <dbl>  <dbl>   <dbl> <int>
       1 y1    one          NaN    NaN     NaN     1
 
-# get_covariance() collection: .on_missing='error' aborts when var missing
+# get_covariance() collection: .if_missing_var='error' aborts when var missing
 
     Code
-      get_covariance(coll, c(focal, y1), .on_missing = "error")
+      get_covariance(coll, c(focal, y1), .if_missing_var = "error")
     Condition
       Error in `.dispatch_over_collection()`:
       x Survey "w2" in the collection is missing a required variable.
@@ -154,10 +154,10 @@
       x Variable "focal" not found in survey data.
       i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
 
-# get_covariance() collection: .on_missing='skip' with all missing aborts
+# get_covariance() collection: .if_missing_var='skip' with all missing aborts
 
     Code
-      get_covariance(coll, c(focal, y1), .on_missing = "skip")
+      get_covariance(coll, c(focal, y1), .if_missing_var = "skip")
     Message
       i Skipped 2 surveys missing the requested variable: "w1" and "w2".
     Condition
