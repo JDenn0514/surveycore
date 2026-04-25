@@ -167,6 +167,10 @@ results in long or wide format. The estimator is selected by \code{method}:
 \code{"pearson"} (default) for two numeric variables, \code{"polychoric"} for two
 ordinal variables under a bivariate-normal latent model (Olsson 1979),
 or \code{"polyserial"} for one ordinal + one continuous variable (Cox 1974).
+The survey-weighted polychoric and polyserial estimators (point estimates
+and design-based variance) are implemented from scratch following
+Mannan (2025); they are not derived from the \code{survey} package, which does
+not provide these estimators.
 }
 \details{
 \strong{Polychoric / polyserial semantics.} For \code{method != "pearson"}, each pair
@@ -221,6 +225,17 @@ df <- data.frame(
 d_ord <- as_survey(df, weights = wt)
 get_corr(d_ord, x = c(o1, o2), method = "polychoric")
 
+}
+\references{
+Cox, N. R. (1974). Estimation of the correlation between a continuous
+and a discrete variable. \emph{Biometrics}, 30(1), 171-178.
+
+Mannan, H. (2025). SAS programs for estimation of weighted polychoric
+and weighted polyserial correlations in a complex survey. SSRN.
+\doi{10.2139/ssrn.6580480}
+
+Olsson, U. (1979). Maximum likelihood estimation of the polychoric
+correlation coefficient. \emph{Psychometrika}, 44(4), 443-460.
 }
 \seealso{
 Other analysis: 

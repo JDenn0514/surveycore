@@ -35,6 +35,10 @@
 #' `"pearson"` (default) for two numeric variables, `"polychoric"` for two
 #' ordinal variables under a bivariate-normal latent model (Olsson 1979),
 #' or `"polyserial"` for one ordinal + one continuous variable (Cox 1974).
+#' The survey-weighted polychoric and polyserial estimators (point estimates
+#' and design-based variance) are implemented from scratch following
+#' Mannan (2025); they are not derived from the `survey` package, which does
+#' not provide these estimators.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
 #'   `survey_twophase`, or `survey_nonprob`. `method` values `"polychoric"`
@@ -178,6 +182,17 @@
 #' replicates are admitted mechanically via the design's stored `scale`
 #' / `rscales` coefficients, but the paper does not validate their
 #' behaviour for this non-linear pseudo-likelihood estimator.
+#'
+#' @references
+#' Cox, N. R. (1974). Estimation of the correlation between a continuous
+#'   and a discrete variable. *Biometrics*, 30(1), 171-178.
+#'
+#' Mannan, H. (2025). SAS programs for estimation of weighted polychoric
+#'   and weighted polyserial correlations in a complex survey. SSRN.
+#'   \doi{10.2139/ssrn.6580480}
+#'
+#' Olsson, U. (1979). Maximum likelihood estimation of the polychoric
+#'   correlation coefficient. *Psychometrika*, 44(4), 443-460.
 #'
 #' @examples
 #' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
