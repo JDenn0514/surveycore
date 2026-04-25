@@ -1,6 +1,8 @@
 # R/survey-collection.R
 #
 # Feature-group file for survey_collection mutators and internal helpers.
+#   - .validate_collection_id()              — shared @id validator
+#   - .validate_collection_if_missing_var()  — shared @if_missing_var validator
 #   - .check_groups_match()        — equality-only @groups check used by
 #                                     the S7 validator and [[<- setter
 #   - .propagate_or_match()        — @groups propagation / equality used by
@@ -10,9 +12,100 @@
 #                                     and add_survey() (§3.3)
 #   - add_survey()                 — append surveys to a collection (§3.7)
 #   - remove_survey()              — drop surveys from a collection (§3.7)
-#
-# The dispatch helpers `.dispatch_over_collection()` and
-# `.warn_on_meta_divergence()` will be appended to this file in PR 2.
+#   - set_collection_id()          — exported setter for @id
+#   - set_collection_if_missing_var() — exported setter for @if_missing_var
+#   - .dispatch_over_collection()  — dispatch helper for collection-aware get_*()
+#   - .warn_on_meta_divergence()   — divergence warning helper
+
+
+# ── .validate_collection_id() ─────────────────────────────────────────────────
+
+#' Validate a `survey_collection` `@id` value
+#'
+#' Shared validator used by the S7 class validator, `as_survey_collection()`,
+#' `.dispatch_over_collection()` (post-resolution), and `set_collection_id()`.
+#' Centralises the "single non-empty non-NA character string" check so all
+#' five call sites raise the same error class with consistent CLI prose.
+#'
+#' @param value    The candidate `@id` value.
+#' @param arg_name Character(1). The user-facing argument label to render
+#'   in the error message: `"id"` from the S7 validator and the setter,
+#'   `".id"` from the constructor and the dispatcher.
+#'
+#' @return `invisible(value)` on success. Raises
+#'   `surveycore_error_collection_invalid_id` on failure.
+#'
+#' @keywords internal
+#' @noRd
+.validate_collection_id <- function(value, arg_name) {
+  if (
+    !is.character(value) ||
+      length(value) != 1L ||
+      is.na(value) ||
+      !nzchar(value)
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg {arg_name}} must be a single non-empty, non-NA ",
+          "character string."
+        ),
+        "i" = paste0(
+          "Got {.cls {class(value)[[1L]]}} of length ",
+          "{.val {length(value)}}: {.val {value}}."
+        )
+      ),
+      class = "surveycore_error_collection_invalid_id"
+    )
+  }
+  invisible(value)
+}
+
+
+# ── .validate_collection_if_missing_var() ─────────────────────────────────────
+
+#' Validate a `survey_collection` `@if_missing_var` value
+#'
+#' Shared validator used by the S7 class validator,
+#' `as_survey_collection()`, `.dispatch_over_collection()` (post-resolution),
+#' and `set_collection_if_missing_var()`. Centralises the
+#' "length-1 character string in c(\"error\", \"skip\")" check so all five
+#' call sites raise the same error class with consistent CLI prose.
+#'
+#' @param value    The candidate `@if_missing_var` value.
+#' @param arg_name Character(1). The user-facing argument label to render
+#'   in the error message: `"if_missing_var"` from the S7 validator and
+#'   the setter, `".if_missing_var"` from the constructor and the
+#'   dispatcher.
+#'
+#' @return `invisible(value)` on success. Raises
+#'   `surveycore_error_collection_invalid_if_missing_var` on failure.
+#'
+#' @keywords internal
+#' @noRd
+.validate_collection_if_missing_var <- function(value, arg_name) {
+  if (
+    !is.character(value) ||
+      length(value) != 1L ||
+      is.na(value) ||
+      !(value %in% c("error", "skip"))
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg {arg_name}} must be one of {.val \"error\"} or ",
+          "{.val \"skip\"}."
+        ),
+        "i" = paste0(
+          "Got {.cls {class(value)[[1L]]}} of length ",
+          "{.val {length(value)}}: {.val {value}}."
+        )
+      ),
+      class = "surveycore_error_collection_invalid_if_missing_var"
+    )
+  }
+  invisible(value)
+}
 
 
 # ── .check_groups_match() ─────────────────────────────────────────────────────
