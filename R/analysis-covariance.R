@@ -85,13 +85,18 @@
 #' @param name_style `"surveycore"` (default) or `"broom"`. Under
 #'   `"broom"`, renames `covariance` -> `estimate`, `se` -> `std.error`,
 #'   `ci_low` -> `conf.low`, `ci_high` -> `conf.high`.
-#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
 #'   named-only when a `survey_collection` is passed as `design`.
-#' @param .id Character(1). Column name used to identify each survey when
-#'   `design` is a [`survey_collection`]. Default `".survey"`.
-#' @param .on_missing `"error"` (default) or `"skip"`. How to handle
-#'   surveys in a collection that lack one of the requested NSE
-#'   variables.
+#' @param .id Character(1) or `NULL`. Column name used to identify each
+#'   survey when `design` is a [`survey_collection`]. For collection inputs,
+#'   `NULL` (the default) resolves to the collection's stored `@id` property.
+#'   Pass a non-`NULL` value to override. Ignored when `design` is a single
+#'   survey.
+#' @param .if_missing_var `"error"`, `"skip"`, or `NULL`. How to handle
+#'   surveys in a collection that lack one of the requested NSE variables.
+#'   For collection inputs, `NULL` (the default) resolves to the collection's
+#'   stored `@if_missing_var` property. Pass a non-`NULL` value to override.
+#'   Ignored when `design` is a single survey.
 #'
 #' @return A `survey_covariance` tibble (also inheriting `survey_result`).
 #'   Columns, in order:
@@ -154,8 +159,8 @@ get_covariance <- function(
   label_vars = TRUE,
   name_style = "surveycore",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 ) {
   if (S7::S7_inherits(design, survey_collection)) {
     return(.dispatch_over_collection(
@@ -165,7 +170,7 @@ get_covariance <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .if_missing_var = .on_missing
+      .if_missing_var = .if_missing_var
     ))
   }
 

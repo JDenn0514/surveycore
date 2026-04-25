@@ -12,7 +12,7 @@
 #   - Skipped-surveys message (C9)
 #   - Meta divergence warning (C11)
 #   - .id validation (C13)
-#   - .on_missing = "skip" partial-drop
+#   - .if_missing_var = "skip" partial-drop
 #   - Length-1 collection edge
 #   - C10: variable-not-found surfaces underlying class
 
@@ -119,7 +119,7 @@ test_that(".meta$per_survey preserves each survey's original .meta", {
 # Error paths
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("C5: .on_missing = 'error' aborts when one survey lacks the variable", {
+test_that("C5: .if_missing_var = 'error' aborts when one survey lacks the variable", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -134,16 +134,16 @@ test_that("C5: .on_missing = 'error' aborts when one survey lacks the variable",
   coll <- do.call(as_survey_collection, surveys)
 
   expect_error(
-    get_variance(coll, focal, .on_missing = "error"),
+    get_variance(coll, focal, .if_missing_var = "error"),
     class = "surveycore_error_collection_missing_var"
   )
   expect_snapshot(
     error = TRUE,
-    get_variance(coll, focal, .on_missing = "error")
+    get_variance(coll, focal, .if_missing_var = "error")
   )
 })
 
-test_that("C6: .on_missing = 'skip' with all surveys missing aborts", {
+test_that("C6: .if_missing_var = 'skip' with all surveys missing aborts", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -157,12 +157,12 @@ test_that("C6: .on_missing = 'skip' with all surveys missing aborts", {
   coll <- do.call(as_survey_collection, surveys)
 
   expect_error(
-    get_variance(coll, focal, .on_missing = "skip"),
+    get_variance(coll, focal, .if_missing_var = "skip"),
     class = "surveycore_error_collection_all_skipped"
   )
   expect_snapshot(
     error = TRUE,
-    get_variance(coll, focal, .on_missing = "skip")
+    get_variance(coll, focal, .if_missing_var = "skip")
   )
 })
 
@@ -218,7 +218,7 @@ test_that("C10: tidy-selected variable absent on single design raises variable_n
 # Messages
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("C9: .on_missing = 'skip' emits skipped-surveys message", {
+test_that("C9: .if_missing_var = 'skip' emits skipped-surveys message", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -233,12 +233,12 @@ test_that("C9: .on_missing = 'skip' emits skipped-surveys message", {
   coll <- do.call(as_survey_collection, surveys)
 
   expect_message(
-    get_variance(coll, focal, .on_missing = "skip"),
+    get_variance(coll, focal, .if_missing_var = "skip"),
     class = "surveycore_message_collection_skipped_surveys"
   )
 })
 
-test_that(".on_missing = 'skip' drops survey missing the focal var", {
+test_that(".if_missing_var = 'skip' drops survey missing the focal var", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -253,7 +253,7 @@ test_that(".on_missing = 'skip' drops survey missing the focal var", {
   coll <- do.call(as_survey_collection, surveys)
 
   result <- suppressMessages(
-    get_variance(coll, focal, .on_missing = "skip")
+    get_variance(coll, focal, .if_missing_var = "skip")
   )
   expect_setequal(unique(result$.survey), "w1")
   meta <- attr(result, ".meta")

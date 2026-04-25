@@ -823,7 +823,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' when one or more resolved variable names are absent from
 #' `names(design@data)`. Gives `.dispatch_over_collection()` a stable,
 #' surveycore-owned error class to `tryCatch` on, so per-survey missing-variable
-#' behavior can be governed by `.on_missing`.
+#' behavior can be governed by `.if_missing_var`.
 #'
 #' The pre-check covers every declared NSE argument (spec §III.4), not only
 #' the focal `x`. The full set of args resolved into `var_names` for each
