@@ -4,7 +4,7 @@
 \alias{as_survey_collection}
 \title{Create a Collection of Survey Designs}
 \usage{
-as_survey_collection(..., group, .id = ".survey", .on_missing = "error")
+as_survey_collection(..., group, .id = ".survey", .if_missing_var = "error")
 }
 \arguments{
 \item{...}{One or more \code{survey_base} objects, passed with explicit names
@@ -26,12 +26,21 @@ identical, or errors \code{surveycore_error_collection_group_divergent}
 if they differ. Default: missing (adopt-from-members).}
 
 \item{.id}{Character(1). Identifier column name used when dispatching
-analysis functions across the collection. Default \code{".survey"}.
-Stored on the collection for later consumption by \code{.dispatch_over_collection()}.}
+analysis functions across the collection. Default \code{".survey"}. Stored
+on the returned collection's \verb{@id} property and used as the default
+by \code{.dispatch_over_collection()} when a per-call \code{.id} is not
+supplied (i.e., when an analysis function is called with \code{.id = NULL}).
+Mutate via \code{\link[=set_collection_id]{set_collection_id()}}.}
 
-\item{.on_missing}{Character(1), either \code{"error"} (default) or \code{"skip"}.
-Controls how dispatched \verb{get_*()} functions behave when a member is
-missing a requested variable. Stored on the collection for later use.}
+\item{.if_missing_var}{Character(1), one of \code{c("error", "skip")}.
+Default \code{"error"}. Stored on the returned collection's
+\verb{@if_missing_var} property and used as the default by
+\code{.dispatch_over_collection()} when a per-call \code{.if_missing_var} is
+not supplied (i.e., when an analysis function is called with
+\code{.if_missing_var = NULL}). When \code{"skip"}, member surveys missing
+a requested variable are dropped from the dispatched result;
+when \code{"error"}, the dispatcher aborts. Mutate via
+\code{\link[=set_collection_if_missing_var]{set_collection_if_missing_var()}}.}
 }
 \value{
 A \code{survey_collection} object containing the supplied surveys.
@@ -79,6 +88,8 @@ coll3@groups
 Other collections: 
 \code{\link{add_survey}()},
 \code{\link{remove_survey}()},
+\code{\link{set_collection_id}()},
+\code{\link{set_collection_if_missing_var}()},
 \code{\link{survey_collection}()}
 }
 \concept{collections}

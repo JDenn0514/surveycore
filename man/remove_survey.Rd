@@ -37,6 +37,8 @@ names(coll2)
 Other collections: 
 \code{\link{add_survey}()},
 \code{\link{as_survey_collection}()},
+\code{\link{set_collection_id}()},
+\code{\link{set_collection_if_missing_var}()},
 \code{\link{survey_collection}()}
 }
 \concept{collections}
