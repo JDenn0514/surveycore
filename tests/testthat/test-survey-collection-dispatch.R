@@ -396,13 +396,12 @@ test_that("C12: get_anova() refuses survey_collection input", {
   expect_snapshot(error = TRUE, get_anova(coll, y1 ~ grp2))
 })
 
-test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
+test_that("C13: .id rejects empty, NA, non-char, wrong length", {
+  # NOTE: as of PR `feature/collection-id-if-missing-var-class`, `.id = NULL`
+  # is a sentinel for "use the stored property" rather than an invalid value.
+  # The other four invalid shapes still error.
   coll <- .make_dispatch_collection()
 
-  expect_error(
-    get_means(coll, y1, .id = NULL),
-    class = "surveycore_error_collection_invalid_id"
-  )
   expect_error(
     get_means(coll, y1, .id = ""),
     class = "surveycore_error_collection_invalid_id"
@@ -419,7 +418,7 @@ test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
     get_means(coll, y1, .id = 1L),
     class = "surveycore_error_collection_invalid_id"
   )
-  expect_snapshot(error = TRUE, get_means(coll, y1, .id = NULL))
+  expect_snapshot(error = TRUE, get_means(coll, y1, .id = NA_character_))
 })
 
 test_that("C14: bind-type mismatch across surveys aborts with surveycore class", {

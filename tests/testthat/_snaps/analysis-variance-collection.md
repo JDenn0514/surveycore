@@ -6,7 +6,7 @@
       Error in `.dispatch_over_collection()`:
       x Survey "w2" in the collection is missing a required variable.
       i Original error: x Variable "focal" not found in survey data. i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
-      v Set `.on_missing = "skip"` to drop surveys missing the variable.
+      v Set `.if_missing_var = "skip"` to drop surveys missing the variable.
       Caused by error in `value[[3L]]()`:
       x Variable "focal" not found in survey data.
       i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
@@ -30,11 +30,12 @@
       x `.id` value "variance" conflicts with a column produced by the analysis function.
       v Pass a different `.id`, e.g. `.id = "wave"`.
 
-# C13: .id rejects NULL, empty, NA, non-char, wrong length
+# C13: .id rejects empty, NA, non-char, wrong length
 
     Code
-      get_variance(coll, y1, .id = NULL)
+      get_variance(coll, y1, .id = NA_character_)
     Condition
-      Error in `.dispatch_over_collection()`:
-      x `.id` must be a single non-empty, non-NA character string. Got <NULL> of length 0.
+      Error in `.validate_collection_id()`:
+      x `.id` must be a single non-empty, non-NA character string.
+      i Got <character> of length 1: NA.
 

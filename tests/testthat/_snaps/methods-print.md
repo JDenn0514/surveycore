@@ -562,6 +562,8 @@
       print(coll)
     Message
       A <survey_collection> with 3 surveys:
+      id: ".survey"
+      if_missing_var: "error"
       "2017-18": survey_taylor, 1,200 rows, 8 variables
       "2019-20": survey_taylor, 1,500 rows, 8 variables
       "2021-22": survey_taylor, 2,000 rows, 8 variables
@@ -572,6 +574,8 @@
       print(coll)
     Message
       A <survey_collection> with 25 surveys:
+      id: ".survey"
+      if_missing_var: "error"
       "wave_01": survey_taylor, 40 rows, 8 variables
       "wave_02": survey_taylor, 40 rows, 8 variables
       "wave_03": survey_taylor, 40 rows, 8 variables
@@ -593,5 +597,7 @@
       print(coll)
     Message
       A <survey_collection> with 1 survey:
+      id: ".survey"
+      if_missing_var: "error"
       "only": survey_taylor, 50 rows, 8 variables
 

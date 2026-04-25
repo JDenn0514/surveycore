@@ -44,6 +44,8 @@
     Message
       A <survey_collection> with 2 surveys:
       Groups: strata
+      id: ".survey"
+      if_missing_var: "error"
       "wave1": survey_taylor, 40 rows, 8 variables
       "wave2": survey_taylor, 40 rows, 8 variables
 
@@ -53,6 +55,8 @@
       print(coll)
     Message
       A <survey_collection> with 2 surveys:
+      id: ".survey"
+      if_missing_var: "error"
       "wave1": survey_taylor, 40 rows, 8 variables
       "wave2": survey_taylor, 40 rows, 8 variables
 
