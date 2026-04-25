@@ -1,4 +1,4 @@
-# surveycore (development version)
+# surveycore 0.8.0
 
 ## Breaking changes
 
