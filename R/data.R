@@ -270,7 +270,7 @@
 #'
 #' @source
 #' American National Election Studies. 2024 Time Series Study.
-#' \url{https://electionstudies.org} (free account required to download raw
+#' Available at electionstudies.org (free account required to download raw
 #' data; the processed `.rda` is included in the package).
 #' Prepared by `data-raw/prepare-anes-2024.R`.
 #'
