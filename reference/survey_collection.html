@@ -11,7 +11,7 @@ comparative analysis. Create with as_survey_collection()."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,7 +43,12 @@ comparative analysis. Create with <code><a href="as_survey_collection.html">as_s
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">survey_collection</span><span class="op">(</span>surveys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">survey_collection</span><span class="op">(</span></span>
+<span>  surveys <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  groups <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>  id <span class="op">=</span> <span class="st">".survey"</span>,</span>
+<span>  if_missing_var <span class="op">=</span> <span class="st">"error"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -52,6 +57,22 @@ comparative analysis. Create with <code><a href="as_survey_collection.html">as_s
 
 <dl><dt id="arg-surveys">surveys<a class="anchor" aria-label="anchor" href="#arg-surveys"></a></dt>
 <dd><p>A named list of <code>survey_base</code> objects.</p></dd>
+
+
+<dt id="arg-groups">groups<a class="anchor" aria-label="anchor" href="#arg-groups"></a></dt>
+<dd><p>Character vector of grouping variable names. Every member's
+<code>@groups</code> must be <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to this value. Default <code>character(0)</code>.</p></dd>
+
+
+<dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
+<dd><p>Character(1). Identifier column name used when dispatching
+analysis functions across the collection. Default <code>".survey"</code>.</p></dd>
+
+
+<dt id="arg-if-missing-var">if_missing_var<a class="anchor" aria-label="anchor" href="#arg-if-missing-var"></a></dt>
+<dd><p>Character(1), one of <code>c("error", "skip")</code>. Default
+<code>"error"</code>. Controls how dispatched <code>get_*()</code> functions behave when a
+member survey is missing a requested variable.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -78,6 +99,28 @@ invalid state.</p>
 <dd><p>A fully named list of <code>survey_base</code> objects.
 Length \(\geq 1\). Names are unique, non-<code>NA</code>, and non-empty.</p></dd>
 
+<dt><code>groups</code></dt>
+<dd><p>A character vector of grouping variable names
+applied uniformly across every member survey. Default
+<code>character(0)</code> (ungrouped). When non-empty, every member's
+<code>@groups</code> is asserted <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to this value.</p></dd>
+
+<dt><code>id</code></dt>
+<dd><p>Character(1). Identifier column name injected by
+<code>.dispatch_over_collection()</code> when a <code>get_*()</code> is called on the
+collection. Default <code>".survey"</code>. Stored on the collection and
+consumed as the per-call default; a non-<code>NULL</code> <code>.id</code> at the
+analysis-function call site overrides this stored value.
+Mutate via <code><a href="set_collection_id.html">set_collection_id()</a></code>.</p></dd>
+
+<dt><code>if_missing_var</code></dt>
+<dd><p>Character(1), one of <code>c("error", "skip")</code>.
+Default <code>"error"</code>. Controls how dispatched <code>get_*()</code> functions
+behave when a member is missing a requested variable. Stored on
+the collection and consumed as the per-call default; a non-<code>NULL</code>
+<code>.if_missing_var</code> at the analysis-function call site overrides
+this stored value. Mutate via <code><a href="set_collection_if_missing_var.html">set_collection_if_missing_var()</a></code>.</p></dd>
+
 
 </dl></div>
     <div class="section level2">
@@ -88,7 +131,9 @@ collection.</p>
 <p>Other collections:
 <code><a href="add_survey.html">add_survey()</a></code>,
 <code><a href="as_survey_collection.html">as_survey_collection()</a></code>,
-<code><a href="remove_survey.html">remove_survey()</a></code></p></div>
+<code><a href="remove_survey.html">remove_survey()</a></code>,
+<code><a href="set_collection_id.html">set_collection_id()</a></code>,
+<code><a href="set_collection_if_missing_var.html">set_collection_if_missing_var()</a></code></p></div>
     </div>
 
     <div class="section level2">

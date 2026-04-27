@@ -46,6 +46,8 @@ unchanged; no error is raised.
 Other collections:
 [`as_survey_collection()`](https://jdenn0514.github.io/surveycore/reference/as_survey_collection.md),
 [`remove_survey()`](https://jdenn0514.github.io/surveycore/reference/remove_survey.md),
+[`set_collection_id()`](https://jdenn0514.github.io/surveycore/reference/set_collection_id.md),
+[`set_collection_if_missing_var()`](https://jdenn0514.github.io/surveycore/reference/set_collection_if_missing_var.md),
 [`survey_collection()`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md)
 
 ## Examples

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,6 +72,9 @@
 <code>survey_collection</code> container + <code>get_*()</code> dispatch</td>
 <td>✅ Complete</td>
 <td>PRs #97, #98</td>
+</tr><tr class="odd"><td>Polychoric / polyserial correlation (<code>get_corr(method = ...)</code>)</td>
+<td>✅ Complete</td>
+<td>PRs #107, #108, #109</td>
 </tr></tbody></table><hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
@@ -149,6 +152,12 @@
 <code>archive/get-anova-polymorphic/</code> — polymorphic <code>object</code> dispatch for <code><a href="reference/get_anova.html">get_anova()</a></code> (shipped; PR #96)</li>
 <li>
 <code>archive/survey-collection/</code> — <code>survey_collection</code> container + <code>get_*()</code> dispatch spec, plan, and decisions (shipped; PRs #97, #98)</li>
+<li>
+<code>archive/get-covariance/</code> — <code><a href="reference/get_covariance.html">get_covariance()</a></code> spec, plan, decisions, and test spec (shipped; PR #105)</li>
+<li>
+<code>archive/collection-uniform-groups/</code> — uniform <code>@groups</code> enforcement across <code>survey_collection</code> (shipped; PR #106)</li>
+<li>
+<code>archive/polychoric-corr/</code> — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)</li>
 <li>
 <code>archive/</code> — completed phase docs (specs, impl plans, decisions — all historical)</li>
 <li>

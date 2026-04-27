@@ -81,6 +81,7 @@ access metadata.
 Other analysis:
 [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+[`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
@@ -89,6 +90,7 @@ Other analysis:
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
 [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+[`get_variance()`](https://jdenn0514.github.io/surveycore/reference/get_variance.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 
 ## Examples

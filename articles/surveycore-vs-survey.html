@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -783,12 +783,15 @@ who haven’t heard enough — filtered below).</p>
 <p><strong>survey</strong> — matrix output, no confidence intervals</p>
 <div class="sourceCode" id="cb101"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_corr_sv</span> <span class="op">&lt;-</span> <span class="fu">svydesign</span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">weight</span>, data <span class="op">=</span> <span class="va">ns_corr</span><span class="op">)</span></span>
-<span><span class="fu">svycor</span><span class="op">(</span><span class="op">~</span><span class="va">cand_favorability_trump</span> <span class="op">+</span> <span class="va">cand_favorability_biden</span>, <span class="va">ns_corr_sv</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">jtools</span><span class="fu">::</span><span class="fu"><a href="https://jtools.jacob-long.com/reference/svycor.html" class="external-link">svycor</a></span><span class="op">(</span><span class="op">~</span><span class="va">cand_favorability_trump</span> <span class="op">+</span> <span class="va">cand_favorability_biden</span>, <span class="va">ns_corr_sv</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt;                         cand_favorability_trump cand_favorability_biden</span></span>
+<span><span class="co">#&gt; cand_favorability_trump                    1.00                   -0.49</span></span>
+<span><span class="co">#&gt; cand_favorability_biden                   -0.49                    1.00</span></span></code></pre>
 <p><strong>srvyr</strong> — no dedicated <code>survey_corr()</code>
 verb; users must fall back to <code>survey</code></p>
 <p><strong>surveycore</strong> — long tibble with Fisher-Z confidence
 intervals (bounds guaranteed in [−1, 1])</p>
-<div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb103"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span><span class="va">ns_corr_sc</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
 <span><span class="co">#&gt;   var1         var2           r ci_low ci_high p_value statistic    df     n</span></span>
@@ -810,26 +813,26 @@ argument that controls which uncertainty columns appear. In
 <code>srvyr</code>, you repeat the <code>summarise()</code> call for
 each type.</p>
 <p><strong>survey</strong> — separate call per uncertainty type</p>
-<div class="sourceCode" id="cb104"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb105"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">svymean</span><span class="op">(</span><span class="op">~</span><span class="va">age</span>, <span class="va">ns_sv</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">m</span>                      <span class="co"># SE only in the estimate</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;       mean     SE</span></span>
 <span><span class="co">#&gt; age 47.156 0.3956</span></span></code></pre>
-<div class="sourceCode" id="cb106"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb107"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>             <span class="co"># CI — separate call</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;        2.5 %   97.5 %</span></span>
 <span><span class="co">#&gt; age 46.38062 47.93123</span></span></code></pre>
-<div class="sourceCode" id="cb108"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb109"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cv</span><span class="op">(</span><span class="va">m</span><span class="op">)</span>                  <span class="co"># CV — separate call</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;             age</span></span>
 <span><span class="co">#&gt; age 0.008388587</span></span></code></pre>
-<div class="sourceCode" id="cb110"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb111"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">svymean</span><span class="op">(</span><span class="op">~</span><span class="va">age</span>, <span class="va">ns_sv</span>, deff <span class="op">=</span> <span class="cn">TRUE</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># DEFF — different return structure</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;         mean       SE DEff</span></span>
 <span><span class="co">#&gt; age 47.15593  0.39557  Inf</span></span></code></pre>
 <p><strong>srvyr</strong> — one call per type; the variable is estimated
 multiple times</p>
-<div class="sourceCode" id="cb112"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb113"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_srvyr</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">summarise</span><span class="op">(</span></span>
 <span>    m_se   <span class="op">=</span> <span class="fu">survey_mean</span><span class="op">(</span><span class="va">age</span>, vartype <span class="op">=</span> <span class="st">"se"</span>,   na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
@@ -844,7 +847,7 @@ multiple times</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: m_deff_deff &lt;dbl&gt;</span></span></span></code></pre>
 <p><strong>surveycore</strong> — one call, any combination of
 metrics</p>
-<div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb115"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">age</span>, variance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"se"</span>, <span class="st">"ci"</span>, <span class="st">"cv"</span>, <span class="st">"deff"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;    mean    se      cv ci_low ci_high  deff     n</span></span>
@@ -852,7 +855,7 @@ metrics</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  47.2 0.396 0.008<span style="text-decoration: underline;">39</span>   46.4    47.9  3.47  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
 <p>Set <code>variance = NULL</code> to return point estimates and sample
 counts only:</p>
-<div class="sourceCode" id="cb116"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb117"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">age</span>, variance <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
 <span><span class="co">#&gt;    mean     n</span></span>
@@ -910,7 +913,7 @@ intact. surveycore resolves them automatically — no manual recoding
 required.</p>
 <p><strong>survey / srvyr</strong> — group column values are raw integer
 codes</p>
-<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># pid3 values: 1, 2, 3, 4 — the reader must consult the codebook</span></span>
 <span><span class="fu">svyby</span><span class="op">(</span><span class="op">~</span><span class="va">discrimination_blacks</span>, <span class="op">~</span><span class="va">pid3</span>, <span class="va">ns_sv</span>, <span class="va">svymean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   pid3 discrimination_blacks         se</span></span>
@@ -920,7 +923,7 @@ codes</p>
 <span><span class="co">#&gt; 4    4              2.360898 0.09929886</span></span></code></pre>
 <p><strong>surveycore</strong> — “Democrat”, “Republican”,
 “Independent”, “Something else”</p>
-<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">discrimination_blacks</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 5</span></span></span>
 <span><span class="co">#&gt;   pid3            mean ci_low ci_high     n</span></span>
@@ -930,7 +933,7 @@ codes</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Independent     2.52   2.42    2.62  <span style="text-decoration: underline;">1</span>856</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Something else  2.36   2.17    2.56   427</span></span></code></pre>
 <p>Opt out with <code>label_values = FALSE</code> to see raw codes:</p>
-<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">discrimination_blacks</span>, group <span class="op">=</span> <span class="va">pid3</span>, label_values <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 5</span></span></span>
 <span><span class="co">#&gt;    pid3  mean ci_low ci_high     n</span></span>
@@ -950,7 +953,7 @@ in <code>survey</code> and <code>srvyr</code>; surveycore stacks them in
 a single call.</p>
 <p><strong>survey / srvyr</strong> — must loop; output is a list that
 the user binds manually</p>
-<div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">news_vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"news_sources_facebook"</span>, <span class="st">"news_sources_cnn"</span>, <span class="st">"news_sources_fox"</span>,</span>
 <span>  <span class="st">"news_sources_npr"</span>, <span class="st">"news_sources_new_york_times"</span></span>
@@ -971,7 +974,7 @@ the user binds manually</p>
 <span><span class="co">#&gt; news_sources_new_york_times news_sources_new_york_times              1.727273</span></span></code></pre>
 <p><strong>surveycore</strong> — one call; a <code>name</code> column
 identifies each item; variable labels are applied automatically</p>
-<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_sc</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">news_sources_facebook</span><span class="op">:</span><span class="va">news_sources_other</span><span class="op">)</span></span>
@@ -998,7 +1001,7 @@ identifies each item; variable labels are applied automatically</p>
 cells silently — the user may not notice that a group has only 8
 respondents. surveycore warns when any unweighted cell count falls below
 <code>min_cell_n</code> (default: 30).</p>
-<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Construct a design with deliberately small cells</span></span>
 <span><span class="va">small_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fl">15</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -1017,7 +1020,7 @@ respondents. surveycore warns when any unweighted cell count falls below
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> B     -<span style="color: #BB0000;">0.186</span> -<span style="color: #BB0000;">0.683</span>    0.312    15</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> C      0.105 -<span style="color: #BB0000;">0.037</span><span style="color: #BB0000; text-decoration: underline;">7</span>   0.248   200</span></span></code></pre>
 <p>Suppress the warning when small cells are expected:</p>
-<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">small_svy</span>, <span class="va">x</span>, group <span class="op">=</span> <span class="va">group</span>, min_cell_n <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -1028,7 +1031,7 @@ unweighted and estimated population count for each cell requires a
 separate <code>svytotal(~1, ...)</code> call. surveycore adds it with
 one argument:</p>
 <p><strong>survey</strong> — extra call for weighted N</p>
-<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Proportions by group (unweighted n not shown in output)</span></span>
 <span><span class="fu">svyby</span><span class="op">(</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">consider_trump</span><span class="op">)</span>, <span class="op">~</span><span class="va">pid3</span>, <span class="va">ns_sv</span>, <span class="va">svymean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   pid3 factor(consider_trump)1 factor(consider_trump)2</span></span>
@@ -1046,7 +1049,7 @@ one argument:</p>
 <span><span class="co">#&gt; 2                 0.01417166                  0.011797172</span></span>
 <span><span class="co">#&gt; 3                 0.02051542                  0.016804745</span></span>
 <span><span class="co">#&gt; 4                 0.03924281                  0.033059895</span></span></code></pre>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimated weighted N per group — requires a separate call</span></span>
 <span><span class="fu">svyby</span><span class="op">(</span><span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">consider_trump</span><span class="op">)</span><span class="op">)</span>, <span class="op">~</span><span class="va">pid3</span>, <span class="va">ns_sv</span>, <span class="va">svytotal</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   pid3 as.numeric(!is.na(consider_trump))       se</span></span>
@@ -1055,7 +1058,7 @@ one argument:</p>
 <span><span class="co">#&gt; 3    3                           1874.555 74.13607</span></span>
 <span><span class="co">#&gt; 4    4                            538.104 41.74667</span></span></code></pre>
 <p><strong>surveycore</strong> — one argument</p>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">consider_trump</span>, group <span class="op">=</span> <span class="va">pid3</span>, n_weighted <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 12 × 5</span></span></span>
 <span><span class="co">#&gt;    pid3           consider_trump    pct     n n_weighted</span></span>
@@ -1083,13 +1086,13 @@ tibble. It contains the variable label, value labels, and question
 preface for each focal and grouping variable — everything needed to
 build a publication-ready table without consulting the codebook
 separately.</p>
-<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_sc</span>, <span class="va">discrimination_blacks</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Variable label for the focal variable</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">".meta"</span><span class="op">)</span><span class="op">$</span><span class="va">x</span><span class="op">$</span><span class="va">discrimination_blacks</span><span class="op">$</span><span class="va">variable_label</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "Blacks"</span></span></code></pre>
-<div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb141"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Value labels for the grouping variable</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">".meta"</span><span class="op">)</span><span class="op">$</span><span class="va">group</span><span class="op">$</span><span class="va">pid3</span><span class="op">$</span><span class="va">value_labels</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;       Democrat     Republican    Independent Something else </span></span>

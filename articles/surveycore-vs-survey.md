@@ -816,8 +816,12 @@ ns_corr_sc <- as_survey_nonprob(ns_corr, weights = weight)
 
 ``` r
 ns_corr_sv <- svydesign(ids = ~1, weights = ~weight, data = ns_corr)
-svycor(~cand_favorability_trump + cand_favorability_biden, ns_corr_sv)
+jtools::svycor(~cand_favorability_trump + cand_favorability_biden, ns_corr_sv)
 ```
+
+    #>                         cand_favorability_trump cand_favorability_biden
+    #> cand_favorability_trump                    1.00                   -0.49
+    #> cand_favorability_biden                   -0.49                    1.00
 
 **srvyr** — no dedicated `survey_corr()` verb; users must fall back to
 `survey`

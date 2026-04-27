@@ -13,7 +13,7 @@ variance estimation is never re-specified."><meta property="og:image" content="h
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,7 @@ variance estimation is never re-specified.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">as_survey_collection</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">as_survey_collection</span><span class="op">(</span><span class="va">...</span>, <span class="va">group</span>, .id <span class="op">=</span> <span class="st">".survey"</span>, .if_missing_var <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -56,6 +56,44 @@ variance estimation is never re-specified.</p>
 <dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>One or more <code>survey_base</code> objects, passed with explicit names
 or as bare symbols. At least one argument is required.</p></dd>
+
+
+<dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
+<dd><p>&lt;<code><a href="https://tidyselect.r-lib.org/reference/language.html" class="external-link">tidy-select</a></code>&gt; Grouping variable(s)
+to apply uniformly across every member survey. Accepts bare names
+(<code>region</code>, <code>c(region, stratum)</code>), <code>all_of()</code>, etc. When supplied and
+resolving to a non-empty character vector, the named columns must exist
+in every member's <code>@data</code>; they are propagated onto each member's
+<code>@groups</code> and set as <code>coll@groups</code>. If a member already carries a
+non-empty <code>@groups</code> that differs from the resolved target, the target
+takes precedence and a
+<code>surveycore_warning_collection_group_overridden</code> warning is emitted
+(one per divergent member). When missing or resolving to an empty
+vector (<code>NULL</code>, <code>character(0)</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>, <code>all_of(character(0))</code>), the
+collection adopts the members' uniform <code>@groups</code> if they are all
+identical, or errors <code>surveycore_error_collection_group_divergent</code>
+if they differ. Default: missing (adopt-from-members).</p></dd>
+
+
+<dt id="arg--id">.id<a class="anchor" aria-label="anchor" href="#arg--id"></a></dt>
+<dd><p>Character(1). Identifier column name used when dispatching
+analysis functions across the collection. Default <code>".survey"</code>. Stored
+on the returned collection's <code>@id</code> property and used as the default
+by <code>.dispatch_over_collection()</code> when a per-call <code>.id</code> is not
+supplied (i.e., when an analysis function is called with <code>.id = NULL</code>).
+Mutate via <code><a href="set_collection_id.html">set_collection_id()</a></code>.</p></dd>
+
+
+<dt id="arg--if-missing-var">.if_missing_var<a class="anchor" aria-label="anchor" href="#arg--if-missing-var"></a></dt>
+<dd><p>Character(1), one of <code>c("error", "skip")</code>.
+Default <code>"error"</code>. Stored on the returned collection's
+<code>@if_missing_var</code> property and used as the default by
+<code>.dispatch_over_collection()</code> when a per-call <code>.if_missing_var</code> is
+not supplied (i.e., when an analysis function is called with
+<code>.if_missing_var = NULL</code>). When <code>"skip"</code>, member surveys missing
+a requested variable are dropped from the dispatched result;
+when <code>"error"</code>, the dispatcher aborts. Mutate via
+<code><a href="set_collection_if_missing_var.html">set_collection_if_missing_var()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -80,6 +118,8 @@ emitted showing the <code>original -&gt; repaired</code> mapping.</p>
 <p>Other collections:
 <code><a href="add_survey.html">add_survey()</a></code>,
 <code><a href="remove_survey.html">remove_survey()</a></code>,
+<code><a href="set_collection_id.html">set_collection_id()</a></code>,
+<code><a href="set_collection_if_missing_var.html">set_collection_if_missing_var()</a></code>,
 <code><a href="survey_collection.html">survey_collection()</a></code></p></div>
     </div>
 
@@ -99,6 +139,11 @@ emitted showing the <code>original -&gt; repaired</code> mapping.</p>
 <span class="r-in"><span><span class="va">coll2</span> <span class="op">&lt;-</span> <span class="fu">as_survey_collection</span><span class="op">(</span><span class="va">d1</span>, <span class="va">d2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">coll2</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "d1" "d2"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Uniform grouping across members</span></span></span>
+<span class="r-in"><span><span class="va">coll3</span> <span class="op">&lt;-</span> <span class="fu">as_survey_collection</span><span class="op">(</span><span class="va">d1</span>, <span class="va">d2</span>, group <span class="op">=</span> <span class="va">vstrat</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">coll3</span><span class="op">@</span><span class="va">groups</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "vstrat"</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

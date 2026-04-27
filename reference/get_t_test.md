@@ -25,8 +25,8 @@ get_t_test(
   label_vars = TRUE,
   name_style = "surveycore",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 )
 ```
 
@@ -103,21 +103,25 @@ get_t_test(
 
 - ...:
 
-  Unused. Reserved so that `.id` and `.on_missing` remain named-only
+  Unused. Reserved so that `.id` and `.if_missing_var` remain named-only
   when a `survey_collection` is passed as `design`.
 
 - .id:
 
-  Character(1). Column name used to identify each survey when `design`
-  is a
+  Character(1) or `NULL`. Column name used to identify each survey when
+  `design` is a
   [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
-  Default `".survey"`. Ignored when `design` is a single survey.
+  For collection inputs, `NULL` (the default) resolves to the
+  collection's stored `@id` property. Pass a non-`NULL` value to
+  override. Ignored when `design` is a single survey.
 
-- .on_missing:
+- .if_missing_var:
 
-  `"error"` (default) or `"skip"`. How to handle surveys in a collection
-  that lack one of the requested NSE variables. Ignored when `design` is
-  a single survey.
+  `"error"`, `"skip"`, or `NULL`. How to handle surveys in a collection
+  that lack one of the requested NSE variables. For collection inputs,
+  `NULL` (the default) resolves to the collection's stored
+  `@if_missing_var` property. Pass a non-`NULL` value to override.
+  Ignored when `design` is a single survey.
 
 ## Value
 
@@ -134,6 +138,7 @@ Other analysis:
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
+[`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
@@ -141,6 +146,7 @@ Other analysis:
 [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md),
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+[`get_variance()`](https://jdenn0514.github.io/surveycore/reference/get_variance.md),
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md)
 
 ## Examples

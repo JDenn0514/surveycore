@@ -11,7 +11,7 @@ quantification, and metadata-driven labelling."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,8 +59,8 @@ quantification, and metadata-driven labelling.</p>
 <span>  label_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  label_vars <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  name_style <span class="op">=</span> <span class="st">"surveycore"</span>,</span>
-<span>  .id <span class="op">=</span> <span class="st">".survey"</span>,</span>
-<span>  .on_missing <span class="op">=</span> <span class="st">"error"</span></span>
+<span>  .id <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .if_missing_var <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -156,15 +156,19 @@ renames <code>pct</code> → <code>estimate</code>, <code>se</code> → <code>st
 
 
 <dt id="arg--id">.id<a class="anchor" aria-label="anchor" href="#arg--id"></a></dt>
-<dd><p>Character(1). Column name used to identify each survey when
-<code>design</code> is a <code><a href="survey_collection.html">survey_collection</a></code>. Default <code>".survey"</code>. Ignored when
-<code>design</code> is a single survey.</p></dd>
+<dd><p>Character(1) or <code>NULL</code>. Column name used to identify each
+survey when <code>design</code> is a <code><a href="survey_collection.html">survey_collection</a></code>. For collection inputs,
+<code>NULL</code> (the default) resolves to the collection's stored <code>@id</code> property.
+Pass a non-<code>NULL</code> value to override. Ignored when <code>design</code> is a single
+survey.</p></dd>
 
 
-<dt id="arg--on-missing">.on_missing<a class="anchor" aria-label="anchor" href="#arg--on-missing"></a></dt>
-<dd><p><code>"error"</code> (default) or <code>"skip"</code>. How to handle surveys
-in a collection that lack one of the requested NSE variables. Ignored
-when <code>design</code> is a single survey.</p></dd>
+<dt id="arg--if-missing-var">.if_missing_var<a class="anchor" aria-label="anchor" href="#arg--if-missing-var"></a></dt>
+<dd><p><code>"error"</code>, <code>"skip"</code>, or <code>NULL</code>. How to handle
+surveys in a collection that lack one of the requested NSE variables.
+For collection inputs, <code>NULL</code> (the default) resolves to the collection's
+stored <code>@if_missing_var</code> property. Pass a non-<code>NULL</code> value to override.
+Ignored when <code>design</code> is a single survey.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -202,6 +206,7 @@ not physically removed for domain/group subsets.</p>
 <code><a href="clean.html">clean()</a></code>,
 <code><a href="get_anova.html">get_anova()</a></code>,
 <code><a href="get_corr.html">get_corr()</a></code>,
+<code><a href="get_covariance.html">get_covariance()</a></code>,
 <code><a href="get_diffs.html">get_diffs()</a></code>,
 <code><a href="get_means.html">get_means()</a></code>,
 <code><a href="get_pairwise.html">get_pairwise()</a></code>,
@@ -209,6 +214,7 @@ not physically removed for domain/group subsets.</p>
 <code><a href="get_ratios.html">get_ratios()</a></code>,
 <code><a href="get_t_test.html">get_t_test()</a></code>,
 <code><a href="get_totals.html">get_totals()</a></code>,
+<code><a href="get_variance.html">get_variance()</a></code>,
 <code><a href="meta.html">meta()</a></code></p></div>
     </div>
 

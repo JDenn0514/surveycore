@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,75 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.0" id="surveycore-080">surveycore 0.8.0<a class="anchor" aria-label="anchor" href="#surveycore-080"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-8-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-8-0"></a></h3>
+<ul><li>Constructing a <code>survey_collection</code> from member surveys with divergent <code>@groups</code> now errors <code>surveycore_error_collection_group_divergent</code>. Previously, a mixed-grouping collection would dispatch analysis functions per-survey and stitch a patchwork of grouped and ungrouped rows together with <code>bind_rows()</code> — violating the pseudo-data.frame mental model. All members must either share <code>@groups</code> or the caller must supply <code>group =</code> explicitly.</li>
+<li>
+<code><a href="../reference/as_survey_collection.html">as_survey_collection()</a></code>’s <code>.on_missing</code> argument has been replaced by <code>.if_missing_var</code>, and the previously silent no-op behaviour is fixed. <code>.if_missing_var</code> is now stored on the returned collection’s <code>@if_missing_var</code> property and is honoured (rather than ignored) by every dispatched <code>get_*()</code>. Callers using the old name will see R’s positional-argument-mismatch error.</li>
+<li>The <code>.on_missing</code> named-only argument on every collection-dispatching <code>get_*()</code> (<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>, <code><a href="../reference/get_ratios.html">get_ratios()</a></code>, <code><a href="../reference/get_diffs.html">get_diffs()</a></code>, <code><a href="../reference/get_corr.html">get_corr()</a></code>, <code><a href="../reference/get_variance.html">get_variance()</a></code>, <code><a href="../reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="../reference/get_covariance.html">get_covariance()</a></code>, <code><a href="../reference/get_t_test.html">get_t_test()</a></code>, <code><a href="../reference/get_pairwise.html">get_pairwise()</a></code>) has been renamed to <code>.if_missing_var</code>. The default flips from <code>"error"</code> to <code>NULL</code>; <code>NULL</code> resolves to the collection’s stored <code>@if_missing_var</code> property, while a non-<code>NULL</code> value overrides it for that call. The <code>.id</code> argument similarly defaults to <code>NULL</code> and resolves to the collection’s stored <code>@id</code>. Callers passing <code>.on_missing = ...</code> will silently have the value flow into <code>...</code> (no behaviour change at the analysis layer); update to <code>.if_missing_var = ...</code> to restore intent.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-8-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-8-0"></a></h3>
+<div class="section level4">
+<h4 id="survey_collection-per-call-dispatch-defaults-0-8-0">
+<code>survey_collection</code> per-call dispatch defaults<a class="anchor" aria-label="anchor" href="#survey_collection-per-call-dispatch-defaults-0-8-0"></a></h4>
+<ul><li>
+<code>survey_collection</code> gains two new properties:
+<ul><li>
+<code>@id</code> (<code>character(1)</code>, default <code>".survey"</code>) — column name <code>.dispatch_over_collection()</code> uses when an analysis function is dispatched across the collection without an explicit per-call <code>.id</code>. Validated via the new shared helper; the existing <code>surveycore_error_collection_invalid_id</code> class fires on bad input.</li>
+<li>
+<code>@if_missing_var</code> (<code>character(1)</code>, default <code>"error"</code>, must be one of <code>c("error", "skip")</code>) — controls how dispatched <code>get_*()</code> calls behave when a member survey is missing a requested variable. Validated via the new helper; raises the new <code>surveycore_error_collection_invalid_if_missing_var</code> error class on bad input.</li>
+</ul></li>
+<li>New exported setters <code>set_collection_id(x, id)</code> and <code>set_collection_if_missing_var(x, if_missing_var)</code> mutate the corresponding property and return the collection invisibly. Both validate via the same shared helpers; both raise <code>surveycore_error_not_survey_collection</code> on non-collection input.</li>
+<li>
+<code><a href="../reference/add_survey.html">add_survey()</a></code> and <code><a href="../reference/remove_survey.html">remove_survey()</a></code> now propagate the source collection’s <code>@id</code> and <code>@if_missing_var</code> onto the returned collection.</li>
+<li>
+<code>print(survey_collection)</code> renders <code>id:</code> and <code>if_missing_var:</code> lines on every print, regardless of whether they hold the default values.</li>
+<li>
+<code>.dispatch_over_collection()</code> resolves both <code>.id</code> and <code>.if_missing_var</code> via two-tier precedence: a non-<code>NULL</code> value at the analysis-function call site beats the value stored on the collection’s property. The <code>surveycore_error_collection_id_collision</code> hint additionally surfaces <code><a href="../reference/set_collection_id.html">set_collection_id()</a></code> as a fix path when the collision was triggered by the stored <code>@id</code>.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="uniform-grouping-on-survey_collection-0-8-0">Uniform grouping on <code>survey_collection</code>
+<a class="anchor" aria-label="anchor" href="#uniform-grouping-on-survey_collection-0-8-0"></a></h4>
+<ul><li>
+<code>survey_collection</code> gains a <code>@groups</code> property (<code>character(0)</code> by default). Every member survey’s <code>@groups</code> is asserted <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to the collection’s value by the class validator — a uniform-grouping invariant that guarantees dispatched <code>get_*()</code> results share a single grouping structure.</li>
+<li>
+<code><a href="../reference/as_survey_collection.html">as_survey_collection()</a></code> gains a <code>group =</code> argument that accepts tidy-select column names (bare, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>, <code>all_of()</code>). Missing or empty-resolved <code>group =</code> (including <code>NULL</code>, <code>character(0)</code>, <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>, <code>all_of(character(0))</code>) adopts the members’ uniform <code>@groups</code> or errors on divergence; a supplied non-empty <code>group =</code> overrides any pre-existing member <code>@groups</code> and emits a typed <code>surveycore_warning_collection_group_overridden</code> per divergent member.</li>
+<li>
+<code><a href="../reference/add_survey.html">add_survey()</a></code> and <code><a href="../reference/remove_survey.html">remove_survey()</a></code> now preserve <code>coll@groups</code> across mutation: a grouped collection propagates its <code>@groups</code> onto any empty-grouped new member and errors on divergent-grouped members (<code>surveycore_error_collection_group_conflict</code>); removal keeps the collection-level grouping.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="polychoric-and-polyserial-correlation-via-get_corrmethod---0-8-0">Polychoric and polyserial correlation via <code>get_corr(method = ...)</code>
+<a class="anchor" aria-label="anchor" href="#polychoric-and-polyserial-correlation-via-get_corrmethod---0-8-0"></a></h4>
+<ul><li>
+<code><a href="../reference/get_corr.html">get_corr()</a></code> gains a <code>method = "pearson"</code> argument. Setting <code>method = "polychoric"</code> fits a weighted two-step MLE for the correlation between two ordinal variables under a bivariate-normal latent model (Olsson 1979; Mannan 2025); <code>method = "polyserial"</code> fits the analogous MLE for one ordinal + one continuous variable (Cox 1974). Auto-detection of the ordinal / continuous side is handled internally; no new user-facing argument is required. Confidence intervals are constructed on the Fisher-z scale and back-transformed to <code>[-1, 1]</code>. Variance is design-based: Taylor linearization via a perturbation-based influence function on <code>survey_taylor</code>, and a full per-replicate re-fit of both thresholds and <code>rho</code> on <code>survey_replicate</code>. For <code>method != "pearson"</code>, <code>df = NA_integer_</code> and <code>statistic</code> is the z-scale Wald statistic referred to a standard normal distribution. <code>meta(result)$bivariate_normal_cdf</code> is <code>"pbivnorm"</code>, and <code>meta(result)$n_failed_replicates_total</code> carries the total count of non-converged replicates when the replicate path observed any. Agreement with <code><a href="https://rdrr.io/pkg/polycor/man/polychor.html" class="external-link">polycor::polychor()</a></code> / <code><a href="https://rdrr.io/pkg/polycor/man/polyserial.html" class="external-link">polycor::polyserial()</a></code> on equal-weight fixtures is within <code>1e-4</code>.</li>
+<li>New package Import: <code>pbivnorm</code> (&gt;= 0.6.0), used as the bivariate-normal CDF for the polychoric / polyserial likelihood.</li>
+<li>Fourteen new typed error / warning classes (PC-1 through PC-14) surface ordinal-type, optimizer, sparse-cell, boundary, and replicate-convergence conditions — see <code>plans/error-messages.md</code> for the full list.</li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="new-functions-0-8-0">New functions<a class="anchor" aria-label="anchor" href="#new-functions-0-8-0"></a></h3>
+<ul><li>
+<code><a href="../reference/get_variance.html">get_variance()</a></code> computes design-based finite-population variance estimates for one or more numeric variables in a survey design, matching <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svyvar()</a></code> at tolerance <code>1e-10</code> on point estimates and <code>1e-8</code> on SEs. Returns a <code>survey_variance</code> tibble with point estimate, SE, CI, CV, MOE, design effect (<code>deff</code>), and cell sizes. Supports grouping (via <code>group =</code> and <code>group_by()</code>), per-variable <code>na_handling = "pairwise"</code> (default) or <code>"listwise"</code>, <code>name_style = "broom"</code> renaming, and column-level <code>label</code> attributes for downstream gt integration. Dispatches over <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>, and <code>survey_collection</code> designs.</li>
+<li>
+<code><a href="../reference/get_covariance.html">get_covariance()</a></code> computes design-based finite-population covariance estimates for all unordered pairs drawn from one or more numeric variables in a survey design, matching the off-diagonal entries of <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svyvar()</a></code> at tolerance <code>1e-10</code> on point estimates and <code>1e-8</code> on SEs. Returns a <code>survey_covariance</code> tibble with covariance, SE, CI, CV, MOE, design effect (<code>deff</code>), and pairwise cell sizes. Pearson-only, pairwise-complete NA handling. Supports grouping (via <code>group =</code> and <code>group_by()</code>), <code>redundant = TRUE</code> to include both <code>(x, y)</code> and <code>(y, x)</code> orderings, <code>diagonal = TRUE</code> to include <code>(x, x)</code> self-pairs (which equal <code>get_variance(x)</code> exactly at <code>1e-10</code>), <code>name_style = "broom"</code> renaming, and column-level <code>label</code> attributes for downstream gt integration. Dispatches over <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>, and <code>survey_collection</code> designs.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-warning-classes-0-8-0">New warning classes<a class="anchor" aria-label="anchor" href="#new-warning-classes-0-8-0"></a></h3>
+<ul><li>
+<code>surveycore_warning_variance_all_na</code> — fired when every row of the active domain is <code>NA</code> on the focal variable.</li>
+<li>
+<code>surveycore_warning_variance_insufficient_n</code> — fired when the focal variable has fewer than two non-<code>NA</code> observations in the active domain (variance is undefined).</li>
+<li>
+<code>surveycore_warning_covariance_all_na</code> — fired when every row of the active domain is <code>NA</code> on at least one variable in the pair.</li>
+<li>
+<code>surveycore_warning_covariance_insufficient_n</code> — fired when a pair has fewer than two pairwise-complete observations in the active domain (covariance is undefined).</li>
+<li>
+<code>surveycore_warning_covariance_non_numeric</code> — fired when one or more variables passed via <code>x</code> are non-numeric and silently dropped from the pair list.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.7.1" id="surveycore-071">surveycore 0.7.1<a class="anchor" aria-label="anchor" href="#surveycore-071"></a></h2>
 <div class="section level3">

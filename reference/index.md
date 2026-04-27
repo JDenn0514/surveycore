@@ -35,6 +35,16 @@ Group multiple survey designs into a single container for joint analysis
 
   Remove Surveys from a `survey_collection`
 
+- [`set_collection_id()`](https://jdenn0514.github.io/surveycore/reference/set_collection_id.md)
+  :
+
+  Set the Identifier Column on a `survey_collection`
+
+- [`set_collection_if_missing_var()`](https://jdenn0514.github.io/surveycore/reference/set_collection_if_missing_var.md)
+  :
+
+  Set the Missing-Variable Behaviour on a `survey_collection`
+
 ## Estimation
 
 Compute weighted estimates with design-correct standard errors.
@@ -47,8 +57,12 @@ Compute weighted estimates with design-correct standard errors.
   : Weighted Mean for a Survey Design
 - [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
   : Weighted Total for a Survey Design
+- [`get_variance()`](https://jdenn0514.github.io/surveycore/reference/get_variance.md)
+  : Design-Based Population Variance for a Survey Design
+- [`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md)
+  : Design-Based Population Covariance for a Survey Design
 - [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
-  : Survey-Weighted Pearson Correlation
+  : Survey-Weighted Correlation (Pearson, Polychoric, Polyserial)
 - [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
   : Survey-Weighted Quantiles
 - [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
