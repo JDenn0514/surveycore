@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/JDenn0514/surveycore/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/JDenn0514/surveycore/blob/v0.8.0/inst/CITATION)
 
 Dennen J (2026). *surveycore: Core Survey Analysis Infrastructure*. R
 package version 0.6.2, <https://github.com/JDenn0514/surveycore>.
