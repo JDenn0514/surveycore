@@ -49,7 +49,7 @@ Republican, \code{2} = neither, \code{3} = closer to Democrat.}
 }
 \source{
 American National Election Studies. 2024 Time Series Study.
-\url{https://electionstudies.org} (free account required to download raw
+Available at electionstudies.org (free account required to download raw
 data; the processed \code{.rda} is included in the package).
 Prepared by \verb{data-raw/prepare-anes-2024.R}.
 }

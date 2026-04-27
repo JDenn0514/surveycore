@@ -11,6 +11,10 @@
   completeness ("Automatically preserves..." instead of "Automatic
   preservation of...").
 * Bumped `inst/CITATION` to track the upcoming release version.
+* Removed the `\url{}` wrapper around `electionstudies.org` in the
+  `anes_2024` data documentation. The URL is preserved as plain prose; the
+  ANES homepage 403's automated requests, which previously triggered a
+  `urlchecker::url_check()` failure under `R CMD check --as-cran`.
 
 # surveycore 0.8.0
 
