@@ -1,4 +1,4 @@
-# surveycore (development version)
+# surveycore 0.8.1
 
 ## CRAN preparation
 
