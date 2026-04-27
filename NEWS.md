@@ -43,6 +43,17 @@
 * `surveycore_warning_covariance_insufficient_n` — fired when a pair has fewer than two pairwise-complete observations in the active domain (covariance is undefined).
 * `surveycore_warning_covariance_non_numeric` — fired when one or more variables passed via `x` are non-numeric and silently dropped from the pair list.
 
+# surveycore 0.7.1
+
+## Documentation
+
+* Trimmed the `Getting Started` vignette to remove dependencies on the sibling
+  `surveytidy` package, which is not yet on CRAN. The correlation and ratio
+  examples now clean data via `dplyr::filter()` on the underlying data frame
+  before constructing the survey object. The standalone "Using surveytidy"
+  section has been removed; those workflows are documented in the `surveytidy`
+  package itself.
+
 # surveycore 0.7.0
 
 ## Breaking changes

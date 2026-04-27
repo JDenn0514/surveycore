@@ -17,19 +17,15 @@ library(surveycore)
 knitr::opts_chunk$set(
   comment = "#>"
 )
-has_surveytidy <- requireNamespace("surveytidy", quietly = TRUE)
-if (has_surveytidy) library(surveytidy)
 ```
 
 `surveycore` gives you a (mostly) complete workflow for survey data analysis.
-This vignette is designed to give you a quick overview of the main functionality 
-present in this package. It is comprised of three main sections:
+This vignette is designed to give you a quick overview of the main functionality
+present in this package. It is comprised of two main sections:
 
-1. Creating survey objects 
+1. Creating survey objects
 
 2. Conducting simple analysis
-
-3. Using `surveytidy` for data manipulation
 
 **Quick PSA before jumping in:**
 
@@ -309,57 +305,62 @@ get_totals(pew_jewish_svy, group = age4cat)
 more continuous variables. Confidence intervals use the Fisher Z
 transformation, guaranteeing bounds in (−1, 1).
 
-Let's look at approval for Trump and Biden, but first we'll do some quick data
-cleaning using the `surveytidy` package (I'll go more in-depth later showing
-what this package can do).
+Let's look at approval for Trump and Biden. First we clean the underlying
+data frame — dropping rows with missing values and removing "Not sure"
+responses (coded `999`) — then rebuild the survey object.
 
+```{r corr-basic}
+ns_wave1_clean <- ns_wave1 |>
+  dplyr::filter(
+    !is.na(cand_favorability_trump),
+    !is.na(cand_favorability_biden),
+    cand_favorability_trump != 999,
+    cand_favorability_biden != 999
+  )
 
-```{r corr-basic, eval=has_surveytidy}
+ns_wave1_clean_svy <- as_survey_nonprob(ns_wave1_clean, weights = weight)
 
-
-ns_wave1_svy |>
-  # drop NAs
-  drop_na(cand_favorability_trump, cand_favorability_biden) |>
-  # remove "Not sure" responses (coded 999)
-  filter_out(cand_favorability_trump == 999 | cand_favorability_biden == 999) |>
-  # calculate correlations
-  get_corr(c(cand_favorability_trump, cand_favorability_biden))
-
+get_corr(
+  ns_wave1_clean_svy,
+  c(cand_favorability_trump, cand_favorability_biden)
+)
 ```
 
 Next, let's look at favorability across multiple variables.
 
+```{r corr-multi}
+fav_vars <- c(
+  "cand_favorability_trump", "cand_favorability_biden",
+  "cand_favorability_harris", "cand_favorability_sanders",
+  "cand_favorability_warren", "cand_favorability_buttigieg",
+  "cand_favorability_pence"
+)
 
-```{r corr-multi, eval=has_surveytidy}
-ns_wave1_svy |>
-  drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
-  # filter out any respondents who said "Not sure"
-  filter_out(
-    dplyr::if_any(
-      c(cand_favorability_trump:cand_favorability_pence),
-      ~ .x == 999
-    )
-  ) |>
-  get_corr(c(cand_favorability_trump:cand_favorability_pence))
+ns_wave1_multi <- ns_wave1 |>
+  dplyr::filter(
+    dplyr::if_all(dplyr::all_of(fav_vars), ~ !is.na(.x) & .x != 999)
+  )
+
+ns_wave1_multi_svy <- as_survey_nonprob(ns_wave1_multi, weights = weight)
+
+get_corr(
+  ns_wave1_multi_svy,
+  c(cand_favorability_trump:cand_favorability_pence)
+)
 ```
 
-The output defaults to a long version where each row is a unique 
-variable pair. It shows the correlation in `r`, the confidence 
+The output defaults to a long version where each row is a unique
+variable pair. It shows the correlation in `r`, the confidence
 intervals, p-values, and other relevant information.
 
 Switch to wide format for a more familiar correlation-matrix layout:
 
-```{r corr-wide, eval=has_surveytidy}
-ns_wave1_svy |>
-  drop_na(c(cand_favorability_trump:cand_favorability_pence)) |>
-  # filter out any respondents who said "Not sure"
-  filter_out(
-    dplyr::if_any(
-      c(cand_favorability_trump:cand_favorability_pence),
-      ~ .x == 999
-    )
-  ) |>
-  get_corr(c(cand_favorability_trump:cand_favorability_pence), format = "wide")
+```{r corr-wide}
+get_corr(
+  ns_wave1_multi_svy,
+  c(cand_favorability_trump:cand_favorability_pence),
+  format = "wide"
+)
 ```
 
 
@@ -384,17 +385,12 @@ Trump's aggregate favorability score to Biden's. A ratio less than 1 means
 Trump's aggregate score is lower — i.e., he is viewed more favorably on
 average; a ratio greater than 1 means Biden is viewed more favorably.
 
-```{r ratios-basic, eval=has_surveytidy}
-ns_wave1_svy |>
-  # drop NAs
-  drop_na(cand_favorability_trump, cand_favorability_biden) |>
-  # remove people who don't know enough about Trump or Biden
-  filter_out(cand_favorability_trump == 999 | cand_favorability_biden == 999) |>
-  # get the ratio of favorability
-  get_ratios(
-    numerator = cand_favorability_trump,
-    denominator = cand_favorability_biden
-  )
+```{r ratios-basic}
+get_ratios(
+  ns_wave1_clean_svy,
+  numerator = cand_favorability_trump,
+  denominator = cand_favorability_biden
+)
 ```
 
 ---
@@ -491,107 +487,6 @@ get_freqs(pew_jewish_svy, age4cat, n_weighted = TRUE)
 
 ```
 
-
----
-
-## Using `surveytidy`
-
-```{r, eval=FALSE}
-pak::pak("jacobdennen/surveytidy")
-```
-
-
-All analysis functions make it easy to pipe in the survey design as well.
-This allows you to manipulate the data with dplyr-like verbs from the
-`surveytidy` package. We briefly saw an example of this earlier when looking 
-at correlations. The `surveytidy` package provides dplyr verbs like: `filter()`,
-`select()`, `mutate()`, `group_by()`, `rename()`, and a few others that work
-directly on survey objects. We'll show a few of those in play with the 
-Nationscape data again.
-
-We'll rename the variable for Biden's favorability, then create a new one 
-where we add 1 to it, and then select the relevant columns to compare.
-
-
-```{r eval=has_surveytidy}
-
-ns_wave1_svy |>
-  # rename the variable
-  rename(fav_biden = cand_favorability_biden) |>
-  # let's start with a simple example of adding 1 to favorability of Biden
-  mutate(fav_biden_1 = fav_biden + 1) |>
-  # now let's look at the results
-  select(fav_biden, fav_biden_1)
-
-```
-
-### Grouped analysis with `group_by()`
-
-Now let's do a slightly more in-depth example. We're going to look at how 
-people view Trump by age group. First, let's create the necessary variables.
-
-```{r eval=has_surveytidy}
-ns_wave1_svy <- ns_wave1_svy |>
-  # rename trump favorability
-  rename(fav_trump = cand_favorability_trump) |>
-  mutate(
-    # convert favorability of Trump to a 3 level factor
-    fav_trump_f3 = dplyr::recode_values(
-      fav_trump,
-      c(1:2) ~ "Favorable",
-      c(3:4) ~ "Unfavorable",
-      999 ~ "Haven't heard enough"
-    ),
-    age_f4 = dplyr::case_when(
-      age < 30 ~ "18-29",
-      age < 50 ~ "30-49",
-      age < 65 ~ "50-64",
-      age > 64 ~ "65+",
-      .default = NA_character_
-    )
-  )
-
-ns_wave1_svy |> select(fav_trump, fav_trump_f3, age, age_f4)
-
-```
-
-Now let's look at the grouped frequencies. So far, we've used the `group`
-argument, but we can also `group_by()` from surveytidy. Looking below,
-we can see that they return identical results.
-
-```{r surveytidy-group_by, eval=has_surveytidy}
-ns_wave1_svy |>
-  group_by(age_f4) |>
-  get_freqs(fav_trump_f3)
-
-ns_wave1_svy |>
-  get_freqs(fav_trump_f3, group = age_f4)
-
-```
-
-### Using `filter()` for domain estimation
-
-It is very common in survey analysis to calculate results among
-subgroups. For example, you may be interested in knowing how 
-people under 30 view Trump. One way is to do what we just did, 
-use `group_by()` on an age category. A simpler method is using the `filter()` and `filter_out()` functions from
-surveytidy.
-For example:
-
-```{r filter, eval=has_surveytidy}
-ns_wave1_svy |>
-  # keep only people under 30 in the domain
-  filter(age < 30) |>
-  # calculate frequencies
-  get_freqs(fav_trump_f3)
-```
-
-As you can see, the results are the same as those calculated
-via `group_by()` and `group`. That's because the method for
-estimating subpopulation results is the same in both.
-
-For more information on domain estimation, a vignette on
-surveytidy's website will be up shortly.
 
 ---
 
