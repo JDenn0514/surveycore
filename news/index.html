@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,9 +27,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.8.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.1" id="surveycore-081">surveycore 0.8.1<a class="anchor" aria-label="anchor" href="#surveycore-081"></a></h2>
+<div class="section level3">
+<h3 id="cran-preparation-0-8-1">CRAN preparation<a class="anchor" aria-label="anchor" href="#cran-preparation-0-8-1"></a></h3>
+<ul><li>Added Thomas Lumley to <code>Authors@R</code> as <code>[ctb, cph]</code> for the variance estimation code vendored from the <code>survey</code> package (R/variance-taylor.R, R/variance-replicate.R, R/variance-twophase.R, R/variance-vendored-saddlepoint.R). Vendoring is documented in <code>VENDORED.md</code>.</li>
+<li>Reworded the closing sentence of the package <code>Description</code> for grammatical completeness (“Automatically preserves…” instead of “Automatic preservation of…”).</li>
+<li>Bumped <code>inst/CITATION</code> to track the upcoming release version.</li>
+<li>Removed the <code>\url{}</code> wrapper around <code>electionstudies.org</code> in the <code>anes_2024</code> data documentation. The URL is preserved as plain prose; the ANES homepage 403’s automated requests, which previously triggered a <code>urlchecker::url_check()</code> failure under <code>R CMD check --as-cran</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.0" id="surveycore-080">surveycore 0.8.0<a class="anchor" aria-label="anchor" href="#surveycore-080"></a></h2>
 <div class="section level3">

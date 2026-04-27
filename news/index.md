@@ -1,5 +1,23 @@
 # Changelog
 
+## surveycore 0.8.1
+
+### CRAN preparation
+
+- Added Thomas Lumley to `Authors@R` as `[ctb, cph]` for the variance
+  estimation code vendored from the `survey` package
+  (R/variance-taylor.R, R/variance-replicate.R, R/variance-twophase.R,
+  R/variance-vendored-saddlepoint.R). Vendoring is documented in
+  `VENDORED.md`.
+- Reworded the closing sentence of the package `Description` for
+  grammatical completeness (“Automatically preserves…” instead of
+  “Automatic preservation of…”).
+- Bumped `inst/CITATION` to track the upcoming release version.
+- Removed the `\url{}` wrapper around `electionstudies.org` in the
+  `anes_2024` data documentation. The URL is preserved as plain prose;
+  the ANES homepage 403’s automated requests, which previously triggered
+  a `urlchecker::url_check()` failure under `R CMD check --as-cran`.
+
 ## surveycore 0.8.0
 
 ### Breaking changes
