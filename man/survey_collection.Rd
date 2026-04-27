@@ -4,10 +4,25 @@
 \alias{survey_collection}
 \title{Multi-Survey Container}
 \usage{
-survey_collection(surveys = list())
+survey_collection(
+  surveys = list(),
+  groups = character(0),
+  id = ".survey",
+  if_missing_var = "error"
+)
 }
 \arguments{
 \item{surveys}{A named list of \code{survey_base} objects.}
+
+\item{groups}{Character vector of grouping variable names. Every member's
+\verb{@groups} must be \code{identical()} to this value. Default \code{character(0)}.}
+
+\item{id}{Character(1). Identifier column name used when dispatching
+analysis functions across the collection. Default \code{".survey"}.}
+
+\item{if_missing_var}{Character(1), one of \code{c("error", "skip")}. Default
+\code{"error"}. Controls how dispatched \verb{get_*()} functions behave when a
+member survey is missing a requested variable.}
 }
 \value{
 A \code{survey_collection} object.
@@ -34,6 +49,22 @@ invalid state.
 \describe{
 \item{\code{surveys}}{A fully named list of \code{survey_base} objects.
 Length \eqn{\geq 1}. Names are unique, non-\code{NA}, and non-empty.}
+\item{\code{groups}}{A character vector of grouping variable names
+applied uniformly across every member survey. Default
+\code{character(0)} (ungrouped). When non-empty, every member's
+\verb{@groups} is asserted \code{identical()} to this value.}
+\item{\code{id}}{Character(1). Identifier column name injected by
+\code{.dispatch_over_collection()} when a \verb{get_*()} is called on the
+collection. Default \code{".survey"}. Stored on the collection and
+consumed as the per-call default; a non-\code{NULL} \code{.id} at the
+analysis-function call site overrides this stored value.
+Mutate via \code{\link[=set_collection_id]{set_collection_id()}}.}
+\item{\code{if_missing_var}}{Character(1), one of \code{c("error", "skip")}.
+Default \code{"error"}. Controls how dispatched \verb{get_*()} functions
+behave when a member is missing a requested variable. Stored on
+the collection and consumed as the per-call default; a non-\code{NULL}
+\code{.if_missing_var} at the analysis-function call site overrides
+this stored value. Mutate via \code{\link[=set_collection_if_missing_var]{set_collection_if_missing_var()}}.}
 }
 }
 
@@ -53,6 +84,8 @@ collection.
 Other collections: 
 \code{\link{add_survey}()},
 \code{\link{as_survey_collection}()},
-\code{\link{remove_survey}()}
+\code{\link{remove_survey}()},
+\code{\link{set_collection_id}()},
+\code{\link{set_collection_if_missing_var}()}
 }
 \concept{collections}

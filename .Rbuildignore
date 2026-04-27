@@ -17,6 +17,9 @@
 ^SOPs$
 ^archive$
 ^Rplots\.pdf$
+^\.surveycore-workspace$
+^doc$
+^Meta$
 
 # Vignette build artifacts (pre-built HTML from local development)
 ^vignettes/.*_files$

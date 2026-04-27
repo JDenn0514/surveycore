@@ -21,3 +21,49 @@
 # @return A character vector of column names from x@data.
 # Class defined in R/core-classes.R
 S7::method(names, survey_base) <- function(x) names(x@data)
+
+
+# ── broom tidy / glance for survey_variance ──────────────────────────────────
+#
+# These S3 shims are registered in zzz.R under the broom generics. They
+# provide minimal compatibility so `broom::tidy()` and `broom::glance()`
+# work on `get_variance()` results without invoking broom's default
+# data.frame fallbacks. No new semantics — tidy() returns the result as a
+# plain tibble; glance() returns a 1-row summary.
+
+# @keywords internal
+# @noRd
+tidy.survey_variance <- function(x, ...) {
+  tibble::as_tibble(x)
+}
+
+# @keywords internal
+# @noRd
+glance.survey_variance <- function(x, ...) {
+  tibble::tibble(
+    n_rows = nrow(x),
+    n_vars = length(unique(x$name))
+  )
+}
+
+
+# ── broom tidy / glance for survey_covariance ────────────────────────────────
+#
+# Same minimal shim pattern as `survey_variance`. Registered in zzz.R under
+# the broom generics. tidy() returns the result as a plain tibble; glance()
+# returns a 1-row summary with row count and unique-pair count.
+
+# @keywords internal
+# @noRd
+tidy.survey_covariance <- function(x, ...) {
+  tibble::as_tibble(x)
+}
+
+# @keywords internal
+# @noRd
+glance.survey_covariance <- function(x, ...) {
+  tibble::tibble(
+    n_rows = nrow(x),
+    n_pairs = nrow(x)
+  )
+}

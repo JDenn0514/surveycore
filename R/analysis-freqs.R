@@ -55,12 +55,16 @@
 #'   to the raw variable name when no label is set.
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
 #'   renames `pct` → `estimate`, `se` → `std.error`, etc.
-#' @param .id Character(1). Column name used to identify each survey when
-#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
-#'   `design` is a single survey.
-#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
-#'   in a collection that lack one of the requested NSE variables. Ignored
-#'   when `design` is a single survey.
+#' @param .id Character(1) or `NULL`. Column name used to identify each
+#'   survey when `design` is a [`survey_collection`]. For collection inputs,
+#'   `NULL` (the default) resolves to the collection's stored `@id` property.
+#'   Pass a non-`NULL` value to override. Ignored when `design` is a single
+#'   survey.
+#' @param .if_missing_var `"error"`, `"skip"`, or `NULL`. How to handle
+#'   surveys in a collection that lack one of the requested NSE variables.
+#'   For collection inputs, `NULL` (the default) resolves to the collection's
+#'   stored `@if_missing_var` property. Pass a non-`NULL` value to override.
+#'   Ignored when `design` is a single survey.
 #'
 #' @details
 #' **Single-variable mode** (when `x` resolves to exactly one variable):
@@ -130,8 +134,8 @@ get_freqs <- function(
   label_values = TRUE,
   label_vars = TRUE,
   name_style = "surveycore",
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 ) {
   if (S7::S7_inherits(design, survey_collection)) {
     return(.dispatch_over_collection(
@@ -141,7 +145,7 @@ get_freqs <- function(
       group = {{ group }},
       ...,
       .id = .id,
-      .on_missing = .on_missing
+      .if_missing_var = .if_missing_var
     ))
   }
   # ── Step 1: Validate ────────────────────────────────────────────────────────

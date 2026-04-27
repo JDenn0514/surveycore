@@ -18,8 +18,8 @@ get_t_test(
   label_vars = TRUE,
   name_style = "surveycore",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 )
 }
 \arguments{
@@ -70,16 +70,20 @@ visible effect because column names are fixed. Default \code{TRUE}.}
 \code{ci_low} to \code{conf.low}, \code{ci_high} to \code{conf.high}, \code{p_value} to
 \code{p.value}, \code{df} to \code{parameter}). \code{t_stat} is not renamed.}
 
-\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+\item{...}{Unused. Reserved so that \code{.id} and \code{.if_missing_var} remain
 named-only when a \code{survey_collection} is passed as \code{design}.}
 
-\item{.id}{Character(1). Column name used to identify each survey when
-\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
-\code{design} is a single survey.}
+\item{.id}{Character(1) or \code{NULL}. Column name used to identify each
+survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
+\code{NULL} (the default) resolves to the collection's stored \verb{@id} property.
+Pass a non-\code{NULL} value to override. Ignored when \code{design} is a single
+survey.}
 
-\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
-in a collection that lack one of the requested NSE variables. Ignored
-when \code{design} is a single survey.}
+\item{.if_missing_var}{\code{"error"}, \code{"skip"}, or \code{NULL}. How to handle
+surveys in a collection that lack one of the requested NSE variables.
+For collection inputs, \code{NULL} (the default) resolves to the collection's
+stored \verb{@if_missing_var} property. Pass a non-\code{NULL} value to override.
+Ignored when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_t_test} tibble (also inheriting \code{survey_result}).
@@ -108,6 +112,7 @@ Other analysis:
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},
+\code{\link{get_covariance}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
@@ -115,6 +120,7 @@ Other analysis:
 \code{\link{get_quantiles}()},
 \code{\link{get_ratios}()},
 \code{\link{get_totals}()},
+\code{\link{get_variance}()},
 \code{\link{meta}()}
 }
 \concept{analysis}

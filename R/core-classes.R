@@ -653,12 +653,40 @@ survey_twophase <- S7::new_class(
 #' \describe{
 #'   \item{`surveys`}{A fully named list of `survey_base` objects.
 #'     Length \eqn{\geq 1}. Names are unique, non-`NA`, and non-empty.}
+#'   \item{`groups`}{A character vector of grouping variable names
+#'     applied uniformly across every member survey. Default
+#'     `character(0)` (ungrouped). When non-empty, every member's
+#'     `@groups` is asserted `identical()` to this value.}
+#'   \item{`id`}{Character(1). Identifier column name injected by
+#'     `.dispatch_over_collection()` when a `get_*()` is called on the
+#'     collection. Default `".survey"`. Stored on the collection and
+#'     consumed as the per-call default; a non-`NULL` `.id` at the
+#'     analysis-function call site overrides this stored value.
+#'     Mutate via [set_collection_id()].}
+#'   \item{`if_missing_var`}{Character(1), one of `c("error", "skip")`.
+#'     Default `"error"`. Controls how dispatched `get_*()` functions
+#'     behave when a member is missing a requested variable. Stored on
+#'     the collection and consumed as the per-call default; a non-`NULL`
+#'     `.if_missing_var` at the analysis-function call site overrides
+#'     this stored value. Mutate via [set_collection_if_missing_var()].}
 #' }
 #'
 #' @param surveys A named list of `survey_base` objects.
+#' @param groups Character vector of grouping variable names. Every member's
+#'   `@groups` must be `identical()` to this value. Default `character(0)`.
+#' @param id Character(1). Identifier column name used when dispatching
+#'   analysis functions across the collection. Default `".survey"`.
+#' @param if_missing_var Character(1), one of `c("error", "skip")`. Default
+#'   `"error"`. Controls how dispatched `get_*()` functions behave when a
+#'   member survey is missing a requested variable.
 #'
 #' @return A `survey_collection` object.
-#' @usage survey_collection(surveys = list())
+#' @usage survey_collection(
+#'   surveys = list(),
+#'   groups = character(0),
+#'   id = ".survey",
+#'   if_missing_var = "error"
+#' )
 #'
 #' @examples
 #' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
@@ -675,9 +703,31 @@ survey_twophase <- S7::new_class(
 survey_collection <- S7::new_class(
   "survey_collection",
   properties = list(
-    surveys = S7::class_list
+    surveys = S7::class_list,
+    groups = S7::new_property(
+      S7::class_character,
+      default = quote(character(0))
+    ),
+    id = S7::new_property(
+      S7::class_character,
+      default = ".survey"
+    ),
+    if_missing_var = S7::new_property(
+      S7::class_character,
+      default = "error"
+    )
   ),
   validator = function(self) {
+    # C13 — @id well-formed (length-1, character, non-NA, non-empty).
+    # Run before C1/C2/C4/G1 so the most descriptive error fires first
+    # when multiple invariants would otherwise trigger.
+    .validate_collection_id(self@id, "id")
+
+    # C15 — @if_missing_var well-formed (length-1, character, non-NA,
+    # in c("error", "skip")). Run after @id so the @id error has
+    # precedence when both are simultaneously invalid.
+    .validate_collection_if_missing_var(self@if_missing_var, "if_missing_var")
+
     # C1 — empty list
     if (length(self@surveys) == 0L) {
       cli::cli_abort(
@@ -722,6 +772,84 @@ survey_collection <- S7::new_class(
         ),
         class = "surveycore_error_collection_bad_element"
       )
+    }
+
+    # G1c — @groups well-formed (no NA, no "", no duplicates). Checked
+    # before G1 / G1b so a malformed target produces a single clear error
+    # rather than cascading through per-member checks.
+    grps <- self@groups
+    n_na <- sum(is.na(grps))
+    n_empty <- sum(!is.na(grps) & grps == "")
+    dup_idx <- duplicated(grps) & !is.na(grps)
+    duplicated_names <- unique(grps[dup_idx])
+    if (n_na > 0L || n_empty > 0L || length(duplicated_names) > 0L) {
+      bullets <- c(
+        "x" = paste0(
+          "{.arg groups} must be a character vector of column names with ",
+          "no {.val NA}, empty strings, or duplicates."
+        )
+      )
+      if (n_na > 0L) {
+        bullets <- c(
+          bullets,
+          "i" = "Contains {.val {n_na}} {.val NA} value(s)."
+        )
+      }
+      if (n_empty > 0L) {
+        bullets <- c(
+          bullets,
+          "i" = "Contains {.val {n_empty}} empty string(s)."
+        )
+      }
+      if (length(duplicated_names) > 0L) {
+        bullets <- c(
+          bullets,
+          "i" = "Duplicates: {.val {duplicated_names}}."
+        )
+      }
+      cli::cli_abort(
+        bullets,
+        class = "surveycore_error_collection_groups_malformed"
+      )
+    }
+
+    # G1 — every member's @groups must be identical() to self@groups.
+    # Loop with early exit on first mismatch so the error names the first
+    # divergent member (by name).
+    for (idx in seq_along(self@surveys)) {
+      member <- self@surveys[[idx]]
+      member_name <- nms[[idx]]
+      .check_groups_match(
+        candidate_groups = member@groups,
+        target_groups = self@groups,
+        error_class = "surveycore_error_collection_groups_invariant",
+        context = member_name
+      )
+    }
+
+    # G1b — every column in self@groups must exist in every member's @data.
+    # Only runs when @groups is non-empty (otherwise vacuously satisfied).
+    if (length(self@groups) > 0L) {
+      for (idx in seq_along(self@surveys)) {
+        member <- self@surveys[[idx]]
+        member_name <- nms[[idx]]
+        data_cols <- names(member@data)
+        missing_cols <- setdiff(self@groups, data_cols)
+        if (length(missing_cols) > 0L) {
+          first_missing <- missing_cols[[1L]]
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "Member {.val {member_name}} has @groups ",
+                "{.val {self@groups}} but column {.field {first_missing}} ",
+                "is not in its @data."
+              ),
+              "i" = "Columns available: {.val {data_cols}}."
+            ),
+            class = "surveycore_error_collection_group_not_in_member_data"
+          )
+        }
+      }
     }
 
     NULL

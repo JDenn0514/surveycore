@@ -1,3 +1,48 @@
+# surveycore 0.8.0
+
+## Breaking changes
+
+* Constructing a `survey_collection` from member surveys with divergent `@groups` now errors `surveycore_error_collection_group_divergent`. Previously, a mixed-grouping collection would dispatch analysis functions per-survey and stitch a patchwork of grouped and ungrouped rows together with `bind_rows()` — violating the pseudo-data.frame mental model. All members must either share `@groups` or the caller must supply `group =` explicitly.
+* `as_survey_collection()`'s `.on_missing` argument has been replaced by `.if_missing_var`, and the previously silent no-op behaviour is fixed. `.if_missing_var` is now stored on the returned collection's `@if_missing_var` property and is honoured (rather than ignored) by every dispatched `get_*()`. Callers using the old name will see R's positional-argument-mismatch error.
+* The `.on_missing` named-only argument on every collection-dispatching `get_*()` (`get_means()`, `get_totals()`, `get_freqs()`, `get_ratios()`, `get_diffs()`, `get_corr()`, `get_variance()`, `get_quantiles()`, `get_covariance()`, `get_t_test()`, `get_pairwise()`) has been renamed to `.if_missing_var`. The default flips from `"error"` to `NULL`; `NULL` resolves to the collection's stored `@if_missing_var` property, while a non-`NULL` value overrides it for that call. The `.id` argument similarly defaults to `NULL` and resolves to the collection's stored `@id`. Callers passing `.on_missing = ...` will silently have the value flow into `...` (no behaviour change at the analysis layer); update to `.if_missing_var = ...` to restore intent.
+
+## New features
+
+### `survey_collection` per-call dispatch defaults
+
+* `survey_collection` gains two new properties:
+  - `@id` (`character(1)`, default `".survey"`) — column name `.dispatch_over_collection()` uses when an analysis function is dispatched across the collection without an explicit per-call `.id`. Validated via the new shared helper; the existing `surveycore_error_collection_invalid_id` class fires on bad input.
+  - `@if_missing_var` (`character(1)`, default `"error"`, must be one of `c("error", "skip")`) — controls how dispatched `get_*()` calls behave when a member survey is missing a requested variable. Validated via the new helper; raises the new `surveycore_error_collection_invalid_if_missing_var` error class on bad input.
+* New exported setters `set_collection_id(x, id)` and `set_collection_if_missing_var(x, if_missing_var)` mutate the corresponding property and return the collection invisibly. Both validate via the same shared helpers; both raise `surveycore_error_not_survey_collection` on non-collection input.
+* `add_survey()` and `remove_survey()` now propagate the source collection's `@id` and `@if_missing_var` onto the returned collection.
+* `print(survey_collection)` renders `id:` and `if_missing_var:` lines on every print, regardless of whether they hold the default values.
+* `.dispatch_over_collection()` resolves both `.id` and `.if_missing_var` via two-tier precedence: a non-`NULL` value at the analysis-function call site beats the value stored on the collection's property. The `surveycore_error_collection_id_collision` hint additionally surfaces `set_collection_id()` as a fix path when the collision was triggered by the stored `@id`.
+
+### Uniform grouping on `survey_collection`
+
+* `survey_collection` gains a `@groups` property (`character(0)` by default). Every member survey's `@groups` is asserted `identical()` to the collection's value by the class validator — a uniform-grouping invariant that guarantees dispatched `get_*()` results share a single grouping structure.
+* `as_survey_collection()` gains a `group =` argument that accepts tidy-select column names (bare, `c()`, `all_of()`). Missing or empty-resolved `group =` (including `NULL`, `character(0)`, `c()`, `all_of(character(0))`) adopts the members' uniform `@groups` or errors on divergence; a supplied non-empty `group =` overrides any pre-existing member `@groups` and emits a typed `surveycore_warning_collection_group_overridden` per divergent member.
+* `add_survey()` and `remove_survey()` now preserve `coll@groups` across mutation: a grouped collection propagates its `@groups` onto any empty-grouped new member and errors on divergent-grouped members (`surveycore_error_collection_group_conflict`); removal keeps the collection-level grouping.
+
+### Polychoric and polyserial correlation via `get_corr(method = ...)`
+
+* `get_corr()` gains a `method = "pearson"` argument. Setting `method = "polychoric"` fits a weighted two-step MLE for the correlation between two ordinal variables under a bivariate-normal latent model (Olsson 1979; Mannan 2025); `method = "polyserial"` fits the analogous MLE for one ordinal + one continuous variable (Cox 1974). Auto-detection of the ordinal / continuous side is handled internally; no new user-facing argument is required. Confidence intervals are constructed on the Fisher-z scale and back-transformed to `[-1, 1]`. Variance is design-based: Taylor linearization via a perturbation-based influence function on `survey_taylor`, and a full per-replicate re-fit of both thresholds and `rho` on `survey_replicate`. For `method != "pearson"`, `df = NA_integer_` and `statistic` is the z-scale Wald statistic referred to a standard normal distribution. `meta(result)$bivariate_normal_cdf` is `"pbivnorm"`, and `meta(result)$n_failed_replicates_total` carries the total count of non-converged replicates when the replicate path observed any. Agreement with `polycor::polychor()` / `polycor::polyserial()` on equal-weight fixtures is within `1e-4`.
+* New package Import: `pbivnorm` (>= 0.6.0), used as the bivariate-normal CDF for the polychoric / polyserial likelihood.
+* Fourteen new typed error / warning classes (PC-1 through PC-14) surface ordinal-type, optimizer, sparse-cell, boundary, and replicate-convergence conditions — see `plans/error-messages.md` for the full list.
+
+## New functions
+
+* `get_variance()` computes design-based finite-population variance estimates for one or more numeric variables in a survey design, matching `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_variance` tibble with point estimate, SE, CI, CV, MOE, design effect (`deff`), and cell sizes. Supports grouping (via `group =` and `group_by()`), per-variable `na_handling = "pairwise"` (default) or `"listwise"`, `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Dispatches over `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`, and `survey_collection` designs.
+* `get_covariance()` computes design-based finite-population covariance estimates for all unordered pairs drawn from one or more numeric variables in a survey design, matching the off-diagonal entries of `survey::svyvar()` at tolerance `1e-10` on point estimates and `1e-8` on SEs. Returns a `survey_covariance` tibble with covariance, SE, CI, CV, MOE, design effect (`deff`), and pairwise cell sizes. Pearson-only, pairwise-complete NA handling. Supports grouping (via `group =` and `group_by()`), `redundant = TRUE` to include both `(x, y)` and `(y, x)` orderings, `diagonal = TRUE` to include `(x, x)` self-pairs (which equal `get_variance(x)` exactly at `1e-10`), `name_style = "broom"` renaming, and column-level `label` attributes for downstream gt integration. Dispatches over `survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`, and `survey_collection` designs.
+
+## New warning classes
+
+* `surveycore_warning_variance_all_na` — fired when every row of the active domain is `NA` on the focal variable.
+* `surveycore_warning_variance_insufficient_n` — fired when the focal variable has fewer than two non-`NA` observations in the active domain (variance is undefined).
+* `surveycore_warning_covariance_all_na` — fired when every row of the active domain is `NA` on at least one variable in the pair.
+* `surveycore_warning_covariance_insufficient_n` — fired when a pair has fewer than two pairwise-complete observations in the active domain (covariance is undefined).
+* `surveycore_warning_covariance_non_numeric` — fired when one or more variables passed via `x` are non-numeric and silently dropped from the pair list.
+
 # surveycore 0.7.1
 
 ## Documentation

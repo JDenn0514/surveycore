@@ -1,23 +1,59 @@
 # R/analysis-corr.R
 #
-# Survey-weighted Pearson correlation for survey designs.
+# Survey-weighted correlation for survey designs.
 # Exported function: get_corr()
 #
-# Internal helpers: analysis-corr-helpers.R
+# Internal helpers: analysis-corr-helpers.R (Pearson variance),
+# analysis-corr-latent.R (polychoric / polyserial MLE + variance paths).
+
+
+# ── .corr_extract_n_failed_from_condition() ──────────────────────────────────
+#
+# Parse the integer count of non-converged replicates from a
+# surveycore_warning_polychoric_replicate_convergence condition message.
+# The PC-12 message is formatted as "N of R replicate fit(s) failed to
+# converge." with N = n_failed rendered as an unquoted integer by cli.
+# Returns NA_integer_ if the count cannot be recovered.
+.corr_extract_n_failed_from_condition <- function(cnd) {
+  msg <- paste(conditionMessage(cnd), collapse = " ")
+  # Match the leading "N of R" in the PC-12 message.
+  m <- regmatches(msg, regexpr("[0-9]+(?=\\s+of\\s+[0-9]+)", msg, perl = TRUE))
+  if (length(m) != 1L || !nzchar(m)) {
+    return(NA_integer_) # nocov
+  }
+  suppressWarnings(as.integer(m))
+}
+
 
 # ── get_corr() ────────────────────────────────────────────────────────────────
 
-#' Survey-Weighted Pearson Correlation
+#' Survey-Weighted Correlation (Pearson, Polychoric, Polyserial)
 #'
-#' Compute pairwise Pearson correlations between two or more numeric variables
-#' in a survey design, with design-based standard errors and confidence
-#' intervals. Returns results in long or wide format.
+#' Compute pairwise correlations between two or more variables in a survey
+#' design, with design-based standard errors and confidence intervals. Returns
+#' results in long or wide format. The estimator is selected by `method`:
+#' `"pearson"` (default) for two numeric variables, `"polychoric"` for two
+#' ordinal variables under a bivariate-normal latent model (Olsson 1979),
+#' or `"polyserial"` for one ordinal + one continuous variable (Cox 1974).
+#' The survey-weighted polychoric and polyserial estimators (point estimates
+#' and design-based variance) are implemented from scratch following
+#' Mannan (2025); they are not derived from the `survey` package, which does
+#' not provide these estimators.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
-#'   `survey_twophase`, or `survey_nonprob`.
+#'   `survey_twophase`, or `survey_nonprob`. `method` values `"polychoric"`
+#'   and `"polyserial"` are supported on `survey_taylor` and
+#'   `survey_replicate` only; other design classes raise
+#'   `surveycore_error_polychoric_design_unsupported`.
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
-#'   numeric variable names. Non-numeric variables are dropped with a warning.
-#'   At least two numeric variables must remain.
+#'   variable names. For `method = "pearson"`, non-numeric columns are dropped
+#'   with a warning. For `method = "polychoric"`, every selected column must
+#'   classify as ordinal (ordered factor, unordered factor, or integer with
+#'   `<= 10` distinct values) — non-ordinal columns raise
+#'   `surveycore_error_polychoric_requires_ordinal`. For
+#'   `method = "polyserial"`, each pair is canonicalized by type (one ordinal
+#'   + one continuous); logical / character / high-cardinality integer
+#'   columns raise `surveycore_error_polyserial_canonicalization_ambiguous`.
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Combined with any grouping set by `group_by()`. Default
 #'   `NULL`.
@@ -62,14 +98,25 @@
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
 #'   renames `r` → `estimate`, `se` → `std.error`, etc. Only affects long
 #'   format.
-#' @param ... Unused. Reserved so that `.id` and `.on_missing` remain
+#' @param method Character(1). Estimator applied to every pair. One of
+#'   `"pearson"` (default, sample-based product-moment correlation),
+#'   `"polychoric"` (MLE under a bivariate-normal latent model for two
+#'   ordinal variables), or `"polyserial"` (MLE for one ordinal + one
+#'   continuous variable). The same `method` applies to every pair; it
+#'   cannot be vectorised. Non-matching values raise the standard
+#'   [base::match.arg()] signal.
+#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
 #'   named-only when a `survey_collection` is passed as `design`.
-#' @param .id Character(1). Column name used to identify each survey when
-#'   `design` is a [`survey_collection`]. Default `".survey"`. Ignored when
-#'   `design` is a single survey.
-#' @param .on_missing `"error"` (default) or `"skip"`. How to handle surveys
-#'   in a collection that lack one of the requested NSE variables. Ignored
-#'   when `design` is a single survey.
+#' @param .id Character(1) or `NULL`. Column name used to identify each
+#'   survey when `design` is a [`survey_collection`]. For collection inputs,
+#'   `NULL` (the default) resolves to the collection's stored `@id` property.
+#'   Pass a non-`NULL` value to override. Ignored when `design` is a single
+#'   survey.
+#' @param .if_missing_var `"error"`, `"skip"`, or `NULL`. How to handle
+#'   surveys in a collection that lack one of the requested NSE variables.
+#'   For collection inputs, `NULL` (the default) resolves to the collection's
+#'   stored `@if_missing_var` property. Pass a non-`NULL` value to override.
+#'   Ignored when `design` is a single survey.
 #'
 #' @return A `survey_corr` tibble (also inheriting `survey_result`).
 #'
@@ -99,7 +146,53 @@
 #'   }
 #'
 #'   Use `meta(result)` to access design type, variable labels, and
-#'   `method` (`"pearson"`).
+#'   `method` (`"pearson"`, `"polychoric"`, or `"polyserial"`). For
+#'   `method != "pearson"`, `meta(result)$bivariate_normal_cdf` is
+#'   `"pbivnorm"` (the bivariate-normal CDF used internally). When the
+#'   replicate variance path observed one or more non-converged replicates,
+#'   `meta(result)$n_failed_replicates_total` carries the scalar total.
+#'
+#' @details
+#' **Polychoric / polyserial semantics.** For `method != "pearson"`, each pair
+#' is fit by a two-step MLE: weighted marginal thresholds (and, for
+#' polyserial, a weighted standardization of the continuous side) are
+#' estimated first, then `rho` is maximised over the weighted
+#' log-likelihood via [stats::optimize()] on `(-1 + 1e-6, 1 - 1e-6)`.
+#' Confidence intervals are constructed on the Fisher-z scale
+#' (`atanh(rho)`) and back-transformed via `tanh` with truncation to
+#' `[-1, 1]`. The Wald statistic `zeta.hat / SE(zeta.hat)` is referred to
+#' a standard normal distribution, so `df = NA_integer_` — distinct from
+#' the Pearson case where `df = n - 2` and the t-distribution is used.
+#' Column label attributes are method-neutral (e.g. `"statistic"`, not
+#' `"t-statistic"` / `"z-statistic"`); check `meta(result)$method` to
+#' interpret the values.
+#'
+#' **Bivariate-normal assumption.** The polychoric / polyserial MLEs
+#' assume the underlying latent variables are jointly bivariate-normal.
+#' This is an unverified assumption; no runtime diagnostic is performed.
+#'
+#' **Taylor-path cost.** On a `survey_taylor` design, the variance path
+#' for `method != "pearson"` is `O(n)` re-optimisations per variable pair
+#' (a perturbation-based influence function). For large `n` and many
+#' pairs, passing a `survey_replicate` design (one re-fit per replicate,
+#' not per respondent) is substantially faster.
+#'
+#' **Replicate-type caveat.** Mannan (2025) verifies the replicate-weight
+#' variance formula for jackknife and bootstrap replicates. BRR and Fay
+#' replicates are admitted mechanically via the design's stored `scale`
+#' / `rscales` coefficients, but the paper does not validate their
+#' behaviour for this non-linear pseudo-likelihood estimator.
+#'
+#' @references
+#' Cox, N. R. (1974). Estimation of the correlation between a continuous
+#'   and a discrete variable. *Biometrics*, 30(1), 171-178.
+#'
+#' Mannan, H. (2025). SAS programs for estimation of weighted polychoric
+#'   and weighted polyserial correlations in a complex survey. SSRN.
+#'   \doi{10.2139/ssrn.6580480}
+#'
+#' Olsson, U. (1979). Maximum likelihood estimation of the polychoric
+#'   correlation coefficient. *Psychometrika*, 44(4), 443-460.
 #'
 #' @examples
 #' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
@@ -112,6 +205,16 @@
 #' # AAPOR-compliant
 #' get_corr(d, x = c(ridageyr, bpxsy1),
 #'          variance = c("ci", "moe"), n_weighted = TRUE)
+#'
+#' # Polychoric correlation between two ordinal variables
+#' df <- data.frame(
+#'   id = 1:200,
+#'   wt = runif(200, 0.5, 2),
+#'   o1 = factor(sample(1:4, 200, replace = TRUE), ordered = TRUE),
+#'   o2 = factor(sample(1:4, 200, replace = TRUE), ordered = TRUE)
+#' )
+#' d_ord <- as_survey(df, weights = wt)
+#' get_corr(d_ord, x = c(o1, o2), method = "polychoric")
 #'
 #' @family analysis
 #' @export
@@ -131,9 +234,10 @@ get_corr <- function(
   label_values = TRUE,
   label_vars = TRUE,
   name_style = "surveycore",
+  method = "pearson",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 ) {
   if (S7::S7_inherits(design, survey_collection)) {
     return(.dispatch_over_collection(
@@ -141,9 +245,10 @@ get_corr <- function(
       design,
       x = {{ x }},
       group = {{ group }},
+      method = method,
       ...,
       .id = .id,
-      .on_missing = .on_missing
+      .if_missing_var = .if_missing_var
     ))
   }
   # ── Step 1: Validate ────────────────────────────────────────────────────────
@@ -156,6 +261,7 @@ get_corr <- function(
     na.rm = na.rm
   )
   format <- match.arg(format)
+  method <- match.arg(method, c("pearson", "polychoric", "polyserial"))
 
   # ── Step 2: Resolve variables ───────────────────────────────────────────────
   x_quo <- rlang::enquo(x)
@@ -163,25 +269,31 @@ get_corr <- function(
 
   x_names_all <- .resolve_tidy_select(x_quo, design@data)
 
-  # Drop non-numeric variables with warning (per dropped variable)
-  is_numeric_col <- vapply(
-    x_names_all,
-    function(nm) is.numeric(design@data[[nm]]),
-    logical(1L)
-  )
-  dropped <- x_names_all[!is_numeric_col]
-  if (length(dropped) > 0L) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "{.fn get_corr} requires numeric variables. ",
-          "Dropping non-numeric column{?s}: {.field {dropped}}."
-        )
-      ),
-      class = "surveycore_warning_corr_non_numeric"
+  # Method-aware non-numeric handling. Pearson: silently drop non-numeric
+  # columns with a warning. Polychoric / polyserial: retain all columns and
+  # let the latent-pair dispatcher gate on ordinal / canonicalization errors.
+  if (identical(method, "pearson")) {
+    is_numeric_col <- vapply(
+      x_names_all,
+      function(nm) is.numeric(design@data[[nm]]),
+      logical(1L)
     )
+    dropped <- x_names_all[!is_numeric_col]
+    if (length(dropped) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.fn get_corr} requires numeric variables. ",
+            "Dropping non-numeric column{?s}: {.field {dropped}}."
+          )
+        ),
+        class = "surveycore_warning_corr_non_numeric"
+      )
+    }
+    x_names <- x_names_all[is_numeric_col]
+  } else {
+    x_names <- x_names_all
   }
-  x_names <- x_names_all[is_numeric_col]
 
   if (length(x_names) < 2L) {
     cli::cli_abort(
@@ -275,6 +387,7 @@ get_corr <- function(
   all_grp_rows <- vector("list", n_combos)
   all_active_masks <- vector("list", n_combos)
   small_cell_ns <- integer(0)
+  n_failed_replicates_total <- 0L
 
   for (ci in seq_len(n_combos)) {
     # Build active mask for this combo
@@ -290,13 +403,40 @@ get_corr <- function(
     all_active_masks[[ci]] <- active_mask
     active_domain <- as.numeric(active_mask)
 
-    # Inner loop: pairs
+    # Inner loop: pairs. Dispatch by method: Pearson uses the existing
+    # HT / Hajek delta-method path; polychoric / polyserial delegate to
+    # .corr_latent_pair() (MLE + design-based Fisher-z variance).
     pair_results_this <- vector("list", n_pairs)
     for (k in seq_len(n_pairs)) {
       xnm <- x_names[[pairs_i[[k]]]]
       ynm <- x_names[[pairs_j[[k]]]]
-      vco <- .corr_vcov_pair(design, xnm, ynm, active_domain, na.rm)
-      res <- .corr_pair_result(vco)
+      if (identical(method, "pearson")) {
+        vco <- .corr_vcov_pair(design, xnm, ynm, active_domain, na.rm)
+        res <- .corr_pair_result(vco)
+      } else {
+        # Capture PC-12 (replicate partial convergence) warnings so we can
+        # aggregate the total number of non-converged replicates across
+        # pairs into meta()$n_failed_replicates_total. The handler does NOT
+        # muffle the warning; it observes it and passes through.
+        res <- withCallingHandlers(
+          .corr_latent_pair(
+            design = design,
+            x_col = xnm,
+            y_col = ynm,
+            method = method,
+            active_domain = active_domain,
+            na.rm = na.rm,
+            conf_level = conf_level
+          ),
+          surveycore_warning_polychoric_replicate_convergence = function(cnd) {
+            add <- .corr_extract_n_failed_from_condition(cnd)
+            if (!is.na(add)) {
+              n_failed_replicates_total <<- n_failed_replicates_total +
+                as.integer(add)
+            }
+          }
+        )
+      }
       pair_results_this[[k]] <- res
       if (!is.na(res$n) && res$n > 0L && res$n < min_cell_n) {
         small_cell_ns <- c(small_cell_ns, res$n)
@@ -366,10 +506,20 @@ get_corr <- function(
     meta_args_wide <- list(
       conf_level = conf_level,
       call = match.call(),
-      method = "pearson",
+      method = method,
       group = group_meta,
       x = x_meta_list
     )
+    if (!identical(method, "pearson")) {
+      meta_args_wide$bivariate_normal_cdf <- "pbivnorm"
+    }
+    if (
+      !identical(method, "pearson") && n_failed_replicates_total > 0L
+    ) {
+      meta_args_wide$n_failed_replicates_total <- as.integer(
+        n_failed_replicates_total
+      )
+    }
 
     return(.make_result_tibble(
       stacked_wide,
@@ -418,7 +568,13 @@ get_corr <- function(
   acc_df <- integer(total_rows)
   acc_n <- integer(total_rows)
   acc_nw <- numeric(total_rows)
+  # Non-Pearson path precomputes Fisher-z CI bounds per pair; collect them
+  # so the variance-column assembly can consume them directly.
+  acc_ci_low <- rep(NA_real_, total_rows)
+  acc_ci_high <- rep(NA_real_, total_rows)
   acc_grp_rows <- vector("list", n_combos)
+
+  is_latent <- !identical(method, "pearson")
 
   # ── Step 16: Combo fill loop ────────────────────────────────────────────────
   for (ci in seq_len(n_combos)) {
@@ -436,17 +592,23 @@ get_corr <- function(
       acc_var2[[out]] <- display_names[[x_names[[j]]]]
 
       if (i == j) {
-        # Self-correlation (diagonal = TRUE case)
+        # Self-correlation (diagonal = TRUE case). Same for Pearson and
+        # latent methods: r = 1 exactly, SE = 0; df / p / statistic are
+        # method-aware (Wald reference is standard normal for latent).
         acc_r[[out]] <- 1
         acc_se[[out]] <- 0
         acc_se_srs[[out]] <- 0
         acc_pval[[out]] <- 0
         acc_stat[[out]] <- Inf
-        acc_df[[out]] <- 0L
+        acc_df[[out]] <- if (is_latent) NA_integer_ else 0L
         acc_n[[out]] <- as.integer(
           sum(active_mask & !is.na(design@data[[x_names[[i]]]]))
         )
         acc_nw[[out]] <- 0
+        if (is_latent) {
+          acc_ci_low[[out]] <- 1
+          acc_ci_high[[out]] <- 1
+        }
       } else {
         k <- pair_idx_map[i, j]
         res <- pair_results[[k]]
@@ -460,7 +622,31 @@ get_corr <- function(
         acc_n[[out]] <- as.integer(nn)
         acc_nw[[out]] <- res$n_weighted
 
-        if (!is.na(r) && !is.na(nn) && nn >= 3L) {
+        if (is_latent) {
+          # Polychoric / polyserial: z-scale Wald statistic referred to a
+          # standard normal. df = NA_integer_ since the MLE is asymptotic.
+          # CI bounds were pre-computed on the Fisher-z scale by
+          # .corr_latent_pair() and truncated to [-1, 1].
+          acc_ci_low[[out]] <- res$ci_low %||% NA_real_
+          acc_ci_high[[out]] <- res$ci_high %||% NA_real_
+          rho_z <- res$rho_z %||% NA_real_
+          se_z <- res$se_z %||% NA_real_
+          if (
+            !is.na(rho_z) &&
+              !is.na(se_z) &&
+              is.finite(se_z) &&
+              se_z > 0
+          ) {
+            z_stat <- rho_z / se_z
+            acc_stat[[out]] <- z_stat
+            acc_df[[out]] <- NA_integer_
+            acc_pval[[out]] <- 2 * stats::pnorm(-abs(z_stat))
+          } else {
+            acc_stat[[out]] <- NA_real_
+            acc_df[[out]] <- NA_integer_
+            acc_pval[[out]] <- NA_real_
+          }
+        } else if (!is.na(r) && !is.na(nn) && nn >= 3L) {
           df_t <- nn - 2L
           if (abs(r) < 1) {
             t_stat <- r * sqrt(df_t) / sqrt(1 - r^2)
@@ -532,9 +718,17 @@ get_corr <- function(
       var_col_list$cv <- cv
     }
     if ("ci" %in% variance || "moe" %in% variance) {
-      z_crit <- stats::qnorm((1 + conf_level) / 2)
-      ci_low <- tanh(atanh(r_vec) - z_crit * se_vec)
-      ci_high <- tanh(atanh(r_vec) + z_crit * se_vec)
+      if (is_latent) {
+        # CI bounds were pre-computed per-pair on the Fisher-z scale by
+        # .corr_latent_pair() and truncated to [-1, 1]. Reuse them to keep
+        # the z-scale / rho-scale transform in one place.
+        ci_low <- acc_ci_low
+        ci_high <- acc_ci_high
+      } else {
+        z_crit <- stats::qnorm((1 + conf_level) / 2)
+        ci_low <- tanh(atanh(r_vec) - z_crit * se_vec)
+        ci_high <- tanh(atanh(r_vec) + z_crit * se_vec)
+      }
       if ("ci" %in% variance) {
         var_col_list$ci_low <- ci_low
         var_col_list$ci_high <- ci_high
@@ -565,10 +759,18 @@ get_corr <- function(
   meta_args <- list(
     conf_level = conf_level,
     call = match.call(),
-    method = "pearson",
+    method = method,
     group = group_meta,
     x = x_meta_list
   )
+  if (is_latent) {
+    meta_args$bivariate_normal_cdf <- "pbivnorm"
+  }
+  if (is_latent && n_failed_replicates_total > 0L) {
+    meta_args$n_failed_replicates_total <- as.integer(
+      n_failed_replicates_total
+    )
+  }
 
   # ── Step 21: Assemble result ────────────────────────────────────────────────
   result <- .make_result_tibble(
@@ -588,9 +790,45 @@ get_corr <- function(
   result$var1 <- factor(result$var1, levels = uniq_display)
   result$var2 <- factor(result$var2, levels = uniq_display)
 
-  # ── Step 23: Apply decimals and name style ──────────────────────────────────
+  # ── Step 23: Attach method-neutral labels for `statistic`, `df`, `p_value` ─
+  # The spec requires these three columns carry method-neutral `label`
+  # attributes (e.g., "statistic", not "t-statistic" / "z-statistic") so
+  # downstream gt consumers render consistently across Pearson and the
+  # latent methods. Other columns are left un-labelled in this release to
+  # preserve existing tests — full column-label coverage is a separate
+  # follow-up (see MEMORY.md project_column_labels).
+  result <- .attach_corr_inference_labels(result, name_style)
+
+  # ── Step 24: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
     result <- .apply_decimals(result, decimals)
   }
   .apply_name_style(result, name_style)
+}
+
+
+# ── .attach_corr_inference_labels() ──────────────────────────────────────────
+#
+# Attach method-neutral `label` attributes to the three inference columns
+# (`statistic`, `df`, `p_value`) of a survey_corr result. For name_style =
+# "broom", the p_value column is named `p.value`.
+.attach_corr_inference_labels <- function(result, name_style) {
+  saved_meta <- attr(result, ".meta")
+  saved_class <- class(result)
+
+  p_value_col <- if (identical(name_style, "broom")) "p.value" else "p_value"
+
+  if ("statistic" %in% names(result)) {
+    attr(result[["statistic"]], "label") <- "statistic"
+  }
+  if ("df" %in% names(result)) {
+    attr(result[["df"]], "label") <- "df"
+  }
+  if (p_value_col %in% names(result)) {
+    attr(result[[p_value_col]], "label") <- "p-value"
+  }
+
+  attr(result, ".meta") <- saved_meta
+  class(result) <- saved_class
+  result
 }

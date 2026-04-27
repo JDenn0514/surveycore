@@ -67,6 +67,7 @@ clean(fit, conf_level = 0.99, exponentiate = FALSE)
 Other analysis: 
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},
+\code{\link{get_covariance}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
@@ -75,6 +76,7 @@ Other analysis:
 \code{\link{get_ratios}()},
 \code{\link{get_t_test}()},
 \code{\link{get_totals}()},
+\code{\link{get_variance}()},
 \code{\link{meta}()}
 }
 \concept{analysis}

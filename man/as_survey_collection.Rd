@@ -4,11 +4,43 @@
 \alias{as_survey_collection}
 \title{Create a Collection of Survey Designs}
 \usage{
-as_survey_collection(...)
+as_survey_collection(..., group, .id = ".survey", .if_missing_var = "error")
 }
 \arguments{
 \item{...}{One or more \code{survey_base} objects, passed with explicit names
 or as bare symbols. At least one argument is required.}
+
+\item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Grouping variable(s)
+to apply uniformly across every member survey. Accepts bare names
+(\code{region}, \code{c(region, stratum)}), \code{all_of()}, etc. When supplied and
+resolving to a non-empty character vector, the named columns must exist
+in every member's \verb{@data}; they are propagated onto each member's
+\verb{@groups} and set as \code{coll@groups}. If a member already carries a
+non-empty \verb{@groups} that differs from the resolved target, the target
+takes precedence and a
+\code{surveycore_warning_collection_group_overridden} warning is emitted
+(one per divergent member). When missing or resolving to an empty
+vector (\code{NULL}, \code{character(0)}, \code{c()}, \code{all_of(character(0))}), the
+collection adopts the members' uniform \verb{@groups} if they are all
+identical, or errors \code{surveycore_error_collection_group_divergent}
+if they differ. Default: missing (adopt-from-members).}
+
+\item{.id}{Character(1). Identifier column name used when dispatching
+analysis functions across the collection. Default \code{".survey"}. Stored
+on the returned collection's \verb{@id} property and used as the default
+by \code{.dispatch_over_collection()} when a per-call \code{.id} is not
+supplied (i.e., when an analysis function is called with \code{.id = NULL}).
+Mutate via \code{\link[=set_collection_id]{set_collection_id()}}.}
+
+\item{.if_missing_var}{Character(1), one of \code{c("error", "skip")}.
+Default \code{"error"}. Stored on the returned collection's
+\verb{@if_missing_var} property and used as the default by
+\code{.dispatch_over_collection()} when a per-call \code{.if_missing_var} is
+not supplied (i.e., when an analysis function is called with
+\code{.if_missing_var = NULL}). When \code{"skip"}, member surveys missing
+a requested variable are dropped from the dispatched result;
+when \code{"error"}, the dispatcher aborts. Mutate via
+\code{\link[=set_collection_if_missing_var]{set_collection_if_missing_var()}}.}
 }
 \value{
 A \code{survey_collection} object containing the supplied surveys.
@@ -45,6 +77,10 @@ names(coll)
 coll2 <- as_survey_collection(d1, d2)
 names(coll2)
 
+# Uniform grouping across members
+coll3 <- as_survey_collection(d1, d2, group = vstrat)
+coll3@groups
+
 }
 \seealso{
 \link{survey_collection}, \code{\link[=add_survey]{add_survey()}}, \code{\link[=remove_survey]{remove_survey()}}
@@ -52,6 +88,8 @@ names(coll2)
 Other collections: 
 \code{\link{add_survey}()},
 \code{\link{remove_survey}()},
+\code{\link{set_collection_id}()},
+\code{\link{set_collection_if_missing_var}()},
 \code{\link{survey_collection}()}
 }
 \concept{collections}

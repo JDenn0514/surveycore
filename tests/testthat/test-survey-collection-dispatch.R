@@ -1,7 +1,7 @@
 # tests/testthat/test-survey-collection-dispatch.R
 #
 # Dispatch tests for survey_collection: per-function happy paths, oracle
-# tests (dispatch identity + NSE forwarding), .meta carry-over, .id/.on_missing
+# tests (dispatch identity + NSE forwarding), .meta carry-over, .id/.if_missing_var
 # behaviour, and the seven PR-2 error/warning classes (C5, C6, C7, C9, C10,
 # C11, C12, C13, C14).
 #
@@ -137,15 +137,15 @@ test_that("custom .id renames the identifier column", {
 })
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Section 4 — Single-design passthrough ignores .id / .on_missing
+# Section 4 — Single-design passthrough ignores .id / .if_missing_var
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("single-design call silently ignores .id and .on_missing", {
+test_that("single-design call silently ignores .id and .if_missing_var", {
   coll <- .make_dispatch_collection(n_surveys = 1L)
   d <- coll[["w1"]]
 
   plain <- get_means(d, y1)
-  with_ignored <- get_means(d, y1, .id = "ignored", .on_missing = "skip")
+  with_ignored <- get_means(d, y1, .id = "ignored", .if_missing_var = "skip")
 
   expect_identical(dim(plain), dim(with_ignored))
   expect_identical(names(plain), names(with_ignored))
@@ -316,7 +316,7 @@ test_that("get_pairwise() forwards `by`", {
 # Section 5 — Error paths (dual pattern: class= + snapshot for representative)
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("C5: .on_missing = 'error' aborts when one survey lacks the variable", {
+test_that("C5: .if_missing_var = 'error' aborts when one survey lacks the variable", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -331,16 +331,16 @@ test_that("C5: .on_missing = 'error' aborts when one survey lacks the variable",
   coll <- do.call(as_survey_collection, surveys)
 
   expect_error(
-    get_means(coll, focal, .on_missing = "error"),
+    get_means(coll, focal, .if_missing_var = "error"),
     class = "surveycore_error_collection_missing_var"
   )
   expect_snapshot(
     error = TRUE,
-    get_means(coll, focal, .on_missing = "error")
+    get_means(coll, focal, .if_missing_var = "error")
   )
 })
 
-test_that("C6: .on_missing = 'skip' with all surveys missing aborts", {
+test_that("C6: .if_missing_var = 'skip' with all surveys missing aborts", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -354,12 +354,12 @@ test_that("C6: .on_missing = 'skip' with all surveys missing aborts", {
   coll <- do.call(as_survey_collection, surveys)
 
   expect_error(
-    get_means(coll, focal, .on_missing = "skip"),
+    get_means(coll, focal, .if_missing_var = "skip"),
     class = "surveycore_error_collection_all_skipped"
   )
   expect_snapshot(
     error = TRUE,
-    get_means(coll, focal, .on_missing = "skip")
+    get_means(coll, focal, .if_missing_var = "skip")
   )
 })
 
@@ -396,13 +396,12 @@ test_that("C12: get_anova() refuses survey_collection input", {
   expect_snapshot(error = TRUE, get_anova(coll, y1 ~ grp2))
 })
 
-test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
+test_that("C13: .id rejects empty, NA, non-char, wrong length", {
+  # NOTE: as of PR `feature/collection-id-if-missing-var-class`, `.id = NULL`
+  # is a sentinel for "use the stored property" rather than an invalid value.
+  # The other four invalid shapes still error.
   coll <- .make_dispatch_collection()
 
-  expect_error(
-    get_means(coll, y1, .id = NULL),
-    class = "surveycore_error_collection_invalid_id"
-  )
   expect_error(
     get_means(coll, y1, .id = ""),
     class = "surveycore_error_collection_invalid_id"
@@ -419,7 +418,7 @@ test_that("C13: .id rejects NULL, empty, NA, non-char, wrong length", {
     get_means(coll, y1, .id = 1L),
     class = "surveycore_error_collection_invalid_id"
   )
-  expect_snapshot(error = TRUE, get_means(coll, y1, .id = NULL))
+  expect_snapshot(error = TRUE, get_means(coll, y1, .id = NA_character_))
 })
 
 test_that("C14: bind-type mismatch across surveys aborts with surveycore class", {
@@ -482,7 +481,7 @@ test_that("C10: tidy-selected variable absent raises surveycore_error_variable_n
 # Section — NSE-arg pre-check scope covers every NSE arg (not just focal)
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that(".on_missing = 'skip' drops survey missing a grouping var", {
+test_that(".if_missing_var = 'skip' drops survey missing a grouping var", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -497,7 +496,7 @@ test_that(".on_missing = 'skip' drops survey missing a grouping var", {
   coll <- do.call(as_survey_collection, surveys)
 
   result <- suppressMessages(
-    get_means(coll, y1, group = grp, .on_missing = "skip")
+    get_means(coll, y1, group = grp, .if_missing_var = "skip")
   )
   expect_setequal(unique(result$.survey), "w1")
   meta <- attr(result, ".meta")
@@ -518,13 +517,13 @@ test_that("length-1 collection dispatches", {
   expect_identical(unique(result$.survey), "w1")
 })
 
-test_that("length-1 + .on_missing = 'skip' + missing var → all_skipped", {
+test_that("length-1 + .if_missing_var = 'skip' + missing var → all_skipped", {
   df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   coll <- as_survey_collection(only = d)
 
   expect_error(
-    get_means(coll, absent, .on_missing = "skip"),
+    get_means(coll, absent, .if_missing_var = "skip"),
     class = "surveycore_error_collection_all_skipped"
   )
 })
@@ -533,7 +532,7 @@ test_that("length-1 + .on_missing = 'skip' + missing var → all_skipped", {
 # Section — Messages (skipped surveys info message)
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("C9: .on_missing = 'skip' emits skipped-surveys message", {
+test_that("C9: .if_missing_var = 'skip' emits skipped-surveys message", {
   surveys <- list(
     w1 = {
       df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
@@ -548,7 +547,7 @@ test_that("C9: .on_missing = 'skip' emits skipped-surveys message", {
   coll <- do.call(as_survey_collection, surveys)
 
   expect_message(
-    get_means(coll, focal, .on_missing = "skip"),
+    get_means(coll, focal, .if_missing_var = "skip"),
     class = "surveycore_message_collection_skipped_surveys"
   )
 })
@@ -636,4 +635,205 @@ test_that("heterogeneous schemas bind_rows with NA-fills on extras", {
   result <- get_freqs(coll, shared)
   expect_s3_class(result, "tbl_df")
   expect_setequal(unique(result$.survey), c("w1", "w2"))
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section — Two-tier precedence resolution (.id and .if_missing_var)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Eight tests covering the four .id and four .if_missing_var scenarios:
+# (default-stored vs non-default-stored) × (no call-arg vs call-arg).
+
+# ─ .id precedence ─────────────────────────────────────────────────────────
+
+test_that(".id precedence: default stored, no call-arg → .survey", {
+  coll <- .make_dispatch_collection(n_surveys = 2L)
+  # Default stored .id is ".survey"; pass .id = NULL explicitly to invoke
+  # the dispatcher's stored-property fallback under the PR-1 bridge.
+  result <- get_means(coll, y1, .id = NULL)
+  expect_identical(names(result)[[1L]], ".survey")
+})
+
+test_that(".id precedence: default stored, call-arg overrides", {
+  coll <- .make_dispatch_collection(n_surveys = 2L)
+  result <- get_means(coll, y1, .id = "year")
+  expect_identical(names(result)[[1L]], "year")
+})
+
+test_that(".id precedence: non-default stored, no call-arg → stored", {
+  surveys <- lapply(seq_len(2L), function(i) {
+    df <- make_survey_data(
+      n = 60L,
+      n_psu = 6L,
+      n_strata = 2L,
+      seed = i
+    )
+    as_survey(df, ids = psu, weights = wt, strata = strata)
+  })
+  names(surveys) <- c("w1", "w2")
+  coll <- do.call(
+    as_survey_collection,
+    c(surveys, list(.id = "wave"))
+  )
+  # PR-1 bridge: pass .id = NULL explicitly to invoke stored fallback.
+  result <- get_means(coll, y1, .id = NULL)
+  expect_identical(names(result)[[1L]], "wave")
+})
+
+test_that(".id precedence: non-default stored, call-arg overrides", {
+  surveys <- lapply(seq_len(2L), function(i) {
+    df <- make_survey_data(
+      n = 60L,
+      n_psu = 6L,
+      n_strata = 2L,
+      seed = i
+    )
+    as_survey(df, ids = psu, weights = wt, strata = strata)
+  })
+  names(surveys) <- c("w1", "w2")
+  coll <- do.call(
+    as_survey_collection,
+    c(surveys, list(.id = "wave"))
+  )
+  result <- get_means(coll, y1, .id = "year")
+  expect_identical(names(result)[[1L]], "year")
+})
+
+
+# ─ .if_missing_var precedence ─────────────────────────────────────────────
+#
+# Note: in PR 1, the analysis function signatures still expose `.if_missing_var`
+# (renamed to `.if_missing_var` inside the dispatcher only). The bridge
+# `.if_missing_var = .if_missing_var` at the inner call site forwards the old
+# argument's value into the new dispatcher parameter. To exercise the
+# dispatcher's two-tier precedence here without colliding with the
+# bridge, we either (a) call through `.if_missing_var` (which forwards into
+# `.if_missing_var` via the bridge) or (b) call the dispatcher directly.
+
+.make_skip_collection <- function() {
+  surveys <- list(
+    w1 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df$focal <- rnorm(nrow(df))
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    },
+    w2 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    }
+  )
+  do.call(as_survey_collection, surveys)
+}
+
+test_that(".if_missing_var precedence: default stored, no call-arg → error", {
+  coll <- .make_skip_collection()
+  # Direct dispatcher call: .if_missing_var = NULL → fall back to
+  # collection@if_missing_var (default "error").
+  expect_error(
+    .dispatch_over_collection(
+      get_means,
+      coll,
+      x = focal,
+      .if_missing_var = NULL
+    ),
+    class = "surveycore_error_collection_missing_var"
+  )
+})
+
+test_that(".if_missing_var precedence: default stored, call-arg \"skip\" overrides", {
+  coll <- .make_skip_collection()
+  result <- suppressMessages(
+    .dispatch_over_collection(
+      get_means,
+      coll,
+      x = focal,
+      .if_missing_var = "skip"
+    )
+  )
+  expect_setequal(unique(result$.survey), "w1")
+})
+
+test_that(".if_missing_var precedence: non-default stored, no call-arg → stored", {
+  surveys <- list(
+    w1 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df$focal <- rnorm(nrow(df))
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    },
+    w2 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    }
+  )
+  coll <- do.call(
+    as_survey_collection,
+    c(surveys, list(.if_missing_var = "skip"))
+  )
+  # Direct dispatcher call: .if_missing_var = NULL → fall back to
+  # collection@if_missing_var (set to "skip").
+  result <- suppressMessages(
+    .dispatch_over_collection(
+      get_means,
+      coll,
+      x = focal,
+      .if_missing_var = NULL
+    )
+  )
+  expect_setequal(unique(result$.survey), "w1")
+})
+
+test_that(".if_missing_var precedence: non-default stored, call-arg \"error\" overrides", {
+  surveys <- list(
+    w1 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 1L)
+      df$focal <- rnorm(nrow(df))
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    },
+    w2 = {
+      df <- make_survey_data(n = 60L, n_psu = 6L, n_strata = 2L, seed = 2L)
+      as_survey(df, ids = psu, weights = wt, strata = strata)
+    }
+  )
+  coll <- do.call(
+    as_survey_collection,
+    c(surveys, list(.if_missing_var = "skip"))
+  )
+  # Direct dispatcher call: explicit "error" beats stored "skip".
+  expect_error(
+    .dispatch_over_collection(
+      get_means,
+      coll,
+      x = focal,
+      .if_missing_var = "error"
+    ),
+    class = "surveycore_error_collection_missing_var"
+  )
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section — id_collision hint mentions set_collection_id() when stored
+# ══════════════════════════════════════════════════════════════════════════════
+
+test_that("id_collision hint mentions set_collection_id() under stored .id", {
+  # Build a collection whose stored @id collides with a get_means() column.
+  surveys <- lapply(seq_len(2L), function(i) {
+    df <- make_survey_data(
+      n = 60L,
+      n_psu = 6L,
+      n_strata = 2L,
+      seed = i
+    )
+    as_survey(df, ids = psu, weights = wt, strata = strata)
+  })
+  names(surveys) <- c("w1", "w2")
+  coll <- do.call(
+    as_survey_collection,
+    c(surveys, list(.id = "mean"))
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_means(coll, y1, .id = NULL)
+  )
 })

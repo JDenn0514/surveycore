@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis-corr.R
 \name{get_corr}
 \alias{get_corr}
-\title{Survey-Weighted Pearson Correlation}
+\title{Survey-Weighted Correlation (Pearson, Polychoric, Polyserial)}
 \usage{
 get_corr(
   design,
@@ -20,18 +20,30 @@ get_corr(
   label_values = TRUE,
   label_vars = TRUE,
   name_style = "surveycore",
+  method = "pearson",
   ...,
-  .id = ".survey",
-  .on_missing = "error"
+  .id = NULL,
+  .if_missing_var = NULL
 )
 }
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
-\code{survey_twophase}, or \code{survey_nonprob}.}
+\code{survey_twophase}, or \code{survey_nonprob}. \code{method} values \code{"polychoric"}
+and \code{"polyserial"} are supported on \code{survey_taylor} and
+\code{survey_replicate} only; other design classes raise
+\code{surveycore_error_polychoric_design_unsupported}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
-numeric variable names. Non-numeric variables are dropped with a warning.
-At least two numeric variables must remain.}
+variable names. For \code{method = "pearson"}, non-numeric columns are dropped
+with a warning. For \code{method = "polychoric"}, every selected column must
+classify as ordinal (ordered factor, unordered factor, or integer with
+\verb{<= 10} distinct values) — non-ordinal columns raise
+\code{surveycore_error_polychoric_requires_ordinal}. For
+\code{method = "polyserial"}, each pair is canonicalized by type (one ordinal
+\itemize{
+\item one continuous); logical / character / high-cardinality integer
+columns raise \code{surveycore_error_polyserial_canonicalization_ambiguous}.
+}}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Combined with any grouping set by \code{group_by()}. Default
@@ -90,16 +102,28 @@ labels are unset.}
 renames \code{r} → \code{estimate}, \code{se} → \code{std.error}, etc. Only affects long
 format.}
 
-\item{...}{Unused. Reserved so that \code{.id} and \code{.on_missing} remain
+\item{method}{Character(1). Estimator applied to every pair. One of
+\code{"pearson"} (default, sample-based product-moment correlation),
+\code{"polychoric"} (MLE under a bivariate-normal latent model for two
+ordinal variables), or \code{"polyserial"} (MLE for one ordinal + one
+continuous variable). The same \code{method} applies to every pair; it
+cannot be vectorised. Non-matching values raise the standard
+\code{\link[base:match.arg]{base::match.arg()}} signal.}
+
+\item{...}{Unused. Reserved so that \code{.id} and \code{.if_missing_var} remain
 named-only when a \code{survey_collection} is passed as \code{design}.}
 
-\item{.id}{Character(1). Column name used to identify each survey when
-\code{design} is a \code{\link{survey_collection}}. Default \code{".survey"}. Ignored when
-\code{design} is a single survey.}
+\item{.id}{Character(1) or \code{NULL}. Column name used to identify each
+survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
+\code{NULL} (the default) resolves to the collection's stored \verb{@id} property.
+Pass a non-\code{NULL} value to override. Ignored when \code{design} is a single
+survey.}
 
-\item{.on_missing}{\code{"error"} (default) or \code{"skip"}. How to handle surveys
-in a collection that lack one of the requested NSE variables. Ignored
-when \code{design} is a single survey.}
+\item{.if_missing_var}{\code{"error"}, \code{"skip"}, or \code{NULL}. How to handle
+surveys in a collection that lack one of the requested NSE variables.
+For collection inputs, \code{NULL} (the default) resolves to the collection's
+stored \verb{@if_missing_var} property. Pass a non-\code{NULL} value to override.
+Ignored when \code{design} is a single survey.}
 }
 \value{
 A \code{survey_corr} tibble (also inheriting \code{survey_result}).
@@ -130,12 +154,54 @@ other columns in both long and wide formats.
 }
 
 Use \code{meta(result)} to access design type, variable labels, and
-\code{method} (\code{"pearson"}).
+\code{method} (\code{"pearson"}, \code{"polychoric"}, or \code{"polyserial"}). For
+\code{method != "pearson"}, \code{meta(result)$bivariate_normal_cdf} is
+\code{"pbivnorm"} (the bivariate-normal CDF used internally). When the
+replicate variance path observed one or more non-converged replicates,
+\code{meta(result)$n_failed_replicates_total} carries the scalar total.
 }
 \description{
-Compute pairwise Pearson correlations between two or more numeric variables
-in a survey design, with design-based standard errors and confidence
-intervals. Returns results in long or wide format.
+Compute pairwise correlations between two or more variables in a survey
+design, with design-based standard errors and confidence intervals. Returns
+results in long or wide format. The estimator is selected by \code{method}:
+\code{"pearson"} (default) for two numeric variables, \code{"polychoric"} for two
+ordinal variables under a bivariate-normal latent model (Olsson 1979),
+or \code{"polyserial"} for one ordinal + one continuous variable (Cox 1974).
+The survey-weighted polychoric and polyserial estimators (point estimates
+and design-based variance) are implemented from scratch following
+Mannan (2025); they are not derived from the \code{survey} package, which does
+not provide these estimators.
+}
+\details{
+\strong{Polychoric / polyserial semantics.} For \code{method != "pearson"}, each pair
+is fit by a two-step MLE: weighted marginal thresholds (and, for
+polyserial, a weighted standardization of the continuous side) are
+estimated first, then \code{rho} is maximised over the weighted
+log-likelihood via \code{\link[stats:optimize]{stats::optimize()}} on \verb{(-1 + 1e-6, 1 - 1e-6)}.
+Confidence intervals are constructed on the Fisher-z scale
+(\code{atanh(rho)}) and back-transformed via \code{tanh} with truncation to
+\verb{[-1, 1]}. The Wald statistic \code{zeta.hat / SE(zeta.hat)} is referred to
+a standard normal distribution, so \code{df = NA_integer_} — distinct from
+the Pearson case where \code{df = n - 2} and the t-distribution is used.
+Column label attributes are method-neutral (e.g. \code{"statistic"}, not
+\code{"t-statistic"} / \code{"z-statistic"}); check \code{meta(result)$method} to
+interpret the values.
+
+\strong{Bivariate-normal assumption.} The polychoric / polyserial MLEs
+assume the underlying latent variables are jointly bivariate-normal.
+This is an unverified assumption; no runtime diagnostic is performed.
+
+\strong{Taylor-path cost.} On a \code{survey_taylor} design, the variance path
+for \code{method != "pearson"} is \code{O(n)} re-optimisations per variable pair
+(a perturbation-based influence function). For large \code{n} and many
+pairs, passing a \code{survey_replicate} design (one re-fit per replicate,
+not per respondent) is substantially faster.
+
+\strong{Replicate-type caveat.} Mannan (2025) verifies the replicate-weight
+variance formula for jackknife and bootstrap replicates. BRR and Fay
+replicates are admitted mechanically via the design's stored \code{scale}
+/ \code{rscales} coefficients, but the paper does not validate their
+behaviour for this non-linear pseudo-likelihood estimator.
 }
 \examples{
 d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
@@ -149,11 +215,33 @@ get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 get_corr(d, x = c(ridageyr, bpxsy1),
          variance = c("ci", "moe"), n_weighted = TRUE)
 
+# Polychoric correlation between two ordinal variables
+df <- data.frame(
+  id = 1:200,
+  wt = runif(200, 0.5, 2),
+  o1 = factor(sample(1:4, 200, replace = TRUE), ordered = TRUE),
+  o2 = factor(sample(1:4, 200, replace = TRUE), ordered = TRUE)
+)
+d_ord <- as_survey(df, weights = wt)
+get_corr(d_ord, x = c(o1, o2), method = "polychoric")
+
+}
+\references{
+Cox, N. R. (1974). Estimation of the correlation between a continuous
+and a discrete variable. \emph{Biometrics}, 30(1), 171-178.
+
+Mannan, H. (2025). SAS programs for estimation of weighted polychoric
+and weighted polyserial correlations in a complex survey. SSRN.
+\doi{10.2139/ssrn.6580480}
+
+Olsson, U. (1979). Maximum likelihood estimation of the polychoric
+correlation coefficient. \emph{Psychometrika}, 44(4), 443-460.
 }
 \seealso{
 Other analysis: 
 \code{\link{clean}()},
 \code{\link{get_anova}()},
+\code{\link{get_covariance}()},
 \code{\link{get_diffs}()},
 \code{\link{get_freqs}()},
 \code{\link{get_means}()},
@@ -162,6 +250,7 @@ Other analysis:
 \code{\link{get_ratios}()},
 \code{\link{get_t_test}()},
 \code{\link{get_totals}()},
+\code{\link{get_variance}()},
 \code{\link{meta}()}
 }
 \concept{analysis}

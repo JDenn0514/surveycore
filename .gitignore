@@ -25,7 +25,12 @@ vignettes/*_files/
 # Internal SOPs — not part of the package
 SOPs/
 
-# Pipeline workflow runs — per-request artifacts, not part of the package
+# Pipeline workspace — per-request runtime artifacts
 .surveycore-workspace/
-/doc/
-/Meta/
+
+# Claude Code harness runtime lock (session-local)
+.claude/scheduled_tasks.lock
+
+# Vignette build artifacts (local devtools::build_vignettes output)
+doc/
+Meta/

@@ -25,6 +25,7 @@ functions may be added but the existing structure will not change in breaking wa
 | SATA metadata (`set_sata()`, `classify_question_type()`) | ✅ Complete | PRs #89, #90, #91, #92 |
 | Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
 | `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
+| Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
 
 ---
 
@@ -100,5 +101,8 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
 - `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)
 - `archive/survey-collection/` — `survey_collection` container + `get_*()` dispatch spec, plan, and decisions (shipped; PRs #97, #98)
+- `archive/get-covariance/` — `get_covariance()` spec, plan, decisions, and test spec (shipped; PR #105)
+- `archive/collection-uniform-groups/` — uniform `@groups` enforcement across `survey_collection` (shipped; PR #106)
+- `archive/polychoric-corr/` — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy

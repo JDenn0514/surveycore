@@ -1,20 +1,20 @@
-# C5: .on_missing = 'error' aborts when one survey lacks the variable
+# C5: .if_missing_var = 'error' aborts when one survey lacks the variable
 
     Code
-      get_means(coll, focal, .on_missing = "error")
+      get_means(coll, focal, .if_missing_var = "error")
     Condition
       Error in `.dispatch_over_collection()`:
       x Survey "w2" in the collection is missing a required variable.
       i Original error: x Variable "focal" not found in survey data. i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
-      v Set `.on_missing = "skip"` to drop surveys missing the variable.
+      v Set `.if_missing_var = "skip"` to drop surveys missing the variable.
       Caused by error in `value[[3L]]()`:
       x Variable "focal" not found in survey data.
       i Available: "psu", "strata", "fpc", "wt", "y1", "y2", "y3", and "group".
 
-# C6: .on_missing = 'skip' with all surveys missing aborts
+# C6: .if_missing_var = 'skip' with all surveys missing aborts
 
     Code
-      get_means(coll, focal, .on_missing = "skip")
+      get_means(coll, focal, .if_missing_var = "skip")
     Message
       i Skipped 2 surveys missing the requested variable: "w1" and "w2".
     Condition
@@ -48,13 +48,14 @@
       x `get_anova()` does not yet support <survey_collection> inputs.
       i Run `get_anova()` on each survey individually, or see `?survey_collection` for the current dispatch coverage.
 
-# C13: .id rejects NULL, empty, NA, non-char, wrong length
+# C13: .id rejects empty, NA, non-char, wrong length
 
     Code
-      get_means(coll, y1, .id = NULL)
+      get_means(coll, y1, .id = NA_character_)
     Condition
-      Error in `.dispatch_over_collection()`:
-      x `.id` must be a single non-empty, non-NA character string. Got <NULL> of length 0.
+      Error in `.validate_collection_id()`:
+      x `.id` must be a single non-empty, non-NA character string.
+      i Got <character> of length 1: NA.
 
 # C14: bind-type mismatch across surveys aborts with surveycore class
 
@@ -97,4 +98,13 @@
         <chr>   <dbl>  <dbl>   <dbl> <int>
       1 w1          1      1       1    60
       2 w2          1      1       1    60
+
+# id_collision hint mentions set_collection_id() under stored .id
+
+    Code
+      get_means(coll, y1, .id = NULL)
+    Condition
+      Error in `.dispatch_over_collection()`:
+      x `.id` value "mean" conflicts with a column produced by the analysis function.
+      v Pass a different `.id` to override (e.g., `.id = "wave"`) or update the stored property via `set_collection_id()`.
 
