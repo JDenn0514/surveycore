@@ -6,6 +6,8 @@
 # All 10 test items from spec §7.7. Every block gated with
 # skip_if_not_installed("marginaleffects").
 
+skip_on_cran()
+
 library(surveycore)
 
 # ── Shared test fixtures ───────────────────────────────────────────────────────

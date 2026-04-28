@@ -17,6 +17,8 @@
 # Error / warning classes exercised at the public-API layer:
 #   PC-1 .. PC-14 plus pre-existing Pearson classes (regression guard).
 
+skip_on_cran()
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 # Build a small unweighted Taylor design with two 4-level ordinal factors;

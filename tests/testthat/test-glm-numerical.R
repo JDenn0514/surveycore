@@ -11,6 +11,8 @@
 # Spec: plans/spec-phase-2.md §9.1
 # Handoff: plans/handoff-pr6-glm-numerical-tests.md
 
+skip_on_cran()
+
 # ===========================================================================
 # Section 1: Gaussian oracle — all 5 design classes
 # ===========================================================================

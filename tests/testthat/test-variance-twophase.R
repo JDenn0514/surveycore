@@ -2,6 +2,8 @@
 # Tests for the two-phase variance engine: .twophasevar(), .twophase_mean(),
 # .twophase_total(), .twophase_df(), and associated helpers.
 
+skip_on_cran()
+
 # ── Section 1: Engine unit tests (synthetic data) ─────────────────────────────
 
 test_that(".twophasevar() returns a finite non-negative scalar for valid input (approx)", {

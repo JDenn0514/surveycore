@@ -15,6 +15,8 @@
 # directly on fitted model objects with no environment re-evaluation. This
 # is the same oracle used by anova.svyglm per term.
 
+skip_on_cran()
+
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. Taylor sequential — 4 combos
 # ═══════════════════════════════════════════════════════════════════════════

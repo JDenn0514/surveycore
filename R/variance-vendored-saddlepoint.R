@@ -19,7 +19,9 @@
 #
 # Modifications: helpers are dotted/internal (not exported); no dependency
 # on CompQuadForm; no Satterthwaite-only / integration branches (those are
-# intentionally out of scope for the vendored slice).
+# intentionally out of scope for the vendored slice); upstream's sapply()
+# calls are replaced with type-safe vapply(..., FUN.VALUE = numeric(1))
+# and .saddle()'s bare NA return is typed as NA_real_ to match.
 # ---------------------------------------------------------------------------
 
 # Saddlepoint root-finder (direct port of survey:::saddle).
@@ -32,7 +34,11 @@
   x <- x / d
   k0 <- function(zeta) -sum(log(1 - 2 * zeta * lambda)) / 2
   kprime0 <- function(zeta) {
-    sapply(zeta, function(zz) sum(lambda / (1 - 2 * zz * lambda)))
+    vapply(
+      zeta,
+      function(zz) sum(lambda / (1 - 2 * zz * lambda)),
+      numeric(1)
+    )
   }
   kpprime0 <- function(zeta) {
     2 * sum(lambda^2 / (1 - 2 * zeta * lambda)^2)
@@ -55,7 +61,7 @@
   w <- sign(hatzeta) * sqrt(2 * (hatzeta * x - k0(hatzeta)))
   v <- hatzeta * sqrt(kpprime0(hatzeta))
   if (abs(hatzeta) < 1e-04) {
-    NA
+    NA_real_
   } else {
     stats::pnorm(w + log(v / w) / w, lower.tail = FALSE)
   }
@@ -86,7 +92,7 @@
   # Saddlepoint: expand a by df to produce the per-chi-square-component
   # eigenvalue vector, then call .saddle() per x element.
   lambda <- rep(a, df)
-  sad <- sapply(x, .saddle, lambda = lambda)
+  sad <- vapply(x, .saddle, numeric(1), lambda = lambda)
   if (lower.tail) {
     sad <- 1 - sad
   }
