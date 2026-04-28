@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,14 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.2" id="surveycore-082">surveycore 0.8.2<a class="anchor" aria-label="anchor" href="#surveycore-082"></a></h2>
+<div class="section level3">
+<h3 id="cran-preparation-0-8-2">CRAN preparation<a class="anchor" aria-label="anchor" href="#cran-preparation-0-8-2"></a></h3>
+<ul><li>Resubmission addressing CRAN feedback on the 0.8.1 submission. Tagged numerical oracle and integration test files (comparisons against <code>survey</code>, <code>marginaleffects</code> integration, polychoric/polyserial MLE, vendored saddlepoint parity, and two-phase variance parity) with <code>skip_on_cran()</code>. Test runtime under <code>R CMD check --as-cran</code> drops from ~11 minutes to under 1 minute. The skipped tests continue to run on every push in CI and locally with <code>devtools::test()</code>.</li>
+<li>Single-quoted <code>'surveyverse'</code> in <code>Description</code> to match the convention used for other proper nouns (<code>'S7'</code>, <code>'tidyselect'</code>, <code>'haven'</code>) and silence the spell-checker NOTE.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.1" id="surveycore-081">surveycore 0.8.1<a class="anchor" aria-label="anchor" href="#surveycore-081"></a></h2>
 <div class="section level3">
