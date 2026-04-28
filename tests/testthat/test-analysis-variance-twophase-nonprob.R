@@ -6,6 +6,8 @@
 #
 # Tolerances (from test-spec.md): point 1e-10, SE 1e-8.
 
+skip_on_cran()
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 .variance_tol_point <- 1e-10

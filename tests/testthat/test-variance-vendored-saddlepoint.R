@@ -6,6 +6,8 @@
 # Satterthwaite fallback is out of scope here; the NA-regime parity test
 # targets the root-finder directly per the impl plan PR B task 3.
 
+skip_on_cran()
+
 # ---------------------------------------------------------------------------
 # .pchisqsum_sad() vs survey::pchisqsum(..., method = "saddlepoint")
 # ---------------------------------------------------------------------------

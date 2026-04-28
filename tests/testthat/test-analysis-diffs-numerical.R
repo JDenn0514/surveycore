@@ -3,6 +3,8 @@
 # Numerical oracle tests for get_diffs() — comparing against
 # survey::svyglm + marginaleffects and manual computation.
 
+skip_on_cran()
+
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. BIVARIATE OLS VS MANUAL COMPUTATION (clean path)
 # ═══════════════════════════════════════════════════════════════════════════

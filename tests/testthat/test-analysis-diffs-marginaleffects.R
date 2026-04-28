@@ -3,6 +3,8 @@
 # Tests specific to the marginaleffects estimation path in get_diffs().
 # Validates avg_slopes() and avg_predictions() integration.
 
+skip_on_cran()
+
 # ── Shared test data ──────────────────────────────────────────────────────
 
 .make_me_data <- function(n = 300, seed = 42) {
