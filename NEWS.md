@@ -1,3 +1,18 @@
+# surveycore 0.8.2
+
+## CRAN preparation
+
+* Resubmission addressing CRAN feedback on the 0.8.1 submission. Tagged
+  numerical oracle and integration test files (comparisons against
+  `survey`, `marginaleffects` integration, polychoric/polyserial MLE,
+  vendored saddlepoint parity, and two-phase variance parity) with
+  `skip_on_cran()`. Test runtime under `R CMD check --as-cran` drops
+  from ~11 minutes to under 1 minute. The skipped tests continue to
+  run on every push in CI and locally with `devtools::test()`.
+* Single-quoted `'surveyverse'` in `Description` to match the
+  convention used for other proper nouns (`'S7'`, `'tidyselect'`,
+  `'haven'`) and silence the spell-checker NOTE.
+
 # surveycore 0.8.1
 
 ## CRAN preparation

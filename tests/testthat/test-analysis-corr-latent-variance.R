@@ -11,6 +11,8 @@
 #   PC-14 (Taylor boundary wide CI).
 # Dispatcher-level re-raises: PC-2, PC-4, PC-5, PC-10, PC-11, PC-13.
 
+skip_on_cran()
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 # Create a small Taylor design with two ordinal variables.

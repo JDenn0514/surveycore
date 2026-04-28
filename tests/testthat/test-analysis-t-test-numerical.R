@@ -3,6 +3,8 @@
 # Numerical oracle tests: get_t_test() vs survey::svyttest()
 # All blocks guarded with skip_if_not_installed("survey")
 
+skip_on_cran()
+
 # ── Shared NHANES fixture ───────────────────────────────────────────────────
 
 .make_nhanes_designs <- function() {
