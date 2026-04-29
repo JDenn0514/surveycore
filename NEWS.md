@@ -1,3 +1,15 @@
+# surveycore 0.8.3.9000
+
+## New features
+
+* `pool_pvals()` -- pool a list of `get_*()` analysis result tibbles (each
+  carrying a `p_value` column) into a single multiplicity-corrected family
+  via `stats::p.adjust()`. Returns a `survey_pooled_pvals` tibble with a
+  `.meta` attribute and a dedicated `print()` method. Accompanied by a new
+  shared private validator `.validate_pval_adjustment_method()` that is now
+  the single source of truth for `pval_adj` validation across `get_diffs()`
+  and `get_pairwise()` (no observable behavior change at those call sites).
+
 # surveycore 0.8.3
 
 ## CRAN preparation

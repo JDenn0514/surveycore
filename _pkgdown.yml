@@ -79,6 +79,14 @@ reference:
       - get_pairwise
       - get_anova
 
+  - title: "Post-hoc / multiplicity correction"
+    desc: >
+      Pool p-values across multiple analysis result tibbles into a single
+      family-wise multiplicity correction.
+    contents:
+      - pool_pvals
+      - print.survey_pooled_pvals
+
   - title: "Regression"
     desc: >
       Survey-weighted generalised linear models with Binder (1983)

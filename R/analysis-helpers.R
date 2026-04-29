@@ -952,6 +952,128 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 }
 
 
+#' Test whether `x` is a plain list (not a data.frame)
+#'
+#' Returns `TRUE` iff `x` is a list AND does not inherit from `data.frame`.
+#' Used by `pool_pvals()` to guard against single-tibble input — tibbles
+#' are lists in R, so a naive `is.list()` check would silently accept
+#' a single result tibble that should have been wrapped in `list()`.
+#'
+#' @param x Any R object.
+#' @return Logical(1).
+#' @keywords internal
+#' @noRd
+.is_plain_list <- function(x) {
+  is.list(x) && !inherits(x, "data.frame")
+}
+
+
+#' Validate a `pval_adj`-style method argument against `stats::p.adjust.methods`
+#'
+#' Shared validator for the `pval_adj` argument of `get_diffs()` and
+#' `get_pairwise()` and the `method` argument of `pool_pvals()`. Asserts
+#' that `method` is a single non-NA string in `stats::p.adjust.methods`.
+#'
+#' On failure, raises `cli::cli_abort()` with the supplied `class`. The
+#' message format is parameterized:
+#' - `"x"` line: `"{.arg {arg_name}} must be a valid method for {.fn stats::p.adjust}."`
+#' - `"i"` line: `"Valid methods: {.or {.val {valid_methods}}}."`
+#' - `"i"` line (only when `include_received = TRUE`): `"Got {.val {method}}."`
+#'
+#' The `include_received` parameter exists so the helper can match the
+#' exact 2-line text emitted by the legacy inline validator in
+#' `get_diffs()` (which does NOT include the "Got" line) AND the 3-line
+#' text emitted by the legacy inline validator in `get_pairwise()` and
+#' the spec-mandated `pool_pvals()` format (which DO include it). This
+#' keeps existing test snapshots byte-identical after the refactor.
+#'
+#' @param method The user-supplied method argument.
+#' @param arg_name Character(1). Argument name to render in the error
+#'   message (e.g., `"pval_adj"` or `"method"`).
+#' @param call Caller environment for error attribution. Defaults to
+#'   `rlang::caller_env()` so the error appears to originate from the
+#'   caller, not the helper.
+#' @param class Character(1). Error class to attach to the abort.
+#' @param include_received Logical(1). When `TRUE`, append a `Got "..."`
+#'   line. Default `TRUE`.
+#' @return `invisible(TRUE)` on success; errors otherwise.
+#' @keywords internal
+#' @noRd
+.validate_pval_adjustment_method <- function(
+  method,
+  arg_name = "method",
+  call = rlang::caller_env(),
+  class = "surveycore_error_invalid_pval_adj",
+  include_received = TRUE
+) {
+  valid_methods <- stats::p.adjust.methods
+  is_bad <- !is.character(method) ||
+    length(method) != 1L ||
+    is.na(method) ||
+    !method %in% valid_methods
+  if (!is_bad) {
+    return(invisible(TRUE))
+  }
+  msg <- c(
+    "x" = paste0(
+      "{.arg {arg_name}} must be a valid method for ",
+      "{.fn stats::p.adjust}."
+    ),
+    "i" = "Valid methods: {.or {.val {valid_methods}}}."
+  )
+  if (isTRUE(include_received)) {
+    msg <- c(msg, "i" = "Got {.val {method}}.")
+  }
+  cli::cli_abort(msg, class = class, call = call)
+}
+
+
+#' Per-element column presence and id-collision check for `pool_pvals()`
+#'
+#' Walks `seq_along(results)` and collects the identifier of every list
+#' element that (1) lacks any column named in `col_names`, or (2)
+#' already contains a column named `id_col`. Element identifiers are
+#' the list names where present and the 1-based integer index coerced
+#' to character otherwise.
+#'
+#' @param results A list of data frames / tibbles.
+#' @param col_names Character vector of column names that must be
+#'   present on every element.
+#' @param id_col Character(1). Column name that must NOT be present on
+#'   any element (collision check).
+#' @return Named list with two character vectors: `missing_pcol` and
+#'   `id_collision`. Both are empty when validation passes.
+#' @keywords internal
+#' @noRd
+.validate_list_columns <- function(results, col_names, id_col) {
+  ids <- names(results)
+  if (is.null(ids)) {
+    ids <- as.character(seq_along(results))
+  } else {
+    blank <- !nzchar(ids)
+    if (any(blank)) {
+      ids[blank] <- as.character(seq_along(results))[blank]
+    }
+  }
+  missing_pcol <- character(0)
+  id_collision <- character(0)
+  for (i in seq_along(results)) {
+    elem <- results[[i]]
+    elem_names <- names(elem)
+    if (!all(col_names %in% elem_names)) {
+      missing_pcol <- c(missing_pcol, ids[[i]])
+    }
+    if (id_col %in% elem_names) {
+      id_collision <- c(id_collision, ids[[i]])
+    }
+  }
+  list(
+    missing_pcol = missing_pcol,
+    id_collision = id_collision
+  )
+}
+
+
 #' Compute design-based degrees of freedom
 #'
 #' Returns the design-based degrees of freedom as a numeric scalar. Used by
