@@ -245,6 +245,19 @@ against the messages defined here.
 
 *Note: the spec also defined `[[<-`-specific classes G5 / G5b (group mismatch on replace / append), G6 (`not_survey_base`), G7 (`index_out_of_range`), and G7b (`index_bad_type`). The `[[<-` method was not implemented because `S7::method("[[<-", ...)` registers the method in S3methods metadata in a form that trips R CMD check's `checkReplaceFuns` and produces a spurious warning. Users should mutate a collection via `add_survey()` / `remove_survey()` instead. If a future workaround is found, those classes can be added here without breaking callers.*
 
+### pool_pvals rows (2026-04-29)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| PP-1 | `pool_pvals()` | `length(results) == 0` | ERROR | `surveycore_error_pool_pvals_empty` | `"x" = "{.arg results} must be a list of length ≥ 1.", "i" = "Got an empty list."` |
+| PP-2 | `pool_pvals()` | `results` is not a list (atomic vector, `NULL`, or a `data.frame`/tibble passed directly) | ERROR | `surveycore_error_pool_pvals_not_list` | `"x" = "{.arg results} must be a list of tibbles, not {.cls {class(results)[[1L]]}}.", "i" = "Got {.cls {class(results)}}.", "v" = "Wrap a single result in {.code list()} (e.g., {.code pool_pvals(list(get_diffs(...)))}). For multiple results, supply a named or unnamed list."` |
+| PP-3 | `pool_pvals()` (via shared `.validate_pval_adjustment_method()` helper) | `method` is not a single string in `stats::p.adjust.methods` | ERROR | `surveycore_error_pool_pvals_invalid_method` | `"x" = "{.arg method} must be a valid method for {.fn stats::p.adjust}.", "i" = "Valid methods: {.or {.val {valid_methods}}}.", "i" = "Got {.val {method}}."` |
+| PP-4 | `pool_pvals()` | One or more list elements lack a column matching `p_col` | ERROR | `surveycore_error_pool_pvals_missing_pcol` | `"x" = "All elements of {.arg results} must contain a column named {.val {p_col}}.", "i" = "Element{?s} missing the column: {.val {bad}}.", "v" = "Add the column or pass a different {.arg p_col}."` |
+| PP-5 | `pool_pvals()` | One or more list elements already contain a column matching `id_col` (collision) | ERROR | `surveycore_error_pool_pvals_id_col_collision` | `"x" = "{.arg id_col} {.val {id_col}} collides with an existing column in {length(bad)} input element{?s}.", "i" = "Offending element{?s}: {.val {bad}}.", "v" = "Rename the offending column, or supply a different {.arg id_col}."` |
+| PP-6 | `pool_pvals()` | After binding, one or more non-NA values of pooled `p_col` are outside `[0, 1]` | ERROR | `surveycore_error_pool_pvals_invalid_pvalues` | `"x" = "Pooled column {.val {p_col}} contains {n_bad} value(s) outside {.code [0, 1]}.", "i" = "Offending row{?s} (source / row-within-source): {.val {bad_locs}}.", "v" = "Verify that {.arg p_col} names a p-value column, not a coefficient or test statistic."` |
+| PP-7 | `pool_pvals()` | `strip_within_adj = FALSE` and at least one input element already contains `new_col` | WARNING | `surveycore_warning_pool_pvals_input_pre_adjusted` | `"!" = "{length(bad)} input element{?s} already contained a column named {.val {new_col}}.", "i" = "Renamed to {.val {within_col}} per element before binding. Double-adjustment does not formally maintain FDR control.", "v" = "Set {.arg strip_within_adj = TRUE} to drop pre-existing within-call adjustments, or pass {.code pval_adj = NULL} to upstream {.fn get_*} calls."` |
+| PP-8 | `pool_pvals()` | After binding, every value of `p_col` is `NA` | WARNING | `surveycore_warning_pool_pvals_no_pvalues_available` | `"!" = "All values of pooled column {.val {p_col}} are {.code NA}.", "i" = "Returning the bound tibble with all-{.code NA} {.val {new_col}}."` |
+
 ---
 
 ## Notes on Typed Errors
@@ -305,3 +318,4 @@ Which test files cover which error table rows:
 | `test-survey-collection-dispatch.R` | C5, C6, C7, C9, C10, C11, C12, C13, C14 |
 | `test-glm-anova-numerical.R` | numerical parity tests vs `survey` package (no new error rows) |
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
+| `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
