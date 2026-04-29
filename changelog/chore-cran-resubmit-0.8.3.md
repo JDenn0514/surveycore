@@ -25,6 +25,10 @@ clean (0 errors, 0 warnings, 1 "New submission" note).
     and polyserial correlation.
 - Trimmed the analysis-functions enumeration to three exemplars
   (`means, frequencies, and regression models`) for brevity.
+- Single-quoted `'Lumley'`, `'Mannan'`, `'polychoric'`, and
+  `'polyserial'` in `Description` to silence the win-builder
+  spell-check NOTE. This follows the same convention already used for
+  `'S7'`, `'tidyselect'`, `'haven'`, and `'surveyverse'`.
 - Removed the `'surveyverse'` ecosystem pointer; the package's role in
   the ecosystem is documented in `README.md` and the package-level
   `man/surveycore-package.Rd`, which is sufficient for CRAN purposes.
