@@ -72,14 +72,16 @@ post-election variables:
 svy_pre <- as_survey(anes_2024,
   ids     = v240103c,
   strata  = v240103d,
-  weights = v240103a
+  weights = v240103a,
+  nest    = TRUE
 )
 
 # Post-election analysis (validated vote choice)
 svy_post <- as_survey(anes_2024,
   ids     = v240103c,
   strata  = v240103d,
-  weights = v240103b
+  weights = v240103b,
+  nest    = TRUE
 )
 }\if{html}{\out{</div>}}
 
@@ -108,8 +110,13 @@ each code to its meaning, including all missing-value codes. Example:
 names(anes_2024)
 
 # Create pre-election design
-# svy <- as_survey(anes_2024, ids = v240103c, strata = v240103d,
-#                  weights = v240103a)
+svy <- as_survey(
+  anes_2024,
+  ids = v240103c,
+  strata = v240103d,
+  weights = v240103a,
+  nest = TRUE
+)
 
 # Inspect variable label (ANES uses opaque V-codes; labels give context)
 attr(anes_2024$v241177, "label")

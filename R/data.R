@@ -238,14 +238,16 @@
 #' svy_pre <- as_survey(anes_2024,
 #'   ids     = v240103c,
 #'   strata  = v240103d,
-#'   weights = v240103a
+#'   weights = v240103a,
+#'   nest    = TRUE
 #' )
 #'
 #' # Post-election analysis (validated vote choice)
 #' svy_post <- as_survey(anes_2024,
 #'   ids     = v240103c,
 #'   strata  = v240103d,
-#'   weights = v240103b
+#'   weights = v240103b,
+#'   nest    = TRUE
 #' )
 #' ```
 #'
@@ -279,8 +281,13 @@
 #' names(anes_2024)
 #'
 #' # Create pre-election design
-#' # svy <- as_survey(anes_2024, ids = v240103c, strata = v240103d,
-#' #                  weights = v240103a)
+#' svy <- as_survey(
+#'   anes_2024,
+#'   ids = v240103c,
+#'   strata = v240103d,
+#'   weights = v240103a,
+#'   nest = TRUE
+#' )
 #'
 #' # Inspect variable label (ANES uses opaque V-codes; labels give context)
 #' attr(anes_2024$v241177, "label")
@@ -356,7 +363,8 @@
 #' svy <- as_survey(gss_2024,
 #'   ids     = vpsu,
 #'   strata  = vstrat,
-#'   weights = wtssps       # or wtssnrps for non-response-adjusted weight
+#'   weights = wtssps,      # or wtssnrps for non-response-adjusted weight
+#'   nest    = TRUE
 #' )
 #' ```
 #'
@@ -402,7 +410,13 @@
 #' names(gss_2024)
 #'
 #' # Create survey design
-#' # svy <- as_survey(gss_2024, ids = vpsu, strata = vstrat, weights = wtssps)
+#' svy <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   strata = vstrat,
+#'   weights = wtssps,
+#'   nest = TRUE
+#' )
 #'
 #' # Inspect variable label
 #' attr(gss_2024$happy, "label")
@@ -563,7 +577,11 @@
 #' names(pew_npors_2025)
 #'
 #' # Create survey design (no PSU for ABS design)
-#' # svy <- as_survey(pew_npors_2025, strata = stratum, weights = weight)
+#' svy <- as_survey(
+#'   pew_npors_2025,
+#'   strata = stratum,
+#'   weights = weight
+#' )
 #'
 #' # Inspect variable label
 #' attr(pew_npors_2025$smuse_fb, "label")
