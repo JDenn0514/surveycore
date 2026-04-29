@@ -44,7 +44,7 @@ binding, and a warning is emitted. If \code{TRUE}, any pre-existing
 binding; no warning.}
 }
 \value{
-An object of S3 class \code{c("survey_pooled_pvals", "tbl_df", "tbl", "data.frame")} — a tibble with an additional class tag.
+An object of S3 class \code{c("survey_pooled_pvals", "tbl_df", "tbl", "data.frame")} -- a tibble with an additional class tag.
 Column ordering: (1) the union of input columns in input-union
 order; (2) \code{id_col}; (3) \code{new_col}; (4) \code{paste0(new_col, "_within")} if applicable. The result carries a \code{.meta} attribute
 (a list) with keys \code{method}, \code{family_size}, \code{n_total}, \code{n_na},
@@ -63,26 +63,26 @@ and applies \code{stats::p.adjust()} once across the entire pool.
 \code{pool_pvals()} dispatches verbatim to \code{stats::p.adjust()}; the
 adjustment formula is determined entirely by \code{method}.
 \itemize{
-\item \code{"BH"} (Benjamini-Hochberg, 1995) — controls the false discovery
+\item \code{"BH"} (Benjamini-Hochberg, 1995) -- controls the false discovery
 rate (FDR) under independence or positive regression dependency
 (PRDS). Recommended default for multi-DV survey families.
-\item \code{"BY"} (Benjamini-Yekutieli, 2001) — controls FDR under arbitrary
+\item \code{"BY"} (Benjamini-Yekutieli, 2001) -- controls FDR under arbitrary
 dependence; strictly more conservative than BH. Use when the
 dependence structure across DVs is unknown or arbitrary.
-\item \code{"fdr"} — alias for \code{"BH"} per \code{stats::p.adjust()} source. The
+\item \code{"fdr"} -- alias for \code{"BH"} per \code{stats::p.adjust()} source. The
 two are identical.
-\item \code{"holm"} (Holm, 1979) — controls the family-wise error rate
+\item \code{"holm"} (Holm, 1979) -- controls the family-wise error rate
 (FWER) under arbitrary dependence. Uniformly more powerful than
 Bonferroni.
-\item \code{"hochberg"} (Hochberg, 1988) — controls FWER, requires
+\item \code{"hochberg"} (Hochberg, 1988) -- controls FWER, requires
 independence or MTP_2 dependence (not just PRDS). Use Holm
 instead when DVs are correlated and FWER control is desired.
-\item \code{"hommel"} (Hommel, 1988) — controls FWER, requires independence
+\item \code{"hommel"} (Hommel, 1988) -- controls FWER, requires independence
 or MTP_2 dependence. Same caveat as Hochberg.
-\item \code{"bonferroni"} — controls FWER under any dependence structure
+\item \code{"bonferroni"} -- controls FWER under any dependence structure
 (Bonferroni's inequality). Most conservative of the FWER
 procedures; preferred for tiny families.
-\item \code{"none"} — pass-through; raw p-values returned in \code{new_col}.
+\item \code{"none"} -- pass-through; raw p-values returned in \code{new_col}.
 }
 }
 
@@ -111,7 +111,7 @@ preservation must re-attach the attribute after pooling.
 surveycore's \code{get_t_test()}, \code{get_pairwise()} (default
 \code{pval_adj = "holm"}), and \code{get_diffs()} overwrite the \code{p_value}
 column in place when \code{pval_adj != NULL}. \code{pool_pvals()} cannot
-detect this by column inspection alone — the
+detect this by column inspection alone -- the
 \code{surveycore_warning_pool_pvals_input_pre_adjusted} warning class
 only fires when a separate column matching \code{new_col} is present.
 Pass \code{pval_adj = NULL} upstream to avoid silent double-adjustment.
@@ -192,20 +192,20 @@ pool_pvals(list(age = r1, hrs1 = r2))
 Benjamini, Y. and Hochberg, Y. (1995). Controlling the False
 Discovery Rate: A Practical and Powerful Approach to Multiple
 Testing. \emph{Journal of the Royal Statistical Society, Series B}
-57(1), 289–300. \doi{10.1111/j.2517-6161.1995.tb02031.x}
+57(1), 289-300. \doi{10.1111/j.2517-6161.1995.tb02031.x}
 
 Benjamini, Y. and Yekutieli, D. (2001). The control of the false
 discovery rate in multiple testing under dependency. \emph{Annals of
-Statistics} 29(4), 1165–1188. \doi{10.1214/aos/1013699998}
+Statistics} 29(4), 1165-1188. \doi{10.1214/aos/1013699998}
 
 Holm, S. (1979). A simple sequentially rejective multiple test
-procedure. \emph{Scandinavian Journal of Statistics} 6(2), 65–70.
+procedure. \emph{Scandinavian Journal of Statistics} 6(2), 65-70.
 
 Hochberg, Y. (1988). A sharper Bonferroni procedure for multiple
-tests of significance. \emph{Biometrika} 75(4), 800–802.
+tests of significance. \emph{Biometrika} 75(4), 800-802.
 \doi{10.1093/biomet/75.4.800}
 
 Hommel, G. (1988). A stagewise rejective multiple test procedure
-based on a modified Bonferroni test. \emph{Biometrika} 75(2), 383–386.
+based on a modified Bonferroni test. \emph{Biometrika} 75(2), 383-386.
 \doi{10.1093/biomet/75.2.383}
 }

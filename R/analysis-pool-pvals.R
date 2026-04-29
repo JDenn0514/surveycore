@@ -38,7 +38,7 @@
 #'   binding; no warning.
 #'
 #' @return An object of S3 class `c("survey_pooled_pvals", "tbl_df",
-#'   "tbl", "data.frame")` — a tibble with an additional class tag.
+#'   "tbl", "data.frame")` -- a tibble with an additional class tag.
 #'   Column ordering: (1) the union of input columns in input-union
 #'   order; (2) `id_col`; (3) `new_col`; (4) `paste0(new_col,
 #'   "_within")` if applicable. The result carries a `.meta` attribute
@@ -52,26 +52,26 @@
 #' `pool_pvals()` dispatches verbatim to `stats::p.adjust()`; the
 #' adjustment formula is determined entirely by `method`.
 #'
-#' - `"BH"` (Benjamini-Hochberg, 1995) — controls the false discovery
+#' - `"BH"` (Benjamini-Hochberg, 1995) -- controls the false discovery
 #'   rate (FDR) under independence or positive regression dependency
 #'   (PRDS). Recommended default for multi-DV survey families.
-#' - `"BY"` (Benjamini-Yekutieli, 2001) — controls FDR under arbitrary
+#' - `"BY"` (Benjamini-Yekutieli, 2001) -- controls FDR under arbitrary
 #'   dependence; strictly more conservative than BH. Use when the
 #'   dependence structure across DVs is unknown or arbitrary.
-#' - `"fdr"` — alias for `"BH"` per `stats::p.adjust()` source. The
+#' - `"fdr"` -- alias for `"BH"` per `stats::p.adjust()` source. The
 #'   two are identical.
-#' - `"holm"` (Holm, 1979) — controls the family-wise error rate
+#' - `"holm"` (Holm, 1979) -- controls the family-wise error rate
 #'   (FWER) under arbitrary dependence. Uniformly more powerful than
 #'   Bonferroni.
-#' - `"hochberg"` (Hochberg, 1988) — controls FWER, requires
+#' - `"hochberg"` (Hochberg, 1988) -- controls FWER, requires
 #'   independence or MTP_2 dependence (not just PRDS). Use Holm
 #'   instead when DVs are correlated and FWER control is desired.
-#' - `"hommel"` (Hommel, 1988) — controls FWER, requires independence
+#' - `"hommel"` (Hommel, 1988) -- controls FWER, requires independence
 #'   or MTP_2 dependence. Same caveat as Hochberg.
-#' - `"bonferroni"` — controls FWER under any dependence structure
+#' - `"bonferroni"` -- controls FWER under any dependence structure
 #'   (Bonferroni's inequality). Most conservative of the FWER
 #'   procedures; preferred for tiny families.
-#' - `"none"` — pass-through; raw p-values returned in `new_col`.
+#' - `"none"` -- pass-through; raw p-values returned in `new_col`.
 #'
 #' ## Default method
 #'
@@ -96,7 +96,7 @@
 #' surveycore's `get_t_test()`, `get_pairwise()` (default
 #' `pval_adj = "holm"`), and `get_diffs()` overwrite the `p_value`
 #' column in place when `pval_adj != NULL`. `pool_pvals()` cannot
-#' detect this by column inspection alone — the
+#' detect this by column inspection alone -- the
 #' `surveycore_warning_pool_pvals_input_pre_adjusted` warning class
 #' only fires when a separate column matching `new_col` is present.
 #' Pass `pval_adj = NULL` upstream to avoid silent double-adjustment.
@@ -153,21 +153,21 @@
 #' Benjamini, Y. and Hochberg, Y. (1995). Controlling the False
 #' Discovery Rate: A Practical and Powerful Approach to Multiple
 #' Testing. *Journal of the Royal Statistical Society, Series B*
-#' 57(1), 289–300. \doi{10.1111/j.2517-6161.1995.tb02031.x}
+#' 57(1), 289-300. \doi{10.1111/j.2517-6161.1995.tb02031.x}
 #'
 #' Benjamini, Y. and Yekutieli, D. (2001). The control of the false
 #' discovery rate in multiple testing under dependency. *Annals of
-#' Statistics* 29(4), 1165–1188. \doi{10.1214/aos/1013699998}
+#' Statistics* 29(4), 1165-1188. \doi{10.1214/aos/1013699998}
 #'
 #' Holm, S. (1979). A simple sequentially rejective multiple test
-#' procedure. *Scandinavian Journal of Statistics* 6(2), 65–70.
+#' procedure. *Scandinavian Journal of Statistics* 6(2), 65-70.
 #'
 #' Hochberg, Y. (1988). A sharper Bonferroni procedure for multiple
-#' tests of significance. *Biometrika* 75(4), 800–802.
+#' tests of significance. *Biometrika* 75(4), 800-802.
 #' \doi{10.1093/biomet/75.4.800}
 #'
 #' Hommel, G. (1988). A stagewise rejective multiple test procedure
-#' based on a modified Bonferroni test. *Biometrika* 75(2), 383–386.
+#' based on a modified Bonferroni test. *Biometrika* 75(2), 383-386.
 #' \doi{10.1093/biomet/75.2.383}
 #'
 #' @examples
@@ -193,7 +193,7 @@ pool_pvals <- function(
   id_col = "source",
   strip_within_adj = FALSE
 ) {
-  # ── 1. Non-list / data.frame guard ───────────────────────────────────────
+  # 1. Non-list / data.frame guard
   if (!.is_plain_list(results)) {
     cli::cli_abort(
       c(
@@ -212,25 +212,25 @@ pool_pvals <- function(
     )
   }
 
-  # ── 2. Empty list check ─────────────────────────────────────────────────
+  # 2. Empty list check
   if (length(results) == 0L) {
     cli::cli_abort(
       c(
-        "x" = "{.arg results} must be a list of length ≥ 1.",
+        "x" = "{.arg results} must be a list of length >= 1.",
         "i" = "Got an empty list."
       ),
       class = "surveycore_error_pool_pvals_empty"
     )
   }
 
-  # ── 3. Method validation ────────────────────────────────────────────────
+  # 3. Method validation (delegated to shared helper)
   .validate_pval_adjustment_method(
     method,
     arg_name = "method",
     class = "surveycore_error_pool_pvals_invalid_method"
   )
 
-  # ── 4 & 5. Per-element p_col presence + id_col collision ────────────────
+  # 4 & 5. Per-element p_col presence + id_col collision
   checks <- .validate_list_columns(
     results,
     col_names = p_col,
@@ -270,7 +270,7 @@ pool_pvals <- function(
     )
   }
 
-  # ── 6. Per-element pre-existing new_col detection ───────────────────────
+  # 6. Per-element pre-existing new_col detection
   bad_pre <- vapply(
     seq_along(results),
     function(i) new_col %in% names(results[[i]]),
@@ -324,10 +324,10 @@ pool_pvals <- function(
     }
   }
 
-  # ── 7. bind_rows ────────────────────────────────────────────────────────
+  # 7. bind_rows
   bound <- dplyr::bind_rows(results, .id = id_col)
 
-  # ── 8. Post-bind range check on pooled p_col ────────────────────────────
+  # 8. Post-bind range check on pooled p_col
   pooled <- bound[[p_col]]
   bad_idx <- which(!is.na(pooled) & (pooled < 0 | pooled > 1))
   if (length(bad_idx) > 0L) {
@@ -359,11 +359,11 @@ pool_pvals <- function(
     )
   }
 
-  # ── 9. p.adjust over pool ───────────────────────────────────────────────
+  # 9. p.adjust over pool
   adj <- stats::p.adjust(pooled, method = method)
   bound[[new_col]] <- adj
 
-  # ── 10. All-NA pool warning ─────────────────────────────────────────────
+  # 10. All-NA pool warning
   if (length(pooled) > 0L && all(is.na(pooled))) {
     cli::cli_warn(
       c(
@@ -380,9 +380,7 @@ pool_pvals <- function(
     )
   }
 
-  # ── Column ordering ─────────────────────────────────────────────────────
-  # Union of original input columns in input-union order, then id_col,
-  # new_col, and (when applicable) within_col.
+  # Column ordering: input union, then id_col, new_col, optional within_col
   input_union <- character(0)
   for (i in seq_along(results)) {
     input_union <- union(input_union, names(results[[i]]))
@@ -392,16 +390,13 @@ pool_pvals <- function(
   if (within_col %in% names(bound)) {
     trailing <- c(trailing, within_col)
   }
-  # Drop trailing names from the union to avoid duplication; bind_rows
-  # may have already promoted them to columns.
   input_union <- setdiff(input_union, trailing)
   ordered_cols <- c(input_union, trailing)
-  # Be defensive: keep only columns that exist in `bound`.
   ordered_cols <- ordered_cols[ordered_cols %in% names(bound)]
   out <- bound[, ordered_cols, drop = FALSE]
   out <- tibble::as_tibble(out)
 
-  # ── S3 class + .meta attribute ──────────────────────────────────────────
+  # S3 class + .meta attribute
   meta <- list(
     method = method,
     family_size = sum(!is.na(out[[p_col]])),
@@ -444,7 +439,7 @@ print.survey_pooled_pvals <- function(x, n = 10, ...) {
     paste0(
       "<survey_pooled_pvals: method = {.val {meta$method}}, ",
       "family_size = {meta$family_size}, ",
-      "{meta$n_significant_05} significant at α = 0.05>"
+      "{meta$n_significant_05} significant at alpha = 0.05>"
     )
   )
   NextMethod()

@@ -34,7 +34,7 @@
       pool_pvals(list())
     Condition
       Error in `pool_pvals()`:
-      x `results` must be a list of length ≥ 1.
+      x `results` must be a list of length >= 1.
       i Got an empty list.
 
 # pool_pvals() rejects invalid method (string) with invalid_method
@@ -92,7 +92,7 @@
     Code
       print(out)
     Message
-      <survey_pooled_pvals: method = "BH", family_size = 3, 1 significant at α =
+      <survey_pooled_pvals: method = "BH", family_size = 3, 1 significant at alpha =
       0.05>
     Output
       # A tibble: 4 x 4
@@ -110,7 +110,7 @@
     Code
       print(out_no_na)
     Message
-      <survey_pooled_pvals: method = "BH", family_size = 3, 1 significant at α =
+      <survey_pooled_pvals: method = "BH", family_size = 3, 1 significant at alpha =
       0.05>
     Output
       # A tibble: 3 x 3
@@ -125,7 +125,7 @@
     Code
       print(out_with_na)
     Message
-      <survey_pooled_pvals: method = "BH", family_size = 2, 1 significant at α =
+      <survey_pooled_pvals: method = "BH", family_size = 2, 1 significant at alpha =
       0.05>
     Output
       # A tibble: 4 x 3

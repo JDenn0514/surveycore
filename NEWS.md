@@ -2,7 +2,7 @@
 
 ## New features
 
-* `pool_pvals()` — pool a list of `get_*()` analysis result tibbles (each
+* `pool_pvals()` -- pool a list of `get_*()` analysis result tibbles (each
   carrying a `p_value` column) into a single multiplicity-corrected family
   via `stats::p.adjust()`. Returns a `survey_pooled_pvals` tibble with a
   `.meta` attribute and a dedicated `print()` method. Accompanied by a new
