@@ -637,20 +637,11 @@ get_pairwise <- function(
   )
 
   # Step 3: Validate pval_adj
-  valid_methods <- stats::p.adjust.methods
-  if (!pval_adj %in% valid_methods) {
-    cli::cli_abort(
-      c(
-        "x" = paste0(
-          "{.arg pval_adj} must be a valid method for ",
-          "{.fn stats::p.adjust}."
-        ),
-        "i" = "Valid methods: {.or {.val {valid_methods}}}.",
-        "i" = "Got {.val {pval_adj}}."
-      ),
-      class = "surveycore_error_invalid_pval_adj"
-    )
-  }
+  .validate_pval_adjustment_method(
+    pval_adj,
+    arg_name = "pval_adj",
+    class = "surveycore_error_invalid_pval_adj"
+  )
 
   # Step 4: Resolve x
   x_name <- rlang::as_name(rlang::ensym(x))
