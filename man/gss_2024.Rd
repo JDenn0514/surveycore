@@ -78,7 +78,8 @@ linearization:
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{svy <- as_survey(gss_2024,
   ids     = vpsu,
   strata  = vstrat,
-  weights = wtssps       # or wtssnrps for non-response-adjusted weight
+  weights = wtssps,      # or wtssnrps for non-response-adjusted weight
+  nest    = TRUE
 )
 }\if{html}{\out{</div>}}
 
@@ -119,7 +120,13 @@ each code to its meaning, including all missing-value codes. Example:
 names(gss_2024)
 
 # Create survey design
-# svy <- as_survey(gss_2024, ids = vpsu, strata = vstrat, weights = wtssps)
+svy <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  strata = vstrat,
+  weights = wtssps,
+  nest = TRUE
+)
 
 # Inspect variable label
 attr(gss_2024$happy, "label")

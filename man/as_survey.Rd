@@ -59,15 +59,11 @@ correction. Uses a tidy-select interface for all design variable arguments.
 }
 \section{Tidy-select}{
 
-All design variable arguments (\code{ids}, \code{probs}, \code{weights}, \code{strata}, \code{fpc})
-support tidy-select syntax:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{# Bare name
-as_survey(df, weights = wt)
-# c() for multi-stage ids
-as_survey(df, ids = c(psu, ssu), weights = wt)
-# tidy-select helpers also work (e.g., starts_with())
-}\if{html}{\out{</div>}}
+All design variable arguments (\code{ids}, \code{probs}, \code{weights}, \code{strata},
+\code{fpc}) support tidy-select syntax: bare column names, \code{c()} to combine
+multiple columns (multi-stage \code{ids = c(psu, ssu)}, multi-stage \code{fpc}),
+and tidyselect helpers like \code{starts_with()}. See the Examples section
+below for runnable demonstrations.
 }
 
 \section{Simple random sample}{
@@ -116,6 +112,23 @@ d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
                   strata = sdmvstra, nest = TRUE)
+
+# c() to combine multiple columns — sketched on a synthetic two-stage frame
+df <- data.frame(
+  psu = rep(1:5, each = 4),
+  ssu = 1:20,
+  wt  = runif(20, 0.5, 2)
+)
+d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
+
+# Tidy-select helpers like starts_with() also work
+d_h <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  strata = vstrat,
+  weights = starts_with("wtssn"),
+  nest = TRUE
+)
 
 }
 \references{
