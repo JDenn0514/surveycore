@@ -280,12 +280,22 @@ get_diffs <- function(
   }
 
   if (!is.null(pval_adj)) {
-    .validate_pval_adjustment_method(
-      pval_adj,
-      arg_name = "pval_adj",
-      class = "surveycore_error_invalid_pval_adj",
-      include_received = FALSE
-    )
+    valid_methods <- stats::p.adjust.methods
+    if (!pval_adj %in% valid_methods) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg pval_adj} must be a valid method for ",
+            "{.fn stats::p.adjust}."
+          ),
+          "i" = paste0(
+            "Valid methods: ",
+            "{.or {.val {valid_methods}}}."
+          )
+        ),
+        class = "surveycore_error_invalid_pval_adj"
+      )
+    }
   }
 
   # ── Step 5: Handle ref_level ──────────────────────────────────────────────
