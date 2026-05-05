@@ -275,6 +275,7 @@ test_that("get_effective_n() kish: n==0 domain returns NA for n_eff and deff_kis
 })
 
 test_that("get_effective_n() kish: n==0 domain (from domain filter) returns NA", {
+  skip_if_not_installed("surveytidy")
   # Use a domain-filtered design where the filter leaves some groups empty
   df <- data.frame(grp = c("A", "A", "B", "B"),
                    y = c(1, 2, 3, 4),
