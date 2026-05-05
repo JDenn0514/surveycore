@@ -1,3 +1,12 @@
+# surveycore 0.8.4.9000
+
+## New features
+
+* `get_effective_n()` computes the effective sample size of a survey design
+  using the Kish (1965) weight approximation (`method = "kish"`) or the full
+  design effect for a specified variable (`method = "deff"`). Supports all
+  design types and `survey_collection`.
+
 # surveycore 0.8.3
 
 ## CRAN preparation

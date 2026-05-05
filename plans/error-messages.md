@@ -245,6 +245,15 @@ against the messages defined here.
 
 *Note: the spec also defined `[[<-`-specific classes G5 / G5b (group mismatch on replace / append), G6 (`not_survey_base`), G7 (`index_out_of_range`), and G7b (`index_bad_type`). The `[[<-` method was not implemented because `S7::method("[[<-", ...)` registers the method in S3methods metadata in a form that trips R CMD check's `checkReplaceFuns` and produces a spurious warning. Users should mutate a collection via `add_survey()` / `remove_survey()` instead. If a future workaround is found, those classes can be added here without breaking callers.*
 
+### get_effective_n() rows (2026-05-05)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| EN-1 | `get_effective_n()` | `design` is not a `survey_base` or `survey_collection` | ERROR | `surveycore_error_unsupported_class` | (reuses existing class — thrown by `.check_unsupported_class(design, "get_effective_n")`: `"x" = "{.fn get_effective_n} requires a survey design object.", "i" = "Got {.cls {class(design)[[1L]]}}."`) |
+| EN-2 | `get_effective_n()` | `method = "deff"` and `x = NULL` | ERROR | `surveycore_error_effective_n_deff_requires_x` | `"x" = "{.arg x} is required when {.arg method} = {.val \"deff\"}.", "i" = "Supply a numeric variable name, or switch to {.code method = \"kish\"} which needs no variable."` |
+| EN-3 | `get_effective_n()` | `x` resolves to more than one column | ERROR | `surveycore_error_effective_n_x_multi_col` | `"x" = "{.arg x} must select exactly one variable, not {length(selected)}.", "i" = "Selected: {.field {selected}}.", "v" = "Pass one variable at a time, or loop over variables."` |
+| EN-4 | `get_effective_n()` | `method` is not `"kish"` or `"deff"` | ERROR | (thrown by `match.arg()`; no custom class) | — |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -319,3 +328,4 @@ Which test files cover which error table rows:
 | `test-glm-anova-numerical.R` | numerical parity tests vs `survey` package (no new error rows) |
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
+| `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |

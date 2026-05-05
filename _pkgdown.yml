@@ -78,6 +78,7 @@ reference:
       - get_t_test
       - get_pairwise
       - get_anova
+      - get_effective_n
 
   - title: "Regression"
     desc: >
