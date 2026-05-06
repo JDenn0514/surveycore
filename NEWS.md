@@ -1,4 +1,4 @@
-# surveycore 0.8.4.9000
+# surveycore 0.8.4
 
 ## New features
 

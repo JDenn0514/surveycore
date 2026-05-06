@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.8.4.9000
+Version: 0.8.4
 Authors@R: c(
     person(
         "Jacob", "Dennen",
