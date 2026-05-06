@@ -817,9 +817,10 @@ survey_glm <- function(
       response = response
     )
     # Reset environment: reformulate() inherits survey_glm()'s frame, which
-    # would embed all local variables in the stored object. Use globalenv()
-    # so the stored formula is portable.
-    environment(formula) <- globalenv()
+    # would embed all local variables in the stored object. Use baseenv() so
+    # the stored formula is portable and CRAN-policy compliant (no reliance
+    # on .GlobalEnv).
+    environment(formula) <- baseenv()
   }
 
   # Validate formula type

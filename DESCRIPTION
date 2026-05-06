@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.8.2
+Version: 0.8.4
 Authors@R: c(
     person(
         "Jacob", "Dennen",
@@ -13,12 +13,15 @@ Authors@R: c(
         role = c("ctb", "cph"),
         comment = "Author of variance estimation code vendored from the 'survey' package"
     ))
-Description: Provides 'S7'-based infrastructure for survey analysis including
-    design objects, metadata preservation, and variance estimation. Forms the
-    foundation of the 'surveyverse' ecosystem. Supports Taylor series, replicate
-    weight, and two-phase designs with a 'tidyselect' interface for intuitive
-    design specification. Automatically preserves 'haven'-style variable and
-    value labels throughout all operations.
+Description: Provides 'S7'-based infrastructure for survey analysis.
+    Supports Taylor series, replicate weight, and two-phase designs following
+    the methods in 'Lumley' (2004) <doi:10.18637/jss.v009.i08>. Includes
+    design-based estimators such as means, frequencies, and regression
+    models, with weighted 'polychoric' and 'polyserial' correlation following
+    'Mannan' (2025) <doi:10.2139/ssrn.6580480>. A metadata system
+    automatically preserves 'haven'-style variable labels, value labels, and
+    question-preface attributes through all operations. Uses a 'tidyselect'
+    interface for design specification.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
