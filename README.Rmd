@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 # surveycore <a href = "https://jdenn0514.github.io/surveycore/index.html"><img src="man/figures/logo.png" align="right" height="138" /></a>
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/surveycore)](https://CRAN.R-project.org/package=surveycore)
 [![Project Status: Active -- The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JDenn0514/surveycore/actions/workflows/R-CMD-check.yaml)
 [![pkgcheck](https://github.com/JDenn0514/surveycore/workflows/pkgcheck/badge.svg)](https://github.com/JDenn0514/surveycore/actions?query=workflow%3Apkgcheck)
