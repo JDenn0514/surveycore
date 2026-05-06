@@ -75,6 +75,8 @@ Compute weighted estimates with design-correct standard errors.
   : All-Pairs Pairwise T-Tests for Survey Designs
 - [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
   : Design-Based Analysis of Variance for Survey GLM Fits
+- [`get_effective_n()`](https://jdenn0514.github.io/surveycore/reference/get_effective_n.md)
+  : Effective Sample Size for a Survey Design
 
 ## Regression
 

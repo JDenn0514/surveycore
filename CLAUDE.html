@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,42 +37,42 @@
 <hr><div class="section level2">
 <h2 id="implementation-status">Implementation Status<a class="anchor" aria-label="anchor" href="#implementation-status"></a></h2>
 <p>The package API is stable. All core functionality is complete. New analysis functions may be added but the existing structure will not change in breaking ways.</p>
-<table class="table"><colgroup><col width="42%"><col width="30%"><col width="26%"></colgroup><thead><tr class="header"><th>Component</th>
+<table class="table"><colgroup><col width="42%"><col width="30%"><col width="26%"></colgroup><thead><tr><th>Component</th>
 <th>Status</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td>S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
+</tr></thead><tbody><tr><td>S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
 <td>✅ Complete</td>
 <td>v0.1.0</td>
-</tr><tr class="even"><td>surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
+</tr><tr><td>surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
 <td>✅ Complete</td>
 <td>Separate <code>surveytidy</code> package</td>
-</tr><tr class="odd"><td>SRS support</td>
+</tr><tr><td>SRS support</td>
 <td>✅ Complete</td>
 <td>Absorbed into <code>survey_taylor</code>; no ids/strata</td>
-</tr><tr class="even"><td>Two-phase variance</td>
+</tr><tr><td>Two-phase variance</td>
 <td>✅ Complete</td>
 <td>v0.2.x</td>
-</tr><tr class="odd"><td>Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
+</tr><tr><td>Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
 <td>✅ Complete</td>
 <td>v0.3.0</td>
-</tr><tr class="even"><td>Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
+</tr><tr><td>Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
 <td>✅ Complete</td>
 <td>v0.6.x</td>
-</tr><tr class="odd"><td>T-tests and pairwise (<code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>)</td>
+</tr><tr><td>T-tests and pairwise (<code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>)</td>
 <td>🔄 In Review</td>
 <td>PR #88; see <code>plans/spec-get-t-test-pairwise.md</code>
 </td>
-</tr><tr class="even"><td>SATA metadata (<code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/classify_question_type.html">classify_question_type()</a></code>)</td>
+</tr><tr><td>SATA metadata (<code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/classify_question_type.html">classify_question_type()</a></code>)</td>
 <td>✅ Complete</td>
 <td>PRs #89, #90, #91, #92</td>
-</tr><tr class="odd"><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code>anova.survey_glm_fit()</code>)</td>
+</tr><tr><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code>anova.survey_glm_fit()</code>)</td>
 <td>✅ Complete</td>
 <td>PRs #93, #94, #95, #96</td>
-</tr><tr class="even"><td>
+</tr><tr><td>
 <code>survey_collection</code> container + <code>get_*()</code> dispatch</td>
 <td>✅ Complete</td>
 <td>PRs #97, #98</td>
-</tr><tr class="odd"><td>Polychoric / polyserial correlation (<code>get_corr(method = ...)</code>)</td>
+</tr><tr><td>Polychoric / polyserial correlation (<code>get_corr(method = ...)</code>)</td>
 <td>✅ Complete</td>
 <td>PRs #107, #108, #109</td>
 </tr></tbody></table><hr></div>

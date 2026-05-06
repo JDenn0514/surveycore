@@ -85,8 +85,7 @@ A data frame with 9,254 rows and 14 variables:
 ## Source
 
 National Center for Health Statistics, CDC. NHANES 2017-2018 Continuous
-Survey.
-<https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?BeginYear=2017>
+Survey. <https://www.cdc.gov/nchs/nhanes/>
 
 ## Details
 

@@ -42,28 +42,28 @@ etc.) are covered in
 
 Read the first row that matches your data.
 
-| My data…                                                             | Constructor                                                                                        | Why                                            |
-|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------|
-| Has cluster IDs, strata, and/or design weights                       | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Taylor series linearization — the general case |
-| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …)  | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Uses the agency-supplied variance replicates   |
-| Is a pure SRS — equal probability, no clustering, no strata          | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Omit `ids` and `strata`; creates an SRS design |
-| Is a non-probability panel or opt-in sample with calibration weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)     | Calibrated design; SEs are approximate         |
-| Was sampled in two stages with an expensive Phase 2 measurement      | [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)   | Two-phase variance accounting for both stages  |
+| My data… | Constructor | Why |
+|----|----|----|
+| Has cluster IDs, strata, and/or design weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Taylor series linearization — the general case |
+| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Uses the agency-supplied variance replicates |
+| Is a pure SRS — equal probability, no clustering, no strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Omit `ids` and `strata`; creates an SRS design |
+| Is a non-probability panel or opt-in sample with calibration weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Calibrated design; SEs are approximate |
+| Was sampled in two stages with an expensive Phase 2 measurement | [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) | Two-phase variance accounting for both stages |
 
 ### Common surveys at a glance
 
-| Survey                              | Constructor                                                                                        | Design                                                     |
-|-------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------------------|
-| NHANES                              | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Stratified cluster, Taylor series                          |
-| ANES                                | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Stratified cluster, Taylor series                          |
-| GSS                                 | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Stratified multi-stage cluster                             |
-| Pew NPORS                           | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)                     | Stratified address-based sample (no PSU)                   |
-| ACS PUMS (1-year)                   | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | 80 successive-difference replicate weights                 |
-| Pew Jewish Americans 2020           | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | 100 JK1 jackknife replicate weights                        |
-| BRFSS                               | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Bootstrap replicate weights                                |
-| NAEP / PISA                         | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | JK2 jackknife replicate weights                            |
-| Nationscape (Democracy Fund + UCLA) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)     | Non-probability quota panel; ACS-calibrated raking weights |
-| Opt-in online panels                | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)     | Non-probability; vendor-supplied raking weights            |
+| Survey | Constructor | Design |
+|----|----|----|
+| NHANES | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Stratified cluster, Taylor series |
+| ANES | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Stratified cluster, Taylor series |
+| GSS | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Stratified multi-stage cluster |
+| Pew NPORS | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Stratified address-based sample (no PSU) |
+| ACS PUMS (1-year) | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | 80 successive-difference replicate weights |
+| Pew Jewish Americans 2020 | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | 100 JK1 jackknife replicate weights |
+| BRFSS | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Bootstrap replicate weights |
+| NAEP / PISA | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | JK2 jackknife replicate weights |
+| Nationscape (Democracy Fund + UCLA) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability quota panel; ACS-calibrated raking weights |
+| Opt-in online panels | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability; vendor-supplied raking weights |
 
 ------------------------------------------------------------------------
 
@@ -79,13 +79,13 @@ surveys ([Lumley 2010](#ref-lumley2010), ch. 2; [Lohr
 
 ### 2.1 Core arguments
 
-| Argument  | Codebook term                                       | What it does                         |
-|-----------|-----------------------------------------------------|--------------------------------------|
-| `ids`     | “PSU”, “primary sampling unit”, “cluster ID”        | Stage-1 cluster identifier           |
-| `weights` | “sampling weight”, “person weight”, “design weight” | Inverse of selection probability     |
-| `strata`  | “stratum”, “design stratum”, “sampling stratum”     | Stratification variable              |
-| `fpc`     | “FPC”, “finite population correction”, “N”          | Population size or sampling fraction |
-| `nest`    | (see below)                                         | Whether PSU IDs are locally unique   |
+| Argument | Codebook term | What it does |
+|----|----|----|
+| `ids` | “PSU”, “primary sampling unit”, “cluster ID” | Stage-1 cluster identifier |
+| `weights` | “sampling weight”, “person weight”, “design weight” | Inverse of selection probability |
+| `strata` | “stratum”, “design stratum”, “sampling stratum” | Stratification variable |
+| `fpc` | “FPC”, “finite population correction”, “N” | Population size or sampling fraction |
+| `nest` | (see below) | Whether PSU IDs are locally unique |
 
 All arguments accept bare column names — no `~formula` syntax required.
 
@@ -102,6 +102,7 @@ Set `nest = TRUE` when PSU IDs are not globally unique across strata
 ([Lumley 2010, 28](#ref-lumley2010)). A quick diagnostic:
 
 ``` r
+
 # NHANES: only two distinct PSU values, but 15 strata
 # Each stratum has its own PSU 1 and PSU 2 → nest = TRUE
 length(unique(nhanes_2017$sdmvpsu)) # 2
@@ -110,6 +111,7 @@ length(unique(nhanes_2017$sdmvpsu)) # 2
     ## [1] 2
 
 ``` r
+
 length(unique(nhanes_2017$sdmvstra)) # 15
 ```
 
@@ -139,6 +141,7 @@ For two-stage designs — counties then households, schools then students
 — pass both levels of IDs as a vector:
 
 ``` r
+
 as_survey(data, ids = c(county_id, household_id), weights = wt, strata = region)
 ```
 
@@ -148,14 +151,15 @@ NHANES uses a stratified, multistage probability cluster sample. The
 design variables are documented in the analytic notes on the NHANES
 website ([Lumley 2010](#ref-lumley2010), ch. 4):
 
-| Variable   | Role                                                      | Argument  |
-|------------|-----------------------------------------------------------|-----------|
-| `sdmvpsu`  | Masked variance PSU (cluster ID)                          | `ids`     |
-| `sdmvstra` | Masked variance stratum                                   | `strata`  |
+| Variable | Role | Argument |
+|----|----|----|
+| `sdmvpsu` | Masked variance PSU (cluster ID) | `ids` |
+| `sdmvstra` | Masked variance stratum | `strata` |
 | `wtmec2yr` | 2-year MEC examination weight (blood pressure, lab tests) | `weights` |
-| `wtint2yr` | 2-year interview weight (income, education, etc.)         | `weights` |
+| `wtint2yr` | 2-year interview weight (income, education, etc.) | `weights` |
 
 ``` r
+
 # Subset to MEC exam participants (ridstatr == 2) before using wtmec2yr.
 # The 550 interview-only participants have wtmec2yr = 0 and are not part
 # of the exam sample.
@@ -203,6 +207,7 @@ with `wtint2yr` — all 9,254 participants have a positive interview
 weight:
 
 ``` r
+
 svy_nhanes_int <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
@@ -226,6 +231,7 @@ weight for the variables you are analyzing:
 | `v240103b` | Post-election weight — use for validated vote choice | `weights` |
 
 ``` r
+
 # Pre-election analysis (party ID, ideology, candidate preference)
 svy_anes_pre <- as_survey(
   anes_2024,
@@ -239,6 +245,7 @@ svy_anes_pre <- as_survey(
     ##   If PSUs are nested within strata, set `nest = TRUE`.
 
 ``` r
+
 # Post-election analysis (validated vote choice: v242066, v242067)
 svy_anes_post <- as_survey(
   anes_2024,
@@ -262,14 +269,15 @@ The General Social Survey uses a stratified multi-stage cluster design.
 Two weights are available depending on whether non-response bias is a
 concern:
 
-| Variable   | Role                                                         | Argument  |
-|------------|--------------------------------------------------------------|-----------|
-| `vpsu`     | Variance primary sampling unit                               | `ids`     |
-| `vstrat`   | Variance stratum                                             | `strata`  |
-| `wtssps`   | Person post-stratification weight — standard analysis weight | `weights` |
-| `wtssnrps` | Person post-stratification weight, non-response adjusted     | `weights` |
+| Variable | Role | Argument |
+|----|----|----|
+| `vpsu` | Variance primary sampling unit | `ids` |
+| `vstrat` | Variance stratum | `strata` |
+| `wtssps` | Person post-stratification weight — standard analysis weight | `weights` |
+| `wtssnrps` | Person post-stratification weight, non-response adjusted | `weights` |
 
 ``` r
+
 # Standard analysis weight
 svy_gss <- as_survey(
   gss_2024,
@@ -283,6 +291,7 @@ svy_gss <- as_survey(
     ##   within strata, set `nest = TRUE`.
 
 ``` r
+
 # Non-response adjusted weight (preferred when non-response bias is a concern)
 svy_gss_nr <- as_survey(
   gss_2024,
@@ -307,12 +316,13 @@ sample (ABS)** — units are drawn directly from the USPS Computerized
 Delivery Sequence file with no intermediate cluster stage. Each address
 is its own sampling unit, so there is no PSU variable. Omit `ids`:
 
-| Variable  | Role                                                          | Argument  |
-|-----------|---------------------------------------------------------------|-----------|
-| `stratum` | Sampling stratum (10 levels, defined by census block group)   | `strata`  |
-| `weight`  | Final raked weight — base weight calibrated to Census targets | `weights` |
+| Variable | Role | Argument |
+|----|----|----|
+| `stratum` | Sampling stratum (10 levels, defined by census block group) | `strata` |
+| `weight` | Final raked weight — base weight calibrated to Census targets | `weights` |
 
 ``` r
+
 svy_npors <- as_survey(
   pew_npors_2025,
   strata = stratum,
@@ -346,16 +356,16 @@ applies. Getting this wrong produces systematically incorrect standard
 errors. Identify the correct type from your codebook’s technical
 documentation.
 
-| Type                      | Full name                     | Identifying signs in codebook                       | Common surveys                                                                          |
-|---------------------------|-------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `"JK1"`                   | Jackknife-1                   | “JK1”; one PSU dropped per replicate                | NHES, some Pew studies                                                                  |
-| `"JK2"`                   | Jackknife-2                   | “JK2”; paired PSUs; exactly 2 PSUs per stratum      | NAEP, PISA, most NCES surveys                                                           |
-| `"JKn"`                   | Jackknife-n                   | One stratum dropped per replicate                   | Less common; some multi-PSU designs                                                     |
-| `"BRR"`                   | Balanced Repeated Replication | “BRR”; exactly 2 PSUs per stratum required          | Some CPS variants                                                                       |
-| `"Fay"`                   | Fay’s Modified BRR            | “Fay BRR” or “Fay’s method”; BRR with epsilon       | Some Census Bureau surveys ([Fay 1989](#ref-fay1989); [Judkins 1990](#ref-judkins1990)) |
-| `"bootstrap"`             | Bootstrap                     | “bootstrap replication weights”; 100–500 replicates | BRFSS                                                                                   |
-| `"successive-difference"` | Successive Difference         | “SDR” or “successive difference replication”        | ACS 1-year PUMS ([U.S. Census Bureau 2022](#ref-census2022))                            |
-| `"ACS"`                   | ACS variant                   | Specific to ACS 5-year methodology                  | ACS 5-year PUMS                                                                         |
+| Type | Full name | Identifying signs in codebook | Common surveys |
+|----|----|----|----|
+| `"JK1"` | Jackknife-1 | “JK1”; one PSU dropped per replicate | NHES, some Pew studies |
+| `"JK2"` | Jackknife-2 | “JK2”; paired PSUs; exactly 2 PSUs per stratum | NAEP, PISA, most NCES surveys |
+| `"JKn"` | Jackknife-n | One stratum dropped per replicate | Less common; some multi-PSU designs |
+| `"BRR"` | Balanced Repeated Replication | “BRR”; exactly 2 PSUs per stratum required | Some CPS variants |
+| `"Fay"` | Fay’s Modified BRR | “Fay BRR” or “Fay’s method”; BRR with epsilon | Some Census Bureau surveys ([Fay 1989](#ref-fay1989); [Judkins 1990](#ref-judkins1990)) |
+| `"bootstrap"` | Bootstrap | “bootstrap replication weights”; 100–500 replicates | BRFSS |
+| `"successive-difference"` | Successive Difference | “SDR” or “successive difference replication” | ACS 1-year PUMS ([U.S. Census Bureau 2022](#ref-census2022)) |
+| `"ACS"` | ACS variant | Specific to ACS 5-year methodology | ACS 5-year PUMS |
 
 The Fay epsilon parameter (`fay_rho`) controls how much each replicate
 weight differs from the full-sample weight. Its value is specified in
@@ -368,12 +378,13 @@ The ACS 1-year PUMS provides 80 successive-difference replicate weights
 for variance estimation, documented in the ACS Design and Methodology
 report ([U.S. Census Bureau 2022](#ref-census2022)):
 
-| Variable           | Role                                                    | Argument     |
-|--------------------|---------------------------------------------------------|--------------|
-| `pwgtp`            | Person weight                                           | `weights`    |
+| Variable | Role | Argument |
+|----|----|----|
+| `pwgtp` | Person weight | `weights` |
 | `pwgtp1`–`pwgtp80` | Successive-difference replicate weights (80 replicates) | `repweights` |
 
 ``` r
+
 svy_acs <- as_survey_replicate(
   acs_pums_wy,
   weights = pwgtp,
@@ -419,12 +430,13 @@ svy_acs
 This Pew study provides 100 jackknife-1 replicate weights alongside the
 full-sample weight:
 
-| Variable                    | Role                                             | Argument     |
-|-----------------------------|--------------------------------------------------|--------------|
-| `extweight`                 | Full-sample base weight                          | `weights`    |
+| Variable | Role | Argument |
+|----|----|----|
+| `extweight` | Full-sample base weight | `weights` |
 | `extweight1`–`extweight100` | JK1 jackknife replicate weights (100 replicates) | `repweights` |
 
 ``` r
+
 svy_jewish <- as_survey_replicate(
   pew_jewish_2020,
   weights = extweight,
@@ -503,12 +515,12 @@ surveys with a screening phase ([Breslow and Cain
 
 ### 4.2 Arguments
 
-| Argument                            | What it does                                                  |
-|-------------------------------------|---------------------------------------------------------------|
-| `phase1`                            | A `survey_taylor` object representing the Phase 1 design      |
-| `subset`                            | Bare name of a logical column: `TRUE` = selected into Phase 2 |
-| `ids2`, `strata2`, `probs2`, `fpc2` | Phase 2 design variables (all optional)                       |
-| `method`                            | `"full"` (default), `"approx"`, or `"simple"`                 |
+| Argument | What it does |
+|----|----|
+| `phase1` | A `survey_taylor` object representing the Phase 1 design |
+| `subset` | Bare name of a logical column: `TRUE` = selected into Phase 2 |
+| `ids2`, `strata2`, `probs2`, `fpc2` | Phase 2 design variables (all optional) |
+| `method` | `"full"` (default), `"approx"`, or `"simple"` |
 
 The `method` argument:
 
@@ -530,6 +542,7 @@ members plus all relapse cases ([Breslow and Cain
 1988](#ref-breslow1988)).
 
 ``` r
+
 nwtco <- survival::nwtco
 
 # in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()
@@ -545,6 +558,7 @@ phase1 <- as_survey(nwtco, ids = seqno)
     ## ℹ Population totals will equal sample totals, not estimated population totals.
 
 ``` r
+
 # Phase 2: subcohort, with Phase 2 sampling stratified by relapse status
 svy_twophase <- as_survey_twophase(
   phase1,
@@ -621,6 +635,7 @@ of selection (80/400 = 0.20) — the textbook SRS case ([Cochran
 1977](#ref-cochran1977), ch. 2; [Lohr 2022](#ref-lohr2022), ch. 2):
 
 ``` r
+
 set.seed(101)
 N <- 400 # total schools in district
 n <- 80 # schools sampled
@@ -739,7 +754,7 @@ from the data, not fixed by the sampling protocol. Use
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 for all of them.
 
-What calibration weights accomplish ([Mercer, Lau, and Kennedy
+What calibration weights accomplish ([Mercer et al.
 2018](#ref-mercer2018); [McPhee et al. 2023](#ref-mcphee2023)):
 
 - They reduce bias from *measured* demographic confounders
@@ -750,12 +765,12 @@ What calibration weights accomplish ([Mercer, Lau, and Kennedy
 
 ### 6.3 What you can and cannot claim
 
-| Claim                                                 | Valid?           | Notes                                                                |
-|-------------------------------------------------------|------------------|----------------------------------------------------------------------|
-| Point estimates representative of calibration margins | ✅ Yes           | Calibrated to age, gender, education, etc. targets                   |
-| Estimates more accurate than unweighted               | ✅ Usually       | Especially for outcomes correlated with demographic variables        |
-| Standard errors reflect true sampling uncertainty     | ⚠️ Approximately | SEs computed under approximate variance model; likely underestimated |
-| Results equivalent to a probability-sample estimate   | ❌ No            | Selection mechanism is unknown and cannot be fully corrected         |
+| Claim | Valid? | Notes |
+|----|----|----|
+| Point estimates representative of calibration margins | ✅ Yes | Calibrated to age, gender, education, etc. targets |
+| Estimates more accurate than unweighted | ✅ Usually | Especially for outcomes correlated with demographic variables |
+| Standard errors reflect true sampling uncertainty | ⚠️ Approximately | SEs computed under approximate variance model; likely underestimated |
+| Results equivalent to a probability-sample estimate | ❌ No | Selection mechanism is unknown and cannot be fully corrected |
 
 This is the standard practice across the industry — used routinely by
 academic researchers, major survey organizations, and commercial firms
@@ -776,11 +791,12 @@ race/ethnicity, and region, plus 2016 presidential vote choice. This is
 the textbook use case for
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md).
 
-| Variable | Role                                                                           | Argument  |
-|----------|--------------------------------------------------------------------------------|-----------|
+| Variable | Role | Argument |
+|----|----|----|
 | `weight` | Raking weight calibrated to ACS demographic targets and 2016 presidential vote | `weights` |
 
 ``` r
+
 svy_ns <- as_survey_nonprob(ns_wave1, weights = weight)
 svy_ns
 ```
@@ -817,6 +833,7 @@ svy_ns
     ## #   news_sources_local_newspaper <dbl>, news_sources_other <dbl>, …
 
 ``` r
+
 # Presidential approval rating (July 2019)
 get_freqs(svy_ns, pres_approval)
 ```
@@ -852,6 +869,7 @@ for a non-probability sample and present standard errors as if the
 design were a probability sample:
 
 ``` r
+
 # Creates a survey_taylor object, which misrepresents the design
 svy_wrong <- as_survey(ns_wave1, weights = weight)
 ```
@@ -879,6 +897,7 @@ This is the appropriate constructor whenever the weights were derived to
 make the respondents resemble the full student body:
 
 ``` r
+
 svy_campus <- as_survey_nonprob(campus_survey, weights = ps_weight)
 ```
 
@@ -888,6 +907,7 @@ surveycore functions:** Add a column of 1s and use
 without `ids` or `strata`:
 
 ``` r
+
 campus_survey$wt <- 1
 svy_campus <- as_survey(campus_survey, weights = wt)
 ```
@@ -916,12 +936,12 @@ and
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
 — differ in one fundamental way: *where the weights come from*.
 
-|                         | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) / [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| Weight source           | Sampling protocol (1/π_i)                                                                                                                                                           | Post-hoc adjustment                                                                            |
-| Selection probabilities | Known and controlled                                                                                                                                                                | Unknown or overridden by calibration                                                           |
-| Weight values           | Vary across respondents (or uniform for SRS)                                                                                                                                        | Vary (reflect adjustment, not design)                                                          |
-| Variance estimator      | Design-based (exact)                                                                                                                                                                | Approximate                                                                                    |
+|  | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) / [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
+|----|----|----|
+| Weight source | Sampling protocol (1/π_i) | Post-hoc adjustment |
+| Selection probabilities | Known and controlled | Unknown or overridden by calibration |
+| Weight values | Vary across respondents (or uniform for SRS) | Vary (reflect adjustment, not design) |
+| Variance estimator | Design-based (exact) | Approximate |
 
 In
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
@@ -975,6 +995,7 @@ treat the participants as a census. Add a column of 1s and use
 without `ids` or `strata`:
 
 ``` r
+
 classroom_data$wt <- 1
 svy_participants <- as_survey(classroom_data, weights = wt)
 ```
@@ -985,13 +1006,13 @@ representative of all students at the school.
 
 ### 8.2 General decision rule
 
-| Design                                                  | Appropriate tool                                                                                                                                                                   | Notes                                      |
-|---------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| Probability sample with design weights                  | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Exact variance                             |
-| Pure SRS — equal probability, no clustering/strata      | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) (no `ids` or `strata`)                                                                              | Exact variance; SRS special case of Taylor |
-| Any sample with calibration/raking/PSW/matching weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)                                                                                     | Approximate variance                       |
-| Voluntary response or convenience sample, no weights    | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) with `weights = 1` (no `ids`/`strata`)                                                              | Conditional inference only; disclose       |
-| Causal inference (treatment effect estimation)          | Not surveycore                                                                                                                                                                     | Use MatchIt, WeightIt, lme4, etc.          |
+| Design | Appropriate tool | Notes |
+|----|----|----|
+| Probability sample with design weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Exact variance |
+| Pure SRS — equal probability, no clustering/strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) (no `ids` or `strata`) | Exact variance; SRS special case of Taylor |
+| Any sample with calibration/raking/PSW/matching weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Approximate variance |
+| Voluntary response or convenience sample, no weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) with `weights = 1` (no `ids`/`strata`) | Conditional inference only; disclose |
+| Causal inference (treatment effect estimation) | Not surveycore | Use MatchIt, WeightIt, lme4, etc. |
 
 When you use
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
@@ -1008,26 +1029,25 @@ unless the sample can be independently defended as representative.
 A lookup table for common codebook terms and how they map to constructor
 arguments:
 
-| Codebook term                                                  | Maps to                                                                                                                                                                                         | Notes                                                                                                  |
-|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| “sampling weight”, “survey weight”, “person weight”            | `weights =`                                                                                                                                                                                     |                                                                                                        |
-| “PSU”, “primary sampling unit”, “cluster ID”                   | `ids =`                                                                                                                                                                                         |                                                                                                        |
-| “stratum”, “design stratum”, “sampling stratum”                | `strata =`                                                                                                                                                                                      |                                                                                                        |
-| “FPC”, “finite population correction”, “population size”       | `fpc =`                                                                                                                                                                                         |                                                                                                        |
-| “replicate weights”, “bootstrap weights”, “BRR weights”        | `repweights =`                                                                                                                                                                                  | Use [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) |
-| “base weight”, “design weight” (with separate replicates)      | `weights =` in [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)                                                                               |                                                                                                        |
-| “Fay coefficient”, “Fay factor”, “epsilon”                     | `fay_rho =`                                                                                                                                                                                     | With `type = "Fay"`                                                                                    |
-| “raking weights”, “post-stratification weights”, “cal weights” | `weights =` in [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)                                                                                   | Non-probability design                                                                                 |
-| “two-phase”, “double sampling”, “case-cohort”                  | Phase 1 → [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), then [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) |                                                                                                        |
+| Codebook term | Maps to | Notes |
+|----|----|----|
+| “sampling weight”, “survey weight”, “person weight” | `weights =` |  |
+| “PSU”, “primary sampling unit”, “cluster ID” | `ids =` |  |
+| “stratum”, “design stratum”, “sampling stratum” | `strata =` |  |
+| “FPC”, “finite population correction”, “population size” | `fpc =` |  |
+| “replicate weights”, “bootstrap weights”, “BRR weights” | `repweights =` | Use [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) |
+| “base weight”, “design weight” (with separate replicates) | `weights =` in [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) |  |
+| “Fay coefficient”, “Fay factor”, “epsilon” | `fay_rho =` | With `type = "Fay"` |
+| “raking weights”, “post-stratification weights”, “cal weights” | `weights =` in [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability design |
+| “two-phase”, “double sampling”, “case-cohort” | Phase 1 → [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), then [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) |  |
 
 ------------------------------------------------------------------------
 
 ## References
 
-Baker, Reg, J. Michael Brick, Nancy A. Bates, Mike Battaglia, Mick P.
-Couper, Jill A. Dever, Krista J. Gile, and Roger Tourangeau. 2013.
-“Summary Report of the AAPOR Task Force on Non-Probability Sampling.”
-*Journal of Survey Statistics and Methodology* 1 (2): 90–143.
+Baker, Reg, J. Michael Brick, Nancy A. Bates, et al. 2013. “Summary
+Report of the AAPOR Task Force on Non-Probability Sampling.” *Journal of
+Survey Statistics and Methodology* 1 (2): 90–143.
 <https://doi.org/10.1093/jssam/smt008>.
 
 Breslow, Norman E., and Kevin C. Cain. 1988. “Logistic Regression for
@@ -1042,8 +1062,8 @@ Nonprobability Samples.” *Statistical Science* 32 (2): 249–64.
 <https://doi.org/10.1214/16-STS598>.
 
 Fay, Robert E. 1989. “Theory and Application of Replicate Weighting for
-Variance Calculations.” In *Proceedings of the Section on Survey
-Research Methods*, 212–17. American Statistical Association.
+Variance Calculations.” *Proceedings of the Section on Survey Research
+Methods*, 212–17.
 
 Judkins, David R. 1990. “Fay’s Method for Variance Estimation.” *Journal
 of Official Statistics* 6 (3): 223–39.
@@ -1054,22 +1074,21 @@ Press.
 Lumley, Thomas. 2010. *Complex Surveys: A Guide to Analysis Using R*.
 John Wiley & Sons. <https://doi.org/10.1002/9780470580066>.
 
-McPhee, Cameron, Frances Barlas, Nancy Brigham, Jill Darling, David
-Dutwin, Chris Jackson, Mickey Jackson, et al. 2023. “Data Quality
-Metrics for Online Samples: Considerations for Study Design & Analysis.”
-American Association for Public Opinion Research.
+McPhee, Cameron, Frances Barlas, Nancy Brigham, et al. 2023. *Data
+Quality Metrics for Online Samples: Considerations for Study Design &
+Analysis*. American Association for Public Opinion Research.
 <https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf>.
 
-Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. “For Weighting
-Online Opt-in Samples, What Matters Most?” Pew Research Center.
+Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. *For Weighting
+Online Opt-in Samples, What Matters Most?* Pew Research Center.
 <https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/>.
 
 Saegusa, Takumi, and Jon A. Wellner. 2013. “Weighted Likelihood
 Estimation Under Two-Phase Sampling.” *Annals of Statistics* 41 (1):
 269–95. <https://doi.org/10.1214/12-AOS1073>.
 
-U.S. Census Bureau. 2022. “American Community Survey Design and
-Methodology, Chapter 12: Variance Estimation.” U.S. Census Bureau.
+U.S. Census Bureau. 2022. *American Community Survey Design and
+Methodology, Chapter 12: Variance Estimation*. U.S. Census Bureau.
 <https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf>.
 
 Valliant, Richard, and Jill A. Dever. 2018. *Survey Weights: A

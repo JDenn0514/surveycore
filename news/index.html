@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,21 @@
       <small>Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.4" id="surveycore-084">surveycore 0.8.4<a class="anchor" aria-label="anchor" href="#surveycore-084"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-8-4">New features<a class="anchor" aria-label="anchor" href="#new-features-0-8-4"></a></h3>
+<ul><li>
+<code><a href="../reference/get_effective_n.html">get_effective_n()</a></code> computes the effective sample size of a survey design using the Kish (1965) weight approximation (<code>method = "kish"</code>) or the full design effect for a specified variable (<code>method = "deff"</code>). Supports all design types and <code>survey_collection</code>.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.8.3" id="surveycore-083">surveycore 0.8.3<a class="anchor" aria-label="anchor" href="#surveycore-083"></a></h2><p class="text-muted">CRAN release: 2026-05-05</p>
+<div class="section level3">
+<h3 id="cran-preparation-0-8-3">CRAN preparation<a class="anchor" aria-label="anchor" href="#cran-preparation-0-8-3"></a></h3>
+<ul><li>Resubmission addressing CRAN feedback on the 0.8.2 submission. Four changes: (1) Added DOI references to the package <code>Description</code> (Lumley 2004 for variance estimation; Mannan 2025 for weighted polychoric/polyserial correlation). (2) Uncommented three <code><a href="../reference/as_survey.html">as_survey()</a></code> calls in the <code>@examples</code> blocks of <code>anes_2024</code>, <code>gss_2024</code>, and <code>pew_npors_2025</code>, so they now run during <code>R CMD check</code>. The ANES and GSS examples (and the corresponding prose <code>@details</code> sketches) also gained <code>nest = TRUE</code>, which is required by those designs and silences a previously-emitted warning. (3) Replaced the <code>\section{Tidy-select}</code> <code>\preformatted{}</code> code sketch in <code><a href="../reference/as_survey.html">as_survey()</a></code> with prose, and added two runnable demonstrations to the <code>@examples</code> block (<code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code> for multi-stage IDs on a synthetic frame, and <code>starts_with()</code> for tidyselect-helper weights on <code>gss_2024</code>). (4) Replaced <code><a href="https://rdrr.io/r/base/environment.html" class="external-link">globalenv()</a></code> with <code><a href="https://rdrr.io/r/base/environment.html" class="external-link">baseenv()</a></code> as the formula environment in <code><a href="../reference/survey_glm.html">survey_glm()</a></code> to comply with CRAN policy on <code>.GlobalEnv</code> modification.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.2" id="surveycore-082">surveycore 0.8.2<a class="anchor" aria-label="anchor" href="#surveycore-082"></a></h2>
 <div class="section level3">

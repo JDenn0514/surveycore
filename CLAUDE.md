@@ -18,19 +18,19 @@ The package API is stable. All core functionality is complete. New
 analysis functions may be added but the existing structure will not
 change in breaking ways.
 
-| Component                                                                                                                                                                                              | Status       | Notes                                            |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|--------------------------------------------------|
-| S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion                                                                                                                   | ✅ Complete  | v0.1.0                                           |
-| surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`)                                                                                                                                      | ✅ Complete  | Separate `surveytidy` package                    |
-| SRS support                                                                                                                                                                                            | ✅ Complete  | Absorbed into `survey_taylor`; no ids/strata     |
-| Two-phase variance                                                                                                                                                                                     | ✅ Complete  | v0.2.x                                           |
-| Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`)                                                                                                 | ✅ Complete  | v0.3.0                                           |
-| Regression (`survey_glm_fit`, [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md))                                                                                        | ✅ Complete  | v0.6.x                                           |
-| T-tests and pairwise ([`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md), [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md))          | 🔄 In Review | PR \#88; see `plans/spec-get-t-test-pairwise.md` |
-| SATA metadata ([`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md), [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)) | ✅ Complete  | PRs \#89, \#90, \#91, \#92                       |
-| Design-based ANOVA ([`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md), `anova.survey_glm_fit()`)                                                                          | ✅ Complete  | PRs \#93, \#94, \#95, \#96                       |
-| `survey_collection` container + `get_*()` dispatch                                                                                                                                                     | ✅ Complete  | PRs \#97, \#98                                   |
-| Polychoric / polyserial correlation (`get_corr(method = ...)`)                                                                                                                                         | ✅ Complete  | PRs \#107, \#108, \#109                          |
+| Component | Status | Notes |
+|----|----|----|
+| S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | v0.1.0 |
+| surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
+| SRS support | ✅ Complete | Absorbed into `survey_taylor`; no ids/strata |
+| Two-phase variance | ✅ Complete | v0.2.x |
+| Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
+| Regression (`survey_glm_fit`, [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)) | ✅ Complete | v0.6.x |
+| T-tests and pairwise ([`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md), [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)) | 🔄 In Review | PR \#88; see `plans/spec-get-t-test-pairwise.md` |
+| SATA metadata ([`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md), [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)) | ✅ Complete | PRs \#89, \#90, \#91, \#92 |
+| Design-based ANOVA ([`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md), `anova.survey_glm_fit()`) | ✅ Complete | PRs \#93, \#94, \#95, \#96 |
+| `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs \#97, \#98 |
+| Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs \#107, \#108, \#109 |
 
 ------------------------------------------------------------------------
 

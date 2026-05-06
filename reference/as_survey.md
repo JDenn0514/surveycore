@@ -78,13 +78,11 @@ A `survey_taylor` object.
 ## Tidy-select
 
 All design variable arguments (`ids`, `probs`, `weights`, `strata`,
-`fpc`) support tidy-select syntax:
-
-    # Bare name
-    as_survey(df, weights = wt)
-    # c() for multi-stage ids
-    as_survey(df, ids = c(psu, ssu), weights = wt)
-    # tidy-select helpers also work (e.g., starts_with())
+`fpc`) support tidy-select syntax: bare column names,
+[`c()`](https://rdrr.io/r/base/c.html) to combine multiple columns
+(multi-stage `ids = c(psu, ssu)`, multi-stage `fpc`), and tidyselect
+helpers like `starts_with()`. See the Examples section below for
+runnable demonstrations.
 
 ## Simple random sample
 
@@ -167,4 +165,21 @@ d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
                   strata = sdmvstra, nest = TRUE)
+
+# c() to combine multiple columns — sketched on a synthetic two-stage frame
+df <- data.frame(
+  psu = rep(1:5, each = 4),
+  ssu = 1:20,
+  wt  = runif(20, 0.5, 2)
+)
+d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
+
+# Tidy-select helpers like starts_with() also work
+d_h <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  strata = vstrat,
+  weights = starts_with("wtssn"),
+  nest = TRUE
+)
 ```

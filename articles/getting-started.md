@@ -56,6 +56,7 @@ we’ll use the General Social Survey which has variables for clustering,
 strata, and design weights.
 
 ``` r
+
 gss_svy <- as_survey(
   gss_2024,
   ids = vpsu,
@@ -68,6 +69,7 @@ gss_svy <- as_survey(
     #>   within strata, set `nest = TRUE`.
 
 ``` r
+
 gss_svy
 ```
 
@@ -107,6 +109,7 @@ columns like `repwt_1`, `repwt_2`. For example, Pew’s Jewish American
 study from 2020 uses replicate weights.
 
 ``` r
+
 pew_jewish_svy <- as_survey_replicate(
   pew_jewish_2020,
   weights = extweight,
@@ -160,6 +163,7 @@ the SRS special case.
 Here is a synthetic school district survey to illustrate:
 
 ``` r
+
 set.seed(101)
 N <- 400 # total schools in district
 n <- 80 # schools sampled
@@ -215,6 +219,7 @@ ensure the sample is representative of the population you are interested
 in.
 
 ``` r
+
 ns_wave1_svy <- as_survey_nonprob(ns_wave1, weights = weight)
 
 ns_wave1_svy
@@ -261,6 +266,7 @@ studies, medical validation studies, or surveys with a screening phase.
 We will use the nwtco data from the `survival` package.
 
 ``` r
+
 nwtco <- survival::nwtco
 
 # in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()
@@ -276,6 +282,7 @@ phase1 <- as_survey(nwtco, ids = seqno)
     #> ℹ Population totals will equal sample totals, not estimated population totals.
 
 ``` r
+
 # Phase 2: subcohort, with Phase 2 sampling stratified by relapse status
 nwtco_svy <- as_survey_twophase(
   phase1,
@@ -347,6 +354,7 @@ frequencies for. Here’s a simple example where we calculate whether or
 not people are willing to consider voting for Trump.
 
 ``` r
+
 get_freqs(ns_wave1_svy, consider_trump)
 ```
 
@@ -369,6 +377,7 @@ allows you to pass in multiple variables (it uses `tidy-select` under
 the hood to do this). Let’s look at an example:
 
 ``` r
+
 get_freqs(ns_wave1_svy, c(news_sources_facebook:news_sources_other))
 ```
 
@@ -392,6 +401,7 @@ holds the response code. You can also change the name of the columns if
 you want. For example:
 
 ``` r
+
 ns_wave1_svy |>
   get_freqs(
     c(news_sources_facebook:news_sources_other),
@@ -421,6 +431,7 @@ ns_wave1_svy |>
 estimates the survey-weighted mean of a continuous variable.
 
 ``` r
+
 # Mean discrimination against blacks
 get_means(ns_wave1_svy, discrimination_blacks)
 ```
@@ -449,6 +460,7 @@ First, we will look at the Nationscape data. Since these are calibration
 weights, the totals will add up to the number of rows (6,422).
 
 ``` r
+
 get_totals(ns_wave1_svy)
 ```
 
@@ -461,6 +473,7 @@ However, the Pew Jewish-Americans study shows us the estimated total
 population of Jews in the US:
 
 ``` r
+
 get_totals(pew_jewish_svy)
 ```
 
@@ -480,6 +493,7 @@ to know how many Jews are in each age category we would calculate it
 like this:
 
 ``` r
+
 get_totals(pew_jewish_svy, group = age4cat)
 ```
 
@@ -506,6 +520,7 @@ underlying data frame — dropping rows with missing values and removing
 “Not sure” responses (coded `999`) — then rebuild the survey object.
 
 ``` r
+
 ns_wave1_clean <- ns_wave1 |>
   dplyr::filter(
     !is.na(cand_favorability_trump),
@@ -530,6 +545,7 @@ get_corr(
 Next, let’s look at favorability across multiple variables.
 
 ``` r
+
 fav_vars <- c(
   "cand_favorability_trump", "cand_favorability_biden",
   "cand_favorability_harris", "cand_favorability_sanders",
@@ -572,6 +588,7 @@ intervals, p-values, and other relevant information.
 Switch to wide format for a more familiar correlation-matrix layout:
 
 ``` r
+
 get_corr(
   ns_wave1_multi_svy,
   c(cand_favorability_trump:cand_favorability_pence),
@@ -602,7 +619,9 @@ get_corr(
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
 estimates the ratio of two weighted totals:
 
-$$\widehat{R} = \frac{\sum\limits_{i}w_{i}\, y_{i}}{\sum\limits_{i}w_{i}\, x_{i}}$$
+``` math
+\hat{R} = \frac{\sum_i w_i \, y_i}{\sum_i w_i \, x_i}
+```
 
 Variance is estimated via the delta method (linearization), equivalent
 to [`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
@@ -620,6 +639,7 @@ favorably on average; a ratio greater than 1 means Biden is viewed more
 favorably.
 
 ``` r
+
 get_ratios(
   ns_wave1_clean_svy,
   numerator = cand_favorability_trump,
@@ -645,6 +665,7 @@ data. By default, it calculates the quantiles at the 25th, 50th, and
 75th percentile.
 
 ``` r
+
 # Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))
 get_quantiles(ns_wave1_svy, age)
 ```
@@ -661,6 +682,7 @@ get_quantiles(ns_wave1_svy, age)
 Pass any numeric vector to `probs`. For the median alone:
 
 ``` r
+
 get_quantiles(ns_wave1_svy, age, probs = 0.5)
 ```
 
@@ -672,6 +694,7 @@ get_quantiles(ns_wave1_svy, age, probs = 0.5)
 For deciles of age:
 
 ``` r
+
 get_quantiles(ns_wave1_svy, age, probs = seq(0.1, 0.9, 0.1))
 ```
 
@@ -697,6 +720,7 @@ bare column name or multiple using
 consideration by party identification.
 
 ``` r
+
 get_freqs(ns_wave1_svy, consider_trump, group = pid3)
 ```
 
@@ -741,6 +765,7 @@ The `conf_level` argument controls the confidence level for `"ci"` and
 `"moe"`. The default is `0.95`; for a 90% CI:
 
 ``` r
+
 get_means(
   ns_wave1_svy,
   age,
@@ -769,6 +794,7 @@ the number of people from the sample (`n`), and the estimated population
 size (`n_weighted`) of Jewish- Americans in each age category.
 
 ``` r
+
 get_freqs(pew_jewish_svy, age4cat, n_weighted = TRUE)
 ```
 
@@ -785,14 +811,14 @@ get_freqs(pew_jewish_svy, age4cat, n_weighted = TRUE)
 
 ## Summary
 
-| Function                                                                               | Use for                                                     |
-|----------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)         | Categorical variables — weighted distributions, percentages |
-| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)         | Continuous variables — weighted means                       |
-| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)       | Population counts or aggregates — weighted sums             |
-| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)       | Ratios of two weighted totals                               |
-| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)           | Pairwise Pearson correlations                               |
-| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Weighted quantiles and median — Woodruff CIs                |
+| Function | Use for |
+|----|----|
+| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md) | Categorical variables — weighted distributions, percentages |
+| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md) | Continuous variables — weighted means |
+| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md) | Population counts or aggregates — weighted sums |
+| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md) | Ratios of two weighted totals |
+| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md) | Pairwise Pearson correlations |
+| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Weighted quantiles and median — Woodruff CIs |
 
 All functions: - Return a tibble subclass ready for further analysis or
 display - Accept a `group` argument for subgroup estimates - Accept a

@@ -88,16 +88,16 @@ FPC). It supports:
 
 Each analysis function accepts specific types of outcome variables:
 
-| Function                                                                               | Accepts                                                        |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------|
-| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)         | Categorical or coded integer variables                         |
-| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)         | Numeric variables                                              |
-| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)       | Numeric variables                                              |
-| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)           | Pairs of numeric variables                                     |
-| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Numeric variables                                              |
-| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)       | Two numeric variables (numerator / denominator)                |
-| [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)         | A categorical grouping variable + one or more numeric outcomes |
-| [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)       | Numeric or binary response, numeric or categorical predictors  |
+| Function | Accepts |
+|----|----|
+| [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md) | Categorical or coded integer variables |
+| [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md) | Numeric variables |
+| [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md) | Numeric variables |
+| [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md) | Pairs of numeric variables |
+| [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md) | Numeric variables |
+| [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md) | Two numeric variables (numerator / denominator) |
+| [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md) | A categorical grouping variable + one or more numeric outcomes |
+| [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md) | Numeric or binary response, numeric or categorical predictors |
 
 ## Basic usage
 

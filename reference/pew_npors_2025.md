@@ -363,7 +363,11 @@ names(pew_npors_2025)
 #> [64] "basewt"            "weight"           
 
 # Create survey design (no PSU for ABS design)
-# svy <- as_survey(pew_npors_2025, strata = stratum, weights = weight)
+svy <- as_survey(
+  pew_npors_2025,
+  strata = stratum,
+  weights = weight
+)
 
 # Inspect variable label
 attr(pew_npors_2025$smuse_fb, "label")

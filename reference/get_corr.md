@@ -270,6 +270,7 @@ Other analysis:
 [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md),
 [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
+[`get_effective_n()`](https://jdenn0514.github.io/surveycore/reference/get_effective_n.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md),
@@ -322,5 +323,5 @@ get_corr(d_ord, x = c(o1, o2), method = "polychoric")
 #> # A tibble: 1 × 9
 #>   var1  var2        r ci_low ci_high p_value statistic    df     n
 #>   <fct> <fct>   <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
-#> 1 o1    o2    -0.0110 -0.299   0.279   0.942   -0.0725    NA   200
+#> 1 o1    o2    -0.0149 -0.298   0.271   0.921   -0.0997    NA   200
 ```

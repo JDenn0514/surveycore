@@ -13,7 +13,7 @@ cross-section are included."><meta property="og:image" content="https://jdenn051
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -168,7 +168,8 @@ linearization:</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>,</span>
 <span>  ids     <span class="op">=</span> <span class="va">vpsu</span>,</span>
 <span>  strata  <span class="op">=</span> <span class="va">vstrat</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">wtssps</span>       <span class="co"># or wtssnrps for non-response-adjusted weight</span></span>
+<span>  weights <span class="op">=</span> <span class="va">wtssps</span>,      <span class="co"># or wtssnrps for non-response-adjusted weight</span></span>
+<span>  nest    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
 <p><strong>Missing value codes:</strong> The GSS uses a consistent system of negative
 integer codes for missing data across all variables:</p><table class="table table"><tr><td>Code</td><td>Meaning</td></tr><tr><td><code>-100</code></td><td>Inapplicable (question not asked of this respondent)</td></tr><tr><td><code>-99</code></td><td>No answer</td></tr><tr><td><code>-98</code></td><td>Don't know</td></tr><tr><td><code>-97</code></td><td>Skipped on web</td></tr><tr><td><code>-90</code></td><td>Refused</td></tr></table><p>These codes are stored as value labels on every column (check
@@ -199,7 +200,13 @@ each code to its meaning, including all missing-value codes. Example:
 <span class="r-out co"><span class="r-pr">#&gt;</span> [25] "abany"    "attend"   "relig"   </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Create survey design</span></span></span>
-<span class="r-in"><span><span class="co"># svy &lt;- as_survey(gss_2024, ids = vpsu, strata = vstrat, weights = wtssps)</span></span></span>
+<span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">gss_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Inspect variable label</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">gss_2024</span><span class="op">$</span><span class="va">happy</span>, <span class="st">"label"</span><span class="op">)</span></span></span>

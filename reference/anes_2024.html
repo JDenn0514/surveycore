@@ -15,7 +15,7 @@ of the American electorate. Fielded via face-to-face interview and web
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,14 +148,16 @@ post-election variables:</p>
 <span><span class="va">svy_pre</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">anes_2024</span>,</span>
 <span>  ids     <span class="op">=</span> <span class="va">v240103c</span>,</span>
 <span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">v240103a</span></span>
+<span>  weights <span class="op">=</span> <span class="va">v240103a</span>,</span>
+<span>  nest    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Post-election analysis (validated vote choice)</span></span>
 <span><span class="va">svy_post</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">anes_2024</span>,</span>
 <span>  ids     <span class="op">=</span> <span class="va">v240103c</span>,</span>
 <span>  strata  <span class="op">=</span> <span class="va">v240103d</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">v240103b</span></span>
+<span>  weights <span class="op">=</span> <span class="va">v240103b</span>,</span>
+<span>  nest    <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
 <p><strong>Missing value codes:</strong> The ANES uses negative integer codes for missing
 data throughout: <code>-9</code> = Refused, <code>-8</code> = Don't know, <code>-4</code> = Technical error,
@@ -184,8 +186,13 @@ each code to its meaning, including all missing-value codes. Example:
 <span class="r-out co"><span class="r-pr">#&gt;</span> [19] "v242067" </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Create pre-election design</span></span></span>
-<span class="r-in"><span><span class="co"># svy &lt;- as_survey(anes_2024, ids = v240103c, strata = v240103d,</span></span></span>
-<span class="r-in"><span><span class="co">#                  weights = v240103a)</span></span></span>
+<span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">anes_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">v240103c</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">v240103d</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">v240103a</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Inspect variable label (ANES uses opaque V-codes; labels give context)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">anes_2024</span><span class="op">$</span><span class="va">v241177</span>, <span class="st">"label"</span><span class="op">)</span></span></span>

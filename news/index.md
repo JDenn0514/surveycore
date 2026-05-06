@@ -1,5 +1,43 @@
 # Changelog
 
+## surveycore 0.8.4
+
+### New features
+
+- [`get_effective_n()`](https://jdenn0514.github.io/surveycore/reference/get_effective_n.md)
+  computes the effective sample size of a survey design using the
+  Kish (1965) weight approximation (`method = "kish"`) or the full
+  design effect for a specified variable (`method = "deff"`). Supports
+  all design types and `survey_collection`.
+
+## surveycore 0.8.3
+
+CRAN release: 2026-05-05
+
+### CRAN preparation
+
+- Resubmission addressing CRAN feedback on the 0.8.2 submission. Four
+  changes: (1) Added DOI references to the package `Description` (Lumley
+  2004 for variance estimation; Mannan 2025 for weighted
+  polychoric/polyserial correlation). (2) Uncommented three
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  calls in the `@examples` blocks of `anes_2024`, `gss_2024`, and
+  `pew_npors_2025`, so they now run during `R CMD check`. The ANES and
+  GSS examples (and the corresponding prose `@details` sketches) also
+  gained `nest = TRUE`, which is required by those designs and silences
+  a previously-emitted warning. (3) Replaced the `\section{Tidy-select}`
+  `\preformatted{}` code sketch in
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  with prose, and added two runnable demonstrations to the `@examples`
+  block ([`c()`](https://rdrr.io/r/base/c.html) for multi-stage IDs on a
+  synthetic frame, and `starts_with()` for tidyselect-helper weights on
+  `gss_2024`). (4) Replaced
+  [`globalenv()`](https://rdrr.io/r/base/environment.html) with
+  [`baseenv()`](https://rdrr.io/r/base/environment.html) as the formula
+  environment in
+  [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  to comply with CRAN policy on `.GlobalEnv` modification.
+
 ## surveycore 0.8.2
 
 ### CRAN preparation

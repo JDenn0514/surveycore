@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,28 +64,28 @@
 <h2 id="vendored-functions">Vendored Functions<a class="anchor" aria-label="anchor" href="#vendored-functions"></a></h2>
 <div class="section level3">
 <h3 id="taylor--replicate-r06-variance-taylorr">Taylor / Replicate (R/06-variance-taylor.R)<a class="anchor" aria-label="anchor" href="#taylor--replicate-r06-variance-taylorr"></a></h3>
-<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr><th>surveycore name</th>
 <th>Adapted from</th>
 <th>survey version</th>
 <th>Modified?</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td><code>.svy_onestrat()</code></td>
+</tr></thead><tbody><tr><td><code>.svy_onestrat()</code></td>
 <td><code>survey:::onestrat</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>cli errors; <code>getOption("survey.adjust.domain.lonely")</code> removed</td>
-</tr><tr class="even"><td><code>.svy_onestage()</code></td>
+</tr><tr><td><code>.svy_onestage()</code></td>
 <td><code>survey:::onestage</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>
 <code>vapply</code> instead of <code>sapply</code>; cli error format</td>
-</tr><tr class="odd"><td><code>.svy_multistage()</code></td>
+</tr><tr><td><code>.svy_multistage()</code></td>
 <td><code>survey:::multistage</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>RCPP path removed; renamed <code>fpcs</code> param to <code>popmat</code> for clarity</td>
-</tr><tr class="even"><td><code>.svy_recvar()</code></td>
+</tr><tr><td><code>.svy_recvar()</code></td>
 <td><code>survey:::svyrecvar</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
@@ -93,28 +93,28 @@
 </tr></tbody></table></div>
 <div class="section level3">
 <h3 id="two-phase-r06-variance-twophaser">Two-Phase (R/06-variance-twophase.R)<a class="anchor" aria-label="anchor" href="#two-phase-r06-variance-twophaser"></a></h3>
-<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr><th>surveycore name</th>
 <th>Adapted from</th>
 <th>survey version</th>
 <th>Modified?</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td><code>.twophasevar()</code></td>
+</tr></thead><tbody><tr><td><code>.twophasevar()</code></td>
 <td><code>survey:::twophasevar</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>S7 class access; three-method dispatch made explicit; cli errors</td>
-</tr><tr class="even"><td><code>.twophase_phase1_var()</code></td>
+</tr><tr><td><code>.twophase_phase1_var()</code></td>
 <td><code>survey:::svyrecvar.phase1</code></td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>S7 <code>@variables</code> access; FPC matrix built inline; cli errors</td>
-</tr><tr class="odd"><td><code>.twophase_phase2_var()</code></td>
+</tr><tr><td><code>.twophase_phase2_var()</code></td>
 <td>Phase 2 component of <code>survey:::twophasevar</code>
 </td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>S7 access; auto-popsize computation; RCPP path removed</td>
-</tr><tr class="even"><td><code>.compute_phase2_probs()</code></td>
+</tr><tr><td><code>.compute_phase2_probs()</code></td>
 <td>Internal prob computation in <code>survey/R/twophase.R</code>
 </td>
 <td>4.4.8</td>
@@ -123,38 +123,38 @@
 </tr></tbody></table></div>
 <div class="section level3">
 <h3 id="correlation-variance-r06-variance-taylorr-r06-variance-replicater-r06-variance-srsr-r06-variance-twophaser">Correlation Variance (R/06-variance-taylor.R, R/06-variance-replicate.R, R/06-variance-srs.R, R/06-variance-twophase.R)<a class="anchor" aria-label="anchor" href="#correlation-variance-r06-variance-taylorr-r06-variance-replicater-r06-variance-srsr-r06-variance-twophaser"></a></h3>
-<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr><th>surveycore name</th>
 <th>Adapted from</th>
 <th>survey version</th>
 <th>Modified?</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td><code>.vcov_pair_taylor()</code></td>
+</tr></thead><tbody><tr><td><code>.vcov_pair_taylor()</code></td>
 <td>
 <code>survey:::svyvar</code> linearization in <code>survey/R/surveysummary.R</code>
 </td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>Bivariate domain-estimation; 3-column influence matrix; S7 <code>@variables</code> access</td>
-</tr><tr class="even"><td><code>.vcov_pair_replicate()</code></td>
+</tr><tr><td><code>.vcov_pair_replicate()</code></td>
 <td>Replicate variance of <code>survey:::svyvar</code>
 </td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>Per-replicate (Var(X), Cov(X,Y), Var(Y)) computation; 3×3 meta-vcov via matrix replicate formula</td>
-</tr><tr class="odd"><td><code>.vcov_pair_srs()</code></td>
+</tr><tr><td><code>.vcov_pair_srs()</code></td>
 <td>Taylor linearization of <code>survey:::svyvar</code> applied to <code>svydesign(ids=~1)</code>
 </td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>SRS structure (each obs = own PSU); delegates to <code>.svy_recvar()</code>
 </td>
-</tr><tr class="even"><td><code>.vcov_pair_calibrated()</code></td>
+</tr><tr><td><code>.vcov_pair_calibrated()</code></td>
 <td>HT linearization of <code>survey:::svyvar</code>
 </td>
 <td>4.4.8</td>
 <td>Yes</td>
 <td>HT variance formula for calibrated designs; in-domain rows only</td>
-</tr><tr class="odd"><td><code>.vcov_pair_twophase()</code></td>
+</tr><tr><td><code>.vcov_pair_twophase()</code></td>
 <td>Two-phase linearization of <code>survey:::svyvar</code>
 </td>
 <td>4.4.8</td>
@@ -163,17 +163,17 @@
 </tr></tbody></table></div>
 <div class="section level3">
 <h3 id="woodruff-quantile-helpers-r13-analysis-quantilesr">Woodruff Quantile Helpers (R/13-analysis-quantiles.R)<a class="anchor" aria-label="anchor" href="#woodruff-quantile-helpers-r13-analysis-quantilesr"></a></h3>
-<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr class="header"><th>surveycore name</th>
+<table class="table"><colgroup><col width="26%"><col width="20%"><col width="25%"><col width="17%"><col width="10%"></colgroup><thead><tr><th>surveycore name</th>
 <th>Adapted from</th>
 <th>survey version</th>
 <th>Modified?</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td><code>.last()</code></td>
+</tr></thead><tbody><tr><td><code>.last()</code></td>
 <td><code>survey:::.last</code></td>
 <td>4.4.8</td>
 <td>Minimal</td>
 <td>Renamed; identical logic</td>
-</tr><tr class="even"><td><code>.wtd_qs()</code></td>
+</tr><tr><td><code>.wtd_qs()</code></td>
 <td>
 <code>survey:::qs</code> with <code>survey:::qrule_math</code> inlined</td>
 <td>4.4.8</td>

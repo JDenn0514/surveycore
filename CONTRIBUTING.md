@@ -77,6 +77,7 @@ SURVEYCORE_EXTENDED_TESTS=true Rscript -e "devtools::test()"
 To run extended tests locally:
 
 ``` r
+
 Sys.setenv(SURVEYCORE_EXTENDED_TESTS = "true")
 devtools::test()
 ```
@@ -85,6 +86,7 @@ Extended tests live in the same `tests/testthat/` directory as regular
 tests. Any test block that requires the extended flag wraps its body in:
 
 ``` r
+
 skip_if(
   !identical(Sys.getenv("SURVEYCORE_EXTENDED_TESTS"), "true"),
   message = "Set SURVEYCORE_EXTENDED_TESTS=true to run extended tests"
