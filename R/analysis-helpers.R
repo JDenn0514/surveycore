@@ -141,7 +141,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' @param design   A survey design object.
 #' @param var_name Character(1). Column name in `design@data`.
 #' @return Named list with keys `variable_label`, `question_preface`,
-#'   `value_labels`, and `sata`.
+#'   `value_labels`, `sata`, and `higher_is`.
 #' @noRd
 .extract_var_meta <- function(design, var_name) {
   col <- design@data[[var_name]]
@@ -162,11 +162,14 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
   sata <- isTRUE(design@metadata@sata[[var_name]])
 
+  higher_is <- design@metadata@higher_is[[var_name]] %||% NULL
+
   list(
     variable_label = variable_label,
     question_preface = question_preface,
     value_labels = value_labels,
-    sata = sata
+    sata = sata,
+    higher_is = higher_is
   )
 }
 

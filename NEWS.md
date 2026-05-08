@@ -1,3 +1,14 @@
+# surveycore 0.8.5.9000 (development)
+
+## New features
+
+* `set_higher_is()` and `extract_higher_is()` store and retrieve a
+  direction-of-improvement attribute (`"better"` or `"worse"`) for survey
+  variables. The attribute is used by `get_diffs()` (upcoming
+  `show_favorability` argument) to classify differences as favorable or
+  backlash. Supports all three calling conventions (named `...` args, named
+  vector, `variable =` + `direction =`), data frames, and tidy-select.
+
 # surveycore 0.8.4
 
 ## New features
