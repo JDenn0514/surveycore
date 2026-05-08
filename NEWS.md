@@ -9,6 +9,12 @@
   backlash. Supports all three calling conventions (named `...` args, named
   vector, `variable =` + `direction =`), data frames, and tidy-select.
 
+* `set_reverse_coded()` and `extract_reverse_coded()` store and retrieve a
+  reverse-coded flag for survey variables. Supports tidy-select `...` (bare
+  names and selection helpers) and the `variable =` character-vector
+  interface. Setting `reverse_coded = FALSE` removes the flag. Works on both
+  survey design objects and plain data frames.
+
 # surveycore 0.8.4
 
 ## New features

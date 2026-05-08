@@ -103,6 +103,7 @@ reference:
       - set_missing_codes
       - set_sata
       - set_higher_is
+      - set_reverse_coded
       - infer_question_prefaces
 
   - title: "Metadata — extractors"
@@ -117,6 +118,7 @@ reference:
       - extract_missing_codes
       - extract_sata
       - extract_higher_is
+      - extract_reverse_coded
       - extract_metadata
       - classify_question_type
       - survey_weighting_history

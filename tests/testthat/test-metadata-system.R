@@ -2858,3 +2858,171 @@ test_that(".extract_var_meta() includes higher_is key in output", {
   meta <- surveycore:::.extract_var_meta(d, "bpxsy1")
   expect_identical(meta$higher_is, "worse")
 })
+
+# ── PR 2 — reverse_coded ──────────────────────────────────────────────────────
+
+# ── set_reverse_coded() — happy paths ─────────────────────────────────────────
+
+test_that("set_reverse_coded() Convention A (bare name) stores TRUE for variable", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  expect_identical(d@metadata@reverse_coded[["bpxsy1"]], TRUE)
+})
+
+test_that("set_reverse_coded() Convention A multiple bare names stores TRUE for both", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1, ridageyr)
+  expect_identical(d@metadata@reverse_coded[["bpxsy1"]], TRUE)
+  expect_identical(d@metadata@reverse_coded[["ridageyr"]], TRUE)
+})
+
+test_that("set_reverse_coded() with reverse_coded = FALSE removes the entry", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  d <- set_reverse_coded(d, bpxsy1, reverse_coded = FALSE)
+  expect_null(d@metadata@reverse_coded[["bpxsy1"]])
+})
+
+test_that("set_reverse_coded() Convention B (variable=) stores TRUE for all listed vars", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, variable = c("bpxsy1", "ridageyr"))
+  expect_identical(d@metadata@reverse_coded[["bpxsy1"]], TRUE)
+  expect_identical(d@metadata@reverse_coded[["ridageyr"]], TRUE)
+})
+
+test_that("set_reverse_coded() data frame path stores attr on column", {
+  df <- data.frame(x = 1:5, y = 6:10)
+  df <- set_reverse_coded(df, x)
+  expect_identical(attr(df$x, "reverse_coded"), TRUE)
+  expect_null(attr(df$y, "reverse_coded"))
+})
+
+test_that("extract_reverse_coded() single bare name returns named logical TRUE", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  result <- extract_reverse_coded(d, bpxsy1)
+  expect_identical(result, c(bpxsy1 = TRUE))
+})
+
+test_that("extract_reverse_coded() no var arg returns all variables; unset => FALSE", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  result <- extract_reverse_coded(d)
+  expect_true(is.logical(result))
+  expect_true(result[["bpxsy1"]])
+  expect_false(result[["ridageyr"]])
+})
+
+test_that("extract_reverse_coded() variable = char vector returns named logical", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  result <- extract_reverse_coded(d, variable = "bpxsy1")
+  expect_identical(result, c(bpxsy1 = TRUE))
+})
+
+# ── set_reverse_coded() / extract_reverse_coded() — error paths ───────────────
+
+test_that("set_reverse_coded() errors for non-survey non-df input", {
+  expect_error(
+    set_reverse_coded(list(x = 1), bpxsy1),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, set_reverse_coded(list(x = 1), bpxsy1))
+})
+
+test_that("extract_reverse_coded() errors for non-survey non-df input", {
+  expect_error(
+    extract_reverse_coded(list(x = 1), bpxsy1),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, extract_reverse_coded(list(x = 1), bpxsy1))
+})
+
+test_that("set_reverse_coded() errors when reverse_coded = NA", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_reverse_coded(d, bpxsy1, reverse_coded = NA),
+    class = "surveycore_error_reverse_coded_not_logical"
+  )
+  expect_snapshot(error = TRUE, set_reverse_coded(d, bpxsy1, reverse_coded = NA))
+})
+
+test_that("set_reverse_coded() errors when both ... and variable provided (setter)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_reverse_coded(d, bpxsy1, variable = "bpxsy1"),
+    class = "surveycore_error_reverse_coded_ambiguous_input"
+  )
+  expect_snapshot(error = TRUE, set_reverse_coded(d, bpxsy1, variable = "bpxsy1"))
+})
+
+test_that("extract_reverse_coded() errors when both ... and variable provided (extractor)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    extract_reverse_coded(d, bpxsy1, variable = "bpxsy1"),
+    class = "surveycore_error_reverse_coded_ambiguous_input"
+  )
+  expect_snapshot(error = TRUE, extract_reverse_coded(d, bpxsy1, variable = "bpxsy1"))
+})
+
+test_that("set_reverse_coded() errors when no variable names provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_reverse_coded(d),
+    class = "surveycore_error_reverse_coded_no_vars"
+  )
+  expect_snapshot(error = TRUE, set_reverse_coded(d))
+})
+
+test_that("set_reverse_coded() warns when variable not found in x", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    set_reverse_coded(d, variable = "nonexistent_var_xyz"),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_snapshot(set_reverse_coded(d, variable = "nonexistent_var_xyz"))
+})
+
+test_that("extract_reverse_coded() warns and returns logical(0) when variable not found", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    result <- extract_reverse_coded(d, variable = "nonexistent_var_xyz"),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_identical(result, logical(0))
+})
+
+# ── set_reverse_coded() / extract_reverse_coded() — edge cases ────────────────
+
+test_that("set then unset: extract_reverse_coded() returns FALSE after reverse_coded = FALSE", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_reverse_coded(d, bpxsy1)
+  expect_true(extract_reverse_coded(d, bpxsy1)[["bpxsy1"]])
+  d <- set_reverse_coded(d, bpxsy1, reverse_coded = FALSE)
+  expect_false(extract_reverse_coded(d, bpxsy1)[["bpxsy1"]])
+})
+
+test_that("extract_reverse_coded() returns logical(0) when zero-length variable= result", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    result <- extract_reverse_coded(d, variable = "nonexistent_xyz"),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_identical(result, logical(0))
+  expect_true(is.logical(result))
+})
