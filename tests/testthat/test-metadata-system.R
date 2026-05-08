@@ -2649,3 +2649,212 @@ test_that(".extract_var_meta() includes sata key in output", {
   expect_true(meta_sata$sata)
   expect_false(meta_no_sata$sata)
 })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PR 1 — higher_is
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── set_higher_is() — happy paths ─────────────────────────────────────────────
+
+test_that("set_higher_is() Conv 1 single: stores direction under variable name", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "worse")
+})
+
+test_that("set_higher_is() Conv 1 multi-var: stores both directions", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse", bpxdi1 = "better")
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "worse")
+  expect_identical(d@metadata@higher_is[["bpxdi1"]], "better")
+})
+
+test_that("set_higher_is() Conv 2 named vector: stores both directions", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, c(bpxsy1 = "worse", bpxdi1 = "better"))
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "worse")
+  expect_identical(d@metadata@higher_is[["bpxdi1"]], "better")
+})
+
+test_that("set_higher_is() Conv 3 scalar: variable + direction args", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, variable = "bpxsy1", direction = "worse")
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "worse")
+})
+
+test_that("set_higher_is() Conv 3 vector: multiple variables + direction vector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, variable = c("bpxsy1", "bpxdi1"), direction = c("worse", "worse"))
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "worse")
+  expect_identical(d@metadata@higher_is[["bpxdi1"]], "worse")
+})
+
+test_that("set_higher_is() NULL direction removes the entry", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  d <- set_higher_is(d, bpxsy1 = NULL)
+  expect_null(d@metadata@higher_is[["bpxsy1"]])
+})
+
+test_that("set_higher_is() on data frame stores attr on column", {
+  df <- data.frame(score = 1:5, rating = 1:5)
+  df <- set_higher_is(df, score = "worse")
+  expect_identical(attr(df[["score"]], "higher_is"), "worse")
+})
+
+test_that("extract_higher_is() single bare name returns named character vector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  result <- extract_higher_is(d, bpxsy1)
+  expect_identical(result, c(bpxsy1 = "worse"))
+})
+
+test_that("extract_higher_is() c() of bare names returns both", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse", bpxdi1 = "better")
+  result <- extract_higher_is(d, c(bpxsy1, bpxdi1))
+  expect_identical(result, c(bpxsy1 = "worse", bpxdi1 = "better"))
+})
+
+test_that("extract_higher_is() no ... returns all vars; unset are NA_character_", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  result <- extract_higher_is(d)
+  expect_identical(result[["bpxsy1"]], "worse")
+  expect_identical(result[["ridageyr"]], NA_character_)
+  expect_true(is.character(result))
+  expect_true(!is.null(names(result)))
+})
+
+test_that("extract_higher_is() variable = character returns named vector", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  result <- extract_higher_is(d, variable = "bpxsy1")
+  expect_identical(result, c(bpxsy1 = "worse"))
+})
+
+# ── set_higher_is() — error paths ─────────────────────────────────────────────
+
+test_that("set_higher_is() errors when x is not a survey or data frame", {
+  expect_error(
+    set_higher_is(list(x = 1), bpxsy1 = "worse"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, set_higher_is(list(x = 1), bpxsy1 = "worse"))
+})
+
+test_that("extract_higher_is() errors when x is not a survey or data frame", {
+  expect_error(
+    extract_higher_is(list(x = 1), bpxsy1),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_snapshot(error = TRUE, extract_higher_is(list(x = 1), bpxsy1))
+})
+
+test_that("set_higher_is() errors for invalid direction (Conv 1)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_higher_is(d, bpxsy1 = "neutral"),
+    class = "surveycore_error_direction_invalid"
+  )
+  expect_snapshot(error = TRUE, set_higher_is(d, bpxsy1 = "neutral"))
+})
+
+test_that("set_higher_is() errors for invalid direction (Conv 3)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_higher_is(d, variable = "bpxsy1", direction = "neutral"),
+    class = "surveycore_error_direction_invalid"
+  )
+  expect_snapshot(error = TRUE, set_higher_is(d, variable = "bpxsy1", direction = "neutral"))
+})
+
+test_that("set_higher_is() errors when both ... and variable provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_higher_is(d, bpxsy1 = "worse", variable = "bpxsy1"),
+    class = "surveycore_error_higher_is_ambiguous_input"
+  )
+  expect_snapshot(error = TRUE, set_higher_is(d, bpxsy1 = "worse", variable = "bpxsy1"))
+})
+
+test_that("extract_higher_is() errors when both ... and variable provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    extract_higher_is(d, bpxsy1, variable = "bpxsy1"),
+    class = "surveycore_error_higher_is_ambiguous_input"
+  )
+  expect_snapshot(error = TRUE, extract_higher_is(d, bpxsy1, variable = "bpxsy1"))
+})
+
+test_that("set_higher_is() errors when no variable names provided", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_error(
+    set_higher_is(d),
+    class = "surveycore_error_higher_is_no_vars"
+  )
+  expect_snapshot(error = TRUE, set_higher_is(d))
+})
+
+test_that("set_higher_is() warns when variable not found in x (setter)", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    set_higher_is(d, nonexistent_var_xyz = "worse"),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_snapshot(set_higher_is(d, nonexistent_var_xyz = "worse"))
+})
+
+test_that("extract_higher_is() warns and returns character(0) when variable not found", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  expect_warning(
+    result <- extract_higher_is(d, variable = "nonexistent_var_xyz"),
+    class = "surveycore_warning_var_not_found"
+  )
+  expect_identical(result, character(0))
+  expect_null(names(result))
+})
+
+# ── set_higher_is() — edge cases ──────────────────────────────────────────────
+
+test_that("set_higher_is() overwrite: last write wins", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  d <- set_higher_is(d, bpxsy1 = "better")
+  expect_identical(d@metadata@higher_is[["bpxsy1"]], "better")
+})
+
+test_that("extract_higher_is() all-NA when no higher_is set on any variable", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  result <- extract_higher_is(d)
+  expect_true(all(is.na(result)))
+  expect_true(is.character(result))
+})
+
+test_that(".extract_var_meta() includes higher_is key in output", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+                 strata = sdmvstra, nest = TRUE)
+  d <- set_higher_is(d, bpxsy1 = "worse")
+  meta <- surveycore:::.extract_var_meta(d, "bpxsy1")
+  expect_identical(meta$higher_is, "worse")
+})

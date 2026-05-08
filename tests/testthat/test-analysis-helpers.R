@@ -778,12 +778,13 @@ test_that(".extract_var_meta() returns all-NULL list for plain numeric column", 
   expect_type(result, "list")
   expect_identical(
     names(result),
-    c("variable_label", "question_preface", "value_labels", "sata")
+    c("variable_label", "question_preface", "value_labels", "sata", "higher_is")
   )
   expect_null(result$variable_label)
   expect_null(result$question_preface)
   expect_null(result$value_labels)
   expect_false(result$sata)
+  expect_null(result$higher_is)
 })
 
 test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {

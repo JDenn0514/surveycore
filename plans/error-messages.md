@@ -254,6 +254,14 @@ against the messages defined here.
 | EN-3 | `get_effective_n()` | `x` resolves to more than one column | ERROR | `surveycore_error_effective_n_x_multi_col` | `"x" = "{.arg x} must select exactly one variable, not {length(selected)}.", "i" = "Selected: {.field {selected}}.", "v" = "Pass one variable at a time, or loop over variables."` |
 | EN-4 | `get_effective_n()` | `method` is not `"kish"` or `"deff"` | ERROR | (thrown by `match.arg()`; no custom class) | — |
 
+### higher_is / direction rows (PR 1 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| HI-1 | `set_higher_is()`, `extract_higher_is()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_higher_is_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| HI-2 | `set_higher_is()` | Neither `...` nor `variable` provided | ERROR | `surveycore_error_higher_is_no_vars` | `"x" = "{.fn set_higher_is} requires at least one variable name."` |
+| HI-3 | `set_higher_is()` | `direction` value is not `"better"`, `"worse"`, or `NULL` | ERROR | `surveycore_error_direction_invalid` | `"x" = "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} (or {.code NULL} to remove). Got {.val {bad}}."` |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
