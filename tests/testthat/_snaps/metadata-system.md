@@ -620,3 +620,61 @@
       Warning:
       ! 1 variable not found in `x` and was skipped: nonexistent_var_xyz.
 
+# set_reverse_coded() errors for non-survey non-df input
+
+    Code
+      set_reverse_coded(list(x = 1), bpxsy1)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_reverse_coded() errors for non-survey non-df input
+
+    Code
+      extract_reverse_coded(list(x = 1), bpxsy1)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# set_reverse_coded() errors when reverse_coded = NA
+
+    Code
+      set_reverse_coded(d, bpxsy1, reverse_coded = NA)
+    Condition
+      Error:
+      x `reverse_coded` must be `TRUE` or `FALSE`.
+
+# set_reverse_coded() errors when both ... and variable provided (setter)
+
+    Code
+      set_reverse_coded(d, bpxsy1, variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# extract_reverse_coded() errors when both ... and variable provided (extractor)
+
+    Code
+      extract_reverse_coded(d, bpxsy1, variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# set_reverse_coded() errors when no variable names provided
+
+    Code
+      set_reverse_coded(d)
+    Condition
+      Error:
+      x `set_reverse_coded()` requires at least one variable name.
+
+# set_reverse_coded() warns when variable not found in x
+
+    Code
+      set_reverse_coded(d, variable = "nonexistent_var_xyz")
+    Condition
+      Warning:
+      ! 1 variable not found in `x` and was skipped: nonexistent_var_xyz.
+

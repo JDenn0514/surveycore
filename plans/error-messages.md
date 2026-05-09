@@ -262,6 +262,14 @@ against the messages defined here.
 | HI-2 | `set_higher_is()` | Neither `...` nor `variable` provided | ERROR | `surveycore_error_higher_is_no_vars` | `"x" = "{.fn set_higher_is} requires at least one variable name."` |
 | HI-3 | `set_higher_is()` | `direction` value is not `"better"`, `"worse"`, or `NULL` | ERROR | `surveycore_error_direction_invalid` | `"x" = "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} (or {.code NULL} to remove). Got {.val {bad}}."` |
 
+### reverse_coded rows (PR 2 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| RC-1 | `set_reverse_coded()`, `extract_reverse_coded()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_reverse_coded_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| RC-2 | `set_reverse_coded()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_reverse_coded_no_vars` | `"x" = "{.fn set_reverse_coded} requires at least one variable name."` |
+| RC-3 | `set_reverse_coded()` | `reverse_coded` is not `TRUE` or `FALSE` (e.g., `NA`, non-logical) | ERROR | `surveycore_error_reverse_coded_not_logical` | `"x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."` |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -337,3 +345,4 @@ Which test files cover which error table rows:
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
+| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
