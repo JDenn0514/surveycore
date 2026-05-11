@@ -4,16 +4,24 @@
 
 * `set_higher_is()` and `extract_higher_is()` store and retrieve a
   direction-of-improvement attribute (`"better"` or `"worse"`) for survey
-  variables. The attribute is used by `get_diffs()` (upcoming
-  `show_favorability` argument) to classify differences as favorable or
-  backlash. Supports all three calling conventions (named `...` args, named
-  vector, `variable =` + `direction =`), data frames, and tidy-select.
+  variables. The attribute is used by `get_diffs(show_favorability = TRUE)`
+  to classify differences as favorable or backlash. Supports all three
+  calling conventions (named `...` args, named vector,
+  `variable =` + `direction =`), data frames, and tidy-select.
 
 * `set_reverse_coded()` and `extract_reverse_coded()` store and retrieve a
   reverse-coded flag for survey variables. Supports tidy-select `...` (bare
   names and selection helpers) and the `variable =` character-vector
   interface. Setting `reverse_coded = FALSE` removes the flag. Works on both
   survey design objects and plain data frames.
+
+* `get_diffs()` gains `alpha` and `show_favorability` arguments.
+  `show_favorability = TRUE` appends `favorable` and `backlash` logical
+  columns to the result. A difference is classified as favorable when it is
+  statistically significant (`p < alpha`, default `0.05`) and in the
+  direction indicated by `higher_is` metadata set via `set_higher_is()`.
+  When no `higher_is` metadata is set, both columns are all `FALSE`. The
+  adjusted p-value (when `pval_adj` is supplied) is used for classification.
 
 # surveycore 0.8.4
 

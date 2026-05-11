@@ -17,6 +17,8 @@ get_diffs(
   scale = c("ame", "link"),
   variance = "ci",
   conf_level = 0.95,
+  alpha = 0.05,
+  show_favorability = FALSE,
   min_cell_n = 30L,
   n_weighted = FALSE,
   decimals = NULL,
@@ -79,6 +81,18 @@ For Gaussian/identity models, both are identical. Case-sensitive.}
 \item{conf_level}{Numeric(1) in (0, 1). Confidence level. Default
 \code{0.95}.}
 
+\item{alpha}{Numeric(1) strictly between 0 and 1. Significance threshold
+used when \code{show_favorability = TRUE} to classify whether a difference
+is statistically significant. Uses strict \code{<} (p < alpha). Default
+\code{0.05}.}
+
+\item{show_favorability}{Logical. If \code{TRUE}, appends two logical columns
+to the result: \code{favorable} (the difference is statistically significant
+and in the direction indicated by \code{higher_is} metadata on \code{x}) and
+\code{backlash} (significant but in the opposite direction). Requires
+\code{higher_is} metadata set on \code{x} via \code{\link[=set_higher_is]{set_higher_is()}}; if not set,
+both columns are all \code{FALSE}. Default \code{FALSE}.}
+
 \item{min_cell_n}{Integer(1). Minimum unweighted cell size before
 \code{surveycore_warning_small_cell} fires. Default \code{30L}.}
 
@@ -121,8 +135,9 @@ A \code{survey_diffs} tibble (also inheriting \code{survey_result}).
 Columns (in order): group columns (when active), treatment variable,
 \code{estimate}, \code{pct_change} (optional), \code{mean} (optional), \code{n},
 \code{n_weighted} (optional), \code{se} (optional), \code{ci_low} (optional),
-\code{ci_high} (optional), \code{p_value}, \code{stars}. Use \code{\link[=meta]{meta()}} to access
-design type, family, reference level, and other metadata.
+\code{ci_high} (optional), \code{p_value}, \code{stars}, \code{favorable} (optional),
+\code{backlash} (optional). Use \code{\link[=meta]{meta()}} to access design type, family,
+reference level, and other metadata.
 }
 \description{
 Estimates treatment effects (differences from a reference group) via
