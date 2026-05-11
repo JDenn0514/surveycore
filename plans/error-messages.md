@@ -270,6 +270,12 @@ against the messages defined here.
 | RC-2 | `set_reverse_coded()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_reverse_coded_no_vars` | `"x" = "{.fn set_reverse_coded} requires at least one variable name."` |
 | RC-3 | `set_reverse_coded()` | `reverse_coded` is not `TRUE` or `FALSE` (e.g., `NA`, non-logical) | ERROR | `surveycore_error_reverse_coded_not_logical` | `"x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."` |
 
+### diffs favorability rows (PR 3 — 2026-05-11)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| FA-1 | `get_diffs()` | `alpha` not a single numeric value strictly between 0 and 1 | ERROR | `surveycore_error_alpha_invalid` | `"{.arg alpha} must be a single numeric value strictly between 0 and 1. Got {.val {alpha}}."` |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -336,7 +342,7 @@ Which test files cover which error table rows:
 | `test-glm-methods.R` | 76 |
 | `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |
-| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
+| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new), FA-1 (new) |
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
 | `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8, C15 |

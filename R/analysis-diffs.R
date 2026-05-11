@@ -52,6 +52,16 @@
 #'   `"ci"`. Controls which uncertainty columns appear. Default `"ci"`.
 #' @param conf_level Numeric(1) in (0, 1). Confidence level. Default
 #'   `0.95`.
+#' @param alpha Numeric(1) strictly between 0 and 1. Significance threshold
+#'   used when `show_favorability = TRUE` to classify whether a difference
+#'   is statistically significant. Uses strict `<` (p < alpha). Default
+#'   `0.05`.
+#' @param show_favorability Logical. If `TRUE`, appends two logical columns
+#'   to the result: `favorable` (the difference is statistically significant
+#'   and in the direction indicated by `higher_is` metadata on `x`) and
+#'   `backlash` (significant but in the opposite direction). Requires
+#'   `higher_is` metadata set on `x` via [set_higher_is()]; if not set,
+#'   both columns are all `FALSE`. Default `FALSE`.
 #' @param min_cell_n Integer(1). Minimum unweighted cell size before
 #'   `surveycore_warning_small_cell` fires. Default `30L`.
 #' @param n_weighted Logical. If `TRUE`, includes an `n_weighted` column
@@ -123,8 +133,9 @@
 #'   Columns (in order): group columns (when active), treatment variable,
 #'   `estimate`, `pct_change` (optional), `mean` (optional), `n`,
 #'   `n_weighted` (optional), `se` (optional), `ci_low` (optional),
-#'   `ci_high` (optional), `p_value`, `stars`. Use [meta()] to access
-#'   design type, family, reference level, and other metadata.
+#'   `ci_high` (optional), `p_value`, `stars`, `favorable` (optional),
+#'   `backlash` (optional). Use [meta()] to access design type, family,
+#'   reference level, and other metadata.
 #'
 #' @examples
 #' library(marginaleffects)
@@ -160,6 +171,8 @@ get_diffs <- function(
   scale = c("ame", "link"),
   variance = "ci",
   conf_level = 0.95,
+  alpha = 0.05,
+  show_favorability = FALSE,
   min_cell_n = 30L,
   n_weighted = FALSE,
   decimals = NULL,
@@ -192,6 +205,26 @@ get_diffs <- function(
     na.rm = na.rm,
     valid_variance = c("se", "ci")
   )
+
+  # ── Step 1b: Validate alpha ───────────────────────────────────────────────
+  if (
+    !is.numeric(alpha) ||
+      length(alpha) != 1L ||
+      is.na(alpha) ||
+      !is.finite(alpha) ||
+      alpha <= 0 ||
+      alpha >= 1
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg alpha} must be a single numeric value strictly between ",
+          "0 and 1. Got {.val {alpha}}."
+        )
+      ),
+      class = "surveycore_error_alpha_invalid"
+    )
+  }
 
   # ── Step 2: Validate design class ─────────────────────────────────────────
   .check_unsupported_class(design, "get_diffs")
@@ -446,6 +479,39 @@ get_diffs <- function(
 
   # ── Step 20: Attach .meta ────────────────────────────────────────────────
   x_meta <- .extract_var_meta(design, x_name)
+
+  # ── Step 20a: Favorability columns ───────────────────────────────────────
+  if (isTRUE(show_favorability)) {
+    higher_is_val <- x_meta$higher_is
+    pval_col <- if ("p_value" %in% names(result)) "p_value" else "p.value"
+    p_vals <- result[[pval_col]]
+    sig <- !is.na(p_vals) & p_vals < alpha
+
+    favorable <- logical(nrow(result))
+    backlash  <- logical(nrow(result))
+
+    if (!is.null(higher_is_val)) {
+      est <- result$estimate
+      if (higher_is_val == "better") {
+        favorable[sig] <- est[sig] > 0
+        backlash[sig]  <- est[sig] < 0
+      } else if (higher_is_val == "worse") {
+        favorable[sig] <- est[sig] < 0
+        backlash[sig]  <- est[sig] > 0
+      }
+    }
+
+    attr(favorable, "label") <- "Favorable"
+    attr(backlash,  "label") <- "Backlash"
+
+    saved_meta  <- attr(result, ".meta")
+    saved_class <- class(result)
+    result$favorable <- favorable
+    result$backlash  <- backlash
+    attr(result, ".meta") <- saved_meta
+    class(result) <- saved_class
+  }
+
   treats_meta <- .extract_var_meta(design, treats_name)
   treats_meta$name <- treats_name
   treats_meta$ref_level <- ref_level

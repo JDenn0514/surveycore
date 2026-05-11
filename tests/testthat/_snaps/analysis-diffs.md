@@ -84,3 +84,51 @@
       2 A          0.214  50.2    58  -3.29    3.72   0.898 ""   
       3 B         -0.543  49.4    77  -3.95    2.86   0.737 ""   
 
+# get_diffs() rejects alpha > 1
+
+    Code
+      get_diffs(d, dv, treats, alpha = 1.5)
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got 1.5.
+
+# get_diffs() rejects alpha = 0
+
+    Code
+      get_diffs(d, dv, treats, alpha = 0)
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got 0.
+
+# get_diffs() rejects alpha = '0.05' (character)
+
+    Code
+      get_diffs(d, dv, treats, alpha = "0.05")
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got "0.05".
+
+# get_diffs() rejects alpha = NA
+
+    Code
+      get_diffs(d, dv, treats, alpha = NA)
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got NA.
+
+# get_diffs() rejects alpha = Inf
+
+    Code
+      get_diffs(d, dv, treats, alpha = Inf)
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got Inf.
+
+# get_diffs() rejects alpha = c(0.05, 0.1) (length > 1)
+
+    Code
+      get_diffs(d, dv, treats, alpha = c(0.05, 0.1))
+    Condition
+      Error in `get_diffs()`:
+      x `alpha` must be a single numeric value strictly between 0 and 1. Got 0.05 and 0.1.
+
