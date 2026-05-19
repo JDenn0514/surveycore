@@ -996,8 +996,52 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     subset <- design@data[[design@variables$subset]]
     ph1_data <- design@data[subset, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
+  } else if (S7::S7_inherits(design, survey_nonprob)) {
+    Inf
   } else {
-    # survey_nonprob, unknown
     max(1L, nrow(design@data) - 1L)
   }
+}
+
+
+# ── .nonprob_rep_na_warn() ────────────────────────────────────────────────────
+#
+# Issue a warning when >5% of bootstrap replicates produce NA estimates for a
+# survey_nonprob domain cell. Returns TRUE (sentinel) when all replicates are
+# NA (caller must return NA-filled result). Returns NULL otherwise.
+#
+# @param design     A survey design object.
+# @param na_frac    Fraction of replicates that are NA (0 to 1).
+# @param na_dropped Integer count of NA replicates.
+# @param R          Total number of replicates.
+# @param scale      The scale factor used in the variance formula.
+# @return NULL (no action), or TRUE (all-NA sentinel).
+# @noRd
+.nonprob_rep_na_warn <- function(design, na_frac, na_dropped, R, scale) {
+  if (!S7::S7_inherits(design, survey_nonprob)) return(NULL)
+  if (na_frac == 0) return(NULL)
+  if (na_frac > 0.05) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{na_dropped} of {R} bootstrap replicates have no observations in ",
+          "this domain ({round(100 * na_frac, 1)}% of R)."
+        ),
+        "i" = paste0(
+          "Standard errors for this cell understate variance because the ",
+          "scale factor {.code {round(scale, 4)}} was computed for {R} ",
+          "replicates but only {R - na_dropped} contribute."
+        ),
+        "i" = paste0(
+          "Consider collapsing small domain categories or increasing R in ",
+          "{.fn surveywts::create_bootstrap_weights}."
+        )
+      ),
+      class = "surveycore_warning_domain_replicates_na"
+    )
+  }
+  if (na_frac == 1.0) {
+    return(TRUE) # sentinel: caller must return its own NA-filled result shape
+  }
+  NULL
 }

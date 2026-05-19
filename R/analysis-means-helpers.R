@@ -139,11 +139,25 @@
   rep_Y <- as.numeric((y_safe * domain) %*% rep_mat)
   rep_p <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
 
-  n_rep <- ncol(rep_mat)
+  R <- ncol(rep_mat)
+  na_dropped <- sum(is.na(rep_p))
+  na_frac <- na_dropped / R
+  if (isTRUE(
+    .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
+  )) {
+    return(list(
+      mean = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = n_d,
+      n_weighted = N_d
+    ))
+  }
+
   v <- .svy_rep_var(
     rep_p,
     scale = vars$scale,
-    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
+    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, R),
     mse = isTRUE(vars$mse),
     coef = ybar
   )
@@ -303,7 +317,25 @@
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_mean_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    .calibrated_mean_cell(design, y_col, domain)
+    if (!is.null(design@variables$repweights)) {
+      .replicate_mean_cell(design, y_col, domain)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this ",
+            "design for correct SEs."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_fallback"
+      )
+      .calibrated_mean_cell(design, y_col, domain)
+    }
   } else {
     cli::cli_abort(
       c(

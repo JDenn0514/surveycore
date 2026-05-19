@@ -496,13 +496,10 @@ test_that(".degf() oracle: Twophase design returns positive value [RELAXED — k
   expect_gt(.degf(d_sc), 0)
 })
 
-test_that(".degf() oracle: Calibrated design matches survey::degf() for plain weighted design", {
-  skip_if_not_installed("survey")
+test_that(".degf() oracle: survey_nonprob always returns Inf (no design-based df)", {
   df <- make_survey_data(seed = 42)
   d_sc <- as_survey_nonprob(df, weights = wt)
-  # Reference: survey::svydesign with ids=~1 gives degf = n - 1, same as our formula
-  d_sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
-  expect_equal(.degf(d_sc), survey::degf(d_sv), tolerance = 1e-10)
+  expect_equal(.degf(d_sc), Inf)
 })
 
 # ===========================================================================
