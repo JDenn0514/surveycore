@@ -495,9 +495,22 @@ S7::method(print, survey_nonprob) <- function(
 
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
-  cli::cli_text(
-    "{.cls survey_nonprob} (non-probability) [experimental]"
-  )
+  if (!is.null(x@variables$repweights)) {
+    R_count <- length(x@variables$repweights)
+    cli::cli_text(
+      paste0(
+        "{.cls survey_nonprob} (non-probability, BOOTSTRAP, ",
+        "{R_count} replicates) [experimental]"
+      )
+    )
+  } else {
+    cli::cli_text(
+      "{.cls survey_nonprob} (non-probability) [experimental]"
+    )
+    cli::cli_bullets(
+      c("*" = "Variance: SRS approximation (no bootstrap replicate weights)")
+    )
+  }
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
 
@@ -516,6 +529,16 @@ S7::method(print, survey_nonprob) <- function(
     cli::cli_h2("Design specification")
 
     cli::cli_bullets(c("*" = "Weights: {.field {wts_var}}"))
+
+    if (!is.null(x@variables$repweights)) {
+      R_count <- length(x@variables$repweights)
+      rep_cols <- paste(x@variables$repweights, collapse = ", ")
+      cli::cli_bullets(c(
+        "*" = "Replicate weights: {R_count} columns ({.field {rep_cols}})"
+      ))
+      cli::cli_bullets(c("*" = "Type: {.val {x@variables$type}}"))
+      cli::cli_bullets(c("*" = "Scale: {.val {x@variables$scale}}"))
+    }
 
     cal_label <- if (!is.null(x@calibration)) "stored" else "none stored"
     cli::cli_bullets(c("*" = "Calibration provenance: {cal_label}"))
