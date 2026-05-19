@@ -206,8 +206,10 @@ get_ratios <- function(
   domain_mask <- .apply_domain(design)
   degf <- Inf # Normal approximation; matches survey::svyratio() default
 
-  # Flag for replicate dispatch
-  is_replicate <- S7::S7_inherits(design, survey_replicate)
+  # Flag for replicate dispatch (also true for survey_nonprob with repweights)
+  is_replicate <- S7::S7_inherits(design, survey_replicate) ||
+    (S7::S7_inherits(design, survey_nonprob) &&
+      !is.null(design@variables$repweights))
 
   # ── Step 3: Single-level warning for group variables ──────────────────────
   if (length(group_vars) > 0L) {
