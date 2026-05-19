@@ -293,43 +293,18 @@ test_that("surveycore_warning_domain_replicates_na fires when >5% replicates are
   )
 })
 
-test_that("surveycore_warning_domain_replicates_na does NOT fire for survey_replicate", {
-  set.seed(99L)
-  df <- make_survey_data(n = 200L, seed = 99L)
-  df$grp <- ifelse(seq_len(nrow(df)) <= 10L, "A", "B")
-
-  R <- 20L
-  repwt_data <- matrix(
-    pmax(0.1, df$wt * matrix(
-      rexp(nrow(df) * R, rate = 1),
-      nrow = nrow(df), ncol = R
-    )),
-    nrow = nrow(df), ncol = R
-  )
-  colnames(repwt_data) <- paste0("repwt_", seq_len(R))
-  df_rep <- cbind(df, as.data.frame(repwt_data))
-
-  # Zero out repweights for group "A" rows in 15 of 20 replicates
-  a_rows <- df_rep$grp == "A"
-  for (r in seq_len(15L)) {
-    df_rep[[paste0("repwt_", r)]][a_rows] <- 0
-  }
-
+test_that(".nonprob_rep_na_warn() returns NULL immediately for non-survey_nonprob designs", {
+  # The NPS-gating in .nonprob_rep_na_warn() returns NULL for any design that
+  # is not a survey_nonprob — preventing surveycore_warning_domain_replicates_na
+  # from ever firing for survey_replicate, survey_taylor, or survey_twophase.
+  df <- make_survey_data(n = 100L, design = "replicate", type = "BRR", seed = 7L)
   d_rep <- as_survey_replicate(
-    df_rep,
+    df,
     weights = wt,
     repweights = starts_with("repwt_"),
-    type = "bootstrap",
-    mse = TRUE
+    type = "BRR"
   )
-
-  # For survey_replicate, .nonprob_rep_na_warn() returns NULL immediately
-  # so no surveycore_warning_domain_replicates_na should fire
-  result <- withCallingHandlers(
-    get_means(d_rep, y1, group = grp),
-    surveycore_warning_domain_replicates_na = function(w) {
-      stop("domain_replicates_na warning fired for survey_replicate — should not happen")
-    }
-  )
-  expect_true(nrow(result) >= 1L)
+  # na_frac = 0.9 would trigger the warning for survey_nonprob, but not here
+  result <- .nonprob_rep_na_warn(d_rep, na_frac = 0.9, na_dropped = 9L, R = 10L, scale = 0.1)
+  expect_null(result)
 })
