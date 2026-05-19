@@ -729,3 +729,38 @@ test_that("print.survey_collection snapshot: length-1 pluralisation", {
   coll <- as_survey_collection(only = d)
   expect_snapshot(print(coll))
 })
+
+
+# ── NEW: survey_nonprob with repweights ──────────────────────────────────────
+
+test_that("print.survey_nonprob() shows BOOTSTRAP class line with repweights", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  set.seed(42L)
+  df <- make_survey_data(n = 100L, seed = 42L)
+  # Add 10 repweight columns
+  R <- 10L
+  for (r in seq_len(R)) {
+    df[[paste0("repwt_", r)]] <- pmax(0.1, df$wt * rexp(nrow(df)))
+  }
+  d <- as_survey_nonprob(df, weights = wt, repweights = starts_with("repwt_"))
+  expect_snapshot(print(d))
+})
+
+test_that("print.survey_nonprob() shows SRS approximation note without repweights", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- data.frame(y = rnorm(50L), wt = runif(50L, 0.5, 2.5))
+  d <- as_survey_nonprob(df, weights = wt)
+  expect_snapshot(print(d))
+})
+
+test_that("print.survey_nonprob() with repweights and design_info = TRUE shows replicate bullets", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  set.seed(42L)
+  df <- make_survey_data(n = 100L, seed = 42L)
+  R <- 10L
+  for (r in seq_len(R)) {
+    df[[paste0("repwt_", r)]] <- pmax(0.1, df$wt * rexp(nrow(df)))
+  }
+  d <- as_survey_nonprob(df, weights = wt, repweights = starts_with("repwt_"))
+  expect_snapshot(print(d, design_info = TRUE))
+})
