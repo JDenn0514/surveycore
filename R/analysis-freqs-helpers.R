@@ -157,7 +157,7 @@
     .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
   )) {
     return(list(
-      p = NA_real_,
+      pct = NA_real_,
       se = NA_real_,
       se_srs = NA_real_,
       n = n_cell,
