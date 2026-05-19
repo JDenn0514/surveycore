@@ -302,6 +302,14 @@ test_invariants <- function(design) {
       )
     }
 
+    # All 5 repweight keys must be present (values may be NULL).
+    for (key in c("repweights", "type", "scale", "rscales", "mse")) {
+      testthat::expect_true(
+        key %in% names(design@variables),
+        label = paste0("@variables has '", key, "' key")
+      )
+    }
+
     return(invisible(design))
   }
   # Invariant 1: @data is a non-NULL data.frame with >= 1 row, no duplicate names

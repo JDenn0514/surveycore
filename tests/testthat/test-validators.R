@@ -351,6 +351,78 @@ test_that(".validate_rscales() errors for length too long", {
   )
 })
 
+test_that(".validate_rscales() errors for NA values via as_survey_nonprob()", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, NA_real_)
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, NA_real_)
+    )
+  )
+})
+
+test_that(".validate_rscales() errors for negative values via as_survey_nonprob()", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, -0.5)
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, -0.5)
+    )
+  )
+})
+
+test_that(".validate_rscales() errors for NA values via as_survey_replicate()", {
+  df_r <- make_survey_data(design = "replicate", type = "BRR", seed = 101)
+  repwt_cols <- grep("^repwt_", names(df_r), value = TRUE)
+  bad_rscales <- rep(1, length(repwt_cols))
+  bad_rscales[1] <- NA_real_
+
+  expect_error(
+    as_survey_replicate(
+      df_r,
+      weights = wt,
+      repweights = all_of(repwt_cols),
+      type = "BRR",
+      rscales = bad_rscales
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df_r,
+      weights = wt,
+      repweights = all_of(repwt_cols),
+      type = "BRR",
+      rscales = bad_rscales
+    )
+  )
+})
+
 
 # ── .update_design_var_names ───────────────────────────────────────────────────
 #

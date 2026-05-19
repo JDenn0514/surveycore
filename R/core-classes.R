@@ -897,6 +897,9 @@ survey_collection <- S7::new_class(
 #'   or `NULL` if calibration was performed externally. Stores the
 #'   calibration targets, variables, and trimming parameters for
 #'   reproducibility and future bootstrap re-calibration. Default `NULL`.
+#' @param reference_sample Optional [survey_taylor] object representing the
+#'   probability-based reference sample used to estimate propensity scores or
+#'   calibration targets. Stored for reproducibility. Default `NULL`.
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -904,6 +907,12 @@ survey_collection <- S7::new_class(
 #' @section Design variables (`@variables`):
 #' \describe{
 #'   \item{`weights`}{Character string naming the (calibrated) weight column.}
+#'   \item{`repweights`}{Character vector of bootstrap replicate weight column
+#'     names, or `NULL` when no replicate weights are present.}
+#'   \item{`type`}{Replicate type (`"bootstrap"`), or `NULL`.}
+#'   \item{`scale`}{Numeric scale factor for the variance formula, or `NULL`.}
+#'   \item{`rscales`}{Per-replicate scale factors, or `NULL`.}
+#'   \item{`mse`}{Logical. `TRUE` for MSE form of variance, or `NULL`.}
 #'   \item{`probs_provided`}{Always `FALSE` for calibrated designs.}
 #' }
 #'
@@ -920,7 +929,8 @@ survey_collection <- S7::new_class(
 #'   variables = list(),
 #'   groups = character(0),
 #'   call = NULL,
-#'   calibration = NULL
+#'   calibration = NULL,
+#'   reference_sample = NULL
 #' )
 #' @seealso [as_survey_nonprob()] to create a `survey_nonprob` object.
 #' @family constructors
@@ -933,7 +943,10 @@ survey_nonprob <- S7::new_class(
     # Stores calibration provenance from surveywts output.
     # NULL when calibration was done externally.
     # RESERVED for full population in Phase 2.5.
-    calibration = S7::new_property(default = NULL)
+    calibration = S7::new_property(default = NULL),
+    # Optional survey_taylor reference sample used for propensity estimation.
+    # NULL when not supplied. Type-checked in as_survey_nonprob() (Layer 3).
+    reference_sample = S7::new_property(default = NULL)
   ),
   validator = function(self) {
     weights_var <- self@variables$weights
