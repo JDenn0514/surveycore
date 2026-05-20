@@ -265,6 +265,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
     Output
@@ -290,6 +291,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       Weighted N: 10
       
@@ -336,6 +338,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
       
@@ -369,6 +372,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       Weighted N: 10
       
@@ -402,6 +406,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
       

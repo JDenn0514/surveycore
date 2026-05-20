@@ -444,6 +444,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 30
       
     Output
@@ -470,6 +471,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 30
       Domain: 30 of 30 rows
       
@@ -600,4 +602,99 @@
       id: ".survey"
       if_missing_var: "error"
       "only": survey_taylor, 50 rows, 8 variables
+
+# print.survey_nonprob() shows BOOTSTRAP class line with repweights
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, BOOTSTRAP, 10 replicates) [experimental]
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 18
+         psu   strata      fpc    wt    y1      y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   298 13.2   61.2 -0.466      0 B      39.0    11.3      5.73
+       2 psu_2 stratum_1   298 16.5   64.4 -0.269      0 C      21.4     5.87    27.5 
+       3 psu_2 stratum_1   298 10.6   39.0 -0.391      0 A      49.0     0.334    4.36
+       4 psu_3 stratum_1   298 12.7   48.8  1.35       1 B       1.73   34.2     14.0 
+       5 psu_4 stratum_1   298 12.6   62.0 -0.0228     0 A       2.13   16.7      8.91
+       6 psu_4 stratum_1   298  9.19  45.3  0.244      0 B       0.766   2.32     3.94
+       7 psu_4 stratum_1   298 15.0   49.5 -0.942      1 A      34.6    60.8     25.4 
+       8 psu_5 stratum_1   298 15.5   49.1 -0.729      0 B       8.21    5.74     5.39
+       9 psu_5 stratum_1   298 13.9   41.1  0.998      1 C       7.15   44.6     25.4 
+      10 psu_5 stratum_1   298 17.3   45.6  1.26       1 B       1.61    0.395    8.04
+      # i 90 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+
+# print.survey_nonprob() shows SRS approximation note without repweights
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
+      Sample size: 50
+      
+    Output
+      # A tibble: 50 x 2
+              y    wt
+          <dbl> <dbl>
+       1 -0.415 1.38 
+       2  1.98  0.808
+       3  0.460 0.715
+       4 -1.13  1.45 
+       5 -1.78  2.36 
+       6 -0.393 1.09 
+       7 -0.767 1.41 
+       8 -0.380 1.82 
+       9  0.370 1.33 
+      10 -0.625 0.631
+      # i 40 more rows
+
+# print.survey_nonprob() with repweights and design_info = TRUE shows replicate bullets
+
+    Code
+      print(d, design_info = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, BOOTSTRAP, 10 replicates) [experimental]
+      Sample size: 100
+      
+      
+      -- Design specification --
+      
+      * Weights: wt
+      * Replicate weights: 10 columns (repwt_1, repwt_2, repwt_3, repwt_4, repwt_5,
+        repwt_6, repwt_7, repwt_8, repwt_9, repwt_10)
+      * Type: "bootstrap"
+      * Scale: 0.1
+      * Calibration provenance: none stored
+      
+      Design variables: wt
+      
+    Output
+      # A tibble: 100 x 18
+         psu   strata      fpc    wt    y1      y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   298 13.2   61.2 -0.466      0 B      39.0    11.3      5.73
+       2 psu_2 stratum_1   298 16.5   64.4 -0.269      0 C      21.4     5.87    27.5 
+       3 psu_2 stratum_1   298 10.6   39.0 -0.391      0 A      49.0     0.334    4.36
+       4 psu_3 stratum_1   298 12.7   48.8  1.35       1 B       1.73   34.2     14.0 
+       5 psu_4 stratum_1   298 12.6   62.0 -0.0228     0 A       2.13   16.7      8.91
+       6 psu_4 stratum_1   298  9.19  45.3  0.244      0 B       0.766   2.32     3.94
+       7 psu_4 stratum_1   298 15.0   49.5 -0.942      1 A      34.6    60.8     25.4 
+       8 psu_5 stratum_1   298 15.5   49.1 -0.729      0 B       8.21    5.74     5.39
+       9 psu_5 stratum_1   298 13.9   41.1  0.998      1 C       7.15   44.6     25.4 
+      10 psu_5 stratum_1   298 17.3   45.6  1.26       1 B       1.61    0.395    8.04
+      # i 90 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
 
