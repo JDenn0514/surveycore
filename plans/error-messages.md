@@ -289,6 +289,24 @@ against the messages defined here.
 | PP-7 | `pool_pvals()` | `strip_within_adj = FALSE` and at least one input element already contains `new_col` | WARNING | `surveycore_warning_pool_pvals_input_pre_adjusted` | `"!" = "{length(bad)} input element{?s} already contained a column named {.val {new_col}}.", "i" = "Renamed to {.val {within_col}} per element before binding. Double-adjustment does not formally maintain FDR control.", "v" = "Set {.arg strip_within_adj = TRUE} to drop pre-existing within-call adjustments, or pass {.code pval_adj = NULL} to upstream {.fn get_*} calls."` |
 | PP-8 | `pool_pvals()` | After binding, every value of `p_col` is `NA` | WARNING | `surveycore_warning_pool_pvals_no_pvalues_available` | `"!" = "All values of pooled column {.val {p_col}} are {.code NA}.", "i" = "Returning the bound tibble with all-{.code NA} {.val {new_col}}."` |
 
+### nonprob-bootstrap-variance rows (PR 1 — class, constructor, validator)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| NB-1 | `as_survey_nonprob()` | `type` is not `"bootstrap"` | ERROR | `surveycore_error_type_invalid` | `"x" = "{.arg type} must be {.val \"bootstrap\"} for {.cls survey_nonprob} objects.", "i" = "Jackknife and other replicate types are not supported for non-probability samples. Got {.val {type}}."` |
+| NB-2 | `get_means()`, `get_totals()`, `get_freqs()`, `get_corr()`, `get_ratios()`, `get_quantiles()`, `get_diffs()` | `survey_nonprob` object has no bootstrap replicate weights | WARN | `surveycore_warning_nonprob_srs_fallback` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "Run {.fn surveywts::create_bootstrap_weights} on this design for correct SEs."` |
+| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."` |
+| NB-4 | `get_means()` etc. (analysis functions, bootstrap path) | >5% of replicates have NA in a domain cell for `survey_nonprob` | WARN | `surveycore_warning_domain_replicates_na` | `"!" = "{na_dropped} of {R} bootstrap replicates have no observations in this domain ({pct}% of R).", "i" = "Standard errors for this cell understate variance when more than 5% of replicates are dropped.", "i" = "Consider collapsing small domain categories or increasing R."` |
+| NB-5 | `as_survey_nonprob()` | `reference_sample` is not a `survey_taylor` | ERROR | `surveycore_error_reference_sample_nonprob` | `"x" = "{.arg reference_sample} must be a {.cls survey_taylor} object.", "i" = "Got {.cls {class(reference_sample)[[1L]]}}.", "v" = "Pass the {.cls survey_taylor} object used to estimate propensity scores."` |
+| NB-6 | `as_survey_nonprob()` | `calibration$bootstrap` is `FALSE` when `repweights` is present | ERROR | `surveycore_error_provenance_not_bootstrap` | `"x" = "{.arg calibration} indicates the replicate weights were not produced by re-running the adjustment procedure.", "i" = "{.code calibration$bootstrap} must be {.val TRUE} for bootstrap variance to be valid.", "v" = "Use {.fn surveywts::create_bootstrap_weights} to produce repweights with re-calibration."` |
+| NB-7 | `as_survey_nonprob()` | `calibration$R` mismatches count of resolved `repweights` columns | ERROR | `surveycore_error_provenance_R_mismatch` | `"x" = "Provenance records {.val {calibration$R}} replicates but {.val {length(repweights_vars)}} replicate weight columns were found.", "i" = "The {.arg calibration} object and {.arg repweights} columns must come from the same {.fn surveywts::create_bootstrap_weights} call."` |
+| NB-8 | `as_survey_nonprob()`, `as_survey_replicate()` | `rscales` has NA, negative, or non-numeric values | ERROR | `surveycore_error_rscales_na` | `"x" = "{.arg rscales} must be a non-negative numeric vector with no NA values.", "i" = "Got {sum(is.na(rscales))} NA value(s) and/or {sum(rscales[!is.na(rscales)] < 0, na.rm = TRUE)} negative value(s).", "v" = "Supply a numeric vector of length {n_rep} with all values >= 0."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Row 16 (`surveycore_error_repweights_empty`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
+- Row 17 (`surveycore_error_rscales_length`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
+
 ---
 
 ## Notes on Typed Errors

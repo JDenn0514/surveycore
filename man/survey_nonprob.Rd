@@ -10,7 +10,8 @@ survey_nonprob(
   variables = list(),
   groups = character(0),
   call = NULL,
-  calibration = NULL
+  calibration = NULL,
+  reference_sample = NULL
 )
 }
 \arguments{
@@ -33,6 +34,10 @@ standalone surveycore use.}
 or \code{NULL} if calibration was performed externally. Stores the
 calibration targets, variables, and trimming parameters for
 reproducibility and future bootstrap re-calibration. Default \code{NULL}.}
+
+\item{reference_sample}{Optional \link{survey_taylor} object representing the
+probability-based reference sample used to estimate propensity scores or
+calibration targets. Stored for reproducibility. Default \code{NULL}.}
 }
 \value{
 A \code{survey_nonprob} object.
@@ -71,6 +76,12 @@ appropriate and what the limitations are.
 
 \describe{
 \item{\code{weights}}{Character string naming the (calibrated) weight column.}
+\item{\code{repweights}}{Character vector of bootstrap replicate weight column
+names, or \code{NULL} when no replicate weights are present.}
+\item{\code{type}}{Replicate type (\code{"bootstrap"}), or \code{NULL}.}
+\item{\code{scale}}{Numeric scale factor for the variance formula, or \code{NULL}.}
+\item{\code{rscales}}{Per-replicate scale factors, or \code{NULL}.}
+\item{\code{mse}}{Logical. \code{TRUE} for MSE form of variance, or \code{NULL}.}
 \item{\code{probs_provided}}{Always \code{FALSE} for calibrated designs.}
 }
 }

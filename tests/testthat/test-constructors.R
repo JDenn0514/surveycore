@@ -1970,6 +1970,272 @@ test_that("get_means() handles partial-NA weight column for survey_nonprob", {
 })
 
 
+# ==============================================================================
+# as_survey_nonprob() — repweights and bootstrap arguments
+# ==============================================================================
+
+# ── Happy paths ────────────────────────────────────────────────────────────────
+
+test_that("as_survey_nonprob() with repweights stores 5 keys in @variables", {
+  set.seed(1)
+  n <- 50
+  df <- data.frame(
+    y = rnorm(n),
+    w = runif(n, 0.5, 2),
+    rw1 = runif(n, 0.4, 2.1),
+    rw2 = runif(n, 0.4, 2.1),
+    rw3 = runif(n, 0.4, 2.1)
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = w,
+    repweights = starts_with("rw"),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  expect_identical(d@variables$repweights, c("rw1", "rw2", "rw3"))
+  expect_identical(d@variables$type, "bootstrap")
+  expect_equal(d@variables$scale, 1 / 3)
+  expect_identical(d@variables$rscales, rep(1, 3))
+  expect_true(isTRUE(d@variables$mse))
+})
+
+test_that("as_survey_nonprob() stores reference_sample in @reference_sample", {
+  set.seed(2)
+  df_np <- data.frame(y = rnorm(30), w = runif(30, 0.5, 2))
+  df_ref <- make_survey_data(n = 100, seed = 42)
+  d_ref <- as_survey(df_ref, ids = psu, weights = wt, strata = strata)
+
+  d <- as_survey_nonprob(df_np, weights = w, reference_sample = d_ref)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d@reference_sample, survey_taylor))
+})
+
+test_that("as_survey_nonprob() accepts valid calibration provenance + repweights", {
+  set.seed(3)
+  n <- 40
+  df <- data.frame(
+    y = rnorm(n),
+    w = runif(n, 0.5, 2),
+    rw1 = runif(n, 0.4, 2.1),
+    rw2 = runif(n, 0.4, 2.1)
+  )
+  cal <- list(bootstrap = TRUE, R = 2L, method = "bootstrap_raking")
+  d <- as_survey_nonprob(
+    df,
+    weights = w,
+    repweights = starts_with("rw"),
+    type = "bootstrap",
+    calibration = cal
+  )
+  test_invariants(d)
+  expect_identical(d@calibration, cal)
+  expect_identical(d@variables$repweights, c("rw1", "rw2"))
+})
+
+test_that("as_survey_nonprob() computes default scale = 1/R and rscales = rep(1, R)", {
+  set.seed(4)
+  n <- 40
+  df <- data.frame(
+    y = rnorm(n),
+    w = runif(n, 0.5, 2),
+    rw1 = runif(n, 0.4, 2.1),
+    rw2 = runif(n, 0.4, 2.1),
+    rw3 = runif(n, 0.4, 2.1),
+    rw4 = runif(n, 0.4, 2.1)
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = w,
+    repweights = starts_with("rw"),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 1 / 4)
+  expect_identical(d@variables$rscales, rep(1, 4))
+})
+
+test_that("as_survey_nonprob() with no repweights has all 5 keys as NULL", {
+  df <- data.frame(y = 1:20, w = rep(1, 20))
+  d <- as_survey_nonprob(df, weights = w)
+  test_invariants(d)
+  expect_null(d@variables$repweights)
+  expect_null(d@variables$type)
+  expect_null(d@variables$scale)
+  expect_null(d@variables$rscales)
+  expect_null(d@variables$mse)
+})
+
+test_that("as_survey_nonprob(df, weights = w) still works (backward compat)", {
+  df <- data.frame(y = 1:20, w = rep(1.5, 20))
+  d <- as_survey_nonprob(df, weights = w)
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_nonprob))
+  expect_identical(d@variables$weights, "w")
+})
+
+# ── Error paths ────────────────────────────────────────────────────────────────
+
+test_that("as_survey_nonprob() rejects repweights selecting 0 columns", {
+  df <- data.frame(y = 1:20, w = rep(1, 20))
+  expect_error(
+    as_survey_nonprob(df, weights = w, repweights = starts_with("rw")),
+    class = "surveycore_error_repweights_empty"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = w, repweights = starts_with("rw"))
+  )
+})
+
+test_that("as_survey_nonprob() rejects repweights selecting exactly 1 column", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20))
+  expect_error(
+    as_survey_nonprob(df, weights = w, repweights = rw1),
+    class = "surveycore_error_repweights_single"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = w, repweights = rw1)
+  )
+})
+
+test_that("as_survey_nonprob() rejects type != 'bootstrap'", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR"),
+    class = "surveycore_error_type_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR")
+  )
+})
+
+test_that("as_survey_nonprob() rejects rscales length mismatch", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, 1, 1)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, 1, 1)
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects rscales with NA values", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, NA_real_)
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, NA_real_)
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects rscales with negative values", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, -0.5)
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      rscales = c(1, -0.5)
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects reference_sample that is not survey_taylor", {
+  df <- data.frame(y = 1:20, w = rep(1, 20))
+  expect_error(
+    as_survey_nonprob(df, weights = w, reference_sample = data.frame(x = 1:5)),
+    class = "surveycore_error_reference_sample_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = w, reference_sample = data.frame(x = 1:5))
+  )
+})
+
+test_that("as_survey_nonprob() rejects calibration$bootstrap = FALSE with repweights", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  cal <- list(bootstrap = FALSE, R = 2L)
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      calibration = cal
+    ),
+    class = "surveycore_error_provenance_not_bootstrap"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      calibration = cal
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects calibration$R mismatch with repweights count", {
+  df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
+  cal <- list(bootstrap = TRUE, R = 5L)
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      calibration = cal
+    ),
+    class = "surveycore_error_provenance_R_mismatch"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = w,
+      repweights = c(rw1, rw2),
+      calibration = cal
+    )
+  )
+})
+
 # ── weighting_history promotion ───────────────────────────────────────────────
 
 test_that("as_survey() promotes weighting_history attribute from data", {

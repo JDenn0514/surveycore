@@ -1110,14 +1110,60 @@ as_survey_twophase <- function(
 #'   column (a single column, values strictly > 0). Typically produced by
 #'   an external raking function (e.g., `anesrake::anesrake()`) or a
 #'   \pkg{surveywts} calibration function.
+#' @param repweights <[`tidy-select`][tidyselect::language]> Bootstrap
+#'   replicate weight columns (at least 2). Each column must be numeric and
+#'   represents one set of combined bootstrap weights (calibration already
+#'   applied). Supply `NULL` (the default) to use SRS-based variance
+#'   approximation. Columns are combined-weights: the calibration adjustment
+#'   has already been re-applied within each replicate column.
+#' @param type Character. Replicate type. Must be `"bootstrap"` — jackknife
+#'   and other replicate types are not supported for non-probability samples.
+#'   Ignored when `repweights = NULL`. Default `"bootstrap"`.
+#' @param scale Numeric scalar. Scaling factor for the replicate variance
+#'   formula. Default `NULL`, which sets `scale = 1 / R` (where `R` is the
+#'   number of replicate columns). Note: this default differs from
+#'   [as_survey_replicate()], which uses type-specific defaults.
+#' @param rscales Numeric vector of length `R`. Per-replicate scale factors.
+#'   All values must be non-negative and non-NA. Default `NULL`, which sets
+#'   `rscales = rep(1, R)`.
+#' @param mse Logical. If `TRUE` (the default), the mean-squared-error form
+#'   of the variance estimator is used: `(1/R) * sum((theta_r - theta)^2)`.
+#'   If `FALSE`, the centered form is used instead. Default `TRUE`. Note:
+#'   this default differs from [as_survey_replicate()] — `mse = TRUE` is
+#'   the appropriate default for bootstrap replicates from calibrated
+#'   non-probability samples (Wu 2022).
+#' @param reference_sample Optional. A [survey_taylor] object representing the
+#'   probability-based reference sample used to estimate propensity scores or
+#'   calibration targets. Stored in `@reference_sample` for reproducibility.
+#'   Supply `NULL` (the default) when no reference sample is available.
 #' @param calibration Optional. The calibration provenance object returned by
-#'   a \pkg{surveywts} calibration function (e.g., `surveywts::rake()`).
-#'   Stored in `@calibration` for reproducibility. Supply `NULL` (the default)
+#'   a \pkg{surveywts} calibration function (e.g.,
+#'   `surveywts::create_bootstrap_weights()`). Stored in `@calibration` for
+#'   reproducibility. When `repweights` is also supplied, `calibration` is
+#'   validated: `calibration$bootstrap` must be `TRUE` and `calibration$R`
+#'   must equal the number of replicate columns. Supply `NULL` (the default)
 #'   when calibration was performed externally and provenance metadata is not
-#'   available. The object's structure is defined by \pkg{surveywts} and will
-#'   be formally specified in Phase 2.5.
+#'   available.
 #'
 #' @return A `survey_nonprob` object.
+#'
+#' @details
+#' When `repweights` is supplied, the variance estimator uses the bootstrap
+#' replicate formula: `V = scale * sum(rscales * (theta_r - theta)^2)`.
+#' The default `scale = 1/R` follows Wu (2022) and Chen et al. (2021) for
+#' calibrated non-probability bootstrap variance.
+#'
+#' When `repweights = NULL`, standard errors use an SRS approximation (treating
+#' each observation as its own PSU). This understates calibration uncertainty;
+#' see `vignette("creating-survey-objects")` for details.
+#'
+#' @references
+#' Wu, C. (2022) Statistical inference with non-probability survey samples.
+#' \emph{Survey Methodology} \bold{48}(2), 283--311.
+#'
+#' Chen, Y., Li, P. and Wu, C. (2021) Doubly robust inference with
+#' non-probability survey samples. \emph{Journal of the American Statistical
+#' Association} \bold{115}(532), 2011--2021.
 #'
 #' @examples
 #' # Minimal: pre-computed calibration weights from an external tool
@@ -1137,6 +1183,12 @@ as_survey_twophase <- function(
 as_survey_nonprob <- function(
   data,
   weights,
+  repweights = NULL,
+  type = "bootstrap",
+  scale = NULL,
+  rscales = NULL,
+  mse = TRUE,
+  reference_sample = NULL,
   calibration = NULL
 ) {
   call <- match.call()
@@ -1177,26 +1229,182 @@ as_survey_nonprob <- function(
 
   metadata <- .extract_haven_metadata(data)
 
-  # ── Build @variables ────────────────────────────────────────────────────────
+  # ── Resolve repweights (optional) ──────────────────────────────────────────
 
-  variables <- list(
-    weights = weights_var,
-    probs_provided = FALSE,
-    ids = NULL,
-    strata = NULL,
-    fpc = NULL,
-    nest = FALSE,
-    visible_vars = NULL
-  )
+  repweights_quo <- rlang::enquo(repweights)
+  repweights_vars <- NULL
+
+  if (!rlang::quo_is_null(repweights_quo)) {
+    repweights_cols <- tidyselect::eval_select(repweights_quo, data)
+
+    # Error: 0 columns selected
+    if (length(repweights_cols) == 0L) {
+      cli::cli_abort(
+        c("x" = "{.arg repweights} must select at least one column"),
+        class = "surveycore_error_repweights_empty"
+      )
+    }
+
+    # Error: exactly 1 column selected (bootstrap needs >= 2)
+    if (length(repweights_cols) == 1L) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg repweights} must name at least 2 replicate weight ",
+            "columns."
+          ),
+          "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."
+        ),
+        class = "surveycore_error_repweights_single"
+      )
+    }
+
+    repweights_vars <- names(repweights_cols)
+    R <- length(repweights_vars)
+
+    # Error: type must be "bootstrap" for survey_nonprob
+    if (!identical(type, "bootstrap")) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg type} must be {.val \"bootstrap\"} for ",
+            "{.cls survey_nonprob} objects."
+          ),
+          "i" = paste0(
+            "Jackknife and other replicate types are not supported for ",
+            "non-probability samples. Got {.val {type}}."
+          )
+        ),
+        class = "surveycore_error_type_invalid"
+      )
+    }
+
+    # Resolve scale default: 1/R
+    scale <- if (is.null(scale)) 1 / R else scale
+
+    # Resolve rscales default: rep(1, R)
+    rscales <- if (is.null(rscales)) rep(1, R) else rscales
+
+    # Validate rscales (length mismatch and NA/negative)
+    .validate_rscales(rscales, R)
+
+    # Validate reference_sample type if provided
+    if (!is.null(reference_sample) &&
+        !S7::S7_inherits(reference_sample, survey_taylor)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg reference_sample} must be a {.cls survey_taylor} object."
+          ),
+          "i" = "Got {.cls {class(reference_sample)[[1L]]}}.",
+          "v" = paste0(
+            "Pass the {.cls survey_taylor} object used to estimate ",
+            "propensity scores."
+          )
+        ),
+        class = "surveycore_error_reference_sample_nonprob"
+      )
+    }
+
+    # Provenance checks (only when BOTH calibration AND repweights non-NULL)
+    if (!is.null(calibration)) {
+      if (!isTRUE(calibration$bootstrap)) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg calibration} indicates the replicate weights were not ",
+              "produced by re-running the adjustment procedure."
+            ),
+            "i" = paste0(
+              "{.code calibration$bootstrap} must be {.val TRUE} for ",
+              "bootstrap variance to be valid."
+            ),
+            "v" = paste0(
+              "Use {.fn surveywts::create_bootstrap_weights} to produce ",
+              "repweights with re-calibration."
+            )
+          ),
+          class = "surveycore_error_provenance_not_bootstrap"
+        )
+      }
+      if (!is.null(calibration$R) && !identical(calibration$R, R)) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "Provenance records {.val {calibration$R}} replicates but ",
+              "{.val {R}} replicate weight columns were found."
+            ),
+            "i" = paste0(
+              "The {.arg calibration} object and {.arg repweights} columns ",
+              "must come from the same ",
+              "{.fn surveywts::create_bootstrap_weights} call."
+            )
+          ),
+          class = "surveycore_error_provenance_R_mismatch"
+        )
+      }
+    }
+
+    # Build @variables with all 5 repweight keys populated
+    variables <- list(
+      weights        = weights_var,
+      repweights     = repweights_vars,
+      type           = type,
+      scale          = scale,
+      rscales        = rscales,
+      mse            = isTRUE(mse),
+      probs_provided = FALSE,
+      ids            = NULL,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      visible_vars   = NULL
+    )
+  } else {
+    # No repweights — validate reference_sample type if provided
+    if (!is.null(reference_sample) &&
+        !S7::S7_inherits(reference_sample, survey_taylor)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg reference_sample} must be a {.cls survey_taylor} object."
+          ),
+          "i" = "Got {.cls {class(reference_sample)[[1L]]}}.",
+          "v" = paste0(
+            "Pass the {.cls survey_taylor} object used to estimate ",
+            "propensity scores."
+          )
+        ),
+        class = "surveycore_error_reference_sample_nonprob"
+      )
+    }
+
+    # No-repweights path — all 5 keys present as NULL
+    variables <- list(
+      weights        = weights_var,
+      repweights     = NULL,
+      type           = NULL,
+      scale          = NULL,
+      rscales        = NULL,
+      mse            = NULL,
+      probs_provided = FALSE,
+      ids            = NULL,
+      strata         = NULL,
+      fpc            = NULL,
+      nest           = FALSE,
+      visible_vars   = NULL
+    )
+  }
 
   # ── Construct and return survey_nonprob object ───────────────────────────
 
   survey_nonprob(
-    data = data,
-    metadata = metadata,
-    variables = variables,
-    calibration = calibration,
-    call = call
+    data             = data,
+    metadata         = metadata,
+    variables        = variables,
+    calibration      = calibration,
+    reference_sample = reference_sample,
+    call             = call
   )
 }
 
