@@ -1,4 +1,4 @@
-# surveycore 0.8.5.9000 (development)
+# surveycore 0.9.0
 
 ## New features
 
@@ -22,6 +22,22 @@
   direction indicated by `higher_is` metadata set via `set_higher_is()`.
   When no `higher_is` metadata is set, both columns are all `FALSE`. The
   adjusted p-value (when `pval_adj` is supplied) is used for classification.
+
+* `as_survey_nonprob()` gains replicate-weight (bootstrap) support via six
+  new arguments: `repweights`, `type`, `scale`, `rscales`, `mse`, and
+  `reference_sample`. When `repweights` is supplied, the constructor resolves
+  and validates the replicate weight columns and stores them in `@variables`.
+  A `reference_sample` property is also added to the `survey_nonprob` class
+  for provenance tracking.
+
+* All `get_*()` estimation functions now dispatch to the replicate-weight
+  variance engine when a `survey_nonprob` object has `repweights` set.
+  When no repweights are supplied, a warning is emitted and the SRS
+  approximation is used as a fallback. Degrees of freedom for
+  `survey_nonprob` estimates always use the normal approximation (`Inf`).
+
+* `print()` for `survey_nonprob` now shows bootstrap replicate information
+  (replicate count, type, and scale) when repweights are set.
 
 # surveycore 0.8.4
 
