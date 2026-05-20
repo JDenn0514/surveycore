@@ -26,6 +26,8 @@ functions may be added but the existing structure will not change in breaking wa
 | Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
 | `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
 | Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
+| Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
+| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; see `archive/nonprob-bootstrap/` |
 
 ---
 
