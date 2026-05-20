@@ -265,6 +265,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
     Output
@@ -290,6 +291,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       Weighted N: 10
       
@@ -336,6 +338,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
       
@@ -369,6 +372,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       Weighted N: 10
       
@@ -402,6 +406,7 @@
       
       -- Survey Design ---------------------------------------------------------------
       <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
       Sample size: 10
       
       
@@ -455,6 +460,92 @@
       x Weight column w must be numeric.
       i Got <character>.
       v Convert with `as.numeric(w)`.
+
+# as_survey_nonprob() rejects repweights selecting 0 columns
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = starts_with("rw"))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `repweights` must select at least one column
+
+# as_survey_nonprob() rejects repweights selecting exactly 1 column
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = rw1)
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `repweights` must name at least 2 replicate weight columns.
+      i Bootstrap variance requires >= 2 replicates. Got "1".
+
+# as_survey_nonprob() rejects type != 'bootstrap'
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be "\"bootstrap\"" for <survey_nonprob> objects.
+      i Jackknife and other replicate types are not supported for non-probability samples. Got "BRR".
+
+# as_survey_nonprob() rejects rscales length mismatch
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), rscales = c(1, 1,
+        1))
+    Condition
+      Error in `.validate_rscales()`:
+      x Length of `rscales` (3) must equal number of replicate weights (2).
+
+# as_survey_nonprob() rejects rscales with NA values
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), rscales = c(1,
+        NA_real_))
+    Condition
+      Error in `.validate_rscales()`:
+      x `rscales` must be a non-negative numeric vector with no NA values.
+      i Got 1 NA value(s) and/or 0 negative value(s).
+      v Supply a numeric vector of length 2 with all values >= 0.
+
+# as_survey_nonprob() rejects rscales with negative values
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), rscales = c(1,
+        -0.5))
+    Condition
+      Error in `.validate_rscales()`:
+      x `rscales` must be a non-negative numeric vector with no NA values.
+      i Got 0 NA value(s) and/or 1 negative value(s).
+      v Supply a numeric vector of length 2 with all values >= 0.
+
+# as_survey_nonprob() rejects reference_sample that is not survey_taylor
+
+    Code
+      as_survey_nonprob(df, weights = w, reference_sample = data.frame(x = 1:5))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `reference_sample` must be a <survey_taylor> object.
+      i Got <data.frame>.
+      v Pass the <survey_taylor> object used to estimate propensity scores.
+
+# as_survey_nonprob() rejects calibration$bootstrap = FALSE with repweights
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), calibration = cal)
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `calibration` indicates the replicate weights were not produced by re-running the adjustment procedure.
+      i `calibration$bootstrap` must be "TRUE" for bootstrap variance to be valid.
+      v Use `surveywts::create_bootstrap_weights()` to produce repweights with re-calibration.
+
+# as_survey_nonprob() rejects calibration$R mismatch with repweights count
+
+    Code
+      as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), calibration = cal)
+    Condition
+      Error in `as_survey_nonprob()`:
+      x Provenance records 5 replicates but 2 replicate weight columns were found.
+      i The `calibration` object and `repweights` columns must come from the same `surveywts::create_bootstrap_weights()` call.
 
 # as_survey() errors when fpc has more columns than ID stages
 

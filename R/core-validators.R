@@ -388,6 +388,28 @@ NULL
     )
   }
 
+  # Check for non-numeric, NA, or negative values.
+  n_na <- sum(is.na(rscales))
+  n_neg <- sum(rscales[!is.na(rscales)] < 0)
+  if (!is.numeric(rscales) || n_na > 0L || n_neg > 0L) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg rscales} must be a non-negative numeric vector ",
+          "with no NA values."
+        ),
+        "i" = paste0(
+          "Got {n_na} NA value(s) and/or {n_neg} negative value(s)."
+        ),
+        "v" = paste0(
+          "Supply a numeric vector of length {n_rep} with ",
+          "all values >= 0."
+        )
+      ),
+      class = "surveycore_error_rscales_na"
+    )
+  }
+
   invisible(TRUE)
 }
 

@@ -280,8 +280,32 @@ TaskUpdate (PR task):
 
 Report: "Merged: {prUrl}"
 
-Then read the implementation plan and report the first remaining `- [ ]`
-section as the next action (same as the "Done without merge" step above).
+Then proceed to Step 12.
+
+---
+
+## Step 12: Archive Plan Files (post-merge only)
+
+Extract the feature slug from the branch name (e.g., `feature/get-variance` → `get-variance`,
+`fix/pool-pvals-edge-case` → `pool-pvals-edge-case`).
+
+List all plain files in `plans/` (not subdirectories, not `error-messages.md`):
+
+```bash
+find plans -maxdepth 1 -type f ! -name 'error-messages.md'
+```
+
+Filter to files whose names contain the feature slug. If any match:
+
+1. Create `archive/{slug}/` if it doesn't exist
+2. Move all matching files there
+3. Report: "Archived to archive/{slug}/: {file1}, {file2}, ..."
+
+If no files match, skip silently — do not prompt the user.
+
+After archiving (or skipping), read the implementation plan and report the first
+remaining `- [ ]` section as the next action (same as the "Done without merge"
+step above).
 
 ---
 
@@ -303,6 +327,7 @@ time (`mergeAfterCI` flag). When in doubt, stop after CI.**
 | Monitor CI | Yes |
 | Produce CI failure handoff block for r-implement | Yes |
 | Merge the PR (when explicitly requested at invocation) | Yes |
+| Archive matching plan files to `archive/` after merge | Yes |
 | Write or edit `.R` source files | **NO** |
 | Write or edit `.R` test files | **NO** |
 | Fix failing tests | **NO** |

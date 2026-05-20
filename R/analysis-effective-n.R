@@ -33,7 +33,7 @@
 #'
 #' @details
 #' The **Kish method** (`method = "kish"`) computes effective N from survey
-#' weights alone: `n_eff = (Σw)² / Σw²`. It captures only weight variation.
+#' weights alone: `n_eff = sum(w)^2 / sum(w^2)`. It captures only weight variation.
 #' For clustered designs with equal weights, `deff_kish = 1.0` even when the
 #' true design effect is substantially greater due to clustering. Use
 #' `method = "deff"` to capture the full design effect for a specific

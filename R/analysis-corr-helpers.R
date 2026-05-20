@@ -25,7 +25,25 @@
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .vcov_pair_twophase(design, x_col, y_col, domain, na.rm)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    .vcov_pair_calibrated(design, x_col, y_col, domain, na.rm)
+    if (!is.null(design@variables$repweights)) {
+      .vcov_pair_replicate(design, x_col, y_col, domain, na.rm)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this ",
+            "design for correct SEs."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_fallback"
+      )
+      .vcov_pair_calibrated(design, x_col, y_col, domain, na.rm)
+    }
   } else {
     cli::cli_abort(
       c(

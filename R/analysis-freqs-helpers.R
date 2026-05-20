@@ -150,11 +150,25 @@
   rep_Y <- as.numeric(num %*% rep_mat) # weighted cell count per replicate
   rep_p <- ifelse(rep_N_d > 0, rep_Y / rep_N_d, NA_real_)
 
-  n_rep <- ncol(rep_mat)
+  R <- ncol(rep_mat)
+  na_dropped <- sum(is.na(rep_p))
+  na_frac <- na_dropped / R
+  if (isTRUE(
+    .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
+  )) {
+    return(list(
+      pct = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = n_cell,
+      n_weighted = Y
+    ))
+  }
+
   v <- .svy_rep_var(
     rep_p,
     scale = vars$scale,
-    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, n_rep),
+    rscales = if (!is.null(vars$rscales)) vars$rscales else rep(1L, R),
     mse = isTRUE(vars$mse),
     coef = p
   )
@@ -323,7 +337,25 @@
   if (S7::S7_inherits(design, survey_taylor)) {
     .taylor_freq_cell(design, num, denom)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    .calibrated_freq_cell(design, num, denom)
+    if (!is.null(design@variables$repweights)) {
+      .replicate_freq_cell(design, num, denom)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this ",
+            "design for correct SEs."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_fallback"
+      )
+      .calibrated_freq_cell(design, num, denom)
+    }
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .replicate_freq_cell(design, num, denom)
   } else if (S7::S7_inherits(design, survey_twophase)) {

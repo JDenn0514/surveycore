@@ -254,6 +254,28 @@ against the messages defined here.
 | EN-3 | `get_effective_n()` | `x` resolves to more than one column | ERROR | `surveycore_error_effective_n_x_multi_col` | `"x" = "{.arg x} must select exactly one variable, not {length(selected)}.", "i" = "Selected: {.field {selected}}.", "v" = "Pass one variable at a time, or loop over variables."` |
 | EN-4 | `get_effective_n()` | `method` is not `"kish"` or `"deff"` | ERROR | (thrown by `match.arg()`; no custom class) | — |
 
+### higher_is / direction rows (PR 1 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| HI-1 | `set_higher_is()`, `extract_higher_is()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_higher_is_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| HI-2 | `set_higher_is()` | Neither `...` nor `variable` provided | ERROR | `surveycore_error_higher_is_no_vars` | `"x" = "{.fn set_higher_is} requires at least one variable name."` |
+| HI-3 | `set_higher_is()` | `direction` value is not `"better"`, `"worse"`, or `NULL` | ERROR | `surveycore_error_direction_invalid` | `"x" = "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} (or {.code NULL} to remove). Got {.val {bad}}."` |
+
+### reverse_coded rows (PR 2 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| RC-1 | `set_reverse_coded()`, `extract_reverse_coded()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_reverse_coded_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| RC-2 | `set_reverse_coded()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_reverse_coded_no_vars` | `"x" = "{.fn set_reverse_coded} requires at least one variable name."` |
+| RC-3 | `set_reverse_coded()` | `reverse_coded` is not `TRUE` or `FALSE` (e.g., `NA`, non-logical) | ERROR | `surveycore_error_reverse_coded_not_logical` | `"x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."` |
+
+### diffs favorability rows (PR 3 — 2026-05-11)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| FA-1 | `get_diffs()` | `alpha` not a single numeric value strictly between 0 and 1 | ERROR | `surveycore_error_alpha_invalid` | `"{.arg alpha} must be a single numeric value strictly between 0 and 1. Got {.val {alpha}}."` |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -266,6 +288,24 @@ against the messages defined here.
 | PP-6 | `pool_pvals()` | After binding, one or more non-NA values of pooled `p_col` are outside `[0, 1]` | ERROR | `surveycore_error_pool_pvals_invalid_pvalues` | `"x" = "Pooled column {.val {p_col}} contains {n_bad} value(s) outside {.code [0, 1]}.", "i" = "Offending row{?s} (source / row-within-source): {.val {bad_locs}}.", "v" = "Verify that {.arg p_col} names a p-value column, not a coefficient or test statistic."` |
 | PP-7 | `pool_pvals()` | `strip_within_adj = FALSE` and at least one input element already contains `new_col` | WARNING | `surveycore_warning_pool_pvals_input_pre_adjusted` | `"!" = "{length(bad)} input element{?s} already contained a column named {.val {new_col}}.", "i" = "Renamed to {.val {within_col}} per element before binding. Double-adjustment does not formally maintain FDR control.", "v" = "Set {.arg strip_within_adj = TRUE} to drop pre-existing within-call adjustments, or pass {.code pval_adj = NULL} to upstream {.fn get_*} calls."` |
 | PP-8 | `pool_pvals()` | After binding, every value of `p_col` is `NA` | WARNING | `surveycore_warning_pool_pvals_no_pvalues_available` | `"!" = "All values of pooled column {.val {p_col}} are {.code NA}.", "i" = "Returning the bound tibble with all-{.code NA} {.val {new_col}}."` |
+
+### nonprob-bootstrap-variance rows (PR 1 — class, constructor, validator)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| NB-1 | `as_survey_nonprob()` | `type` is not `"bootstrap"` | ERROR | `surveycore_error_type_invalid` | `"x" = "{.arg type} must be {.val \"bootstrap\"} for {.cls survey_nonprob} objects.", "i" = "Jackknife and other replicate types are not supported for non-probability samples. Got {.val {type}}."` |
+| NB-2 | `get_means()`, `get_totals()`, `get_freqs()`, `get_corr()`, `get_ratios()`, `get_quantiles()`, `get_diffs()` | `survey_nonprob` object has no bootstrap replicate weights | WARN | `surveycore_warning_nonprob_srs_fallback` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "Run {.fn surveywts::create_bootstrap_weights} on this design for correct SEs."` |
+| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."` |
+| NB-4 | `get_means()` etc. (analysis functions, bootstrap path) | >5% of replicates have NA in a domain cell for `survey_nonprob` | WARN | `surveycore_warning_domain_replicates_na` | `"!" = "{na_dropped} of {R} bootstrap replicates have no observations in this domain ({pct}% of R).", "i" = "Standard errors for this cell understate variance when more than 5% of replicates are dropped.", "i" = "Consider collapsing small domain categories or increasing R."` |
+| NB-5 | `as_survey_nonprob()` | `reference_sample` is not a `survey_taylor` | ERROR | `surveycore_error_reference_sample_nonprob` | `"x" = "{.arg reference_sample} must be a {.cls survey_taylor} object.", "i" = "Got {.cls {class(reference_sample)[[1L]]}}.", "v" = "Pass the {.cls survey_taylor} object used to estimate propensity scores."` |
+| NB-6 | `as_survey_nonprob()` | `calibration$bootstrap` is `FALSE` when `repweights` is present | ERROR | `surveycore_error_provenance_not_bootstrap` | `"x" = "{.arg calibration} indicates the replicate weights were not produced by re-running the adjustment procedure.", "i" = "{.code calibration$bootstrap} must be {.val TRUE} for bootstrap variance to be valid.", "v" = "Use {.fn surveywts::create_bootstrap_weights} to produce repweights with re-calibration."` |
+| NB-7 | `as_survey_nonprob()` | `calibration$R` mismatches count of resolved `repweights` columns | ERROR | `surveycore_error_provenance_R_mismatch` | `"x" = "Provenance records {.val {calibration$R}} replicates but {.val {length(repweights_vars)}} replicate weight columns were found.", "i" = "The {.arg calibration} object and {.arg repweights} columns must come from the same {.fn surveywts::create_bootstrap_weights} call."` |
+| NB-8 | `as_survey_nonprob()`, `as_survey_replicate()` | `rscales` has NA, negative, or non-numeric values | ERROR | `surveycore_error_rscales_na` | `"x" = "{.arg rscales} must be a non-negative numeric vector with no NA values.", "i" = "Got {sum(is.na(rscales))} NA value(s) and/or {sum(rscales[!is.na(rscales)] < 0, na.rm = TRUE)} negative value(s).", "v" = "Supply a numeric vector of length {n_rep} with all values >= 0."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Row 16 (`surveycore_error_repweights_empty`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
+- Row 17 (`surveycore_error_rscales_length`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
 
 ---
 
@@ -320,7 +360,7 @@ Which test files cover which error table rows:
 | `test-glm-methods.R` | 76 |
 | `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |
-| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
+| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new), FA-1 (new) |
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
 | `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8, C15 |
@@ -329,3 +369,4 @@ Which test files cover which error table rows:
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
+| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |

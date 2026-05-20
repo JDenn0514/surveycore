@@ -713,13 +713,32 @@ test_that(".degf() returns design-based finite df for SRS-style design", {
   expect_equal(.degf(d), nrow(df) - 1L)
 })
 
-test_that(".degf() returns design-based finite df for survey_nonprob", {
-  # Calibrated with 50 rows → degf = 50 - 1 = 49
+test_that(".degf() returns Inf for survey_nonprob without repweights", {
+  # survey_nonprob always returns Inf — no design-based df available
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 14L)
   d <- as_survey_nonprob(df, weights = wt)
   test_invariants(d)
 
-  expect_equal(.degf(d), nrow(df) - 1L)
+  expect_equal(.degf(d), Inf)
+})
+
+test_that(".degf() returns Inf for survey_nonprob with repweights", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 77L)
+  R <- 10L
+  set.seed(77L)
+  repwt_data <- matrix(
+    pmax(0.1, df$wt * matrix(
+      rexp(nrow(df) * R, rate = 1),
+      nrow = nrow(df), ncol = R
+    )),
+    nrow = nrow(df), ncol = R
+  )
+  colnames(repwt_data) <- paste0("repwt_", seq_len(R))
+  df_rep <- cbind(df, as.data.frame(repwt_data))
+  d <- as_survey_nonprob(df_rep, weights = wt, repweights = starts_with("repwt_"))
+  test_invariants(d)
+
+  expect_equal(.degf(d), Inf)
 })
 
 test_that(".degf() throws surveycore_error_unsupported_class for non-design object", {
@@ -778,12 +797,13 @@ test_that(".extract_var_meta() returns all-NULL list for plain numeric column", 
   expect_type(result, "list")
   expect_identical(
     names(result),
-    c("variable_label", "question_preface", "value_labels", "sata")
+    c("variable_label", "question_preface", "value_labels", "sata", "higher_is")
   )
   expect_null(result$variable_label)
   expect_null(result$question_preface)
   expect_null(result$value_labels)
   expect_false(result$sata)
+  expect_null(result$higher_is)
 })
 
 test_that(".extract_var_meta() returns variable_label from @metadata@variable_labels", {

@@ -4,7 +4,17 @@
 \alias{as_survey_nonprob}
 \title{Create a Calibrated / Non-Probability Survey Design}
 \usage{
-as_survey_nonprob(data, weights, calibration = NULL)
+as_survey_nonprob(
+  data,
+  weights,
+  repweights = NULL,
+  type = "bootstrap",
+  scale = NULL,
+  rscales = NULL,
+  mse = TRUE,
+  reference_sample = NULL,
+  calibration = NULL
+)
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey responses with
@@ -16,12 +26,46 @@ column (a single column, values strictly > 0). Typically produced by
 an external raking function (e.g., \code{anesrake::anesrake()}) or a
 \pkg{surveywts} calibration function.}
 
+\item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> Bootstrap
+replicate weight columns (at least 2). Each column must be numeric and
+represents one set of combined bootstrap weights (calibration already
+applied). Supply \code{NULL} (the default) to use SRS-based variance
+approximation. Columns are combined-weights: the calibration adjustment
+has already been re-applied within each replicate column.}
+
+\item{type}{Character. Replicate type. Must be \code{"bootstrap"} — jackknife
+and other replicate types are not supported for non-probability samples.
+Ignored when \code{repweights = NULL}. Default \code{"bootstrap"}.}
+
+\item{scale}{Numeric scalar. Scaling factor for the replicate variance
+formula. Default \code{NULL}, which sets \code{scale = 1 / R} (where \code{R} is the
+number of replicate columns). Note: this default differs from
+\code{\link[=as_survey_replicate]{as_survey_replicate()}}, which uses type-specific defaults.}
+
+\item{rscales}{Numeric vector of length \code{R}. Per-replicate scale factors.
+All values must be non-negative and non-NA. Default \code{NULL}, which sets
+\code{rscales = rep(1, R)}.}
+
+\item{mse}{Logical. If \code{TRUE} (the default), the mean-squared-error form
+of the variance estimator is used: \code{(1/R) * sum((theta_r - theta)^2)}.
+If \code{FALSE}, the centered form is used instead. Default \code{TRUE}. Note:
+this default differs from \code{\link[=as_survey_replicate]{as_survey_replicate()}} — \code{mse = TRUE} is
+the appropriate default for bootstrap replicates from calibrated
+non-probability samples (Wu 2022).}
+
+\item{reference_sample}{Optional. A \link{survey_taylor} object representing the
+probability-based reference sample used to estimate propensity scores or
+calibration targets. Stored in \verb{@reference_sample} for reproducibility.
+Supply \code{NULL} (the default) when no reference sample is available.}
+
 \item{calibration}{Optional. The calibration provenance object returned by
-a \pkg{surveywts} calibration function (e.g., \code{surveywts::rake()}).
-Stored in \verb{@calibration} for reproducibility. Supply \code{NULL} (the default)
+a \pkg{surveywts} calibration function (e.g.,
+\code{surveywts::create_bootstrap_weights()}). Stored in \verb{@calibration} for
+reproducibility. When \code{repweights} is also supplied, \code{calibration} is
+validated: \code{calibration$bootstrap} must be \code{TRUE} and \code{calibration$R}
+must equal the number of replicate columns. Supply \code{NULL} (the default)
 when calibration was performed externally and provenance metadata is not
-available. The object's structure is defined by \pkg{surveywts} and will
-be formally specified in Phase 2.5.}
+available.}
 }
 \value{
 A \code{survey_nonprob} object.
@@ -34,6 +78,15 @@ Creates a survey design object for non-probability samples and post-hoc
 calibrated designs (e.g., raked online panels, post-stratified samples).
 Accepts pre-computed calibration weights and optionally stores calibration
 provenance from \pkg{surveywts} output for reproducibility.
+
+When \code{repweights} is supplied, the variance estimator uses the bootstrap
+replicate formula: \code{V = scale * sum(rscales * (theta_r - theta)^2)}.
+The default \code{scale = 1/R} follows Wu (2022) and Chen et al. (2021) for
+calibrated non-probability bootstrap variance.
+
+When \code{repweights = NULL}, standard errors use an SRS approximation (treating
+each observation as its own PSU). This understates calibration uncertainty;
+see \code{vignette("creating-survey-objects")} for details.
 }
 \section{Phase 2.5 skeleton}{
 
@@ -79,6 +132,14 @@ df <- data.frame(
 )
 d <- as_survey_nonprob(df, weights = cal_wt)
 
+}
+\references{
+Wu, C. (2022) Statistical inference with non-probability survey samples.
+\emph{Survey Methodology} \bold{48}(2), 283--311.
+
+Chen, Y., Li, P. and Wu, C. (2021) Doubly robust inference with
+non-probability survey samples. \emph{Journal of the American Statistical
+Association} \bold{115}(532), 2011--2021.
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} for probability designs with Taylor variance,

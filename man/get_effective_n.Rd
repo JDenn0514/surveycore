@@ -75,7 +75,7 @@ design-effect-based formula for a specified variable (\code{method = "deff"}).
 }
 \details{
 The \strong{Kish method} (\code{method = "kish"}) computes effective N from survey
-weights alone: \verb{n_eff = (Σw)² / Σw²}. It captures only weight variation.
+weights alone: \code{n_eff = sum(w)^2 / sum(w^2)}. It captures only weight variation.
 For clustered designs with equal weights, \code{deff_kish = 1.0} even when the
 true design effect is substantially greater due to clustering. Use
 \code{method = "deff"} to capture the full design effect for a specific

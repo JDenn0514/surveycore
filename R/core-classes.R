@@ -41,6 +41,14 @@
 #' @param sata A named list mapping variable names to `TRUE` for variables
 #'   that are select-all-that-apply (SATA). Only variables explicitly marked
 #'   as SATA appear in this list — absence means the variable is not SATA.
+#' @param higher_is A named list mapping variable names to `"better"` or
+#'   `"worse"`, indicating the direction of improvement for that variable.
+#'   Absent keys mean the direction is unset. Use [set_higher_is()] and
+#'   [extract_higher_is()] to access this property.
+#' @param reverse_coded A named list mapping variable names to `TRUE` for
+#'   variables that are reverse-coded. Absent keys mean the variable is not
+#'   reverse-coded. Use [set_reverse_coded()] and [extract_reverse_coded()] to
+#'   access this property.
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
@@ -95,6 +103,14 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     sata = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    higher_is = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    reverse_coded = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),
@@ -897,6 +913,9 @@ survey_collection <- S7::new_class(
 #'   or `NULL` if calibration was performed externally. Stores the
 #'   calibration targets, variables, and trimming parameters for
 #'   reproducibility and future bootstrap re-calibration. Default `NULL`.
+#' @param reference_sample Optional [survey_taylor] object representing the
+#'   probability-based reference sample used to estimate propensity scores or
+#'   calibration targets. Stored for reproducibility. Default `NULL`.
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -904,6 +923,12 @@ survey_collection <- S7::new_class(
 #' @section Design variables (`@variables`):
 #' \describe{
 #'   \item{`weights`}{Character string naming the (calibrated) weight column.}
+#'   \item{`repweights`}{Character vector of bootstrap replicate weight column
+#'     names, or `NULL` when no replicate weights are present.}
+#'   \item{`type`}{Replicate type (`"bootstrap"`), or `NULL`.}
+#'   \item{`scale`}{Numeric scale factor for the variance formula, or `NULL`.}
+#'   \item{`rscales`}{Per-replicate scale factors, or `NULL`.}
+#'   \item{`mse`}{Logical. `TRUE` for MSE form of variance, or `NULL`.}
 #'   \item{`probs_provided`}{Always `FALSE` for calibrated designs.}
 #' }
 #'
@@ -920,7 +945,8 @@ survey_collection <- S7::new_class(
 #'   variables = list(),
 #'   groups = character(0),
 #'   call = NULL,
-#'   calibration = NULL
+#'   calibration = NULL,
+#'   reference_sample = NULL
 #' )
 #' @seealso [as_survey_nonprob()] to create a `survey_nonprob` object.
 #' @family constructors
@@ -933,7 +959,10 @@ survey_nonprob <- S7::new_class(
     # Stores calibration provenance from surveywts output.
     # NULL when calibration was done externally.
     # RESERVED for full population in Phase 2.5.
-    calibration = S7::new_property(default = NULL)
+    calibration = S7::new_property(default = NULL),
+    # Optional survey_taylor reference sample used for propensity estimation.
+    # NULL when not supplied. Type-checked in as_survey_nonprob() (Layer 3).
+    reference_sample = S7::new_property(default = NULL)
   ),
   validator = function(self) {
     weights_var <- self@variables$weights

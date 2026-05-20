@@ -234,8 +234,10 @@ Before writing any output, check for `plans/spec-review-{id}.md`.
 
 ## Output Structure
 
-Organize all issues by spec section. If a section has no issues, say
-"No issues found."
+Organize all issues by severity tier in descending order (BLOCKING first,
+then REQUIRED, then SUGGESTION). Within each tier, list issues in the order
+they were found. Each issue includes a `Section:` line so the spec location
+is not lost.
 
 ```markdown
 ## Spec Review: [id] — Pass [N] ([YYYY-MM-DD])
@@ -250,17 +252,38 @@ _Omit this section on Pass 1._
 
 ### New Issues
 
-#### Section: [First major section name]
+#### BLOCKING
 
 **Issue [N]: [title]**
 Severity: BLOCKING
-...
+Section: [Spec section name]
+[Rule or principle violated]
 
-#### Section: [Next section name]
+[Description...]
 
-No new issues found.
+Options: ...
 
 ---
+
+#### REQUIRED
+
+**Issue [N]: [title]**
+Severity: REQUIRED
+Section: [Spec section name]
+...
+
+---
+
+#### SUGGESTION
+
+**Issue [N]: [title]**
+Severity: SUGGESTION
+Section: [Spec section name]
+...
+
+---
+
+_If a tier has no issues, omit that tier heading entirely._
 
 ## Summary (Pass [N])
 
