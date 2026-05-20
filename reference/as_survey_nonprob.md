@@ -5,7 +5,17 @@
 ## Usage
 
 ``` r
-as_survey_nonprob(data, weights, calibration = NULL)
+as_survey_nonprob(
+  data,
+  weights,
+  repweights = NULL,
+  type = "bootstrap",
+  scale = NULL,
+  rscales = NULL,
+  mse = TRUE,
+  reference_sample = NULL,
+  calibration = NULL
+)
 ```
 
 ## Arguments
@@ -23,14 +33,64 @@ as_survey_nonprob(data, weights, calibration = NULL)
   Typically produced by an external raking function (e.g.,
   `anesrake::anesrake()`) or a surveywts calibration function.
 
+- repweights:
+
+  \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
+  Bootstrap replicate weight columns (at least 2). Each column must be
+  numeric and represents one set of combined bootstrap weights
+  (calibration already applied). Supply `NULL` (the default) to use
+  SRS-based variance approximation. Columns are combined-weights: the
+  calibration adjustment has already been re-applied within each
+  replicate column.
+
+- type:
+
+  Character. Replicate type. Must be `"bootstrap"` — jackknife and other
+  replicate types are not supported for non-probability samples. Ignored
+  when `repweights = NULL`. Default `"bootstrap"`.
+
+- scale:
+
+  Numeric scalar. Scaling factor for the replicate variance formula.
+  Default `NULL`, which sets `scale = 1 / R` (where `R` is the number of
+  replicate columns). Note: this default differs from
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
+  which uses type-specific defaults.
+
+- rscales:
+
+  Numeric vector of length `R`. Per-replicate scale factors. All values
+  must be non-negative and non-NA. Default `NULL`, which sets
+  `rscales = rep(1, R)`.
+
+- mse:
+
+  Logical. If `TRUE` (the default), the mean-squared-error form of the
+  variance estimator is used: `(1/R) * sum((theta_r - theta)^2)`. If
+  `FALSE`, the centered form is used instead. Default `TRUE`. Note: this
+  default differs from
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  — `mse = TRUE` is the appropriate default for bootstrap replicates
+  from calibrated non-probability samples (Wu 2022).
+
+- reference_sample:
+
+  Optional. A
+  [survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
+  object representing the probability-based reference sample used to
+  estimate propensity scores or calibration targets. Stored in
+  `@reference_sample` for reproducibility. Supply `NULL` (the default)
+  when no reference sample is available.
+
 - calibration:
 
   Optional. The calibration provenance object returned by a surveywts
-  calibration function (e.g., `surveywts::rake()`). Stored in
-  `@calibration` for reproducibility. Supply `NULL` (the default) when
-  calibration was performed externally and provenance metadata is not
-  available. The object's structure is defined by surveywts and will be
-  formally specified in Phase 2.5.
+  calibration function (e.g., `surveywts::create_bootstrap_weights()`).
+  Stored in `@calibration` for reproducibility. When `repweights` is
+  also supplied, `calibration` is validated: `calibration$bootstrap`
+  must be `TRUE` and `calibration$R` must equal the number of replicate
+  columns. Supply `NULL` (the default) when calibration was performed
+  externally and provenance metadata is not available.
 
 ## Value
 
@@ -42,6 +102,17 @@ Creates a survey design object for non-probability samples and post-hoc
 calibrated designs (e.g., raked online panels, post-stratified samples).
 Accepts pre-computed calibration weights and optionally stores
 calibration provenance from surveywts output for reproducibility.
+
+When `repweights` is supplied, the variance estimator uses the bootstrap
+replicate formula: `V = scale * sum(rscales * (theta_r - theta)^2)`. The
+default `scale = 1/R` follows Wu (2022) and Chen et al. (2021) for
+calibrated non-probability bootstrap variance.
+
+When `repweights = NULL`, standard errors use an SRS approximation
+(treating each observation as its own PSU). This understates calibration
+uncertainty; see
+[`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
+for details.
 
 ## Phase 2.5 skeleton
 
@@ -84,6 +155,15 @@ applied practice for raked non-probability samples, but is technically a
 model-assisted approximation rather than design-based variance. See
 [`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
 for details and limitations.
+
+## References
+
+Wu, C. (2022) Statistical inference with non-probability survey samples.
+*Survey Methodology* **48**(2), 283–311.
+
+Chen, Y., Li, P. and Wu, C. (2021) Doubly robust inference with
+non-probability survey samples. *Journal of the American Statistical
+Association* **115**(532), 2011–2021.
 
 ## See also
 

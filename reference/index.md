@@ -111,6 +111,10 @@ argument.
   : Set Missing Code(s)
 - [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md)
   : Set SATA (Select-All-That-Apply) Flag
+- [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md)
+  : Set Direction-of-Improvement Attribute
+- [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md)
+  : Set Reverse-Coded Flag
 - [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
   : Infer Question Prefaces from Variable Labels
 
@@ -132,6 +136,10 @@ Retrieve metadata for one or more variables.
   : Extract Missing Value Codes
 - [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md)
   : Extract SATA (Select-All-That-Apply) Flags
+- [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md)
+  : Extract Direction-of-Improvement Attributes
+- [`extract_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/extract_reverse_coded.md)
+  : Extract Reverse-Coded Flags
 - [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
   : Extract All Metadata for Variables
 - [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)

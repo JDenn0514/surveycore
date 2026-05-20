@@ -17,6 +17,8 @@ survey_metadata(
   universe = list(),
   missing_codes = list(),
   sata = list(),
+  higher_is = list(),
+  reverse_coded = list(),
   transformations = list(),
   weighting_history = list()
 )
@@ -60,6 +62,25 @@ survey_metadata(
   select-all-that-apply (SATA). Only variables explicitly marked as SATA
   appear in this list — absence means the variable is not SATA.
 
+- higher_is:
+
+  A named list mapping variable names to `"better"` or `"worse"`,
+  indicating the direction of improvement for that variable. Absent keys
+  mean the direction is unset. Use
+  [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md)
+  and
+  [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md)
+  to access this property.
+
+- reverse_coded:
+
+  A named list mapping variable names to `TRUE` for variables that are
+  reverse-coded. Absent keys mean the variable is not reverse-coded. Use
+  [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md)
+  and
+  [`extract_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/extract_reverse_coded.md)
+  to access this property.
+
 - transformations:
 
   A named list tracking variable transformation history (populated
@@ -82,17 +103,21 @@ A `survey_metadata` object.
 
 Other metadata:
 [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md),
+[`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md),
 [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
 [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
+[`extract_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/extract_reverse_coded.md),
 [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md),
 [`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
+[`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md),
 [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
+[`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md),
 [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md),
 [`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),

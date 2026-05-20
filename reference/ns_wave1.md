@@ -856,6 +856,21 @@ attr(ns_wave1$news_sources_cnn, "labels")
 # non-prob samples)
 svy <- as_survey_nonprob(ns_wave1, weights = weight)
 get_freqs(svy, pres_approval)
+#> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+#>   use an SRS approximation that underestimates calibration uncertainty.
+#> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+#> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+#>   use an SRS approximation that underestimates calibration uncertainty.
+#> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+#> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+#>   use an SRS approximation that underestimates calibration uncertainty.
+#> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+#> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+#>   use an SRS approximation that underestimates calibration uncertainty.
+#> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+#> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+#>   use an SRS approximation that underestimates calibration uncertainty.
+#> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 #> # A tibble: 5 × 3
 #>   pres_approval          pct     n
 #>   <fct>                <dbl> <int>

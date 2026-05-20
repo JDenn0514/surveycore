@@ -84,7 +84,8 @@ FPC). It supports:
 - Data frames, tibbles, and data.table objects as input.
 - Variables with haven-style variable labels and value labels (e.g. from
   `.xpt` or `.sav` files read with `haven`).
-- Grouped analyses (via `surveytidy::group_by()`).
+- Grouped analyses (via
+  [`surveytidy::group_by()`](https://dplyr.tidyverse.org/reference/group_by.html)).
 
 Each analysis function accepts specific types of outcome variables:
 

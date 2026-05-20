@@ -231,6 +231,8 @@ ns_wave1_svy
 
     #> <survey_nonprob> (non-probability) [experimental]
 
+    #> • Variance: SRS approximation (no bootstrap replicate weights)
+
     #> Sample size: 6422
 
     #> 
@@ -358,6 +360,16 @@ not people are willing to consider voting for Trump.
 get_freqs(ns_wave1_svy, consider_trump)
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 3 × 3
     #>   consider_trump   pct     n
     #>   <fct>          <dbl> <int>
@@ -380,6 +392,79 @@ the hood to do this). Let’s look at an example:
 
 get_freqs(ns_wave1_svy, c(news_sources_facebook:news_sources_other))
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 24 × 4
     #>    name                                   value   pct     n
@@ -410,6 +495,79 @@ ns_wave1_svy |>
   )
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 24 × 4
     #>    news_source                            choice   pct     n
     #>    <fct>                                  <chr>  <dbl> <int>
@@ -435,6 +593,10 @@ estimates the survey-weighted mean of a continuous variable.
 # Mean discrimination against blacks
 get_means(ns_wave1_svy, discrimination_blacks)
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 1 × 4
     #>    mean ci_low ci_high     n
@@ -463,6 +625,10 @@ weights, the totals will add up to the number of rows (6,422).
 
 get_totals(ns_wave1_svy)
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 1 × 3
     #>   total ci_low ci_high
@@ -537,6 +703,10 @@ get_corr(
 )
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 1 × 9
     #>   var1         var2           r ci_low ci_high p_value statistic    df     n
     #>   <fct>        <fct>      <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
@@ -565,6 +735,115 @@ get_corr(
   c(cand_favorability_trump:cand_favorability_pence)
 )
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 36 × 9
     #>    var1         var2          r   ci_low ci_high   p_value statistic    df     n
@@ -595,6 +874,115 @@ get_corr(
   format = "wide"
 )
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 9 × 10
     #>   variable      `Donald Trump` `Barack Obama` Alexandria Ocasio-Co…¹ `Joe Biden`
@@ -647,6 +1035,16 @@ get_ratios(
 )
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 1 × 4
     #>   ratio ci_low ci_high     n
     #>   <dbl>  <dbl>   <dbl> <int>
@@ -670,6 +1068,16 @@ data. By default, it calculates the quantiles at the 25th, 50th, and
 get_quantiles(ns_wave1_svy, age)
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 3 × 5
     #>   quantile estimate ci_low ci_high     n
     #>   <chr>       <dbl>  <dbl>   <dbl> <int>
@@ -686,6 +1094,10 @@ Pass any numeric vector to `probs`. For the median alone:
 get_quantiles(ns_wave1_svy, age, probs = 0.5)
 ```
 
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+
     #> # A tibble: 1 × 5
     #>   quantile estimate ci_low ci_high     n
     #>   <chr>       <dbl>  <dbl>   <dbl> <int>
@@ -697,6 +1109,34 @@ For deciles of age:
 
 get_quantiles(ns_wave1_svy, age, probs = seq(0.1, 0.9, 0.1))
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 9 × 5
     #>   quantile estimate ci_low ci_high     n
@@ -723,6 +1163,43 @@ consideration by party identification.
 
 get_freqs(ns_wave1_svy, consider_trump, group = pid3)
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    #> ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 12 × 4
     #>    pid3           consider_trump    pct     n
@@ -773,6 +1250,10 @@ get_means(
   conf_level = 0.9
 )
 ```
+
+    #> Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    #>   use an SRS approximation that underestimates calibration uncertainty.
+    #> ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     #> # A tibble: 1 × 6
     #>    mean    se ci_low ci_high   moe     n

@@ -27,9 +27,11 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/classify_question_type.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/clean.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/dot-get_design_vars_flat.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/extract_higher_is.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_metadata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_question_preface.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/extract_reverse_coded.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_sata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_universe.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_val_labels.html</loc></url>
@@ -63,8 +65,10 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/remove_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_collection_id.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_collection_if_missing_var.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/set_higher_is.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_missing_codes.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_question_preface.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_sata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_universe.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_val_labels.html</loc></url>

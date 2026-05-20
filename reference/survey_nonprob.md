@@ -14,7 +14,8 @@ survey_nonprob(
   variables = list(),
   groups = character(0),
   call = NULL,
-  calibration = NULL
+  calibration = NULL,
+  reference_sample = NULL
 )
 ```
 
@@ -56,6 +57,14 @@ survey_nonprob(
   trimming parameters for reproducibility and future bootstrap
   re-calibration. Default `NULL`.
 
+- reference_sample:
+
+  Optional
+  [survey_taylor](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md)
+  object representing the probability-based reference sample used to
+  estimate propensity scores or calibration targets. Stored for
+  reproducibility. Default `NULL`.
+
 ## Value
 
 A `survey_nonprob` object.
@@ -94,6 +103,27 @@ for guidance on when this is appropriate and what the limitations are.
 - `weights`:
 
   Character string naming the (calibrated) weight column.
+
+- `repweights`:
+
+  Character vector of bootstrap replicate weight column names, or `NULL`
+  when no replicate weights are present.
+
+- `type`:
+
+  Replicate type (`"bootstrap"`), or `NULL`.
+
+- `scale`:
+
+  Numeric scale factor for the variance formula, or `NULL`.
+
+- `rscales`:
+
+  Per-replicate scale factors, or `NULL`.
+
+- `mse`:
+
+  Logical. `TRUE` for MSE form of variance, or `NULL`.
 
 - `probs_provided`:
 

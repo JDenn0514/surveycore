@@ -807,6 +807,8 @@ svy_ns
 
     ## <survey_nonprob> (non-probability) [experimental]
 
+    ## • Variance: SRS approximation (no bootstrap replicate weights)
+
     ## Sample size: 6422
 
     ## 
@@ -837,6 +839,22 @@ svy_ns
 # Presidential approval rating (July 2019)
 get_freqs(svy_ns, pres_approval)
 ```
+
+    ## Warning: ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    ##   use an SRS approximation that underestimates calibration uncertainty.
+    ## ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    ## ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    ##   use an SRS approximation that underestimates calibration uncertainty.
+    ## ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    ## ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    ##   use an SRS approximation that underestimates calibration uncertainty.
+    ## ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    ## ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    ##   use an SRS approximation that underestimates calibration uncertainty.
+    ## ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    ## ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors
+    ##   use an SRS approximation that underestimates calibration uncertainty.
+    ## ℹ Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
 
     ## # A tibble: 5 × 3
     ##   pres_approval          pct     n

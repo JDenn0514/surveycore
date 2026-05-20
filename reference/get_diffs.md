@@ -20,6 +20,8 @@ get_diffs(
   scale = c("ame", "link"),
   variance = "ci",
   conf_level = 0.95,
+  alpha = 0.05,
+  show_favorability = FALSE,
   min_cell_n = 30L,
   n_weighted = FALSE,
   decimals = NULL,
@@ -107,6 +109,23 @@ get_diffs(
 
   Numeric(1) in (0, 1). Confidence level. Default `0.95`.
 
+- alpha:
+
+  Numeric(1) strictly between 0 and 1. Significance threshold used when
+  `show_favorability = TRUE` to classify whether a difference is
+  statistically significant. Uses strict `<` (p \< alpha). Default
+  `0.05`.
+
+- show_favorability:
+
+  Logical. If `TRUE`, appends two logical columns to the result:
+  `favorable` (the difference is statistically significant and in the
+  direction indicated by `higher_is` metadata on `x`) and `backlash`
+  (significant but in the opposite direction). Requires `higher_is`
+  metadata set on `x` via
+  [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md);
+  if not set, both columns are all `FALSE`. Default `FALSE`.
+
 - min_cell_n:
 
   Integer(1). Minimum unweighted cell size before
@@ -169,7 +188,7 @@ A `survey_diffs` tibble (also inheriting `survey_result`). Columns (in
 order): group columns (when active), treatment variable, `estimate`,
 `pct_change` (optional), `mean` (optional), `n`, `n_weighted`
 (optional), `se` (optional), `ci_low` (optional), `ci_high` (optional),
-`p_value`, `stars`. Use
+`p_value`, `stars`, `favorable` (optional), `backlash` (optional). Use
 [`meta()`](https://jdenn0514.github.io/surveycore/reference/meta.md) to
 access design type, family, reference level, and other metadata.
 

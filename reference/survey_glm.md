@@ -117,9 +117,10 @@ the [`stats::glm()`](https://rdrr.io/r/stats/glm.html) call in
 the "non-integer \#successes" warning that fires for every
 survey-weighted binomial model.
 
-**Domain estimation:** Use `surveytidy::filter()` before calling
-`survey_glm()`. The GLM is fit on in-domain rows only; variance
-estimation uses the full design for correct design-based SEs.
+**Domain estimation:** Use
+[`surveytidy::filter()`](https://dplyr.tidyverse.org/reference/filter.html)
+before calling `survey_glm()`. The GLM is fit on in-domain rows only;
+variance estimation uses the full design for correct design-based SEs.
 
 **Multinomial response:** [`cbind()`](https://rdrr.io/r/base/cbind.html)
 on the LHS of `formula` is not supported. Multinomial logistic

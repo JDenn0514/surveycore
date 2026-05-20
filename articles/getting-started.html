@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Inter-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Getting Started with surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.8.4/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
     </div>
 
@@ -256,6 +256,7 @@ are interested in.</p>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> (non-probability) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Variance: SRS approximation (no bootstrap replicate weights)</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">6422</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6,422 × 171</span></span></span>
@@ -290,7 +291,7 @@ studies, medical validation studies, or surveys with a screening
 phase.</p>
 <p>We will use the nwtco data from the <code>survival</code>
 package.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nwtco</span> <span class="op">&lt;-</span> <span class="fu">survival</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/survival/man/nwtco.html" class="external-link">nwtco</a></span></span>
 <span></span>
 <span><span class="co"># in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()</span></span>
@@ -302,7 +303,7 @@ package.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Treating as equal-probability sampling within clusters (unknown population</span></span>
 <span><span class="co">#&gt;   size).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Population totals will equal sample totals, not estimated population totals.</span></span></code></pre>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Phase 2: subcohort, with Phase 2 sampling stratified by relapse status</span></span>
 <span><span class="va">nwtco_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_twophase.html">as_survey_twophase</a></span><span class="op">(</span></span>
 <span>  <span class="va">phase1</span>,</span>
@@ -360,8 +361,17 @@ proportions). The first argument is the survey design, the second is the
 variable you want to get the frequencies for. Here’s a simple example
 where we calculate whether or not people are willing to consider voting
 for Trump.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">consider_trump</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
 <span><span class="co">#&gt;   consider_trump   pct     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -376,8 +386,80 @@ week. Please indicate which of the following sources you used.” Rather
 than looking at each one individually, <code><a href="../reference/get_freqs.html">get_freqs()</a></code> allows
 you to pass in multiple variables (it uses <code>tidy-select</code>
 under the hood to do this). Let’s look at an example:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">news_sources_facebook</span><span class="op">:</span><span class="va">news_sources_other</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 24 × 4</span></span></span>
 <span><span class="co">#&gt;    name                                   value   pct     n</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -395,13 +477,85 @@ under the hood to do this). Let’s look at an example:</p>
 <p>The <code>name</code> column identifies which variable each row
 belongs to; <code>value</code> holds the response code. You can also
 change the name of the columns if you want. For example:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">news_sources_facebook</span><span class="op">:</span><span class="va">news_sources_other</span><span class="op">)</span>,</span>
 <span>    names_to <span class="op">=</span> <span class="st">"news_source"</span>,</span>
 <span>    values_to <span class="op">=</span> <span class="st">"choice"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 24 × 4</span></span></span>
 <span><span class="co">#&gt;    news_source                            choice   pct     n</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                                  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -422,9 +576,12 @@ change the name of the columns if you want. For example:</p>
 </h3>
 <p><code><a href="../reference/get_means.html">get_means()</a></code> estimates the survey-weighted mean of a
 continuous variable.</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Mean discrimination against blacks</span></span>
 <span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">discrimination_blacks</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;    mean ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -446,15 +603,18 @@ Nationscape data to show how calibrated weights do not.</p>
 <p>First, we will look at the Nationscape data. Since these are
 calibration weights, the totals will add up to the number of rows
 (6,422).</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
 <span><span class="co">#&gt;   total ci_low ci_high</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  <span style="text-decoration: underline;">6</span>422  <span style="text-decoration: underline;">6</span>192.   <span style="text-decoration: underline;">6</span>652.</span></span></code></pre>
 <p>However, the Pew Jewish-Americans study shows us the estimated total
 population of Jews in the US:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
 <span><span class="co">#&gt;      total   ci_low  ci_high</span></span>
@@ -468,7 +628,7 @@ specifying it in the <code>x</code> argument.</p>
 specific response option, we use the <code>group</code> argument. For
 example: if we wanted to know how many Jews are in each age category we
 would calculate it like this:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span>, group <span class="op">=</span> <span class="va">age4cat</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   age4cat      total   ci_low  ci_high</span></span>
@@ -491,7 +651,7 @@ intervals use the Fisher Z transformation, guaranteeing bounds in (−1,
 underlying data frame — dropping rows with missing values and removing
 “Not sure” responses (coded <code>999</code>) — then rebuild the survey
 object.</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_wave1_clean</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
 <span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">)</span>,</span>
@@ -506,12 +666,15 @@ object.</p>
 <span>  <span class="va">ns_wave1_clean_svy</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span>, <span class="va">cand_favorability_biden</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
 <span><span class="co">#&gt;   var1         var2           r ci_low ci_high p_value statistic    df     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Donald Trump Joe Biden -<span style="color: #BB0000;">0.495</span> -<span style="color: #BB0000;">0.524</span>  -<span style="color: #BB0000;">0.464</span>       0     -<span style="color: #BB0000;">41.3</span>  <span style="text-decoration: underline;">5</span>276  <span style="text-decoration: underline;">5</span>278</span></span></code></pre>
 <p>Next, let’s look at favorability across multiple variables.</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fav_vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"cand_favorability_trump"</span>, <span class="st">"cand_favorability_biden"</span>,</span>
 <span>  <span class="st">"cand_favorability_harris"</span>, <span class="st">"cand_favorability_sanders"</span>,</span>
@@ -530,6 +693,114 @@ object.</p>
 <span>  <span class="va">ns_wave1_multi_svy</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 36 × 9</span></span></span>
 <span><span class="co">#&gt;    var1         var2          r   ci_low ci_high   p_value statistic    df     n</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -549,12 +820,120 @@ variable pair. It shows the correlation in <code>r</code>, the
 confidence intervals, p-values, and other relevant information.</p>
 <p>Switch to wide format for a more familiar correlation-matrix
 layout:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_multi_svy</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>,</span>
 <span>  format <span class="op">=</span> <span class="st">"wide"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 10</span></span></span>
 <span><span class="co">#&gt;   variable      `Donald Trump` `Barack Obama` Alexandria Ocasio-Co…¹ `Joe Biden`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -589,12 +968,21 @@ ratio of Trump’s aggregate favorability score to Biden’s. A ratio less
 than 1 means Trump’s aggregate score is lower — i.e., he is viewed more
 favorably on average; a ratio greater than 1 means Biden is viewed more
 favorably.</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_ratios.html">get_ratios</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_clean_svy</span>,</span>
 <span>  numerator <span class="op">=</span> <span class="va">cand_favorability_trump</span>,</span>
 <span>  denominator <span class="op">=</span> <span class="va">cand_favorability_biden</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   ratio ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -611,9 +999,18 @@ intervals are derived by inverting the weighted CDF rather than assuming
 normality, so they are generally <strong>asymmetric</strong> around the
 estimate and always respect the range of the data. By default, it
 calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))</span></span>
 <span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 5</span></span></span>
 <span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -625,15 +1022,45 @@ calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
 </h4>
 <p>Pass any numeric vector to <code>probs</code>. For the median
 alone:</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> p50            47     46      49  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
 <p>For deciles of age:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 5</span></span></span>
 <span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -655,8 +1082,44 @@ alone:</p>
 computing estimates separately within levels of a categorical variable.
 Pass a bare column name or multiple using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. For example,
 we’ll look at Trump consideration by party identification.</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb82"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">consider_trump</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 12 × 4</span></span></span>
 <span><span class="co">#&gt;    pid3           consider_trump    pct     n</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -719,13 +1182,16 @@ You can request any combination of:</p>
 <p>The <code>conf_level</code> argument controls the confidence level
 for <code>"ci"</code> and <code>"moe"</code>. The default is
 <code>0.95</code>; for a 90% CI:</p>
-<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb85"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_svy</span>,</span>
 <span>  <span class="va">age</span>,</span>
 <span>  variance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"se"</span>, <span class="st">"ci"</span>, <span class="st">"moe"</span><span class="op">)</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.9</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;    mean    se ci_low ci_high   moe     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -745,7 +1211,7 @@ populations. In this example, we’re looking at the proportion
 (<code>pct</code>), the number of people from the sample
 (<code>n</code>), and the estimated population size
 (<code>n_weighted</code>) of Jewish- Americans in each age category.</p>
-<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb88"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span>, <span class="va">age4cat</span>, n_weighted <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   age4cat      pct     n n_weighted</span></span>

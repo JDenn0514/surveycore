@@ -12,8 +12,8 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Inter-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Creating Survey Objects in surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.8.4/vignettes/creating-survey-objects.Rmd" class="external-link"><code>vignettes/creating-survey-objects.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/creating-survey-objects.Rmd" class="external-link"><code>vignettes/creating-survey-objects.Rmd</code></a></small>
       <div class="d-none name"><code>creating-survey-objects.Rmd</code></div>
     </div>
 
@@ -1189,6 +1189,7 @@ presidential vote</td>
 <pre><code><span><span class="co">## </span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> (non-probability) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">•</span> Variance: SRS approximation (no bootstrap replicate weights)</span></span></code></pre>
 <pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">6422</span></span></span></code></pre>
 <pre><code><span><span class="co">## </span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6,422 × 171</span></span></span>
@@ -1211,9 +1212,24 @@ presidential vote</td>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_telemundo &lt;dbl&gt;, news_sources_npr &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_amtalk &lt;dbl&gt;, news_sources_new_york_times &lt;dbl&gt;,</span></span></span>
 <span><span class="co">## <span style="color: #949494;">#   news_sources_local_newspaper &lt;dbl&gt;, news_sources_other &lt;dbl&gt;, …</span></span></span></code></pre>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Presidential approval rating (July 2019)</span></span>
 <span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">svy_ns</span>, <span class="va">pres_approval</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">##   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">## <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">##   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">## <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">##   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">## <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">##   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">## <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">##   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">## <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
 <span><span class="co">##   pres_approval          pct     n</span></span>
 <span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -1239,7 +1255,7 @@ future readers of your code.</p>
 </h3>
 <p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and
 present standard errors as if the design were a probability sample:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Creates a survey_taylor object, which misrepresents the design</span></span>
 <span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <p>Using <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> makes the non-probability
@@ -1262,13 +1278,13 @@ registrar demographics (year, major, housing status), use
 <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>. This is the appropriate constructor
 whenever the weights were derived to make the respondents resemble the
 full student body:</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">ps_weight</span><span class="op">)</span></span></code></pre></div>
 <p><strong>If no calibration weights are available and you still want to
 use surveycore functions:</strong> Add a column of 1s and use
 <code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
 <code>strata</code>:</p>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">campus_survey</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>This treats all respondents as equally weighted. The SEs it produces
@@ -1373,7 +1389,7 @@ attitudes of students in these specific classrooms without generalizing
 — you can treat the participants as a census. Add a column of 1s and use
 <code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
 <code>strata</code>:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classroom_data</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>Equal weights treat all participants as equally represented. The SEs

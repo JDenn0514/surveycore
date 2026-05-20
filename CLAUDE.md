@@ -164,6 +164,11 @@ so this rarely bites — but keep it in mind.
   across `survey_collection` (shipped; PR \#106)
 - `archive/polychoric-corr/` — polychoric / polyserial correlation spec,
   plan, decisions, and test spec (shipped; PRs \#107, \#108, \#109)
+- `archive/variable-direction/` —
+  [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md),
+  [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md),
+  and `get_diffs(show_favorability)` spec, plan, and decisions (shipped;
+  PRs \#124, \#125, \#126)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all
   historical)
 - `.claude/rules/` — code style, testing standards, R package
