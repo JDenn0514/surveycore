@@ -133,7 +133,18 @@
       "Bash(Rscript -e 'devtools::document\\(\\)')",
       "Bash(Rscript -e 'devtools::check\\(\\)')",
       "Bash(grep -n \"^\\\\.resolve_tidy_select\\\\s*<-\" /Users/jacobdennen/surveycore/R/*.R)",
-      "Bash(Rscript -e \"devtools::check\\(\\)\" 2>&1)"
+      "Bash(Rscript -e \"devtools::check\\(\\)\" 2>&1)",
+      "Bash(command -v air)",
+      "Bash(air format *)",
+      "Bash(awk *)",
+      "WebFetch(domain:stat.ethz.ch)",
+      "WebFetch(domain:doi.org)",
+      "WebFetch(domain:projecteuclid.org)",
+      "mcp__plugin_qmd_qmd__query",
+      "WebFetch(domain:)",
+      "Bash(wait)",
+      "Bash(kill %1)",
+      "Bash(wait %1)"
     ],
     "defaultMode": "bypassPermissions"
   },
