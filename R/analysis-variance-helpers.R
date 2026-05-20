@@ -269,6 +269,20 @@
     numeric(1L)
   )
 
+  na_dropped <- sum(is.na(rep_v))
+  na_frac <- na_dropped / n_rep
+  if (isTRUE(
+    .nonprob_rep_na_warn(design, na_frac, na_dropped, n_rep, vars$scale)
+  )) {
+    return(list(
+      variance = NA_real_,
+      se = NA_real_,
+      se_srs = NA_real_,
+      n = n_d,
+      n_weighted = sc$W
+    ))
+  }
+
   v <- .svy_rep_var(
     rep_v,
     scale = vars$scale,
@@ -483,7 +497,25 @@
   } else if (S7::S7_inherits(design, survey_twophase)) {
     .twophase_variance_cell(design, y_col, domain)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    .nonprob_variance_cell(design, y_col, domain)
+    if (!is.null(design@variables$repweights)) {
+      .replicate_variance_cell(design, y_col, domain)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this ",
+            "design for correct SEs."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_fallback"
+      )
+      .nonprob_variance_cell(design, y_col, domain)
+    }
   } else {
     cli::cli_abort(
       c(

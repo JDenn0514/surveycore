@@ -216,6 +216,23 @@
 
   # 3x3 meta-vcov: sigma[j,k] = scale * sum_r(rscales_r * dev_r[j] * dev_r[k])
   ok <- apply(rep_abc, 1L, function(row) !any(is.na(row)))
+  na_dropped_abc <- sum(!ok)
+  na_frac_abc <- na_dropped_abc / n_rep
+  if (isTRUE(
+    .nonprob_rep_na_warn(
+      design, na_frac_abc, na_dropped_abc, n_rep, scale
+    )
+  )) {
+    sigma <- matrix(NA_real_, 3L, 3L)
+    return(list(
+      a = a,
+      b = b,
+      c = c_val,
+      sigma = sigma,
+      n = n_d,
+      n_weighted = W_d
+    ))
+  }
   if (!any(ok)) {
     sigma <- matrix(NA_real_, 3L, 3L)
     return(list(
