@@ -12,6 +12,8 @@ survey_metadata(
   universe = list(),
   missing_codes = list(),
   sata = list(),
+  higher_is = list(),
+  reverse_coded = list(),
   transformations = list(),
   weighting_history = list()
 )
@@ -39,6 +41,16 @@ vectors of missing-value codes
 \item{sata}{A named list mapping variable names to \code{TRUE} for variables
 that are select-all-that-apply (SATA). Only variables explicitly marked
 as SATA appear in this list — absence means the variable is not SATA.}
+
+\item{higher_is}{A named list mapping variable names to \code{"better"} or
+\code{"worse"}, indicating the direction of improvement for that variable.
+Absent keys mean the direction is unset. Use \code{\link[=set_higher_is]{set_higher_is()}} and
+\code{\link[=extract_higher_is]{extract_higher_is()}} to access this property.}
+
+\item{reverse_coded}{A named list mapping variable names to \code{TRUE} for
+variables that are reverse-coded. Absent keys mean the variable is not
+reverse-coded. Use \code{\link[=set_reverse_coded]{set_reverse_coded()}} and \code{\link[=extract_reverse_coded]{extract_reverse_coded()}} to
+access this property.}
 
 \item{transformations}{A named list tracking variable transformation
 history (populated automatically during operations).}
@@ -76,17 +88,21 @@ m@value_labels$sex
 \seealso{
 Other metadata: 
 \code{\link{classify_question_type}()},
+\code{\link{extract_higher_is}()},
 \code{\link{extract_metadata}()},
 \code{\link{extract_missing_codes}()},
 \code{\link{extract_question_preface}()},
+\code{\link{extract_reverse_coded}()},
 \code{\link{extract_sata}()},
 \code{\link{extract_universe}()},
 \code{\link{extract_val_labels}()},
 \code{\link{extract_var_label}()},
 \code{\link{extract_var_note}()},
 \code{\link{infer_question_prefaces}()},
+\code{\link{set_higher_is}()},
 \code{\link{set_missing_codes}()},
 \code{\link{set_question_preface}()},
+\code{\link{set_reverse_coded}()},
 \code{\link{set_sata}()},
 \code{\link{set_universe}()},
 \code{\link{set_val_labels}()},

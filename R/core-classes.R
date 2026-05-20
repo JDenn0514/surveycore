@@ -41,6 +41,14 @@
 #' @param sata A named list mapping variable names to `TRUE` for variables
 #'   that are select-all-that-apply (SATA). Only variables explicitly marked
 #'   as SATA appear in this list — absence means the variable is not SATA.
+#' @param higher_is A named list mapping variable names to `"better"` or
+#'   `"worse"`, indicating the direction of improvement for that variable.
+#'   Absent keys mean the direction is unset. Use [set_higher_is()] and
+#'   [extract_higher_is()] to access this property.
+#' @param reverse_coded A named list mapping variable names to `TRUE` for
+#'   variables that are reverse-coded. Absent keys mean the variable is not
+#'   reverse-coded. Use [set_reverse_coded()] and [extract_reverse_coded()] to
+#'   access this property.
 #' @param transformations A named list tracking variable transformation
 #'   history (populated automatically during operations).
 #' @param weighting_history A list recording weighting operations applied to
@@ -95,6 +103,14 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     sata = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    higher_is = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    reverse_coded = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),

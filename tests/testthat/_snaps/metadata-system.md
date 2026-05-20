@@ -554,3 +554,127 @@
       x `extract_sata()` received an invalid `format` value "tibble".
       i `format` must be one of "named_vector", "list", and "data_frame".
 
+# set_higher_is() errors when x is not a survey or data frame
+
+    Code
+      set_higher_is(list(x = 1), bpxsy1 = "worse")
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_higher_is() errors when x is not a survey or data frame
+
+    Code
+      extract_higher_is(list(x = 1), bpxsy1)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# set_higher_is() errors for invalid direction (Conv 1)
+
+    Code
+      set_higher_is(d, bpxsy1 = "neutral")
+    Condition
+      Error:
+      x `direction` must be "\"better\"" or "\"worse\"" (or `NULL` to remove). Got "neutral".
+
+# set_higher_is() errors for invalid direction (Conv 3)
+
+    Code
+      set_higher_is(d, variable = "bpxsy1", direction = "neutral")
+    Condition
+      Error:
+      x `direction` must be "\"better\"" or "\"worse\"" (or `NULL` to remove). Got "neutral".
+
+# set_higher_is() errors when both ... and variable provided
+
+    Code
+      set_higher_is(d, bpxsy1 = "worse", variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# extract_higher_is() errors when both ... and variable provided
+
+    Code
+      extract_higher_is(d, bpxsy1, variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# set_higher_is() errors when no variable names provided
+
+    Code
+      set_higher_is(d)
+    Condition
+      Error:
+      x `set_higher_is()` requires at least one variable name.
+
+# set_higher_is() warns when variable not found in x (setter)
+
+    Code
+      set_higher_is(d, nonexistent_var_xyz = "worse")
+    Condition
+      Warning:
+      ! 1 variable not found in `x` and was skipped: nonexistent_var_xyz.
+
+# set_reverse_coded() errors for non-survey non-df input
+
+    Code
+      set_reverse_coded(list(x = 1), bpxsy1)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_reverse_coded() errors for non-survey non-df input
+
+    Code
+      extract_reverse_coded(list(x = 1), bpxsy1)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# set_reverse_coded() errors when reverse_coded = NA
+
+    Code
+      set_reverse_coded(d, bpxsy1, reverse_coded = NA)
+    Condition
+      Error:
+      x `reverse_coded` must be `TRUE` or `FALSE`.
+
+# set_reverse_coded() errors when both ... and variable provided (setter)
+
+    Code
+      set_reverse_coded(d, bpxsy1, variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# extract_reverse_coded() errors when both ... and variable provided (extractor)
+
+    Code
+      extract_reverse_coded(d, bpxsy1, variable = "bpxsy1")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+
+# set_reverse_coded() errors when no variable names provided
+
+    Code
+      set_reverse_coded(d)
+    Condition
+      Error:
+      x `set_reverse_coded()` requires at least one variable name.
+
+# set_reverse_coded() warns when variable not found in x
+
+    Code
+      set_reverse_coded(d, variable = "nonexistent_var_xyz")
+    Condition
+      Warning:
+      ! 1 variable not found in `x` and was skipped: nonexistent_var_xyz.
+

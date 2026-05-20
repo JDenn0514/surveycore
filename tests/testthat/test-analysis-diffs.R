@@ -643,3 +643,204 @@ test_that("get_diffs() na.rm = FALSE with NAs errors from survey_glm", {
     get_diffs(d, dv, treats, na.rm = FALSE)
   )
 })
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PR 3 — favorability (show_favorability, alpha)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Helper: two-group design with a large, clearly significant negative diff
+# (A mean ~30 vs Control mean ~60; p ≈ 0 → stable across seeds)
+.make_fav_design <- function(seed = 42L) {
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 4L, seed = seed)
+  set.seed(seed + 1L)
+  n <- nrow(df)
+  # Explicit levels so "Control" is the reference (first level)
+  df$treats <- factor(
+    sample(c("Control", "A"), n, replace = TRUE),
+    levels = c("Control", "A")
+  )
+  # Control ~60, A ~30 → diff (A - Control) ≈ -30, p ≈ 0
+  df$dv <- ifelse(
+    df$treats == "Control",
+    rnorm(n, 60, 3),
+    rnorm(n, 30, 3)
+  )
+  df$gender <- factor(sample(c("M", "F"), n, replace = TRUE))
+  as_survey(df, ids = psu, weights = wt, strata = strata)
+}
+
+# ── Error paths: alpha_invalid ──────────────────────────────────────────────
+
+test_that("get_diffs() rejects alpha > 1", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = 1.5),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = 1.5))
+})
+
+test_that("get_diffs() rejects alpha = 0", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = 0),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = 0))
+})
+
+test_that("get_diffs() rejects alpha = '0.05' (character)", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = "0.05"),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = "0.05"))
+})
+
+test_that("get_diffs() rejects alpha = NA", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = NA),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = NA))
+})
+
+test_that("get_diffs() rejects alpha = Inf", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = Inf),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = Inf))
+})
+
+test_that("get_diffs() rejects alpha = c(0.05, 0.1) (length > 1)", {
+  d <- .make_diffs_design()
+  expect_error(
+    get_diffs(d, dv, treats, alpha = c(0.05, 0.1)),
+    class = "surveycore_error_alpha_invalid"
+  )
+  expect_snapshot(error = TRUE, get_diffs(d, dv, treats, alpha = c(0.05, 0.1)))
+})
+
+# ── Happy paths ──────────────────────────────────────────────────────────────
+
+test_that("get_diffs() show_favorability = FALSE: no favorable/backlash columns; higher_is in .meta", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, show_favorability = FALSE)
+  expect_false("favorable" %in% names(result))
+  expect_false("backlash" %in% names(result))
+  expect_identical(attr(result, ".meta")$x[["dv"]]$higher_is, "worse")
+})
+
+test_that("get_diffs() show_favorability + higher_is='worse' + negative sig diff: favorable=TRUE, backlash=FALSE", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE)
+  a_row <- result[result$treats == "A", ]
+  expect_true(a_row$favorable)
+  expect_false(a_row$backlash)
+  expect_identical(attr(result$favorable, "label"), "Favorable")
+  expect_identical(attr(result$backlash, "label"), "Backlash")
+})
+
+test_that("get_diffs() show_favorability + higher_is='better' + negative sig diff: favorable=FALSE, backlash=TRUE", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "better")
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE)
+  a_row <- result[result$treats == "A", ]
+  expect_false(a_row$favorable)
+  expect_true(a_row$backlash)
+})
+
+test_that("get_diffs() show_favorability + non-significant result: both FALSE", {
+  # Random data with no treatment effect; p >> 0.01 for random diffs
+  d <- .make_diffs_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE, alpha = 0.01)
+  expect_true(all(!result$favorable))
+  expect_true(all(!result$backlash))
+})
+
+test_that("get_diffs() show_favorability: custom alpha = 0.001 keeps highly sig result favorable", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  # p ≈ 0 for the large effect, so favorable even at very small alpha
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE, alpha = 0.001)
+  a_row <- result[result$treats == "A", ]
+  expect_true(a_row$favorable)
+})
+
+test_that("get_diffs() show_favorability + name_style='broom': favorable/backlash present, uses p.value", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE, name_style = "broom")
+  expect_true("favorable" %in% names(result))
+  expect_true("backlash" %in% names(result))
+  expect_true("p.value" %in% names(result))
+  a_row <- result[result$treats == "A", ]
+  expect_true(a_row$favorable)
+  expect_false(a_row$backlash)
+})
+
+test_that("get_diffs() show_favorability + group: columns present, aligned per group", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, group = gender, show_favorability = TRUE)
+  expect_true("favorable" %in% names(result))
+  expect_true("backlash" %in% names(result))
+  expect_true(is.logical(result$favorable))
+  expect_true(is.logical(result$backlash))
+  # Each group should have its own rows with correct alignment
+  expect_true("gender" %in% names(result))
+})
+
+test_that("get_diffs() show_favorability + pval_adj: classification uses adjusted p-value", {
+  d <- .make_fav_design()
+  d <- set_higher_is(d, dv = "worse")
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE, pval_adj = "bonferroni")
+  expect_true("favorable" %in% names(result))
+  expect_true("backlash" %in% names(result))
+  a_row <- result[result$treats == "A", ]
+  # Large effect: even after Bonferroni adjustment, p ≈ 0 → still favorable
+  expect_true(a_row$favorable)
+  expect_false(a_row$backlash)
+})
+
+# ── Edge cases ────────────────────────────────────────────────────────────────
+
+test_that("get_diffs() show_favorability + no higher_is set: both columns all FALSE, no warning", {
+  d <- .make_fav_design()
+  # Deliberately do NOT call set_higher_is()
+  expect_no_warning(
+    result <- get_diffs(d, dv, treats, show_favorability = TRUE)
+  )
+  expect_true("favorable" %in% names(result))
+  expect_true("backlash" %in% names(result))
+  expect_true(all(!result$favorable))
+  expect_true(all(!result$backlash))
+})
+
+test_that("get_diffs() show_favorability: p_value == alpha → both FALSE (strict <)", {
+  d <- .make_diffs_design()
+  d <- set_higher_is(d, dv = "worse")
+  # Get the actual p-values for this fixed-seed dataset
+  baseline <- get_diffs(d, dv, treats)
+  # Exclude the reference row (p_value = NA) before finding min p
+  valid_pvals <- baseline$p_value[!is.na(baseline$p_value)]
+  min_p <- min(valid_pvals)
+  skip_if(min_p == 0 || !is.finite(min_p),
+          "p-value is exactly 0 or non-finite; boundary cannot be tested")
+  skip_if(min_p >= 1, "p-value >= 1; outside valid alpha range")
+  # With alpha == min_p: strict < means p is NOT < alpha → not significant
+  result <- get_diffs(d, dv, treats, show_favorability = TRUE, alpha = min_p)
+  # Find the row with p_value exactly equal to min_p (exclude NA rows)
+  obs_rows <- result[!is.na(result$p_value) & result$p_value == min_p, ]
+  if (nrow(obs_rows) > 0) {
+    expect_false(obs_rows$favorable[[1]])
+    expect_false(obs_rows$backlash[[1]])
+  }
+})

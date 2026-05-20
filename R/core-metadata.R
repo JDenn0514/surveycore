@@ -1692,6 +1692,416 @@ extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
 }
 
 
+# ── set_higher_is() / extract_higher_is() ─────────────────────────────────────
+
+#' Set Direction-of-Improvement Attribute
+#'
+#' Records whether a higher value is better (`"better"`) or worse (`"worse"`)
+#' for one or more variables in a survey design object or data frame. This
+#' metadata is used by [get_diffs()] when `show_favorability = TRUE`.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the direction (`"better"` or `"worse"`). Supports Convention 1 (named
+#'   args: `bpxsy1 = "worse"`) and Convention 2 (named character vector:
+#'   `c(bpxsy1 = "worse", lbxtc = "better")`). Mutually exclusive with
+#'   `variable`.
+#' @param variable `character`. Variable name(s) — Convention 3 alternative
+#'   to `...`. Mutually exclusive with `...`.
+#' @param direction `character`. Direction value(s) for Convention 3. Must be
+#'   `"better"`, `"worse"`, or `NULL` (to remove the attribute). Same length
+#'   as `variable`, or `NULL` to remove.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_higher_is(d, bpxsy1 = "worse")
+#' extract_higher_is(d, bpxsy1)
+#'
+#' @seealso [extract_higher_is()] to retrieve direction attributes
+#' @family metadata
+#' @export
+set_higher_is <- function(x, ..., variable = NULL, direction = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots <- rlang::list2(...)
+  dots_used <- length(dots) > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_higher_is_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && !var_used) {
+    cli::cli_abort(
+      c("x" = "{.fn set_higher_is} requires at least one variable name."),
+      class = "surveycore_error_higher_is_no_vars",
+      call = call
+    )
+  }
+
+  # Convention 3 pre-check: scalar direction validation before parse
+  if (
+    var_used &&
+      length(direction) == 1L &&
+      !is.null(direction) &&
+      !direction %in% c("better", "worse")
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} ",
+          "(or {.code NULL} to remove). Got {.val {direction}}."
+        )
+      ),
+      class = "surveycore_error_direction_invalid",
+      call = call
+    )
+  }
+
+  pairs <- .parse_setter_input(
+    dots = dots,
+    variable = variable,
+    content = direction,
+    content_arg_name = "direction",
+    content_type = "scalar",
+    fn_name = "set_higher_is",
+    call = call
+  )
+
+  all_cols <- .get_data_cols(x)
+
+  for (v in names(pairs)) {
+    if (!v %in% all_cols) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "1 variable not found in {.arg x} and was skipped: {.field {v}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+      next
+    }
+    val <- pairs[[v]]
+    if (!is.null(val) && !val %in% c("better", "worse")) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} ",
+            "(or {.code NULL} to remove). Got {.val {val}}."
+          )
+        ),
+        class = "surveycore_error_direction_invalid",
+        call = call
+      )
+    }
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@higher_is[[v]] <- val
+    } else {
+      attr(x[[v]], "higher_is") <- val
+    }
+  }
+
+  invisible(x)
+}
+
+
+#' Extract Direction-of-Improvement Attributes
+#'
+#' Returns the direction-of-improvement (`"better"` or `"worse"`) for one or
+#' more variables in a survey design object or data frame. Variables with no
+#' direction set return `NA_character_`.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   If empty, returns direction for all columns of `x`. Mutually exclusive
+#'   with `variable`.
+#' @param variable `character`. Variable name(s) — alternative to `...`.
+#'   Mutually exclusive with `...`.
+#'
+#' @return A named character vector. Unset variables return `NA_character_`.
+#'   Returns `character(0)` (named, zero-length) when all specified variables
+#'   are missing from `x`.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_higher_is(d, bpxsy1 = "worse")
+#' extract_higher_is(d, bpxsy1)
+#' extract_higher_is(d)
+#'
+#' @seealso [set_higher_is()] to set direction attributes
+#' @family metadata
+#' @export
+extract_higher_is <- function(x, ..., variable = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_higher_is_ambiguous_input",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else if (var_used) {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  } else {
+    var_names <- all_cols
+  }
+
+  out <- vapply(var_names, function(v) {
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@higher_is[[v]] %||% NA_character_
+    } else {
+      attr(x[[v]], "higher_is", exact = TRUE) %||% NA_character_
+    }
+  }, character(1L))
+
+  if (length(out) == 0L) out <- unname(out)
+  out
+}
+
+
+# ── set_reverse_coded() / extract_reverse_coded() ─────────────────────────────
+
+#' Set Reverse-Coded Flag
+#'
+#' Marks one or more variables as reverse-coded in a survey design object or
+#' data frame. Uses the same two-convention pattern as [set_sata()].
+#'
+#' **Convention A (tidy-select `...`)** — recommended:
+#' ```r
+#' design |> set_reverse_coded(anxiety, worry)
+#' ```
+#'
+#' **Convention B (`variable` = character vector)** — programmatic:
+#' ```r
+#' vars <- c("anxiety", "worry")
+#' design |> set_reverse_coded(variable = vars)
+#' ```
+#'
+#' Setting `reverse_coded = FALSE` removes the flag.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to mark.
+#'   Cannot be combined with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#' @param reverse_coded `logical(1)`. `TRUE` (default) marks variables as
+#'   reverse-coded; `FALSE` removes the flag. `NA` is not accepted.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_reverse_coded(d, bpxsy1, ridageyr)
+#' d <- set_reverse_coded(d, bpxsy1, reverse_coded = FALSE)
+#'
+#' @seealso [extract_reverse_coded()] to retrieve reverse-coded flags
+#' @family metadata
+#' @export
+set_reverse_coded <- function(x, ..., variable = NULL, reverse_coded = TRUE) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  if (!is.logical(reverse_coded) || length(reverse_coded) != 1L ||
+      is.na(reverse_coded)) {
+    cli::cli_abort(
+      c("x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."),
+      class = "surveycore_error_reverse_coded_not_logical",
+      call = call
+    )
+  }
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_reverse_coded_ambiguous_input",
+      call = call
+    )
+  }
+
+  if (!dots_used && (!var_used || length(variable) == 0L)) {
+    cli::cli_abort(
+      c("x" = "{.fn set_reverse_coded} requires at least one variable name."),
+      class = "surveycore_error_reverse_coded_no_vars",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  }
+
+  for (v in var_names) {
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@reverse_coded[[v]] <- if (isTRUE(reverse_coded)) TRUE else NULL
+    } else {
+      attr(x[[v]], "reverse_coded") <- if (isTRUE(reverse_coded)) TRUE else NULL
+    }
+  }
+
+  invisible(x)
+}
+
+
+#' Extract Reverse-Coded Flags
+#'
+#' Returns the reverse-coded status for one or more variables in a survey
+#' design object or data frame.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   If empty, returns reverse-coded status for all columns of `x`.
+#'   Cannot be combined with `variable`.
+#' @param variable `character`. Alternative programmatic interface: character
+#'   vector of variable names. Cannot be combined with `...`.
+#'
+#' @return A named logical vector. Variables not marked as reverse-coded return
+#'   `FALSE`. When all specified variables are missing, returns `logical(0)`.
+#'
+#' @examples
+#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+#'                strata = sdmvstra, nest = TRUE)
+#' d <- set_reverse_coded(d, bpxsy1)
+#' extract_reverse_coded(d, bpxsy1)
+#' extract_reverse_coded(d)
+#'
+#' @seealso [set_reverse_coded()] to set reverse-coded flags
+#' @family metadata
+#' @export
+extract_reverse_coded <- function(x, ..., variable = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  dots_used <- ...length() > 0L
+  var_used <- !is.null(variable)
+
+  if (dots_used && var_used) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Provide variable names via {.arg ...} or via ",
+          "{.arg variable}, not both."
+        )
+      ),
+      class = "surveycore_error_reverse_coded_ambiguous_input",
+      call = call
+    )
+  }
+
+  all_cols <- .get_data_cols(x)
+
+  if (dots_used) {
+    var_names <- names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  } else if (var_used) {
+    missing <- setdiff(variable, all_cols)
+    if (length(missing) > 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{length(missing)} variable{?s} not found in {.arg x}",
+            " and {?was/were} skipped: {.field {missing}}."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+    }
+    var_names <- intersect(variable, all_cols)
+  } else {
+    var_names <- all_cols
+  }
+
+  out <- vapply(var_names, function(v) {
+    if (S7::S7_inherits(x, survey_base)) {
+      isTRUE(x@metadata@reverse_coded[[v]])
+    } else {
+      isTRUE(attr(x[[v]], "reverse_coded", exact = TRUE))
+    }
+  }, logical(1L))
+
+  if (length(out) == 0L) out <- unname(out)
+  out
+}
+
+
 # ── classify_question_type() — variable type classifier ──────────────────────
 
 #' Classify Variable Question Types

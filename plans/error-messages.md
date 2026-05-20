@@ -254,6 +254,28 @@ against the messages defined here.
 | EN-3 | `get_effective_n()` | `x` resolves to more than one column | ERROR | `surveycore_error_effective_n_x_multi_col` | `"x" = "{.arg x} must select exactly one variable, not {length(selected)}.", "i" = "Selected: {.field {selected}}.", "v" = "Pass one variable at a time, or loop over variables."` |
 | EN-4 | `get_effective_n()` | `method` is not `"kish"` or `"deff"` | ERROR | (thrown by `match.arg()`; no custom class) | — |
 
+### higher_is / direction rows (PR 1 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| HI-1 | `set_higher_is()`, `extract_higher_is()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_higher_is_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| HI-2 | `set_higher_is()` | Neither `...` nor `variable` provided | ERROR | `surveycore_error_higher_is_no_vars` | `"x" = "{.fn set_higher_is} requires at least one variable name."` |
+| HI-3 | `set_higher_is()` | `direction` value is not `"better"`, `"worse"`, or `NULL` | ERROR | `surveycore_error_direction_invalid` | `"x" = "{.arg direction} must be {.val \"better\"} or {.val \"worse\"} (or {.code NULL} to remove). Got {.val {bad}}."` |
+
+### reverse_coded rows (PR 2 — 2026-05-08)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| RC-1 | `set_reverse_coded()`, `extract_reverse_coded()` | Both `...` and `variable` provided simultaneously | ERROR | `surveycore_error_reverse_coded_ambiguous_input` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both."` |
+| RC-2 | `set_reverse_coded()` | Neither `...` nor `variable` provided (or `variable = character(0)`) | ERROR | `surveycore_error_reverse_coded_no_vars` | `"x" = "{.fn set_reverse_coded} requires at least one variable name."` |
+| RC-3 | `set_reverse_coded()` | `reverse_coded` is not `TRUE` or `FALSE` (e.g., `NA`, non-logical) | ERROR | `surveycore_error_reverse_coded_not_logical` | `"x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."` |
+
+### diffs favorability rows (PR 3 — 2026-05-11)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| FA-1 | `get_diffs()` | `alpha` not a single numeric value strictly between 0 and 1 | ERROR | `surveycore_error_alpha_invalid` | `"{.arg alpha} must be a single numeric value strictly between 0 and 1. Got {.val {alpha}}."` |
+
 ### pool_pvals rows (2026-04-29)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -338,7 +360,7 @@ Which test files cover which error table rows:
 | `test-glm-methods.R` | 76 |
 | `test-glm-clean.R` | 75, 84 |
 | `test-metadata-infer.R` | 78, 79, 80 |
-| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new) |
+| `test-analysis-diffs.R` | 43 (reused), 45/45a/45b/46 (reused), 49 (reused), 64 (reused), 81 (reused), 92–100 (new), FA-1 (new) |
 | `test-analysis-diffs-helpers.R` | .stars_pval() and .apply_name_style(exclude) tests |
 | `test-glm-anova.R` | A-1 (reused row 75), A-2..A-5, A-7..A-20 (new); 45b, 46 (reused via `.validate_decimals_namestyle()`) |
 | `test-survey-collection.R` | C1, C2, C2a, C3, C4, C8, C15 |
@@ -347,3 +369,4 @@ Which test files cover which error table rows:
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
+| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
