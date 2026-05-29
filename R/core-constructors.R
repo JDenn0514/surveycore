@@ -1063,6 +1063,14 @@ as_survey_twophase <- function(
 }
 
 
+# ── .is_stratified_jk() ──────────────────────────────────────────────────────
+#
+# Returns TRUE when `type` is a stratified jackknife variant (JK2 or JKn).
+# Used by as_survey_nonprob() to gate the rscales requirement check.
+# One confirmed call site: as_survey_nonprob().
+.is_stratified_jk <- function(type) type %in% c("JK2", "JKn")
+
+
 # ── as_survey_nonprob ───────────────────────────────────────────────────────
 
 #' Create a Calibrated / Non-Probability Survey Design
@@ -1070,16 +1078,10 @@ as_survey_twophase <- function(
 #' `r lifecycle::badge("experimental")`
 #'
 #' Creates a survey design object for non-probability samples and post-hoc
-#' calibrated designs (e.g., raked online panels, post-stratified samples).
-#' Accepts pre-computed calibration weights and optionally stores calibration
-#' provenance from \pkg{surveywts} output for reproducibility.
-#'
-#' @section Phase 2.5 skeleton:
-#' This constructor is a **skeleton**. The resulting `survey_nonprob` object
-#' supports estimation via a model-assisted SRS variance assumption — the same
-#' as calling [as_survey()] with weights only. Full bootstrap re-calibration
-#' variance (which re-applies the raking procedure on each replicate) will be
-#' implemented in Phase 2.5 alongside the \pkg{surveywts} package.
+#' calibrated designs (e.g., raked online panels, quota samples,
+#' post-stratified samples). Accepts pre-computed calibration weights and
+#' optionally stores calibration provenance from \pkg{surveywts} output for
+#' reproducibility.
 #'
 #' @section When to use:
 #' Use `as_survey_nonprob()` instead of [as_survey()] when:
@@ -1096,12 +1098,25 @@ as_survey_twophase <- function(
 #' use [as_survey()], [as_survey_replicate()], or [as_survey_twophase()]
 #' instead.
 #'
-#' @section Variance estimation note:
-#' Standard errors from a `survey_nonprob` object assume simple random
-#' sampling within the calibrated weights. This is consistent with common
-#' applied practice for raked non-probability samples, but is technically
-#' a model-assisted approximation rather than design-based variance. See
-#' `vignette("creating-survey-objects")` for details and limitations.
+#' @section Variance estimation:
+#' Two modes are available, depending on whether `repweights` is supplied:
+#' \describe{
+#'   \item{**SRS approximation** (`repweights = NULL`, the default)}{Standard
+#'     errors treat the calibrated weights as fixed and assume simple random
+#'     sampling. This is a model-assisted approximation that understates
+#'     calibration uncertainty. Use this mode only when replicate weights are
+#'     unavailable; interpret standard errors with caution (Valliant 2020;
+#'     Elliott and Valliant 2017).}
+#'   \item{**Bootstrap variance** (`repweights` supplied)}{Each replicate weight
+#'     column must contain calibrated weights re-estimated on one bootstrap
+#'     draw (i.e., raking or post-stratification was re-applied within each
+#'     replicate). This propagates calibration uncertainty into the variance
+#'     estimate and is the recommended approach (Chrostowski et al. 2025;
+#'     Kolenikov 2014).}
+#' }
+#' See `vignette("creating-survey-objects")` for guidance on choosing between
+#' these modes and on the limitations of SRS-based variance for calibrated
+#' non-probability samples.
 #'
 #' @param data A `data.frame` containing the survey responses with
 #'   pre-computed calibration weights. Must have at least one row and
@@ -1158,10 +1173,24 @@ as_survey_twophase <- function(
 #' see `vignette("creating-survey-objects")` for details.
 #'
 #' @references
-#' Wu, C. (2022) Statistical inference with non-probability survey samples.
+#' Valliant, R. (2020). Comparing alternatives for estimation from
+#' nonprobability samples. \emph{Journal of Survey Statistics and Methodology}
+#' \bold{8}(2), 231--263. \doi{10.1093/jssam/smz003}
+#'
+#' Elliott, M.R. and Valliant, R. (2017). Inference for nonprobability
+#' samples. \emph{Statistical Science} \bold{32}(2), 249--264.
+#'
+#' Chrostowski, M.J., Guzman, C.A. and Malm, L. (2025). Variance estimation
+#' for non-probability surveys. \emph{Journal of Survey Statistics and
+#' Methodology} (forthcoming).
+#'
+#' Kolenikov, S. (2014). Calibrating variance estimation with proxy variables.
+#' \emph{Survey Methodology} \bold{40}(1), 21--38.
+#'
+#' Wu, C. (2022). Statistical inference with non-probability survey samples.
 #' \emph{Survey Methodology} \bold{48}(2), 283--311.
 #'
-#' Chen, Y., Li, P. and Wu, C. (2021) Doubly robust inference with
+#' Chen, Y., Li, P. and Wu, C. (2021). Doubly robust inference with
 #' non-probability survey samples. \emph{Journal of the American Statistical
 #' Association} \bold{115}(532), 2011--2021.
 #'
@@ -1245,7 +1274,7 @@ as_survey_nonprob <- function(
       )
     }
 
-    # Error: exactly 1 column selected (bootstrap needs >= 2)
+    # Error: exactly 1 column selected (replicate variance needs >= 2)
     if (length(repweights_cols) == 1L) {
       cli::cli_abort(
         c(
@@ -1253,7 +1282,7 @@ as_survey_nonprob <- function(
             "{.arg repweights} must name at least 2 replicate weight ",
             "columns."
           ),
-          "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."
+          "i" = "Replicate variance requires >= 2 replicates. Got {.val 1}."
         ),
         class = "surveycore_error_repweights_single"
       )
@@ -1262,28 +1291,77 @@ as_survey_nonprob <- function(
     repweights_vars <- names(repweights_cols)
     R <- length(repweights_vars)
 
-    # Error: type must be "bootstrap" for survey_nonprob
-    if (!identical(type, "bootstrap")) {
+    # Step 8: normalize "jackknife" alias to "JK1"
+    if (is.character(type) &&
+        length(type) == 1L &&
+        identical(type, "jackknife")) {
+      type <- "JK1"
+    }
+
+    # Step 9: validate type — must be a single string in the supported set
+    valid_types <- c("bootstrap", "JK1", "JK2", "JKn")
+    if (!is.character(type) ||
+        length(type) != 1L ||
+        is.na(type) ||
+        !type %in% valid_types) {
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.arg type} must be {.val \"bootstrap\"} for ",
-            "{.cls survey_nonprob} objects."
+            "{.arg type} must be one of {.val bootstrap}, {.val JK1},",
+            " {.val JK2}, {.val JKn}, or {.val jackknife} for",
+            " {.cls survey_nonprob} objects."
           ),
-          "i" = paste0(
-            "Jackknife and other replicate types are not supported for ",
-            "non-probability samples. Got {.val {type}}."
-          )
+          "i" = "Got {.val {type}}."
         ),
-        class = "surveycore_error_type_invalid"
+        class = "surveycore_error_type_unsupported_for_nonprob"
       )
     }
 
-    # Resolve scale default: 1/R
-    scale <- if (is.null(scale)) 1 / R else scale
+    # Step 10: rscales guard for stratified JK (JK2/JKn require explicit rscales)
+    if (.is_stratified_jk(type) && is.null(rscales)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg type} = {.val {type}} requires explicit {.arg rscales}."
+          ),
+          "i" = paste0(
+            "Stratified jackknife rscales are stratum-specific: ",
+            "{.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently ",
+            "use {.code rep(1, R)}, which is statistically incorrect for ",
+            "JK2/JKn."
+          ),
+          "v" = paste0(
+            "Compute {.code rscales} as {.code (n_h - 1) / n_h} where ",
+            "{.code n_h} is the number of units in stratum {.code h}, ",
+            "indexed to replicate order."
+          )
+        ),
+        class = "surveycore_error_stratified_jk_rscales_unset"
+      )
+    }
 
-    # Resolve rscales default: rep(1, R)
-    rscales <- if (is.null(rscales)) rep(1, R) else rscales
+    # Step 11: scale computation
+    if (is.null(scale)) {
+      scale <- .compute_nonprob_scale(type, R)
+    } else if (scale < 0) {
+      cli::cli_abort(
+        c(
+          "x" = "{.arg scale} must be >= 0. Got {.val {scale}}.",
+          "i" = paste0(
+            "A negative scale factor produces negative variance, ",
+            "which is nonsensical."
+          ),
+          "v" = paste0(
+            "Use {.code scale = 0} to exclude a replicate's contribution, ",
+            "or omit {.arg scale} to use the type-specific default."
+          )
+        ),
+        class = "surveycore_error_scale_negative"
+      )
+    }
+
+    # Step 12: rscales default
+    if (is.null(rscales)) rscales <- rep(1, R)
 
     # Validate rscales (length mismatch and NA/negative)
     .validate_rscales(rscales, R)
