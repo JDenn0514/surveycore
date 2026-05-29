@@ -1063,6 +1063,14 @@ as_survey_twophase <- function(
 }
 
 
+# ── .is_stratified_jk() ──────────────────────────────────────────────────────
+#
+# Returns TRUE when `type` is a stratified jackknife variant (JK2 or JKn).
+# Used by as_survey_nonprob() to gate the rscales requirement check.
+# One confirmed call site: as_survey_nonprob().
+.is_stratified_jk <- function(type) type %in% c("JK2", "JKn")
+
+
 # ── as_survey_nonprob ───────────────────────────────────────────────────────
 
 #' Create a Calibrated / Non-Probability Survey Design
@@ -1266,7 +1274,7 @@ as_survey_nonprob <- function(
       )
     }
 
-    # Error: exactly 1 column selected (bootstrap needs >= 2)
+    # Error: exactly 1 column selected (replicate variance needs >= 2)
     if (length(repweights_cols) == 1L) {
       cli::cli_abort(
         c(
@@ -1274,7 +1282,7 @@ as_survey_nonprob <- function(
             "{.arg repweights} must name at least 2 replicate weight ",
             "columns."
           ),
-          "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."
+          "i" = "Replicate variance requires >= 2 replicates. Got {.val 1}."
         ),
         class = "surveycore_error_repweights_single"
       )
@@ -1283,28 +1291,77 @@ as_survey_nonprob <- function(
     repweights_vars <- names(repweights_cols)
     R <- length(repweights_vars)
 
-    # Error: type must be "bootstrap" for survey_nonprob
-    if (!identical(type, "bootstrap")) {
+    # Step 8: normalize "jackknife" alias to "JK1"
+    if (is.character(type) &&
+        length(type) == 1L &&
+        identical(type, "jackknife")) {
+      type <- "JK1"
+    }
+
+    # Step 9: validate type — must be a single string in the supported set
+    valid_types <- c("bootstrap", "JK1", "JK2", "JKn")
+    if (!is.character(type) ||
+        length(type) != 1L ||
+        is.na(type) ||
+        !type %in% valid_types) {
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.arg type} must be {.val \"bootstrap\"} for ",
-            "{.cls survey_nonprob} objects."
+            "{.arg type} must be one of {.val \"bootstrap\"}, {.val \"JK1\"},",
+            " {.val \"JK2\"}, {.val \"JKn\"}, or {.val \"jackknife\"} for",
+            " {.cls survey_nonprob} objects."
           ),
-          "i" = paste0(
-            "Jackknife and other replicate types are not supported for ",
-            "non-probability samples. Got {.val {type}}."
-          )
+          "i" = "Got {.val {type}}."
         ),
-        class = "surveycore_error_type_invalid"
+        class = "surveycore_error_type_unsupported_for_nonprob"
       )
     }
 
-    # Resolve scale default: 1/R
-    scale <- if (is.null(scale)) 1 / R else scale
+    # Step 10: rscales guard for stratified JK (JK2/JKn require explicit rscales)
+    if (.is_stratified_jk(type) && is.null(rscales)) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.arg type} = {.val {type}} requires explicit {.arg rscales}."
+          ),
+          "i" = paste0(
+            "Stratified jackknife rscales are stratum-specific: ",
+            "{.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently ",
+            "use {.code rep(1, R)}, which is statistically incorrect for ",
+            "JK2/JKn."
+          ),
+          "v" = paste0(
+            "Compute {.code rscales} as {.code (n_h - 1) / n_h} where ",
+            "{.code n_h} is the number of units in stratum {.code h}, ",
+            "indexed to replicate order."
+          )
+        ),
+        class = "surveycore_error_stratified_jk_rscales_unset"
+      )
+    }
 
-    # Resolve rscales default: rep(1, R)
-    rscales <- if (is.null(rscales)) rep(1, R) else rscales
+    # Step 11: scale computation
+    if (is.null(scale)) {
+      scale <- .compute_nonprob_scale(type, R)
+    } else if (scale < 0) {
+      cli::cli_abort(
+        c(
+          "x" = "{.arg scale} must be >= 0. Got {.val {scale}}.",
+          "i" = paste0(
+            "A negative scale factor produces negative variance, ",
+            "which is nonsensical."
+          ),
+          "v" = paste0(
+            "Use {.code scale = 0} to exclude a replicate's contribution, ",
+            "or omit {.arg scale} to use the type-specific default."
+          )
+        ),
+        class = "surveycore_error_scale_negative"
+      )
+    }
+
+    # Step 12: rscales default
+    if (is.null(rscales)) rscales <- rep(1, R)
 
     # Validate rscales (length mismatch and NA/negative)
     .validate_rscales(rscales, R)

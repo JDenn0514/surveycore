@@ -476,16 +476,16 @@
     Condition
       Error in `as_survey_nonprob()`:
       x `repweights` must name at least 2 replicate weight columns.
-      i Bootstrap variance requires >= 2 replicates. Got "1".
+      i Replicate variance requires >= 2 replicates. Got "1".
 
-# as_survey_nonprob() rejects type != 'bootstrap'
+# as_survey_nonprob() rejects type != 'bootstrap' (legacy — superseded by NB-1 blocks)
 
     Code
       as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be "\"bootstrap\"" for <survey_nonprob> objects.
-      i Jackknife and other replicate types are not supported for non-probability samples. Got "BRR".
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "BRR".
 
 # as_survey_nonprob() rejects rscales length mismatch
 
@@ -600,4 +600,108 @@
     Condition
       Error in `as_survey_replicate()`:
       x `fpc` must select exactly one column, not 2
+
+# as_survey_nonprob() rejects type = 'BRR' with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "BRR")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "BRR".
+
+# as_survey_nonprob() rejects type = 'Fay' with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "Fay")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "Fay".
+
+# as_survey_nonprob() rejects type = 'bootstrap2' with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "bootstrap2")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "bootstrap2".
+
+# as_survey_nonprob() rejects type = c('JK1', 'JK2') (vector) with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = c("JK1",
+        "JK2"))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "JK1" and "JK2".
+
+# as_survey_nonprob() rejects type = NA_character_ with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = NA_character_)
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got NA.
+
+# as_survey_nonprob() rejects type = 'jk1' (lowercase) with surveycore_error_type_unsupported_for_nonprob
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "jk1")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      i Got "jk1".
+
+# surveycore_error_repweights_single message says 'Replicate variance' for JK1
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = r1, type = "JK1")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `repweights` must name at least 2 replicate weight columns.
+      i Replicate variance requires >= 2 replicates. Got "1".
+
+# surveycore_error_repweights_single message says 'Replicate variance' for bootstrap
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = r1, type = "bootstrap")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `repweights` must name at least 2 replicate weight columns.
+      i Replicate variance requires >= 2 replicates. Got "1".
+
+# surveycore_error_stratified_jk_rscales_unset fires for JK2 with rscales = NULL
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK2")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` = "JK2" requires explicit `rscales`.
+      i Stratified jackknife rscales are stratum-specific: `(n_h - 1) / n_h`. Supplying `NULL` would silently use `rep(1, R)`, which is statistically incorrect for JK2/JKn.
+      v Compute `rscales` as `(n_h - 1) / n_h` where `n_h` is the number of units in stratum `h`, indexed to replicate order.
+
+# surveycore_error_stratified_jk_rscales_unset fires for JKn with rscales = NULL
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JKn")
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `type` = "JKn" requires explicit `rscales`.
+      i Stratified jackknife rscales are stratum-specific: `(n_h - 1) / n_h`. Supplying `NULL` would silently use `rep(1, R)`, which is statistically incorrect for JK2/JKn.
+      v Compute `rscales` as `(n_h - 1) / n_h` where `n_h` is the number of units in stratum `h`, indexed to replicate order.
+
+# surveycore_error_scale_negative fires for negative scale with JK1
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1",
+      scale = -0.5)
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `scale` must be >= 0. Got -0.5.
+      i A negative scale factor produces negative variance, which is nonsensical.
+      v Use `scale = 0` to exclude a replicate's contribution, or omit `scale` to use the type-specific default.
 

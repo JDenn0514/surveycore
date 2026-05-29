@@ -2100,11 +2100,11 @@ test_that("as_survey_nonprob() rejects repweights selecting exactly 1 column", {
   )
 })
 
-test_that("as_survey_nonprob() rejects type != 'bootstrap'", {
+test_that("as_survey_nonprob() rejects type != 'bootstrap' (legacy — superseded by NB-1 blocks)", {
   df <- data.frame(y = 1:20, w = rep(1, 20), rw1 = runif(20), rw2 = runif(20))
   expect_error(
     as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR"),
-    class = "surveycore_error_type_invalid"
+    class = "surveycore_error_type_unsupported_for_nonprob"
   )
   expect_snapshot(
     error = TRUE,
@@ -2543,4 +2543,311 @@ test_that("make_survey_data() with no n_ssu/n_unit is identical to original", {
 
   # Identical output
   expect_identical(df_old, df_new)
+})
+
+# ---------------------------------------------------------------------------
+# nonprob-jackknife — NB-1, NB-3, NB-9, NB-10 error classes
+# ---------------------------------------------------------------------------
+
+test_that("as_survey_nonprob() rejects type = 'BRR' with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "BRR"),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "BRR")
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = 'Fay' with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "Fay"),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "Fay")
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = 'bootstrap2' with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = "bootstrap2"
+    ),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = "bootstrap2"
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = c('JK1', 'JK2') (vector) with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = c("JK1", "JK2")
+    ),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = c("JK1", "JK2")
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = NA_character_ with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = NA_character_
+    ),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = NA_character_
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = 'jk1' (lowercase) with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = "jk1"
+    ),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3), type = "jk1"
+    )
+  )
+})
+
+test_that("as_survey_nonprob() rejects type = 1 (numeric) with surveycore_error_type_unsupported_for_nonprob", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  # class= only — no snapshot needed for edge-case numeric input
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = 1),
+    class = "surveycore_error_type_unsupported_for_nonprob"
+  )
+})
+
+test_that("surveycore_error_repweights_single message says 'Replicate variance' for JK1", {
+  df <- data.frame(x = 1:5, wt = rep(1, 5), r1 = rep(1, 5))
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = r1, type = "JK1"),
+    class = "surveycore_error_repweights_single"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = r1, type = "JK1")
+  )
+})
+
+test_that("surveycore_error_repweights_single message says 'Replicate variance' for bootstrap", {
+  df <- data.frame(x = 1:5, wt = rep(1, 5), r1 = rep(1, 5))
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = r1, type = "bootstrap"),
+    class = "surveycore_error_repweights_single"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = r1, type = "bootstrap")
+  )
+})
+
+# ── NB-9: stratified JK rscales guard ────────────────────────────────────────
+
+test_that("surveycore_error_stratified_jk_rscales_unset fires for JK2 with rscales = NULL", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK2"),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK2")
+  )
+})
+
+test_that("surveycore_error_stratified_jk_rscales_unset fires for JKn with rscales = NULL", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JKn"),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JKn")
+  )
+})
+
+# ── NB-10: negative scale guard ──────────────────────────────────────────────
+
+test_that("surveycore_error_scale_negative fires for negative scale with JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3, r4),
+      type = "JK1", scale = -0.5
+    ),
+    class = "surveycore_error_scale_negative"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3, r4),
+      type = "JK1", scale = -0.5
+    )
+  )
+  # Also test very small negative value
+  expect_error(
+    as_survey_nonprob(
+      df, weights = wt, repweights = c(r1, r2, r3, r4),
+      type = "JK1", scale = -1e-10
+    ),
+    class = "surveycore_error_scale_negative"
+  )
+})
+
+# ── Happy-path scale and rscales defaults ─────────────────────────────────────
+
+test_that("JK1 type stored and scale defaults to (R-1)/R", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1"
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JK1")
+  expect_equal(d@variables$scale, 3 / 4)
+  expect_equal(d@variables$rscales, rep(1, 4))
+})
+
+test_that("jackknife alias normalizes to JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3), type = "jackknife"
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JK1")
+  expect_equal(d@variables$scale, 2 / 3)
+})
+
+test_that("JK2 with explicit rscales: scale defaults to 1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2),
+    type = "JK2", rscales = c(0.5, 0.5)
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JK2")
+  expect_equal(d@variables$scale, 1)
+  expect_equal(d@variables$rscales, c(0.5, 0.5))
+})
+
+test_that("JKn with explicit rscales: type stored and scale defaults to 1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3),
+    type = "JKn", rscales = c(0.5, 0.5, 0.5)
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JKn")
+  expect_equal(d@variables$scale, 1)
+})
+
+test_that("Bootstrap unchanged: scale = 1/R, rscales = rep(1, R)", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5),
+    r4 = rep(1, 5), r5 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3, r4, r5), type = "bootstrap"
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 1 / 5)
+  expect_equal(d@variables$rscales, rep(1, 5))
+})
+
+test_that("Explicit scale overrides default for JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3, r4),
+    type = "JK1", scale = 0.5
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 0.5)
+})
+
+test_that("scale = 0 is accepted for JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df, weights = wt, repweights = c(r1, r2, r3, r4),
+    type = "JK1", scale = 0
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 0)
 })
