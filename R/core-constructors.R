@@ -1307,8 +1307,8 @@ as_survey_nonprob <- function(
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.arg type} must be one of {.val \"bootstrap\"}, {.val \"JK1\"},",
-            " {.val \"JK2\"}, {.val \"JKn\"}, or {.val \"jackknife\"} for",
+            "{.arg type} must be one of {.val bootstrap}, {.val JK1},",
+            " {.val JK2}, {.val JKn}, or {.val jackknife} for",
             " {.cls survey_nonprob} objects."
           ),
           "i" = "Got {.val {type}}."

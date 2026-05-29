@@ -484,7 +484,7 @@
       as_survey_nonprob(df, weights = w, repweights = c(rw1, rw2), type = "BRR")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "BRR".
 
 # as_survey_nonprob() rejects rscales length mismatch
@@ -607,7 +607,7 @@
       as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "BRR")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "BRR".
 
 # as_survey_nonprob() rejects type = 'Fay' with surveycore_error_type_unsupported_for_nonprob
@@ -616,7 +616,7 @@
       as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "Fay")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "Fay".
 
 # as_survey_nonprob() rejects type = 'bootstrap2' with surveycore_error_type_unsupported_for_nonprob
@@ -625,7 +625,7 @@
       as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "bootstrap2")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "bootstrap2".
 
 # as_survey_nonprob() rejects type = c('JK1', 'JK2') (vector) with surveycore_error_type_unsupported_for_nonprob
@@ -635,7 +635,7 @@
         "JK2"))
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "JK1" and "JK2".
 
 # as_survey_nonprob() rejects type = NA_character_ with surveycore_error_type_unsupported_for_nonprob
@@ -644,7 +644,7 @@
       as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = NA_character_)
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got NA.
 
 # as_survey_nonprob() rejects type = 'jk1' (lowercase) with surveycore_error_type_unsupported_for_nonprob
@@ -653,7 +653,7 @@
       as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "jk1")
     Condition
       Error in `as_survey_nonprob()`:
-      x `type` must be one of "\"bootstrap\"", "\"JK1\"", "\"JK2\"", "\"JKn\"", or "\"jackknife\"" for <survey_nonprob> objects.
+      x `type` must be one of "bootstrap", "JK1", "JK2", "JKn", or "jackknife" for <survey_nonprob> objects.
       i Got "jk1".
 
 # surveycore_error_repweights_single message says 'Replicate variance' for JK1
