@@ -518,3 +518,28 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 .get_data_for_select <- function(x) {
   if (is.data.frame(x)) x else x@data
 }
+
+# ── .compute_nonprob_scale() ──────────────────────────────────────────────────
+#
+# Computes the default variance scale factor for a survey_nonprob design.
+# Used by as_survey_nonprob() when scale = NULL.
+#
+# Args:
+#   type: character(1) — one of "bootstrap", "JK1", "JK2", "JKn"
+#   R:    integer(1)   — number of replicates
+#
+# Returns:
+#   numeric(1) — the default scale factor for the given type
+#     bootstrap: 1/R  (per Wu 2022 / Chen et al. 2021)
+#     JK1:       (R-1)/R
+#     JK2:       1
+#     JKn:       1
+#' @noRd
+.compute_nonprob_scale <- function(type, R) {
+  switch(type,
+    bootstrap = 1 / R,
+    JK1       = (R - 1) / R,
+    JK2       = 1,
+    JKn       = 1
+  )
+}

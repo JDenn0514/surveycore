@@ -21,11 +21,15 @@ functions may be added but the existing structure will not change in breaking wa
 | Two-phase variance | ✅ Complete | v0.2.x |
 | Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
 | Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
-| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | 🔄 In Review | PR #88; see `plans/spec-get-t-test-pairwise.md` |
+| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | ✅ Complete | PR #88; see `archive/get-t-test-pairwise/` |
+| Effective sample size (`get_effective_n()`) | ✅ Complete | PR #122; see `archive/effective-n/` |
+| Design variance (`get_variance()`) | ✅ Complete | PRs #103, #104; see `archive/get-variance/` |
 | SATA metadata (`set_sata()`, `classify_question_type()`) | ✅ Complete | PRs #89, #90, #91, #92 |
 | Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
 | `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
 | Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
+| Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
+| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; planning docs in `plans/` |
 
 ---
 
@@ -96,7 +100,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/spec-get-t-test-pairwise.md` — spec for `get_t_test()` + `get_pairwise()` (in review, PR #88)
+- `archive/get-t-test-pairwise/` — spec, plan, and decisions for `get_t_test()` + `get_pairwise()` (shipped; PR #88)
 - `archive/sata-metadata/` — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)
 - `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
 - `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)

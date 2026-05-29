@@ -672,3 +672,14 @@ test_that(".delete_metadata_col() removes column from all metadata slots", {
   expect_null(sc2@metadata@notes[["y1"]])
   expect_null(sc2@metadata@transformations[["y1"]])
 })
+
+# ---------------------------------------------------------------------------
+# .compute_nonprob_scale() — replicate scale helper
+# ---------------------------------------------------------------------------
+
+test_that("`.compute_nonprob_scale()` returns correct default for each type", {
+  expect_equal(surveycore:::.compute_nonprob_scale("bootstrap", 5L), 1 / 5)
+  expect_equal(surveycore:::.compute_nonprob_scale("JK1", 4L), 3 / 4)
+  expect_equal(surveycore:::.compute_nonprob_scale("JK2", 10L), 1)
+  expect_equal(surveycore:::.compute_nonprob_scale("JKn", 10L), 1)
+})
