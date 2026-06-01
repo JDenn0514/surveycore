@@ -764,3 +764,249 @@ test_that("print.survey_nonprob() with repweights and design_info = TRUE shows r
   d <- as_survey_nonprob(df, weights = wt, repweights = starts_with("repwt_"))
   expect_snapshot(print(d, design_info = TRUE))
 })
+
+
+# ── Task Group 6: print/summary for jackknife types ──────────────────────────
+
+# Helper data for jackknife print tests
+.make_nonprob_repwt_df <- function(n = 10, R = 4) {
+  df <- data.frame(
+    y = seq_len(n),
+    wt = rep(1, n)
+  )
+  for (r in seq_len(R)) {
+    df[[paste0("r", r)]] <- rep(1, n)
+  }
+  df
+}
+
+test_that("print(survey_nonprob): JK1 header contains 'JK1' not 'BOOTSTRAP'", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK1"
+  )
+  test_invariants(d)
+  output <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("JK1", output)))
+  expect_false(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("print(survey_nonprob): JK2 header contains 'JK2'", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK2",
+    rscales = rep(0.75, 4)
+  )
+  test_invariants(d)
+  output <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("JK2", output)))
+  expect_false(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("print(survey_nonprob): JKn header contains 'JKN'", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JKn",
+    rscales = rep(0.75, 4)
+  )
+  test_invariants(d)
+  output <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("JKN", output)))
+  expect_false(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("print(survey_nonprob): bootstrap header still contains 'BOOTSTRAP' [regression]", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  output <- capture.output(print(d), type = "message")
+  expect_true(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("print(survey_nonprob): SRS-mode header does not contain 'JK' or 'BOOTSTRAP'", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  d <- as_survey_nonprob(df, weights = wt)
+  output <- capture.output(print(d), type = "message")
+  expect_false(any(grepl("JK", output)))
+  expect_false(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("print(survey_nonprob): return value is input object, invisibly", {
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK1"
+  )
+  result <- withVisible(print(d))
+  expect_false(result$visible)
+  expect_true(S7::S7_inherits(result$value, survey_nonprob))
+})
+
+test_that("print(survey_nonprob): JK1 snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK1"
+  )
+  expect_snapshot(print(d))
+})
+
+test_that("print(survey_nonprob): JK2 snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK2",
+    rscales = rep(0.75, 4)
+  )
+  expect_snapshot(print(d))
+})
+
+test_that("print(survey_nonprob): JKn snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JKn",
+    rscales = rep(0.75, 4)
+  )
+  expect_snapshot(print(d))
+})
+
+test_that("print(survey_nonprob): bootstrap snapshot [regression guard]", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "bootstrap"
+  )
+  expect_snapshot(print(d))
+})
+
+# ── summary tests for jackknife types ────────────────────────────────────────
+
+test_that("summary(survey_nonprob): JK1 type line contains 'JK1 replicates'", {
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK1"
+  )
+  output <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("JK1", output)))
+  expect_true(any(grepl("replicates", output)))
+})
+
+test_that("summary(survey_nonprob): JKn type line contains 'JKn' (as-stored, no case transformation)", {
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JKn",
+    rscales = rep(0.75, 4)
+  )
+  output <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("JKn", output)))
+})
+
+test_that("summary(survey_nonprob): bootstrap type line contains 'bootstrap' [regression guard]", {
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "bootstrap"
+  )
+  output <- capture.output(summary(d), type = "message")
+  expect_true(any(grepl("bootstrap", output)))
+})
+
+test_that("summary(survey_nonprob): SRS type line does not contain 'JK' or 'BOOTSTRAP'", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  d <- as_survey_nonprob(df, weights = wt)
+  output <- capture.output(summary(d), type = "message")
+  expect_false(any(grepl("JK", output)))
+  expect_false(any(grepl("BOOTSTRAP", output)))
+})
+
+test_that("summary(survey_nonprob): JK1 snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK1"
+  )
+  expect_snapshot(summary(d))
+})
+
+test_that("summary(survey_nonprob): JK2 snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK2",
+    rscales = rep(0.75, 4)
+  )
+  expect_snapshot(summary(d))
+})
+
+test_that("summary(survey_nonprob): JKn snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JKn",
+    rscales = rep(0.75, 4)
+  )
+  expect_snapshot(summary(d))
+})
+
+test_that("summary(survey_nonprob): bootstrap snapshot [regression guard]", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  df <- .make_nonprob_repwt_df(n = 10, R = 4)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "bootstrap"
+  )
+  expect_snapshot(summary(d))
+})

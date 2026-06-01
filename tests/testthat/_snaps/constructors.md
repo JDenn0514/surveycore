@@ -547,6 +547,69 @@
       x Provenance records 5 replicates but 2 replicate weight columns were found.
       i The `calibration` object and `repweights` columns must come from the same `surveywts::create_bootstrap_weights()` call.
 
+# surveycore_error_provenance_not_bootstrap still fires for bootstrap + calibration$bootstrap = FALSE
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "bootstrap",
+      calibration = list(bootstrap = FALSE))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `calibration` indicates the replicate weights were not produced by re-running the adjustment procedure.
+      i `calibration$bootstrap` must be "TRUE" for bootstrap variance to be valid.
+      v Use `surveywts::create_bootstrap_weights()` to produce repweights with re-calibration.
+
+# surveycore_error_provenance_R_mismatch fires for JK1 with mismatched calibration$R
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3), type = "JK1",
+      calibration = list(R = 5L))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x Provenance records 5 replicates but 3 replicate weight columns were found.
+      i The `calibration` object and `repweights` columns must come from the same `surveywts::create_bootstrap_weights()` call.
+
+# calibration = list() with type = 'bootstrap' raises surveycore_error_provenance_not_bootstrap
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "bootstrap",
+      calibration = list())
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `calibration` indicates the replicate weights were not produced by re-running the adjustment procedure.
+      i `calibration$bootstrap` must be "TRUE" for bootstrap variance to be valid.
+      v Use `surveywts::create_bootstrap_weights()` to produce repweights with re-calibration.
+
+# surveycore_error_rscales_length fires for wrong-length rscales with JK1
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1",
+      rscales = c(1, 1))
+    Condition
+      Error in `.validate_rscales()`:
+      x Length of `rscales` (2) must equal number of replicate weights (4).
+
+# surveycore_error_rscales_na fires for NA in rscales with JK1
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1",
+      rscales = c(1, NA_real_, 1, 1))
+    Condition
+      Error in `.validate_rscales()`:
+      x `rscales` must be a non-negative numeric vector with no NA values.
+      i Got 1 NA value(s) and/or 0 negative value(s).
+      v Supply a numeric vector of length 4 with all values >= 0.
+
+# surveycore_error_reference_sample_nonprob fires for non-taylor reference_sample with JK1
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1",
+      reference_sample = data.frame(x = 1:5))
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `reference_sample` must be a <survey_taylor> object.
+      i Got <data.frame>.
+      v Pass the <survey_taylor> object used to estimate propensity scores.
+
 # as_survey() errors when fpc has more columns than ID stages
 
     Code

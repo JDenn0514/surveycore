@@ -1386,25 +1386,29 @@ as_survey_nonprob <- function(
 
     # Provenance checks (only when BOTH calibration AND repweights non-NULL)
     if (!is.null(calibration)) {
-      if (!isTRUE(calibration$bootstrap)) {
-        cli::cli_abort(
-          c(
-            "x" = paste0(
-              "{.arg calibration} indicates the replicate weights were not ",
-              "produced by re-running the adjustment procedure."
+      # bootstrap provenance check is type-gated: only fires for bootstrap type
+      if (type == "bootstrap") {
+        if (!isTRUE(calibration$bootstrap)) {
+          cli::cli_abort(
+            c(
+              "x" = paste0(
+                "{.arg calibration} indicates the replicate weights were not ",
+                "produced by re-running the adjustment procedure."
+              ),
+              "i" = paste0(
+                "{.code calibration$bootstrap} must be {.val TRUE} for ",
+                "bootstrap variance to be valid."
+              ),
+              "v" = paste0(
+                "Use {.fn surveywts::create_bootstrap_weights} to produce ",
+                "repweights with re-calibration."
+              )
             ),
-            "i" = paste0(
-              "{.code calibration$bootstrap} must be {.val TRUE} for ",
-              "bootstrap variance to be valid."
-            ),
-            "v" = paste0(
-              "Use {.fn surveywts::create_bootstrap_weights} to produce ",
-              "repweights with re-calibration."
-            )
-          ),
-          class = "surveycore_error_provenance_not_bootstrap"
-        )
+            class = "surveycore_error_provenance_not_bootstrap"
+          )
+        }
       }
+      # R mismatch check applies to ALL types (bootstrap and jackknife)
       if (!is.null(calibration$R) && !identical(calibration$R, R)) {
         cli::cli_abort(
           c(

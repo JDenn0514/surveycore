@@ -698,3 +698,191 @@
       # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
       #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
 
+# print(survey_nonprob): JK1 snapshot
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, JK1, 4 replicates) [experimental]
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 6
+             y    wt    r1    r2    r3    r4
+         <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+       1     1     1     1     1     1     1
+       2     2     1     1     1     1     1
+       3     3     1     1     1     1     1
+       4     4     1     1     1     1     1
+       5     5     1     1     1     1     1
+       6     6     1     1     1     1     1
+       7     7     1     1     1     1     1
+       8     8     1     1     1     1     1
+       9     9     1     1     1     1     1
+      10    10     1     1     1     1     1
+
+# print(survey_nonprob): JK2 snapshot
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, JK2, 4 replicates) [experimental]
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 6
+             y    wt    r1    r2    r3    r4
+         <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+       1     1     1     1     1     1     1
+       2     2     1     1     1     1     1
+       3     3     1     1     1     1     1
+       4     4     1     1     1     1     1
+       5     5     1     1     1     1     1
+       6     6     1     1     1     1     1
+       7     7     1     1     1     1     1
+       8     8     1     1     1     1     1
+       9     9     1     1     1     1     1
+      10    10     1     1     1     1     1
+
+# print(survey_nonprob): JKn snapshot
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, JKN, 4 replicates) [experimental]
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 6
+             y    wt    r1    r2    r3    r4
+         <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+       1     1     1     1     1     1     1
+       2     2     1     1     1     1     1
+       3     3     1     1     1     1     1
+       4     4     1     1     1     1     1
+       5     5     1     1     1     1     1
+       6     6     1     1     1     1     1
+       7     7     1     1     1     1     1
+       8     8     1     1     1     1     1
+       9     9     1     1     1     1     1
+      10    10     1     1     1     1     1
+
+# print(survey_nonprob): bootstrap snapshot [regression guard]
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, BOOTSTRAP, 4 replicates) [experimental]
+      Sample size: 10
+      
+    Output
+      # A tibble: 10 x 6
+             y    wt    r1    r2    r3    r4
+         <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+       1     1     1     1     1     1     1
+       2     2     1     1     1     1     1
+       3     3     1     1     1     1     1
+       4     4     1     1     1     1     1
+       5     5     1     1     1     1     1
+       6     6     1     1     1     1     1
+       7     7     1     1     1     1     1
+       8     8     1     1     1     1     1
+       9     9     1     1     1     1     1
+      10    10     1     1     1     1     1
+
+# summary(survey_nonprob): JK1 snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: non-probability, JK1 replicates [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      Calibration provenance: none stored
+      
+      Metadata: 0 of 6 variable(s) labeled
+
+# summary(survey_nonprob): JK2 snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: non-probability, JK2 replicates [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      Calibration provenance: none stored
+      
+      Metadata: 0 of 6 variable(s) labeled
+
+# summary(survey_nonprob): JKn snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: non-probability, JKn replicates [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      Calibration provenance: none stored
+      
+      Metadata: 0 of 6 variable(s) labeled
+
+# summary(survey_nonprob): bootstrap snapshot [regression guard]
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: non-probability, bootstrap replicates [experimental]
+      Sample size: 10
+      Weighted N: 10
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 1 – 1
+      * Mean: 1
+      * CV: 0
+      Calibration provenance: none stored
+      
+      Metadata: 0 of 6 variable(s) labeled
+

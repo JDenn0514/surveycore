@@ -497,9 +497,10 @@ S7::method(print, survey_nonprob) <- function(
   cli::cli_h1("Survey Design")
   if (!is.null(x@variables$repweights)) {
     R_count <- length(x@variables$repweights)
+    type_label <- toupper(x@variables$type)
     cli::cli_text(
       paste0(
-        "{.cls survey_nonprob} (non-probability, BOOTSTRAP, ",
+        "{.cls survey_nonprob} (non-probability, {type_label}, ",
         "{R_count} replicates) [experimental]"
       )
     )
@@ -583,7 +584,13 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
   x <- object
 
   cli::cli_h1("Survey Design Summary")
-  cli::cli_text("Type: non-probability [experimental]")
+  if (!is.null(x@variables$repweights)) {
+    cli::cli_text(
+      "Type: non-probability, {x@variables$type} replicates [experimental]"
+    )
+  } else {
+    cli::cli_text("Type: non-probability [experimental]")
+  }
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
   wts_var <- x@variables$weights
