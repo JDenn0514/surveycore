@@ -81,6 +81,7 @@ internally (avoids collision with user columns named `.weights`).
 ## R Package Conventions
 
 - Use the GSS dataset (not NHANES or gss_2024) for examples and tests unless told otherwise. Use rlang patterns over deparse().
+- All R code written in any context — `.R` source files, roxygen2 `@examples` blocks, and ` ```r ``` ` blocks in `.md` spec and plan documents — must follow the rules in `.claude/rules/code-style.md`.
 
 ## General Behavior
 
