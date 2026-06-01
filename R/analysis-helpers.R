@@ -1024,7 +1024,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     cli::cli_warn(
       c(
         "!" = paste0(
-          "{na_dropped} of {R} bootstrap replicates have no observations in ",
+          "{na_dropped} of {R} replicates have no observations in ",
           "this domain ({round(100 * na_frac, 1)}% of R)."
         ),
         "i" = paste0(

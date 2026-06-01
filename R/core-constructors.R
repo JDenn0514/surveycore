@@ -1131,9 +1131,25 @@ as_survey_twophase <- function(
 #'   applied). Supply `NULL` (the default) to use SRS-based variance
 #'   approximation. Columns are combined-weights: the calibration adjustment
 #'   has already been re-applied within each replicate column.
-#' @param type Character. Replicate type. Must be `"bootstrap"` — jackknife
-#'   and other replicate types are not supported for non-probability samples.
-#'   Ignored when `repweights = NULL`. Default `"bootstrap"`.
+#' @param type Character scalar. Replicate variance type. When
+#'   \code{repweights = NULL}, this argument is ignored. Case-sensitive.
+#'   Valid values:
+#'   \describe{
+#'     \item{\code{"bootstrap"}}{Bootstrap variance. Default scale: \code{1/R}.
+#'       Default value for \code{type}.}
+#'     \item{\code{"JK1"}}{Delete-one jackknife for unclustered nonprob designs.
+#'       Default scale: \code{(R-1)/R}. Appropriate when each unit is its own
+#'       replication unit. For clustered designs, use \code{"JK2"} or
+#'       \code{"JKn"} with explicit \code{rscales}.}
+#'     \item{\code{"jackknife"}}{Alias for \code{"JK1"}. Normalized to
+#'       \code{"JK1"} before storage — the stored value is always
+#'       \code{"JK1"}, never \code{"jackknife"}.}
+#'     \item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
+#'       Requires explicit \code{rscales} (stratum-specific scale factors of
+#'       the form \code{(n_h - 1) / n_h}).}
+#'     \item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
+#'       designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
+#'   }
 #' @param scale Numeric scalar. Scaling factor for the replicate variance
 #'   formula. Default `NULL`, which sets `scale = 1 / R` (where `R` is the
 #'   number of replicate columns). Note: this default differs from
