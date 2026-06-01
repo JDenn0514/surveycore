@@ -60,3 +60,25 @@
       x `na.rm` must be `TRUE` or `FALSE`.
       i Got `NA`.
 
+# .nonprob_rep_na_warn() domain-NA warning does not say 'bootstrap' for JK1
+
+    Code
+      withCallingHandlers(get_means(d, y, group = grp),
+      surveycore_warning_domain_replicates_na = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      })
+    Message
+      ! 3 of 20 replicates have no observations in this domain (15% of R).
+      i Standard errors for this cell understate variance because the scale factor `0.95` was computed for 20 replicates but only 17 contribute.
+      i Consider collapsing small domain categories or increasing R in `surveywts::create_bootstrap_weights()`.
+    Condition
+      Warning:
+      ! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+    Output
+      # A tibble: 2 x 5
+        grp     mean ci_low ci_high     n
+        <chr>  <dbl>  <dbl>   <dbl> <int>
+      1 A     -0.121 -0.427   0.186    25
+      2 B     -0.168 -0.168  -0.168    25
+

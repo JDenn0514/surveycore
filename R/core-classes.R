@@ -922,9 +922,11 @@ survey_collection <- S7::new_class(
 #' @section Design variables (`@variables`):
 #' \describe{
 #'   \item{`weights`}{Character string naming the (calibrated) weight column.}
-#'   \item{`repweights`}{Character vector of bootstrap replicate weight column
-#'     names, or `NULL` when no replicate weights are present.}
-#'   \item{`type`}{Replicate type (`"bootstrap"`), or `NULL`.}
+#'   \item{`repweights`}{Character vector of replicate weight column names, or
+#'     `NULL` when no replicate weights are present.}
+#'   \item{`type`}{Replicate type: one of `"bootstrap"`, `"JK1"`, `"JK2"`,
+#'     `"JKn"`, or `"jackknife"` (alias for `"JK1"`, normalized before
+#'     storage), or `NULL` when no replicate weights are present.}
 #'   \item{`scale`}{Numeric scale factor for the variance formula, or `NULL`.}
 #'   \item{`rscales`}{Per-replicate scale factors, or `NULL`.}
 #'   \item{`mse`}{Logical. `TRUE` for MSE form of variance, or `NULL`.}
