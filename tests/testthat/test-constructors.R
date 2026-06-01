@@ -2236,6 +2236,335 @@ test_that("as_survey_nonprob() rejects calibration$R mismatch with repweights co
   )
 })
 
+# ── Task Group 4: calibration conditional (jackknife bypass) ──────────────────
+
+test_that("JK1 with calibration having only R field: no error", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_no_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      calibration = list(R = 4L)
+    )
+  )
+})
+
+test_that("JK1 with calibration$bootstrap = FALSE: no error (field is type-gated)", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_no_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      calibration = list(bootstrap = FALSE, R = 4L)
+    )
+  )
+})
+
+test_that("JK1 with calibration$bootstrap = TRUE: no error", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_no_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      calibration = list(bootstrap = TRUE, R = 4L)
+    )
+  )
+})
+
+test_that("surveycore_error_provenance_not_bootstrap still fires for bootstrap + calibration$bootstrap = FALSE", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "bootstrap",
+      calibration = list(bootstrap = FALSE)
+    ),
+    class = "surveycore_error_provenance_not_bootstrap"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "bootstrap",
+      calibration = list(bootstrap = FALSE)
+    )
+  )
+})
+
+test_that("surveycore_error_provenance_R_mismatch fires for JK1 with mismatched calibration$R", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3),
+      type = "JK1",
+      calibration = list(R = 5L)
+    ),
+    class = "surveycore_error_provenance_R_mismatch"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3),
+      type = "JK1",
+      calibration = list(R = 5L)
+    )
+  )
+})
+
+test_that("calibration = list() with type = 'bootstrap' raises surveycore_error_provenance_not_bootstrap", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "bootstrap",
+      calibration = list()
+    ),
+    class = "surveycore_error_provenance_not_bootstrap"
+  )
+})
+
+test_that("calibration = list() with type = 'JK1' accepted", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_no_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      calibration = list()
+    )
+  )
+})
+
+# ── Task Group 5: constructor edge-case tests ─────────────────────────────────
+
+test_that("two-row data constructs valid JK1 object (minimum sample size)", {
+  df <- data.frame(x = 1:2, wt = c(1, 1), r1 = c(1, 1), r2 = c(1, 1))
+  d <- as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK1")
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_nonprob))
+})
+
+test_that("JK1 with one zero-valued rscale entry accepted", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_no_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      rscales = c(1, 0, 1, 1)
+    )
+  )
+})
+
+test_that("'jackknife' alias not stored: design@variables$type == 'JK1'", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3),
+    type = "jackknife"
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JK1")
+})
+
+test_that("JK1 scale exact value for R = 10: 9/10 exactly", {
+  df <- as.data.frame(
+    setNames(
+      c(list(x = 1:10, wt = rep(1, 10)),
+        setNames(
+          lapply(seq_len(10), function(i) rep(1, 10)),
+          paste0("r", seq_len(10))
+        )),
+      c("x", "wt", paste0("r", seq_len(10)))
+    )
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("r"),
+    type = "JK1"
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 9 / 10)
+})
+
+test_that("JK2 default scale = 1 exactly", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "JK2",
+    rscales = c(0.5, 0.5, 0.5, 0.5)
+  )
+  test_invariants(d)
+  expect_equal(d@variables$scale, 1)
+})
+
+test_that("repweights = NULL ignores type = 'jackknife': type NULL in variables", {
+  df <- data.frame(x = 1:5, wt = rep(1, 5))
+  d <- as_survey_nonprob(df, weights = wt, type = "jackknife")
+  test_invariants(d)
+  expect_null(d@variables$type)
+})
+
+test_that("repweights = NULL ignores type = 'BRR': all rep vars NULL in variables", {
+  df <- data.frame(x = 1:5, wt = rep(1, 5))
+  d <- as_survey_nonprob(df, weights = wt, type = "BRR")
+  test_invariants(d)
+  expect_null(d@variables$type)
+  expect_null(d@variables$repweights)
+  expect_null(d@variables$scale)
+  expect_null(d@variables$rscales)
+})
+
+test_that("jackknife alias with explicit non-uniform rscales normalizes to JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = c(r1, r2, r3, r4),
+    type = "jackknife",
+    rscales = c(0.9, 0.8, 0.85, 0.95)
+  )
+  test_invariants(d)
+  expect_identical(d@variables$type, "JK1")
+  expect_equal(d@variables$rscales, c(0.9, 0.8, 0.85, 0.95))
+})
+
+test_that("surveycore_error_rscales_length fires for wrong-length rscales with JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      rscales = c(1, 1)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      rscales = c(1, 1)
+    )
+  )
+})
+
+test_that("surveycore_error_rscales_na fires for NA in rscales with JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      rscales = c(1, NA_real_, 1, 1)
+    ),
+    class = "surveycore_error_rscales_na"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      rscales = c(1, NA_real_, 1, 1)
+    )
+  )
+})
+
+test_that("surveycore_error_reference_sample_nonprob fires for non-taylor reference_sample with JK1", {
+  df <- data.frame(
+    x = 1:5, wt = rep(1, 5),
+    r1 = rep(1, 5), r2 = rep(1, 5), r3 = rep(1, 5), r4 = rep(1, 5)
+  )
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      reference_sample = data.frame(x = 1:5)
+    ),
+    class = "surveycore_error_reference_sample_nonprob"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "JK1",
+      reference_sample = data.frame(x = 1:5)
+    )
+  )
+})
+
 # ── weighting_history promotion ───────────────────────────────────────────────
 
 test_that("as_survey() promotes weighting_history attribute from data", {
