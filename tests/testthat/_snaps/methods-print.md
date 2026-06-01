@@ -805,7 +805,7 @@
     Message
       
       -- Survey Design Summary -------------------------------------------------------
-      Type: non-probability, JK1 replicates (4 replicates) [experimental]
+      Type: non-probability, JK1 replicates [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -827,7 +827,7 @@
     Message
       
       -- Survey Design Summary -------------------------------------------------------
-      Type: non-probability, JK2 replicates (4 replicates) [experimental]
+      Type: non-probability, JK2 replicates [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -849,7 +849,7 @@
     Message
       
       -- Survey Design Summary -------------------------------------------------------
-      Type: non-probability, JKN replicates (4 replicates) [experimental]
+      Type: non-probability, JKn replicates [experimental]
       Sample size: 10
       Weighted N: 10
       
@@ -871,7 +871,7 @@
     Message
       
       -- Survey Design Summary -------------------------------------------------------
-      Type: non-probability, BOOTSTRAP replicates (4 replicates) [experimental]
+      Type: non-probability, bootstrap replicates [experimental]
       Sample size: 10
       Weighted N: 10
       

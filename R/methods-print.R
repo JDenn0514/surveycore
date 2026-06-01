@@ -585,13 +585,8 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
 
   cli::cli_h1("Survey Design Summary")
   if (!is.null(x@variables$repweights)) {
-    type_label <- toupper(x@variables$type)
-    n_reps <- length(x@variables$repweights)
     cli::cli_text(
-      paste0(
-        "Type: non-probability, {type_label} replicates ",
-        "({n_reps} replicates) [experimental]"
-      )
+      "Type: non-probability, {x@variables$type} replicates [experimental]"
     )
   } else {
     cli::cli_text("Type: non-probability [experimental]")

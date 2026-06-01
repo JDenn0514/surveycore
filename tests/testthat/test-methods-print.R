@@ -928,7 +928,7 @@ test_that("summary(survey_nonprob): JK1 type line contains 'JK1 replicates'", {
   expect_true(any(grepl("replicates", output)))
 })
 
-test_that("summary(survey_nonprob): JKn type line contains 'JKN' (uppercased)", {
+test_that("summary(survey_nonprob): JKn type line contains 'JKn' (as-stored, no case transformation)", {
   df <- .make_nonprob_repwt_df(n = 10, R = 4)
   d <- as_survey_nonprob(
     df,
@@ -938,10 +938,10 @@ test_that("summary(survey_nonprob): JKn type line contains 'JKN' (uppercased)", 
     rscales = rep(0.75, 4)
   )
   output <- capture.output(summary(d), type = "message")
-  expect_true(any(grepl("JKN", output)))
+  expect_true(any(grepl("JKn", output)))
 })
 
-test_that("summary(survey_nonprob): bootstrap type line contains 'BOOTSTRAP' [regression guard]", {
+test_that("summary(survey_nonprob): bootstrap type line contains 'bootstrap' [regression guard]", {
   df <- .make_nonprob_repwt_df(n = 10, R = 4)
   d <- as_survey_nonprob(
     df,
@@ -950,7 +950,7 @@ test_that("summary(survey_nonprob): bootstrap type line contains 'BOOTSTRAP' [re
     type = "bootstrap"
   )
   output <- capture.output(summary(d), type = "message")
-  expect_true(any(grepl("BOOTSTRAP", output)))
+  expect_true(any(grepl("bootstrap", output)))
 })
 
 test_that("summary(survey_nonprob): SRS type line does not contain 'JK' or 'BOOTSTRAP'", {

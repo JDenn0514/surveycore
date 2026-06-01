@@ -568,6 +568,17 @@
       x Provenance records 5 replicates but 3 replicate weight columns were found.
       i The `calibration` object and `repweights` columns must come from the same `surveywts::create_bootstrap_weights()` call.
 
+# calibration = list() with type = 'bootstrap' raises surveycore_error_provenance_not_bootstrap
+
+    Code
+      as_survey_nonprob(df, weights = wt, repweights = c(r1, r2, r3, r4), type = "bootstrap",
+      calibration = list())
+    Condition
+      Error in `as_survey_nonprob()`:
+      x `calibration` indicates the replicate weights were not produced by re-running the adjustment procedure.
+      i `calibration$bootstrap` must be "TRUE" for bootstrap variance to be valid.
+      v Use `surveywts::create_bootstrap_weights()` to produce repweights with re-calibration.
+
 # surveycore_error_rscales_length fires for wrong-length rscales with JK1
 
     Code

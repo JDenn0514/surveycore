@@ -2355,6 +2355,16 @@ test_that("calibration = list() with type = 'bootstrap' raises surveycore_error_
     ),
     class = "surveycore_error_provenance_not_bootstrap"
   )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = c(r1, r2, r3, r4),
+      type = "bootstrap",
+      calibration = list()
+    )
+  )
 })
 
 test_that("calibration = list() with type = 'JK1' accepted", {
