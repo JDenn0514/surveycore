@@ -76,8 +76,9 @@ between these modes and interpreting the results.
 \item{\code{repweights}}{Character vector of replicate weight column names, or
 \code{NULL} when no replicate weights are present.}
 \item{\code{type}}{Replicate type: one of \code{"bootstrap"}, \code{"JK1"}, \code{"JK2"},
-\code{"JKn"}, or \code{"jackknife"} (alias for \code{"JK1"}, normalized before
-storage), or \code{NULL} when no replicate weights are present.}
+\code{"JKn"}, \code{"group-jackknife"}, or \code{"jackknife"} (alias for \code{"JK1"},
+normalized before storage), or \code{NULL} when no replicate weights are
+present.}
 \item{\code{scale}}{Numeric scale factor for the variance formula, or \code{NULL}.}
 \item{\code{rscales}}{Per-replicate scale factors, or \code{NULL}.}
 \item{\code{mse}}{Logical. \code{TRUE} for MSE form of variance, or \code{NULL}.}
