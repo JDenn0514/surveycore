@@ -2,9 +2,9 @@
 
 ## PR map
 
-- [ ] PR 1: `feature/nonprob-jackknife-core` — Scale helper + type validation + rscales guard
-- [ ] PR 2: `feature/nonprob-jackknife-display` — Calibration conditional + print/summary display *(depends on PR 1)*
-- [ ] PR 3: `feature/nonprob-jackknife-analysis` — Analysis helpers + roxygen docs + dispatch + verification *(depends on PR 2)*
+- [x] PR 1: `feature/nonprob-jackknife-core` — Scale helper + type validation + rscales guard
+- [x] PR 2: `feature/nonprob-jackknife-display` — Calibration conditional + print/summary display *(depends on PR 1)*
+- [x] PR 3: `feature/nonprob-jackknife-analysis` — Analysis helpers + roxygen docs + dispatch + verification *(depends on PR 2)*
 
 ---
 

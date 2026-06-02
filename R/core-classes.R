@@ -955,6 +955,13 @@ survey_collection <- S7::new_class(
 #' Kolenikov, S. (2014). Calibrating variance estimation with proxy variables.
 #' \emph{Survey Methodology} \bold{40}(1), 21--38.
 #'
+#' Wu, C. (2022). Statistical inference with non-probability survey samples.
+#' \emph{Survey Methodology} \bold{48}(2), 283--311.
+#'
+#' Chen, Y., Li, P. and Wu, C. (2021). Doubly robust inference with
+#' non-probability survey samples. \emph{Journal of the American Statistical
+#' Association} \bold{115}(532), 2011--2021.
+#'
 #' @return A `survey_nonprob` object.
 #' @usage survey_nonprob(
 #'   data = data.frame(),
