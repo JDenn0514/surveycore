@@ -29,7 +29,7 @@ functions may be added but the existing structure will not change in breaking wa
 | `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
 | Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
 | Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
-| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; planning docs in `plans/` |
+| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; see `archive/nonprob-bootstrap-variance/` |
 
 ---
 
@@ -110,5 +110,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/collection-uniform-groups/` — uniform `@groups` enforcement across `survey_collection` (shipped; PR #106)
 - `archive/polychoric-corr/` — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)
 - `archive/variable-direction/` — `set_higher_is()`, `set_reverse_coded()`, and `get_diffs(show_favorability)` spec, plan, and decisions (shipped; PRs #124, #125, #126)
+- `archive/nonprob-bootstrap-variance/` — non-probability bootstrap variance spec, impl plans, and decisions (shipped; PRs #127, #130, #131)
+- `archive/nonprob-jackknife/` — non-probability jackknife variance spec, impl plan, comprehension, MI reviews, and decisions (shipped; PRs #133–#136)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
