@@ -25,7 +25,7 @@
       .corr_latent_pair(d, "o1", "o2", method = "polychoric")
     Condition
       Error in `.corr_latent_pair()`:
-      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs in this release.
+      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs.
       v Use `method = "pearson"`, or call `get_corr()` on a <survey_taylor> or <survey_replicate> design.
 
 # .corr_latent_pair() raises PC-1 under polychoric with a numeric column

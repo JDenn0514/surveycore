@@ -33,7 +33,7 @@
       get_corr(coll, x = c(o1, o2), method = "polychoric")
     Condition
       Error in `.corr_latent_pair()`:
-      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs in this release.
+      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs.
       v Use `method = "pearson"`, or call `get_corr()` on a <survey_taylor> or <survey_replicate> design.
 
 # PC-13 (unordered factor) surfaces via the public API (dual)
@@ -84,7 +84,7 @@
       get_corr(d_tp, x = c(o1, o2), method = "polychoric")
     Condition
       Error in `.corr_latent_pair()`:
-      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs in this release.
+      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs.
       v Use `method = "pearson"`, or call `get_corr()` on a <survey_taylor> or <survey_replicate> design.
 
 # PC-8 (> 20% replicate failure) at public API (dual)

@@ -24,3 +24,23 @@
       x `na.rm` must be `TRUE` or `FALSE`.
       i Got `NA`.
 
+# get_corr() polychoric raises PC-7 for survey_nonprob without repweights
+
+    Code
+      get_corr(d, x = c(ord1, ord2), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` is not supported for <surveycore::survey_nonprob> designs without replicate weights.
+      i Supply bootstrap replicate weights via `repweights` in `as_survey_nonprob()` to use this method.
+      v Use `method = "pearson"`, or supply replicate weights.
+
+# get_corr() polyserial raises PC-7 for survey_nonprob without repweights
+
+    Code
+      get_corr(d, x = c(ord1, y2), method = "polyserial")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polyserial"` is not supported for <surveycore::survey_nonprob> designs without replicate weights.
+      i Supply bootstrap replicate weights via `repweights` in `as_survey_nonprob()` to use this method.
+      v Use `method = "pearson"`, or supply replicate weights.
+

@@ -6,7 +6,6 @@
 # Internal helpers: analysis-corr-helpers.R (Pearson variance),
 # analysis-corr-latent.R (polychoric / polyserial MLE + variance paths).
 
-
 # ── .corr_extract_n_failed_from_condition() ──────────────────────────────────
 #
 # Parse the integer count of non-converged replicates from a
@@ -42,9 +41,11 @@
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
 #'   `survey_twophase`, or `survey_nonprob`. `method` values `"polychoric"`
-#'   and `"polyserial"` are supported on `survey_taylor` and
-#'   `survey_replicate` only; other design classes raise
-#'   `surveycore_error_polychoric_design_unsupported`.
+#'   and `"polyserial"` are supported on `survey_taylor`, `survey_replicate`,
+#'   and `survey_nonprob` designs that supply replicate weights
+#'   (`repweights` argument in `as_survey_nonprob()`). `survey_nonprob`
+#'   without replicate weights and `survey_twophase` designs raise
+#'   `surveycore_error_polychoric_design_unsupported` for latent methods.
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
 #'   variable names. For `method = "pearson"`, non-numeric columns are dropped
 #'   with a warning. For `method = "polychoric"`, every selected column must
@@ -195,16 +196,25 @@
 #'   correlation coefficient. *Psychometrika*, 44(4), 443-460.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' get_corr(d, x = c(ridageyr, bpxsy1))
 #'
 #' # Wide correlation matrix
 #' get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 #'
 #' # AAPOR-compliant
-#' get_corr(d, x = c(ridageyr, bpxsy1),
-#'          variance = c("ci", "moe"), n_weighted = TRUE)
+#' get_corr(
+#'   d,
+#'   x = c(ridageyr, bpxsy1),
+#'   variance = c("ci", "moe"),
+#'   n_weighted = TRUE
+#' )
 #'
 #' # Polychoric correlation between two ordinal variables
 #' df <- data.frame(
@@ -215,7 +225,6 @@
 #' )
 #' d_ord <- as_survey(df, weights = wt)
 #' get_corr(d_ord, x = c(o1, o2), method = "polychoric")
-#'
 #' @family analysis
 #' @export
 get_corr <- function(
@@ -513,9 +522,7 @@ get_corr <- function(
     if (!identical(method, "pearson")) {
       meta_args_wide$bivariate_normal_cdf <- "pbivnorm"
     }
-    if (
-      !identical(method, "pearson") && n_failed_replicates_total > 0L
-    ) {
+    if (!identical(method, "pearson") && n_failed_replicates_total > 0L) {
       meta_args_wide$n_failed_replicates_total <- as.integer(
         n_failed_replicates_total
       )

@@ -2,6 +2,11 @@
 
 ## New features
 
+* `get_corr()` with `method = "polychoric"` or `method = "polyserial"` now
+  supports `survey_nonprob` designs that supply bootstrap replicate weights
+  via `as_survey_nonprob(..., repweights = ...)`. Previously these designs
+  always raised `surveycore_error_polychoric_design_unsupported`.
+
 * `set_higher_is()` and `extract_higher_is()` store and retrieve a
   direction-of-improvement attribute (`"better"` or `"worse"`) for survey
   variables. The attribute is used by `get_diffs(show_favorability = TRUE)`
