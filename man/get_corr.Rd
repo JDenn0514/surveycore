@@ -29,9 +29,11 @@ get_corr(
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
 \code{survey_twophase}, or \code{survey_nonprob}. \code{method} values \code{"polychoric"}
-and \code{"polyserial"} are supported on \code{survey_taylor} and
-\code{survey_replicate} only; other design classes raise
-\code{surveycore_error_polychoric_design_unsupported}.}
+and \code{"polyserial"} are supported on \code{survey_taylor}, \code{survey_replicate},
+and \code{survey_nonprob} designs that supply replicate weights
+(\code{repweights} argument in \code{as_survey_nonprob()}). \code{survey_nonprob}
+without replicate weights and \code{survey_twophase} designs raise
+\code{surveycore_error_polychoric_design_unsupported} for latent methods.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
 variable names. For \code{method = "pearson"}, non-numeric columns are dropped
