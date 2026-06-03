@@ -398,7 +398,25 @@ survey_glm_fit <- S7::new_class(
   } else if (S7::S7_inherits(design, survey_replicate)) {
     .glm_replicate_vcov(fit, design, row_mask, domain_mask)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
-    .glm_calibrated_vcov(fit, design, row_mask, domain_mask)
+    if (!is.null(design@variables$repweights)) {
+      .glm_replicate_vcov(fit, design, row_mask, domain_mask)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this ",
+            "design for correct SEs."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_fallback"
+      )
+      .glm_calibrated_vcov(fit, design, row_mask, domain_mask)
+    }
   } else {
     cli::cli_abort(
       c(

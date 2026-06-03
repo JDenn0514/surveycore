@@ -30,6 +30,7 @@ functions may be added but the existing structure will not change in breaking wa
 | Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
 | Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
 | Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; see `archive/nonprob-bootstrap-variance/` |
+| Polychoric/polyserial on `survey_nonprob` with repweights (`get_corr(method = "polychoric"/"polyserial")`) | ✅ Complete | PR #137; see `archive/corr-nonprob-latent/` |
 
 ---
 
@@ -112,5 +113,6 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/variable-direction/` — `set_higher_is()`, `set_reverse_coded()`, and `get_diffs(show_favorability)` spec, plan, and decisions (shipped; PRs #124, #125, #126)
 - `archive/nonprob-bootstrap-variance/` — non-probability bootstrap variance spec, impl plans, and decisions (shipped; PRs #127, #130, #131)
 - `archive/nonprob-jackknife/` — non-probability jackknife variance spec, impl plan, comprehension, MI reviews, and decisions (shipped; PRs #133–#136)
+- `archive/corr-nonprob-latent/` — polychoric/polyserial on `survey_nonprob` with repweights: spec, impl plan, test spec, plan review (shipped; PR #137)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
