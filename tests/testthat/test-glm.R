@@ -1146,8 +1146,11 @@ test_that("survey_glm() matches survey::svyglm() for 2-stage design [oracle]", {
   test_invariants(sc)
   test_glm_fit_invariants(survey_glm(y1 ~ y2, design = sc))
   sv <- survey::svydesign(
-    id = ~psu + ssu, weights = ~wt, strata = ~strata,
-    data = df, nest = TRUE
+    id = ~ psu + ssu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df,
+    nest = TRUE
   )
   sc_fit <- survey_glm(y1 ~ y2, design = sc)
   sv_fit <- survey::svyglm(y1 ~ y2, design = sv)
@@ -1201,12 +1204,198 @@ test_that("survey_glm() with non-contiguous na.omit matches clean-data fit", {
   # Fit on manually cleaned data
   df_clean <- df[!is.na(df$y1), ]
   d_clean <- as_survey(
-    df_clean, ids = psu, weights = wt, strata = strata, nest = TRUE
+    df_clean,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
   )
   fit_clean <- survey_glm(d_clean, y1 ~ y2)
 
   expect_equal(
-    fit_na@coefficients, fit_clean@coefficients, tolerance = 1e-10
+    fit_na@coefficients,
+    fit_clean@coefficients,
+    tolerance = 1e-10
   )
   expect_equal(fit_na@weights, fit_clean@weights, tolerance = 1e-10)
+})
+
+# ---------------------------------------------------------------------------
+# survey_nonprob with repweights — GLM variance dispatch
+# ---------------------------------------------------------------------------
+
+# Shared fixtures for nonprob-with-repweights tests
+.glm_nonprob_fixtures <- function() {
+  df <- make_survey_data(
+    design = "replicate",
+    type = "brr",
+    seed = 1L
+  )
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "BRR"
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = d_rep@variables$scale,
+    rscales = d_rep@variables$rscales,
+    mse = TRUE
+  )
+  df_simple <- make_survey_data(n = 200, seed = 2L)
+  nonprob_no_rep <- as_survey_nonprob(df_simple, weights = wt)
+  list(
+    df = df,
+    d_rep = d_rep,
+    d_np = d_np,
+    df_simple = df_simple,
+    nonprob_no_rep = nonprob_no_rep
+  )
+}
+
+test_that("survey_glm() nonprob with repweights: @vcov matches survey_replicate oracle", {
+  fx <- .glm_nonprob_fixtures()
+  fit_np <- survey_glm(fx$d_np, y1 ~ y2)
+  fit_rep <- survey_glm(fx$d_rep, y1 ~ y2)
+  test_glm_fit_invariants(fit_np)
+  expect_equal(fit_np@coefficients, fit_rep@coefficients, tolerance = 1e-10)
+  expect_equal(fit_np@vcov, fit_rep@vcov, tolerance = 1e-8)
+})
+
+test_that("survey_glm() nonprob with repweights: no surveycore_warning_nonprob_srs_fallback emitted", {
+  fx <- .glm_nonprob_fixtures()
+  expect_no_warning(
+    fit <- survey_glm(fx$d_np, y1 ~ y2),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  test_glm_fit_invariants(fit)
+})
+
+test_that("survey_glm() nonprob NULL repweights: emits surveycore_warning_nonprob_srs_fallback", {
+  fx <- .glm_nonprob_fixtures()
+  expect_warning(
+    fit <- survey_glm(fx$nonprob_no_rep, y1 ~ y2),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  test_glm_fit_invariants(fit)
+  expect_true(all(diag(fit@vcov) > 0))
+})
+
+test_that("survey_glm() nonprob NULL repweights: warning snapshot matches NB-2 text", {
+  fx <- .glm_nonprob_fixtures()
+  expect_snapshot(survey_glm(fx$nonprob_no_rep, y1 ~ y2))
+})
+
+test_that("survey_glm() nonprob with repweights: multiple predictors @vcov matches oracle", {
+  fx <- .glm_nonprob_fixtures()
+  fit_np <- survey_glm(fx$d_np, y1 ~ y2 + y3)
+  fit_rep <- survey_glm(fx$d_rep, y1 ~ y2 + y3)
+  test_glm_fit_invariants(fit_np)
+  expect_equal(nrow(fit_np@vcov), 3L)
+  expect_equal(ncol(fit_np@vcov), 3L)
+  expect_true(all(diag(fit_np@vcov) > 0))
+  expect_equal(fit_np@vcov, fit_rep@vcov, tolerance = 1e-8)
+})
+
+test_that("survey_glm() nonprob with repweights: binomial family invariants hold", {
+  df2 <- make_survey_data(design = "replicate", type = "brr", seed = 3L)
+  d_rep2 <- as_survey_replicate(
+    df2,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "BRR"
+  )
+  d_np2 <- as_survey_nonprob(
+    df2,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = d_rep2@variables$scale,
+    rscales = d_rep2@variables$rscales,
+    mse = TRUE
+  )
+  d_np2 <- surveytidy::mutate(d_np2, y_bin = as.integer(y1 > median(df2$y1)))
+  fit <- survey_glm(d_np2, y_bin ~ y2, family = stats::binomial())
+  test_glm_fit_invariants(fit)
+  expect_true(all(is.finite(fit@vcov)))
+  expect_equal(fit@vcov, t(fit@vcov), tolerance = 1e-12)
+})
+
+test_that("survey_glm() nonprob NULL repweights: warning emitted exactly once", {
+  fx <- .glm_nonprob_fixtures()
+  count <- 0L
+  withCallingHandlers(
+    survey_glm(fx$nonprob_no_rep, y1 ~ y2),
+    surveycore_warning_nonprob_srs_fallback = function(w) {
+      count <<- count + 1L
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_equal(count, 1L)
+})
+
+test_that("survey_glm() nonprob domain estimation with repweights: @vcov matches oracle", {
+  fx <- .glm_nonprob_fixtures()
+  d_np_dom <- surveytidy::filter(fx$d_np, y3 > 0)
+  d_rep_dom <- surveytidy::filter(fx$d_rep, y3 > 0)
+  fit_np <- survey_glm(d_np_dom, y1 ~ y2)
+  fit_rep <- survey_glm(d_rep_dom, y1 ~ y2)
+  test_glm_fit_invariants(fit_np)
+  expect_equal(fit_np@vcov, fit_rep@vcov, tolerance = 1e-8)
+  expect_true(all(diag(fit_np@vcov) > 0))
+})
+
+test_that("survey_glm() nonprob mse = FALSE with repweights: @vcov finite", {
+  fx <- .glm_nonprob_fixtures()
+  d_np_nomse <- as_survey_nonprob(
+    fx$df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = fx$d_rep@variables$scale,
+    rscales = fx$d_rep@variables$rscales,
+    mse = FALSE
+  )
+  fit <- survey_glm(d_np_nomse, y1 ~ y2)
+  test_glm_fit_invariants(fit)
+  expect_true(all(is.finite(fit@vcov)))
+})
+
+test_that("survey_glm() nonprob NULL repweights regression guard: @vcov unchanged from calibrated baseline", {
+  fx <- .glm_nonprob_fixtures()
+  fit_baseline <- suppressWarnings(survey_glm(fx$nonprob_no_rep, y1 ~ y2))
+  fit_again <- suppressWarnings(survey_glm(fx$nonprob_no_rep, y1 ~ y2))
+  test_glm_fit_invariants(fit_baseline)
+  test_glm_fit_invariants(fit_again)
+  expect_equal(fit_baseline@vcov, fit_again@vcov, tolerance = 1e-8)
+  expect_true(all(diag(fit_baseline@vcov) > 0))
+})
+
+test_that("get_means() on survey_nonprob with repweights: finite mean and se, no SRS fallback warning", {
+  df_bin <- make_survey_data(design = "replicate", type = "brr", seed = 4L)
+  d_rep_bin <- as_survey_replicate(
+    df_bin,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "BRR"
+  )
+  d_np_bin <- as_survey_nonprob(
+    df_bin,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = d_rep_bin@variables$scale,
+    rscales = d_rep_bin@variables$rscales,
+    mse = TRUE
+  )
+  result <- expect_no_warning(
+    get_means(d_np_bin, y1),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_true(all(is.finite(result$mean)))
+  expect_true(all(is.finite(result$ci_low)))
 })
