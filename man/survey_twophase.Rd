@@ -52,13 +52,16 @@ indicates Phase 2 membership (\code{TRUE} = selected into Phase 2).}
 \examples{
 # Prefer as_survey_twophase() over calling survey_twophase() directly
 set.seed(1)
-df <- data.frame(id = 1:100, y = rnorm(100), x = rnorm(100),
-                 wt = runif(100, 1, 3),
-                 in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60)))
+df <- data.frame(
+  id = 1:100,
+  y = rnorm(100),
+  x = rnorm(100),
+  wt = runif(100, 1, 3),
+  in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60))
+)
 phase1 <- as_survey(df, weights = wt)
 d <- as_survey_twophase(phase1, subset = in_phase2)
 class(d)
-
 }
 \seealso{
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} to create a \code{survey_twophase} object.

@@ -64,12 +64,19 @@ a property.}
 \examples{
 # Prefer as_survey_replicate() over calling survey_replicate() directly
 set.seed(1)
-df <- data.frame(y = rnorm(20), wt = runif(20, 1, 3),
-                 rep1 = runif(20, 0.5, 2), rep2 = runif(20, 0.5, 2))
-d <- as_survey_replicate(df, weights = wt,
-                         repweights = starts_with("rep"), type = "BRR")
+df <- data.frame(
+  y = rnorm(20),
+  wt = runif(20, 1, 3),
+  rep1 = runif(20, 0.5, 2),
+  rep2 = runif(20, 0.5, 2)
+)
+d <- as_survey_replicate(
+  df,
+  weights = wt,
+  repweights = starts_with("rep"),
+  type = "BRR"
+)
 class(d)
-
 }
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object.

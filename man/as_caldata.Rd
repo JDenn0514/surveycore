@@ -54,18 +54,17 @@ correction is not applied in the GLM variance path.
 \examples{
 # Minimal example: 3-unit design, intercept-only calibration
 base_weights <- c(2.5, 3.0, 4.0)
-g_weights    <- c(1.02, 0.98, 1.01)
+g_weights <- c(1.02, 0.98, 1.01)
 model_matrix <- matrix(1, nrow = 3, ncol = 1)
 
 cd <- as_caldata(base_weights, g_weights, model_matrix)
-names(cd)  # "qr", "w", "stage", "index"
+names(cd) # "qr", "w", "stage", "index"
 
 # Assign to a survey_taylor design
 df <- data.frame(y = c(1.2, 2.3, 3.4), wt = base_weights)
 design <- as_survey(df, weights = wt)
 design@calibration <- list(cd)
-is.null(design@calibration)  # FALSE
-
+is.null(design@calibration) # FALSE
 }
 \references{
 Deville, J.-C., and Sarndal, C.-E. (1992). Calibration estimators in

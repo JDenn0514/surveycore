@@ -69,12 +69,16 @@ this stored value. Mutate via \code{\link[=set_collection_if_missing_var]{set_co
 }
 
 \examples{
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 coll <- survey_collection(surveys = list(gss = d1))
 length(coll)
 names(coll)
-
 }
 \seealso{
 \code{\link[=as_survey_collection]{as_survey_collection()}} to build a collection from survey
