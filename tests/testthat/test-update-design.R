@@ -277,3 +277,24 @@ test_that("update_design() validate=FALSE skips validation for survey_replicate"
     suppressMessages(update_design(d, weights = bad_wt, validate = FALSE))
   )
 })
+
+
+# ── Calibration guard ──────────────────────────────────────────────────────────
+
+test_that("update_design() warns when weight column changes on calibrated design [B-6]", {
+  df <- make_survey_data(n = 200L, seed = 42L)
+  df$wt2 <- df$wt * 1.1
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # Attach a caldata element to simulate a calibrated design
+  cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  d@calibration <- list(cd)
+
+  expect_warning(
+    suppressMessages(update_design(d, weights = wt2)),
+    class = "surveycore_warning_weight_change_invalidates_calibration"
+  )
+  # Snapshot verifies the CLI warning message text
+  expect_snapshot(
+    suppressMessages(update_design(d, weights = wt2))
+  )
+})

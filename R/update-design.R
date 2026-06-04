@@ -66,12 +66,16 @@
 #' # NHANES has two weight columns for different analysis types;
 #' # start with the MEC examination weight for exam participants
 #' exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-#' d <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   exam,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #'
 #' # Switch to interview weight for interview-based variables
 #' d_updated <- update_design(d, weights = wtint2yr)
-#'
 #' @seealso
 #'   [as_survey()] to create a `survey_taylor` object,
 #'   [as_survey_replicate()] to create a `survey_replicate` object
@@ -132,6 +136,23 @@ update_design <- function(
       changed_vars <- c(changed_vars, "fpc")
     }
 
+    # Warn when weights change on a calibrated design (CAL-13)
+    if (!is.null(new_weights) && !is.null(x@calibration)) {
+      cli::cli_warn(
+        c(
+          "!" = "Weight column changed on a calibrated design.",
+          "i" = paste0(
+            "{.field @calibration} was built from the previous weight column."
+          ),
+          "v" = paste0(
+            "Re-run calibration or set ",
+            "{.code design@calibration <- NULL} before analysing."
+          )
+        ),
+        class = "surveycore_warning_weight_change_invalidates_calibration"
+      )
+    }
+
     if (length(changed_vars) > 0L) {
       if (!isTRUE(validate)) {
         attr(x, ".should_validate") <- FALSE
@@ -163,6 +184,23 @@ update_design <- function(
     if (!is.null(new_repweights)) {
       new_variables$repweights <- new_repweights
       changed_vars <- c(changed_vars, "repweights")
+    }
+
+    # Warn when weights change on a calibrated design (CAL-13)
+    if (!is.null(new_weights) && !is.null(x@calibration)) {
+      cli::cli_warn(
+        c(
+          "!" = "Weight column changed on a calibrated design.",
+          "i" = paste0(
+            "{.field @calibration} was built from the previous weight column."
+          ),
+          "v" = paste0(
+            "Re-run calibration or set ",
+            "{.code design@calibration <- NULL} before analysing."
+          )
+        ),
+        class = "surveycore_warning_weight_change_invalidates_calibration"
+      )
     }
 
     if (length(changed_vars) > 0L) {

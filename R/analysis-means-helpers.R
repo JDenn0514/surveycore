@@ -78,6 +78,9 @@
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, y_col))
+  infl_mat <- .maybe_apply_calibration(infl_mat, design)
+  cal_df_reduction <- .get_calibration_df_reduction(design)
+
   v <- .svy_recvar(
     infl_mat,
     mats$clusters_mat,
@@ -88,6 +91,25 @@
 
   se <- sqrt(max(0, v[1L, 1L]))
 
+  # Calibration-adjusted degrees of freedom
+  df_design <- max(1L, .degf_taylor(data, vars))
+  df_final <- df_design - cal_df_reduction
+  if (df_final <= 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "Calibration reduces design df ({df_design}) to {df_final}."
+        ),
+        "i" = "CIs and p-values may be invalid.",
+        "v" = paste0(
+          "Reduce the number of calibration columns or use a larger design."
+        )
+      ),
+      class = "surveycore_warning_zero_df_after_calibration"
+    )
+    df_final <- max(1L, df_final)
+  }
+
   # SRS-equivalent SE for design effect computation
   y_domain <- y_all[domain > 0]
   se_srs <- if (n_d >= 2L) {
@@ -97,7 +119,14 @@
     0
   }
 
-  list(mean = ybar, se = se, se_srs = se_srs, n = n_d, n_weighted = N_d)
+  list(
+    mean = ybar,
+    se = se,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = N_d,
+    df = df_final
+  )
 }
 
 
@@ -142,9 +171,11 @@
   R <- ncol(rep_mat)
   na_dropped <- sum(is.na(rep_p))
   na_frac <- na_dropped / R
-  if (isTRUE(
-    .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
-  )) {
+  if (
+    isTRUE(
+      .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
+    )
+  ) {
     return(list(
       mean = NA_real_,
       se = NA_real_,

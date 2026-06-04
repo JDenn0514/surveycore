@@ -236,3 +236,110 @@ as_caldata <- function(base_weights, g_weights, model_matrix) {
     index = NULL
   )
 }
+
+
+# ── .apply_caldata_projection ─────────────────────────────────────────────────
+#
+# Project the linearization matrix `u` onto the orthogonal complement of the
+# calibration column space, following Deville & Sarndal (1992). This reduces
+# variance estimates to account for the information in the calibration
+# auxiliary variables.
+#
+# @param u        A numeric matrix (n × p). The linearized influence matrix.
+# @param caldata  A list of caldata elements (each created by as_caldata()).
+# @return The projected matrix `u`, same dimensions as input.
+# @noRd
+.apply_caldata_projection <- function(u, caldata) {
+  # Guard 0: empty list pass-through
+  if (length(caldata) == 0L) {
+    return(u)
+  }
+  # Guard 1: all-NA pass-through
+  if (all(is.na(u))) {
+    return(u)
+  }
+  # Guard 1b: NULL element check
+  bad_idx <- which(vapply(caldata, is.null, logical(1)))
+  if (length(bad_idx) > 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "caldata element(s) {bad_idx} are NULL.",
+        "i" = paste0(
+          "All {.field @calibration} list elements must be constructed ",
+          "via {.fn as_caldata}."
+        ),
+        "v" = "Inspect {.code design@calibration} for NULL entries."
+      ),
+      class = "surveycore_error_caldata_invalid_element"
+    )
+  }
+  # Guard 2: stage check
+  bad_stage <- vapply(caldata, function(cd) cd$stage != 0L, logical(1))
+  if (any(bad_stage)) {
+    n_bad <- sum(bad_stage)
+    cli::cli_abort(
+      c(
+        "x" = "Within-PSU calibration (stage != 0) is not supported in v1.",
+        "i" = paste0(
+          "{n_bad} caldata element{?s} {?has/have} stage != 0L."
+        ),
+        "v" = "Use population-level calibration only."
+      ),
+      class = "surveycore_error_caldata_within_stage_unsupported"
+    )
+  }
+  # Loop: project out each calibration's column space
+  for (cd in caldata) {
+    # Guard 3: dimension check
+    if (nrow(u) != length(cd$w)) {
+      cli::cli_abort(
+        c(
+          "x" = "Calibration projection dimension mismatch.",
+          "i" = paste0(
+            "Linearization vector has {nrow(u)} rows; ",
+            "caldata {.code w} has length {length(cd$w)}."
+          )
+        ),
+        class = "surveycore_error_caldata_projection_dimension_mismatch"
+      )
+    }
+    u <- qr.resid(cd$qr, u / cd$w) * cd$w
+  }
+  u
+}
+
+
+# ── .maybe_apply_calibration ──────────────────────────────────────────────────
+#
+# Apply calibration projection if the design has calibration data, otherwise
+# return the linearized matrix unchanged.
+#
+# @param linearized  A numeric matrix. The linearized influence matrix.
+# @param design      A survey_taylor or survey_replicate object.
+# @return The (possibly projected) linearized matrix.
+# @noRd
+.maybe_apply_calibration <- function(linearized, design) {
+  if (!is.null(design@calibration) && length(design@calibration) > 0L) {
+    .apply_caldata_projection(linearized, design@calibration)
+  } else {
+    linearized
+  }
+}
+
+
+# ── .get_calibration_df_reduction ─────────────────────────────────────────────
+#
+# Compute the total degrees-of-freedom reduction from calibration. This equals
+# the sum of QR ranks across all caldata elements in the design's @calibration
+# list.
+#
+# @param design  A survey_taylor or survey_replicate object.
+# @return Integer(1). 0L when no calibration is set.
+# @noRd
+.get_calibration_df_reduction <- function(design) {
+  if (!is.null(design@calibration) && length(design@calibration) > 0L) {
+    sum(vapply(design@calibration, function(cd) cd$qr$rank, integer(1)))
+  } else {
+    0L
+  }
+}
