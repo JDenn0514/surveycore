@@ -628,17 +628,12 @@ test_that("get_means() warns when calibration df reduction >= design df [R-7]", 
   )
 })
 
-test_that("calibration-adjusted SE from get_means() matches survey::rake() oracle [raking, nhanes]", {
+test_that("calibration-adjusted SE from get_means() matches survey::calibrate(calfun = 'raking') oracle [raking, nhanes]", {
   skip_if_not_installed("survey")
-  # Two-margin sequential calibration (equivalent to one raking pass) using
-  # factor variables for gender and discretised age groups.
-  # Oracle: two sequential survey::calibrate() calls with factor model matrices.
-  # surveycore: two accumulated caldata entries, one per margin calibration.
-  #
-  # Note: survey::rake() and survey::calibrate() compute different variance
-  # formulas (postStrata vs caldata GREG linearization). This test uses the
-  # calibrate()-based oracle because surveycore's GREG projection exactly
-  # matches survey::calibrate(), not survey::rake().
+  skip_if_not_installed("MASS")
+  # Architecture A: single combined model matrix for two-margin raking.
+  # Oracle: survey::calibrate(calfun = "raking") with the same combined matrix.
+  # surveycore: single as_caldata() element with g = raked_wts / base_wts.
   nhanes_sub <- nhanes_2017[
     nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
   ]
@@ -657,47 +652,56 @@ test_that("calibration-adjusted SE from get_means() matches survey::rake() oracl
     nest = TRUE
   )
 
-  # Population targets for each margin calibration
-  pop_gender <- c(
-    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
-    "riagendr_f2" = sum(nhanes_sub$wtmec2yr[nhanes_sub$riagendr_f == "2"])
-  )
-  pop_age <- c(
-    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
-    "age_group[18,40)" = sum(
-      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[18,40)"]
-    ),
-    "age_group[40,60)" = sum(
-      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[40,60)"]
-    ),
-    "age_group[60,Inf)" = sum(
-      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[60,Inf)"]
+  # Use survey::rake() to obtain converged IPF weights (same as before).
+  pop_gender <- list(
+    riagendr_f = data.frame(
+      riagendr_f = levels(nhanes_sub$riagendr_f),
+      Freq = c(
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$riagendr_f == "1"]),
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$riagendr_f == "2"])
+      )
     )
   )
-
-  # Oracle: two sequential calibrations (gender margin, then age-group margin)
-  sv_cal1 <- survey::calibrate(
-    sv_design,
-    formula = ~riagendr_f,
-    population = pop_gender
+  pop_age <- list(
+    age_group = data.frame(
+      age_group = levels(nhanes_sub$age_group),
+      Freq = c(
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[0,18)"]),
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[18,40)"]),
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[40,60)"]),
+        sum(nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[60,Inf)"])
+      )
+    )
   )
-  sv_raked <- survey::calibrate(
-    sv_cal1,
-    formula = ~age_group,
-    population = pop_age
+  sv_raked <- survey::rake(
+    sv_design,
+    sample.margins = list(~riagendr_f, ~age_group),
+    population.margins = c(pop_gender, pop_age)
+  )
+
+  # Build combined model matrix (Architecture A): single formula for both margins.
+  combined_mm <- model.matrix(~ riagendr_f + age_group, nhanes_sub)
+
+  # Population totals for the combined matrix columns.
+  combined_pop <- setNames(
+    colSums(combined_mm * nhanes_sub$wtmec2yr),
+    colnames(combined_mm)
+  )
+
+  # Oracle: survey::calibrate with calfun = "raking" and the combined formula.
+  sv_oracle <- survey::calibrate(
+    sv_design,
+    formula = ~ riagendr_f + age_group,
+    population = combined_pop,
+    calfun = "raking"
   )
   sv_se <- as.numeric(
-    survey::SE(survey::svymean(~bpxsy1, sv_raked, na.rm = TRUE))
+    survey::SE(survey::svymean(~bpxsy1, sv_oracle, na.rm = TRUE))
   )
 
-  # surveycore: two caldata entries, one per sequential calibration
-  g1 <- weights(sv_cal1) / nhanes_sub$wtmec2yr
-  mm1 <- model.matrix(~riagendr_f, nhanes_sub)
-  cd1 <- as_caldata(nhanes_sub$wtmec2yr, g1, mm1)
-  wt_after1 <- weights(sv_cal1)
-  g2 <- weights(sv_raked) / wt_after1
-  mm2 <- model.matrix(~age_group, nhanes_sub)
-  cd2 <- as_caldata(wt_after1, g2, mm2)
+  # surveycore: single caldata element with g = raked_wts / base_wts.
+  g <- weights(sv_raked) / nhanes_sub$wtmec2yr
+  cd <- as_caldata(nhanes_sub$wtmec2yr, g, combined_mm)
 
   sc_design <- as_survey(
     nhanes_sub,
@@ -710,7 +714,7 @@ test_that("calibration-adjusted SE from get_means() matches survey::rake() oracl
   sc_raked <- suppressMessages(
     suppressWarnings(update_design(sc_design, weights = wt_raked))
   )
-  sc_raked@calibration <- list(cd1, cd2)
+  sc_raked@calibration <- list(cd)
   sc_se <- get_means(sc_raked, bpxsy1, variance = "se")$se
   expect_equal(sc_se, sv_se, tolerance = 1e-8)
 })
