@@ -627,3 +627,61 @@ test_that("get_means() warns when calibration df reduction >= design df [R-7]", 
     class = "surveycore_warning_zero_df_after_calibration"
   )
 })
+
+test_that("calibration-adjusted SE from get_means() matches survey::rake() oracle [raking, nhanes]", {
+  skip_if_not_installed("survey")
+  # Two-margin raking: calibrate to gender proportions, then to linear age.
+  # Oracle: two sequential survey::calibrate() calls (= one raking pass).
+  # surveycore: two accumulated caldata entries.
+  nhanes_sub <- nhanes_2017[
+    nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
+  ]
+  sv_design <- survey::svydesign(
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_sub,
+    nest = TRUE
+  )
+  # Population targets for margin 1 (gender) and margin 2 (age)
+  pop1 <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    riagendr = sum(nhanes_sub$riagendr * nhanes_sub$wtmec2yr)
+  )
+  pop2 <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    ridageyr = sum(nhanes_sub$ridageyr * nhanes_sub$wtmec2yr)
+  )
+  # Oracle: two sequential calibrations (one pass of raking)
+  sv_cal1 <- survey::calibrate(
+    sv_design,
+    formula = ~riagendr,
+    population = pop1
+  )
+  sv_raked <- survey::calibrate(sv_cal1, formula = ~ridageyr, population = pop2)
+  sv_se <- as.numeric(
+    survey::SE(survey::svymean(~bpxsy1, sv_raked, na.rm = TRUE))
+  )
+  # surveycore: two caldata entries
+  g1 <- weights(sv_cal1) / nhanes_sub$wtmec2yr
+  mm1 <- model.matrix(~riagendr, nhanes_sub)
+  cd1 <- as_caldata(nhanes_sub$wtmec2yr, g1, mm1)
+  wt_after1 <- weights(sv_cal1)
+  g2 <- weights(sv_raked) / wt_after1
+  mm2 <- model.matrix(~ridageyr, nhanes_sub)
+  cd2 <- as_caldata(wt_after1, g2, mm2)
+  sc_design <- as_survey(
+    nhanes_sub,
+    ids = sdmvpsu,
+    weights = wtmec2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  sc_design@data$wt_raked <- weights(sv_raked)
+  sc_raked <- suppressMessages(
+    suppressWarnings(update_design(sc_design, weights = wt_raked))
+  )
+  sc_raked@calibration <- list(cd1, cd2)
+  sc_se <- get_means(sc_raked, bpxsy1, variance = "se")$se
+  expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
