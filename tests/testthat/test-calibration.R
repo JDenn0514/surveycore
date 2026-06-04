@@ -502,7 +502,7 @@ test_that("calibration-adjusted SE is applied to domain estimates [get_means wit
   sc_res_sorted <- sc_res[order(sc_res$riagendr), ]
   sc_ses <- sc_res_sorted$se
 
-  expect_equal(sc_ses, sv_ses, tolerance = 1e-6)
+  expect_equal(sc_ses, sv_ses, tolerance = 1e-8)
 })
 
 
