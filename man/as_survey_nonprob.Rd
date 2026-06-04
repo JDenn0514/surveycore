@@ -147,12 +147,11 @@ non-probability samples.
 \examples{
 # Minimal: pre-computed calibration weights from an external tool
 df <- data.frame(
-  y      = rnorm(200),
-  age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
+  y = rnorm(200),
+  age = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
   cal_wt = runif(200, 0.5, 2.5)
 )
 d <- as_survey_nonprob(df, weights = cal_wt)
-
 }
 \references{
 Valliant, R. (2020). Comparing alternatives for estimation from

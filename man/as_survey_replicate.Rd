@@ -14,7 +14,8 @@ as_survey_replicate(
   rscales = NULL,
   fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse = TRUE
+  mse = TRUE,
+  calibration = NULL
 )
 }
 \arguments{
@@ -56,6 +57,20 @@ Default \code{"fraction"}. Case-sensitive.}
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
 when computing variance). Recommended for most designs.}
+
+\item{calibration}{A list of calibration data elements, each produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default). Stored at \verb{@calibration} for
+provenance and reproducibility. \strong{Not used in variance estimation}: the
+replicate variance estimator ignores \verb{@calibration} entirely — calibration
+is already encoded in the replicate weights.
+
+\strong{Known limitations} (not validated at construction time):
+\itemize{
+\item \emph{Weight consistency}: surveycore cannot verify that \code{cd$w} encodes the
+same base weights as the design weight column.
+\item \emph{Stale calibration after \code{update_design()}}: changing the weight column
+makes \verb{@calibration} stale; clear it manually.
+}}
 }
 \value{
 A \code{survey_replicate} object.
@@ -104,19 +119,18 @@ This behaviour matches the \code{survey} package reference implementation.
 # ACS PUMS Wyoming: 80 successive-difference replicate weights
 d_acs <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
-  type       = "successive-difference"
+  type = "successive-difference"
 )
 
 # Explicit replicate columns using c()
 d_sub <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-  type       = "JK1"
+  type = "JK1"
 )
-
 }
 \references{
 Judkins, D.R. (1990) Fay's method for variance estimation.

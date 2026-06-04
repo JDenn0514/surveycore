@@ -49,6 +49,36 @@
 #' GREG-GLM variance is implemented in a future release. The calibration
 #' correction is not applied in the GLM variance path.
 #'
+#' @section Inter-package contract:
+#' \strong{GREG calibration (single auxiliary variable or multiple uncorrelated
+#' variables):} pass the model matrix from \code{model.matrix(formula, data)}
+#' directly -- one column per calibration variable. The intercept column
+#' (`(Intercept)`) is included by default from \code{model.matrix()}; it
+#' contributes one degree of freedom to the calibration adjustment.
+#'
+#' \strong{Raking (multiple calibration margins, Architecture A):} combine all
+#' margin indicator matrices into a single matrix before calling
+#' \code{as_caldata()}. Column-bind the matrices and drop one reference column
+#' per margin to avoid rank deficiency (e.g., drop the last column of each
+#' per-margin block). Pass this single combined matrix. Do \strong{not} call
+#' \code{as_caldata()} once per margin; that uses Architecture B (sequential),
+#' which requires a separate \code{as_caldata()} element per calibration pass
+#' and stores them all in the \code{@calibration} list.
+#'
+#' \strong{q_k = 1 assumption:} \code{as_caldata()} always assumes
+#' \eqn{q_k = 1} (uniform calibration weights). If your calibration uses a
+#' non-unity \eqn{q_k} (variance-function weights from \code{survey::calibrate(
+#' calfun = "linear", variance = ...)}) you must absorb those weights into
+#' \code{model_matrix} before calling \code{as_caldata()}.
+#'
+#' @section For \code{survey_replicate} designs:
+#' \code{@calibration} on a \code{survey_replicate} object is
+#' \strong{provenance-only}: it documents that the replicate weights were
+#' derived from a calibrated design, but the variance estimator does not apply
+#' any GREG projection. Calibration is already encoded in the replicate weights
+#' themselves. Do not expect \code{get_means()} SE to differ between a
+#' \code{survey_replicate} with and without \code{@calibration} set.
+#'
 #' @references
 #' Deville, J.-C., and Sarndal, C.-E. (1992). Calibration estimators in
 #' survey sampling. *Journal of the American Statistical Association*, 87,
@@ -235,6 +265,96 @@ as_caldata <- function(base_weights, g_weights, model_matrix) {
     stage = 0L,
     index = NULL
   )
+}
+
+
+# ── .validate_calibration_arg ─────────────────────────────────────────────────
+#
+# Validate the `calibration` constructor argument before the survey object is
+# built. Called from as_survey() and as_survey_replicate() immediately before
+# the S7 constructor call.
+#
+# @param calibration  The value supplied to the `calibration =` argument.
+#   Must be NULL, an empty list, or a list of valid caldata objects.
+# @param nrow_data    Integer. The number of rows in the design's data frame.
+#   Each caldata element's `w` vector must have this length.
+# @return Invisibly TRUE on success; aborts on failure.
+# @noRd
+.validate_calibration_arg <- function(calibration, nrow_data) {
+  # Case 1: NULL is always valid (no calibration)
+  if (is.null(calibration)) {
+    return(invisible(TRUE))
+  }
+
+  # Case 2: empty list is valid (cleared calibration)
+  if (is.list(calibration) && length(calibration) == 0L) {
+    return(invisible(TRUE))
+  }
+
+  # Case 3: detect bare (un-wrapped) caldata -- a list whose top-level names are
+  # exactly the four caldata keys. User passed as_caldata() result directly
+  # instead of wrapping it in list().
+  .caldata_keys <- c("qr", "w", "stage", "index")
+  if (
+    is.list(calibration) &&
+      all(.caldata_keys %in% names(calibration))
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg calibration} must be a list of {.fn as_caldata} outputs ",
+          "or {.code NULL}."
+        ),
+        "i" = paste0(
+          "Got {.cls {class(calibration)[[1L]]}}. It looks like you passed ",
+          "the result of {.fn as_caldata} directly -- wrap it in ",
+          "{.code list()}: {.code calibration = list(cd)}."
+        )
+      ),
+      class = "surveycore_error_calibration_not_list"
+    )
+  }
+
+  # Case 4: must be a plain list (data.frame is technically a list but not valid)
+  if (!is.list(calibration) || is.data.frame(calibration)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg calibration} must be a list of {.fn as_caldata} outputs ",
+          "or {.code NULL}."
+        ),
+        "i" = "Got {.cls {class(calibration)[[1L]]}}."
+      ),
+      class = "surveycore_error_calibration_not_list"
+    )
+  }
+
+  # Case 5: loop over list elements -- each must be a valid caldata structure
+  for (i in seq_along(calibration)) {
+    cd <- calibration[[i]]
+    is_valid <- (!is.null(cd) &&
+      is.list(cd) &&
+      all(c("qr", "w", "stage", "index") %in% names(cd)) &&
+      length(cd$w) == nrow_data)
+    if (!is_valid) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Element {.val {i}} of {.arg calibration} is not a valid ",
+            "caldata object."
+          ),
+          "i" = paste0(
+            "Each element must be a named list with fields {.val qr}, ",
+            "{.val w}, {.val stage}, and {.val index}, produced by ",
+            "{.fn as_caldata}."
+          )
+        ),
+        class = "surveycore_error_caldata_invalid_element"
+      )
+    }
+  }
+
+  invisible(TRUE)
 }
 
 

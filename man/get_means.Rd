@@ -104,8 +104,13 @@ with optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 get_means(d, ridageyr)
 
 # With grouped estimate
@@ -113,7 +118,6 @@ get_means(d, ridageyr, group = riagendr)
 
 # AAPOR-compliant
 get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
-
 }
 \seealso{
 Other analysis: 
