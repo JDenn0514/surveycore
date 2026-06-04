@@ -1031,6 +1031,7 @@ test_that("as_survey_replicate() with calibration = list() succeeds", {
     type = "BRR",
     calibration = list()
   )
+  test_invariants(d)
   expect_identical(d@calibration, list())
 })
 
@@ -1044,6 +1045,7 @@ test_that("as_survey_replicate() with calibration = NULL succeeds", {
     type = "BRR",
     calibration = NULL
   )
+  test_invariants(d)
   expect_null(d@calibration)
 })
 
@@ -1062,6 +1064,7 @@ test_that("as_survey_replicate() SE unchanged with/without @calibration (provena
     repweights = tidyselect::all_of(repwt_cols),
     type = "BRR"
   )
+  test_invariants(d_without)
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   d_with <- as_survey_replicate(
     df,
@@ -1083,7 +1086,27 @@ test_that("as_survey() stores calibration argument at @calibration", {
   mm <- model.matrix(~strata, df)
   cd <- as_caldata(base_w, g_w, mm)
   d <- as_survey(df, weights = wt, calibration = list(cd))
+  test_invariants(d)
   expect_identical(d@calibration, list(cd))
+})
+
+test_that("as_survey() stores list of two caldata elements at @calibration", {
+  df <- make_survey_data(n = 200L, seed = 10L)
+  cd1 <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  cd2 <- as_caldata(df$wt, rep(1.02, nrow(df)), matrix(1, nrow(df), 1))
+  d <- as_survey(df, weights = wt, calibration = list(cd1, cd2))
+  test_invariants(d)
+  expect_identical(d@calibration, list(cd1, cd2))
+})
+
+test_that("as_survey() @calibration matches whether set via arg or post-construction", {
+  df <- make_survey_data(n = 200L, seed = 11L)
+  cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  d_via_arg <- as_survey(df, weights = wt, calibration = list(cd))
+  d_post <- as_survey(df, weights = wt)
+  d_post@calibration <- list(cd)
+  test_invariants(d_via_arg)
+  expect_identical(d_via_arg@calibration, d_post@calibration)
 })
 
 test_that("as_survey_replicate() stores calibration argument at @calibration", {
@@ -1100,5 +1123,6 @@ test_that("as_survey_replicate() stores calibration argument at @calibration", {
     type = "BRR",
     calibration = list(cd)
   )
+  test_invariants(d)
   expect_identical(d@calibration, list(cd))
 })
