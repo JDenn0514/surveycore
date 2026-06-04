@@ -630,6 +630,7 @@ test_that("get_means() warns when calibration df reduction >= design df [R-7]", 
 
 test_that("calibration-adjusted SE from get_means() matches survey::calibrate(calfun = 'raking') oracle [raking, nhanes]", {
   skip_if_not_installed("survey")
+  skip_if_not_installed("MASS")
   # Architecture A: single combined model matrix for two-margin raking.
   # Oracle: survey::calibrate(calfun = "raking") with the same combined matrix.
   # surveycore: single as_caldata() element with g = raked_wts / base_wts.
