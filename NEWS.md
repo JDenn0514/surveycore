@@ -2,6 +2,10 @@
 
 ## New features
 
+* Raking oracle in `test-calibration.R` replaced with
+  `survey::calibrate(calfun = "raking")` combined-matrix approach, matching
+  the Architecture A variance formula.
+
 * `as_survey()` and `as_survey_replicate()` now validate the `calibration =`
   argument at construction time (errors CAL-15, CAL-16).
 
