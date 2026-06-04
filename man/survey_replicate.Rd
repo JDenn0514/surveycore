@@ -9,7 +9,8 @@ survey_replicate(
   metadata = survey_metadata(),
   variables = list(),
   groups = character(0),
-  call = NULL
+  call = NULL,
+  calibration = NULL
 )
 }
 \arguments{
@@ -27,6 +28,11 @@ automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration. When non-\code{NULL},
+variance estimation routines apply a Deville-Sarndal calibration
+correction.}
 }
 \value{
 A \code{survey_replicate} object.
@@ -58,17 +64,25 @@ a property.}
 \examples{
 # Prefer as_survey_replicate() over calling survey_replicate() directly
 set.seed(1)
-df <- data.frame(y = rnorm(20), wt = runif(20, 1, 3),
-                 rep1 = runif(20, 0.5, 2), rep2 = runif(20, 0.5, 2))
-d <- as_survey_replicate(df, weights = wt,
-                         repweights = starts_with("rep"), type = "BRR")
+df <- data.frame(
+  y = rnorm(20),
+  wt = runif(20, 1, 3),
+  rep1 = runif(20, 0.5, 2),
+  rep2 = runif(20, 0.5, 2)
+)
+d <- as_survey_replicate(
+  df,
+  weights = wt,
+  repweights = starts_with("rep"),
+  type = "BRR"
+)
 class(d)
-
 }
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

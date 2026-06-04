@@ -9,7 +9,8 @@ survey_taylor(
   metadata = survey_metadata(),
   variables = list(),
   groups = character(0),
-  call = NULL
+  call = NULL,
+  calibration = NULL
 )
 }
 \arguments{
@@ -26,6 +27,11 @@ strata, fpc, nest, probs_provided). Set automatically by \code{\link[=as_survey]
 standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration. When non-\code{NULL},
+variance estimation routines apply a Deville-Sarndal calibration
+correction.}
 }
 \value{
 A \code{survey_taylor} object.
@@ -52,15 +58,20 @@ rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 
 \examples{
 # Prefer as_survey() over calling survey_taylor() directly
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 class(d)
-
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

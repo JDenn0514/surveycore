@@ -171,6 +171,7 @@ Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
 }
 \seealso{
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

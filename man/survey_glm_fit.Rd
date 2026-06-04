@@ -91,6 +91,7 @@ fit@coefficients
 \code{\link[=survey_glm]{survey_glm()}} to create a \code{survey_glm_fit}.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

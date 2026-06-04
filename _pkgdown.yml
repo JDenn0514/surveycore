@@ -49,6 +49,7 @@ reference:
       - as_survey_twophase
       - as_survey_nonprob
       - update_design
+      - as_caldata
 
   - title: "Survey collections"
     desc: >

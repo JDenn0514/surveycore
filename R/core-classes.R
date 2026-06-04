@@ -72,7 +72,6 @@
 #' )
 #' m@variable_labels$age
 #' m@value_labels$sex
-#'
 #' @family metadata
 #' @export
 survey_metadata <- S7::new_class(
@@ -201,6 +200,10 @@ survey_base <- S7::new_class(
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
+#' @param calibration A list of calibration data elements produced by
+#'   [as_caldata()], or `NULL` (default) for no calibration. When non-`NULL`,
+#'   variance estimation routines apply a Deville-Sarndal calibration
+#'   correction.
 #'
 #' @section Design variables (`@variables`):
 #' \describe{
@@ -222,22 +225,29 @@ survey_base <- S7::new_class(
 #'   metadata = survey_metadata(),
 #'   variables = list(),
 #'   groups = character(0),
-#'   call = NULL
+#'   call = NULL,
+#'   calibration = NULL
 #' )
 #'
 #' @examples
 #' # Prefer as_survey() over calling survey_taylor() directly
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' class(d)
-#'
 #' @seealso [as_survey()] to create a `survey_taylor` object.
 #' @family constructors
 #' @export
 survey_taylor <- S7::new_class(
   "survey_taylor",
   parent = survey_base,
-  properties = list(),
+  properties = list(
+    calibration = S7::new_property(default = NULL)
+  ),
   validator = function(self) {
     # ── Gather all named design column names ─────────────────────────────────
     # c() with NULL args drops them automatically
@@ -367,6 +377,10 @@ survey_taylor <- S7::new_class(
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
+#' @param calibration A list of calibration data elements produced by
+#'   [as_caldata()], or `NULL` (default) for no calibration. When non-`NULL`,
+#'   variance estimation routines apply a Deville-Sarndal calibration
+#'   correction.
 #'
 #' @section Design variables (`@variables`):
 #' \describe{
@@ -392,25 +406,35 @@ survey_taylor <- S7::new_class(
 #'   metadata = survey_metadata(),
 #'   variables = list(),
 #'   groups = character(0),
-#'   call = NULL
+#'   call = NULL,
+#'   calibration = NULL
 #' )
 #'
 #' @examples
 #' # Prefer as_survey_replicate() over calling survey_replicate() directly
 #' set.seed(1)
-#' df <- data.frame(y = rnorm(20), wt = runif(20, 1, 3),
-#'                  rep1 = runif(20, 0.5, 2), rep2 = runif(20, 0.5, 2))
-#' d <- as_survey_replicate(df, weights = wt,
-#'                          repweights = starts_with("rep"), type = "BRR")
+#' df <- data.frame(
+#'   y = rnorm(20),
+#'   wt = runif(20, 1, 3),
+#'   rep1 = runif(20, 0.5, 2),
+#'   rep2 = runif(20, 0.5, 2)
+#' )
+#' d <- as_survey_replicate(
+#'   df,
+#'   weights = wt,
+#'   repweights = starts_with("rep"),
+#'   type = "BRR"
+#' )
 #' class(d)
-#'
 #' @seealso [as_survey_replicate()] to create a `survey_replicate` object.
 #' @family constructors
 #' @export
 survey_replicate <- S7::new_class(
   "survey_replicate",
   parent = survey_base,
-  properties = list(),
+  properties = list(
+    calibration = S7::new_property(default = NULL)
+  ),
   validator = function(self) {
     weights_var <- self@variables$weights
     repweights_vars <- self@variables$repweights
@@ -541,13 +565,16 @@ survey_replicate <- S7::new_class(
 #' @examples
 #' # Prefer as_survey_twophase() over calling survey_twophase() directly
 #' set.seed(1)
-#' df <- data.frame(id = 1:100, y = rnorm(100), x = rnorm(100),
-#'                  wt = runif(100, 1, 3),
-#'                  in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60)))
+#' df <- data.frame(
+#'   id = 1:100,
+#'   y = rnorm(100),
+#'   x = rnorm(100),
+#'   wt = runif(100, 1, 3),
+#'   in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60))
+#' )
 #' phase1 <- as_survey(df, weights = wt)
 #' d <- as_survey_twophase(phase1, subset = in_phase2)
 #' class(d)
-#'
 #' @seealso [as_survey_twophase()] to create a `survey_twophase` object.
 #' @family constructors
 #' @export
@@ -705,12 +732,16 @@ survey_twophase <- S7::new_class(
 #' )
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' coll <- survey_collection(surveys = list(gss = d1))
 #' length(coll)
 #' names(coll)
-#'
 #' @seealso [as_survey_collection()] to build a collection from survey
 #'   objects; [add_survey()] / [remove_survey()] to mutate an existing
 #'   collection.
@@ -878,28 +909,29 @@ survey_collection <- S7::new_class(
 #' Calibrated / Non-Probability Survey Design
 #'
 #' A survey design object for non-probability samples and post-hoc calibrated
-#' designs (e.g., raked online panels, quota samples, post-stratified samples).
-#' Create with [as_survey_nonprob()].
+#' designs (e.g., raked online panels, post-stratified samples). Create with
+#' [as_survey_nonprob()].
+#'
+#' @section Phase 2.5 skeleton:
+#' This class is a **skeleton** added in Phase 0 to reserve its place in the
+#' class hierarchy. The constructor [as_survey_nonprob()] accepts
+#' pre-computed calibration weights and stores calibration provenance from
+#' \pkg{surveywts} output.
+#'
+#' Full functionality — including bootstrap variance with re-calibration on
+#' each replicate — will be implemented in Phase 2.5 alongside the
+#' \pkg{surveywts} package. Until then, estimation uses SRS-based variance
+#' (same assumption as [as_survey()] with weights only).
 #'
 #' @section Non-probability samples:
 #' Unlike [as_survey()], [as_survey_replicate()], and [as_survey_twophase()],
-#' this class does **not** assume a probability sampling design. Estimation
-#' functions work on `survey_nonprob` objects, but the resulting standard
-#' errors depend on whether replicate weights are supplied:
-#' \describe{
-#'   \item{**SRS approximation** (`repweights = NULL`)}{Standard errors treat
-#'     the calibrated weights as fixed and assume simple random sampling within
-#'     those weights. This is a model-assisted approximation that understates
-#'     calibration uncertainty and should be interpreted with caution. See
-#'     Valliant (2020) and Elliott and Valliant (2017).}
-#'   \item{**Bootstrap variance** (`repweights` supplied)}{Each replicate weight
-#'     column represents a complete set of calibrated weights re-estimated on
-#'     one bootstrap draw, so calibration uncertainty is propagated into the
-#'     variance estimate. This is the preferred approach when feasible. See
-#'     Chrostowski et al. (2025) and Kolenikov (2014).}
-#' }
-#' See `vignette("creating-survey-objects")` for further guidance on choosing
-#' between these modes and interpreting the results.
+#' this
+#' class does **not** assume a probability sampling design. Standard errors
+#' produced from a `survey_nonprob` object rest on a model-assisted SRS
+#' assumption, which is consistent with common practice for calibrated
+#' non-probability samples (e.g., raked online panels). See
+#' `vignette("creating-survey-objects")` for guidance on when this is
+#' appropriate and what the limitations are.
 #'
 #' @param data A `data.frame` containing the survey data. Prefer
 #'   [as_survey_nonprob()] over calling this constructor directly.
@@ -922,12 +954,9 @@ survey_collection <- S7::new_class(
 #' @section Design variables (`@variables`):
 #' \describe{
 #'   \item{`weights`}{Character string naming the (calibrated) weight column.}
-#'   \item{`repweights`}{Character vector of replicate weight column names, or
-#'     `NULL` when no replicate weights are present.}
-#'   \item{`type`}{Replicate type: one of `"bootstrap"`, `"JK1"`, `"JK2"`,
-#'     `"JKn"`, `"group-jackknife"`, or `"jackknife"` (alias for `"JK1"`,
-#'     normalized before storage), or `NULL` when no replicate weights are
-#'     present.}
+#'   \item{`repweights`}{Character vector of bootstrap replicate weight column
+#'     names, or `NULL` when no replicate weights are present.}
+#'   \item{`type`}{Replicate type (`"bootstrap"`), or `NULL`.}
 #'   \item{`scale`}{Numeric scale factor for the variance formula, or `NULL`.}
 #'   \item{`rscales`}{Per-replicate scale factors, or `NULL`.}
 #'   \item{`mse`}{Logical. `TRUE` for MSE form of variance, or `NULL`.}
@@ -939,28 +968,6 @@ survey_collection <- S7::new_class(
 #' object is stored here. It contains the calibration targets, variables used,
 #' trimming cap, effective sample size before and after, and design effect.
 #' `NULL` when calibration was performed externally (e.g., via `anesrake`).
-#'
-#' @references
-#' Valliant, R. (2020). Comparing alternatives for estimation from
-#' nonprobability samples. \emph{Journal of Survey Statistics and Methodology}
-#' \bold{8}(2), 231--263. \doi{10.1093/jssam/smz003}
-#'
-#' Elliott, M.R. and Valliant, R. (2017). Inference for nonprobability
-#' samples. \emph{Statistical Science} \bold{32}(2), 249--264.
-#'
-#' Chrostowski, M.J., Guzman, C.A. and Malm, L. (2025). Variance estimation
-#' for non-probability surveys. \emph{Journal of Survey Statistics and
-#' Methodology} (forthcoming).
-#'
-#' Kolenikov, S. (2014). Calibrating variance estimation with proxy variables.
-#' \emph{Survey Methodology} \bold{40}(1), 21--38.
-#'
-#' Wu, C. (2022). Statistical inference with non-probability survey samples.
-#' \emph{Survey Methodology} \bold{48}(2), 283--311.
-#'
-#' Chen, Y., Li, P. and Wu, C. (2021). Doubly robust inference with
-#' non-probability survey samples. \emph{Journal of the American Statistical
-#' Association} \bold{115}(532), 2011--2021.
 #'
 #' @return A `survey_nonprob` object.
 #' @usage survey_nonprob(

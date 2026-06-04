@@ -2,6 +2,11 @@
 
 ## New features
 
+* `as_caldata()` constructs a calibration data element suitable for assignment
+  to `design@calibration` on `survey_taylor` and `survey_replicate` objects.
+  Both classes now carry a `@calibration` property (default `NULL`) that will
+  be consumed by the Taylor-series variance path in the upcoming PR 2.
+
 * `get_corr()` with `method = "polychoric"` or `method = "polyserial"` now
   supports `survey_nonprob` designs that supply bootstrap replicate weights
   via `as_survey_nonprob(..., repweights = ...)`. Previously these designs

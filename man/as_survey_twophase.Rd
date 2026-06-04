@@ -121,6 +121,7 @@ two-phase stratified samples: applications in epidemiology.
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
