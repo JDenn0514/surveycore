@@ -116,3 +116,32 @@
       i `model_matrix` must contain only finite numeric values. Check for `NA`, `NaN`, or `Inf` in the matrix.
       v Impute or remove non-finite entries before calling `as_caldata()`.
 
+# .apply_caldata_projection() errors when any caldata entry has stage != 0L [direct]
+
+    Code
+      surveycore:::.apply_caldata_projection(u, list(cd_bad))
+    Condition
+      Error in `surveycore:::.apply_caldata_projection()`:
+      x Within-PSU calibration (stage != 0) is not supported in v1.
+      i 1 caldata element has stage != 0L.
+      v Use population-level calibration only.
+
+# .apply_caldata_projection() errors on dimension mismatch between u and cd$w [direct]
+
+    Code
+      surveycore:::.apply_caldata_projection(u_10, list(cd_5))
+    Condition
+      Error in `surveycore:::.apply_caldata_projection()`:
+      x Calibration projection dimension mismatch.
+      i Linearization vector has 10 rows; caldata `w` has length 5.
+
+# .apply_caldata_projection() errors on NULL element in caldata list [direct, B-5]
+
+    Code
+      surveycore:::.apply_caldata_projection(u, list(cd, NULL))
+    Condition
+      Error in `surveycore:::.apply_caldata_projection()`:
+      x caldata element(s) 2 are NULL.
+      i All @calibration list elements must be constructed via `as_caldata()`.
+      v Inspect `design@calibration` for NULL entries.
+

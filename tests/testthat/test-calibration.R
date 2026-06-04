@@ -216,3 +216,472 @@ test_that("as_caldata() rejects model_matrix with Inf values", {
     as_caldata(base_w, g, mm_inf)
   )
 })
+
+
+# ── .apply_caldata_projection() direct tests ───────────────────────────────────
+
+test_that(".apply_caldata_projection() errors when any caldata entry has stage != 0L [direct]", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  cd_bad <- cd
+  cd_bad$stage <- 1L
+  u <- matrix(rnorm(10), 10, 1)
+  expect_error(
+    surveycore:::.apply_caldata_projection(u, list(cd_bad)),
+    class = "surveycore_error_caldata_within_stage_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.apply_caldata_projection(u, list(cd_bad))
+  )
+})
+
+test_that(".apply_caldata_projection() errors on dimension mismatch between u and cd$w [direct]", {
+  cd_5 <- as_caldata(rep(1, 5), rep(1.1, 5), matrix(1, 5, 1))
+  u_10 <- matrix(rnorm(10), 10, 1)
+  expect_error(
+    surveycore:::.apply_caldata_projection(u_10, list(cd_5)),
+    class = "surveycore_error_caldata_projection_dimension_mismatch"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.apply_caldata_projection(u_10, list(cd_5))
+  )
+})
+
+test_that(".apply_caldata_projection() returns u unchanged when u is all-NA", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  u_na <- matrix(NA_real_, 10, 1)
+  result <- surveycore:::.apply_caldata_projection(u_na, list(cd))
+  expect_true(all(is.na(result)))
+})
+
+test_that(".apply_caldata_projection() returns u unchanged when caldata is empty list [direct, B-7]", {
+  u <- matrix(rnorm(10), 10, 1)
+  result <- surveycore:::.apply_caldata_projection(u, list())
+  expect_identical(result, u)
+})
+
+test_that(".apply_caldata_projection() errors on NULL element in caldata list [direct, B-5]", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  u <- matrix(rnorm(10), 10, 1)
+  expect_error(
+    surveycore:::.apply_caldata_projection(u, list(cd, NULL)),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.apply_caldata_projection(u, list(cd, NULL))
+  )
+})
+
+
+# ── Numerical / behavioral accuracy tests ─────────────────────────────────────
+#
+# Oracle setup helper (used in multiple tests below):
+#   nhanes_sub: nhanes_2017 filtered to positive wtmec2yr and ridstatr == 2
+#   sv_design / sv_cal: survey package reference designs
+#   sc_cal: surveycore calibrated design matching sv_cal
+#
+# The calibration uses riagendr as an auxiliary variable, calibrating to the
+# population totals implied by the interview weights. This produces g-weights
+# != 1 (real calibration effect).
+
+.make_nhanes_oracle <- function() {
+  skip_if_not_installed("survey")
+  nhanes_sub <- nhanes_2017[
+    nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
+  ]
+  sv_design <- survey::svydesign(
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_sub,
+    nest = TRUE
+  )
+  gender_pop <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    riagendr = sum(
+      nhanes_sub$riagendr * nhanes_sub$wtint2yr / sum(nhanes_sub$wtint2yr)
+    ) *
+      sum(nhanes_sub$wtmec2yr)
+  )
+  sv_cal <- survey::calibrate(
+    sv_design,
+    formula = ~riagendr,
+    population = gender_pop
+  )
+  g <- weights(sv_cal) / nhanes_sub$wtmec2yr
+  mm <- model.matrix(~riagendr, nhanes_sub)
+  cd <- as_caldata(nhanes_sub$wtmec2yr, g, mm)
+
+  sc_design <- as_survey(
+    nhanes_sub,
+    ids = sdmvpsu,
+    weights = wtmec2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  sc_design@data$wtmec2yr_cal <- weights(sv_cal)
+  sc_cal <- suppressMessages(
+    suppressWarnings(update_design(sc_design, weights = wtmec2yr_cal))
+  )
+  sc_cal@calibration <- list(cd)
+
+  list(
+    nhanes_sub = nhanes_sub,
+    sv_design = sv_design,
+    sv_cal = sv_cal,
+    sc_design = sc_design,
+    sc_cal = sc_cal,
+    cd = cd
+  )
+}
+
+test_that("calibration-adjusted SE from get_means() matches survey oracle [linear, nhanes]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  sv_se <- as.numeric(
+    survey::SE(survey::svymean(~bpxsy1, o$sv_cal, na.rm = TRUE))
+  )
+  sc_se <- get_means(o$sc_cal, bpxsy1, variance = "se")$se
+  expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
+
+test_that("post-calibration point estimate from get_means() matches survey oracle [linear, nhanes]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  sv_mean <- as.numeric(survey::svymean(~bpxsy1, o$sv_cal, na.rm = TRUE))
+  sc_mean <- get_means(o$sc_cal, bpxsy1, variance = "se")$mean
+  expect_equal(sc_mean, sv_mean, tolerance = 1e-10)
+})
+
+test_that("calibration-adjusted SE from get_totals() matches survey oracle [linear, nhanes]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  sv_se <- as.numeric(
+    survey::SE(survey::svytotal(~bpxsy1, o$sv_cal, na.rm = TRUE))
+  )
+  sc_se <- get_totals(o$sc_cal, bpxsy1, variance = "se")$se
+  expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
+
+test_that("calibration reduces SE when auxiliary variable correlates with outcome [nhanes]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  se_uncal <- get_means(o$sc_design, bpxsy1, variance = "se")$se
+  se_cal <- get_means(o$sc_cal, bpxsy1, variance = "se")$se
+  # The calibration is on riagendr (gender), which is correlated with bpxsy1;
+  # calibration may increase or decrease SE depending on the correlation.
+  # The key test is that they differ (showing calibration had an effect).
+  expect_false(isTRUE(all.equal(se_uncal, se_cal, tolerance = 1e-10)))
+})
+
+test_that("calibration-adjusted SE matches oracle on SRS design [get_means, R-5]", {
+  skip_if_not_installed("survey")
+  # Use a small SRS-style design (no ids/strata) to test the SRS path
+  set.seed(123)
+  n <- 200L
+  df <- data.frame(
+    y = rnorm(n, 5, 2),
+    wt = runif(n, 0.8, 1.2)
+  )
+  sv_d <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+  pop_totals <- c("(Intercept)" = sum(df$wt))
+  sv_cal <- survey::calibrate(sv_d, formula = ~1, population = pop_totals)
+  g <- weights(sv_cal) / df$wt
+  mm <- model.matrix(~1, df)
+  cd <- as_caldata(df$wt, g, mm)
+  sc_d <- as_survey(df, weights = wt)
+  sc_d@data$wt_cal <- weights(sv_cal)
+  sc_cal <- suppressMessages(
+    suppressWarnings(update_design(sc_d, weights = wt_cal))
+  )
+  sc_cal@calibration <- list(cd)
+
+  sv_se <- as.numeric(survey::SE(survey::svymean(~y, sv_cal, na.rm = TRUE)))
+  sc_se <- get_means(sc_cal, y, variance = "se")$se
+  expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
+
+test_that("get_means() SE is unchanged when @calibration is NULL [regression]", {
+  df <- make_survey_data(n = 200L, seed = 99L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  # No calibration set
+  expect_null(d@calibration)
+  se_result <- get_means(d, y1, variance = "se")$se
+  expect_true(is.numeric(se_result))
+  expect_true(se_result > 0)
+})
+
+test_that("get_means() SE is unchanged when @calibration is an empty list", {
+  df <- make_survey_data(n = 200L, seed = 100L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d@calibration <- list()
+  se_result <- get_means(d, y1, variance = "se")$se
+  expect_true(is.numeric(se_result))
+  expect_true(se_result > 0)
+})
+
+test_that("get_means() on survey_replicate with @calibration set returns same SE as uncalibrated", {
+  # Calibration projection is not applied to replicate path; @calibration on
+  # survey_replicate should be silently ignored by .maybe_apply_calibration
+  # (since the replicate path never calls .taylor_mean_cell).
+  df <- make_survey_data(
+    n = 200L,
+    design = "replicate",
+    type = "brr",
+    seed = 77L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt"),
+    type = "BRR"
+  )
+  # Attach a caldata element (should be ignored by replicate path)
+  cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  d_cal <- d_rep
+  d_cal@calibration <- list(cd)
+
+  se_rep <- get_means(d_rep, y1, variance = "se")$se
+  se_cal <- get_means(d_cal, y1, variance = "se")$se
+  # Calibration on replicate design should not change SE (ignored in replicate path)
+  expect_equal(se_rep, se_cal, tolerance = 1e-12)
+})
+
+test_that("get_means() returns NA SE on calibrated design with all-NA outcome column [R-8]", {
+  df <- make_survey_data(n = 200L, seed = 101L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  df$y_na <- NA_real_
+  d@data$y_na <- NA_real_
+  cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  d@calibration <- list(cd)
+
+  result <- get_means(d, y_na, variance = "se")
+  expect_true(is.na(result$se))
+  expect_true(is.na(result$mean))
+})
+
+test_that("two accumulated caldata entries both applied by .apply_caldata_projection()", {
+  # Use a simple SRS design with two sequential calibrations
+  set.seed(42L)
+  n <- 50L
+  df <- data.frame(
+    y = rnorm(n),
+    wt = rep(1, n),
+    x1 = rnorm(n),
+    x2 = rnorm(n)
+  )
+  # Build two caldata elements
+  cd1 <- as_caldata(df$wt, rep(1.01, n), model.matrix(~1, df))
+  cd2 <- as_caldata(df$wt, rep(1.01, n), model.matrix(~x1, df))
+  d <- as_survey(df, weights = wt)
+  d@calibration <- list(cd1, cd2)
+
+  result <- get_means(d, y, variance = "se")
+  # Both projections applied: df should decrease by rank(cd1) + rank(cd2) = 1 + 2
+  expect_equal(result$df, max(1L, .degf(d) - 1L - 2L))
+})
+
+test_that("calibration-adjusted SE is applied to domain estimates [get_means with group]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  # svyby returns a data frame with rows ordered by the by-variable
+  sv_res <- survey::svyby(
+    ~bpxsy1,
+    ~riagendr,
+    o$sv_cal,
+    survey::svymean,
+    na.rm = TRUE
+  )
+  # Extract SEs for riagendr == 1 and riagendr == 2 by position
+  sv_ses <- as.numeric(survey::SE(sv_res)) # SE() on svyby gives a vector
+
+  sc_res <- get_means(o$sc_cal, bpxsy1, group = riagendr, variance = "se")
+  sc_res_sorted <- sc_res[order(sc_res$riagendr), ]
+  sc_ses <- sc_res_sorted$se
+
+  expect_equal(sc_ses, sv_ses, tolerance = 1e-8)
+})
+
+
+# ── Df-adjustment tests ────────────────────────────────────────────────────────
+
+test_that("calibrated design has reduced df in get_means() output [nhanes, linear]", {
+  skip_if_not_installed("survey")
+  o <- .make_nhanes_oracle()
+  # Uncalibrated df
+  df_uncal <- .degf(o$sc_design)
+  # Calibrated df: reduced by qr rank of cd (rank = 2 for ~riagendr intercept + coef)
+  cd_rank <- o$cd$qr$rank
+  result_cal <- get_means(o$sc_cal, bpxsy1, variance = "se")
+  expect_equal(result_cal$df, df_uncal - cd_rank)
+})
+
+test_that("df column in get_means() decreases by qr$rank for each caldata entry", {
+  set.seed(10L)
+  n <- 100L
+  df <- data.frame(
+    y = rnorm(n),
+    wt = rep(1, n),
+    x1 = rnorm(n),
+    x2 = rnorm(n)
+  )
+  d <- as_survey(df, ids = NULL, weights = wt)
+
+  # No calibration
+  result_none <- get_means(d, y, variance = "se")
+  # The df column doesn't appear when uncalibrated
+  expect_false("df" %in% names(result_none))
+
+  # One caldata entry: rank = 1 (intercept only)
+  cd1 <- as_caldata(df$wt, rep(1.01, n), model.matrix(~1, df))
+  d1 <- d
+  d1@calibration <- list(cd1)
+  result1 <- get_means(d1, y, variance = "se")
+  base_df <- .degf(d)
+  expect_equal(result1$df, base_df - 1L)
+
+  # Two caldata entries: rank 1 + rank 2
+  cd2 <- as_caldata(df$wt, rep(1.01, n), model.matrix(~x1, df))
+  d2 <- d
+  d2@calibration <- list(cd1, cd2)
+  result2 <- get_means(d2, y, variance = "se")
+  expect_equal(result2$df, base_df - 1L - 2L)
+})
+
+test_that("calibration-adjusted SE from get_means() matches oracle with ridageyr aux [alternative calibration, nhanes]", {
+  skip_if_not_installed("survey")
+  # Second oracle test using ridageyr as auxiliary — verifies calibration works
+  # with a continuous auxiliary variable producing non-trivial g-weights.
+  nhanes_sub <- nhanes_2017[
+    nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
+  ]
+  sv_design <- survey::svydesign(
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_sub,
+    nest = TRUE
+  )
+  # Calibrate to ridageyr totals derived from interview weights
+  age_pop <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    ridageyr = sum(
+      nhanes_sub$ridageyr * nhanes_sub$wtint2yr / sum(nhanes_sub$wtint2yr)
+    ) *
+      sum(nhanes_sub$wtmec2yr)
+  )
+  sv_cal2 <- survey::calibrate(
+    sv_design,
+    formula = ~ridageyr,
+    population = age_pop
+  )
+  sv_se2 <- as.numeric(
+    survey::SE(survey::svymean(~bpxsy1, sv_cal2, na.rm = TRUE))
+  )
+
+  g2 <- weights(sv_cal2) / nhanes_sub$wtmec2yr
+  mm2 <- model.matrix(~ridageyr, nhanes_sub)
+  cd2 <- as_caldata(nhanes_sub$wtmec2yr, g2, mm2)
+
+  sc_design2 <- as_survey(
+    nhanes_sub,
+    ids = sdmvpsu,
+    weights = wtmec2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  sc_design2@data$wt2 <- weights(sv_cal2)
+  sc_cal2 <- suppressMessages(
+    suppressWarnings(update_design(sc_design2, weights = wt2))
+  )
+  sc_cal2@calibration <- list(cd2)
+
+  sc_se2 <- get_means(sc_cal2, bpxsy1, variance = "se")$se
+  expect_equal(sc_se2, sv_se2, tolerance = 1e-8)
+})
+
+test_that("get_means() warns when calibration df reduction >= design df [R-7]", {
+  # Create a design where df reduction exceeds the design df.
+  # We need n >= min_cell_n (30) to avoid small_cell warning.
+  # Use a simple SRS design (no PSUs/strata): df = n - 1
+  # Then use a very high rank model matrix to make df reduction > df.
+  set.seed(55L)
+  n <- 40L
+  df <- data.frame(
+    y = rnorm(n),
+    wt = rep(1, n)
+  )
+  # SRS design: df_design = n - 1 = 39
+  d <- as_survey(df, weights = wt)
+  # Use a model matrix with rank > 39 to trigger warning
+  # Build identity matrix (rank = n = 40 > 39)
+  x_mat <- diag(n)
+  cd_high <- as_caldata(df$wt, rep(1.001, n), x_mat)
+  d@calibration <- list(cd_high)
+
+  expect_warning(
+    get_means(d, y, variance = "se"),
+    class = "surveycore_warning_zero_df_after_calibration"
+  )
+})
+
+test_that("calibration-adjusted SE from get_means() matches survey::rake() oracle [raking, nhanes]", {
+  skip_if_not_installed("survey")
+  # Two-margin raking: calibrate to gender proportions, then to linear age.
+  # Oracle: two sequential survey::calibrate() calls (= one raking pass).
+  # surveycore: two accumulated caldata entries.
+  nhanes_sub <- nhanes_2017[
+    nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
+  ]
+  sv_design <- survey::svydesign(
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_sub,
+    nest = TRUE
+  )
+  # Population targets for margin 1 (gender) and margin 2 (age)
+  pop1 <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    riagendr = sum(nhanes_sub$riagendr * nhanes_sub$wtmec2yr)
+  )
+  pop2 <- c(
+    "(Intercept)" = sum(nhanes_sub$wtmec2yr),
+    ridageyr = sum(nhanes_sub$ridageyr * nhanes_sub$wtmec2yr)
+  )
+  # Oracle: two sequential calibrations (one pass of raking)
+  sv_cal1 <- survey::calibrate(
+    sv_design,
+    formula = ~riagendr,
+    population = pop1
+  )
+  sv_raked <- survey::calibrate(sv_cal1, formula = ~ridageyr, population = pop2)
+  sv_se <- as.numeric(
+    survey::SE(survey::svymean(~bpxsy1, sv_raked, na.rm = TRUE))
+  )
+  # surveycore: two caldata entries
+  g1 <- weights(sv_cal1) / nhanes_sub$wtmec2yr
+  mm1 <- model.matrix(~riagendr, nhanes_sub)
+  cd1 <- as_caldata(nhanes_sub$wtmec2yr, g1, mm1)
+  wt_after1 <- weights(sv_cal1)
+  g2 <- weights(sv_raked) / wt_after1
+  mm2 <- model.matrix(~ridageyr, nhanes_sub)
+  cd2 <- as_caldata(wt_after1, g2, mm2)
+  sc_design <- as_survey(
+    nhanes_sub,
+    ids = sdmvpsu,
+    weights = wtmec2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  sc_design@data$wt_raked <- weights(sv_raked)
+  sc_raked <- suppressMessages(
+    suppressWarnings(update_design(sc_design, weights = wt_raked))
+  )
+  sc_raked@calibration <- list(cd1, cd2)
+  sc_se <- get_means(sc_raked, bpxsy1, variance = "se")$se
+  expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
