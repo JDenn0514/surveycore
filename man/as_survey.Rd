@@ -49,13 +49,22 @@ distinct PSUs. Set \code{nest = TRUE} when PSU IDs are not globally unique
 (e.g., NHANES, where PSU IDs restart from 1 in each stratum). Requires
 \code{strata} to be specified. Default \code{FALSE}.}
 
-\item{calibration}{A list of calibration data elements produced by
-\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration adjustment.
-When non-\code{NULL}, variance estimation routines apply a
-Deville-Sarndal calibration projection to reduce standard errors
-proportional to the correlation between auxiliary variables and the
-outcome. Equivalent to assigning \code{design@calibration <- list(cd)}
-after construction. Default \code{NULL}.}
+\item{calibration}{A list of calibration data elements, each produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration adjustment. When
+non-\code{NULL}, variance estimation applies a Deville-Sarndal GREG projection
+that reduces standard errors proportional to the correlation between the
+auxiliary variables and the outcome. Equivalent to assigning
+\code{design@calibration <- list(cd)} after construction.
+
+\strong{Known limitations} (not validated at construction time):
+\itemize{
+\item \emph{Weight consistency}: surveycore cannot verify that \code{cd$w} encodes the
+same base weights as the design weight column. Mismatched base weights
+produce incorrect variance estimates.
+\item \emph{Stale calibration after \code{update_design()}}: changing the weight column
+on a calibrated design with \code{\link[=update_design]{update_design()}} makes \verb{@calibration}
+stale. Clear \verb{@calibration} manually after any weight column change.
+}}
 }
 \value{
 A \code{survey_taylor} object.
@@ -108,10 +117,10 @@ d <- from_svydesign(d_survey)
 # Full NHANES design: stratified cluster with PSU IDs nested within strata
 d <- as_survey(
   nhanes_2017,
-  ids     = sdmvpsu,
+  ids = sdmvpsu,
   weights = wtint2yr,
-  strata  = sdmvstra,
-  nest    = TRUE
+  strata = sdmvstra,
+  nest = TRUE
 )
 
 # Stratified design without PSU cluster IDs
@@ -119,14 +128,19 @@ d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 
 # Blood pressure analysis: filter to exam participants, use MEC weight
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-                  strata = sdmvstra, nest = TRUE)
+d_bp <- as_survey(
+  exam,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # c() to combine multiple columns — sketched on a synthetic two-stage frame
 df <- data.frame(
   psu = rep(1:5, each = 4),
   ssu = 1:20,
-  wt  = runif(20, 0.5, 2)
+  wt = runif(20, 0.5, 2)
 )
 d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 
@@ -138,7 +152,6 @@ d_h <- as_survey(
   weights = starts_with("wtssn"),
   nest = TRUE
 )
-
 }
 \references{
 Sarndal, C-E., Swensson, B. and Wretman, J. (1991)

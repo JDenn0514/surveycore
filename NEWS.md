@@ -2,6 +2,9 @@
 
 ## New features
 
+* `as_survey()` and `as_survey_replicate()` now validate the `calibration =`
+  argument at construction time (errors CAL-15, CAL-16).
+
 * `as_caldata()` constructs a calibration data element suitable for assignment
   to `design@calibration` on `survey_taylor` and `survey_replicate` objects.
   Both classes now carry a `@calibration` property (default `NULL`) that will

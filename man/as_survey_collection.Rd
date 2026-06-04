@@ -64,10 +64,20 @@ a \code{surveycore_warning_collection_duplicate_name_repaired} warning is
 emitted showing the \code{original -> repaired} mapping.
 }
 \examples{
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
-d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
+d2 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 
 # Explicit names
 coll <- as_survey_collection("2020" = d1, "2024" = d2)
@@ -80,7 +90,6 @@ names(coll2)
 # Uniform grouping across members
 coll3 <- as_survey_collection(d1, d2, group = vstrat)
 coll3@groups
-
 }
 \seealso{
 \link{survey_collection}, \code{\link[=add_survey]{add_survey()}}, \code{\link[=remove_survey]{remove_survey()}}

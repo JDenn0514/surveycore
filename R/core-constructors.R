@@ -51,13 +51,20 @@
 #'   distinct PSUs. Set `nest = TRUE` when PSU IDs are not globally unique
 #'   (e.g., NHANES, where PSU IDs restart from 1 in each stratum). Requires
 #'   `strata` to be specified. Default `FALSE`.
-#' @param calibration A list of calibration data elements produced by
-#'   [as_caldata()], or `NULL` (default) for no calibration adjustment.
-#'   When non-`NULL`, variance estimation routines apply a
-#'   Deville-Sarndal calibration projection to reduce standard errors
-#'   proportional to the correlation between auxiliary variables and the
-#'   outcome. Equivalent to assigning `design@calibration <- list(cd)`
-#'   after construction. Default `NULL`.
+#' @param calibration A list of calibration data elements, each produced by
+#'   [as_caldata()], or `NULL` (default) for no calibration adjustment. When
+#'   non-`NULL`, variance estimation applies a Deville-Sarndal GREG projection
+#'   that reduces standard errors proportional to the correlation between the
+#'   auxiliary variables and the outcome. Equivalent to assigning
+#'   `design@calibration <- list(cd)` after construction.
+#'
+#'   **Known limitations** (not validated at construction time):
+#'   - *Weight consistency*: surveycore cannot verify that `cd$w` encodes the
+#'     same base weights as the design weight column. Mismatched base weights
+#'     produce incorrect variance estimates.
+#'   - *Stale calibration after `update_design()`*: changing the weight column
+#'     on a calibrated design with [update_design()] makes `@calibration`
+#'     stale. Clear `@calibration` manually after any weight column change.
 #'
 #' @return A `survey_taylor` object.
 #'
@@ -528,6 +535,10 @@ as_survey <- function(
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
 
+  # ── Validate calibration argument ──────────────────────────────────────────
+
+  .validate_calibration_arg(calibration, nrow(data))
+
   # ── Construct and return survey_taylor object ───────────────────────────────
 
   survey_taylor(
@@ -580,11 +591,17 @@ as_survey <- function(
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
-#' @param calibration A list of calibration data elements produced by
-#'   [as_caldata()], or `NULL` (default) for no calibration adjustment.
-#'   Stored at `@calibration` for reproducibility. Currently ignored by the
-#'   replicate variance estimator — variance is computed from replicate weights
-#'   only. Default `NULL`.
+#' @param calibration A list of calibration data elements, each produced by
+#'   [as_caldata()], or `NULL` (default). Stored at `@calibration` for
+#'   provenance and reproducibility. **Not used in variance estimation**: the
+#'   replicate variance estimator ignores `@calibration` entirely — calibration
+#'   is already encoded in the replicate weights.
+#'
+#'   **Known limitations** (not validated at construction time):
+#'   - *Weight consistency*: surveycore cannot verify that `cd$w` encodes the
+#'     same base weights as the design weight column.
+#'   - *Stale calibration after `update_design()`*: changing the weight column
+#'     makes `@calibration` stale; clear it manually.
 #'
 #' @return A `survey_replicate` object.
 #'
@@ -761,6 +778,10 @@ as_survey_replicate <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+
+  # ── Validate calibration argument ──────────────────────────────────────────
+
+  .validate_calibration_arg(calibration, nrow(data))
 
   # ── Construct and return survey_replicate object ────────────────────────────
 

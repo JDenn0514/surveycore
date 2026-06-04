@@ -391,3 +391,4 @@ Which test files cover which error table rows:
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
 | `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
+| `test-calibration.R` | CAL-15, CAL-16 |

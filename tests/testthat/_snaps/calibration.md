@@ -145,3 +145,150 @@
       i All @calibration list elements must be constructed via `as_caldata()`.
       v Inspect `design@calibration` for NULL entries.
 
+# .validate_calibration_arg() errors on numeric vector (CAL-15) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(c(1, 2, 3), 10L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <numeric>.
+
+# .validate_calibration_arg() errors on data frame (CAL-15) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(data.frame(x = 1:3), 10L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <data.frame>.
+
+# .validate_calibration_arg() errors on bare caldata (not wrapped) (CAL-15) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(bare_cd, 10L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <list>. It looks like you passed the result of `as_caldata()` directly -- wrap it in `list()`: `calibration = list(cd)`.
+
+# .validate_calibration_arg() errors on NULL element in list (CAL-16) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(list(cd, NULL), 10L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x Element 2 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# .validate_calibration_arg() errors on element missing index field (CAL-16) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(list(cd_bad), 10L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# .validate_calibration_arg() errors when length(cd$w) != nrow_data (CAL-16) [direct]
+
+    Code
+      surveycore:::.validate_calibration_arg(list(cd), 5L)
+    Condition
+      Error in `surveycore:::.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey() errors on bare caldata (not wrapped) (CAL-15)
+
+    Code
+      as_survey(df, weights = wt, calibration = bare_cd)
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <list>. It looks like you passed the result of `as_caldata()` directly -- wrap it in `list()`: `calibration = list(cd)`.
+
+# as_survey() errors on numeric vector calibration (CAL-15)
+
+    Code
+      as_survey(df, weights = wt, calibration = c(1, 2, 3))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <numeric>.
+
+# as_survey() errors on data frame calibration (CAL-15)
+
+    Code
+      as_survey(df, weights = wt, calibration = data.frame(x = 1:3))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <data.frame>.
+
+# as_survey() errors on element missing index field (CAL-16)
+
+    Code
+      as_survey(df, weights = wt, calibration = list(cd_bad))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey() errors on NULL element in calibration list (CAL-16)
+
+    Code
+      as_survey(df, weights = wt, calibration = list(cd, NULL))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 2 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey() errors when length(cd$w) != nrow(data) (CAL-16)
+
+    Code
+      as_survey(df, weights = wt, calibration = list(cd_wrong))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey() errors on second bad element in two-element list (CAL-16)
+
+    Code
+      as_survey(df, weights = wt, calibration = list(cd_good, cd_bad))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 2 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey_replicate() errors on non-list calibration (CAL-15)
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", calibration = c(1, 2, 3))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x `calibration` must be a list of `as_caldata()` outputs or `NULL`.
+      i Got <numeric>.
+
+# as_survey_replicate() errors on invalid caldata structure (CAL-16)
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", calibration = list(cd_bad))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+
+# as_survey_replicate() errors when length(cd$w) != nrow(data) (CAL-16)
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", calibration = list(cd_wrong))
+    Condition
+      Error in `.validate_calibration_arg()`:
+      x Element 1 of `calibration` is not a valid caldata object.
+      i Each element must be a named list with fields "qr", "w", "stage", and "index", produced by `as_caldata()`.
+

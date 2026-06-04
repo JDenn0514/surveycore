@@ -716,7 +716,365 @@ test_that("calibration-adjusted SE from get_means() matches survey::rake() oracl
 })
 
 
+# ── .validate_calibration_arg() unit tests ───────────────────────────────────
+
+test_that(".validate_calibration_arg() returns invisible TRUE for NULL [direct]", {
+  result <- withVisible(surveycore:::.validate_calibration_arg(NULL, 10L))
+  expect_true(result$value)
+  expect_false(result$visible)
+})
+
+test_that(".validate_calibration_arg() returns invisible TRUE for list() [direct]", {
+  result <- withVisible(surveycore:::.validate_calibration_arg(list(), 10L))
+  expect_true(result$value)
+  expect_false(result$visible)
+})
+
+test_that(".validate_calibration_arg() errors on numeric vector (CAL-15) [direct]", {
+  expect_error(
+    surveycore:::.validate_calibration_arg(c(1, 2, 3), 10L),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(c(1, 2, 3), 10L)
+  )
+})
+
+test_that(".validate_calibration_arg() errors on data frame (CAL-15) [direct]", {
+  expect_error(
+    surveycore:::.validate_calibration_arg(
+      data.frame(x = 1:3),
+      10L
+    ),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(data.frame(x = 1:3), 10L)
+  )
+})
+
+test_that(".validate_calibration_arg() errors on bare caldata (not wrapped) (CAL-15) [direct]", {
+  bare_cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  # bare_cd is a list with all four caldata keys at top level — detected as
+  # a bare (un-wrapped) caldata and triggers CAL-15, not CAL-16.
+  expect_error(
+    surveycore:::.validate_calibration_arg(bare_cd, 10L),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(bare_cd, 10L)
+  )
+})
+
+test_that(".validate_calibration_arg() errors on NULL element in list (CAL-16) [direct]", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  expect_error(
+    surveycore:::.validate_calibration_arg(list(cd, NULL), 10L),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(list(cd, NULL), 10L)
+  )
+})
+
+test_that(".validate_calibration_arg() errors on element missing index field (CAL-16) [direct]", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  cd_bad <- cd
+  cd_bad$index <- NULL # remove index field
+  expect_error(
+    surveycore:::.validate_calibration_arg(list(cd_bad), 10L),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(list(cd_bad), 10L)
+  )
+})
+
+test_that(".validate_calibration_arg() errors when length(cd$w) != nrow_data (CAL-16) [direct]", {
+  # cd built for 10 obs but we pass nrow_data = 5
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  expect_error(
+    surveycore:::.validate_calibration_arg(list(cd), 5L),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    surveycore:::.validate_calibration_arg(list(cd), 5L)
+  )
+})
+
+test_that(".validate_calibration_arg() passes for two valid elements [direct]", {
+  cd1 <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  cd2 <- as_caldata(rep(1, 10), rep(1.0, 10), matrix(1:10, 10, 1))
+  result <- withVisible(
+    surveycore:::.validate_calibration_arg(list(cd1, cd2), 10L)
+  )
+  expect_true(result$value)
+  expect_false(result$visible)
+})
+
+test_that(".validate_calibration_arg() tolerates extra fields on caldata element [direct]", {
+  cd <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  cd$extra_field <- "hello"
+  result <- withVisible(
+    surveycore:::.validate_calibration_arg(list(cd), 10L)
+  )
+  expect_true(result$value)
+  expect_false(result$visible)
+})
+
+
 # ── Constructor calibration parameter tests ────────────────────────────────────
+
+# as_survey() error paths ──────────────────────────────────────────────────────
+
+test_that("as_survey() errors on bare caldata (not wrapped) (CAL-15)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  bare_cd <- as_caldata(df$wt, rep(1.1, 10), matrix(1, 10, 1))
+  # bare_cd has all four caldata keys at top level — detected as bare caldata
+  expect_error(
+    as_survey(df, weights = wt, calibration = bare_cd),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = bare_cd)
+  )
+})
+
+test_that("as_survey() errors on numeric vector calibration (CAL-15)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  expect_error(
+    as_survey(df, weights = wt, calibration = c(1, 2, 3)),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = c(1, 2, 3))
+  )
+})
+
+test_that("as_survey() errors on data frame calibration (CAL-15)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  expect_error(
+    as_survey(df, weights = wt, calibration = data.frame(x = 1:3)),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = data.frame(x = 1:3))
+  )
+})
+
+test_that("as_survey() errors on element missing index field (CAL-16)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  cd <- as_caldata(df$wt, rep(1.1, 10), matrix(1, 10, 1))
+  cd_bad <- cd
+  cd_bad$index <- NULL
+  expect_error(
+    as_survey(df, weights = wt, calibration = list(cd_bad)),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = list(cd_bad))
+  )
+})
+
+test_that("as_survey() errors on NULL element in calibration list (CAL-16)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  cd <- as_caldata(df$wt, rep(1.1, 10), matrix(1, 10, 1))
+  expect_error(
+    as_survey(df, weights = wt, calibration = list(cd, NULL)),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = list(cd, NULL))
+  )
+})
+
+test_that("as_survey() errors when length(cd$w) != nrow(data) (CAL-16)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  cd_wrong <- as_caldata(rep(1, 5), rep(1.1, 5), matrix(1, 5, 1))
+  expect_error(
+    as_survey(df, weights = wt, calibration = list(cd_wrong)),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = list(cd_wrong))
+  )
+})
+
+test_that("as_survey() errors on second bad element in two-element list (CAL-16)", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  cd_good <- as_caldata(df$wt, rep(1.1, 10), matrix(1, 10, 1))
+  cd_bad <- as_caldata(rep(1, 5), rep(1.1, 5), matrix(1, 5, 1))
+  expect_error(
+    as_survey(df, weights = wt, calibration = list(cd_good, cd_bad)),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt, calibration = list(cd_good, cd_bad))
+  )
+})
+
+test_that("as_survey() with calibration = list() succeeds; @calibration is list()", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  d <- as_survey(df, weights = wt, calibration = list())
+  test_invariants(d)
+  expect_identical(d@calibration, list())
+})
+
+test_that("as_survey() with calibration = NULL succeeds; @calibration is NULL", {
+  df <- data.frame(y = 1:10, wt = rep(1, 10))
+  d <- suppressWarnings(as_survey(df, weights = wt, calibration = NULL))
+  test_invariants(d)
+  expect_null(d@calibration)
+})
+
+# as_survey_replicate() error paths ───────────────────────────────────────────
+
+test_that("as_survey_replicate() errors on non-list calibration (CAL-15)", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 3L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = c(1, 2, 3)
+    ),
+    class = "surveycore_error_calibration_not_list"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = c(1, 2, 3)
+    )
+  )
+})
+
+test_that("as_survey_replicate() errors on invalid caldata structure (CAL-16)", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 4L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  cd <- as_caldata(df$wt, rep(1.1, nrow(df)), matrix(1, nrow(df), 1))
+  cd_bad <- cd
+  cd_bad$index <- NULL
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = list(cd_bad)
+    ),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = list(cd_bad)
+    )
+  )
+})
+
+test_that("as_survey_replicate() errors when length(cd$w) != nrow(data) (CAL-16)", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 5L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  cd_wrong <- as_caldata(rep(1, 10), rep(1.1, 10), matrix(1, 10, 1))
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = list(cd_wrong)
+    ),
+    class = "surveycore_error_caldata_invalid_element"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      calibration = list(cd_wrong)
+    )
+  )
+})
+
+test_that("as_survey_replicate() with calibration = list() succeeds", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 6L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    calibration = list()
+  )
+  expect_identical(d@calibration, list())
+})
+
+test_that("as_survey_replicate() with calibration = NULL succeeds", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 7L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    calibration = NULL
+  )
+  expect_null(d@calibration)
+})
+
+test_that("as_survey_replicate() SE unchanged with/without @calibration (provenance-only)", {
+  df <- make_survey_data(
+    n = 200L,
+    design = "replicate",
+    type = "brr",
+    seed = 42L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  d_without <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+  cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
+  d_with <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    calibration = list(cd)
+  )
+
+  se_without <- get_means(d_without, y1, variance = "se")$se
+  se_with <- get_means(d_with, y1, variance = "se")$se
+  expect_equal(se_without, se_with, tolerance = 1e-12)
+})
 
 test_that("as_survey() stores calibration argument at @calibration", {
   df <- make_survey_data(n = 200L, seed = 1L)

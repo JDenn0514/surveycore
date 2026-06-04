@@ -75,32 +75,31 @@ clustered designs.
 \examples{
 # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
 df <- data.frame(
-  id        = 1:20,
-  wt        = rep(2, 20),
+  id = 1:20,
+  wt = rep(2, 20),
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
-  y         = rnorm(20)
+  y = rnorm(20)
 )
 phase1 <- as_survey(df, ids = id, weights = wt)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 
 # With Phase 2 stratification and inclusion probabilities
 df2 <- data.frame(
-  id          = 1:30,
-  wt          = rep(3, 30),
-  in_phase2   = c(rep(TRUE, 15), rep(FALSE, 15)),
-  arm         = rep(c("A", "B", "C"), 10),
+  id = 1:30,
+  wt = rep(3, 30),
+  in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
+  arm = rep(c("A", "B", "C"), 10),
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
-  y           = rnorm(30)
+  y = rnorm(30)
 )
 phase1b <- as_survey(df2, ids = id, weights = wt)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,
-  probs2  = subsamprate,
-  subset  = in_phase2,
-  method  = "full"
+  probs2 = subsamprate,
+  subset = in_phase2,
+  method = "full"
 )
-
 }
 \references{
 Sarndal, C-E., Swensson, B. and Wretman, J. (1992)

@@ -51,6 +51,40 @@ Taylor-series and replicate-weight variance estimates.
 GREG-GLM variance is implemented in a future release. The calibration
 correction is not applied in the GLM variance path.
 }
+\section{Inter-package contract}{
+
+\strong{GREG calibration (single auxiliary variable or multiple uncorrelated
+variables):} pass the model matrix from \code{model.matrix(formula, data)}
+directly -- one column per calibration variable. The intercept column
+(\code{(Intercept)}) is included by default from \code{model.matrix()}; it
+contributes one degree of freedom to the calibration adjustment.
+
+\strong{Raking (multiple calibration margins, Architecture A):} combine all
+margin indicator matrices into a single matrix before calling
+\code{as_caldata()}. Column-bind the matrices and drop one reference column
+per margin to avoid rank deficiency (e.g., drop the last column of each
+per-margin block). Pass this single combined matrix. Do \strong{not} call
+\code{as_caldata()} once per margin; that uses Architecture B (sequential),
+which requires a separate \code{as_caldata()} element per calibration pass
+and stores them all in the \code{@calibration} list.
+
+\strong{q_k = 1 assumption:} \code{as_caldata()} always assumes
+\eqn{q_k = 1} (uniform calibration weights). If your calibration uses a
+non-unity \eqn{q_k} (variance-function weights from \code{survey::calibrate(
+calfun = "linear", variance = ...)}) you must absorb those weights into
+\code{model_matrix} before calling \code{as_caldata()}.
+}
+
+\section{For \code{survey_replicate} designs}{
+
+\code{@calibration} on a \code{survey_replicate} object is
+\strong{provenance-only}: it documents that the replicate weights were
+derived from a calibrated design, but the variance estimator does not apply
+any GREG projection. Calibration is already encoded in the replicate weights
+themselves. Do not expect \code{get_means()} SE to differ between a
+\code{survey_replicate} with and without \code{@calibration} set.
+}
+
 \examples{
 # Minimal example: 3-unit design, intercept-only calibration
 base_weights <- c(2.5, 3.0, 4.0)
