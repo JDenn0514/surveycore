@@ -51,6 +51,13 @@
 #'   distinct PSUs. Set `nest = TRUE` when PSU IDs are not globally unique
 #'   (e.g., NHANES, where PSU IDs restart from 1 in each stratum). Requires
 #'   `strata` to be specified. Default `FALSE`.
+#' @param calibration A list of calibration data elements produced by
+#'   [as_caldata()], or `NULL` (default) for no calibration adjustment.
+#'   When non-`NULL`, variance estimation routines apply a
+#'   Deville-Sarndal calibration projection to reduce standard errors
+#'   proportional to the correlation between auxiliary variables and the
+#'   outcome. Equivalent to assigning `design@calibration <- list(cd)`
+#'   after construction. Default `NULL`.
 #'
 #' @return A `survey_taylor` object.
 #'
@@ -90,10 +97,10 @@
 #' # Full NHANES design: stratified cluster with PSU IDs nested within strata
 #' d <- as_survey(
 #'   nhanes_2017,
-#'   ids     = sdmvpsu,
+#'   ids = sdmvpsu,
 #'   weights = wtint2yr,
-#'   strata  = sdmvstra,
-#'   nest    = TRUE
+#'   strata = sdmvstra,
+#'   nest = TRUE
 #' )
 #'
 #' # Stratified design without PSU cluster IDs
@@ -101,14 +108,19 @@
 #'
 #' # Blood pressure analysis: filter to exam participants, use MEC weight
 #' exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-#' d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-#'                   strata = sdmvstra, nest = TRUE)
+#' d_bp <- as_survey(
+#'   exam,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #'
 #' # c() to combine multiple columns — sketched on a synthetic two-stage frame
 #' df <- data.frame(
 #'   psu = rep(1:5, each = 4),
 #'   ssu = 1:20,
-#'   wt  = runif(20, 0.5, 2)
+#'   wt = runif(20, 0.5, 2)
 #' )
 #' d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 #'
@@ -120,7 +132,6 @@
 #'   weights = starts_with("wtssn"),
 #'   nest = TRUE
 #' )
-#'
 #' @references
 #' Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
 #' \emph{Model Assisted Survey Sampling}. Springer.
@@ -145,7 +156,8 @@ as_survey <- function(
   weights = NULL,
   strata = NULL,
   fpc = NULL,
-  nest = FALSE
+  nest = FALSE,
+  calibration = NULL
 ) {
   call <- match.call()
 
@@ -522,6 +534,7 @@ as_survey <- function(
     data = data,
     metadata = metadata,
     variables = variables,
+    calibration = calibration,
     call = call
   )
 }
@@ -567,6 +580,11 @@ as_survey <- function(
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
+#' @param calibration A list of calibration data elements produced by
+#'   [as_caldata()], or `NULL` (default) for no calibration adjustment.
+#'   Stored at `@calibration` for reproducibility. Currently ignored by the
+#'   replicate variance estimator — variance is computed from replicate weights
+#'   only. Default `NULL`.
 #'
 #' @return A `survey_replicate` object.
 #'
@@ -601,19 +619,18 @@ as_survey <- function(
 #' # ACS PUMS Wyoming: 80 successive-difference replicate weights
 #' d_acs <- as_survey_replicate(
 #'   acs_pums_wy,
-#'   weights    = pwgtp,
+#'   weights = pwgtp,
 #'   repweights = pwgtp1:pwgtp80,
-#'   type       = "successive-difference"
+#'   type = "successive-difference"
 #' )
 #'
 #' # Explicit replicate columns using c()
 #' d_sub <- as_survey_replicate(
 #'   acs_pums_wy,
-#'   weights    = pwgtp,
+#'   weights = pwgtp,
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-#'   type       = "JK1"
+#'   type = "JK1"
 #' )
-#'
 #' @references
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
 #' \emph{Journal of the American Statistical Association}
@@ -650,7 +667,8 @@ as_survey_replicate <- function(
   rscales = NULL,
   fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse = TRUE
+  mse = TRUE,
+  calibration = NULL
 ) {
   call <- match.call()
   type <- match.arg(type)
@@ -750,6 +768,7 @@ as_survey_replicate <- function(
     data = data,
     metadata = metadata,
     variables = variables,
+    calibration = calibration,
     call = call
   )
 }
@@ -811,32 +830,31 @@ as_survey_replicate <- function(
 #' @examples
 #' # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
 #' df <- data.frame(
-#'   id        = 1:20,
-#'   wt        = rep(2, 20),
+#'   id = 1:20,
+#'   wt = rep(2, 20),
 #'   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
-#'   y         = rnorm(20)
+#'   y = rnorm(20)
 #' )
 #' phase1 <- as_survey(df, ids = id, weights = wt)
 #' d2 <- as_survey_twophase(phase1, subset = in_phase2)
 #'
 #' # With Phase 2 stratification and inclusion probabilities
 #' df2 <- data.frame(
-#'   id          = 1:30,
-#'   wt          = rep(3, 30),
-#'   in_phase2   = c(rep(TRUE, 15), rep(FALSE, 15)),
-#'   arm         = rep(c("A", "B", "C"), 10),
+#'   id = 1:30,
+#'   wt = rep(3, 30),
+#'   in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
+#'   arm = rep(c("A", "B", "C"), 10),
 #'   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
-#'   y           = rnorm(30)
+#'   y = rnorm(30)
 #' )
 #' phase1b <- as_survey(df2, ids = id, weights = wt)
 #' d2b <- as_survey_twophase(
 #'   phase1b,
 #'   strata2 = arm,
-#'   probs2  = subsamprate,
-#'   subset  = in_phase2,
-#'   method  = "full"
+#'   probs2 = subsamprate,
+#'   subset = in_phase2,
+#'   method = "full"
 #' )
-#'
 #' @references
 #' Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
 #' \emph{Model Assisted Survey Sampling}. Springer.
@@ -1213,12 +1231,11 @@ as_survey_twophase <- function(
 #' @examples
 #' # Minimal: pre-computed calibration weights from an external tool
 #' df <- data.frame(
-#'   y      = rnorm(200),
-#'   age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
+#'   y = rnorm(200),
+#'   age = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
 #'   cal_wt = runif(200, 0.5, 2.5)
 #' )
 #' d <- as_survey_nonprob(df, weights = cal_wt)
-#'
 #' @seealso
 #'   [as_survey()] for probability designs with Taylor variance,
 #'   [as_survey_replicate()] for replicate-weight designs
@@ -1308,18 +1325,22 @@ as_survey_nonprob <- function(
     R <- length(repweights_vars)
 
     # Step 8: normalize "jackknife" alias to "JK1"
-    if (is.character(type) &&
+    if (
+      is.character(type) &&
         length(type) == 1L &&
-        identical(type, "jackknife")) {
+        identical(type, "jackknife")
+    ) {
       type <- "JK1"
     }
 
     # Step 9: validate type — must be a single string in the supported set
     valid_types <- c("bootstrap", "JK1", "JK2", "JKn")
-    if (!is.character(type) ||
+    if (
+      !is.character(type) ||
         length(type) != 1L ||
         is.na(type) ||
-        !type %in% valid_types) {
+        !type %in% valid_types
+    ) {
       cli::cli_abort(
         c(
           "x" = paste0(
@@ -1377,14 +1398,18 @@ as_survey_nonprob <- function(
     }
 
     # Step 12: rscales default
-    if (is.null(rscales)) rscales <- rep(1, R)
+    if (is.null(rscales)) {
+      rscales <- rep(1, R)
+    }
 
     # Validate rscales (length mismatch and NA/negative)
     .validate_rscales(rscales, R)
 
     # Validate reference_sample type if provided
-    if (!is.null(reference_sample) &&
-        !S7::S7_inherits(reference_sample, survey_taylor)) {
+    if (
+      !is.null(reference_sample) &&
+        !S7::S7_inherits(reference_sample, survey_taylor)
+    ) {
       cli::cli_abort(
         c(
           "x" = paste0(
@@ -1445,23 +1470,25 @@ as_survey_nonprob <- function(
 
     # Build @variables with all 5 repweight keys populated
     variables <- list(
-      weights        = weights_var,
-      repweights     = repweights_vars,
-      type           = type,
-      scale          = scale,
-      rscales        = rscales,
-      mse            = isTRUE(mse),
+      weights = weights_var,
+      repweights = repweights_vars,
+      type = type,
+      scale = scale,
+      rscales = rscales,
+      mse = isTRUE(mse),
       probs_provided = FALSE,
-      ids            = NULL,
-      strata         = NULL,
-      fpc            = NULL,
-      nest           = FALSE,
-      visible_vars   = NULL
+      ids = NULL,
+      strata = NULL,
+      fpc = NULL,
+      nest = FALSE,
+      visible_vars = NULL
     )
   } else {
     # No repweights — validate reference_sample type if provided
-    if (!is.null(reference_sample) &&
-        !S7::S7_inherits(reference_sample, survey_taylor)) {
+    if (
+      !is.null(reference_sample) &&
+        !S7::S7_inherits(reference_sample, survey_taylor)
+    ) {
       cli::cli_abort(
         c(
           "x" = paste0(
@@ -1479,30 +1506,30 @@ as_survey_nonprob <- function(
 
     # No-repweights path — all 5 keys present as NULL
     variables <- list(
-      weights        = weights_var,
-      repweights     = NULL,
-      type           = NULL,
-      scale          = NULL,
-      rscales        = NULL,
-      mse            = NULL,
+      weights = weights_var,
+      repweights = NULL,
+      type = NULL,
+      scale = NULL,
+      rscales = NULL,
+      mse = NULL,
       probs_provided = FALSE,
-      ids            = NULL,
-      strata         = NULL,
-      fpc            = NULL,
-      nest           = FALSE,
-      visible_vars   = NULL
+      ids = NULL,
+      strata = NULL,
+      fpc = NULL,
+      nest = FALSE,
+      visible_vars = NULL
     )
   }
 
   # ── Construct and return survey_nonprob object ───────────────────────────
 
   survey_nonprob(
-    data             = data,
-    metadata         = metadata,
-    variables        = variables,
-    calibration      = calibration,
+    data = data,
+    metadata = metadata,
+    variables = variables,
+    calibration = calibration,
     reference_sample = reference_sample,
-    call             = call
+    call = call
   )
 }
 
@@ -1563,10 +1590,20 @@ as_survey_nonprob <- function(
 #' @return A `survey_collection` object containing the supplied surveys.
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
-#' d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
+#' d2 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #'
 #' # Explicit names
 #' coll <- as_survey_collection("2020" = d1, "2024" = d2)
@@ -1579,7 +1616,6 @@ as_survey_nonprob <- function(
 #' # Uniform grouping across members
 #' coll3 <- as_survey_collection(d1, d2, group = vstrat)
 #' coll3@groups
-#'
 #' @seealso [survey_collection], [add_survey()], [remove_survey()]
 #' @family collections
 #' @export

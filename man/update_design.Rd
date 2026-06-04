@@ -55,12 +55,16 @@ changed variables.
 # NHANES has two weight columns for different analysis types;
 # start with the MEC examination weight for exam participants
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-d <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  exam,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Switch to interview weight for interview-based variables
 d_updated <- update_design(d, weights = wtint2yr)
-
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object,

@@ -325,6 +325,8 @@ against the messages defined here.
 | CAL-12 | `.apply_caldata_projection()` | NULL element found in caldata list | ERROR | `surveycore_error_caldata_invalid_element` | `"x" = "caldata element(s) {bad_idx} are NULL."` |
 | CAL-13 | `update_design()` | Weight column changes on a calibrated design | WARNING | `surveycore_warning_weight_change_invalidates_calibration` | `"!" = "Weight column changed on a calibrated design."` |
 | CAL-14 | `get_means()` / variance | Calibration df reduction >= design df | WARNING | `surveycore_warning_zero_df_after_calibration` | `"!" = "Calibration reduces design df ({df_design}) to {df_final}."` |
+| CAL-15 | `as_survey()`, `as_survey_replicate()` | `calibration` argument is non-`NULL` but not a list | ERROR | `surveycore_error_calibration_not_list` | `"x" = "{.arg calibration} must be a list of {.fn as_caldata} outputs or {.code NULL}.", "i" = "Got {.cls {class(calibration)[[1L]]}}."` |
+| CAL-16 | `as_survey()`, `as_survey_replicate()` | A list element of `calibration` fails the caldata structure check | ERROR | `surveycore_error_caldata_invalid_element` | `"x" = "Element {.val {i}} of {.arg calibration} is not a valid caldata object.", "i" = "Each element must be a named list with fields {.val qr}, {.val w}, {.val stage}, and {.val index}, produced by {.fn as_caldata}."` (reuses class from CAL-12) |
 
 ---
 

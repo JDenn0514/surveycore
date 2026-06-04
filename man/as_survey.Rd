@@ -11,7 +11,8 @@ as_survey(
   weights = NULL,
   strata = NULL,
   fpc = NULL,
-  nest = FALSE
+  nest = FALSE,
+  calibration = NULL
 )
 }
 \arguments{
@@ -47,6 +48,14 @@ strata — i.e., the same ID value in two different strata refers to two
 distinct PSUs. Set \code{nest = TRUE} when PSU IDs are not globally unique
 (e.g., NHANES, where PSU IDs restart from 1 in each stratum). Requires
 \code{strata} to be specified. Default \code{FALSE}.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration adjustment.
+When non-\code{NULL}, variance estimation routines apply a
+Deville-Sarndal calibration projection to reduce standard errors
+proportional to the correlation between auxiliary variables and the
+outcome. Equivalent to assigning \code{design@calibration <- list(cd)}
+after construction. Default \code{NULL}.}
 }
 \value{
 A \code{survey_taylor} object.

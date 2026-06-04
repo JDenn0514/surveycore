@@ -14,7 +14,8 @@ as_survey_replicate(
   rscales = NULL,
   fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse = TRUE
+  mse = TRUE,
+  calibration = NULL
 )
 }
 \arguments{
@@ -56,6 +57,12 @@ Default \code{"fraction"}. Case-sensitive.}
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
 when computing variance). Recommended for most designs.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration adjustment.
+Stored at \verb{@calibration} for reproducibility. Currently ignored by the
+replicate variance estimator — variance is computed from replicate weights
+only. Default \code{NULL}.}
 }
 \value{
 A \code{survey_replicate} object.

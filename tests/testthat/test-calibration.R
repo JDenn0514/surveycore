@@ -630,12 +630,25 @@ test_that("get_means() warns when calibration df reduction >= design df [R-7]", 
 
 test_that("calibration-adjusted SE from get_means() matches survey::rake() oracle [raking, nhanes]", {
   skip_if_not_installed("survey")
-  # Two-margin raking: calibrate to gender proportions, then to linear age.
-  # Oracle: two sequential survey::calibrate() calls (= one raking pass).
-  # surveycore: two accumulated caldata entries.
+  # Two-margin sequential calibration (equivalent to one raking pass) using
+  # factor variables for gender and discretised age groups.
+  # Oracle: two sequential survey::calibrate() calls with factor model matrices.
+  # surveycore: two accumulated caldata entries, one per margin calibration.
+  #
+  # Note: survey::rake() and survey::calibrate() compute different variance
+  # formulas (postStrata vs caldata GREG linearization). This test uses the
+  # calibrate()-based oracle because surveycore's GREG projection exactly
+  # matches survey::calibrate(), not survey::rake().
   nhanes_sub <- nhanes_2017[
     nhanes_2017$wtmec2yr > 0 & nhanes_2017$ridstatr == 2,
   ]
+  nhanes_sub$age_group <- cut(
+    nhanes_sub$ridageyr,
+    breaks = c(0, 18, 40, 60, Inf),
+    right = FALSE
+  )
+  nhanes_sub$riagendr_f <- factor(nhanes_sub$riagendr)
+
   sv_design <- survey::svydesign(
     ids = ~sdmvpsu,
     weights = ~wtmec2yr,
@@ -643,33 +656,49 @@ test_that("calibration-adjusted SE from get_means() matches survey::rake() oracl
     data = nhanes_sub,
     nest = TRUE
   )
-  # Population targets for margin 1 (gender) and margin 2 (age)
-  pop1 <- c(
+
+  # Population targets for each margin calibration
+  pop_gender <- c(
     "(Intercept)" = sum(nhanes_sub$wtmec2yr),
-    riagendr = sum(nhanes_sub$riagendr * nhanes_sub$wtmec2yr)
+    "riagendr_f2" = sum(nhanes_sub$wtmec2yr[nhanes_sub$riagendr_f == "2"])
   )
-  pop2 <- c(
+  pop_age <- c(
     "(Intercept)" = sum(nhanes_sub$wtmec2yr),
-    ridageyr = sum(nhanes_sub$ridageyr * nhanes_sub$wtmec2yr)
+    "age_group[18,40)" = sum(
+      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[18,40)"]
+    ),
+    "age_group[40,60)" = sum(
+      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[40,60)"]
+    ),
+    "age_group[60,Inf)" = sum(
+      nhanes_sub$wtmec2yr[nhanes_sub$age_group == "[60,Inf)"]
+    )
   )
-  # Oracle: two sequential calibrations (one pass of raking)
+
+  # Oracle: two sequential calibrations (gender margin, then age-group margin)
   sv_cal1 <- survey::calibrate(
     sv_design,
-    formula = ~riagendr,
-    population = pop1
+    formula = ~riagendr_f,
+    population = pop_gender
   )
-  sv_raked <- survey::calibrate(sv_cal1, formula = ~ridageyr, population = pop2)
+  sv_raked <- survey::calibrate(
+    sv_cal1,
+    formula = ~age_group,
+    population = pop_age
+  )
   sv_se <- as.numeric(
     survey::SE(survey::svymean(~bpxsy1, sv_raked, na.rm = TRUE))
   )
-  # surveycore: two caldata entries
+
+  # surveycore: two caldata entries, one per sequential calibration
   g1 <- weights(sv_cal1) / nhanes_sub$wtmec2yr
-  mm1 <- model.matrix(~riagendr, nhanes_sub)
+  mm1 <- model.matrix(~riagendr_f, nhanes_sub)
   cd1 <- as_caldata(nhanes_sub$wtmec2yr, g1, mm1)
   wt_after1 <- weights(sv_cal1)
   g2 <- weights(sv_raked) / wt_after1
-  mm2 <- model.matrix(~ridageyr, nhanes_sub)
+  mm2 <- model.matrix(~age_group, nhanes_sub)
   cd2 <- as_caldata(wt_after1, g2, mm2)
+
   sc_design <- as_survey(
     nhanes_sub,
     ids = sdmvpsu,
@@ -684,4 +713,34 @@ test_that("calibration-adjusted SE from get_means() matches survey::rake() oracl
   sc_raked@calibration <- list(cd1, cd2)
   sc_se <- get_means(sc_raked, bpxsy1, variance = "se")$se
   expect_equal(sc_se, sv_se, tolerance = 1e-8)
+})
+
+
+# ── Constructor calibration parameter tests ────────────────────────────────────
+
+test_that("as_survey() stores calibration argument at @calibration", {
+  df <- make_survey_data(n = 200L, seed = 1L)
+  base_w <- df$wt
+  g_w <- rep(1, nrow(df))
+  mm <- model.matrix(~strata, df)
+  cd <- as_caldata(base_w, g_w, mm)
+  d <- as_survey(df, weights = wt, calibration = list(cd))
+  expect_identical(d@calibration, list(cd))
+})
+
+test_that("as_survey_replicate() stores calibration argument at @calibration", {
+  df <- make_survey_data(n = 200L, design = "replicate", seed = 2L)
+  base_w <- df$wt
+  g_w <- rep(1, nrow(df))
+  mm <- model.matrix(~strata, df)
+  cd <- as_caldata(base_w, g_w, mm)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR",
+    calibration = list(cd)
+  )
+  expect_identical(d@calibration, list(cd))
 })
