@@ -18,6 +18,9 @@ test_that("as_caldata() returns a list with the correct four names", {
   result <- as_caldata(base_w, g, mm)
   expect_type(result, "list")
   expect_identical(sort(names(result)), sort(c("qr", "w", "stage", "index")))
+  expect_s3_class(result$qr, "qr")
+  expect_equal(result$stage, 0L)
+  expect_null(result$index)
 })
 
 test_that("as_caldata() w slot equals g_weights * sqrt(base_weights)", {
@@ -58,6 +61,7 @@ test_that("as_caldata() works with n = 1 (single observation, R-6)", {
   gw1 <- 1.1
   mm1 <- matrix(1, 1, 1)
   result <- as_caldata(bw1, gw1, mm1)
+  expect_s3_class(result$qr, "qr")
   expect_equal(result$w, gw1 * sqrt(bw1))
   expect_identical(result$stage, 0L)
   expect_null(result$index)
