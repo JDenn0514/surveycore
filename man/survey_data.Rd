@@ -24,6 +24,7 @@ head(survey_data(d))
 }
 \seealso{
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

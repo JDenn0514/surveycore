@@ -64,6 +64,7 @@ class(d)
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} to create a \code{survey_twophase} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

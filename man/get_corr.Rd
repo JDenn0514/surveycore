@@ -206,16 +206,25 @@ replicates are admitted mechanically via the design's stored \code{scale}
 behaviour for this non-linear pseudo-likelihood estimator.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 get_corr(d, x = c(ridageyr, bpxsy1))
 
 # Wide correlation matrix
 get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 
 # AAPOR-compliant
-get_corr(d, x = c(ridageyr, bpxsy1),
-         variance = c("ci", "moe"), n_weighted = TRUE)
+get_corr(
+  d,
+  x = c(ridageyr, bpxsy1),
+  variance = c("ci", "moe"),
+  n_weighted = TRUE
+)
 
 # Polychoric correlation between two ordinal variables
 df <- data.frame(
@@ -226,7 +235,6 @@ df <- data.frame(
 )
 d_ord <- as_survey(df, weights = wt)
 get_corr(d_ord, x = c(o1, o2), method = "polychoric")
-
 }
 \references{
 Cox, N. R. (1974). Estimation of the correlation between a continuous

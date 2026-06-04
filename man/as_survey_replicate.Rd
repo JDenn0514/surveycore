@@ -134,6 +134,7 @@ Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_twophase}()},

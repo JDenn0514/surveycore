@@ -9,7 +9,8 @@ survey_replicate(
   metadata = survey_metadata(),
   variables = list(),
   groups = character(0),
-  call = NULL
+  call = NULL,
+  calibration = NULL
 )
 }
 \arguments{
@@ -27,6 +28,11 @@ automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration. When non-\code{NULL},
+variance estimation routines apply a Deville-Sarndal calibration
+correction.}
 }
 \value{
 A \code{survey_replicate} object.
@@ -69,6 +75,7 @@ class(d)
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},

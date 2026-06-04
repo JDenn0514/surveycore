@@ -293,36 +293,38 @@ against the messages defined here.
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|----------|-----------|-------|-------------|----------------------|
-| NB-1 | `as_survey_nonprob()` | `type` is not one of `"bootstrap"`, `"JK1"`, `"JK2"`, `"JKn"`, `"jackknife"` | ERROR | `surveycore_error_type_unsupported_for_nonprob` | `"x" = "{.arg type} must be one of {.val \"bootstrap\"}, {.val \"JK1\"}, {.val \"JK2\"}, {.val \"JKn\"}, or {.val \"jackknife\"} for {.cls survey_nonprob} objects.", "i" = "Got {.val {type}}."` |
+| NB-1 | `as_survey_nonprob()` | `type` is not `"bootstrap"` | ERROR | `surveycore_error_type_invalid` | `"x" = "{.arg type} must be {.val \"bootstrap\"} for {.cls survey_nonprob} objects.", "i" = "Jackknife and other replicate types are not supported for non-probability samples. Got {.val {type}}."` |
 | NB-2 | `get_means()`, `get_totals()`, `get_freqs()`, `get_corr()`, `get_ratios()`, `get_quantiles()`, `get_diffs()` | `survey_nonprob` object has no bootstrap replicate weights | WARN | `surveycore_warning_nonprob_srs_fallback` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "Run {.fn surveywts::create_bootstrap_weights} on this design for correct SEs."` |
-| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Replicate variance requires >= 2 replicates. Got {.val 1}."` |
+| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Bootstrap variance requires >= 2 replicates. Got {.val 1}."` |
 | NB-4 | `get_means()` etc. (analysis functions, bootstrap path) | >5% of replicates have NA in a domain cell for `survey_nonprob` | WARN | `surveycore_warning_domain_replicates_na` | `"!" = "{na_dropped} of {R} bootstrap replicates have no observations in this domain ({pct}% of R).", "i" = "Standard errors for this cell understate variance when more than 5% of replicates are dropped.", "i" = "Consider collapsing small domain categories or increasing R."` |
 | NB-5 | `as_survey_nonprob()` | `reference_sample` is not a `survey_taylor` | ERROR | `surveycore_error_reference_sample_nonprob` | `"x" = "{.arg reference_sample} must be a {.cls survey_taylor} object.", "i" = "Got {.cls {class(reference_sample)[[1L]]}}.", "v" = "Pass the {.cls survey_taylor} object used to estimate propensity scores."` |
-| NB-6 | `as_survey_nonprob()` | `calibration$bootstrap` is `FALSE` when `type = "bootstrap"` and `repweights` is present | ERROR | `surveycore_error_provenance_not_bootstrap` | `"x" = "{.arg calibration} indicates the replicate weights were not produced by re-running the adjustment procedure.", "i" = "{.code calibration$bootstrap} must be {.val TRUE} for bootstrap variance to be valid.", "v" = "Use {.fn surveywts::create_bootstrap_weights} to produce repweights with re-calibration."` |
+| NB-6 | `as_survey_nonprob()` | `calibration$bootstrap` is `FALSE` when `repweights` is present | ERROR | `surveycore_error_provenance_not_bootstrap` | `"x" = "{.arg calibration} indicates the replicate weights were not produced by re-running the adjustment procedure.", "i" = "{.code calibration$bootstrap} must be {.val TRUE} for bootstrap variance to be valid.", "v" = "Use {.fn surveywts::create_bootstrap_weights} to produce repweights with re-calibration."` |
 | NB-7 | `as_survey_nonprob()` | `calibration$R` mismatches count of resolved `repweights` columns | ERROR | `surveycore_error_provenance_R_mismatch` | `"x" = "Provenance records {.val {calibration$R}} replicates but {.val {length(repweights_vars)}} replicate weight columns were found.", "i" = "The {.arg calibration} object and {.arg repweights} columns must come from the same {.fn surveywts::create_bootstrap_weights} call."` |
 | NB-8 | `as_survey_nonprob()`, `as_survey_replicate()` | `rscales` has NA, negative, or non-numeric values | ERROR | `surveycore_error_rscales_na` | `"x" = "{.arg rscales} must be a non-negative numeric vector with no NA values.", "i" = "Got {sum(is.na(rscales))} NA value(s) and/or {sum(rscales[!is.na(rscales)] < 0, na.rm = TRUE)} negative value(s).", "v" = "Supply a numeric vector of length {n_rep} with all values >= 0."` |
-| NB-9 | `as_survey_nonprob()` | `type` is `"JK2"` or `"JKn"` and `rscales` is `NULL` | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.arg type} = {.val {type}} requires explicit {.arg rscales}.", "i" = "Stratified jackknife rscales are stratum-specific: {.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently use {.code rep(1, R)}, which is statistically incorrect for JK2/JKn.", "v" = "Compute {.code rscales} as {.code (n_h - 1) / n_h} where {.code n_h} is the number of units in stratum {.code h}, indexed to replicate order."` |
-| NB-10 | `as_survey_nonprob()` | `scale` argument is explicitly negative (< 0) | ERROR | `surveycore_error_scale_negative` | `"x" = "{.arg scale} must be >= 0. Got {.val {scale}}.", "i" = "A negative scale factor produces negative variance, which is nonsensical.", "v" = "Use {.code scale = 0} to exclude a replicate's contribution, or omit {.arg scale} to use the type-specific default."` |
 
 **Updated trigger descriptions for existing rows:**
 
 - Row 16 (`surveycore_error_repweights_empty`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
 - Row 17 (`surveycore_error_rscales_length`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
 
-### nonprob-jackknife rows (PR nonprob-jackknife)
+### calibrate-survey-taylor rows (PR 1 — class, constructor, as_caldata)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|----------|-----------|-------|-------------|----------------------|
-| NB-1 | `as_survey_nonprob()` | `type` is not in `c("bootstrap", "JK1", "JK2", "JKn", "jackknife")` | ERROR | `surveycore_error_type_unsupported_for_nonprob` | `"x" = "{.arg type} must be one of {.val \"bootstrap\"}, {.val \"JK1\"}, {.val \"JK2\"}, {.val \"JKn\"}, or {.val \"jackknife\"} for {.cls survey_nonprob} objects.", "i" = "Got {.val {type}}."` |
-| NB-3 | `as_survey_nonprob()` | `repweights` resolves to exactly 1 column | ERROR | `surveycore_error_repweights_single` | `"x" = "{.arg repweights} must name at least 2 replicate weight columns.", "i" = "Replicate variance requires >= 2 replicates. Got {.val 1}."` |
-| NB-9 | `as_survey_nonprob()` | `type` is `"JK2"` or `"JKn"` and `rscales = NULL` | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.arg type} = {.val {type}} requires explicit {.arg rscales}.", "i" = "Stratified jackknife rscales are stratum-specific: {.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently use {.code rep(1, R)}, which is statistically incorrect for JK2/JKn.", "v" = "Compute {.code rscales} as {.code (n_h - 1) / n_h} where {.code n_h} is the number of units in stratum {.code h}, indexed to replicate order."` |
-| NB-10 | `as_survey_nonprob()` | user-supplied `scale` is `< 0` (zero is accepted) | ERROR | `surveycore_error_scale_negative` | `"x" = "{.arg scale} must be >= 0. Got {.val {scale}}.", "i" = "A negative scale factor produces negative variance, which is nonsensical.", "v" = "Use {.code scale = 0} to exclude a replicate's contribution, or omit {.arg scale} to use the type-specific default."` |
-
-**Notes on row updates:**
-
-- Row NB-1 is superseded by the new `surveycore_error_type_unsupported_for_nonprob` class. The old class `surveycore_error_type_invalid` (original NB-1) is retired for this condition.
-- Row NB-3 message text updated: `"Bootstrap variance requires"` → `"Replicate variance requires"`. Error class unchanged.
-- Row NB-6 trigger description updated: check only applies when `type = "bootstrap"` (not for jackknife types).
+| CAL-1 | `as_caldata()` | `base_weights` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_weights_missing` | `"x" = "base_weights contains non-finite values ({sum(!is.finite(base_weights))} value(s))."` |
+| CAL-2 | `as_caldata()` | `base_weights` contains non-positive values (or length 0) | ERROR | `surveycore_error_caldata_weights_nonpositive` | `"x" = "base_weights must be strictly positive."` |
+| CAL-3 | `as_caldata()` | `g_weights` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_gweights_missing` | `"x" = "g_weights contains non-finite values."` |
+| CAL-4 | `as_caldata()` | `g_weights` contains non-positive values (or length 0) | ERROR | `surveycore_error_caldata_gweights_nonpositive` | `"x" = "g_weights must be strictly positive."` |
+| CAL-5 | `as_caldata()` | `length(g_weights) != length(base_weights)` | ERROR | `surveycore_error_caldata_gweights_length_mismatch` | `"x" = "g_weights length ({length(g_weights)}) must equal base_weights length ({length(base_weights)})."` |
+| CAL-6 | `as_caldata()` | `g_weights * sqrt(base_weights)` < `.Machine$double.eps^0.5` | ERROR | `surveycore_error_caldata_weights_near_zero` | `"x" = "g_weights * sqrt(base_weights) contains near-zero values ({sum(w_prod < .Machine$double.eps^0.5)} value(s))."` |
+| CAL-7 | `as_caldata()` | `nrow(model_matrix) != length(base_weights)` | ERROR | `surveycore_error_caldata_dimension_mismatch` | `"x" = "model_matrix has {nrow(model_matrix)} rows but base_weights has length {length(base_weights)}."` |
+| CAL-8 | `as_caldata()` | `model_matrix` has 0 columns | ERROR | `surveycore_error_caldata_empty_model_matrix` | `"x" = "model_matrix must have at least 1 column."` |
+| CAL-9 | `as_caldata()` | `model_matrix` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_model_matrix_invalid` | `"x" = "model_matrix contains non-finite values."` |
+| CAL-10 | `.apply_caldata_projection()` | Any caldata element has `stage != 0L` | ERROR | `surveycore_error_caldata_within_stage_unsupported` | `"x" = "Within-PSU calibration (stage != 0) is not supported in v1."` |
+| CAL-11 | `.apply_caldata_projection()` | `nrow(u) != length(cd$w)` | ERROR | `surveycore_error_caldata_projection_dimension_mismatch` | `"x" = "Calibration projection dimension mismatch."` |
+| CAL-12 | `.apply_caldata_projection()` | NULL element found in caldata list | ERROR | `surveycore_error_caldata_invalid_element` | `"x" = "caldata element(s) {bad_idx} are NULL."` |
+| CAL-13 | `update_design()` | Weight column changes on a calibrated design | WARNING | `surveycore_warning_weight_change_invalidates_calibration` | `"!" = "Weight column changed on a calibrated design."` |
+| CAL-14 | `get_means()` / variance | Calibration df reduction >= design df | WARNING | `surveycore_warning_zero_df_after_calibration` | `"!" = "Calibration reduces design df ({df_design}) to {df_final}."` |
 
 ---
 
@@ -387,5 +389,3 @@ Which test files cover which error table rows:
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
 | `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
-| `test-constructors.R` | NB-1 (`surveycore_error_type_unsupported_for_nonprob`), NB-3 (updated text), NB-9 (`surveycore_error_stratified_jk_rscales_unset`), NB-10 (`surveycore_error_scale_negative`) |
-| `test-utils.R` | `.compute_nonprob_scale()` helper |

@@ -147,6 +147,7 @@ John Wiley and Sons.
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
