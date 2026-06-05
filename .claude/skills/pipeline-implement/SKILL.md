@@ -1,6 +1,12 @@
 ---
 name: pipeline-implement
-description: Orchestrates implementation-plan drafting for surveycore after SPEC_READY. Dispatches planner to draft PR map with per-PR acceptance criteria, runs plan review via 5 Explore lenses, resolves findings, advances to PLAN_READY. Produces the checklist that pipeline-ship executes.
+description: >
+  Orchestrates implementation plan drafting for surveycore after SPEC_READY.
+  Dispatches planner to draft a PR map with per-PR acceptance criteria, runs a
+  5-lens plan review, resolves findings, and advances to PLAN_READY. Produces
+  implementation-plan.md that pipeline-ship executes PR-by-PR. Use when the
+  user says "draft the plan", "implementation plan", "build the plan", or after
+  pipeline-spec has reached SPEC_READY.
 ---
 
 # Skill: pipeline-implement
@@ -25,6 +31,25 @@ After `pipeline-spec` has advanced the request to SPEC_READY. Before any code is
 | 2 | Plan review (5 lenses) | `plan-review.md` | REVIEWED |
 | 3 | Resolve findings | updated plan | DRAFT (loop) |
 | 4 | Freeze & advance | status → PLAN_READY | PLAN_READY |
+
+## Stage Routing (user prompt)
+
+Determine which stage the user wants from context (current `status.md` state,
+what they just said, what artifacts exist). If unclear:
+
+```
+question: "Which stage of the implementation workflow?"
+header: "Stage"
+options:
+  - label: "Stage 1 — Draft the plan"
+    description: "Write the PR map from the finalized spec."
+  - label: "Stage 2 — Adversarial review"
+    description: "Full batch pass over the plan; saves issues to plan-review.md."
+  - label: "Stage 3 — Resolve issues"
+    description: "Work through issues and log decisions."
+```
+
+Then jump directly to that stage.
 
 ## Stage 1 — Draft
 
@@ -57,9 +82,17 @@ Loop until plan-review.md verdict=PASS.
 
 On PASS:
 
-1. Copy `implementation-plan.md` from workspace into `plans/implementation-plan-{id}.md`
+1. Copy `implementation-plan.md` from workspace into `plans/implementation-plan-{slug}.md` (slug only — no date prefix)
 2. Append `PLAN_READY` to `status.md`
 3. Return to user with summary (PR count, estimated shipping sequence) and next step (`pipeline-ship`)
+
+## Common Shortcuts to Resist
+
+| Rationalization | Why it fails |
+|-----------------|-------------|
+| "The plan is clear, Stage 2 would just nitpick" | Stage 2 catches missing error paths, wrong task order, and DRY violations. |
+| "We can figure out edge cases during implementation" | Edge cases discovered in implementation are plan bugs. Resolve here. |
+| "Some issues are minor, I'll resolve them later" | `decisions.md` must be populated before handing off. |
 
 ## Signal handling
 

@@ -1,6 +1,14 @@
 ---
 name: pipeline-spec
-description: Orchestrates spec drafting and review for surveycore. Runs Deep Comprehension (if methods-heavy), dispatches planner to draft spec.md + test-spec.md, runs methods review and spec review via Explore subagents, resolves findings, advances to SPEC_READY. Produces artifacts builder and tester can consume independently.
+description: >
+  Orchestrates spec drafting and review for surveycore — from NEW request through
+  SPEC_READY. Runs Deep Comprehension (if methods-heavy or paper attached),
+  dispatches planner to draft spec.md + test-spec.md, runs methods review and
+  spec review via Explore subagents, resolves findings, advances to SPEC_READY.
+  Produces artifacts builder and tester can consume independently. Use when the
+  user says "start planning", "pipeline it", "new feature", "draft spec", or
+  mentions a new exported function, a statistical method, or attaches a journal
+  article.
 ---
 
 # Skill: pipeline-spec
@@ -38,18 +46,86 @@ If preconditions fail, refuse and report to user. See `pipeline-shared/reference
 
 Loops: stages 2 and 3 may loop with their resolve counterparts until verdicts PASS.
 
+## Stage Routing (user prompt)
+
+Determine which stage the user wants from context (current `status.md` state,
+what they just said, what artifacts exist). If unclear:
+
+```
+question: "Which stage of the spec workflow?"
+header: "Stage"
+options:
+  - label: "Stage 1 — Draft the spec"
+    description: "Write spec.md and test-spec.md from the request (includes deep comprehension if methods-heavy)."
+  - label: "Stage 2 — Methods review"
+    description: "Run 5 methodology lenses over an existing draft (methods-heavy specs only)."
+  - label: "Stage 3 — Spec review"
+    description: "Run 6 spec lenses over an existing draft."
+  - label: "Stage 3r — Resolve findings"
+    description: "Work through open issues from methods or spec review and log decisions."
+```
+
+Then jump directly to that stage.
+
 ## Stage 0 — Deep Comprehension
 
-Determine if methods-heavy per planner.md §Step 0 criteria. If yes:
+Determine if methods-heavy per `planner.md §Step 0 criteria`. Also check:
+- Did the user attach papers, PDFs, or markdown files of journal articles?
+- If yes, how many?
+
+**If NOT methods-heavy AND no papers attached:** auto-transition to COMPREHENDED
+with status line `(no methods — auto)`.
+
+### Single paper (exactly 1 attached) or methods-heavy with no paper
 
 1. Dispatch `planner` agent with prompt:
-   > Run Step 0 (Deep Comprehension Protocol) only. Write `comprehension.md` per artifact-schemas.md. Do not draft spec.md or test-spec.md yet.
+   > Run Step 0 (Deep Comprehension Protocol) only. Write `comprehension.md` per
+   > artifact-schemas.md. If a paper was attached, read it in full before writing.
+   > Do not draft spec.md or test-spec.md yet.
+   > Paper/attachment: {path or content}
 
-2. On return, read `comprehension.md`. If coherent (problem restated, formulas present, ≥1 gotcha, ≥1 reference mapping, assumptions listed) → append `COMPREHENDED` to `status.md`.
+2. On return, verify `comprehension.md` is coherent: problem restated, formulas
+   present with symbol bindings, ≥1 gotcha, ≥1 reference mapping, assumptions
+   listed. If not coherent, re-dispatch with specific feedback.
 
-3. If not coherent, re-dispatch with specific feedback.
+3. Append `COMPREHENDED` to `status.md`.
 
-If NOT methods-heavy, auto-transition to COMPREHENDED with status line `(no methods — auto)`.
+### Multiple papers (2+ attached)
+
+Reading multiple full papers inside one agent context crowds out the reasoning
+needed for synthesis. Use parallel extraction first:
+
+1. **Dispatch one `extractor` agent per paper in the same turn** (parallel).
+   Each extractor reads one paper in full and writes `extraction-{slug}.md` to
+   the workspace run directory. Derive the slug from the sanitized filename or a
+   short paper title.
+
+2. **Verify all extractions** before continuing. Each `extraction-{slug}.md`
+   must contain: ≥1 formula with symbol bindings, ≥1 gotcha, ≥1 reference
+   claim. Re-dispatch any extractor that produced a thin or incomplete result.
+
+3. **Dispatch `planner` agent for synthesis**:
+   > Run Step 0 (Deep Comprehension Protocol) — synthesis pass only. All papers
+   > have been pre-read by extraction agents. Their outputs are at:
+   > {list all extraction-{slug}.md paths}
+   >
+   > Read all extractions. Synthesize into `comprehension.md` per
+   > artifact-schemas.md. Pay particular attention to:
+   > - Conflicts between sources (different formulas for the same quantity)
+   > - Assumptions that only one paper makes explicit
+   > - Gotchas that appear in multiple sources (these are especially important)
+   > - Citations: aggregate all Citation sections from the extractions into a
+   >   single Citations section in `comprehension.md`. Preserve any [NOT FOUND]
+   >   flags exactly — do not fill them in by inference.
+   >
+   > Do not re-read the original papers — work only from the extractions.
+
+4. On return, verify `comprehension.md` using the same coherence checks as the
+   single-paper path. Any cross-paper conflicts the planner could not resolve
+   should be written to `decisions.md` as HOLDs for the user to resolve before
+   Stage 1.
+
+5. Append `COMPREHENDED` to `status.md`.
 
 ## Stage 1 — Draft
 
@@ -115,7 +191,7 @@ Loop until spec-review.md verdict=PASS.
 
 On PASS:
 
-1. Copy `spec.md`, `test-spec.md`, `comprehension.md` (if exists) from workspace into `plans/` with `-{id}` suffix
+1. Copy `spec.md`, `test-spec.md`, `comprehension.md` (if exists) from workspace into `plans/` with `-{slug}` suffix (slug only — no date prefix)
 2. Append `SPEC_READY` to `status.md`
 3. Return to user with summary and next step (`pipeline-implement`)
 
@@ -132,3 +208,4 @@ On PASS:
 - `skills/pipeline-shared/references/artifact-schemas.md`
 - `skills/pipeline-shared/references/workspace-layout.md`
 - `.claude/agents/planner.md`
+- `.claude/agents/extractor.md`
