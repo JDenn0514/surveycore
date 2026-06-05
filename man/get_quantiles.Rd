@@ -117,8 +117,13 @@ Supports optional grouping, domain estimation, and all five survey design
 classes.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # IQR + median (default)
 get_quantiles(d, ridageyr)
@@ -128,7 +133,6 @@ get_quantiles(d, ridageyr, probs = 0.5, variance = c("ci", "se"))
 
 # Grouped quartiles
 get_quantiles(d, ridageyr, group = riagendr)
-
 }
 \references{
 Woodruff, R. S. (1952). Confidence intervals for medians and other

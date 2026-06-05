@@ -100,9 +100,12 @@ Supports optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
 \examples{
-d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
-                   repweights = pwgtp1:pwgtp80,
-                   type = "successive-difference")
+d <- as_survey_replicate(
+  acs_pums_wy,
+  weights = pwgtp,
+  repweights = pwgtp1:pwgtp80,
+  type = "successive-difference"
+)
 
 # Population size
 get_totals(d)
@@ -112,7 +115,6 @@ get_totals(d, agep)
 
 # Grouped
 get_totals(d, agep, group = sex)
-
 }
 \seealso{
 Other analysis: 

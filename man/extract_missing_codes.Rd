@@ -36,12 +36,16 @@ Returns missing value sentinel codes for one or more variables in a survey
 design object or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_missing_codes(d, ridageyr = c("Not applicable" = 999L))
 extract_missing_codes(d, ridageyr)
 extract_missing_codes(d, ridageyr, format = "data_frame")
-
 }
 \seealso{
 \code{\link[=set_missing_codes]{set_missing_codes()}} to set missing value codes

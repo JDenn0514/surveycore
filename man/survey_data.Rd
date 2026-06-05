@@ -18,8 +18,13 @@ This is a thin accessor for \code{x@data} that provides a stable public name
 independent of the S7 property structure.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 head(survey_data(d))
 }
 \concept{accessors}

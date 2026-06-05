@@ -35,11 +35,15 @@ Returns value labels for one or more variables in a survey design object
 or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 extract_val_labels(d, riagendr)
 extract_val_labels(d, riagendr, format = "data_frame")
-
 }
 \seealso{
 \code{\link[=set_val_labels]{set_val_labels()}} to set value labels

@@ -334,8 +334,20 @@
 #' @return A new `survey_collection` with the appended surveys.
 #'
 #' @examples
-#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
-#' d2 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
+#' d2 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' coll <- as_survey_collection(a = d1)
 #' coll2 <- add_survey(coll, b = d2)
 #' names(coll2)
@@ -449,8 +461,20 @@ add_survey <- function(.collection, ...) {
 #'   by `remove_survey()` itself.
 #'
 #' @examples
-#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
-#' d2 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
+#' d2 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' coll <- as_survey_collection(a = d1, b = d2)
 #' coll2 <- remove_survey(coll, "a")
 #' names(coll2)
@@ -531,7 +555,13 @@ remove_survey <- function(x, name) {
 #' @return The modified `survey_collection`, invisibly.
 #'
 #' @examples
-#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' coll <- as_survey_collection(a = d1)
 #' coll <- set_collection_id(coll, "wave")
 #' coll@id
@@ -582,7 +612,13 @@ set_collection_id <- function(x, id) {
 #' @return The modified `survey_collection`, invisibly.
 #'
 #' @examples
-#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' coll <- as_survey_collection(a = d1)
 #' coll <- set_collection_if_missing_var(coll, "skip")
 #' coll@if_missing_var

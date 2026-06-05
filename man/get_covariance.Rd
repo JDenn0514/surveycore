@@ -162,7 +162,6 @@ get_covariance(d, x = c(ridageyr, bpxsy1), diagonal = TRUE)
 
 # With grouping
 get_covariance(d, x = c(ridageyr, bpxsy1), group = riagendr)
-
 }
 \references{
 Mood, A. M., Graybill, F. A., & Boes, D. C. (1974).

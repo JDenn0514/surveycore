@@ -194,7 +194,8 @@ scale (e.g., log-odds for logistic regression).
 # Create survey design with treatment groups
 set.seed(42)
 df <- data.frame(
-  id = 1:200, wt = runif(200, 0.5, 2),
+  id = 1:200,
+  wt = runif(200, 0.5, 2),
   dv = rnorm(200, 50, 10),
   arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
 )
@@ -205,7 +206,6 @@ get_diffs(d, dv, arm)
 
 # With percentage change and p-value adjustment
 get_diffs(d, dv, arm, show_pct_change = TRUE, pval_adj = "BH")
-
 }
 \seealso{
 Other analysis: 

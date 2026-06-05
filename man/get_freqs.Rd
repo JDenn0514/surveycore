@@ -136,8 +136,13 @@ not physically removed for domain/group subsets.
 \examples{
 # NHANES exam weights are 0 for non-examined participants; filter first
 nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
-d <- as_survey(nhanes_sub, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_sub,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Single variable
 get_freqs(d, riagendr)
@@ -150,7 +155,6 @@ get_freqs(d, riagendr, group = sdmvstra)
 
 # Multi-variable (stacked)
 get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
-
 }
 \seealso{
 Other analysis: 

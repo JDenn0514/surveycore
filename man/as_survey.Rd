@@ -146,7 +146,7 @@ d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 
 # Tidy-select helpers like starts_with() also work
 d_h <- as_survey(
-  gss,
+  gss_2024,
   ids = vpsu,
   strata = vstrat,
   weights = starts_with("wtssn"),

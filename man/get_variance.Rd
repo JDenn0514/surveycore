@@ -147,7 +147,6 @@ get_variance(d, c(ridageyr, bpxsy1))
 
 # With grouping
 get_variance(d, ridageyr, group = riagendr)
-
 }
 \seealso{
 Other analysis: 

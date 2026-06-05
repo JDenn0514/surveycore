@@ -84,7 +84,7 @@
 #'   and variable metadata.
 #'
 #' @examples
-#' gss_sub <- gss[gss$sex %in% c(1L, 2L) & !is.na(gss$age), ]
+#' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
 #' gss_sub$sex <- factor(
 #'   gss_sub$sex,
 #'   levels = c(1, 2),
@@ -641,7 +641,7 @@ print.survey_t_test <- function(x, ...) {
 #'   adjustment method and other metadata.
 #'
 #' @examples
-#' gss_sub <- gss[gss$sex %in% c(1L, 2L) & !is.na(gss$age), ]
+#' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
 #' gss_sub$sex <- factor(
 #'   gss_sub$sex,
 #'   levels = c(1, 2),

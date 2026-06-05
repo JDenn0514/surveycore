@@ -94,12 +94,20 @@ with k levels and applies multiple-comparison p-value adjustment.
 Delegates pair-level computations to \code{\link[=get_t_test]{get_t_test()}}.
 }
 \examples{
-gss_sub <- gss[gss$sex \%in\% c(1L, 2L) & !is.na(gss$age), ]
-gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-gss_design <- as_survey(gss_sub,
-  ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+gss_sub <- gss_2024[gss_2024$sex \%in\% c(1L, 2L) & !is.na(gss_2024$age), ]
+gss_sub$sex <- factor(
+  gss_sub$sex,
+  levels = c(1, 2),
+  labels = c("Male", "Female")
+)
+gss_design <- as_survey(
+  gss_sub,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 get_pairwise(gss_design, age, by = sex)
-
 }
 \seealso{
 Other analysis: 

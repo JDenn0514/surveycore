@@ -64,7 +64,7 @@
 #'   is renamed to `df.residual`.
 #'
 #' @examples
-#' gss_cc <- gss[stats::complete.cases(gss[, c("age", "sex", "educ")]), ]
+#' gss_cc <- gss_2024[stats::complete.cases(gss_2024[, c("age", "sex", "educ")]), ]
 #' gss_design <- as_survey(
 #'   gss_cc,
 #'   ids = vpsu,

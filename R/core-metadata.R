@@ -563,7 +563,13 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_question_preface(d, happy = "Taken all together...")
 #' extract_question_preface(d, happy)
 #' @seealso [set_question_preface()] to set a question preface
@@ -630,7 +636,13 @@ extract_question_preface <- function(
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_var_note(d, age = "Top-coded at 89")
 #' extract_var_note(d, age)
 #' @seealso [set_var_note()] to set a note
@@ -1235,7 +1247,13 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_question_preface(d, happy = "Taken all together...")
 #' extract_question_preface(d, happy)
 #' @seealso [extract_question_preface()] to retrieve a preface
@@ -1301,7 +1319,13 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_var_note(d, age = "Top-coded at 89")
 #' extract_var_note(d, age)
 #' @seealso [extract_var_note()] to retrieve a note
@@ -1367,7 +1391,13 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_universe(d, age = "All respondents 18+")
 #' extract_metadata(d, age)
 #' @seealso [extract_universe()] to retrieve universe descriptions
@@ -1435,7 +1465,13 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' d <- set_missing_codes(d, happy = c(Refused = -1L, DK = -2L))
 #' extract_missing_codes(d, happy)
 #' @seealso [extract_missing_codes()] to retrieve missing value codes

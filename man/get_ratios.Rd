@@ -130,7 +130,6 @@ get_ratios(d, pray, attendper, group = gender)
 
 # AAPOR-compliant output
 get_ratios(d, pray, attendper, variance = c("ci", "moe"), n_weighted = TRUE)
-
 }
 \seealso{
 Other analysis: 

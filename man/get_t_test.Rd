@@ -101,12 +101,20 @@ surveycore's own variance machinery (\code{survey_glm()}). Supports all four
 survey design classes and optional subgroup analysis via \code{group}.
 }
 \examples{
-gss_sub <- gss[gss$sex \%in\% c(1L, 2L) & !is.na(gss$age), ]
-gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-gss_design <- as_survey(gss_sub,
-  ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+gss_sub <- gss_2024[gss_2024$sex \%in\% c(1L, 2L) & !is.na(gss_2024$age), ]
+gss_sub$sex <- factor(
+  gss_sub$sex,
+  levels = c(1, 2),
+  labels = c("Male", "Female")
+)
+gss_design <- as_survey(
+  gss_sub,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 get_t_test(gss_design, age, by = sex)
-
 }
 \seealso{
 Other analysis: 

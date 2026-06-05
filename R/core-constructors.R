@@ -133,7 +133,7 @@
 #'
 #' # Tidy-select helpers like starts_with() also work
 #' d_h <- as_survey(
-#'   gss,
+#'   gss_2024,
 #'   ids = vpsu,
 #'   strata = vstrat,
 #'   weights = starts_with("wtssn"),
@@ -1682,14 +1682,14 @@ as_survey_nonprob <- function(
 #'
 #' @examples
 #' d1 <- as_survey(
-#'   gss,
+#'   gss_2024,
 #'   ids = vpsu,
 #'   weights = wtssps,
 #'   strata = vstrat,
 #'   nest = TRUE
 #' )
 #' d2 <- as_survey(
-#'   gss,
+#'   gss_2024,
 #'   ids = vpsu,
 #'   weights = wtssps,
 #'   strata = vstrat,

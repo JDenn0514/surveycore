@@ -31,13 +31,15 @@ added.
 \examples{
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(
-    ids = ~sdmvpsu, weights = ~wtmec2yr, strata = ~sdmvstra,
-    data = nhanes_2017, nest = TRUE
+    ids = ~sdmvpsu,
+    weights = ~wtmec2yr,
+    strata = ~sdmvstra,
+    data = nhanes_2017,
+    nest = TRUE
   )
   d <- from_svydesign(sv)
   survey_data(d)
 }
-
 }
 \seealso{
 \code{\link[=as_svydesign]{as_svydesign()}} to convert in the other direction

@@ -95,9 +95,8 @@ attr(df$discrim_c, "label") <-
   "Please rate discrimination - Jews"
 
 df <- infer_question_prefaces(df, verbose = FALSE)
-attr(df$discrim_a, "label")            # "Evangelical Christians"
+attr(df$discrim_a, "label") # "Evangelical Christians"
 attr(df$discrim_a, "question_preface") # "Please rate discrimination"
-
 }
 \seealso{
 Other metadata: 

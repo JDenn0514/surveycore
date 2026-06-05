@@ -146,6 +146,18 @@ reference:
       - survey_metadata
       - survey_collection
 
+  - title: "Print methods"
+    desc: >
+      S3 print methods for surveycore result objects. Called automatically when
+      objects are printed; documented here for reference.
+    contents:
+      - print.survey_result
+      - print.survey_diffs
+      - print.survey_t_test
+      - print.survey_pairwise
+      - print.survey_anova
+      - anova.survey_glm_fit
+
   - title: "Utilities"
     desc: Internal helpers exported for use in extension packages.
     contents:

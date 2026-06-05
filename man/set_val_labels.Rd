@@ -40,10 +40,14 @@ Sets value labels for one or more variables using one of three conventions.
 }\if{html}{\out{</div>}}
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
-
 }
 \seealso{
 \code{\link[=extract_val_labels]{extract_val_labels()}} to retrieve value labels

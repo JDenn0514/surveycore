@@ -65,14 +65,14 @@ emitted showing the \code{original -> repaired} mapping.
 }
 \examples{
 d1 <- as_survey(
-  gss,
+  gss_2024,
   ids = vpsu,
   weights = wtssps,
   strata = vstrat,
   nest = TRUE
 )
 d2 <- as_survey(
-  gss,
+  gss_2024,
   ids = vpsu,
   weights = wtssps,
   strata = vstrat,

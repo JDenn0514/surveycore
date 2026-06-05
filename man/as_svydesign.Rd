@@ -24,13 +24,17 @@ Metadata (variable labels, value labels) is NOT carried over — the \code{surve
 package has no metadata system.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- as_svydesign(d)
   survey::svymean(~ridageyr, sv, na.rm = TRUE)
 }
-
 }
 \seealso{
 \code{\link[=from_svydesign]{from_svydesign()}} to convert back from a \code{survey} design

@@ -30,12 +30,16 @@ survey design object or data frame. Useful for auditing metadata state or
 building codebooks.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_universe(d, ridageyr = "All participants 0+")
 extract_metadata(d, ridageyr)
 extract_metadata(d, fill = "include")
-
 }
 \seealso{
 Other metadata: 

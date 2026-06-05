@@ -22,13 +22,19 @@ with \code{srvyr::as_survey()}. Requires both \code{survey} and \code{srvyr}.
 Metadata (variable labels, value labels) is NOT carried over.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
-if (requireNamespace("survey", quietly = TRUE) &&
-    requireNamespace("srvyr",  quietly = TRUE)) {
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+if (
+  requireNamespace("survey", quietly = TRUE) &&
+    requireNamespace("srvyr", quietly = TRUE)
+) {
   ts <- as_tbl_svy(d)
 }
-
 }
 \seealso{
 \code{\link[=from_tbl_svy]{from_tbl_svy()}} to convert back from a \code{tbl_svy} object

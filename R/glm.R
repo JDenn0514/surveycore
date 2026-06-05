@@ -143,7 +143,13 @@ NULL
 #'
 #' @examples
 #' # survey_glm_fit objects are created by survey_glm(), not directly
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' fit <- survey_glm(d, age ~ sex)
 #' fit@coefficients
 #' @seealso [survey_glm()] to create a `survey_glm_fit`.
@@ -721,7 +727,13 @@ survey_glm_fit <- S7::new_class(
 #' `stats::glm()` IRLS fit (O(*n* · *p*² · *I*) per IRLS iteration).
 #'
 #' @examples
-#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #'
 #' # Linear model: respondent age predicted by education and sex
 #' fit <- survey_glm(d, age ~ educ + sex)

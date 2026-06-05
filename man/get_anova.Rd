@@ -86,10 +86,13 @@ Supports the four method x test combinations shared with
 and design-based Wald with F or Chisq reference.
 }
 \examples{
-gss_cc <- gss[stats::complete.cases(gss[, c("age", "sex", "educ")]), ]
+gss_cc <- gss_2024[stats::complete.cases(gss_2024[, c("age", "sex", "educ")]), ]
 gss_design <- as_survey(
-  gss_cc, ids = vpsu, weights = wtssps,
-  strata = vstrat, nest = TRUE
+  gss_cc,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
 )
 
 # Single fit
@@ -103,7 +106,6 @@ get_anova(gss_design, age ~ sex + educ)
 fit_s <- survey_glm(gss_design, age ~ sex)
 fit_b <- survey_glm(gss_design, age ~ sex + educ)
 get_anova(list(fit_s, fit_b))
-
 }
 \seealso{
 Other analysis: 
