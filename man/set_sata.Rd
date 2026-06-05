@@ -46,7 +46,7 @@ design |> set_sata(variable = sata_vars)
 Setting \code{sata = FALSE} unmarks the listed variables.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 d <- set_sata(d, riagendr, ridageyr)
 d <- set_sata(d, riagendr, sata = FALSE)

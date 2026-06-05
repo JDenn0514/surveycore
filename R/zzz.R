@@ -5,11 +5,12 @@
 # correctly when the package is loaded from an installed library.
 # See: vignette("packages", package = "S7")
 #
-# Phase 2 additions: register all 20 S3 methods + getCall for survey_glm_fit.
+# Phase 2 additions: register all 22 S3 methods + getCall for survey_glm_fit.
 # CRITICAL: S7 namespaced class names ("surveycore::survey_glm_fit") must be
 # used as the class string — not bare "survey_glm_fit". The class() of an S7
 # object returns namespaced names; bare names never match.
-# See: MEMORY.md §Phase 0.5 / surveytidy dplyr Dispatch Pattern
+# See: vignette("packages", package = "S7") for background on .onLoad() method
+# registration for S7 objects.
 
 # nocov start
 .onLoad <- function(libname, pkgname) {

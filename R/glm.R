@@ -8,7 +8,7 @@
 #   .glm_score()         — per-observation score matrix (n × p)
 #   .glm_sandwich_vcov() — bread · meat · bread sandwich assembler
 #   .taylor_var_score_matrix()  — Taylor variance of p-dimensional score total
-#   .glm_vcov_dispatch() — variance dispatch for all 5 design classes
+#   .glm_vcov_dispatch() — variance dispatch for all 4 design classes
 #   .glm_degrees_of_freedom()   — design-based residual df (with clamping)
 #
 # Spec: plans/spec-phase-2.md §II–IV, §VIII
@@ -114,12 +114,14 @@ NULL
 #' @param residuals Working residuals from IRLS, length `n`.
 #' @param weights Survey weights used in fitting, length `n`.
 #' @param design The original [survey_base] survey design object.
-#' @param degf Raw design degrees of freedom (positive scalar): number of
-#'   PSUs minus number of strata for Taylor designs, number of replicates
-#'   minus one for replicate designs, and `n - 1` for SRS designs. This is
-#'   *not* the residual degrees of freedom used for t-statistics and confidence
-#'   intervals; those are computed as `degf - (p - 1)` where `p` is the number
-#'   of model coefficients.
+#' @param degf Raw design degrees of freedom (positive scalar). For
+#'   `survey_taylor` designs (including SRS, which is absorbed into Taylor):
+#'   number of PSUs minus number of strata. For `survey_replicate` designs:
+#'   number of replicates minus one. For `survey_twophase`: Phase 1 PSUs
+#'   minus Phase 1 strata. For `survey_nonprob`: `Inf` (no design-based
+#'   df). This is *not* the residual degrees of freedom used for
+#'   t-statistics and confidence intervals; those are computed as
+#'   `degf - (p - 1)` where `p` is the number of model coefficients.
 #' @param family GLM family object (e.g. `gaussian()`, `binomial()`).
 #' @param formula Model formula.
 #' @param null_deviance Null model deviance.
@@ -141,11 +143,9 @@ NULL
 #'
 #' @examples
 #' # survey_glm_fit objects are created by survey_glm(), not directly
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' fit <- survey_glm(d, age ~ sex)
 #' fit@coefficients
-#'
 #' @seealso [survey_glm()] to create a `survey_glm_fit`.
 #' @family constructors
 #' @export
@@ -297,14 +297,13 @@ survey_glm_fit <- S7::new_class(
 # Assemble the sandwich variance-covariance matrix:
 #   Var(β̂) = bread · meat · bread
 #
-# bread = summary(fit)$cov.unscaled = (X'W̃X)⁻¹ from the IRLS information
+# bread = summary(fit)$cov.unscaled = (X'W~X)^(-1) from the IRLS information
 # matrix — correct for ALL GLM families (uses working weights, not just
-# survey weights). For Gaussian/identity, reduces to (X'WX)⁻¹.
+# survey weights). For Gaussian/identity, reduces to (X'WX)^(-1).
 #
-# @param meat_vcov p × p meat matrix = Var_design(Σ u_i).
-# @param bread     p × p matrix from summary(fit)$cov.unscaled.
-# @return p × p variance-covariance matrix.
-#' @noRd
+# @param meat_vcov p x p meat matrix = Var_design(sum u_i).
+# @param bread     p x p matrix from summary(fit)$cov.unscaled.
+# @return p x p variance-covariance matrix.
 .glm_sandwich_vcov <- function(meat_vcov, bread) {
   bread %*% meat_vcov %*% bread
 }
@@ -610,7 +609,10 @@ survey_glm_fit <- S7::new_class(
 #'
 #' Fits a GLM to survey data, producing design-based coefficient estimates
 #' and variance-covariance matrix via the Binder (1983) sandwich estimator.
-#' All five surveycore design classes are supported.
+#' All four concrete surveycore design classes are supported
+#' (`survey_taylor`, `survey_replicate`, `survey_twophase`, `survey_nonprob`).
+#' `survey_collection` inputs are rejected; call `survey_glm()` on each
+#' element individually.
 #'
 #' @param design A survey design object created by [as_survey()],
 #'   [as_survey_replicate()], [as_survey_twophase()], or
@@ -719,8 +721,7 @@ survey_glm_fit <- S7::new_class(
 #' `stats::glm()` IRLS fit (O(*n* · *p*² · *I*) per IRLS iteration).
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat,
-#'                nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #'
 #' # Linear model: respondent age predicted by education and sex
 #' fit <- survey_glm(d, age ~ educ + sex)
@@ -731,7 +732,6 @@ survey_glm_fit <- S7::new_class(
 #' results <- lapply(c("age", "educ"), function(v) {
 #'   survey_glm(d, response = v, predictors = "sex")
 #' })
-#'
 #' @references
 #' Binder, D.A. (1983) On the variances of asymptotically normal estimators
 #' from complex surveys. \emph{International Statistical Review}

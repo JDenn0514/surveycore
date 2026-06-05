@@ -57,10 +57,15 @@
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @return A `data.frame` with all variables, including design variables.
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' head(survey_data(d))
-#' @family constructors
+#' @family accessors
 #' @export
 survey_data <- function(x) {
   if (!S7::S7_inherits(x, survey_base)) {
@@ -86,10 +91,14 @@ survey_data <- function(x) {
 #' @return A `list` of history entries, or `list()` if no history is present.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' survey_weighting_history(d)   # list() — no weighting history
-#'
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
+#' survey_weighting_history(d) # list() — no weighting history
 #' @family metadata
 #' @export
 survey_weighting_history <- function(x) {
@@ -115,7 +124,6 @@ survey_weighting_history <- function(x) {
 #' packages (`surveytidy`, `surveywts`) can reference it without
 #' using `:::`.
 #'
-#' @keywords internal
 #' @export
 SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
@@ -239,7 +247,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 #'
 #' @param design A survey design object (`survey_base` subclass).
 #' @return A character vector of column names.
-#' @keywords internal
 #' @export
 .get_design_vars_flat <- function(design) {
   if (S7::S7_inherits(design, survey_taylor)) {
@@ -536,10 +543,5 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 #     JKn:       1
 #' @noRd
 .compute_nonprob_scale <- function(type, R) {
-  switch(type,
-    bootstrap = 1 / R,
-    JK1       = (R - 1) / R,
-    JK2       = 1,
-    JKn       = 1
-  )
+  switch(type, bootstrap = 1 / R, JK1 = (R - 1) / R, JK2 = 1, JKn = 1)
 }

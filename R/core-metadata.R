@@ -11,10 +11,16 @@
 #
 # Functions defined here:
 #   Extractors (getters):
-#     extract_var_label()        — single variable label
-#     extract_val_labels()       — single variable value labels
-#     extract_question_preface() — single variable question preface
-#     extract_var_note()         — single variable analyst note
+#     extract_var_label()        — variable labels
+#     extract_val_labels()       — value labels
+#     extract_question_preface() — question preface text
+#     extract_var_note()         — analyst notes
+#     extract_universe()         — universe (eligibility) descriptions
+#     extract_missing_codes()    — missing value sentinel codes
+#     extract_metadata()         — all metadata fields for one or more variables
+#     extract_sata()             — SATA (select-all-that-apply) flags
+#     extract_higher_is()        — direction-of-improvement attributes
+#     extract_reverse_coded()    — reverse-coded flags
 #   Unified setters (conventions 1/2/3, survey objects + data frames):
 #     set_var_label()            — set label for one or more variables
 #     set_val_labels()           — set value labels for one or more variables
@@ -23,6 +29,9 @@
 #     set_var_note()             — set note for one or more variables
 #     set_universe()             — set universe description for one or more vars
 #     set_missing_codes()        — set missing codes for one or more variables
+#     set_sata()                 — set SATA flag for one or more variables
+#     set_higher_is()            — set direction-of-improvement attribute
+#     set_reverse_coded()        — set reverse-coded flag
 #   Internal helpers:
 #     .validate_val_labels()     — check label completeness
 #     .extract_haven_metadata()  — read haven-style attrs from a data.frame
@@ -417,13 +426,17 @@
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' extract_var_label(d)
 #' extract_var_label(d, riagendr, ridageyr)
 #' extract_var_label(d, format = "data_frame")
 #' extract_var_label(d, fill = NA_character_)
-#'
 #' @seealso [set_var_label()] to set a variable label
 #' @family metadata
 #' @export
@@ -475,7 +488,8 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no labels:
 #'   `NULL` (default) omits them; `NA_character_` includes them as `NULL`
-#'   entries in `"list"` format.
+#'   entries in `"list"` format. In `"data_frame"` format, variables with
+#'   no labels are always excluded regardless of `fill`.
 #'
 #' @return
 #' - `"list"` (default): named list of named vectors. Empty: `list()`.
@@ -483,11 +497,15 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
 #'   `value` (codes coerced to character). Empty: zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' extract_val_labels(d, riagendr)
 #' extract_val_labels(d, riagendr, format = "data_frame")
-#'
 #' @seealso [set_val_labels()] to set value labels
 #' @family metadata
 #' @export
@@ -545,11 +563,9 @@ extract_val_labels <- function(x, ..., format = "list", fill = NULL) {
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_question_preface(d, happy = "Taken all together...")
 #' extract_question_preface(d, happy)
-#'
 #' @seealso [set_question_preface()] to set a question preface
 #' @family metadata
 #' @export
@@ -614,11 +630,9 @@ extract_question_preface <- function(
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_var_note(d, age = "Top-coded at 89")
 #' extract_var_note(d, age)
-#'
 #' @seealso [set_var_note()] to set a note
 #' @family metadata
 #' @export
@@ -678,12 +692,16 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_universe(d, ridageyr = "All participants 0+")
 #' extract_universe(d)
 #' extract_universe(d, ridageyr, format = "data_frame")
-#'
 #' @seealso [set_universe()] to set a universe description
 #' @family metadata
 #' @export
@@ -735,7 +753,8 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
 #'   `"data_frame"`. `"named_vector"` is not valid for this function.
 #' @param fill Scalar or `NULL`. How to handle variables with no codes:
 #'   `NULL` (default) omits them; `NA_character_` includes them as `NULL`
-#'   entries in `"list"` format.
+#'   entries in `"list"` format. In `"data_frame"` format, variables with
+#'   no codes are always excluded regardless of `fill`.
 #'
 #' @return
 #' - `"list"` (default): named list of atomic vectors. Empty: `list()`.
@@ -744,12 +763,16 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
 #'   zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_missing_codes(d, ridageyr = c("Not applicable" = 999L))
 #' extract_missing_codes(d, ridageyr)
 #' extract_missing_codes(d, ridageyr, format = "data_frame")
-#'
 #' @seealso [set_missing_codes()] to set missing value codes
 #' @family metadata
 #' @export
@@ -841,12 +864,16 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
 #'   `universe`, `missing_codes`, `transformations`.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_universe(d, ridageyr = "All participants 0+")
 #' extract_metadata(d, ridageyr)
 #' extract_metadata(d, fill = "include")
-#'
 #' @family metadata
 #' @export
 extract_metadata <- function(x, ..., fill = NULL) {
@@ -989,14 +1016,21 @@ extract_metadata <- function(x, ..., fill = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_var_label(d, indfmpir = "Income-to-poverty ratio")
 #'
 #' # Multiple variables
-#' d <- set_var_label(d, bpxsy1 = "Systolic BP (1st reading)",
-#'                       bpxdi1 = "Diastolic BP (1st reading)")
-#'
+#' d <- set_var_label(
+#'   d,
+#'   bpxsy1 = "Systolic BP (1st reading)",
+#'   bpxdi1 = "Diastolic BP (1st reading)"
+#' )
 #' @seealso [extract_var_label()] to retrieve a label
 #' @family metadata
 #' @export
@@ -1102,10 +1136,14 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
-#'
 #' @seealso [extract_val_labels()] to retrieve value labels
 #' @family metadata
 #' @export
@@ -1197,11 +1235,9 @@ set_val_labels <- function(x, ..., variable = NULL, labels = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_question_preface(d, happy = "Taken all together...")
 #' extract_question_preface(d, happy)
-#'
 #' @seealso [extract_question_preface()] to retrieve a preface
 #' @family metadata
 #' @export
@@ -1265,11 +1301,9 @@ set_question_preface <- function(x, ..., variable = NULL, preface = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_var_note(d, age = "Top-coded at 89")
 #' extract_var_note(d, age)
-#'
 #' @seealso [extract_var_note()] to retrieve a note
 #' @family metadata
 #' @export
@@ -1333,11 +1367,10 @@ set_var_note <- function(x, ..., variable = NULL, note = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_universe(d, age = "All respondents 18+")
 #' extract_metadata(d, age)
-#'
+#' @seealso [extract_universe()] to retrieve universe descriptions
 #' @family metadata
 #' @export
 set_universe <- function(x, ..., variable = NULL, universe = NULL) {
@@ -1402,11 +1435,10 @@ set_universe <- function(x, ..., variable = NULL, universe = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' d <- set_missing_codes(d, happy = c(Refused = -1L, DK = -2L))
 #' extract_missing_codes(d, happy)
-#'
+#' @seealso [extract_missing_codes()] to retrieve missing value codes
 #' @family metadata
 #' @export
 set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
@@ -1518,11 +1550,15 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_sata(d, riagendr, ridageyr)
 #' d <- set_sata(d, riagendr, sata = FALSE)
-#'
 #' @seealso [extract_sata()] to retrieve SATA flags
 #' @family metadata
 #' @export
@@ -1626,12 +1662,16 @@ set_sata <- function(x, ..., variable = NULL, sata = TRUE) {
 #'   (logical). Empty: zero-row tibble.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_sata(d, riagendr)
 #' extract_sata(d, riagendr)
 #' extract_sata(d, fill = NULL)
-#'
 #' @seealso [set_sata()] to set SATA flags
 #' @family metadata
 #' @export
@@ -1714,11 +1754,15 @@ extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_higher_is(d, bpxsy1 = "worse")
 #' extract_higher_is(d, bpxsy1)
-#'
 #' @seealso [extract_higher_is()] to retrieve direction attributes
 #' @family metadata
 #' @export
@@ -1837,12 +1881,16 @@ set_higher_is <- function(x, ..., variable = NULL, direction = NULL) {
 #'   are missing from `x`.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_higher_is(d, bpxsy1 = "worse")
 #' extract_higher_is(d, bpxsy1)
 #' extract_higher_is(d)
-#'
 #' @seealso [set_higher_is()] to set direction attributes
 #' @family metadata
 #' @export
@@ -1942,11 +1990,15 @@ extract_higher_is <- function(x, ..., variable = NULL) {
 #' @return The modified object, invisibly.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_reverse_coded(d, bpxsy1, ridageyr)
 #' d <- set_reverse_coded(d, bpxsy1, reverse_coded = FALSE)
-#'
 #' @seealso [extract_reverse_coded()] to retrieve reverse-coded flags
 #' @family metadata
 #' @export
@@ -2042,12 +2094,16 @@ set_reverse_coded <- function(x, ..., variable = NULL, reverse_coded = TRUE) {
 #'   `FALSE`. When all specified variables are missing, returns `logical(0)`.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' d <- set_reverse_coded(d, bpxsy1)
 #' extract_reverse_coded(d, bpxsy1)
 #' extract_reverse_coded(d)
-#'
 #' @seealso [set_reverse_coded()] to set reverse-coded flags
 #' @family metadata
 #' @export
@@ -2153,13 +2209,20 @@ extract_reverse_coded <- function(x, ..., variable = NULL) {
 #'   share a group
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' d <- set_question_preface(d, riagendr = "Demographics",
-#'                              ridageyr = "Demographics")
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
+#' d <- set_question_preface(
+#'   d,
+#'   riagendr = "Demographics",
+#'   ridageyr = "Demographics"
+#' )
 #' d <- set_sata(d, riagendr, ridageyr)
 #' classify_question_type(d, riagendr, ridageyr, bpxsy1)
-#'
 #' @seealso [set_sata()], [extract_sata()], [set_question_preface()]
 #' @family metadata
 #' @export

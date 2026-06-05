@@ -74,7 +74,7 @@ Automatically populated from haven-style attributes when
 \examples{
 # Empty metadata (default)
 m <- survey_metadata()
-m@variable_labels
+extract_var_label(as_survey(data.frame(x = 1, w = 1), weights = w))
 
 # Pre-populated metadata
 m <- survey_metadata(

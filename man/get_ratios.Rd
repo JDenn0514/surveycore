@@ -67,8 +67,9 @@ variable are included in calculations, and observations where a group
 variable is \code{NA} are collected into their own group row in the output
 (appearing after all non-\code{NA} group rows).}
 
-\item{label_values}{Logical. Accepted for API uniformity; has no visible
-effect on \code{get_ratios()} output. Default \code{TRUE}.}
+\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
+functions. For \code{get_ratios()}, no value-level cells appear in the output,
+so this parameter has no effect. Default \code{TRUE}.}
 
 \item{label_vars}{Logical. Accepted for API uniformity; has no visible
 effect on \code{get_ratios()} output. Default \code{TRUE}.}

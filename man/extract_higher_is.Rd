@@ -27,7 +27,7 @@ more variables in a survey design object or data frame. Variables with no
 direction set return \code{NA_character_}.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 d <- set_higher_is(d, bpxsy1 = "worse")
 extract_higher_is(d, bpxsy1)

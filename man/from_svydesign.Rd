@@ -8,7 +8,9 @@ from_svydesign(x)
 }
 \arguments{
 \item{x}{A \code{survey::svydesign}, \code{survey::svrepdesign}, \code{survey::twophase},
-or \code{srvyr::tbl_svy} object.}
+\code{survey::twophase2}, or \code{srvyr::tbl_svy} object. Both \code{"twophase"} and
+\code{"twophase2"} classes from the \code{survey} package are dispatched to the
+two-phase conversion path.}
 }
 \value{
 A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.
@@ -29,7 +31,7 @@ added.
 \examples{
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(
-    ids = ~sdmvpsu, weights = ~wtint2yr, strata = ~sdmvstra,
+    ids = ~sdmvpsu, weights = ~wtmec2yr, strata = ~sdmvstra,
     data = nhanes_2017, nest = TRUE
   )
   d <- from_svydesign(sv)

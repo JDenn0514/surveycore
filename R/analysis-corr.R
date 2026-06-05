@@ -80,15 +80,18 @@
 #'   pairwise sum of weights (both variables non-NA). Default `FALSE`.
 #' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
 #'   columns (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal
-#'   places. Default `NULL` (no rounding).
+#'   places. Default `NULL` (no rounding). Silently ignored when
+#'   `format = "wide"` (the wide matrix contains only `r` values, which are
+#'   not rounded by this argument).
 #' @param min_cell_n Integer. Minimum pairwise unweighted count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
-#' @param na.rm Logical. If `TRUE` (default), pairs use complete cases for
-#'   each variable pair separately (pairwise deletion), and observations where
-#'   any group variable is `NA` are excluded from the output. If `FALSE`,
-#'   pairwise complete cases are still used for each variable pair, and
-#'   observations where a group variable is `NA` are collected into their own
-#'   group row in the output (appearing after all non-`NA` group rows).
+#' @param na.rm Logical. Controls `NA` handling for group variables and the
+#'   computation domain. Pairwise complete-case deletion is always applied
+#'   for the correlation variables themselves regardless of this flag. If
+#'   `TRUE` (default), observations where any group variable is `NA` are
+#'   excluded from the output. If `FALSE`, observations where a group variable
+#'   is `NA` are collected into their own group row in the output (appearing
+#'   after all non-`NA` group rows).
 #' @param label_values Logical. If `TRUE` (default) and the grouping variable
 #'   has value labels, the group column is converted to a labelled factor.
 #'   Has no visible effect when no groups are active.
@@ -129,12 +132,18 @@
 #'     \item `[group_cols...]` — group variable columns (when active), first.
 #'     \item `var1`, `var2` — variable names (or labels when
 #'       `label_vars = TRUE`).
-#'     \item `r` — Pearson correlation coefficient.
+#'     \item `r` — correlation coefficient. For `method = "pearson"`, the
+#'       weighted product-moment correlation; for `"polychoric"` /
+#'       `"polyserial"`, the MLE of `rho` under a bivariate-normal latent
+#'       model.
 #'     \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'       `deff`) — only those requested via `variance`.
 #'     \item `p_value` — two-tailed p-value.
-#'     \item `statistic` — t-statistic.
-#'     \item `df` — degrees of freedom for the t-test (n minus 2).
+#'     \item `statistic` — test statistic. A t-statistic for
+#'       `method = "pearson"`; a Wald z-statistic for latent methods.
+#'     \item `df` — degrees of freedom. `n - 2` for `method = "pearson"`;
+#'       `NA_integer_` for `"polychoric"` and `"polyserial"` (asymptotic
+#'       normal distribution is used).
 #'     \item `n` — pairwise unweighted count.
 #'     \item `n_weighted` — pairwise sum of weights (only when requested).
 #'   }
@@ -199,7 +208,7 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtint2yr,
+#'   weights = wtmec2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )

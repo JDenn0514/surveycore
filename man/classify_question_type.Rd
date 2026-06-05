@@ -48,7 +48,7 @@ get \code{type = "battery"}.
 Group numbers are assigned sequentially by first appearance in the input.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 d <- set_question_preface(d, riagendr = "Demographics",
                              ridageyr = "Demographics")

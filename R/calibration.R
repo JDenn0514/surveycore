@@ -20,7 +20,10 @@
 #' @param g_weights A numeric vector of positive, finite g-factors (length n).
 #'   The calibrated weights are `base_weights * g_weights`. g-factors equal
 #'   to 1.0 represent no adjustment. Must not contain `NA`, `NaN`, or `Inf`.
-#'   Must have the same length as `base_weights`.
+#'   Must have the same length as `base_weights`. The internal quantity
+#'   `g_weights * sqrt(base_weights)` must not have any near-zero values
+#'   (below `sqrt(.Machine$double.eps)`); if it does, a
+#'   `surveycore_error_caldata_weights_near_zero` warning is issued.
 #' @param model_matrix A numeric matrix with `n` rows and at least 1 column,
 #'   representing the calibration covariates used during post-stratification or
 #'   raking. Must not contain `NA`, `NaN`, or `Inf`.
@@ -31,8 +34,9 @@
 #'       `sqrt(base_weights) * model_matrix`. Used for calibration projection
 #'       in variance estimation.}
 #'     \item{`w`}{A numeric vector of length n equal to
-#'       `g_weights * sqrt(base_weights)`. These are the square-root-scaled
-#'       calibrated weights.}
+#'       `g_weights * sqrt(base_weights)`. This intermediate quantity (the
+#'       square root of the calibrated weights scaled by g) is used directly
+#'       in the GREG variance projection formula.}
 #'     \item{`stage`}{Integer scalar `0L`. Currently only between-PSU
 #'       calibration (stage 0) is supported.}
 #'     \item{`index`}{`NULL`. Reserved for future within-PSU calibration
@@ -98,6 +102,10 @@
 #' design <- as_survey(df, weights = wt)
 #' design@calibration <- list(cd)
 #' is.null(design@calibration) # FALSE
+#' @seealso
+#'   [as_survey()] for Taylor series designs,
+#'   [as_survey_replicate()] for replicate-weight designs,
+#'   [as_survey_twophase()] for two-phase designs
 #' @family constructors
 #' @export
 as_caldata <- function(base_weights, g_weights, model_matrix) {

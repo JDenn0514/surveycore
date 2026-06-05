@@ -20,7 +20,8 @@ etc. If empty, returns metadata for all variables. Use
 
 \item{fill}{Scalar or \code{NULL}. How to handle variables with no codes:
 \code{NULL} (default) omits them; \code{NA_character_} includes them as \code{NULL}
-entries in \code{"list"} format.}
+entries in \code{"list"} format. In \code{"data_frame"} format, variables with
+no codes are always excluded regardless of \code{fill}.}
 }
 \value{
 \itemize{
@@ -35,7 +36,7 @@ Returns missing value sentinel codes for one or more variables in a survey
 design object or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 d <- set_missing_codes(d, ridageyr = c("Not applicable" = 999L))
 extract_missing_codes(d, ridageyr)

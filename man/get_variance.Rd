@@ -63,8 +63,9 @@ multi-variable mode controls whether each focal variable uses its own
 complete-case set (\code{"pairwise"}) or the intersection across all focal
 variables (\code{"listwise"}). Ignored when \code{na.rm = FALSE}.}
 
-\item{label_values}{Logical. Accepted for API uniformity; used to
-convert grouping-variable codes to value labels. Default \code{TRUE}.}
+\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
+functions. Used to convert grouping-variable codes to value labels.
+Default \code{TRUE}.}
 
 \item{label_vars}{Logical. If \code{TRUE} (default), the \code{name} column
 shows variable labels when available (falling back to raw names).}
@@ -92,13 +93,19 @@ Ignored when \code{design} is a single survey.}
 A \code{survey_variance} tibble (also inheriting \code{survey_result}).
 Columns, in order:
 \itemize{
+\item \verb{[.id]} — survey identifier column, only when \code{design} is a
+\code{\link{survey_collection}}.
 \item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{name} — focal variable name (or its label when \code{label_vars = TRUE}).
 \item \code{variance} — design-based point estimate of the finite-population
-variance. \code{NaN} for degenerate cells; exact \code{0} for constant-in-domain
+variance. Note: the column is always named \code{variance} regardless of the
+\code{variance} parameter (which controls uncertainty columns, not this
+column). \code{NaN} for degenerate cells; exact \code{0} for constant-in-domain
 variables.
 \item Uncertainty columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high},
-\code{moe}, \code{deff}) — only those requested via \code{variance}.
+\code{moe}, \code{deff}) — only those requested via the \code{variance} parameter.
+The \code{var} uncertainty column is the variance of the estimated variance,
+distinct from the \code{variance} point estimate column.
 \item \code{n} — unweighted count of non-NA observations used.
 \item \code{n_weighted} — sum of weights (only when \code{n_weighted = TRUE}).
 }
@@ -129,7 +136,7 @@ excluded from every variable's calculation.
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtint2yr,
+  weights = wtmec2yr,
   strata = sdmvstra,
   nest = TRUE
 )

@@ -12,7 +12,7 @@
 #
 # Validators implement Layer 1 structural invariants only (per 3-layer
 # validator architecture in phase-0-implementation-plan-v2.md). User-input
-# validation lives in R/03-constructors.R (Layer 3).
+# validation lives in R/core-constructors.R (Layer 3).
 #
 # Error classes match plans/error-messages.md exactly.
 
@@ -63,7 +63,7 @@
 #' @examples
 #' # Empty metadata (default)
 #' m <- survey_metadata()
-#' m@variable_labels
+#' extract_var_label(as_survey(data.frame(x = 1, w = 1), weights = w))
 #'
 #' # Pre-populated metadata
 #' m <- survey_metadata(
@@ -232,7 +232,7 @@ survey_base <- S7::new_class(
 #' @examples
 #' # Prefer as_survey() over calling survey_taylor() directly
 #' d <- as_survey(
-#'   gss_2024,
+#'   gss,
 #'   ids = vpsu,
 #'   weights = wtssps,
 #'   strata = vstrat,
@@ -774,7 +774,7 @@ survey_twophase <- S7::new_class(
 #'
 #' @examples
 #' d1 <- as_survey(
-#'   gss_2024,
+#'   gss,
 #'   ids = vpsu,
 #'   weights = wtssps,
 #'   strata = vstrat,
@@ -1004,7 +1004,9 @@ survey_collection <- S7::new_class(
 #'   \item{`weights`}{Character string naming the (calibrated) weight column.}
 #'   \item{`repweights`}{Character vector of bootstrap replicate weight column
 #'     names, or `NULL` when no replicate weights are present.}
-#'   \item{`type`}{Replicate type (`"bootstrap"`), or `NULL`.}
+#'   \item{`type`}{Replicate type. Only `"bootstrap"` is supported for
+#'     non-probability samples (`"JK1"`, `"JK2"`, and `"JKn"` are not
+#'     accepted); or `NULL` when no replicate weights are present.}
 #'   \item{`scale`}{Numeric scale factor for the variance formula, or `NULL`.}
 #'   \item{`rscales`}{Per-replicate scale factors, or `NULL`.}
 #'   \item{`mse`}{Logical. `TRUE` for MSE form of variance, or `NULL`.}
@@ -1029,7 +1031,6 @@ survey_collection <- S7::new_class(
 #' )
 #' @seealso [as_survey_nonprob()] to create a `survey_nonprob` object.
 #' @family constructors
-#' @keywords internal
 #' @export
 survey_nonprob <- S7::new_class(
   "survey_nonprob",

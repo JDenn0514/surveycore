@@ -7,7 +7,8 @@
 as_tbl_svy(x)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.
+\code{survey_nonprob} is not supported and will error.}
 }
 \value{
 A \code{srvyr::tbl_svy} object.
@@ -21,7 +22,7 @@ with \code{srvyr::as_survey()}. Requires both \code{survey} and \code{srvyr}.
 Metadata (variable labels, value labels) is NOT carried over.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 if (requireNamespace("survey", quietly = TRUE) &&
     requireNamespace("srvyr",  quietly = TRUE)) {

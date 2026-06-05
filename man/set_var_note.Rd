@@ -29,7 +29,7 @@ or other context.
 Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_label()}} for details.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d <- as_survey(gss, ids = vpsu, weights = wtssps,
                strata = vstrat, nest = TRUE)
 d <- set_var_note(d, age = "Top-coded at 89")
 extract_var_note(d, age)

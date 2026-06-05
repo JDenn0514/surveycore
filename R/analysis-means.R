@@ -39,9 +39,9 @@
 #'   variable are included in calculations, and observations where a group
 #'   variable is `NA` are collected into their own group row in the output
 #'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API uniformity; has no visible
-#'   effect since `get_means()` output contains no categorical value cells.
-#'   Default `TRUE`.
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. For `get_means()`, no value-level cells appear in the output,
+#'   so this parameter has no effect. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity; has no visible
 #'   effect since `get_means()` output contains no variable-name value cells.
 #'   Default `TRUE`.
@@ -66,10 +66,14 @@
 #'   \item `mean` — weighted mean estimate.
 #'   \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'     `deff`) — only those requested via `variance`.
+#'   \item `df` — degrees of freedom used for CI calculation. Present only for
+#'     `survey_taylor` designs with an active `@calibration` object
+#'     (GREG-corrected SE). For all other designs the normal approximation
+#'     (`Inf`) is used and `df` is not included.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
-#' The variable name is stored in `meta(result)$variable`, not as a column.
+#' The variable name is stored in `meta(result)$x`, not as a column.
 #' Use `meta(result)` to access design type, variable labels, and other
 #' metadata.
 #'
@@ -77,7 +81,7 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtint2yr,
+#'   weights = wtmec2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )

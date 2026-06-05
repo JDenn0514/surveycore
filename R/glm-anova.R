@@ -19,7 +19,6 @@
 #   .anova_design_df_string()    -- header design-df rendering
 #   .anova_compose_term_labels() -- variable-label composition for `term`
 
-
 # -- .refit_drop_terms() -------------------------------------------------------
 
 # Drop `drop_terms` from `model@formula` and call `survey_glm()` on the
@@ -221,7 +220,9 @@
 
     # Replicate-nonconvergence surfacing (A-19)
     if (S7::S7_inherits(model@design, survey_replicate)) {
-      rep_failures <- tryCatch(reduced@fit_$rep_failures, error = function(e) NULL)
+      rep_failures <- tryCatch(reduced@fit_$rep_failures, error = function(e) {
+        NULL
+      })
       if (is.null(rep_failures)) {
         # survey_glm() currently only emits A-19 via surveycore_warning_glm_convergence
         # at the replicate level; we don't re-raise at the ANOVA level when
@@ -239,14 +240,19 @@
     # reciprocal probability over the entire design (including rows
     # dropped to NA), not the per-fit mean weight.
     design_weights_var <- model@design@variables$weights
-    if (!is.null(design_weights_var) && design_weights_var %in% names(model@design@data)) {
+    if (
+      !is.null(design_weights_var) &&
+        design_weights_var %in% names(model@design@data)
+    ) {
       full_w <- model@design@data[[design_weights_var]]
       full_w <- full_w[is.finite(full_w) & full_w > 0]
       w_mean <- if (length(full_w) > 0) mean(full_w) else 1
     } else {
       w_mean <- mean(model@weights)
     }
-    if (!is.finite(w_mean) || w_mean <= 0) w_mean <- 1
+    if (!is.finite(w_mean) || w_mean <= 0) {
+      w_mean <- 1
+    }
 
     w_full <- model@weights
     w_red <- reduced@weights
@@ -255,11 +261,14 @@
       {
         y <- stats::model.response(stats::model.frame(model@fit_))
         X <- stats::model.matrix(model@fit_)
-        fam <- if (inherits(model@family, "family")) model@family else
+        fam <- if (inherits(model@family, "family")) {
+          model@family
+        } else {
           do.call(
             stats::family,
             list(model@family$family, link = model@family$link)
           )
+        }
         f <- stats::glm.fit(
           x = X,
           y = y,
@@ -274,11 +283,14 @@
       {
         y2 <- stats::model.response(stats::model.frame(reduced@fit_))
         X2 <- stats::model.matrix(reduced@fit_)
-        fam2 <- if (inherits(reduced@family, "family")) reduced@family else
+        fam2 <- if (inherits(reduced@family, "family")) {
+          reduced@family
+        } else {
           do.call(
             stats::family,
             list(reduced@family$family, link = reduced@family$link)
           )
+        }
         f2 <- stats::glm.fit(
           x = X2,
           y = y2,
@@ -788,9 +800,17 @@
 
   # Stack rows into columns
   term_vec <- vapply(rows, function(r) r$term, character(1L))
-  statistic_vec <- vapply(rows, function(r) as.numeric(r$statistic), numeric(1L))
+  statistic_vec <- vapply(
+    rows,
+    function(r) as.numeric(r$statistic),
+    numeric(1L)
+  )
   df_vec <- vapply(rows, function(r) as.numeric(r$df), numeric(1L))
-  ddf_vec <- vapply(rows, function(r) as.numeric(r$ddf %||% NA_real_), numeric(1L))
+  ddf_vec <- vapply(
+    rows,
+    function(r) as.numeric(r$ddf %||% NA_real_),
+    numeric(1L)
+  )
   deff_vec <- vapply(
     rows,
     function(r) as.numeric(r$deff %||% NA_real_),
@@ -821,7 +841,11 @@
 
   # Apply class
   result_class <- c(
-    "survey_anova", "survey_result", "tbl_df", "tbl", "data.frame"
+    "survey_anova",
+    "survey_result",
+    "tbl_df",
+    "tbl",
+    "data.frame"
   )
   class(result) <- result_class
 
@@ -1004,6 +1028,20 @@
 
 # -- anova.survey_glm_fit() ----------------------------------------------------
 
+#' ANOVA Method for Survey GLM Fits
+#'
+#' S3 method that dispatches to [get_anova()]. Pass one or two
+#' [survey_glm_fit] objects; the single-model or pairwise path is chosen
+#' automatically.
+#'
+#' @param object A [survey_glm_fit] object.
+#' @param ... An optional second [survey_glm_fit] for pairwise comparison;
+#'   anything else errors.
+#' @param method Character(1). `"LRT"` (default) or `"Wald"`.
+#' @param test Character(1). `"F"` (default) or `"Chisq"`.
+#' @param null Numeric or `NULL`. Hypothesized coefficient value (Wald only).
+#' @return A `survey_anova` tibble; see [get_anova()] for column details.
+#' @method anova survey_glm_fit
 #' @export
 anova.survey_glm_fit <- function(
   object,
@@ -1044,6 +1082,12 @@ anova.survey_glm_fit <- function(
 
 # -- print.survey_anova() -----------------------------------------------------
 
+#' Print Method for survey_anova Objects
+#'
+#' @param x A `survey_anova` tibble produced by [get_anova()].
+#' @param ... Additional arguments (currently unused).
+#' @return `x`, invisibly.
+#' @method print survey_anova
 #' @export
 print.survey_anova <- function(x, ...) {
   m <- attr(x, ".meta")

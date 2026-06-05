@@ -34,7 +34,7 @@ Returns variable labels for one or more variables in a survey design object
 or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 extract_var_label(d)
 extract_var_label(d, riagendr, ridageyr)

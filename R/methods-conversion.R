@@ -43,13 +43,17 @@
 #'   object.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' if (requireNamespace("survey", quietly = TRUE)) {
 #'   sv <- as_svydesign(d)
 #'   survey::svymean(~ridageyr, sv, na.rm = TRUE)
 #' }
-#'
 #' @seealso [from_svydesign()] to convert back from a `survey` design
 #' @family conversion
 #' @export
@@ -198,16 +202,23 @@ as_svydesign <- function(x) {
 #' Metadata (variable labels, value labels) is NOT carried over.
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#'   `survey_nonprob` is not supported and will error.
 #' @return A `srvyr::tbl_svy` object.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' if (requireNamespace("survey", quietly = TRUE) &&
-#'     requireNamespace("srvyr",  quietly = TRUE)) {
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
+#' if (
+#'   requireNamespace("survey", quietly = TRUE) &&
+#'     requireNamespace("srvyr", quietly = TRUE)
+#' ) {
 #'   ts <- as_tbl_svy(d)
 #' }
-#'
 #' @seealso [from_tbl_svy()] to convert back from a `tbl_svy` object
 #' @family conversion
 #' @export
@@ -311,19 +322,23 @@ as_tbl_svy <- function(x) {
 #' added.
 #'
 #' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
-#'   or `srvyr::tbl_svy` object.
+#'   `survey::twophase2`, or `srvyr::tbl_svy` object. Both `"twophase"` and
+#'   `"twophase2"` classes from the `survey` package are dispatched to the
+#'   two-phase conversion path.
 #' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #'
 #' @examples
 #' if (requireNamespace("survey", quietly = TRUE)) {
 #'   sv <- survey::svydesign(
-#'     ids = ~sdmvpsu, weights = ~wtint2yr, strata = ~sdmvstra,
-#'     data = nhanes_2017, nest = TRUE
+#'     ids = ~sdmvpsu,
+#'     weights = ~wtmec2yr,
+#'     strata = ~sdmvstra,
+#'     data = nhanes_2017,
+#'     nest = TRUE
 #'   )
 #'   d <- from_svydesign(sv)
 #'   survey_data(d)
 #' }
-#'
 #' @seealso [as_svydesign()] to convert in the other direction
 #' @family conversion
 #' @export
@@ -504,15 +519,21 @@ from_svydesign <- function(x) {
 #' @return A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #'
 #' @examples
-#' if (requireNamespace("survey", quietly = TRUE) &&
-#'     requireNamespace("srvyr",  quietly = TRUE)) {
+#' if (
+#'   requireNamespace("survey", quietly = TRUE) &&
+#'     requireNamespace("srvyr", quietly = TRUE)
+#' ) {
 #'   ts <- srvyr::as_survey(
-#'     survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
-#'       strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
+#'     survey::svydesign(
+#'       ids = ~sdmvpsu,
+#'       weights = ~wtmec2yr,
+#'       strata = ~sdmvstra,
+#'       data = nhanes_2017,
+#'       nest = TRUE
+#'     )
 #'   )
 #'   d <- from_tbl_svy(ts)
 #' }
-#'
 #' @seealso [as_tbl_svy()] to convert in the other direction
 #' @family conversion
 #' @export

@@ -70,7 +70,7 @@ this stored value. Mutate via \code{\link[=set_collection_if_missing_var]{set_co
 
 \examples{
 d1 <- as_survey(
-  gss_2024,
+  gss,
   ids = vpsu,
   weights = wtssps,
   strata = vstrat,

@@ -16,4 +16,4 @@ The name of the logical column added to \verb{@data} by \code{filter()} (from
 packages (\code{surveytidy}, \code{surveywts}) can reference it without
 using \code{:::}.
 }
-\keyword{internal}
+\keyword{datasets}

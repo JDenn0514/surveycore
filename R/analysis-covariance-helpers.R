@@ -340,9 +340,11 @@
 
   na_dropped <- sum(is.na(rep_c))
   na_frac <- na_dropped / n_rep
-  if (isTRUE(
-    .nonprob_rep_na_warn(design, na_frac, na_dropped, n_rep, vars$scale)
-  )) {
+  if (
+    isTRUE(
+      .nonprob_rep_na_warn(design, na_frac, na_dropped, n_rep, vars$scale)
+    )
+  ) {
     return(list(
       covariance = NA_real_,
       se = NA_real_,
@@ -515,7 +517,8 @@
   score_sub <- sc$score[active]
 
   var_chat <- (n_d / (n_d - 1L)) *
-    sum(w_sub^2 * (score_sub - c_hat)^2) / W^2
+    sum(w_sub^2 * (score_sub - c_hat)^2) /
+    W^2
   se <- sqrt(max(0, var_chat))
   se_srs <- .se_srs_cov(c_hat, sc$var_x, sc$var_y, n_d)
 
@@ -595,8 +598,7 @@
 # @param group_vars    Character vector of group variable names (raw).
 # @param design        The survey design object (used for group-var labels).
 # @return The tibble with labels attached to every column, unchanged
-#   otherwise.
-#' @noRd
+#         otherwise.
 .attach_covariance_labels <- function(
   result,
   conf_level,

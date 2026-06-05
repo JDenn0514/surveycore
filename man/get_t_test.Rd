@@ -70,8 +70,9 @@ visible effect because column names are fixed. Default \code{TRUE}.}
 \code{ci_low} to \code{conf.low}, \code{ci_high} to \code{conf.high}, \code{p_value} to
 \code{p.value}, \code{df} to \code{parameter}). \code{t_stat} is not renamed.}
 
-\item{...}{Unused. Reserved so that \code{.id} and \code{.if_missing_var} remain
-named-only when a \code{survey_collection} is passed as \code{design}.}
+\item{...}{Additional arguments forwarded to \code{.dispatch_over_collection()}
+when \code{design} is a \code{\link{survey_collection}}. For single-survey inputs these
+arguments are ignored.}
 
 \item{.id}{Character(1) or \code{NULL}. Column name used to identify each
 survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
@@ -100,7 +101,7 @@ surveycore's own variance machinery (\code{survey_glm()}). Supports all four
 survey design classes and optional subgroup analysis via \code{group}.
 }
 \examples{
-gss_sub <- gss_2024[gss_2024$sex \%in\% c(1L, 2L) & !is.na(gss_2024$age), ]
+gss_sub <- gss[gss$sex \%in\% c(1L, 2L) & !is.na(gss$age), ]
 gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
 gss_design <- as_survey(gss_sub,
   ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)

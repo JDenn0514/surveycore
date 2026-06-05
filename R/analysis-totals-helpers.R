@@ -16,10 +16,11 @@
 #
 # Domain estimation of a weighted total using Taylor linearization.
 #
-# @param design  A survey_taylor or survey_nonprob object.
+# @param design  A survey_taylor object (also used for the SRS path of
+#                survey_nonprob without repweights).
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
+# @return Named list: total, se, df (Taylor only), se_srs, n, n_weighted.
 .taylor_total_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -117,7 +118,7 @@
 #
 # Domain estimation of a weighted total using replicate weights.
 #
-# @param design  A survey_replicate object.
+# @param design  A survey_replicate or survey_nonprob object (with repweights).
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
 # @return Named list: total, se, se_srs, n, n_weighted.
@@ -356,7 +357,7 @@
 # @param design  Any survey design object.
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
+# @return Named list: total, se, df (Taylor path only), se_srs, n, n_weighted.
 .total_cell <- function(design, y_col, domain) {
   if (S7::S7_inherits(design, survey_taylor)) {
     .taylor_total_cell(design, y_col, domain)

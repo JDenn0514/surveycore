@@ -19,8 +19,9 @@
 #'   variables. Bare names or tidy-select helpers (e.g., `c(q1, q2, q3)`).
 #'   When two or more variables are selected, multi-variable stacking mode
 #'   is activated (see Details).
-#' @param ... Additional arguments passed to tidy-select (future-proof;
-#'   currently unused).
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Combined with any grouping set by `group_by()`. Default
 #'   `NULL`.
@@ -101,8 +102,13 @@
 #' @examples
 #' # NHANES exam weights are 0 for non-examined participants; filter first
 #' nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
-#' d <- as_survey(nhanes_sub, ids = sdmvpsu, weights = wtmec2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_sub,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #'
 #' # Single variable
 #' get_freqs(d, riagendr)
@@ -115,7 +121,6 @@
 #'
 #' # Multi-variable (stacked)
 #' get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
-#'
 #' @family analysis
 #' @export
 get_freqs <- function(

@@ -30,7 +30,7 @@ Pipes naturally with the rest of the collection API:
 \preformatted{coll |> set_collection_id("wave") |> get_means(y1)}
 }
 \examples{
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d1 <- as_survey(gss, ids = vpsu, weights = wtssps,
                 strata = vstrat, nest = TRUE)
 coll <- as_survey_collection(a = d1)
 coll <- set_collection_id(coll, "wave")

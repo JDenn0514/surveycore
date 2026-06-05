@@ -24,7 +24,7 @@ Metadata (variable labels, value labels) is NOT carried over — the \code{surve
 package has no metadata system.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- as_svydesign(d)

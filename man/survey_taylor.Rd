@@ -59,7 +59,7 @@ rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 \examples{
 # Prefer as_survey() over calling survey_taylor() directly
 d <- as_survey(
-  gss_2024,
+  gss,
   ids = vpsu,
   weights = wtssps,
   strata = vstrat,
@@ -95,7 +95,6 @@ Other constructors:
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

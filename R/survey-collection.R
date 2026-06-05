@@ -24,7 +24,7 @@
 #' Shared validator used by the S7 class validator, `as_survey_collection()`,
 #' `.dispatch_over_collection()` (post-resolution), and `set_collection_id()`.
 #' Centralises the "single non-empty non-NA character string" check so all
-#' five call sites raise the same error class with consistent CLI prose.
+#' four call sites raise the same error class with consistent CLI prose.
 #'
 #' @param value    The candidate `@id` value.
 #' @param arg_name Character(1). The user-facing argument label to render
@@ -68,7 +68,7 @@
 #' Shared validator used by the S7 class validator,
 #' `as_survey_collection()`, `.dispatch_over_collection()` (post-resolution),
 #' and `set_collection_if_missing_var()`. Centralises the
-#' "length-1 character string in c(\"error\", \"skip\")" check so all five
+#' "length-1 character string in c(\"error\", \"skip\")" check so all four
 #' call sites raise the same error class with consistent CLI prose.
 #'
 #' @param value    The candidate `@if_missing_var` value.
@@ -256,6 +256,9 @@
 #'
 #' Shared between `as_survey_collection()` and `add_survey()` so the
 #' error-class choice and position-index formatting stay consistent.
+#' Note: the error message text references `as_survey_collection` by name;
+#' callers from `add_survey()` see the same text (acceptable — the usage
+#' guidance in the `"v"` bullet applies equally to both callers).
 #'
 #' @param quosures A list of quosures from `rlang::enquos(...)`.
 #' @return A character vector of resolved names, same length as `quosures`.
@@ -331,14 +334,11 @@
 #' @return A new `survey_collection` with the appended surveys.
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
-#' d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d2 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' coll <- as_survey_collection(a = d1)
 #' coll2 <- add_survey(coll, b = d2)
 #' names(coll2)
-#'
 #' @seealso [as_survey_collection()], [remove_survey()]
 #' @family collections
 #' @export
@@ -445,17 +445,15 @@ add_survey <- function(.collection, ...) {
 #'
 #' @return A new `survey_collection` without the dropped surveys. Errors
 #'   `surveycore_error_collection_empty` if removing would leave the
-#'   collection empty.
+#'   collection empty. This error is raised by the S7 class validator, not
+#'   by `remove_survey()` itself.
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
-#' d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' d2 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' coll <- as_survey_collection(a = d1, b = d2)
 #' coll2 <- remove_survey(coll, "a")
 #' names(coll2)
-#'
 #' @seealso [as_survey_collection()], [add_survey()]
 #' @family collections
 #' @export
@@ -533,12 +531,10 @@ remove_survey <- function(x, name) {
 #' @return The modified `survey_collection`, invisibly.
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' coll <- as_survey_collection(a = d1)
 #' coll <- set_collection_id(coll, "wave")
 #' coll@id
-#'
 #' @family collections
 #' @export
 set_collection_id <- function(x, id) {
@@ -586,12 +582,10 @@ set_collection_id <- function(x, id) {
 #' @return The modified `survey_collection`, invisibly.
 #'
 #' @examples
-#' d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                 strata = vstrat, nest = TRUE)
+#' d1 <- as_survey(gss, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 #' coll <- as_survey_collection(a = d1)
 #' coll <- set_collection_if_missing_var(coll, "skip")
 #' coll@if_missing_var
-#'
 #' @family collections
 #' @export
 set_collection_if_missing_var <- function(x, if_missing_var) {

@@ -34,7 +34,7 @@ Returns analyst notes for one or more variables in a survey design object
 or data frame.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d <- as_survey(gss, ids = vpsu, weights = wtssps,
                strata = vstrat, nest = TRUE)
 d <- set_var_note(d, age = "Top-coded at 89")
 extract_var_note(d, age)

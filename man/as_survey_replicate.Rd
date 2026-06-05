@@ -38,9 +38,9 @@ or \code{"other"} (user-specified scale). Case-sensitive.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates: \code{(R-1)/R} for jackknife methods, \code{1/4} for
-BRR/Fay, \code{1/R} for bootstrap/ACS, \code{2/R} for successive-difference,
-\code{1} for other.}
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}, \code{"JK2"}, and
+\code{"JKn"}; \code{1/R} for \code{"BRR"}, \code{"Fay"}, \code{"bootstrap"}, and \code{"ACS"};
+\code{2/R} for \code{"successive-difference"}; \code{1} for \code{"other"}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
@@ -164,7 +164,6 @@ Other constructors:
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

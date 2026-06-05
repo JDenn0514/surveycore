@@ -362,7 +362,7 @@ table(ns_wave1$pid3)
 }
 \references{
 Tausanovitch, Chris and Lynn Vavreck. 2021. Democracy Fund + UCLA
-Nationscape, October 10–17, 2019 (version 20210301). Retrieved from
+Nationscape, July 18–24, 2019 — Wave 1 (version 20210301). Retrieved from
 voterstudygroup.org/data/nationscape.
 
 Rivers, Douglas and Delia Bailey. 2009. "Inference from matched samples in

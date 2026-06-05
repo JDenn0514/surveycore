@@ -3,19 +3,23 @@
 # Internal primitives for weighted polychoric and polyserial correlation
 # under complex survey designs (Mannan 2025; Olsson 1979; Cox 1974).
 #
-# PR 1 scope: estimator primitives only. No user-visible API change.
-# Dispatcher (.corr_latent_pair), variance paths, and boundary detection
-# land in PR 2. Exported wiring via get_corr() lands in PR 3.
-#
 # Functions:
 #   .corr_detect_ordinal()           — classify a column by type
 #   .corr_canonicalize_polyserial()  — assign ordinal/continuous roles
 #   .corr_estimate_thresholds()      — weighted marginal threshold estimation
 #   .corr_weighted_standardize()     — weighted standardization (Cox 1974)
+#   .corr_bivnorm_cdf()              — bivariate-normal CDF wrapper
 #   .corr_polychoric_loglik()        — weighted log-likelihood (polychoric)
 #   .corr_polyserial_loglik()        — weighted log-likelihood (polyserial)
+#   .corr_count_sparse_cells()       — detect sparse ordinal cells
 #   .corr_polychoric_mle()           — MLE for polychoric rho
 #   .corr_polyserial_mle()           — MLE for polyserial rho
+#   .corr_detect_boundary_rho()      — detect boundary rho values
+#   .corr_fisher_ci()                — Fisher-z CI construction
+#   .corr_numerical_influence()      — perturbation-based influence function
+#   .corr_taylor_variance_latent()   — Taylor variance for latent methods
+#   .corr_replicate_variance_latent() — replicate variance for latent methods
+#   .corr_latent_pair()              — dispatcher for one variable pair
 
 # ── .corr_detect_ordinal() ────────────────────────────────────────────────────
 #

@@ -21,7 +21,7 @@ is structurally identical. Requires both \code{survey} and \code{srvyr}.
 if (requireNamespace("survey", quietly = TRUE) &&
     requireNamespace("srvyr",  quietly = TRUE)) {
   ts <- srvyr::as_survey(
-    survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
+    survey::svydesign(ids = ~sdmvpsu, weights = ~wtmec2yr,
       strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
   )
   d <- from_tbl_svy(ts)

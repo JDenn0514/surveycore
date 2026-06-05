@@ -118,13 +118,13 @@ d <- from_svydesign(d_survey)
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtint2yr,
+  weights = wtmec2yr,
   strata = sdmvstra,
   nest = TRUE
 )
 
 # Stratified design without PSU cluster IDs
-d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
+d_strat <- as_survey(nhanes_2017, weights = wtmec2yr, strata = sdmvstra)
 
 # Blood pressure analysis: filter to exam participants, use MEC weight
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
@@ -146,7 +146,7 @@ d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 
 # Tidy-select helpers like starts_with() also work
 d_h <- as_survey(
-  gss_2024,
+  gss,
   ids = vpsu,
   strata = vstrat,
   weights = starts_with("wtssn"),
@@ -185,7 +185,6 @@ Other constructors:
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

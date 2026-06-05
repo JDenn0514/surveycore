@@ -34,7 +34,7 @@
 #'
 #' @srrstats {G2.4d} Analysis functions convert grouped output columns to
 #'   factor when the grouping variable carries value labels and
-#'   label_values = TRUE, using explicit as.factor() conversion.
+#'   label_values = TRUE, using explicit factor() conversion.
 #'
 #' @srrstats {G2.6} Constructor pre-processing via tidyselect handles
 #'   one-dimensional column inputs (bare names, c(), starts_with(), etc.)
@@ -108,8 +108,8 @@
 #'
 #' @srrstats {G1.2} A Life Cycle Statement is included in README.md under
 #'   the "Development status" section, showing the completed phases (0–2),
-#'   current stability of the API, and planned future phases (2.5
-#'   calibration, 3 polish/CRAN). NEWS.md documents the full changelog.
+#'   current stability of the API, and the next phase (3 polish/CRAN).
+#'   NEWS.md documents the full changelog.
 #'
 #' @srrstats {G1.3} Statistical terminology (complex survey design, primary
 #'   sampling unit, finite population correction, Taylor linearization,
@@ -118,7 +118,7 @@
 #'   vignette("creating-survey-objects") and vignette("getting-started").
 #'
 #' @srrstats {G1.4a} All internal (non-exported) functions in R/ carry a
-#'   final @noRd roxygen2 tag, including all 16 helpers in
+#'   final @noRd roxygen2 tag, including all 19 helpers in
 #'   R/analysis-helpers.R and all internal helpers in R/glm.R,
 #'   R/core-validators.R, and R/variance-*.R files.
 #'

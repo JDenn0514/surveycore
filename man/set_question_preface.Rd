@@ -28,7 +28,7 @@ are the shared introductory text for a battery of related questions.
 Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_label()}} for details.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d <- as_survey(gss, ids = vpsu, weights = wtssps,
                strata = vstrat, nest = TRUE)
 d <- set_question_preface(d, happy = "Taken all together...")
 extract_question_preface(d, happy)

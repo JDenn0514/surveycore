@@ -15,16 +15,17 @@ present in \code{names(x)}.}
 \value{
 A new \code{survey_collection} without the dropped surveys. Errors
 \code{surveycore_error_collection_empty} if removing would leave the
-collection empty.
+collection empty. This error is raised by the S7 class validator, not
+by \code{remove_survey()} itself.
 }
 \description{
 Drops one or more named surveys from a collection and returns a new
 \code{survey_collection}. Errors if any requested name is not present.
 }
 \examples{
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d1 <- as_survey(gss, ids = vpsu, weights = wtssps,
                 strata = vstrat, nest = TRUE)
-d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d2 <- as_survey(gss, ids = vpsu, weights = wtssps,
                 strata = vstrat, nest = TRUE)
 coll <- as_survey_collection(a = d1, b = d2)
 coll2 <- remove_survey(coll, "a")

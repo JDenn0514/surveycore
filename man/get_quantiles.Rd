@@ -56,16 +56,16 @@ decimal places. Default \code{NULL} (no rounding).}
 \item{min_cell_n}{Integer. Minimum unweighted cell count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
-\item{na.rm}{Logical. If \code{TRUE} (default), \code{NA} values are excluded from
-analysis: observations where the analysis variable is \code{NA} are dropped
-from calculations, and observations where any group variable is \code{NA} are
-excluded from the output. If \code{FALSE}, \code{NA} observations in the analysis
-variable are included in calculations, and observations where a group
-variable is \code{NA} are collected into their own group row in the output
-(appearing after all non-\code{NA} group rows).}
+\item{na.rm}{Logical. If \code{TRUE} (default), \code{NA} values in the analysis
+variable are excluded from calculations. If \code{FALSE}, any \code{NA} values in
+the analysis variable cause all quantile estimates for that cell to be
+\code{NA_real_}. Observations where any group variable is \code{NA} are always
+excluded from the output when \code{na.rm = TRUE}; when \code{na.rm = FALSE} they
+are collected into their own group row (appearing after all non-\code{NA} rows).}
 
-\item{label_values}{Logical. Accepted for API uniformity; has no visible
-effect on \code{get_quantiles()} output. Default \code{TRUE}.}
+\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
+functions. For \code{get_quantiles()}, no value-level cells appear in the
+output, so this parameter has no effect. Default \code{TRUE}.}
 
 \item{label_vars}{Logical. Accepted for API uniformity; has no visible
 effect on \code{get_quantiles()} output. Default \code{TRUE}.}
@@ -101,7 +101,10 @@ intervals and are generally asymmetric around \code{estimate}. \code{deff} is
 always \code{NA} for quantile estimates: computing it requires a kernel
 density estimate at the quantile point (the Woodruff SRS approximation
 used by \code{survey::svyquantile(deff = TRUE)}), which is not implemented.
-\item \code{n} — unweighted count of non-NA observations used in the estimate.
+\item \code{n} — unweighted count of observations in the active domain used
+in the estimate. When \code{na.rm = TRUE}, counts only non-NA observations;
+when \code{na.rm = FALSE}, counts all active-domain rows (including NAs,
+though the estimate will be \code{NA_real_}).
 \item \code{n_weighted} — sum of weights (only when requested).
 }
 One row per (group combination × quantile probability). The variable name
@@ -114,7 +117,7 @@ Supports optional grouping, domain estimation, and all five survey design
 classes.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 
 # IQR + median (default)

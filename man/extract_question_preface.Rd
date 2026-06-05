@@ -34,7 +34,7 @@ Returns question preface text for one or more variables in a survey design
 object or data frame.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
+d <- as_survey(gss, ids = vpsu, weights = wtssps,
                strata = vstrat, nest = TRUE)
 d <- set_question_preface(d, happy = "Taken all together...")
 extract_question_preface(d, happy)

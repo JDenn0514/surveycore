@@ -33,8 +33,9 @@ variables. Bare names or tidy-select helpers (e.g., \code{c(q1, q2, q3)}).
 When two or more variables are selected, multi-variable stacking mode
 is activated (see Details).}
 
-\item{...}{Additional arguments passed to tidy-select (future-proof;
-currently unused).}
+\item{...}{Additional arguments forwarded to \code{.dispatch_over_collection()}
+when \code{design} is a \code{\link{survey_collection}}. For single-survey inputs these
+arguments are ignored.}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Combined with any grouping set by \code{group_by()}. Default

@@ -39,9 +39,11 @@ The modified \code{x}, invisibly.
 \description{
 Scans variable labels in a survey design object or labelled data frame for
 groups of variables sharing a common preface (via separator or longest
-common prefix). Detected prefaces are written to \code{question_preface} in the
-metadata and the shared text is trimmed from each variable label, leaving
-only the unique suffix.
+common prefix). For survey design objects, detected prefaces are written to
+\verb{@metadata@question_prefaces}. For data frames, prefaces are written to
+\code{attr(col, "question_preface")} on each column (no metadata object exists
+until \code{as_survey()} is called). The shared text is trimmed from each
+variable label, leaving only the unique suffix.
 }
 \details{
 \strong{Detection algorithm (two passes):}

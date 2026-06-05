@@ -56,11 +56,14 @@
 #' @param repweights <[`tidy-select`][tidyselect::language]> New replicate
 #'   weight columns (one or more). `NULL` (default) means no change. Only
 #'   used for `survey_replicate` objects.
-#' @param validate Logical. If `TRUE` (default), re-runs the S7 class
-#'   validator after updating, which checks structural invariants (column
-#'   existence, weight column type and positivity, etc.).
+#' @param validate Logical. If `FALSE`, temporarily marks the object to
+#'   suppress validation during the variable update. In practice this has
+#'   no observable effect on the returned object; `validate` is accepted
+#'   for interface compatibility. Default `TRUE`.
 #'
-#' @return The modified survey object, invisibly.
+#' @return The modified survey object, invisibly. As a side effect, a
+#'   `cli_inform()` message is printed listing each changed design variable
+#'   (old name → new name).
 #'
 #' @examples
 #' # NHANES has two weight columns for different analysis types;
@@ -78,9 +81,9 @@
 #' d_updated <- update_design(d, weights = wtint2yr)
 #' @seealso
 #'   [as_survey()] to create a `survey_taylor` object,
-#'   [as_survey_replicate()] to create a `survey_replicate` object
+#'   [as_survey_replicate()] to create a `survey_replicate` object,
+#'   [as_survey_twophase()] to create a `survey_twophase` object
 #'
-#' @family update
 #' @export
 update_design <- function(
   x,

@@ -5,7 +5,9 @@
 # ── .kish_effective_n() [internal] ────────────────────────────────────────────
 
 .kish_effective_n <- function(weights) {
-  if (length(weights) == 0L) return(NA_real_)
+  if (length(weights) == 0L) {
+    return(NA_real_)
+  }
   sum(weights)^2 / sum(weights^2)
 }
 
@@ -84,15 +86,19 @@
 #' `meta(result)$x` is a named list with variable metadata.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtmec2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #'
 #' # Kish effective N (weight-only approximation)
 #' get_effective_n(d)
 #'
 #' # Full DEFF effective N for a specific variable
 #' get_effective_n(d, ridageyr, method = "deff")
-#'
 #' @family analysis
 #' @export
 get_effective_n <- function(
@@ -127,11 +133,16 @@ get_effective_n <- function(
   # ── Step 1: Validate ───────────────────────────────────────────────────────
   .check_unsupported_class(design, "get_effective_n")
   method <- match.arg(method)
-  .validate_shared_args(NULL, 0.95, "surveycore",
-                        decimals = decimals, na.rm = na.rm)
+  .validate_shared_args(
+    NULL,
+    0.95,
+    "surveycore",
+    decimals = decimals,
+    na.rm = na.rm
+  )
 
   # ── Step 2: Resolve x and group ────────────────────────────────────────────
-  x_quo   <- rlang::enquo(x)
+  x_quo <- rlang::enquo(x)
   group_quo <- rlang::enquo(group)
 
   x_name <- NULL
@@ -176,19 +187,19 @@ get_effective_n <- function(
   }
 
   # ── Step 3: Resolve groups and domain ──────────────────────────────────────
-  group_vars  <- .resolve_groups(design, group_quo)
+  group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
 
   # For Kish on twophase: restrict domain to Phase 2 rows
   if (method == "kish" && S7::S7_inherits(design, survey_twophase)) {
-    subset_col  <- design@data[[design@variables$subset]]
+    subset_col <- design@data[[design@variables$subset]]
     domain_mask <- domain_mask & subset_col
   }
 
   # ── Step 4: Single-level warning ───────────────────────────────────────────
   if (length(group_vars) > 0L) {
     for (gv in group_vars) {
-      gv_vals  <- design@data[[gv]][domain_mask]
+      gv_vals <- design@data[[gv]][domain_mask]
       uniq_lvls <- unique(gv_vals[!is.na(gv_vals)])
       if (length(uniq_lvls) < 2L) {
         cli::cli_warn(
@@ -211,32 +222,32 @@ get_effective_n <- function(
 
   # ── Step 5: Build group combos ─────────────────────────────────────────────
   if (length(group_vars) > 0L) {
-    domain_data  <- design@data[domain_mask, group_vars, drop = FALSE]
+    domain_data <- design@data[domain_mask, group_vars, drop = FALSE]
     group_combos <- .build_group_combos(domain_data, na.rm)
-    n_combos     <- nrow(group_combos)
+    n_combos <- nrow(group_combos)
   } else {
     group_combos <- data.frame()
-    n_combos     <- 1L
+    n_combos <- 1L
   }
 
   # ── Step 6: Branch on method ───────────────────────────────────────────────
   if (method == "kish") {
     all_weights <- .get_analysis_weights(design)
 
-    acc_n        <- integer(0)
-    acc_n_eff    <- numeric(0)
+    acc_n <- integer(0)
+    acc_n_eff <- numeric(0)
     acc_grp_rows <- vector("list", 0L)
     small_cell_ns <- integer(0)
 
     for (ci in seq_len(n_combos)) {
       if (length(group_vars) > 0L) {
-        combo_row   <- group_combos[ci, , drop = FALSE]
-        data_cols   <- as.list(design@data[group_vars])
+        combo_row <- group_combos[ci, , drop = FALSE]
+        data_cols <- as.list(design@data[group_vars])
         group_match <- .match_group_combo(data_cols, combo_row)
         active_mask <- domain_mask & group_match
       } else {
         active_mask <- domain_mask
-        combo_row   <- NULL
+        combo_row <- NULL
       }
 
       w <- all_weights[active_mask]
@@ -244,14 +255,14 @@ get_effective_n <- function(
         w <- w[!is.na(w)]
       }
 
-      n_cell     <- length(w)
+      n_cell <- length(w)
       n_eff_cell <- .kish_effective_n(w)
 
       if (n_cell > 0L && n_cell < min_cell_n) {
         small_cell_ns <- c(small_cell_ns, n_cell)
       }
 
-      acc_n     <- c(acc_n,     as.integer(n_cell))
+      acc_n <- c(acc_n, as.integer(n_cell))
       acc_n_eff <- c(acc_n_eff, n_eff_cell)
 
       if (length(group_vars) > 0L) {
@@ -274,8 +285,8 @@ get_effective_n <- function(
     }
 
     col_vecs <- list(
-      n         = acc_n,
-      n_eff     = acc_n_eff,
+      n = acc_n,
+      n_eff = acc_n_eff,
       deff_kish = acc_n / acc_n_eff
     )
     meta_x <- NULL
@@ -288,7 +299,6 @@ get_effective_n <- function(
     } else {
       groups_df <- data.frame()
     }
-
   } else {
     # method = "deff" — delegate to get_means(variance = "deff")
     means_result <- rlang::inject(get_means(
@@ -301,7 +311,7 @@ get_effective_n <- function(
       ...
     ))
 
-    extracted_n    <- means_result$n
+    extracted_n <- means_result$n
     extracted_deff <- means_result$deff
     computed_n_eff <- ifelse(
       is.finite(extracted_deff) & extracted_deff > 0,
@@ -310,9 +320,9 @@ get_effective_n <- function(
     )
 
     col_vecs <- list(
-      n     = as.integer(extracted_n),
+      n = as.integer(extracted_n),
       n_eff = computed_n_eff,
-      deff  = extracted_deff
+      deff = extracted_deff
     )
     meta_x <- stats::setNames(list(x_meta), x_name)
 
@@ -330,10 +340,10 @@ get_effective_n <- function(
 
   meta_args <- list(
     conf_level = 0.95,
-    call       = match.call(),
-    group      = group_meta,
-    x          = meta_x,
-    method     = method
+    call = match.call(),
+    group = group_meta,
+    x = meta_x,
+    method = method
   )
 
   result <- .make_result_tibble(
@@ -355,10 +365,15 @@ get_effective_n <- function(
 
 # ── print.survey_effective_n() ────────────────────────────────────────────────
 
+#' Print method for survey_effective_n objects.
+#' @param x A `survey_effective_n` object.
+#' @param ... Additional arguments (unused).
+#' @return `x`, invisibly.
 #' @method print survey_effective_n
+#' @keywords internal
 #' @export
 print.survey_effective_n <- function(x, ...) {
-  m   <- attr(x, ".meta")
+  m <- attr(x, ".meta")
   cls <- class(x)[1L]
   dims <- paste(nrow(x), "\u00d7", ncol(x))
   method_str <- paste("method:", m$method)

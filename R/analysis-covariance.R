@@ -129,7 +129,7 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtint2yr,
+#'   weights = wtmec2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -140,7 +140,6 @@
 #'
 #' # With grouping
 #' get_covariance(d, x = c(ridageyr, bpxsy1), group = riagendr)
-#'
 #' @family analysis
 #' @export
 get_covariance <- function(
@@ -434,7 +433,9 @@ get_covariance <- function(
     seen <- character(0)
     for (pp in all_na_pairs) {
       key <- paste(pp, collapse = "\t")
-      if (key %in% seen) next
+      if (key %in% seen) {
+        next
+      }
       seen <- c(seen, key)
       x_var <- pp[[1L]]
       y_var <- pp[[2L]]
@@ -454,7 +455,9 @@ get_covariance <- function(
     seen <- character(0)
     for (pp in insuff_n_pairs) {
       key <- paste(pp, collapse = "\t")
-      if (key %in% seen) next
+      if (key %in% seen) {
+        next
+      }
       seen <- c(seen, key)
       x_var <- pp[[1L]]
       y_var <- pp[[2L]]
@@ -523,7 +526,11 @@ get_covariance <- function(
     }
 
     if (length(group_vars) > 0L) {
-      grp_block <- all_grp_rows[[ci_idx]][rep(1L, n_rows_per_combo), , drop = FALSE]
+      grp_block <- all_grp_rows[[ci_idx]][
+        rep(1L, n_rows_per_combo),
+        ,
+        drop = FALSE
+      ]
       acc_grp_rows[[ci_idx]] <- grp_block
     }
   }

@@ -43,7 +43,7 @@ set_var_label(x, variable = vars, label = lbls)
 }\if{html}{\out{</div>}}
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
+d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr,
                strata = sdmvstra, nest = TRUE)
 d <- set_var_label(d, indfmpir = "Income-to-poverty ratio")
 

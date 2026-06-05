@@ -39,11 +39,14 @@
 #'   variable are included in calculations, and observations where a group
 #'   variable is `NA` are collected into their own group row in the output
 #'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API uniformity. Default `TRUE`.
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. For `get_totals()`, no value-level cells appear in the output,
+#'   so this parameter has no effect. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`.
-#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
-#'   named-only when a `survey_collection` is passed as `design`.
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param .id Character(1) or `NULL`. Column name used to identify each
 #'   survey when `design` is a [`survey_collection`]. For collection inputs,
 #'   `NULL` (the default) resolves to the collection's stored `@id` property.
@@ -64,12 +67,15 @@
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
 #' The variable name (or `NULL` for no-variable mode) is in
-#' `meta(result)$variable`. Use `meta(result)` for additional metadata.
+#' `meta(result)$x`. Use `meta(result)` for additional metadata.
 #'
 #' @examples
-#' d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
-#'                    repweights = pwgtp1:pwgtp80,
-#'                    type = "successive-difference")
+#' d <- as_survey_replicate(
+#'   acs_pums_wy,
+#'   weights = pwgtp,
+#'   repweights = pwgtp1:pwgtp80,
+#'   type = "successive-difference"
+#' )
 #'
 #' # Population size
 #' get_totals(d)
@@ -79,7 +85,6 @@
 #'
 #' # Grouped
 #' get_totals(d, agep, group = sex)
-#'
 #' @family analysis
 #' @export
 get_totals <- function(
