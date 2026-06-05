@@ -5,6 +5,7 @@
     Output
       # A survey_t_test result
       # Design: Taylor series | N: 3,197
+      # DV: age of respondent | By: sex (Male vs. Female)
       # A <tbl_df> [1 × 13]
       # A tibble: 1 x 13
         level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high t_stat    df
@@ -99,6 +100,7 @@
     Output
       # A survey_pairwise result
       # Design: Taylor series | N: 3,197
+      # DV: age of respondent | By: sex (2 levels, 1 pairs)
       # Adjustment: holm
       # A <tbl_df> [1 × 13]
       # A tibble: 1 x 13

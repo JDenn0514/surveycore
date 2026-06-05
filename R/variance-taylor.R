@@ -83,7 +83,7 @@
     ),
     cli::cli_abort(
       c("x" = "Unknown {.arg lonely.psu} value: {.val {lonely.psu}}."),
-      class = "surveycore_error_lonely_psu"
+      class = "surveycore_error_lonely_psu_unknown_option"
     )
   )
 }
@@ -391,7 +391,6 @@
 .vcov_pair_taylor <- function(design, x_col, y_col, domain, na.rm = TRUE) {
   data <- design@data
   vars <- design@variables
-  n_full <- nrow(data)
   w <- data[[vars$weights]]
   x_all <- data[[x_col]]
   y_all <- data[[y_col]]

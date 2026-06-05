@@ -106,7 +106,7 @@
         invokeRestart("muffleWarning")
       }, warning = function(w) invokeRestart("muffleWarning")))
     Message
-      ! Estimated correlation for pair (o1, o2) is within "1e-6" of the boundary (0.999917287383696).
+      ! Estimated correlation for pair (o1, o2) is within "1e-4" of the boundary (0.999917287383696).
       i Standard errors based on the delta method or Fisher-z linearization are unreliable near "-1" and "1".
 
 # PC-10 (zero-count interior level) at public API (dual)

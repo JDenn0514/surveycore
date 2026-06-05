@@ -96,7 +96,7 @@ NULL
   } else if (S7::S7_inherits(d, survey_twophase)) {
     "Two-phase"
   } else if (S7::S7_inherits(d, survey_nonprob)) {
-    "Calibrated"
+    "Non-probability"
   } else {
     "Unknown"
   }
@@ -395,7 +395,7 @@ confint.survey_glm_fit <- function(object, parm, level = 0.95, ...) {
     cli::cli_abort(
       c(
         "x" = paste0(
-          "{.arg conf_level} must be a single number strictly between 0 and 1.",
+          "{.arg level} must be a single number strictly between 0 and 1.",
           " Got {.val {level}}."
         )
       ),
@@ -554,8 +554,11 @@ update.survey_glm_fit <- function(object, formula., ...) {
   call <- getCall.survey_glm_fit(object)
   if (is.null(call)) {
     cli::cli_abort(
-      c("x" = "Cannot update: {.arg object@call} is NULL."),
-      class = "surveycore_error_predict_no_fit"
+      c(
+        "x" = "Cannot update {.cls survey_glm_fit}: {.field @call} is NULL.",
+        "v" = "Refit the model to restore {.fn update} support."
+      ),
+      class = "surveycore_error_update_no_call"
     )
   }
   extras <- match.call(expand.dots = FALSE)$...

@@ -9,7 +9,6 @@
 # Layer 3 (constructor / mutator) errors: dual pattern (class= + snapshot).
 # Duplicate-name repair warnings: dual pattern (class= + snapshot).
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 # Build two distinct, small survey_taylor objects for collection tests.
@@ -52,28 +51,36 @@ test_that("survey_collection() validator rejects empty list", {
   )
 })
 
-test_that("survey_collection() validator rejects unnamed elements", {
+test_that("survey_collection() validator rejects unnamed elements with surveycore_error_collection_unnamed", {
   s <- .coll_surveys()
   expect_error(
     survey_collection(surveys = list(s$d1, s$d2)),
-    class = "surveycore_error_collection_empty"
+    class = "surveycore_error_collection_unnamed"
   )
 })
 
-test_that("survey_collection() validator rejects any empty name", {
+test_that("survey_collection() validator rejects any empty name with surveycore_error_collection_unnamed", {
   s <- .coll_surveys()
   expect_error(
     survey_collection(surveys = list(a = s$d1, s$d2)),
-    class = "surveycore_error_collection_empty"
+    class = "surveycore_error_collection_unnamed"
   )
 })
 
-test_that("survey_collection() validator rejects NA names", {
+test_that("survey_collection() validator rejects NA names with surveycore_error_collection_unnamed", {
   s <- .coll_surveys()
   lst <- list(s$d1, s$d2)
   names(lst) <- c("a", NA_character_)
   expect_error(
     survey_collection(surveys = lst),
+    class = "surveycore_error_collection_unnamed"
+  )
+})
+
+# Regression: empty collection still errors with surveycore_error_collection_empty
+test_that("survey_collection() validator rejects empty list with surveycore_error_collection_empty (regression)", {
+  expect_error(
+    survey_collection(surveys = list()),
     class = "surveycore_error_collection_empty"
   )
 })
@@ -409,11 +416,53 @@ test_that("remove_survey() rejects non-survey_collection first arg", {
   )
 })
 
-test_that("remove_survey() rejects non-character name", {
+test_that("remove_survey() rejects integer name with surveycore_error_invalid_name_type", {
   s <- .coll_surveys()
   coll <- as_survey_collection(a = s$d1, b = s$d2)
   expect_error(
     remove_survey(coll, 1L),
+    class = "surveycore_error_invalid_name_type"
+  )
+})
+
+test_that("remove_survey() rejects logical name with surveycore_error_invalid_name_type", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_error(
+    remove_survey(coll, TRUE),
+    class = "surveycore_error_invalid_name_type"
+  )
+})
+
+test_that("remove_survey() rejects NULL name with surveycore_error_invalid_name_type", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_error(
+    remove_survey(coll, NULL),
+    class = "surveycore_error_invalid_name_type"
+  )
+})
+
+test_that("remove_survey() NA_character_ passes type check but errors on name not found", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_error(
+    remove_survey(coll, NA_character_),
+    class = "surveycore_error_collection_name_not_found"
+  )
+})
+
+test_that("remove_survey() error snapshot for invalid name type", {
+  s <- .coll_surveys()
+  coll <- as_survey_collection(a = s$d1, b = s$d2)
+  expect_snapshot(error = TRUE, remove_survey(coll, 1L))
+})
+
+# Regression: non-survey_collection x still errors with not_survey_collection
+test_that("remove_survey() rejects non-survey_collection first arg (regression)", {
+  s <- .coll_surveys()
+  expect_error(
+    remove_survey(s$d1, "a"),
     class = "surveycore_error_not_survey_collection"
   )
 })

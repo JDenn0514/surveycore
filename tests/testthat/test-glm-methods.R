@@ -60,36 +60,47 @@ test_that("print.survey_glm_fit() snapshot matches expected format", {
 
 test_that("summary.survey_glm_fit() returns survey_glm_summary class", {
   fit <- .fit_gaussian()
-  s   <- summary(fit)
+  s <- summary(fit)
   expect_true(inherits(s, "survey_glm_summary"))
   expect_type(s, "list")
 })
 
 test_that("survey_glm_summary has all required fields", {
   fit <- .fit_gaussian()
-  s   <- summary(fit)
-  expected_fields <- c("coefficients", "deviance", "null_deviance", "df_residual",
-                       "df_null", "dispersion", "family", "call",
-                       "design_type", "degf")
+  s <- summary(fit)
+  expected_fields <- c(
+    "coefficients",
+    "deviance",
+    "null_deviance",
+    "df_residual",
+    "df_null",
+    "dispersion",
+    "family",
+    "call",
+    "design_type",
+    "degf"
+  )
   expect_true(all(expected_fields %in% names(s)))
 })
 
 test_that("survey_glm_summary$coefficients is a p x 4 named matrix", {
   fit <- .fit_gaussian()
-  s   <- summary(fit)
+  s <- summary(fit)
   coef_mat <- s$coefficients
   p <- length(fit@coefficients)
   expect_true(is.matrix(coef_mat))
   expect_identical(dim(coef_mat), c(p, 4L))
-  expect_identical(colnames(coef_mat),
-                   c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
+  expect_identical(
+    colnames(coef_mat),
+    c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+  )
   expect_identical(rownames(coef_mat), names(fit@coefficients))
 })
 
 # Item 2a: print(summary(fit)) snapshot
 test_that("print.survey_glm_summary() returns invisible(x)", {
   fit <- .fit_gaussian()
-  s   <- summary(fit)
+  s <- summary(fit)
   result <- withVisible(print(s))
   expect_false(result$visible)
   expect_identical(result$value, s)
@@ -170,9 +181,9 @@ test_that("predict(fit, type = 'link') returns link-scale fitted values", {
 # ---------------------------------------------------------------------------
 
 test_that("predict(fit, new_data = df) returns correct length vector", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
-  nd  <- d@data[1:10, ]
+  nd <- d@data[1:10, ]
   preds <- predict(fit, new_data = nd)
   expect_type(preds, "double")
   expect_equal(length(preds), 10L)
@@ -180,7 +191,7 @@ test_that("predict(fit, new_data = df) returns correct length vector", {
 
 # Item 6a: predict(type = "terms") returns matrix
 test_that("predict(fit, type = 'terms') returns a matrix", {
-  fit   <- .fit_gaussian()
+  fit <- .fit_gaussian()
   terms_preds <- predict(fit, type = "terms")
   expect_true(is.matrix(terms_preds))
   # Number of columns equals number of non-intercept terms
@@ -220,9 +231,9 @@ test_that("fitted() values numerically equal predict(fit) values", {
 # ---------------------------------------------------------------------------
 
 test_that("residuals(type = 'response') returns y - fitted_values", {
-  fit    <- .fit_gaussian()
+  fit <- .fit_gaussian()
   resids <- residuals(fit, type = "response")
-  y      <- stats::model.response(stats::model.frame(fit@fit_))
+  y <- stats::model.response(stats::model.frame(fit@fit_))
   expect_equal(resids, as.numeric(y - fit@fitted_values))
 })
 
@@ -241,8 +252,8 @@ test_that("residuals(type = 'working') returns fit@residuals", {
 
 test_that("residuals(type = 'pearson') delegates to fit_ for binomial (differs from working)", {
   fit_bin <- .fit_binomial()
-  pearson  <- residuals(fit_bin, type = "pearson")
-  working  <- residuals(fit_bin, type = "working")
+  pearson <- residuals(fit_bin, type = "pearson")
+  working <- residuals(fit_bin, type = "working")
   # Pearson and working residuals differ for binomial family
   expect_true(any(pearson != working))
 })
@@ -263,7 +274,7 @@ test_that("residuals(type = 'deviance') delegates to fit_ for binomial (differs 
 # ---------------------------------------------------------------------------
 
 test_that("residuals(type = 'partial') returns a matrix with one column per predictor", {
-  fit     <- .fit_gaussian()
+  fit <- .fit_gaussian()
   partial <- residuals(fit, type = "partial")
   expect_true(is.matrix(partial))
   # Number of columns = number of non-intercept predictors
@@ -323,7 +334,7 @@ test_that("residuals(type = 'partial') with fit_ = NULL errors surveycore_error_
 # Item 16a: residuals(type = "response") binomial — values in [-1, 1]
 test_that("residuals(type = 'response') binomial uses model frame response (0/1)", {
   fit_bin <- .fit_binomial()
-  resids  <- residuals(fit_bin, type = "response")
+  resids <- residuals(fit_bin, type = "response")
   # Response is 0/1 so residuals are in [-1, 1]
   expect_true(all(resids >= -1 & resids <= 1))
 })
@@ -337,37 +348,37 @@ test_that("residuals(type = 'response') binomial uses model frame response (0/1)
 # ---------------------------------------------------------------------------
 
 test_that("confint() returns matrix with correct row and column names", {
-  fit  <- .fit_gaussian()
-  ci   <- confint(fit)
+  fit <- .fit_gaussian()
+  ci <- confint(fit)
   expect_true(is.matrix(ci))
   expect_identical(rownames(ci), names(fit@coefficients))
   expect_identical(colnames(ci), c("2.5 %", "97.5 %"))
 })
 
 test_that("confint() bounds match manual calculation", {
-  fit  <- .fit_gaussian()
-  ci   <- confint(fit)
-  se   <- sqrt(diag(fit@vcov))
-  p    <- length(fit@coefficients)
-  df   <- max(1, fit@degf - (p - 1L))
-  hw   <- stats::qt(0.975, df = df) * se
-  expected_low  <- fit@coefficients - hw
+  fit <- .fit_gaussian()
+  ci <- confint(fit)
+  se <- sqrt(diag(fit@vcov))
+  p <- length(fit@coefficients)
+  df <- max(1, fit@degf - (p - 1L))
+  hw <- stats::qt(0.975, df = df) * se
+  expected_low <- fit@coefficients - hw
   expected_high <- fit@coefficients + hw
-  expect_equal(ci[, "2.5 %"],  expected_low,  tolerance = 1e-12)
+  expect_equal(ci[, "2.5 %"], expected_low, tolerance = 1e-12)
   expect_equal(ci[, "97.5 %"], expected_high, tolerance = 1e-12)
 })
 
 test_that("confint(parm = ...) subsets by name correctly", {
-  fit     <- .fit_gaussian()
+  fit <- .fit_gaussian()
   full_ci <- confint(fit)
-  sub_ci  <- confint(fit, parm = "(Intercept)")
+  sub_ci <- confint(fit, parm = "(Intercept)")
   expect_identical(sub_ci, full_ci["(Intercept)", , drop = FALSE])
 })
 
 test_that("confint() with non-default level uses correct quantile", {
-  fit    <- .fit_gaussian()
-  ci_90  <- confint(fit, level = 0.90)
-  ci_95  <- confint(fit, level = 0.95)
+  fit <- .fit_gaussian()
+  ci_90 <- confint(fit, level = 0.90)
+  ci_95 <- confint(fit, level = 0.95)
   # Wider CI at higher confidence level
   width_90 <- ci_90[, 2L] - ci_90[, 1L]
   width_95 <- ci_95[, 2L] - ci_95[, 1L]
@@ -392,7 +403,7 @@ test_that("confint() with level outside (0,1) errors surveycore_error_invalid_co
 # ---------------------------------------------------------------------------
 
 test_that("formula() returns object@formula (identical)", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
   expect_identical(formula(fit), y1 ~ y2 + y3)
 })
@@ -425,7 +436,7 @@ test_that("terms() with fit_ = NULL errors surveycore_error_predict_no_fit", {
 
 test_that("model.matrix() returns matrix with correct dimensions", {
   fit <- .fit_gaussian()
-  mm  <- model.matrix(fit)
+  mm <- model.matrix(fit)
   expect_true(is.matrix(mm))
   expect_equal(nrow(mm), length(fit@fitted_values))
   expect_equal(ncol(mm), length(fit@coefficients))
@@ -449,9 +460,9 @@ test_that("model.matrix() with fit_ = NULL errors surveycore_error_predict_no_fi
 # ---------------------------------------------------------------------------
 
 test_that("model.frame() returns data frame with model formula columns", {
-  d   <- .glm_taylor()
+  d <- .glm_taylor()
   fit <- survey_glm(d, y1 ~ y2 + y3)
-  mf  <- model.frame(fit)
+  mf <- model.frame(fit)
   expect_true(is.data.frame(mf))
   expect_true(all(c("y1", "y2", "y3") %in% names(mf)))
 })
@@ -502,7 +513,7 @@ test_that("nobs() returns length(object@fitted_values)", {
 
 test_that("hatvalues() returns numeric vector matching hatvalues(fit@fit_)", {
   fit <- .fit_gaussian()
-  hv  <- hatvalues(fit)
+  hv <- hatvalues(fit)
   expect_type(hv, "double")
   expect_equal(length(hv), length(fit@fitted_values))
   expect_equal(hv, stats::hatvalues(fit@fit_))
@@ -584,11 +595,11 @@ test_that("BIC() with fit_ = NULL errors surveycore_error_predict_no_fit", {
 # ---------------------------------------------------------------------------
 
 test_that("update(fit, family = poisson()) returns new survey_glm_fit with Poisson family", {
-  d        <- .glm_taylor()
+  d <- .glm_taylor()
   # Use a non-negative response for Poisson
   d@data$y_count <- as.integer(abs(round(d@data$y1)))
-  fit_gauss  <- survey_glm(d, y_count ~ y2)
-  fit_pois   <- update(fit_gauss, family = poisson())
+  fit_gauss <- survey_glm(d, y_count ~ y2)
+  fit_pois <- update(fit_gauss, family = poisson())
   expect_true(S7::S7_inherits(fit_pois, survey_glm_fit))
   expect_identical(fit_pois@family$family, "poisson")
 })
@@ -598,14 +609,76 @@ test_that("update(fit, family = poisson()) returns new survey_glm_fit with Poiss
 # ---------------------------------------------------------------------------
 
 test_that("print(clean(fit)) snapshot matches expected format and class is correct", {
-  d      <- .glm_taylor()
-  fit    <- survey_glm(d, y1 ~ y2)
+  d <- .glm_taylor()
+  fit <- survey_glm(d, y1 ~ y2)
   result <- clean(fit)
   # Class hierarchy
-  expect_identical(class(result), c("survey_glm_tidy", "survey_result",
-                                    "tbl_df", "tbl", "data.frame"))
+  expect_identical(
+    class(result),
+    c("survey_glm_tidy", "survey_result", "tbl_df", "tbl", "data.frame")
+  )
   # Invariants
   test_glm_tidy_invariants(result)
   # Print snapshot — inherits print.survey_result() from Phase 1
   expect_snapshot(print(result))
+})
+
+
+# ---------------------------------------------------------------------------
+# B4: .glm_design_type_label() for survey_nonprob
+# ---------------------------------------------------------------------------
+
+test_that("print.survey_glm_fit() shows 'Non-probability' for survey_nonprob design", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "bootstrap",
+    seed = 7L
+  )
+  # as_survey_nonprob requires repweights
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols)
+  )
+  fit_np <- survey_glm(d_np, y1 ~ y2)
+  out <- capture.output(print(fit_np))
+  design_line <- grep("Design:", out, value = TRUE)
+  expect_length(design_line, 1L)
+  expect_true(grepl("Non-probability", design_line))
+  expect_false(grepl("Calibrated", design_line))
+})
+
+
+# ---------------------------------------------------------------------------
+# B5: confint() error text uses "level" not "conf_level"
+# ---------------------------------------------------------------------------
+
+test_that("confint() invalid level error references 'level' arg name", {
+  fit <- .fit_gaussian()
+  expect_error(
+    confint(fit, level = 1.5),
+    class = "surveycore_error_invalid_conf_level"
+  )
+  # Snapshot must contain "level" not "conf_level" in the error message
+  expect_snapshot(error = TRUE, confint(fit, level = 1.5))
+})
+
+
+# ---------------------------------------------------------------------------
+# B6: update.survey_glm_fit wrong error class when @call is NULL
+# ---------------------------------------------------------------------------
+
+test_that("update() with @call = NULL errors with surveycore_error_update_no_call", {
+  fit <- .fit_gaussian()
+  fit_no_call <- fit
+  fit_no_call@call <- NULL
+  expect_error(
+    update(fit_no_call),
+    class = "surveycore_error_update_no_call"
+  )
+  expect_snapshot(error = TRUE, update(fit_no_call))
 })

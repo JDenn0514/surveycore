@@ -343,9 +343,8 @@
         ),
         "v" = paste0(
           "Create a survey object with {.fn as_survey}, ",
-          "{.fn as_survey_replicate},"
-        ),
-        " " = "or {.fn as_survey_twophase}."
+          "{.fn as_survey_replicate}, or {.fn as_survey_twophase}."
+        )
       ),
       class = "surveycore_error_not_survey",
       call = call
@@ -1647,7 +1646,7 @@ extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
           "{.arg fill} must be {.code FALSE} or {.code NULL}."
         )
       ),
-      class = "surveycore_error_sata_not_logical",
+      class = "surveycore_error_fill_not_logical",
       call = call
     )
   }
@@ -1893,15 +1892,21 @@ extract_higher_is <- function(x, ..., variable = NULL) {
     var_names <- all_cols
   }
 
-  out <- vapply(var_names, function(v) {
-    if (S7::S7_inherits(x, survey_base)) {
-      x@metadata@higher_is[[v]] %||% NA_character_
-    } else {
-      attr(x[[v]], "higher_is", exact = TRUE) %||% NA_character_
-    }
-  }, character(1L))
+  out <- vapply(
+    var_names,
+    function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@higher_is[[v]] %||% NA_character_
+      } else {
+        attr(x[[v]], "higher_is", exact = TRUE) %||% NA_character_
+      }
+    },
+    character(1L)
+  )
 
-  if (length(out) == 0L) out <- unname(out)
+  if (length(out) == 0L) {
+    out <- unname(out)
+  }
   out
 }
 
@@ -1949,8 +1954,11 @@ set_reverse_coded <- function(x, ..., variable = NULL, reverse_coded = TRUE) {
   call <- rlang::caller_env()
   .check_is_survey_or_df(x, call = call)
 
-  if (!is.logical(reverse_coded) || length(reverse_coded) != 1L ||
-      is.na(reverse_coded)) {
+  if (
+    !is.logical(reverse_coded) ||
+      length(reverse_coded) != 1L ||
+      is.na(reverse_coded)
+  ) {
     cli::cli_abort(
       c("x" = "{.arg reverse_coded} must be {.code TRUE} or {.code FALSE}."),
       class = "surveycore_error_reverse_coded_not_logical",
@@ -2089,15 +2097,21 @@ extract_reverse_coded <- function(x, ..., variable = NULL) {
     var_names <- all_cols
   }
 
-  out <- vapply(var_names, function(v) {
-    if (S7::S7_inherits(x, survey_base)) {
-      isTRUE(x@metadata@reverse_coded[[v]])
-    } else {
-      isTRUE(attr(x[[v]], "reverse_coded", exact = TRUE))
-    }
-  }, logical(1L))
+  out <- vapply(
+    var_names,
+    function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        isTRUE(x@metadata@reverse_coded[[v]])
+      } else {
+        isTRUE(attr(x[[v]], "reverse_coded", exact = TRUE))
+      }
+    },
+    logical(1L)
+  )
 
-  if (length(out) == 0L) out <- unname(out)
+  if (length(out) == 0L) {
+    out <- unname(out)
+  }
   out
 }
 

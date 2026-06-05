@@ -7,7 +7,11 @@
 # GSS fixture for snapshot tests
 .make_gss_design <- function() {
   gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-  gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
+  gss_sub$sex <- factor(
+    gss_sub$sex,
+    levels = c(1, 2),
+    labels = c("Male", "Female")
+  )
   as_survey(gss_sub, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
 }
 
@@ -41,8 +45,19 @@ test_that("get_t_test() returns survey_t_test with correct columns (no group)", 
   expect_s3_class(result, "survey_result")
   expect_equal(nrow(result), 1L)
   expected_cols <- c(
-    "level_a", "level_b", "estimate", "mean_a", "mean_b",
-    "n_a", "n_b", "ci_low", "ci_high", "t_stat", "df", "p_value", "stars"
+    "level_a",
+    "level_b",
+    "estimate",
+    "mean_a",
+    "mean_b",
+    "n_a",
+    "n_b",
+    "ci_low",
+    "ci_high",
+    "t_stat",
+    "df",
+    "p_value",
+    "stars"
   )
   expect_true(all(expected_cols %in% names(result)))
   expect_type(result$level_a, "character")
@@ -59,7 +74,7 @@ test_that("get_t_test() returns survey_t_test with correct columns (no group)", 
 test_that("get_t_test() returns one row per group stratum when group is active", {
   d <- .make_ttest_design()
   result <- get_t_test(d, outcome, by = grp2, group = gender)
-  expect_equal(nrow(result), 2L)  # M and F
+  expect_equal(nrow(result), 2L) # M and F
   expect_true("gender" %in% names(result))
 })
 
@@ -67,8 +82,10 @@ test_that("get_t_test() estimate == mean_b - mean_a", {
   d <- .make_ttest_design()
   result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"))
   expect_equal(
-    result$estimate, result$mean_b - result$mean_a,
-    tolerance = 1e-10, ignore_attr = TRUE
+    result$estimate,
+    result$mean_b - result$mean_a,
+    tolerance = 1e-10,
+    ignore_attr = TRUE
   )
 })
 
@@ -76,8 +93,10 @@ test_that("get_t_test() t_stat == estimate / se", {
   d <- .make_ttest_design()
   result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"))
   expect_equal(
-    result$t_stat, result$estimate / result$se,
-    tolerance = 1e-10, ignore_attr = TRUE
+    result$t_stat,
+    result$estimate / result$se,
+    tolerance = 1e-10,
+    ignore_attr = TRUE
   )
 })
 
@@ -85,16 +104,37 @@ test_that("get_t_test() p_value == 2 * pt(-abs(t_stat), df = df)", {
   d <- .make_ttest_design()
   result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"))
   expected_p <- 2 * stats::pt(-abs(result$t_stat), df = result$df)
-  expect_equal(result$p_value, expected_p, tolerance = 1e-10, ignore_attr = TRUE)
+  expect_equal(
+    result$p_value,
+    expected_p,
+    tolerance = 1e-10,
+    ignore_attr = TRUE
+  )
 })
 
 test_that("get_t_test() CI bounds use qt formula", {
   d <- .make_ttest_design()
   conf <- 0.95
-  result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"), conf_level = conf)
+  result <- get_t_test(
+    d,
+    outcome,
+    by = grp2,
+    variance = c("se", "ci"),
+    conf_level = conf
+  )
   half <- stats::qt((1 + conf) / 2, df = result$df) * result$se
-  expect_equal(result$ci_low, result$estimate - half, tolerance = 1e-10, ignore_attr = TRUE)
-  expect_equal(result$ci_high, result$estimate + half, tolerance = 1e-10, ignore_attr = TRUE)
+  expect_equal(
+    result$ci_low,
+    result$estimate - half,
+    tolerance = 1e-10,
+    ignore_attr = TRUE
+  )
+  expect_equal(
+    result$ci_high,
+    result$estimate + half,
+    tolerance = 1e-10,
+    ignore_attr = TRUE
+  )
 })
 
 test_that("get_t_test() variance = 'se' omits CI columns", {
@@ -143,7 +183,13 @@ test_that("get_t_test() label_vars = TRUE and FALSE both accepted without error"
 
 test_that("get_t_test() name_style = 'broom' renames columns correctly", {
   d <- .make_ttest_design()
-  result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"), name_style = "broom")
+  result <- get_t_test(
+    d,
+    outcome,
+    by = grp2,
+    variance = c("se", "ci"),
+    name_style = "broom"
+  )
   expect_true("std.error" %in% names(result))
   expect_true("conf.low" %in% names(result))
   expect_true("conf.high" %in% names(result))
@@ -158,10 +204,20 @@ test_that("get_t_test() name_style = 'broom' renames columns correctly", {
 
 test_that("get_t_test() decimals = 2 rounds all double columns", {
   d <- .make_ttest_design()
-  result <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"), decimals = 2)
+  result <- get_t_test(
+    d,
+    outcome,
+    by = grp2,
+    variance = c("se", "ci"),
+    decimals = 2
+  )
   double_cols <- vapply(result, is.double, logical(1L))
   for (nm in names(result)[double_cols]) {
-    expect_equal(result[[nm]], round(result[[nm]], 2), label = paste0("column: ", nm))
+    expect_equal(
+      result[[nm]],
+      round(result[[nm]], 2),
+      label = paste0("column: ", nm)
+    )
   }
 })
 
@@ -195,8 +251,14 @@ test_that("get_t_test() works with survey_taylor design", {
 
 test_that("get_t_test() works with survey_replicate design", {
   df <- .make_ttest_data()
-  d_rep <- as_survey_replicate(df, weights = wt, repweights = starts_with("y"),
-    type = "JK1", scale = 1, mse = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("y"),
+    type = "JK1",
+    scale = 1,
+    mse = TRUE
+  )
   result <- get_t_test(d_rep, outcome, by = grp2)
   expect_s3_class(result, "survey_t_test")
   expect_equal(nrow(result), 1L)
@@ -238,7 +300,7 @@ test_that("get_t_test() group with multiple group vars: one row per combination"
   df$grp_b <- factor(rep_len(c("X", "Y"), nrow(df)))
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_t_test(d, outcome, by = grp2, group = c(gender, grp_b))
-  expect_equal(nrow(result), 4L)  # 2 gender * 2 grp_b combinations
+  expect_equal(nrow(result), 4L) # 2 gender * 2 grp_b combinations
 })
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -343,7 +405,10 @@ test_that("get_t_test() rejects invalid conf_level", {
     get_t_test(d, outcome, by = grp2, conf_level = 1.5),
     class = "surveycore_error_invalid_conf_level"
   )
-  expect_snapshot(error = TRUE, get_t_test(d, outcome, by = grp2, conf_level = 1.5))
+  expect_snapshot(
+    error = TRUE,
+    get_t_test(d, outcome, by = grp2, conf_level = 1.5)
+  )
 })
 
 test_that("get_t_test() rejects invalid variance arg", {
@@ -352,7 +417,10 @@ test_that("get_t_test() rejects invalid variance arg", {
     get_t_test(d, outcome, by = grp2, variance = "sd"),
     class = "surveycore_error_invalid_variance_arg"
   )
-  expect_snapshot(error = TRUE, get_t_test(d, outcome, by = grp2, variance = "sd"))
+  expect_snapshot(
+    error = TRUE,
+    get_t_test(d, outcome, by = grp2, variance = "sd")
+  )
 })
 
 test_that("get_t_test() rejects na.rm not logical", {
@@ -361,7 +429,10 @@ test_that("get_t_test() rejects na.rm not logical", {
     get_t_test(d, outcome, by = grp2, na.rm = "yes"),
     class = "surveycore_error_na_rm_not_logical"
   )
-  expect_snapshot(error = TRUE, get_t_test(d, outcome, by = grp2, na.rm = "yes"))
+  expect_snapshot(
+    error = TRUE,
+    get_t_test(d, outcome, by = grp2, na.rm = "yes")
+  )
 })
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -466,7 +537,7 @@ test_that("get_t_test() na.rm = FALSE when x has no NAs: identical to TRUE", {
 
 test_that("get_t_test() conf_level = 0.99 produces wider CI than 0.95", {
   d <- .make_ttest_design()
-  r95 <- get_t_test(d, outcome, by = grp2)  # default 0.95
+  r95 <- get_t_test(d, outcome, by = grp2) # default 0.95
   r99 <- get_t_test(d, outcome, by = grp2, conf_level = 0.99)
   width95 <- r95$ci_high - r95$ci_low
   width99 <- r99$ci_high - r99$ci_low
@@ -481,7 +552,18 @@ test_that("get_t_test() .meta contains required keys", {
   d <- .make_ttest_design()
   result <- get_t_test(d, outcome, by = grp2)
   m <- meta(result)
-  expect_true(all(c("design_type", "n_respondents", "conf_level", "call", "group", "x", "by") %in% names(m)))
+  expect_true(all(
+    c(
+      "design_type",
+      "n_respondents",
+      "conf_level",
+      "call",
+      "group",
+      "x",
+      "by"
+    ) %in%
+      names(m)
+  ))
 })
 
 test_that("get_t_test() .meta$by contains levels sub-key with two factor levels", {
@@ -503,8 +585,19 @@ test_that("get_pairwise() returns survey_pairwise with correct columns (no group
   expect_s3_class(result, "survey_pairwise")
   expect_s3_class(result, "survey_result")
   expected_cols <- c(
-    "level_a", "level_b", "estimate", "mean_a", "mean_b",
-    "n_a", "n_b", "ci_low", "ci_high", "t_stat", "df", "p_value", "stars"
+    "level_a",
+    "level_b",
+    "estimate",
+    "mean_a",
+    "mean_b",
+    "n_a",
+    "n_b",
+    "ci_low",
+    "ci_high",
+    "t_stat",
+    "df",
+    "p_value",
+    "stars"
   )
   expect_true(all(expected_cols %in% names(result)))
 })
@@ -512,7 +605,7 @@ test_that("get_pairwise() returns survey_pairwise with correct columns (no group
 test_that("get_pairwise() produces one row per pair for 3-level by", {
   d <- .make_ttest_design()
   result <- get_pairwise(d, outcome, by = grp3)
-  expect_equal(nrow(result), 3L)  # C(3,2) = 3
+  expect_equal(nrow(result), 3L) # C(3,2) = 3
 })
 
 test_that("get_pairwise() produces one row per pair per group stratum", {
@@ -551,20 +644,40 @@ test_that("get_pairwise() stars computed from adjusted p-values", {
   d <- .make_ttest_design()
   result <- get_pairwise(d, outcome, by = grp3, pval_adj = "holm")
   # Recompute stars from adjusted p-values and compare
-  expected_stars <- vapply(result$p_value, function(p) {
-    if (is.na(p)) return("")
-    if (p < 0.001) return("***")
-    if (p < 0.01) return("**")
-    if (p < 0.05) return("*")
-    if (p < 0.1) return(".")
-    return("")
-  }, character(1L))
+  expected_stars <- vapply(
+    result$p_value,
+    function(p) {
+      if (is.na(p)) {
+        return("")
+      }
+      if (p < 0.001) {
+        return("***")
+      }
+      if (p < 0.01) {
+        return("**")
+      }
+      if (p < 0.05) {
+        return("*")
+      }
+      if (p < 0.1) {
+        return(".")
+      }
+      return("")
+    },
+    character(1L)
+  )
   expect_equal(result$stars, expected_stars, ignore_attr = TRUE)
 })
 
 test_that("get_pairwise() with group: adjustment applied separately per stratum", {
   d <- .make_ttest_design()
-  result <- get_pairwise(d, outcome, by = grp3, group = gender, pval_adj = "holm")
+  result <- get_pairwise(
+    d,
+    outcome,
+    by = grp3,
+    group = gender,
+    pval_adj = "holm"
+  )
   # Should have 6 rows: 3 pairs * 2 gender strata
   expect_equal(nrow(result), 6L)
 })
@@ -587,7 +700,13 @@ test_that("get_pairwise() label_vars = TRUE and FALSE both accepted", {
 
 test_that("get_pairwise() name_style = 'broom' renames correctly", {
   d <- .make_ttest_design()
-  result <- get_pairwise(d, outcome, by = grp3, variance = c("se", "ci"), name_style = "broom")
+  result <- get_pairwise(
+    d,
+    outcome,
+    by = grp3,
+    variance = c("se", "ci"),
+    name_style = "broom"
+  )
   expect_true("std.error" %in% names(result))
   expect_true("conf.low" %in% names(result))
   expect_true("conf.high" %in% names(result))
@@ -604,8 +723,14 @@ test_that("get_pairwise() works with survey_taylor design", {
 
 test_that("get_pairwise() works with survey_replicate design", {
   df <- .make_ttest_data()
-  d_rep <- as_survey_replicate(df, weights = wt, repweights = starts_with("y"),
-    type = "JK1", scale = 1, mse = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("y"),
+    type = "JK1",
+    scale = 1,
+    mse = TRUE
+  )
   result <- get_pairwise(d_rep, outcome, by = grp3)
   expect_s3_class(result, "survey_pairwise")
 })
@@ -629,7 +754,13 @@ test_that("get_pairwise() works with survey_nonprob design", {
 test_that("get_pairwise() print snapshot", {
   gss_design <- .make_gss_design()
   expect_snapshot(
-    print(get_pairwise(gss_design, age, by = sex, pval_adj = "holm", decimals = 2))
+    print(get_pairwise(
+      gss_design,
+      age,
+      by = sex,
+      pval_adj = "holm",
+      decimals = 2
+    ))
   )
 })
 
@@ -643,26 +774,35 @@ test_that("get_pairwise() print fallback: x_label defaults to column name when n
 
 test_that("get_pairwise() coerces character by to factor with warning", {
   df <- .make_ttest_data()
-  df$grp_chr <- as.character(df$grp3)  # 3 levels, character type
+  df$grp_chr <- as.character(df$grp3) # 3 levels, character type
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   expect_warning(
     result <- get_pairwise(d, outcome, by = grp_chr),
     class = "surveycore_warning_by_coerced"
   )
   expect_s3_class(result, "survey_pairwise")
-  expect_equal(nrow(result), 3L)  # C(3,2) = 3 pairs
+  expect_equal(nrow(result), 3L) # C(3,2) = 3 pairs
 })
 
 test_that("get_pairwise() on 2-level by matches get_t_test() estimate, SE, unadjusted p", {
   d <- .make_ttest_design()
-  r_pairwise <- get_pairwise(d, outcome, by = grp2, pval_adj = "none",
-    variance = c("se", "ci"))
+  r_pairwise <- get_pairwise(
+    d,
+    outcome,
+    by = grp2,
+    pval_adj = "none",
+    variance = c("se", "ci")
+  )
   r_ttest <- get_t_test(d, outcome, by = grp2, variance = c("se", "ci"))
   expect_equal(r_pairwise$estimate, r_ttest$estimate, tolerance = 1e-10)
   expect_equal(r_pairwise$se, r_ttest$se, tolerance = 1e-8)
   # p_value labels differ ("P-Value (none)" vs "P-Value") — compare values only
-  expect_equal(r_pairwise$p_value, r_ttest$p_value,
-    tolerance = 1e-6, ignore_attr = TRUE)
+  expect_equal(
+    r_pairwise$p_value,
+    r_ttest$p_value,
+    tolerance = 1e-6,
+    ignore_attr = TRUE
+  )
 })
 
 test_that("get_pairwise() p_value label reflects pval_adj method", {
@@ -713,7 +853,7 @@ test_that("get_pairwise() with exactly 2 levels produces exactly 1 pair", {
 test_that("get_pairwise() with 4 levels produces exactly 6 pairs", {
   d <- .make_ttest_design()
   result <- get_pairwise(d, outcome, by = grp4)
-  expect_equal(nrow(result), 6L)  # C(4,2) = 6
+  expect_equal(nrow(result), 6L) # C(4,2) = 6
 })
 
 test_that("get_pairwise() SRS domain estimation matches physical subsetting", {
@@ -733,10 +873,20 @@ test_that("get_pairwise() SRS domain estimation matches physical subsetting", {
   df_sub$grp <- factor(df_sub$grp, levels = c("A", "B", "C"))
   d_sub <- as_survey(df_sub, weights = wt)
 
-  r_domain <- get_pairwise(d_domain, y, by = grp, pval_adj = "none",
-    variance = c("se", "ci"))
-  r_sub <- get_pairwise(d_sub, y, by = grp, pval_adj = "none",
-    variance = c("se", "ci"))
+  r_domain <- get_pairwise(
+    d_domain,
+    y,
+    by = grp,
+    pval_adj = "none",
+    variance = c("se", "ci")
+  )
+  r_sub <- get_pairwise(
+    d_sub,
+    y,
+    by = grp,
+    pval_adj = "none",
+    variance = c("se", "ci")
+  )
 
   # Point estimates match exactly (same data, same GLM computation)
   expect_equal(r_domain$estimate, r_sub$estimate, tolerance = 1e-10)
@@ -762,4 +912,46 @@ test_that("get_pairwise() .meta contains all PAIRWISE_META_KEYS", {
   m <- meta(result)
   all_keys <- c("group", "x", "by", "pval_adj")
   expect_true(all(all_keys %in% names(m)))
+})
+
+
+# ── print label fallback (B1 / B2) ────────────────────────────────────────────
+
+test_that("print.survey_t_test shows raw column name when no label is set", {
+  d <- .make_ttest_design()
+  result <- get_t_test(d, outcome, by = grp2)
+  out <- capture.output(print(result))
+  # "By:" line must contain the column name "grp2", not an empty string
+  by_line <- grep("By:", out, value = TRUE)
+  expect_length(by_line, 1L)
+  expect_true(grepl("grp2", by_line))
+})
+
+test_that("print.survey_t_test shows variable label when label is set", {
+  d <- .make_ttest_design()
+  d <- set_var_label(d, grp2 = "Group membership")
+  result <- get_t_test(d, outcome, by = grp2)
+  out <- capture.output(print(result))
+  by_line <- grep("By:", out, value = TRUE)
+  expect_length(by_line, 1L)
+  expect_true(grepl("Group membership", by_line))
+})
+
+test_that("print.survey_pairwise shows raw column name when no label is set", {
+  d <- .make_ttest_design()
+  result <- get_pairwise(d, outcome, by = grp3)
+  out <- capture.output(print(result))
+  by_line <- grep("By:", out, value = TRUE)
+  expect_length(by_line, 1L)
+  expect_true(grepl("grp3", by_line))
+})
+
+test_that("print.survey_pairwise shows variable label when label is set", {
+  d <- .make_ttest_design()
+  d <- set_var_label(d, grp3 = "Three-level group")
+  result <- get_pairwise(d, outcome, by = grp3)
+  out <- capture.output(print(result))
+  by_line <- grep("By:", out, value = TRUE)
+  expect_length(by_line, 1L)
+  expect_true(grepl("Three-level group", by_line))
 })

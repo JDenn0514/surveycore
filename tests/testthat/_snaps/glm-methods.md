@@ -105,7 +105,7 @@
       confint(fit, level = 1.5)
     Condition
       Error in `confint()`:
-      x `conf_level` must be a single number strictly between 0 and 1. Got 1.5.
+      x `level` must be a single number strictly between 0 and 1. Got 1.5.
 
 # terms() with fit_ = NULL errors surveycore_error_predict_no_fit
 
@@ -182,4 +182,21 @@
       1 (Intercep~ (Interc~ <NA>      (Int~ FALSE          5.04e+1     0.633   7.95e+1
       2 y2         y2       y2        y2    FALSE          4.67e-5     0.837   5.59e-5
       # i 3 more variables: p_value <dbl>, conf_low <dbl>, conf_high <dbl>
+
+# confint() invalid level error references 'level' arg name
+
+    Code
+      confint(fit, level = 1.5)
+    Condition
+      Error in `confint()`:
+      x `level` must be a single number strictly between 0 and 1. Got 1.5.
+
+# update() with @call = NULL errors with surveycore_error_update_no_call
+
+    Code
+      update(fit_no_call)
+    Condition
+      Error in `update()`:
+      x Cannot update <survey_glm_fit>: @call is NULL.
+      v Refit the model to restore `update()` support.
 

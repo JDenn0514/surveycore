@@ -148,7 +148,7 @@
       
       Family:  gaussian (identity link)
       Formula: y1 ~ y2
-      Design:  Calibrated
+      Design:  Non-probability
       
       Coefficients:
       (Intercept)          y2 

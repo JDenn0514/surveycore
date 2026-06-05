@@ -1630,7 +1630,7 @@
       c(
         "!" = paste0(
           "Estimated correlation for pair ({.field {x_col}}, ",
-          "{.field {y_col}}) is within {.val 1e-6} of the boundary ",
+          "{.field {y_col}}) is within {.val 1e-4} of the boundary ",
           "({.val {rho_hat}})."
         ),
         "i" = paste0(
