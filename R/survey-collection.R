@@ -17,7 +17,6 @@
 #   - .dispatch_over_collection()  — dispatch helper for collection-aware get_*()
 #   - .warn_on_meta_divergence()   — divergence warning helper
 
-
 # ── .validate_collection_id() ─────────────────────────────────────────────────
 
 #' Validate a `survey_collection` `@id` value
@@ -305,7 +304,6 @@
 # Constructor lives in R/core-constructors.R to match other as_survey_*()
 # constructors. See that file.
 
-
 # ── add_survey() ──────────────────────────────────────────────────────────────
 
 #' Add Surveys to a `survey_collection`
@@ -476,9 +474,13 @@ remove_survey <- function(x, name) {
   if (!is.character(name)) {
     cli::cli_abort(
       c(
-        "x" = "{.arg name} must be a character vector, not {.cls {class(name)}}."
+        "x" = paste0(
+          "{.arg name} must be a character vector, not ",
+          "{.cls {class(name)[[1L]]}}."
+        ),
+        "i" = "Got {.cls {class(name)[[1L]]}} instead."
       ),
-      class = "surveycore_error_not_survey_collection"
+      class = "surveycore_error_invalid_name_type"
     )
   }
 

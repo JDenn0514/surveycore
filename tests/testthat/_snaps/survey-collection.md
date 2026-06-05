@@ -27,6 +27,15 @@
       x Name not found in collection: "nope".
       i Available: "a" and "b".
 
+# remove_survey() error snapshot for invalid name type
+
+    Code
+      remove_survey(coll, 1L)
+    Condition
+      Error in `remove_survey()`:
+      x `name` must be a character vector, not <integer>.
+      i Got <integer> instead.
+
 # as_survey_collection() rejects .id = NA_character_
 
     Code

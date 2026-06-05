@@ -23,7 +23,12 @@ skip_on_cran()
 
 # Build a small unweighted Taylor design with two 4-level ordinal factors;
 # correlated via a shifted coding of o1 into o2.
-make_latent_taylor <- function(n = 200L, seed = 42L, n_psu = 20L, n_strata = 4L) {
+make_latent_taylor <- function(
+  n = 200L,
+  seed = 42L,
+  n_psu = 20L,
+  n_strata = 4L
+) {
   set.seed(seed)
   df <- make_survey_data(
     n = n,
@@ -233,95 +238,89 @@ test_that("get_corr() method = 'polychoric' works on stratified survey_taylor", 
   expect_gte(r$ci_high[[1L]], r$r[[1L]])
 })
 
-test_that(
-  "get_corr() method = 'polychoric' on JK1 replicate matches taylor",
-  {
-    # Use the same underlying data for both designs so the MLE rho is equal.
-    set.seed(20L)
-    df <- make_survey_data(
-      n = 160L,
-      n_psu = 20L,
-      n_strata = 4L,
-      design = "replicate",
-      type = "jk1",
-      seed = 20L
-    )
-    df$o1 <- factor(sample(1:4, nrow(df), replace = TRUE), ordered = TRUE)
-    shift <- as.integer(df$o1) + sample(-1:1, nrow(df), replace = TRUE)
-    shift[shift < 1L] <- 1L
-    shift[shift > 4L] <- 4L
-    df$o2 <- factor(shift, levels = 1:4, ordered = TRUE)
-    rep_cols <- grep("^repwt_", names(df), value = TRUE)
-    d_rep <- as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = tidyselect::all_of(rep_cols),
-      type = "JK1"
-    )
-    d_tay <- as_survey(df, ids = psu, weights = wt, strata = strata,
-      nest = TRUE)
-    r_rep <- get_corr(d_rep, x = c(o1, o2), method = "polychoric")
-    r_tay <- get_corr(d_tay, x = c(o1, o2), method = "polychoric")
-    expect_equal(r_rep$r[[1L]], r_tay$r[[1L]], tolerance = 1e-6)
-  }
-)
+test_that("get_corr() method = 'polychoric' on JK1 replicate matches taylor", {
+  # Use the same underlying data for both designs so the MLE rho is equal.
+  set.seed(20L)
+  df <- make_survey_data(
+    n = 160L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jk1",
+    seed = 20L
+  )
+  df$o1 <- factor(sample(1:4, nrow(df), replace = TRUE), ordered = TRUE)
+  shift <- as.integer(df$o1) + sample(-1:1, nrow(df), replace = TRUE)
+  shift[shift < 1L] <- 1L
+  shift[shift > 4L] <- 4L
+  df$o2 <- factor(shift, levels = 1:4, ordered = TRUE)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  d_tay <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  r_rep <- get_corr(d_rep, x = c(o1, o2), method = "polychoric")
+  r_tay <- get_corr(d_tay, x = c(o1, o2), method = "polychoric")
+  expect_equal(r_rep$r[[1L]], r_tay$r[[1L]], tolerance = 1e-6)
+})
 
-test_that(
-  "get_corr() method = 'polychoric' on BRR replicate produces se > 0",
-  {
-    d <- make_latent_replicate(type = "brr", n = 160L, seed = 22L)
-    r <- get_corr(d, x = c(o1, o2), method = "polychoric",
-      variance = c("se", "ci"))
-    expect_true(is.finite(r$r[[1L]]))
-    expect_true(r$se[[1L]] > 0)
-  }
-)
+test_that("get_corr() method = 'polychoric' on BRR replicate produces se > 0", {
+  d <- make_latent_replicate(type = "brr", n = 160L, seed = 22L)
+  r <- get_corr(
+    d,
+    x = c(o1, o2),
+    method = "polychoric",
+    variance = c("se", "ci")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+  expect_true(r$se[[1L]] > 0)
+})
 
 
 # =============================================================================
 # Category 3 — Polyserial happy path + oracle parity (Tasks 12-13)
 # =============================================================================
 
-test_that(
-  "get_corr() method = 'polyserial' matches hand two-step on 3-level fixture",
-  {
-    # decisions.md B1 established .hand_polyserial_twostep() as the strict
-    # oracle for surveycore's Cox (1974) two-step polyserial MLE, pinned at
-    # 1e-6. PR 1 achieves 1e-6 at the primitive layer; the public API
-    # wraps the same .corr_polyserial_mle() call and so inherits the
-    # tolerance. polycor::polyserial(ML = TRUE) is a joint MLE and is
-    # mathematically inappropriate as an oracle regardless of tolerance.
-    fixt <- make_polyserial_fixture(rho = 0.5, n = 500L, k_ord = 3L, seed = 21L)
-    r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
-    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
-    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
-    expect_identical(meta(r)$method, "polyserial")
-  }
-)
+test_that("get_corr() method = 'polyserial' matches hand two-step on 3-level fixture", {
+  # decisions.md B1 established .hand_polyserial_twostep() as the strict
+  # oracle for surveycore's Cox (1974) two-step polyserial MLE, pinned at
+  # 1e-6. PR 1 achieves 1e-6 at the primitive layer; the public API
+  # wraps the same .corr_polyserial_mle() call and so inherits the
+  # tolerance. polycor::polyserial(ML = TRUE) is a joint MLE and is
+  # mathematically inappropriate as an oracle regardless of tolerance.
+  fixt <- make_polyserial_fixture(rho = 0.5, n = 500L, k_ord = 3L, seed = 21L)
+  r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
+  hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+  expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
+  expect_identical(meta(r)$method, "polyserial")
+})
 
-test_that(
-  "get_corr() method = 'polyserial' matches hand two-step on 5-level fixture",
-  {
-    fixt <- make_polyserial_fixture(
-      rho = -0.4, n = 600L, k_ord = 5L, seed = 22L
-    )
-    r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
-    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
-    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
-  }
-)
+test_that("get_corr() method = 'polyserial' matches hand two-step on 5-level fixture", {
+  fixt <- make_polyserial_fixture(
+    rho = -0.4,
+    n = 600L,
+    k_ord = 5L,
+    seed = 22L
+  )
+  r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
+  hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+  expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
+})
 
-test_that(
-  "get_corr() method = 'polyserial' matches hand two-step on 2-level fixture",
-  {
-    fixt <- make_polyserial_fixture(
-      rho = 0.3, n = 800L, k_ord = 2L, seed = 23L
-    )
-    r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
-    hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
-    expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
-  }
-)
+test_that("get_corr() method = 'polyserial' matches hand two-step on 2-level fixture", {
+  fixt <- make_polyserial_fixture(
+    rho = 0.3,
+    n = 800L,
+    k_ord = 2L,
+    seed = 23L
+  )
+  r <- get_corr(fixt$design, x = c(o1, cont), method = "polyserial")
+  hand <- .hand_polyserial_twostep(fixt$ord_int, fixt$cont)
+  expect_equal(r$r[[1L]], hand, tolerance = 1e-6)
+})
 
 test_that("get_corr() method = 'polyserial' works on JK1 replicate", {
   d <- make_latent_replicate(type = "jk1", n = 160L, seed = 32L)
@@ -359,8 +358,13 @@ test_that("polychoric + redundant = TRUE yields symmetric pairs", {
 
 test_that("polychoric + diagonal = TRUE includes self-rows with r = 1", {
   d <- make_latent_taylor(n = 200L, seed = 42L)
-  r <- get_corr(d, x = c(o1, o2), method = "polychoric", diagonal = TRUE,
-    variance = c("se", "ci"))
+  r <- get_corr(
+    d,
+    x = c(o1, o2),
+    method = "polychoric",
+    diagonal = TRUE,
+    variance = c("se", "ci")
+  )
   expect_identical(nrow(r), 3L)
   self_rows <- r[as.character(r$var1) == as.character(r$var2), ]
   # Strip column-level `label` attributes before comparing values.
@@ -418,8 +422,12 @@ test_that("variance = 'ci' emits ci_low / ci_high", {
 
 test_that("variance = c('se', 'ci', 'moe') emits all three; moe = (hi-lo)/2", {
   d <- make_latent_taylor(n = 200L, seed = 62L)
-  r <- get_corr(d, x = c(o1, o2), method = "polychoric",
-    variance = c("se", "ci", "moe"))
+  r <- get_corr(
+    d,
+    x = c(o1, o2),
+    method = "polychoric",
+    variance = c("se", "ci", "moe")
+  )
   expect_true(all(c("se", "ci_low", "ci_high", "moe") %in% names(r)))
   expected_moe <- (r$ci_high - r$ci_low) / 2
   expect_equal(r$moe, expected_moe, tolerance = 1e-10, ignore_attr = TRUE)
@@ -479,26 +487,23 @@ test_that("column label attributes are method-neutral strings", {
 # Category 8 — Edge cases (Tasks 24-31)
 # =============================================================================
 
-test_that(
-  "empty active domain yields r = NA and n = 0 without aborting",
-  {
-    skip_if_not_installed("surveytidy")
-    d <- make_latent_taylor(n = 120L, seed = 80L)
-    # Construct a domain that is empty by filtering on a condition with no
-    # rows. surveytidy::filter() emits an informational warning that the
-    # domain is empty; we suppress it here for test-output hygiene.
-    d2 <- suppressWarnings(
-      surveytidy::filter(d, as.integer(o1) > 999L)
-    )
-    # After PR 2 the .corr_latent_pair() dispatcher short-circuits to
-    # r = NA_real_, n = 0 when the pair has 0 active-complete rows.
-    r <- suppressWarnings(
-      get_corr(d2, x = c(o1, o2), method = "polychoric")
-    )
-    expect_identical(r$n[[1L]], 0L)
-    expect_identical(unname(r$r[[1L]]), NA_real_)
-  }
-)
+test_that("empty active domain yields r = NA and n = 0 without aborting", {
+  skip_if_not_installed("surveytidy")
+  d <- make_latent_taylor(n = 120L, seed = 80L)
+  # Construct a domain that is empty by filtering on a condition with no
+  # rows. surveytidy::filter() emits an informational warning that the
+  # domain is empty; we suppress it here for test-output hygiene.
+  d2 <- suppressWarnings(
+    surveytidy::filter(d, as.integer(o1) > 999L)
+  )
+  # After PR 2 the .corr_latent_pair() dispatcher short-circuits to
+  # r = NA_real_, n = 0 when the pair has 0 active-complete rows.
+  r <- suppressWarnings(
+    get_corr(d2, x = c(o1, o2), method = "polychoric")
+  )
+  expect_identical(r$n[[1L]], 0L)
+  expect_identical(unname(r$r[[1L]]), NA_real_)
+})
 
 test_that("single-level ordinal emits PC-4", {
   set.seed(81L)
@@ -533,34 +538,31 @@ test_that("all-NA focal column routes to empty-pair handling", {
   expect_identical(r$r[[1L]], NA_real_)
 })
 
-test_that(
-  "tiny-weight rows match physical-removal equivalent at 1e-3",
-  {
-    skip_if_not_installed("polycor")
-    set.seed(83L)
-    n <- 300L
-    o1 <- sample(1:4, n, replace = TRUE)
-    o2 <- o1 + sample(-1:1, n, replace = TRUE)
-    o2[o2 < 1L] <- 1L
-    o2[o2 > 4L] <- 4L
-    keep <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.8, 0.2))
-    # surveycore rejects non-positive weights in as_survey(); use a tiny
-    # positive weight (1e-10) to preserve the row count while effectively
-    # zeroing the row's contribution to the weighted likelihood.
-    df_zw <- data.frame(
-      id = 1:n,
-      wt = ifelse(keep, 1, 1e-10),
-      o1 = factor(o1, levels = 1:4, ordered = TRUE),
-      o2 = factor(o2, levels = 1:4, ordered = TRUE)
-    )
-    d_zw <- as_survey(df_zw, weights = wt)
-    r_zw <- get_corr(d_zw, x = c(o1, o2), method = "polychoric")
-    # Compare against polychor on the physically subset data.
-    df_sub <- df_zw[keep, , drop = FALSE]
-    oracle <- polycor::polychor(df_sub$o1, df_sub$o2)
-    expect_equal(r_zw$r[[1L]], oracle, tolerance = 1e-3)
-  }
-)
+test_that("tiny-weight rows match physical-removal equivalent at 1e-3", {
+  skip_if_not_installed("polycor")
+  set.seed(83L)
+  n <- 300L
+  o1 <- sample(1:4, n, replace = TRUE)
+  o2 <- o1 + sample(-1:1, n, replace = TRUE)
+  o2[o2 < 1L] <- 1L
+  o2[o2 > 4L] <- 4L
+  keep <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.8, 0.2))
+  # surveycore rejects non-positive weights in as_survey(); use a tiny
+  # positive weight (1e-10) to preserve the row count while effectively
+  # zeroing the row's contribution to the weighted likelihood.
+  df_zw <- data.frame(
+    id = 1:n,
+    wt = ifelse(keep, 1, 1e-10),
+    o1 = factor(o1, levels = 1:4, ordered = TRUE),
+    o2 = factor(o2, levels = 1:4, ordered = TRUE)
+  )
+  d_zw <- as_survey(df_zw, weights = wt)
+  r_zw <- get_corr(d_zw, x = c(o1, o2), method = "polychoric")
+  # Compare against polychor on the physically subset data.
+  df_sub <- df_zw[keep, , drop = FALSE]
+  oracle <- polycor::polychor(df_sub$o1, df_sub$o2)
+  expect_equal(r_zw$r[[1L]], oracle, tolerance = 1e-3)
+})
 
 test_that("integer vector with 3 distinct values is accepted for polychoric", {
   set.seed(84L)
@@ -634,41 +636,35 @@ test_that("6x7 ordinal pair runs without error", {
   expect_true(is.finite(r$r[[1L]]))
 })
 
-test_that(
-  "surveytidy::filter domain matches raw-subset equivalent within 1e-4",
-  {
-    skip_if_not_installed("surveytidy")
-    skip_if_not_installed("polycor")
-    fixt <- make_unit_weight_design(n = 300L, seed = 88L)
-    d_full <- fixt$design
-    df <- fixt$df
-    d_filt <- surveytidy::filter(d_full, grp == "A")
-    r_filt <- get_corr(d_filt, x = c(o1, o2), method = "polychoric")
-    df_sub <- df[df$grp == "A", , drop = FALSE]
-    oracle <- polycor::polychor(df_sub$o1, df_sub$o2)
-    # Agreement with polycor on equal-weight data is bounded by the
-    # shared optimizer tolerance (~1e-4). Domain correctness is the gate;
-    # optimizer precision is not.
-    expect_equal(r_filt$r[[1L]], oracle, tolerance = 1e-4)
-  }
-)
+test_that("surveytidy::filter domain matches raw-subset equivalent within 1e-4", {
+  skip_if_not_installed("surveytidy")
+  skip_if_not_installed("polycor")
+  fixt <- make_unit_weight_design(n = 300L, seed = 88L)
+  d_full <- fixt$design
+  df <- fixt$df
+  d_filt <- surveytidy::filter(d_full, grp == "A")
+  r_filt <- get_corr(d_filt, x = c(o1, o2), method = "polychoric")
+  df_sub <- df[df$grp == "A", , drop = FALSE]
+  oracle <- polycor::polychor(df_sub$o1, df_sub$o2)
+  # Agreement with polycor on equal-weight data is bounded by the
+  # shared optimizer tolerance (~1e-4). Domain correctness is the gate;
+  # optimizer precision is not.
+  expect_equal(r_filt$r[[1L]], oracle, tolerance = 1e-4)
+})
 
 
 # =============================================================================
 # Category 9 — Survey collection dispatch (Tasks 33-35)
 # =============================================================================
 
-test_that(
-  "survey_collection of all taylor members dispatches polychoric per-survey",
-  {
-    d1 <- make_latent_taylor(n = 120L, seed = 100L)
-    d2 <- make_latent_taylor(n = 120L, seed = 101L)
-    coll <- as_survey_collection(wave1 = d1, wave2 = d2)
-    r <- get_corr(coll, x = c(o1, o2), method = "polychoric")
-    expect_true(".survey" %in% names(r))
-    expect_setequal(as.character(r$.survey), c("wave1", "wave2"))
-  }
-)
+test_that("survey_collection of all taylor members dispatches polychoric per-survey", {
+  d1 <- make_latent_taylor(n = 120L, seed = 100L)
+  d2 <- make_latent_taylor(n = 120L, seed = 101L)
+  coll <- as_survey_collection(wave1 = d1, wave2 = d2)
+  r <- get_corr(coll, x = c(o1, o2), method = "polychoric")
+  expect_true(".survey" %in% names(r))
+  expect_setequal(as.character(r$.survey), c("wave1", "wave2"))
+})
 
 .make_twophase_design <- function(seed) {
   df_tp <- make_survey_data(
@@ -696,94 +692,83 @@ test_that(
   as_survey_twophase(ph1, subset = subset, method = "approx")
 }
 
-test_that(
-  "survey_collection with twophase member + polychoric raises PC-7 (dual)",
-  {
-    d_taylor <- make_latent_taylor(n = 120L, seed = 110L)
-    d_tp <- .make_twophase_design(110L)
-    coll <- as_survey_collection(w1 = d_taylor, w2 = d_tp)
-    expect_error(
-      get_corr(coll, x = c(o1, o2), method = "polychoric"),
-      class = "surveycore_error_polychoric_design_unsupported"
-    )
-    expect_snapshot(
-      error = TRUE,
-      get_corr(coll, x = c(o1, o2), method = "polychoric")
-    )
-  }
-)
+test_that("survey_collection with twophase member + polychoric raises PC-7 (dual)", {
+  d_taylor <- make_latent_taylor(n = 120L, seed = 110L)
+  d_tp <- .make_twophase_design(110L)
+  coll <- as_survey_collection(w1 = d_taylor, w2 = d_tp)
+  expect_error(
+    get_corr(coll, x = c(o1, o2), method = "polychoric"),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(coll, x = c(o1, o2), method = "polychoric")
+  )
+})
 
-test_that(
-  "survey_collection with twophase + .if_missing_var = 'skip' still raises PC-7",
-  {
-    # Note: the collection's `.if_missing_var` hook catches
-    # surveycore_error_variable_not_found only. PC-7 is a distinct class and
-    # propagates through the dispatcher to the caller regardless of
-    # `.if_missing_var`. (This matches the `.dispatch_over_collection()`
-    # contract in R/survey-collection.R; altering it is out of scope for
-    # PR 3.)
-    d_taylor <- make_latent_taylor(n = 120L, seed = 120L)
-    d_tp <- .make_twophase_design(120L)
-    coll <- as_survey_collection(w1 = d_taylor, w2 = d_tp)
-    expect_error(
-      get_corr(coll, x = c(o1, o2), method = "polychoric",
-        .if_missing_var = "skip"),
-      class = "surveycore_error_polychoric_design_unsupported"
-    )
-  }
-)
+test_that("survey_collection with twophase + .if_missing_var = 'skip' still raises PC-7", {
+  # Note: the collection's `.if_missing_var` hook catches
+  # surveycore_error_variable_not_found only. PC-7 is a distinct class and
+  # propagates through the dispatcher to the caller regardless of
+  # `.if_missing_var`. (This matches the `.dispatch_over_collection()`
+  # contract in R/survey-collection.R; altering it is out of scope for
+  # PR 3.)
+  d_taylor <- make_latent_taylor(n = 120L, seed = 120L)
+  d_tp <- .make_twophase_design(120L)
+  coll <- as_survey_collection(w1 = d_taylor, w2 = d_tp)
+  expect_error(
+    get_corr(
+      coll,
+      x = c(o1, o2),
+      method = "polychoric",
+      .if_missing_var = "skip"
+    ),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+})
 
 
 # =============================================================================
 # Category 10 — Pearson regression: warning + error classes still fire (Task 36)
 # =============================================================================
 
-test_that(
-  "method = 'pearson' still warns on non-numeric columns (regression guard)",
-  {
-    set.seed(130L)
-    df <- data.frame(
-      id = 1:100,
-      wt = 1,
-      y1 = rnorm(100L),
-      y2 = rnorm(100L),
-      grp = sample(c("A", "B"), 100L, replace = TRUE)
-    )
-    d <- as_survey(df, weights = wt)
-    expect_warning(
-      get_corr(d, x = c(y1, y2, grp), method = "pearson"),
-      class = "surveycore_warning_corr_non_numeric"
-    )
-  }
-)
+test_that("method = 'pearson' still warns on non-numeric columns (regression guard)", {
+  set.seed(130L)
+  df <- data.frame(
+    id = 1:100,
+    wt = 1,
+    y1 = rnorm(100L),
+    y2 = rnorm(100L),
+    grp = sample(c("A", "B"), 100L, replace = TRUE)
+  )
+  d <- as_survey(df, weights = wt)
+  expect_warning(
+    get_corr(d, x = c(y1, y2, grp), method = "pearson"),
+    class = "surveycore_warning_corr_non_numeric"
+  )
+})
 
-test_that(
-  "surveycore_error_insufficient_variables fires for < 2 columns under latent",
-  {
-    set.seed(131L)
-    df <- data.frame(
-      id = 1:100,
-      wt = 1,
-      o1 = factor(sample(1:3, 100L, replace = TRUE), ordered = TRUE)
-    )
-    d <- as_survey(df, weights = wt)
-    expect_error(
-      get_corr(d, x = o1, method = "polychoric"),
-      class = "surveycore_error_insufficient_variables"
-    )
-  }
-)
+test_that("surveycore_error_insufficient_variables fires for < 2 columns under latent", {
+  set.seed(131L)
+  df <- data.frame(
+    id = 1:100,
+    wt = 1,
+    o1 = factor(sample(1:3, 100L, replace = TRUE), ordered = TRUE)
+  )
+  d <- as_survey(df, weights = wt)
+  expect_error(
+    get_corr(d, x = o1, method = "polychoric"),
+    class = "surveycore_error_insufficient_variables"
+  )
+})
 
-test_that(
-  "surveycore_error_invalid_variance_arg still fires under latent methods",
-  {
-    d <- make_latent_taylor(n = 120L, seed = 132L)
-    expect_error(
-      get_corr(d, x = c(o1, o2), method = "polychoric", variance = "bogus"),
-      class = "surveycore_error_invalid_variance_arg"
-    )
-  }
-)
+test_that("surveycore_error_invalid_variance_arg still fires under latent methods", {
+  d <- make_latent_taylor(n = 120L, seed = 132L)
+  expect_error(
+    get_corr(d, x = c(o1, o2), method = "polychoric", variance = "bogus"),
+    class = "surveycore_error_invalid_variance_arg"
+  )
+})
 
 
 # =============================================================================
@@ -824,8 +809,10 @@ test_that("PC-13 (unordered factor) surfaces via the public API (dual)", {
   df <- data.frame(
     id = 1:200,
     wt = 1,
-    o1 = factor(sample(c("a", "b", "c"), 200L, replace = TRUE),
-      ordered = FALSE),
+    o1 = factor(
+      sample(c("a", "b", "c"), 200L, replace = TRUE),
+      ordered = FALSE
+    ),
     o2 = factor(sample(1:3, 200L, replace = TRUE), ordered = TRUE)
   )
   d <- as_survey(df, weights = wt)
@@ -1220,4 +1207,45 @@ test_that("name_style = 'broom' produces broom columns with neutral labels", {
   expect_true("conf.low" %in% names(r))
   expect_true("conf.high" %in% names(r))
   expect_identical(attr(r$statistic, "label"), "statistic")
+})
+
+
+# ── B3: PC-9 boundary warning threshold ──────────────────────────────────────
+
+test_that("PC-9 boundary warning message contains '1e-4' not '1e-6'", {
+  # Same near-boundary fixture as the PC-9 dual test above, but on a replicate
+  # design to avoid PC-14 also firing.
+  set.seed(1L)
+  o1_int <- c(rep(1L, 249L), rep(2L, 249L), 1L, 2L)
+  o2_int <- c(rep(1L, 249L), rep(2L, 249L), 2L, 1L)
+  n <- length(o1_int)
+  df <- make_survey_data(
+    n = n,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jk1",
+    seed = 1L
+  )
+  df$o1 <- factor(o1_int, levels = 1:3, ordered = TRUE)
+  df$o2 <- factor(o2_int, levels = 1:3, ordered = TRUE)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  # Capture the PC-9 warning text and verify threshold value
+  captured_msg <- NULL
+  withCallingHandlers(
+    get_corr(d, x = c(o1, o2), method = "polychoric"),
+    surveycore_warning_polychoric_boundary_rho = function(cond) {
+      captured_msg <<- conditionMessage(cond)
+      invokeRestart("muffleWarning")
+    },
+    warning = function(w) invokeRestart("muffleWarning")
+  )
+  expect_true(grepl("1e-4", captured_msg, fixed = TRUE))
+  expect_false(grepl("1e-6", captured_msg, fixed = TRUE))
 })

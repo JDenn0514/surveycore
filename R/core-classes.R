@@ -829,7 +829,7 @@ survey_collection <- S7::new_class(
     if (is.null(nms) || any(nms == "") || any(is.na(nms))) {
       cli::cli_abort(
         c("x" = "All surveys in the collection must be named."),
-        class = "surveycore_error_collection_empty"
+        class = "surveycore_error_collection_unnamed"
       )
     }
 

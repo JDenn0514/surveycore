@@ -392,3 +392,15 @@ Which test files cover which error table rows:
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
 | `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
 | `test-calibration.R` | CAL-15, CAL-16 |
+
+### doc-fixes rows (2026-06-05)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| DF-1 | `update.survey_glm_fit` | `object@call` is `NULL` | ERROR | `surveycore_error_update_no_call` | `"Cannot update {.cls survey_glm_fit}: {.field @call} is NULL."` |
+| DF-2 | S7 validator (`survey_collection`) | `@surveys` list has missing/empty/NA names | ERROR | `surveycore_error_collection_unnamed` | `"All surveys in the collection must be named."` (renamed from `surveycore_error_collection_empty` — distinct from the empty-list condition) |
+| DF-3 | `remove_survey()` | `name` not a character vector | ERROR | `surveycore_error_invalid_name_type` | `"{.arg name} must be a character vector, not {.cls {class(name)[[1L]]}}."` |
+| DF-4 | `.vcov_pair_taylor()` / `.svy_onestrat()` | unknown `lonely.psu` value | ERROR | `surveycore_error_lonely_psu_unknown_option` | `"Unknown {.arg lonely.psu} value: {.val {lonely.psu}}."` |
+| DF-5 | `extract_sata()` | `fill` is not `FALSE` or `NULL` | ERROR | `surveycore_error_fill_not_logical` | `"{.arg fill} must be {.code FALSE} or {.code NULL}."` |
+| DF-6 | `.svy_onestrat()` | stratum with one PSU + `lonely.psu = "fail"` | ERROR | `surveycore_error_lonely_psu` | `"Stratum {.val {stratum}} has only one PSU at stage {stage}."` |
+| DF-7 | `.svy_rep_var()` | all replicate thetas are `NA` | ERROR | `surveycore_error_all_replicates_na` | `"All replicates produced NA estimates."` |
