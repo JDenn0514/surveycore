@@ -105,13 +105,13 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
 #'
 #' # Stratified design without PSU cluster IDs
-#' d_strat <- as_survey(nhanes_2017, weights = wtmec2yr, strata = sdmvstra)
+#' d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 #'
 #' # Blood pressure analysis: filter to exam participants, use MEC weight
 #' exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]

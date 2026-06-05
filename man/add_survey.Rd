@@ -33,8 +33,20 @@ Calling \code{add_survey(x)} with no additional surveys returns \code{x} unchang
 no error is raised.
 }
 \examples{
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
-d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
+d2 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 coll <- as_survey_collection(a = d1)
 coll2 <- add_survey(coll, b = d2)
 names(coll2)
