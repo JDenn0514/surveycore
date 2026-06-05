@@ -1136,15 +1136,12 @@ as_survey_twophase <- function(
 
 # ── as_survey_nonprob ───────────────────────────────────────────────────────
 
-#' Create a Calibrated / Non-Probability Survey Design
+#' Create a Non-probability Survey Design
 #'
-#' `r lifecycle::badge("experimental")`
-#'
-#' Creates a survey design object for non-probability samples and post-hoc
-#' calibrated designs (e.g., raked online panels, quota samples,
-#' post-stratified samples). Accepts pre-computed calibration weights and
-#' optionally stores calibration provenance from \pkg{surveywts} output for
-#' reproducibility.
+#' Creates a survey design object for non-probability samples (e.g., online
+#' panels, quota samples, volunteer panels). Accepts pre-computed calibration
+#' weights (including raking and post-stratification) or inverse probability
+#' weighting (IPW) pseudo-weights.
 #'
 #' @section When to use:
 #' Use `as_survey_nonprob()` instead of [as_survey()] when:
@@ -1188,12 +1185,12 @@ as_survey_twophase <- function(
 #'   column (a single column, values strictly > 0). Typically produced by
 #'   an external raking function (e.g., `anesrake::anesrake()`) or a
 #'   \pkg{surveywts} calibration function.
-#' @param repweights <[`tidy-select`][tidyselect::language]> Bootstrap
-#'   replicate weight columns (at least 2). Each column must be numeric and
-#'   represents one set of combined bootstrap weights (calibration already
-#'   applied). Supply `NULL` (the default) to use SRS-based variance
-#'   approximation. Columns are combined-weights: the calibration adjustment
-#'   has already been re-applied within each replicate column.
+#' @param repweights <[`tidy-select`][tidyselect::language]> Replicate weight
+#'   columns (bootstrap or jackknife; at least 2). Each column must be numeric
+#'   and represents one set of calibrated weights re-estimated on one replicate
+#'   draw (calibration already applied within each replicate). Supply `NULL`
+#'   (the default) to use SRS-based variance approximation. See `type` for
+#'   supported replicate schemes.
 #' @param type Character scalar. Replicate variance type. When
 #'   \code{repweights = NULL}, this argument is ignored. Case-sensitive.
 #'   Valid values:
@@ -1230,22 +1227,39 @@ as_survey_twophase <- function(
 #'   probability-based reference sample used to estimate propensity scores or
 #'   calibration targets. Stored in `@reference_sample` for reproducibility.
 #'   Supply `NULL` (the default) when no reference sample is available.
-#' @param calibration Optional. The calibration provenance object returned by
-#'   a \pkg{surveywts} calibration function (e.g.,
-#'   `surveywts::create_bootstrap_weights()`). Stored in `@calibration` for
-#'   reproducibility. When `repweights` is also supplied, `calibration` is
-#'   validated: `calibration$bootstrap` must be `TRUE` and `calibration$R`
-#'   must equal the number of replicate columns. Supply `NULL` (the default)
-#'   when calibration was performed externally and provenance metadata is not
-#'   available.
+#' @param calibration Optional. A calibration provenance object returned by
+#'   a \pkg{surveywts} weighting function. Stored in `@calibration` for
+#'   reproducibility only — it is not used in variance estimation (unlike
+#'   [as_survey()] where `@calibration` drives GREG variance correction).
+#'   When `repweights` is also supplied, two consistency checks are applied:
+#'   for `type = "bootstrap"`, `calibration$bootstrap` must be `TRUE`; for
+#'   all types, `calibration$R` must equal the number of replicate columns
+#'   when `calibration$R` is non-`NULL`. Supply `NULL` (the default) when no
+#'   provenance metadata is available.
 #'
 #' @return A `survey_nonprob` object.
 #'
 #' @details
-#' When `repweights` is supplied, the variance estimator uses the bootstrap
-#' replicate formula: `V = scale * sum(rscales * (theta_r - theta)^2)`.
-#' The default `scale = 1/R` follows Wu (2022) and Chen et al. (2021) for
-#' calibrated non-probability bootstrap variance.
+#' Unlike probability samples, non-probability samples have no design weights
+#' derived from known selection probabilities, which means estimates carry
+#' additional uncertainty not captured by standard design-based variance
+#' formulas. Per Elliott and Valliant (2017), Valliant, Dever, and Kreuter
+#' (2018), and Brick (2015), bootstrap or jackknife replicate weights are the
+#' recommended approach for variance estimation — they propagate calibration
+#' uncertainty into standard errors. Note, however, that replicate variance
+#' addresses calibration uncertainty only; it does not resolve uncertainty about
+#' the selection mechanism itself, which requires untestable modeling
+#' assumptions about the relationship between sample membership and the survey
+#' variables of interest. Without replicate weights, standard errors use a
+#' model-assisted SRS approximation that systematically underestimates variance
+#' for non-probability samples.
+#'
+#' When `repweights` is supplied, the variance estimator uses the replicate
+#' formula: `V = scale * sum(rscales * (theta_r - theta)^2)`. For bootstrap
+#' replicates (`type = "bootstrap"`), the default `scale = 1/R` follows Wu
+#' (2022) and Chen et al. (2021). For jackknife replicates (`type = "JK1"`,
+#' `"JK2"`, or `"JKn"`), scale and rscales follow the standard jackknife
+#' variance conventions; see `type` for defaults.
 #'
 #' When `repweights = NULL`, standard errors use an SRS approximation (treating
 #' each observation as its own PSU). This understates calibration uncertainty;
@@ -1263,6 +1277,14 @@ as_survey_twophase <- function(
 #' for non-probability surveys. \emph{Journal of Survey Statistics and
 #' Methodology} (forthcoming).
 #'
+#' Brick, J.M. (2015). Compositional model inference. In
+#' \emph{Proceedings of the Section on Survey Research Methods}, pp. 299--307.
+#' American Statistical Association, Alexandria, VA.
+#'
+#' Valliant, R., Dever, J.A. and Kreuter, F. (2018).
+#' \emph{Practical Tools for Designing and Weighting Survey Samples}, 2nd ed.
+#' Springer, New York.
+#'
 #' Kolenikov, S. (2014). Calibrating variance estimation with proxy variables.
 #' \emph{Survey Methodology} \bold{40}(1), 21--38.
 #'
@@ -1274,13 +1296,38 @@ as_survey_twophase <- function(
 #' Association} \bold{115}(532), 2011--2021.
 #'
 #' @examples
-#' # Minimal: pre-computed calibration weights from an external tool
+#' # Minimal: pre-computed calibration weights, SRS-based variance
 #' df <- data.frame(
 #'   y = rnorm(200),
 #'   age = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
 #'   cal_wt = runif(200, 0.5, 2.5)
 #' )
 #' d <- as_survey_nonprob(df, weights = cal_wt)
+#'
+#' # Bootstrap variance: replicate weights with calibration re-applied in each
+#' set.seed(1)
+#' R <- 50
+#' rep_cols <- setNames(
+#'   as.data.frame(
+#'     matrix(runif(200 * R, 0.5, 2.5), nrow = 200)
+#'   ),
+#'   paste0("rep_", seq_len(R))
+#' )
+#' df_rep <- cbind(df, rep_cols)
+#' d_boot <- as_survey_nonprob(
+#'   df_rep,
+#'   weights = cal_wt,
+#'   repweights = starts_with("rep_"),
+#'   type = "bootstrap"
+#' )
+#'
+#' # Jackknife variance (JK1): delete-one replicate weights
+#' d_jk <- as_survey_nonprob(
+#'   df_rep,
+#'   weights = cal_wt,
+#'   repweights = starts_with("rep_"),
+#'   type = "JK1"
+#' )
 #' @seealso
 #'   [as_survey()] for probability designs with Taylor variance,
 #'   [as_survey_replicate()] for replicate-weight designs
