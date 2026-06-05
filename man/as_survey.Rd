@@ -154,14 +154,26 @@ d_h <- as_survey(
 )
 }
 \references{
-Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
-\emph{Model Assisted Survey Sampling}. Springer.
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. \emph{Journal of the American Statistical Association}
+\bold{87}(418), 376--382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. \emph{Journal of the American Statistical
+Association} \bold{88}(423), 1013--1020.
 
 Lumley, T. (2004) Analysis of complex survey samples.
 \emph{Journal of Statistical Software} \bold{9}(1), 1--19.
 
 Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
 John Wiley and Sons.
+
+Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations for
+the analysis of survey data using poststratification information.
+\emph{Sankhya} \bold{64-A}, 22--36.
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+\emph{Model Assisted Survey Sampling}. Springer.
 }
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs,

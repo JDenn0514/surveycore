@@ -133,12 +133,24 @@ d_sub <- as_survey_replicate(
 )
 }
 \references{
+Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. \emph{Journal of the American Statistical Association}
+\bold{87}(418), 376--382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. \emph{Journal of the American Statistical
+Association} \bold{88}(423), 1013--1020.
+
 Judkins, D.R. (1990) Fay's method for variance estimation.
 \emph{Journal of the American Statistical Association}
 \bold{85}(410), 895--904.
 
-Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
-for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
+methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
+209--217.
 
 Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 }

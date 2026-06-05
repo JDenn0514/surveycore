@@ -140,14 +140,26 @@
 #'   nest = TRUE
 #' )
 #' @references
-#' Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
-#' \emph{Model Assisted Survey Sampling}. Springer.
+#' Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+#' sampling. \emph{Journal of the American Statistical Association}
+#' \bold{87}(418), 376--382.
+#'
+#' Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+#' procedures in survey sampling. \emph{Journal of the American Statistical
+#' Association} \bold{88}(423), 1013--1020.
 #'
 #' Lumley, T. (2004) Analysis of complex survey samples.
 #' \emph{Journal of Statistical Software} \bold{9}(1), 1--19.
 #'
 #' Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
 #' John Wiley and Sons.
+#'
+#' Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations for
+#' the analysis of survey data using poststratification information.
+#' \emph{Sankhya} \bold{64-A}, 22--36.
+#'
+#' Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+#' \emph{Model Assisted Survey Sampling}. Springer.
 #'
 #' @seealso
 #'   [as_survey_replicate()] for replicate-weight designs,
@@ -649,12 +661,24 @@ as_survey <- function(
 #'   type = "JK1"
 #' )
 #' @references
+#' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+#' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+#'
+#' Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+#' sampling. \emph{Journal of the American Statistical Association}
+#' \bold{87}(418), 376--382.
+#'
+#' Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+#' procedures in survey sampling. \emph{Journal of the American Statistical
+#' Association} \bold{88}(423), 1013--1020.
+#'
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
 #' \emph{Journal of the American Statistical Association}
 #' \bold{85}(410), 895--904.
 #'
-#' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
-#' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+#' Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
+#' methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
+#' 209--217.
 #'
 #' Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 #'
