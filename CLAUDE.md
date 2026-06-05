@@ -34,6 +34,7 @@ functions may be added but the existing structure will not change in breaking wa
 | `survey_glm()` on `survey_nonprob` with repweights routed through replicate-weight estimator | ✅ Complete | PR #138; see `archive/glm-nonprob-replicate/` |
 | Calibration-adjusted variance (`as_caldata()`, `@calibration` on `survey_taylor`/`survey_replicate`, GREG SE correction) | ✅ Complete | PRs #139, #140; see `archive/calibrate-survey-taylor/` |
 | `calibration =` constructor validation (CAL-15, CAL-16) + raking oracle update | ✅ Complete | PRs #141, #142; see `archive/surveywts-calibration/` |
+| Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc) | ✅ Complete | PRs #143, #144; see `archive/doc-fixes/` |
 
 ---
 
@@ -120,5 +121,6 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/glm-nonprob-replicate/` — `survey_glm()` nonprob replicate routing: spec, test spec, impl plan, plan review (shipped; PR #138)
 - `archive/calibrate-survey-taylor/` — calibration-adjusted variance (`as_caldata()`, GREG SE correction): spec, test spec, impl plan, comprehension, plan review, decisions (shipped; PRs #139, #140)
 - `archive/surveywts-calibration/` — `calibration =` constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)
+- `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
