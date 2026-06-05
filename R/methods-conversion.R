@@ -46,7 +46,7 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -209,7 +209,7 @@ as_svydesign <- function(x) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -331,7 +331,7 @@ as_tbl_svy <- function(x) {
 #' if (requireNamespace("survey", quietly = TRUE)) {
 #'   sv <- survey::svydesign(
 #'     ids = ~sdmvpsu,
-#'     weights = ~wtmec2yr,
+#'     weights = ~wtint2yr,
 #'     strata = ~sdmvstra,
 #'     data = nhanes_2017,
 #'     nest = TRUE
@@ -526,7 +526,7 @@ from_svydesign <- function(x) {
 #'   ts <- srvyr::as_survey(
 #'     survey::svydesign(
 #'       ids = ~sdmvpsu,
-#'       weights = ~wtmec2yr,
+#'       weights = ~wtint2yr,
 #'       strata = ~sdmvstra,
 #'       data = nhanes_2017,
 #'       nest = TRUE

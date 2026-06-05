@@ -25,7 +25,7 @@ if (
   ts <- srvyr::as_survey(
     survey::svydesign(
       ids = ~sdmvpsu,
-      weights = ~wtmec2yr,
+      weights = ~wtint2yr,
       strata = ~sdmvstra,
       data = nhanes_2017,
       nest = TRUE

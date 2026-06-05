@@ -136,7 +136,7 @@ excluded from every variable's calculation.
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtmec2yr,
+  weights = wtint2yr,
   strata = sdmvstra,
   nest = TRUE
 )

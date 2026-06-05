@@ -30,7 +30,7 @@ direction set return \code{NA_character_}.
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtmec2yr,
+  weights = wtint2yr,
   strata = sdmvstra,
   nest = TRUE
 )

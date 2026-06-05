@@ -21,7 +21,7 @@ adjustment step. Returns an empty list when no history has been recorded.
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtmec2yr,
+  weights = wtint2yr,
   strata = sdmvstra,
   nest = TRUE
 )

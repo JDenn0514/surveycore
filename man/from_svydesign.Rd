@@ -32,7 +32,7 @@ added.
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
-    weights = ~wtmec2yr,
+    weights = ~wtint2yr,
     strata = ~sdmvstra,
     data = nhanes_2017,
     nest = TRUE

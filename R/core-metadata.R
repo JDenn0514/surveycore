@@ -429,7 +429,7 @@
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -500,7 +500,7 @@ extract_var_label <- function(x, ..., format = "named_vector", fill = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -707,7 +707,7 @@ extract_var_note <- function(x, ..., format = "named_vector", fill = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -778,7 +778,7 @@ extract_universe <- function(x, ..., format = "named_vector", fill = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -879,7 +879,7 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1031,7 +1031,7 @@ extract_metadata <- function(x, ..., fill = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1151,7 +1151,7 @@ set_var_label <- function(x, ..., variable = NULL, label = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1589,7 +1589,7 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1701,7 +1701,7 @@ set_sata <- function(x, ..., variable = NULL, sata = TRUE) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1793,7 +1793,7 @@ extract_sata <- function(x, ..., format = "named_vector", fill = FALSE) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -1920,7 +1920,7 @@ set_higher_is <- function(x, ..., variable = NULL, direction = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -2029,7 +2029,7 @@ extract_higher_is <- function(x, ..., variable = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -2133,7 +2133,7 @@ set_reverse_coded <- function(x, ..., variable = NULL, reverse_coded = TRUE) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
@@ -2248,7 +2248,7 @@ extract_reverse_coded <- function(x, ..., variable = NULL) {
 #' d <- as_survey(
 #'   nhanes_2017,
 #'   ids = sdmvpsu,
-#'   weights = wtmec2yr,
+#'   weights = wtint2yr,
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )

@@ -34,7 +34,7 @@ metadata is used by \code{\link[=get_diffs]{get_diffs()}} when \code{show_favora
 d <- as_survey(
   nhanes_2017,
   ids = sdmvpsu,
-  weights = wtmec2yr,
+  weights = wtint2yr,
   strata = sdmvstra,
   nest = TRUE
 )
