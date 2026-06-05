@@ -63,7 +63,7 @@
 #' @examples
 #' # Empty metadata (default)
 #' m <- survey_metadata()
-#' extract_var_label(as_survey(data.frame(x = 1, w = 1), weights = w))
+#' m@variable_labels
 #'
 #' # Pre-populated metadata
 #' m <- survey_metadata(
