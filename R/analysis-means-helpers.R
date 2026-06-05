@@ -24,7 +24,7 @@
 #                      current group/domain combination.
 # @param y_col        Atomic vector: the focal variable column.
 # @param na.rm        Logical.
-# @return Numeric 0/1 vector of length nrow(design@data).
+# @return Numeric 0/1 vector of the same length as active_mask.
 .mean_domain_vec <- function(active_mask, y_col, na.rm) {
   if (na.rm) {
     as.numeric(active_mask & !is.na(y_col))
@@ -41,10 +41,11 @@
 # have zero influence. This gives correct SEs for subpopulation means (wider
 # than physical subsetting).
 #
-# @param design  A survey_taylor or survey_nonprob object.
+# @param design  A survey_taylor object (also used for the SRS path of
+#                survey_nonprob without repweights).
 # @param y_col   Character: name of the numeric variable column.
 # @param domain  Numeric 0/1 vector (full length): 1 = in domain and non-NA.
-# @return Named list: mean, se, se_srs, n, n_weighted.
+# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted.
 .taylor_mean_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -339,7 +340,7 @@
 # @param design  Any survey design object.
 # @param y_col   Character: variable name.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: mean, se, se_srs, n, n_weighted.
+# @return Named list: mean, se, df (Taylor path only), se_srs, n, n_weighted.
 .mean_cell <- function(design, y_col, domain) {
   if (S7::S7_inherits(design, survey_taylor)) {
     .taylor_mean_cell(design, y_col, domain)

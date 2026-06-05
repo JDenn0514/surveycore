@@ -58,9 +58,9 @@ variable are included in calculations, and observations where a group
 variable is \code{NA} are collected into their own group row in the output
 (appearing after all non-\code{NA} group rows).}
 
-\item{label_values}{Logical. Accepted for API uniformity; has no visible
-effect since \code{get_means()} output contains no categorical value cells.
-Default \code{TRUE}.}
+\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
+functions. For \code{get_means()}, no value-level cells appear in the output,
+so this parameter has no effect. Default \code{TRUE}.}
 
 \item{label_vars}{Logical. Accepted for API uniformity; has no visible
 effect since \code{get_means()} output contains no variable-name value cells.
@@ -91,10 +91,14 @@ A \code{survey_means} tibble (also inheriting \code{survey_result}). Columns:
 \item \code{mean} — weighted mean estimate.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}.
+\item \code{df} — degrees of freedom used for CI calculation. Present only for
+\code{survey_taylor} designs with an active \verb{@calibration} object
+(GREG-corrected SE). For all other designs the normal approximation
+(\code{Inf}) is used and \code{df} is not included.
 \item \code{n} — unweighted count of non-NA observations used in the estimate.
 \item \code{n_weighted} — sum of weights (only when requested).
 }
-The variable name is stored in \code{meta(result)$variable}, not as a column.
+The variable name is stored in \code{meta(result)$x}, not as a column.
 Use \code{meta(result)} to access design type, variable labels, and other
 metadata.
 }

@@ -51,8 +51,9 @@
 #'   variable are included in calculations, and observations where a group
 #'   variable is `NA` are collected into their own group row in the output
 #'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API uniformity; has no visible
-#'   effect on `get_ratios()` output. Default `TRUE`.
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. For `get_ratios()`, no value-level cells appear in the output,
+#'   so this parameter has no effect. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity; has no visible
 #'   effect on `get_ratios()` output. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
@@ -97,7 +98,6 @@
 #'
 #' # AAPOR-compliant output
 #' get_ratios(d, pray, attendper, variance = c("ci", "moe"), n_weighted = TRUE)
-#'
 #' @family analysis
 #' @export
 get_ratios <- function(

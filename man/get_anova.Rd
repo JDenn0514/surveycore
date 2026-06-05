@@ -2,7 +2,7 @@
 % Please edit documentation in R/glm-anova-dispatch.R
 \name{get_anova}
 \alias{get_anova}
-\title{Design-Based Analysis of Variance for Survey GLM Fits}
+\title{Design-Based Analysis of Variance and Wald Tests for Survey GLM Fits}
 \usage{
 get_anova(
   object,
@@ -63,11 +63,13 @@ naive-covariance near-singular gate in the Rao-Scott LRT. Default
 }
 \value{
 A \code{survey_anova} tibble with columns \code{term}, \code{statistic}, \code{df},
-\code{ddf}, \code{deff}, \code{p_value}, \code{stars} and a \code{.meta} attribute.
+\code{ddf}, \code{deff}, \code{p_value}, \code{stars} and a \code{.meta} attribute. When
+\code{name_style = "broom"}, \code{p_value} is renamed to \code{p.value} and \code{ddf}
+is renamed to \code{df.residual}.
 }
 \description{
-Rao-Scott design-based ANOVA for \code{\link[=survey_glm]{survey_glm()}} fits. Accepts three input
-shapes on \code{object}:
+Rao-Scott design-based ANOVA and design-based Wald tests for
+\code{\link[=survey_glm]{survey_glm()}} fits. Accepts three input shapes on \code{object}:
 }
 \details{
 \itemize{
@@ -84,12 +86,13 @@ Supports the four method x test combinations shared with
 and design-based Wald with F or Chisq reference.
 }
 \examples{
-gss_cc <- gss_2024[
-  stats::complete.cases(gss_2024[, c("age", "sex", "educ")]),
-]
+gss_cc <- gss_2024[stats::complete.cases(gss_2024[, c("age", "sex", "educ")]), ]
 gss_design <- as_survey(
-  gss_cc, ids = vpsu, weights = wtssps,
-  strata = vstrat, nest = TRUE
+  gss_cc,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
 )
 
 # Single fit
@@ -103,7 +106,6 @@ get_anova(gss_design, age ~ sex + educ)
 fit_s <- survey_glm(gss_design, age ~ sex)
 fit_b <- survey_glm(gss_design, age ~ sex + educ)
 get_anova(list(fit_s, fit_b))
-
 }
 \seealso{
 Other analysis: 

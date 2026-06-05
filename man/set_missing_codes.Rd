@@ -31,13 +31,19 @@ the calling conventions. For Convention 3 with a single variable, a bare
 named atomic vector is accepted in addition to a list.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_missing_codes(d, happy = c(Refused = -1L, DK = -2L))
 extract_missing_codes(d, happy)
-
 }
 \seealso{
+\code{\link[=extract_missing_codes]{extract_missing_codes()}} to retrieve missing value codes
+
 Other metadata: 
 \code{\link{classify_question_type}()},
 \code{\link{extract_higher_is}()},

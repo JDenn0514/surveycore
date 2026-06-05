@@ -64,8 +64,9 @@ effect. Default \code{TRUE}.}
 
 \item{name_style}{Character(1). \code{"surveycore"} (default) or \code{"broom"}.}
 
-\item{...}{Unused. Reserved so that \code{.id} and \code{.if_missing_var} remain
-named-only when a \code{survey_collection} is passed as \code{design}.}
+\item{...}{Additional arguments forwarded to \code{.dispatch_over_collection()}
+when \code{design} is a \code{\link{survey_collection}}. For single-survey inputs these
+arguments are ignored.}
 
 \item{.id}{Character(1) or \code{NULL}. Column name used to identify each
 survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
@@ -94,11 +95,19 @@ Delegates pair-level computations to \code{\link[=get_t_test]{get_t_test()}}.
 }
 \examples{
 gss_sub <- gss_2024[gss_2024$sex \%in\% c(1L, 2L) & !is.na(gss_2024$age), ]
-gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-gss_design <- as_survey(gss_sub,
-  ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+gss_sub$sex <- factor(
+  gss_sub$sex,
+  levels = c(1, 2),
+  labels = c("Male", "Female")
+)
+gss_design <- as_survey(
+  gss_sub,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 get_pairwise(gss_design, age, by = sex)
-
 }
 \seealso{
 Other analysis: 

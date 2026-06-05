@@ -149,9 +149,11 @@ Gaussian and non-Gaussian families, and optional subgroup analysis.
 
 \code{get_diffs()} uses two estimation paths:
 \itemize{
-\item \strong{Clean path} (bivariate Gaussian, no group): extracts coefficients
-directly from \code{clean()}. The intercept is the reference group mean;
-treatment coefficients are differences from reference.
+\item \strong{Clean path} (bivariate Gaussian with no covariates and no group, OR
+any family with \code{scale = "link"}): extracts coefficients directly from
+\code{clean()}. The intercept is the reference group mean; treatment
+coefficients are differences from reference. When \code{scale = "link"} and
+the family is non-Gaussian, \code{mean} and \code{pct_change} are suppressed.
 \item \strong{Marginaleffects path} (covariates, non-Gaussian with
 \code{scale = "ame"}, or group): uses \code{avg_slopes()} for estimates and
 \code{avg_predictions()} for means.
@@ -189,12 +191,11 @@ scale (e.g., log-odds for logistic regression).
 }
 }
 \examples{
-library(marginaleffects)
-
 # Create survey design with treatment groups
 set.seed(42)
 df <- data.frame(
-  id = 1:200, wt = runif(200, 0.5, 2),
+  id = 1:200,
+  wt = runif(200, 0.5, 2),
   dv = rnorm(200, 50, 10),
   arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
 )
@@ -205,7 +206,6 @@ get_diffs(d, dv, arm)
 
 # With percentage change and p-value adjustment
 get_diffs(d, dv, arm, show_pct_change = TRUE, pval_adj = "BH")
-
 }
 \seealso{
 Other analysis: 

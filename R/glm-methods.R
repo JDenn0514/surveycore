@@ -6,10 +6,10 @@
 # S3 dispatch does not work for S7 objects via UseMethod(); dynamic
 # registration is required (same pattern as surveytidy dplyr verbs).
 #
-# Methods in this file (20 + getCall + print.survey_glm_summary):
+# Methods in this file (22 + print.survey_glm_summary):
 #   print, summary, coef, vcov, predict, fitted, residuals, confint,
 #   formula, terms, model.matrix, model.frame, deviance, df.residual,
-#   nobs, hatvalues, logLik, AIC, BIC, update, getCall
+#   nobs, hatvalues, logLik, AIC, BIC, update, getCall, plot
 #
 # Spec: plans/spec-phase-2.md §V
 

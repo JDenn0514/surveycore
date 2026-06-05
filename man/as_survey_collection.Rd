@@ -89,7 +89,7 @@ names(coll2)
 
 # Uniform grouping across members
 coll3 <- as_survey_collection(d1, d2, group = vstrat)
-coll3@groups
+names(survey_data(coll3[[1L]]))
 }
 \seealso{
 \link{survey_collection}, \code{\link[=add_survey]{add_survey()}}, \code{\link[=remove_survey]{remove_survey()}}

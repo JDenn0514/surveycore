@@ -18,10 +18,14 @@ Each entry is appended by surveywts after a calibration or nonresponse
 adjustment step. Returns an empty list when no history has been recorded.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
-survey_weighting_history(d)   # list() — no weighting history
-
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+survey_weighting_history(d) # list() — no weighting history
 }
 \seealso{
 Other metadata: 

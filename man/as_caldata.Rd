@@ -14,7 +14,10 @@ calibration is applied. Must not contain \code{NA}, \code{NaN}, or \code{Inf}.}
 \item{g_weights}{A numeric vector of positive, finite g-factors (length n).
 The calibrated weights are \code{base_weights * g_weights}. g-factors equal
 to 1.0 represent no adjustment. Must not contain \code{NA}, \code{NaN}, or \code{Inf}.
-Must have the same length as \code{base_weights}.}
+Must have the same length as \code{base_weights}. The internal quantity
+\code{g_weights * sqrt(base_weights)} must not have any near-zero values
+(below \code{sqrt(.Machine$double.eps)}); if it does, a
+\code{surveycore_error_caldata_weights_near_zero} warning is issued.}
 
 \item{model_matrix}{A numeric matrix with \code{n} rows and at least 1 column,
 representing the calibration covariates used during post-stratification or
@@ -27,8 +30,9 @@ A named list with four elements:
 \code{sqrt(base_weights) * model_matrix}. Used for calibration projection
 in variance estimation.}
 \item{\code{w}}{A numeric vector of length n equal to
-\code{g_weights * sqrt(base_weights)}. These are the square-root-scaled
-calibrated weights.}
+\code{g_weights * sqrt(base_weights)}. This intermediate quantity (the
+square root of the calibrated weights scaled by g) is used directly
+in the GREG variance projection formula.}
 \item{\code{stage}}{Integer scalar \code{0L}. Currently only between-PSU
 calibration (stage 0) is supported.}
 \item{\code{index}}{\code{NULL}. Reserved for future within-PSU calibration
@@ -106,12 +110,15 @@ survey sampling. \emph{Journal of the American Statistical Association}, 87,
 376–382.
 }
 \seealso{
+\code{\link[=as_survey]{as_survey()}} for Taylor series designs,
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs,
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} for two-phase designs
+
 Other constructors: 
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

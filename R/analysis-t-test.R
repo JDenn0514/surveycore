@@ -62,8 +62,9 @@
 #'   `"surveycore"` (default) or `"broom"` (renames `se` to `std.error`,
 #'   `ci_low` to `conf.low`, `ci_high` to `conf.high`, `p_value` to
 #'   `p.value`, `df` to `parameter`). `t_stat` is not renamed.
-#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
-#'   named-only when a `survey_collection` is passed as `design`.
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param .id Character(1) or `NULL`. Column name used to identify each
 #'   survey when `design` is a [`survey_collection`]. For collection inputs,
 #'   `NULL` (the default) resolves to the collection's stored `@id` property.
@@ -84,11 +85,19 @@
 #'
 #' @examples
 #' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-#' gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-#' gss_design <- as_survey(gss_sub,
-#'   ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' gss_sub$sex <- factor(
+#'   gss_sub$sex,
+#'   levels = c(1, 2),
+#'   labels = c("Male", "Female")
+#' )
+#' gss_design <- as_survey(
+#'   gss_sub,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' get_t_test(gss_design, age, by = sex)
-#'
 #' @family analysis
 #' @export
 get_t_test <- function(
@@ -530,6 +539,10 @@ get_t_test <- function(
 
 # ── print.survey_t_test() ─────────────────────────────────────────────────────
 
+#' Print method for survey_t_test objects.
+#' @param x A `survey_t_test` object.
+#' @param ... Additional arguments (unused).
+#' @return `x`, invisibly.
 #' @method print survey_t_test
 #' @export
 print.survey_t_test <- function(x, ...) {
@@ -606,8 +619,9 @@ print.survey_t_test <- function(x, ...) {
 #' @param label_vars Logical(1). Accepted for API uniformity; no visible
 #'   effect. Default `TRUE`.
 #' @param name_style Character(1). `"surveycore"` (default) or `"broom"`.
-#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
-#'   named-only when a `survey_collection` is passed as `design`.
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param .id Character(1) or `NULL`. Column name used to identify each
 #'   survey when `design` is a [`survey_collection`]. For collection inputs,
 #'   `NULL` (the default) resolves to the collection's stored `@id` property.
@@ -628,11 +642,19 @@ print.survey_t_test <- function(x, ...) {
 #'
 #' @examples
 #' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-#' gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-#' gss_design <- as_survey(gss_sub,
-#'   ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' gss_sub$sex <- factor(
+#'   gss_sub$sex,
+#'   levels = c(1, 2),
+#'   labels = c("Male", "Female")
+#' )
+#' gss_design <- as_survey(
+#'   gss_sub,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' get_pairwise(gss_design, age, by = sex)
-#'
 #' @family analysis
 #' @export
 get_pairwise <- function(
@@ -939,6 +961,10 @@ get_pairwise <- function(
 
 # ── print.survey_pairwise() ───────────────────────────────────────────────────
 
+#' Print method for survey_pairwise objects.
+#' @param x A `survey_pairwise` object.
+#' @param ... Additional arguments (unused).
+#' @return `x`, invisibly.
 #' @method print survey_pairwise
 #' @export
 print.survey_pairwise <- function(x, ...) {

@@ -6,7 +6,7 @@
 # S3 method naming (print.survey_taylor <- ...) is silently ignored
 # for S7 objects and must never be used here.
 #
-# Classes defined in R/00-s7-classes.R:
+# Classes defined in R/core-classes.R:
 #   survey_taylor   — Taylor series linearization design
 #   survey_replicate — Replicate weights design
 #   survey_twophase — Two-phase sampling design
@@ -104,7 +104,7 @@
 # @param full If TRUE, show all sections.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(print, survey_taylor) <- function(
   x,
   n = 10L,
@@ -245,7 +245,7 @@ S7::method(print, survey_taylor) <- function(
 # @param full If TRUE, show all sections.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(print, survey_replicate) <- function(
   x,
   n = 10L,
@@ -350,7 +350,7 @@ S7::method(print, survey_replicate) <- function(
 # @param full If TRUE, show all sections.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(print, survey_twophase) <- function(
   x,
   n = 10L,
@@ -464,7 +464,7 @@ S7::method(print, survey_twophase) <- function(
 
 # ── print.survey_nonprob ───────────────────────────────────────────────
 
-# Print a Calibrated / Non-Probability Survey Design
+# Print a Non-Probability Survey Design
 #
 # @param x A survey_nonprob object.
 # @param n Maximum number of data rows to print. Default 10L.
@@ -474,7 +474,7 @@ S7::method(print, survey_twophase) <- function(
 # @param full If TRUE, show all sections.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(print, survey_nonprob) <- function(
   x,
   n = 10L,
@@ -576,10 +576,10 @@ S7::method(print, survey_nonprob) <- function(
 
 # ── summary.survey_nonprob ─────────────────────────────────────────────
 
-# Summarise a Calibrated / Non-Probability Survey Design
+# Summarise a Non-Probability Survey Design
 # @param object A survey_nonprob object.
 # @return object, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(summary, survey_nonprob) <- function(object, ...) {
   x <- object
 
@@ -620,7 +620,7 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
 # Summarise a Taylor Series Survey Design
 # @param object A survey_taylor object.
 # @return object, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(summary, survey_taylor) <- function(object, ...) {
   x <- object
 
@@ -674,7 +674,7 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
 # Summarise a Replicate Weights Survey Design
 # @param object A survey_replicate object.
 # @return object, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(summary, survey_replicate) <- function(object, ...) {
   x <- object
 
@@ -717,7 +717,7 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
 # Summarise a Two-Phase Survey Design
 # @param object A survey_twophase object.
 # @return object, invisibly.
-# Class defined in R/00-s7-classes.R
+# Class defined in R/core-classes.R
 S7::method(summary, survey_twophase) <- function(object, ...) {
   x <- object
 

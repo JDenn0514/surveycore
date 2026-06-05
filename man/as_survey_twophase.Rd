@@ -60,8 +60,7 @@ for all Phase 2 design variable arguments.
 \item \code{"full"} — Full two-phase variance formula. Accounts for variability in
 both phases. Requires Phase 2 design information (\code{probs2}, \code{ids2},
 \code{strata2}) when Phase 2 is not a simple random subsample. If none of
-these are provided, a warning is issued and Phase 2 selection is treated
-as SRS within Phase 1 strata.
+these are provided, an error is raised.
 \item \code{"approx"} — Approximation that ignores Phase 1 sampling variability.
 Faster but less accurate than \code{"full"} when the Phase 1 sampling fraction
 is non-negligible.
@@ -124,7 +123,6 @@ Other constructors:
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# R/06-variance-taylor.R
+# R/variance-taylor.R
 # ---------------------------------------------------------------------------
 # Taylor series variance estimation for survey_taylor designs.
 #
@@ -193,7 +193,7 @@
   v
 }
 
-# Master variance function (pure R; no post-strata in Phase 0).
+# Master variance function (pure R; no post-strata).
 # Adapted from survey:::svyrecvar.
 # fpcs: list(sampsize = matrix, popsize = matrix or NULL)
 .svy_recvar <- function(
@@ -387,7 +387,6 @@
 #   $sigma      3x3 meta-vcov of (Var(X), Cov(X,Y), Var(Y))
 #   $n          Pairwise unweighted count (in-domain, non-NA for both)
 #   $n_weighted Pairwise weighted sum
-#' @noRd
 .vcov_pair_taylor <- function(design, x_col, y_col, domain, na.rm = TRUE) {
   data <- design@data
   vars <- design@variables

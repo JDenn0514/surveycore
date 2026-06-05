@@ -37,15 +37,15 @@
 #'   decimal places. Default `NULL` (no rounding).
 #' @param min_cell_n Integer. Minimum unweighted cell count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
-#' @param na.rm Logical. If `TRUE` (default), `NA` values are excluded from
-#'   analysis: observations where the analysis variable is `NA` are dropped
-#'   from calculations, and observations where any group variable is `NA` are
-#'   excluded from the output. If `FALSE`, `NA` observations in the analysis
-#'   variable are included in calculations, and observations where a group
-#'   variable is `NA` are collected into their own group row in the output
-#'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API uniformity; has no visible
-#'   effect on `get_quantiles()` output. Default `TRUE`.
+#' @param na.rm Logical. If `TRUE` (default), `NA` values in the analysis
+#'   variable are excluded from calculations. If `FALSE`, any `NA` values in
+#'   the analysis variable cause all quantile estimates for that cell to be
+#'   `NA_real_`. Observations where any group variable is `NA` are always
+#'   excluded from the output when `na.rm = TRUE`; when `na.rm = FALSE` they
+#'   are collected into their own group row (appearing after all non-`NA` rows).
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. For `get_quantiles()`, no value-level cells appear in the
+#'   output, so this parameter has no effect. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity; has no visible
 #'   effect on `get_quantiles()` output. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`. When `"broom"`,
@@ -75,7 +75,10 @@
 #'     always `NA` for quantile estimates: computing it requires a kernel
 #'     density estimate at the quantile point (the Woodruff SRS approximation
 #'     used by `survey::svyquantile(deff = TRUE)`), which is not implemented.
-#'   \item `n` — unweighted count of non-NA observations used in the estimate.
+#'   \item `n` — unweighted count of observations in the active domain used
+#'     in the estimate. When `na.rm = TRUE`, counts only non-NA observations;
+#'     when `na.rm = FALSE`, counts all active-domain rows (including NAs,
+#'     though the estimate will be `NA_real_`).
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
 #' One row per (group combination × quantile probability). The variable name
@@ -87,8 +90,13 @@
 #' **47**(260), 635–646.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #'
 #' # IQR + median (default)
 #' get_quantiles(d, ridageyr)
@@ -98,7 +106,6 @@
 #'
 #' # Grouped quartiles
 #' get_quantiles(d, ridageyr, group = riagendr)
-#'
 #' @family analysis
 #' @export
 get_quantiles <- function(

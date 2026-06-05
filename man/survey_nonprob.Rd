@@ -85,7 +85,9 @@ modes and the limitations of each.
 \item{\code{weights}}{Character string naming the (calibrated) weight column.}
 \item{\code{repweights}}{Character vector of bootstrap replicate weight column
 names, or \code{NULL} when no replicate weights are present.}
-\item{\code{type}}{Replicate type (\code{"bootstrap"}), or \code{NULL}.}
+\item{\code{type}}{Replicate type. Only \code{"bootstrap"} is supported for
+non-probability samples (\code{"JK1"}, \code{"JK2"}, and \code{"JKn"} are not
+accepted); or \code{NULL} when no replicate weights are present.}
 \item{\code{scale}}{Numeric scale factor for the variance formula, or \code{NULL}.}
 \item{\code{rscales}}{Per-replicate scale factors, or \code{NULL}.}
 \item{\code{mse}}{Logical. \code{TRUE} for MSE form of variance, or \code{NULL}.}
@@ -110,7 +112,6 @@ Other constructors:
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_replicate}()},
@@ -118,4 +119,3 @@ Other constructors:
 \code{\link{survey_twophase}()}
 }
 \concept{constructors}
-\keyword{internal}

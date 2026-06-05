@@ -18,22 +18,13 @@ This is a thin accessor for \code{x@data} that provides a stable public name
 independent of the S7 property structure.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 head(survey_data(d))
 }
-\seealso{
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
-}
-\concept{constructors}
+\concept{accessors}

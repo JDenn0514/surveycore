@@ -37,12 +37,15 @@ Only used for \code{survey_taylor} objects.}
 weight columns (one or more). \code{NULL} (default) means no change. Only
 used for \code{survey_replicate} objects.}
 
-\item{validate}{Logical. If \code{TRUE} (default), re-runs the S7 class
-validator after updating, which checks structural invariants (column
-existence, weight column type and positivity, etc.).}
+\item{validate}{Logical. If \code{FALSE}, temporarily marks the object to
+suppress validation during the variable update. In practice this has
+no observable effect on the returned object; \code{validate} is accepted
+for interface compatibility. Default \code{TRUE}.}
 }
 \value{
-The modified survey object, invisibly.
+The modified survey object, invisibly. As a side effect, a
+\code{cli_inform()} message is printed listing each changed design variable
+(old name → new name).
 }
 \description{
 Updates one or more design variables (weights, cluster IDs, strata, FPC,
@@ -68,6 +71,6 @@ d_updated <- update_design(d, weights = wtint2yr)
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object,
-\code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} to create a \code{survey_replicate} object,
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} to create a \code{survey_twophase} object
 }
-\concept{update}

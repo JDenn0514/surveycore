@@ -29,13 +29,19 @@ describes the population to which a variable applies
 Supports Conventions 1, 2, and 3 — see \code{\link[=set_var_label]{set_var_label()}} for details.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_universe(d, age = "All respondents 18+")
 extract_metadata(d, age)
-
 }
 \seealso{
+\code{\link[=extract_universe]{extract_universe()}} to retrieve universe descriptions
+
 Other metadata: 
 \code{\link{classify_question_type}()},
 \code{\link{extract_higher_is}()},

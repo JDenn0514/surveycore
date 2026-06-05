@@ -25,12 +25,16 @@ Returns the reverse-coded status for one or more variables in a survey
 design object or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_reverse_coded(d, bpxsy1)
 extract_reverse_coded(d, bpxsy1)
 extract_reverse_coded(d)
-
 }
 \seealso{
 \code{\link[=set_reverse_coded]{set_reverse_coded()}} to set reverse-coded flags

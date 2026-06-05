@@ -33,8 +33,9 @@ variables. Bare names or tidy-select helpers (e.g., \code{c(q1, q2, q3)}).
 When two or more variables are selected, multi-variable stacking mode
 is activated (see Details).}
 
-\item{...}{Additional arguments passed to tidy-select (future-proof;
-currently unused).}
+\item{...}{Additional arguments forwarded to \code{.dispatch_over_collection()}
+when \code{design} is a \code{\link{survey_collection}}. For single-survey inputs these
+arguments are ignored.}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Combined with any grouping set by \code{group_by()}. Default
@@ -135,8 +136,13 @@ not physically removed for domain/group subsets.
 \examples{
 # NHANES exam weights are 0 for non-examined participants; filter first
 nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
-d <- as_survey(nhanes_sub, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_sub,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Single variable
 get_freqs(d, riagendr)
@@ -149,7 +155,6 @@ get_freqs(d, riagendr, group = sdmvstra)
 
 # Multi-variable (stacked)
 get_freqs(d, c(riagendr, ridreth3), names_to = "item", values_to = "value")
-
 }
 \seealso{
 Other analysis: 

@@ -9,9 +9,9 @@
 #   as_survey_nonprob()   — creates a survey_nonprob object (Phase 2.5 skeleton)
 #
 # This file implements Layer 3 of the 3-layer validator architecture:
-#   Layer 1 — S7 class validators      (R/00-s7-classes.R)
-#   Layer 2 — reusable validator helpers (R/02-validators.R)
-#   Layer 3 — constructor input parsing  (R/03-constructors.R)  <-- this file
+#   Layer 1 — S7 class validators      (R/core-classes.R)
+#   Layer 2 — reusable validator helpers (R/core-validators.R)
+#   Layer 3 — constructor input parsing  (R/core-constructors.R)  <-- this file
 #
 # Error classes match plans/error-messages.md exactly.
 # All cli_abort()/cli_warn() calls include a class= argument.
@@ -588,9 +588,9 @@ as_survey <- function(
 #'   or `"other"` (user-specified scale). Case-sensitive.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
-#'   the number of replicates: `(R-1)/R` for jackknife methods, `1/4` for
-#'   BRR/Fay, `1/R` for bootstrap/ACS, `2/R` for successive-difference,
-#'   `1` for other.
+#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`, `"JK2"`, and
+#'   `"JKn"`; `1/R` for `"BRR"`, `"Fay"`, `"bootstrap"`, and `"ACS"`;
+#'   `2/R` for `"successive-difference"`; `1` for `"other"`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
 #'   replicate weight columns selected by `repweights`.
@@ -858,8 +858,7 @@ as_survey_replicate <- function(
 #' * `"full"` — Full two-phase variance formula. Accounts for variability in
 #'   both phases. Requires Phase 2 design information (`probs2`, `ids2`,
 #'   `strata2`) when Phase 2 is not a simple random subsample. If none of
-#'   these are provided, a warning is issued and Phase 2 selection is treated
-#'   as SRS within Phase 1 strata.
+#'   these are provided, an error is raised.
 #'
 #' * `"approx"` — Approximation that ignores Phase 1 sampling variability.
 #'   Faster but less accurate than `"full"` when the Phase 1 sampling fraction
@@ -1707,7 +1706,7 @@ as_survey_nonprob <- function(
 #'
 #' # Uniform grouping across members
 #' coll3 <- as_survey_collection(d1, d2, group = vstrat)
-#' coll3@groups
+#' names(survey_data(coll3[[1L]]))
 #' @seealso [survey_collection], [add_survey()], [remove_survey()]
 #' @family collections
 #' @export

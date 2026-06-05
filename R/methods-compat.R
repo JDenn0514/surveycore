@@ -51,7 +51,7 @@ glance.survey_variance <- function(x, ...) {
 #
 # Same minimal shim pattern as `survey_variance`. Registered in zzz.R under
 # the broom generics. tidy() returns the result as a plain tibble; glance()
-# returns a 1-row summary with row count and unique-pair count.
+# returns a 1-row summary with row count and pair count (n_pairs = nrow(x)).
 
 # @keywords internal
 # @noRd

@@ -59,8 +59,9 @@
 #'   multi-variable mode controls whether each focal variable uses its own
 #'   complete-case set (`"pairwise"`) or the intersection across all focal
 #'   variables (`"listwise"`). Ignored when `na.rm = FALSE`.
-#' @param label_values Logical. Accepted for API uniformity; used to
-#'   convert grouping-variable codes to value labels. Default `TRUE`.
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. Used to convert grouping-variable codes to value labels.
+#'   Default `TRUE`.
 #' @param label_vars Logical. If `TRUE` (default), the `name` column
 #'   shows variable labels when available (falling back to raw names).
 #' @param name_style `"surveycore"` (default) or `"broom"`. Under `"broom"`,
@@ -82,13 +83,19 @@
 #' @return A `survey_variance` tibble (also inheriting `survey_result`).
 #'   Columns, in order:
 #' \itemize{
+#'   \item `[.id]` — survey identifier column, only when `design` is a
+#'     [`survey_collection`].
 #'   \item `[group_cols...]` — group variable columns (when active), first.
 #'   \item `name` — focal variable name (or its label when `label_vars = TRUE`).
 #'   \item `variance` — design-based point estimate of the finite-population
-#'     variance. `NaN` for degenerate cells; exact `0` for constant-in-domain
+#'     variance. Note: the column is always named `variance` regardless of the
+#'     `variance` parameter (which controls uncertainty columns, not this
+#'     column). `NaN` for degenerate cells; exact `0` for constant-in-domain
 #'     variables.
 #'   \item Uncertainty columns (`se`, `var`, `cv`, `ci_low`, `ci_high`,
-#'     `moe`, `deff`) — only those requested via `variance`.
+#'     `moe`, `deff`) — only those requested via the `variance` parameter.
+#'     The `var` uncertainty column is the variance of the estimated variance,
+#'     distinct from the `variance` point estimate column.
 #'   \item `n` — unweighted count of non-NA observations used.
 #'   \item `n_weighted` — sum of weights (only when `n_weighted = TRUE`).
 #' }
@@ -108,7 +115,6 @@
 #'
 #' # With grouping
 #' get_variance(d, ridageyr, group = riagendr)
-#'
 #' @family analysis
 #' @export
 get_variance <- function(
@@ -253,7 +259,9 @@ get_variance <- function(
     x_col <- design@data[[vn]]
 
     # Display name for the "name" column
-    vn_display <- if (label_vars && !is.null(x_meta_list[[vn]]$variable_label)) {
+    vn_display <- if (
+      label_vars && !is.null(x_meta_list[[vn]]$variable_label)
+    ) {
       x_meta_list[[vn]]$variable_label
     } else {
       vn
@@ -438,7 +446,13 @@ get_variance <- function(
   result <- .apply_name_style(result, name_style)
 
   # ── Step 14: Attach column-level label attributes ───────────────────────────
-  result <- .attach_variance_labels(result, conf_level, name_style, group_vars, design)
+  result <- .attach_variance_labels(
+    result,
+    conf_level,
+    name_style,
+    group_vars,
+    design
+  )
 
   result
 }
@@ -456,8 +470,7 @@ get_variance <- function(
 # @param group_vars    Character vector of group variable names (raw).
 # @param design        The survey design object (used for group-var labels).
 # @return The tibble with labels attached to every column, unchanged
-#   otherwise.
-#' @noRd
+#         otherwise.
 .attach_variance_labels <- function(
   result,
   conf_level,

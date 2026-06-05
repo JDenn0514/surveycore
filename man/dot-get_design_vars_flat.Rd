@@ -18,4 +18,3 @@ Returns a flat character vector of all design-variable column names
 are dropped; names are unique. Exported for use by extension packages
 (e.g., \code{surveytidy}); not intended for end users.
 }
-\keyword{internal}

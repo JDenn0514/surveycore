@@ -107,9 +107,11 @@
 #'
 #' Scans variable labels in a survey design object or labelled data frame for
 #' groups of variables sharing a common preface (via separator or longest
-#' common prefix). Detected prefaces are written to `question_preface` in the
-#' metadata and the shared text is trimmed from each variable label, leaving
-#' only the unique suffix.
+#' common prefix). For survey design objects, detected prefaces are written to
+#' `@metadata@question_prefaces`. For data frames, prefaces are written to
+#' `attr(col, "question_preface")` on each column (no metadata object exists
+#' until `as_survey()` is called). The shared text is trimmed from each
+#' variable label, leaving only the unique suffix.
 #'
 #' @details
 #' **Detection algorithm (two passes):**
@@ -171,9 +173,8 @@
 #'   "Please rate discrimination - Jews"
 #'
 #' df <- infer_question_prefaces(df, verbose = FALSE)
-#' attr(df$discrim_a, "label")            # "Evangelical Christians"
+#' attr(df$discrim_a, "label") # "Evangelical Christians"
 #' attr(df$discrim_a, "question_preface") # "Please rate discrimination"
-#'
 #' @family metadata
 #' @export
 infer_question_prefaces <- function(
