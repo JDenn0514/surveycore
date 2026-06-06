@@ -99,6 +99,7 @@ After all builders in the batch return:
 
 1. Verify each worktree merged back cleanly (no conflicts)
 2. Verify each `implementation.md` write surface matches the plan
+3. Remove each builder's worktree: `git worktree remove --force <worktree-path>` then `git worktree prune`
 
 Then dispatch `tester` agent for each PR (not in a worktree; tester reads the merged checkout):
 
