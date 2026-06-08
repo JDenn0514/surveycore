@@ -1,16 +1,14 @@
-## California Academic Performance Index 2000: Two-stage cluster sample
+## California Academic Performance Index 2000: Simple Random Sample
 ##
-## Source: survey::apiclus2 (Lumley 2004)
+## Source: survey::apisrs (Lumley 2004)
 ## Original data: California Department of Education, 2000 API study
 ## License: GPL-2 (survey package); reformatted to surveycore conventions
 ##
 ## Population: 6,194 California public schools
-## Sample: 126 schools from 40 districts (two-stage cluster)
-##   Stage 1 PSU: district (dnum)
-##   Stage 2 SSU: school within district (snum)
+## Sample: 200 schools (simple random sample)
 ##
 ## Output dataset: ca_api_2000
-##   126 rows x 39 variables (flag column dropped — all NA)
+##   200 rows x 39 variables (flag column dropped — all NA)
 ##
 ## Run from the package root: source("data-raw/prepare-ca-api-2000.R")
 
@@ -21,16 +19,16 @@ library(usethis)
 
 data(api, package = "survey")
 message(
-  "Loaded apiclus2: ",
-  nrow(apiclus2),
+  "Loaded apisrs: ",
+  nrow(apisrs),
   " rows x ",
-  ncol(apiclus2),
+  ncol(apisrs),
   " cols"
 )
 
-## ---- 2. Drop flag (entirely NA across all 126 rows) ----
+## ---- 2. Drop flag (entirely NA across all 200 rows) ----
 
-ca_api_2000 <- apiclus2
+ca_api_2000 <- apisrs
 ca_api_2000$flag <- NULL
 
 ## ---- 3. Convert factor columns to integer with labels attributes ----
@@ -53,11 +51,11 @@ for (col in c("sch.wide", "comp.imp", "both", "awards", "yr.rnd")) {
 ## ---- 4. Attach label attributes ----
 ##
 ## Source var.labels covers cds through pw (indices 1-38 in original 40-col
-## data, excluding flag at index 10). Columns fpc1/fpc2 and ~10 blank entries
+## data, excluding flag at index 10). fpc column and ~10 blank entries
 ## are filled manually per design doc.
 
-src_names <- names(apiclus2) # original 40 names (incl. flag)
-src_labels <- attr(apiclus2, "var.labels") # 38 entries (cds..pw)
+src_names <- names(apisrs) # original 40 names (incl. flag)
+src_labels <- attr(apisrs, "var.labels") # 38 entries (cds..pw)
 
 # Manual labels for blank source entries and fpc1/fpc2
 manual_labels <- c(
@@ -69,8 +67,7 @@ manual_labels <- c(
   yr.rnd = "Year-round school",
   pct.resp = "Percent of parents responding to survey",
   pw = "Sampling weight (inverse probability of selection)",
-  fpc1 = "First-stage FPC (total districts in frame = 757)",
-  fpc2 = "Second-stage FPC (schools in the selected district)"
+  fpc = "FPC (number of schools in the California API system)"
 )
 
 for (i in seq_along(src_names)) {
@@ -115,5 +112,5 @@ message(
   ncol(ca_api_2000),
   " cols"
 )
-message("  Design: ids = c(dnum, snum), weights = pw, fpc = c(fpc1, fpc2)")
+message("  Design: ids = NULL, weights = pw, fpc = fpc")
 message("Document with: ?ca_api_2000")

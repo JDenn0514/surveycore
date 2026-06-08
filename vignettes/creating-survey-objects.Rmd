@@ -19,26 +19,18 @@ library(surveycore)
 ## Introduction
 
 Every analysis function in surveycore — `get_means()`, `get_totals()`,
-`get_freqs()`, `get_ratios()`, `get_corr()` — takes a **survey design object** as 
-its first argument. That object encodes how your data was collected: which 
-units were clustered together, which strata were defined, what weights apply,
-and how variance should be estimated. Without it, point estimates may be 
-biased and standard errors are almost certainly wrong [@lumley2010; @lohr2022].
+`get_freqs()`, `get_ratios()`, `get_corr()` — takes a **survey design object** 
+as its first argument. That object includes things like which units
+were clustered together, which strata were defined, what weights apply, and
+other relevant information so that point and variance estimation can be 
+properly calculated. Without it, point estimates may be biased and standard
+errors are almost certainly wrong [@lumley2010; @lohr2022].
 
 This vignette answers one question: *given my data, which constructor do I
 call and how do I call it?*
 
-It is written for three audiences:
-
-- **Academic researchers** working with named public surveys (NHANES, ANES,
-  ACS, GSS). Jump to the relevant worked example in each section.
-- **Practitioners** running surveys of schools, businesses, or organizations.
-  The conceptual explanations in each section are for you.
-- **Non-probability panel users** — if you use non-probability samples, like
-  Cint or other non-probability samples, skip ahead to [Section 6](#sec-nps).
-
 This vignette covers object *creation* only. Two things not covered are:
-- How to create weights and how the different weighting methods work. 
+- How to create weights and how different weighting mechanisms work. 
 - What the different analysis/estimation functions (`get_means()`, 
   `get_totals()`, etc.) do. Those are covered in `vignette("getting-started")`.
 

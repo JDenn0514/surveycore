@@ -1207,57 +1207,34 @@
 "ns_wave1"
 
 
-#' California Academic Performance Index 2000: Two-Stage Cluster Sample
+#' California Academic Performance Index 2000: Simple Random Sample
 #'
-#' A two-stage cluster sample from the 2000 California Academic Performance
-#' Index (API) study. Districts were sampled at the first stage (PSU); schools
-#' within sampled districts at the second stage (SSU). This is the same
-#' underlying data as `apiclus2` in the `survey` package, reformatted to
+#' A simple random sample from the 2000 California Academic Performance
+#' Index (API) study. 200 schools were randomly sampled. This is the same
+#' underlying data as `apisrs` in the `survey` package, reformatted to
 #' surveycore conventions.
 #'
-#' @format A data frame with 126 rows and 39 variables.
-#'
-#' **Design variables** (required for variance estimation):
+#' @format A data frame with 200 rows and 38 variables:
 #' \describe{
-#'   \item{dnum}{District number. First-stage cluster ID (PSU). 40 unique
-#'     districts represented.}
-#'   \item{snum}{School number (numeric). Second-stage cluster ID (SSU).}
 #'   \item{pw}{Sampling weight (inverse probability of selection).}
-#'   \item{fpc1}{First-stage finite population correction. Number of districts
-#'     in the sampling frame (757 for all rows).}
-#'   \item{fpc2}{Second-stage finite population correction. Number of schools
-#'     in the selected district.}
-#' }
-#'
-#' **School identifiers:**
-#' \describe{
+#'   \item{fpc}{FPC (number of schools in the California API system).}
 #'   \item{cds}{County/district/school code (character, 14-digit).}
+#'   \item{snum}{School number (integer).}
+#'   \item{dnum}{District number (integer).}
 #'   \item{name}{Short school name (character).}
 #'   \item{sname}{Full school name (character).}
 #'   \item{dname}{District name (character).}
 #'   \item{cname}{County name (character).}
 #'   \item{cnum}{County number (integer).}
-#' }
-#'
-#' **API scores and targets:**
-#' \describe{
 #'   \item{api00}{API score 2000 (integer).}
 #'   \item{api99}{API score 1999 (integer).}
 #'   \item{target}{API growth target (integer).}
 #'   \item{growth}{API score change, \code{api00 - api99} (integer).}
 #'   \item{pcttest}{Percent of students tested (integer).}
-#' }
-#'
-#' **Award eligibility indicators** (integer, 0 = No, 1 = Yes):
-#' \describe{
-#'   \item{sch_wide}{Met school-wide growth target.}
-#'   \item{comp_imp}{Met comparable improvement target.}
-#'   \item{both}{Met both targets.}
-#'   \item{awards}{Eligible for awards program.}
-#' }
-#'
-#' **School characteristics:**
-#' \describe{
+#'   \item{sch_wide}{Met school-wide growth target (integer, 0 = No, 1 = Yes).}
+#'   \item{comp_imp}{Met comparable improvement target (integer, 0 = No, 1 = Yes).}
+#'   \item{both}{Met both targets (integer, 0 = No, 1 = Yes).}
+#'   \item{awards}{Eligible for awards program (integer, 0 = No, 1 = Yes).}
 #'   \item{stype}{School type (integer): 1 = Elementary, 2 = High, 3 = Middle.}
 #'   \item{yr_rnd}{Year-round school (integer, 0 = No, 1 = Yes).}
 #'   \item{meals}{Percent of students receiving free meals (integer).}
@@ -1265,51 +1242,29 @@
 #'   \item{mobility}{Percent of students in first year at school (integer).}
 #'   \item{enroll}{Total number of students (integer).}
 #'   \item{api_stu}{Number of students included in API 2000 (integer).}
-#' }
-#'
-#' **Class size** (\code{NA} where inapplicable by school type):
-#' \describe{
-#'   \item{acs_k3}{Average class size, grades K--3 (integer).}
-#'   \item{acs_46}{Average class size, grades 4--6 (integer).}
-#'   \item{acs_core}{Average class size, core academic courses (integer).}
-#' }
-#'
-#' **Parent education** (percent of parents at each level):
-#' \describe{
-#'   \item{not_hsg}{Did not complete high school (integer).}
-#'   \item{hsg}{High school graduate (integer).}
-#'   \item{some_col}{Some college (integer).}
-#'   \item{col_grad}{College graduate (integer).}
-#'   \item{grad_sch}{Graduate school (integer).}
+#'   \item{acs_k3}{Average class size, grades K--3 (integer; \code{NA} for high and middle schools).}
+#'   \item{acs_46}{Average class size, grades 4--6 (integer; \code{NA} for high schools and some others).}
+#'   \item{acs_core}{Average class size, core academic courses (integer; \code{NA} for most elementary schools).}
+#'   \item{not_hsg}{Percent of parents who did not complete high school (integer).}
+#'   \item{hsg}{Percent of parents who are high school graduates (integer).}
+#'   \item{some_col}{Percent of parents with some college (integer).}
+#'   \item{col_grad}{Percent of parents who are college graduates (integer).}
+#'   \item{grad_sch}{Percent of parents with graduate school education (integer).}
 #'   \item{avg_ed}{Average parent education level (numeric).}
 #'   \item{pct_resp}{Percent of parents who responded to the survey (integer).}
-#' }
-#'
-#' **Teacher credentials:**
-#' \describe{
 #'   \item{full}{Percent of teachers fully credentialed (integer).}
 #'   \item{emer}{Percent of teachers on emergency credentials (integer).}
 #' }
 #'
 #' @details
-#' **Survey design:** Two-stage cluster sampling. Use `as_survey()` with
-#' `ids = c(dnum, snum)` and `weights = pw`:
+#' **Survey design:** Simple random sample. Use `as_survey()` with
+#' `weights = pw` and `fpc = fpc`:
 #'
 #' ```r
-#' svy <- as_survey(ca_api_2000,
-#'   ids     = c(dnum, snum),
-#'   weights = pw
-#' )
-#' ```
-#'
-#' To incorporate the first-stage finite population correction, supply `fpc1`
-#' via the `fpc` argument:
-#'
-#' ```r
-#' svy <- as_survey(ca_api_2000,
-#'   ids     = c(dnum, snum),
+#' svy <- as_survey(
+#'   ca_api_2000,
 #'   weights = pw,
-#'   fpc     = fpc1
+#'   fpc = fpc
 #' )
 #' ```
 #'
@@ -1319,14 +1274,14 @@
 #' `NA` for all high schools and some elementary and middle schools; `acs_core` is `NA` for
 #' most elementary schools.
 #'
-#' **Metadata:** All 39 columns carry `"label"` attributes (human-readable
+#' **Metadata:** All 38 columns carry `"label"` attributes (human-readable
 #' variable descriptions). The six categorical columns (`stype`, `sch_wide`,
 #' `comp_imp`, `both`, `awards`, `yr_rnd`) additionally carry `"labels"`
 #' attributes mapping integer codes to category names, compatible with
 #' surveycore's metadata system.
 #'
-#' **Relationship to `apiclus2`:** This dataset contains the same observations
-#' as `survey::apiclus2`, with three differences: (1) the all-`NA` `flag`
+#' **Relationship to `apisrs`:** This dataset contains the same observations
+#' as `survey::apisrs`, with three differences: (1) the all-`NA` `flag`
 #' column is dropped; (2) factor columns are stored as plain integers with
 #' `labels` attributes; (3) column names are in snake_case.
 #'
@@ -1337,10 +1292,10 @@
 #' California Department of Education, Academic Performance Index 2000.
 #'
 #' @examples
-#' head(ca_api_2000[, c("dnum", "snum", "pw", "fpc1", "fpc2", "api00")])
+#' head(ca_api_2000[, c("pw", "fpc", "api00", "enroll")])
 #'
-#' # Create two-stage cluster design
-#' svy <- as_survey(ca_api_2000, ids = c(dnum, snum), weights = pw)
+#' # Create an SRS design
+#' svy <- as_survey(ca_api_2000, weights = pw, fpc = fpc)
 #' svy
 #'
 #' # Inspect variable label
