@@ -11,7 +11,7 @@ A data frame with 126 rows and 39 variables.
 \describe{
 \item{dnum}{District number. First-stage cluster ID (PSU). 40 unique
 districts represented.}
-\item{snum}{School number. Second-stage cluster ID (SSU).}
+\item{snum}{School number (numeric). Second-stage cluster ID (SSU).}
 \item{pw}{Sampling weight (inverse probability of selection).}
 \item{fpc1}{First-stage finite population correction. Number of districts
 in the sampling frame (757 for all rows).}
@@ -72,8 +72,7 @@ in the selected district.}
 \item{col_grad}{College graduate (integer).}
 \item{grad_sch}{Graduate school (integer).}
 \item{avg_ed}{Average parent education level (numeric).}
-\item{pct_resp}{Percent of parents who responded to the survey (integer).
-\code{NA} for some schools.}
+\item{pct_resp}{Percent of parents who responded to the survey (integer).}
 }
 
 \strong{Teacher credentials:}
@@ -119,9 +118,10 @@ via the \code{fpc} argument:
 }\if{html}{\out{</div>}}
 
 \strong{Missing values:} Several columns have \code{NA} for schools where the value is
-inapplicable: \code{acs_k3} and \code{acs_46} are \code{NA} for high schools and middle
-schools (respectively, where those grade spans do not exist); \code{acs_core} is
-\code{NA} for elementary schools; \code{pct_resp} is \code{NA} for some schools.
+inapplicable: \code{acs_k3} (grades K--3) is \code{NA} for high schools and middle
+schools, where those grade spans do not exist; \code{acs_46} (grades 4--6) is
+\code{NA} for most elementary and some middle schools; \code{acs_core} is \code{NA} for
+elementary schools.
 
 \strong{Metadata:} All 39 columns carry \code{"label"} attributes (human-readable
 variable descriptions). The six categorical columns (\code{stype}, \code{sch_wide},
@@ -139,10 +139,7 @@ head(ca_api_2000[, c("dnum", "snum", "pw", "fpc1", "fpc2", "api00")])
 
 # Create two-stage cluster design
 library(surveycore)
-svy <- as_survey(ca_api_2000,
-  ids     = c(dnum, snum),
-  weights = pw
-)
+svy <- as_survey(ca_api_2000, ids = c(dnum, snum), weights = pw)
 svy
 
 # Inspect variable label

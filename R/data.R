@@ -1221,7 +1221,7 @@
 #' \describe{
 #'   \item{dnum}{District number. First-stage cluster ID (PSU). 40 unique
 #'     districts represented.}
-#'   \item{snum}{School number. Second-stage cluster ID (SSU).}
+#'   \item{snum}{School number (numeric). Second-stage cluster ID (SSU).}
 #'   \item{pw}{Sampling weight (inverse probability of selection).}
 #'   \item{fpc1}{First-stage finite population correction. Number of districts
 #'     in the sampling frame (757 for all rows).}
@@ -1282,8 +1282,7 @@
 #'   \item{col_grad}{College graduate (integer).}
 #'   \item{grad_sch}{Graduate school (integer).}
 #'   \item{avg_ed}{Average parent education level (numeric).}
-#'   \item{pct_resp}{Percent of parents who responded to the survey (integer).
-#'     \code{NA} for some schools.}
+#'   \item{pct_resp}{Percent of parents who responded to the survey (integer).}
 #' }
 #'
 #' **Teacher credentials:**
@@ -1315,9 +1314,10 @@
 #' ```
 #'
 #' **Missing values:** Several columns have `NA` for schools where the value is
-#' inapplicable: `acs_k3` and `acs_46` are `NA` for high schools and middle
-#' schools (respectively, where those grade spans do not exist); `acs_core` is
-#' `NA` for elementary schools; `pct_resp` is `NA` for some schools.
+#' inapplicable: `acs_k3` (grades K--3) is `NA` for high schools and middle
+#' schools, where those grade spans do not exist; `acs_46` (grades 4--6) is
+#' `NA` for most elementary and some middle schools; `acs_core` is `NA` for
+#' elementary schools.
 #'
 #' **Metadata:** All 39 columns carry `"label"` attributes (human-readable
 #' variable descriptions). The six categorical columns (`stype`, `sch_wide`,
