@@ -1317,7 +1317,7 @@
 #' inapplicable: `acs_k3` (grades K--3) is `NA` for high schools and middle
 #' schools, where those grade spans do not exist; `acs_46` (grades 4--6) is
 #' `NA` for all high schools and some elementary and middle schools; `acs_core` is `NA` for
-#' elementary schools.
+#' most elementary schools.
 #'
 #' **Metadata:** All 39 columns carry `"label"` attributes (human-readable
 #' variable descriptions). The six categorical columns (`stype`, `sch_wide`,
@@ -1340,7 +1340,6 @@
 #' head(ca_api_2000[, c("dnum", "snum", "pw", "fpc1", "fpc2", "api00")])
 #'
 #' # Create two-stage cluster design
-#' library(surveycore)
 #' svy <- as_survey(ca_api_2000, ids = c(dnum, snum), weights = pw)
 #' svy
 #'

@@ -121,7 +121,7 @@ via the \code{fpc} argument:
 inapplicable: \code{acs_k3} (grades K--3) is \code{NA} for high schools and middle
 schools, where those grade spans do not exist; \code{acs_46} (grades 4--6) is
 \code{NA} for all high schools and some elementary and middle schools; \code{acs_core} is \code{NA} for
-elementary schools.
+most elementary schools.
 
 \strong{Metadata:} All 39 columns carry \code{"label"} attributes (human-readable
 variable descriptions). The six categorical columns (\code{stype}, \code{sch_wide},
@@ -138,7 +138,6 @@ column is dropped; (2) factor columns are stored as plain integers with
 head(ca_api_2000[, c("dnum", "snum", "pw", "fpc1", "fpc2", "api00")])
 
 # Create two-stage cluster design
-library(surveycore)
 svy <- as_survey(ca_api_2000, ids = c(dnum, snum), weights = pw)
 svy
 
