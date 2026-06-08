@@ -9,7 +9,7 @@ or data frame."><meta property="og:image" content="https://jdenn0514.github.io/s
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ or data frame."><meta property="og:image" content="https://jdenn0514.github.io/s
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Extract Variable Labels</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/core-metadata.R" class="external-link"><code>R/core-metadata.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-metadata.R" class="external-link"><code>R/core-metadata.R</code></a></small>
       <div class="d-none name"><code>extract_var_label.Rd</code></div>
     </div>
 
@@ -107,8 +107,13 @@ zero-row tibble.</p></li>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_2017</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">extract_var_label</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                    seqn                                 sdmvpsu </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            "Respondent sequence number"            "Masked variance pseudo-PSU" </span>
@@ -160,7 +165,6 @@ zero-row tibble.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          "Education level - Adults 20+"  "Systolic: Blood pres (1st rdg) mm Hg" </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                  bpxdi1                                  bpxpls </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> "Diastolic: Blood pres (1st rdg) mm Hg"     "60 sec. pulse (30 sec. pulse * 2)" </span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -80,8 +80,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 extract_var_label(d)
 #>                                    seqn                                 sdmvpsu 
 #>            "Respondent sequence number"            "Masked variance pseudo-PSU" 

@@ -13,7 +13,7 @@ classes."><meta property="og:image" content="https://jdenn0514.github.io/surveyc
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ classes."><meta property="og:image" content="https://jdenn0514.github.io/surveyc
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Survey-Weighted Quantiles</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-quantiles.R" class="external-link"><code>R/analysis-quantiles.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-quantiles.R" class="external-link"><code>R/analysis-quantiles.R</code></a></small>
       <div class="d-none name"><code>get_quantiles.Rd</code></div>
     </div>
 
@@ -121,18 +121,18 @@ decimal places. Default <code>NULL</code> (no rounding).</p></dd>
 
 
 <dt id="arg-na-rm">na.rm<a class="anchor" aria-label="anchor" href="#arg-na-rm"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), <code>NA</code> values are excluded from
-analysis: observations where the analysis variable is <code>NA</code> are dropped
-from calculations, and observations where any group variable is <code>NA</code> are
-excluded from the output. If <code>FALSE</code>, <code>NA</code> observations in the analysis
-variable are included in calculations, and observations where a group
-variable is <code>NA</code> are collected into their own group row in the output
-(appearing after all non-<code>NA</code> group rows).</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (default), <code>NA</code> values in the analysis
+variable are excluded from calculations. If <code>FALSE</code>, any <code>NA</code> values in
+the analysis variable cause all quantile estimates for that cell to be
+<code>NA_real_</code>. Observations where any group variable is <code>NA</code> are always
+excluded from the output when <code>na.rm = TRUE</code>; when <code>na.rm = FALSE</code> they
+are collected into their own group row (appearing after all non-<code>NA</code> rows).</p></dd>
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity; has no visible
-effect on <code>get_quantiles()</code> output. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Accepted for API consistency across <code>get_*()</code>
+functions. For <code>get_quantiles()</code>, no value-level cells appear in the
+output, so this parameter has no effect. Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -178,7 +178,10 @@ intervals and are generally asymmetric around <code>estimate</code>. <code>deff<
 always <code>NA</code> for quantile estimates: computing it requires a kernel
 density estimate at the quantile point (the Woodruff SRS approximation
 used by <code>survey::svyquantile(deff = TRUE)</code>), which is not implemented.</p></li>
-<li><p><code>n</code> — unweighted count of non-NA observations used in the estimate.</p></li>
+<li><p><code>n</code> — unweighted count of observations in the active domain used
+in the estimate. When <code>na.rm = TRUE</code>, counts only non-NA observations;
+when <code>na.rm = FALSE</code>, counts all active-domain rows (including NAs,
+though the estimate will be <code>NA_real_</code>).</p></li>
 <li><p><code>n_weighted</code> — sum of weights (only when requested).</p></li>
 </ul><p>One row per (group combination × quantile probability). The variable name
 and <code>probs</code> vector are stored in <code>meta(result)</code>.</p>
@@ -210,8 +213,13 @@ position measures. <em>Journal of the American Statistical Association</em>,
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_2017</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># IQR + median (default)</span></span></span>
 <span class="r-in"><span><span class="fu">get_quantiles</span><span class="op">(</span><span class="va">d</span>, <span class="va">ridageyr</span><span class="op">)</span></span></span>
@@ -240,7 +248,6 @@ position measures. <em>Journal of the American Statistical Association</em>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        2 p25            20     19      22  <span style="text-decoration: underline;">4</span>697</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        2 p50            39     38      42  <span style="text-decoration: underline;">4</span>697</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        2 p75            58     56      61  <span style="text-decoration: underline;">4</span>697</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

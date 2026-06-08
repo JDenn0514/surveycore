@@ -20,25 +20,16 @@ survey_data(x)
 
 A `data.frame` with all variables, including design variables.
 
-## See also
-
-Other constructors:
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
-[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
-[`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
-[`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
-[`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
-[`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
-[`survey_taylor()`](https://jdenn0514.github.io/surveycore/reference/survey_taylor.md),
-[`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
-
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 head(survey_data(d))
 #>    seqn sdmvpsu sdmvstra  wtmec2yr  wtint2yr ridstatr riagendr ridageyr
 #> 1 93703       2      145  8539.731  9246.492        2        2        2

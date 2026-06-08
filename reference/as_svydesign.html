@@ -13,7 +13,7 @@ or for round-trip testing."><meta property="og:image" content="https://jdenn0514
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ or for round-trip testing."><meta property="og:image" content="https://jdenn0514
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Convert a surveycore Design Object to a survey Package Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/methods-conversion.R" class="external-link"><code>R/methods-conversion.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/methods-conversion.R" class="external-link"><code>R/methods-conversion.R</code></a></small>
       <div class="d-none name"><code>as_svydesign.Rd</code></div>
     </div>
 
@@ -78,15 +78,19 @@ package has no metadata system.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_2017</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"survey"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">sv</span> <span class="op">&lt;-</span> <span class="fu">as_svydesign</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svymean</a></span><span class="op">(</span><span class="op">~</span><span class="va">ridageyr</span>, <span class="va">sv</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            mean     SE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ridageyr 38.424 0.5244</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

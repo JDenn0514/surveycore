@@ -44,8 +44,10 @@ get_freqs(
 
 - ...:
 
-  Additional arguments passed to tidy-select (future-proof; currently
-  unused).
+  Additional arguments forwarded to `.dispatch_over_collection()` when
+  `design` is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  For single-survey inputs these arguments are ignored.
 
 - group:
 
@@ -201,8 +203,13 @@ Other analysis:
 ``` r
 # NHANES exam weights are 0 for non-examined participants; filter first
 nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
-d <- as_survey(nhanes_sub, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_sub,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Single variable
 get_freqs(d, riagendr)

@@ -11,7 +11,7 @@ independent of the S7 property structure."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,7 @@ independent of the S7 property structure."><meta property="og:image" content="ht
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Access the Data Component of a Survey Design Object</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
       <div class="d-none name"><code>survey_data.Rd</code></div>
     </div>
 
@@ -58,25 +58,16 @@ independent of the S7 property structure.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> with all variables, including design variables.</p>
     </div>
-    <div class="section level2">
-    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p>Other constructors:
-<code><a href="as_survey.html">as_survey()</a></code>,
-<code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
-<code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
-<code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_glm.html">survey_glm()</a></code>,
-<code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
-<code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
-<code><a href="survey_replicate.html">survey_replicate()</a></code>,
-<code><a href="survey_taylor.html">survey_taylor()</a></code>,
-<code><a href="survey_twophase.html">survey_twophase()</a></code></p></div>
-    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_2017</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">survey_data</span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    seqn sdmvpsu sdmvstra  wtmec2yr  wtint2yr ridstatr riagendr ridageyr</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 93703       2      145  8539.731  9246.492        2        2        2</span>

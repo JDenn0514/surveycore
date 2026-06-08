@@ -9,7 +9,7 @@ estimation. Create with as_survey()."><meta property="og:image" content="https:/
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ estimation. Create with as_survey()."><meta property="og:image" content="https:/
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Taylor Series Linearization Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
       <div class="d-none name"><code>survey_taylor.Rd</code></div>
     </div>
 
@@ -45,7 +45,8 @@ estimation. Create with <code><a href="as_survey.html">as_survey()</a></code>.</
 <span>  metadata <span class="op">=</span> <span class="fu"><a href="survey_metadata.html">survey_metadata</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  groups <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
-<span>  call <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  call <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  calibration <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -75,6 +76,13 @@ standalone surveycore use.</p></dd>
 
 <dt id="arg-call">call<a class="anchor" aria-label="anchor" href="#arg-call"></a></dt>
 <dd><p>Language object capturing the construction call.</p></dd>
+
+
+<dt id="arg-calibration">calibration<a class="anchor" aria-label="anchor" href="#arg-calibration"></a></dt>
+<dd><p>A list of calibration data elements produced by
+<code><a href="as_caldata.html">as_caldata()</a></code>, or <code>NULL</code> (default) for no calibration. When non-<code>NULL</code>,
+variance estimation routines apply a Deville-Sarndal calibration
+correction.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -110,14 +118,30 @@ rather than <code>weights</code> to <code><a href="as_survey.html">as_survey()</
 
 </dl></div>
     <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. <em>Journal of the American Statistical Association</em>
+<b>87</b>(418), 376–382.</p>
+<p>Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. <em>Journal of the American Statistical
+Association</em> <b>88</b>(423), 1013–1020.</p>
+<p>Lumley, T. (2010) <em>Complex Surveys: A Guide to Analysis Using R</em>.
+John Wiley and Sons.</p>
+<p>Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations for
+the analysis of survey data using poststratification information.
+<em>Sankhya</em> <b>64-A</b>, 22–36.</p>
+<p>Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+<em>Model Assisted Survey Sampling</em>. Springer.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="as_survey.html">as_survey()</a></code> to create a <code>survey_taylor</code> object.</p>
 <p>Other constructors:
+<code><a href="as_caldata.html">as_caldata()</a></code>,
 <code><a href="as_survey.html">as_survey()</a></code>,
 <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
 <code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
 <code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
@@ -128,12 +152,16 @@ rather than <code>weights</code> to <code><a href="as_survey.html">as_survey()</
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Prefer as_survey() over calling survey_taylor() directly</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>, ids <span class="op">=</span> <span class="va">vpsu</span>, weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">vstrat</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">gss_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "surveycore::survey_taylor" "surveycore::survey_base"  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3] "S7_object"                </span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

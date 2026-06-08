@@ -11,7 +11,7 @@ Gaussian and non-Gaussian families, and optional subgroup analysis."><meta prope
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,7 @@ Gaussian and non-Gaussian families, and optional subgroup analysis."><meta prope
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Treatment Effect Estimation for Survey Designs</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-diffs.R" class="external-link"><code>R/analysis-diffs.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-diffs.R" class="external-link"><code>R/analysis-diffs.R</code></a></small>
       <div class="d-none name"><code>get_diffs.Rd</code></div>
     </div>
 
@@ -236,12 +236,14 @@ reference level, and other metadata.</p>
 <h3 id="estimation-paths">Estimation Paths<a class="anchor" aria-label="anchor" href="#estimation-paths"></a></h3>
 
 
-<p><code>get_diffs()</code> uses two estimation paths:</p><ul><li><p><strong>Clean path</strong> (bivariate Gaussian, no group): extracts coefficients
-directly from <code><a href="clean.html">clean()</a></code>. The intercept is the reference group mean;
-treatment coefficients are differences from reference.</p></li>
+<p><code>get_diffs()</code> uses two estimation paths:</p><ul><li><p><strong>Clean path</strong> (bivariate Gaussian with no covariates and no group, OR
+any family with <code>scale = "link"</code>): extracts coefficients directly from
+<code><a href="clean.html">clean()</a></code>. The intercept is the reference group mean; treatment
+coefficients are differences from reference. When <code>scale = "link"</code> and
+the family is non-Gaussian, <code>mean</code> and <code>pct_change</code> are suppressed.</p></li>
 <li><p><strong>Marginaleffects path</strong> (covariates, non-Gaussian with
-<code>scale = "ame"</code>, or group): uses <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes()</a></code> for estimates and
-<code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">avg_predictions()</a></code> for means.</p></li>
+<code>scale = "ame"</code>, or group): uses <code>avg_slopes()</code> for estimates and
+<code>avg_predictions()</code> for means.</p></li>
 </ul></div>
 
 <div class="section">
@@ -304,12 +306,11 @@ scale (e.g., log-odds for logistic regression).</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marginaleffects.com/" class="external-link">marginaleffects</a></span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Create survey design with treatment groups</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Create survey design with treatment groups</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">200</span>, wt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">200</span>,</span></span>
+<span class="r-in"><span>  wt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  dv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">50</span>, <span class="fl">10</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  arm <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="fl">200</span>, <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
@@ -332,7 +333,6 @@ scale (e.g., log-odds for logistic regression).</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> A          0       <span style="color: #BB0000;">NA</span>        50.3    66  <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>     <span style="color: #949494;">""</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> B         -<span style="color: #BB0000;">2.14</span>    -<span style="color: #BB0000;">0.042</span><span style="color: #BB0000; text-decoration: underline;">5</span>   48.2    72  -<span style="color: #BB0000;">5.49</span>    1.21   0.418 <span style="color: #949494;">""</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> Control   -<span style="color: #BB0000;">0.165</span>   -<span style="color: #BB0000;">0.003</span><span style="color: #BB0000; text-decoration: underline;">27</span>  50.2    62  -<span style="color: #BB0000;">3.93</span>    3.61   0.931 <span style="color: #949494;">""</span>   </span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

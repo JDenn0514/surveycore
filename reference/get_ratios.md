@@ -101,8 +101,9 @@ get_ratios(
 
 - label_values:
 
-  Logical. Accepted for API uniformity; has no visible effect on
-  `get_ratios()` output. Default `TRUE`.
+  Logical. Accepted for API consistency across `get_*()` functions. For
+  `get_ratios()`, no value-level cells appear in the output, so this
+  parameter has no effect. Default `TRUE`.
 
 - label_vars:
 

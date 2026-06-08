@@ -18,6 +18,7 @@ as_tbl_svy(x)
 - x:
 
   A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+  `survey_nonprob` is not supported and will error.
 
 ## Value
 
@@ -40,10 +41,17 @@ Other conversion:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
-if (requireNamespace("survey", quietly = TRUE) &&
-    requireNamespace("srvyr",  quietly = TRUE)) {
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+if (
+  requireNamespace("survey", quietly = TRUE) &&
+    requireNamespace("srvyr", quietly = TRUE)
+) {
   ts <- as_tbl_svy(d)
 }
 ```

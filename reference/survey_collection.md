@@ -108,8 +108,13 @@ Other collections:
 ## Examples
 
 ``` r
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 coll <- survey_collection(surveys = list(gss = d1))
 length(coll)
 #> [1] 1

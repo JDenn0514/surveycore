@@ -9,31 +9,21 @@ Every analysis function in surveycore —
 [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
 — takes a **survey design object** as its first argument. That object
-encodes how your data was collected: which units were clustered
-together, which strata were defined, what weights apply, and how
-variance should be estimated. Without it, point estimates may be biased
-and standard errors are almost certainly wrong ([Lumley
-2010](#ref-lumley2010); [Lohr 2022](#ref-lohr2022)).
+includes things like which units were clustered together, which strata
+were defined, what weights apply, and other relevant information so that
+point and variance estimation can be properly calculated. Without it,
+point estimates may be biased and standard errors are almost certainly
+wrong ([Lumley 2010](#ref-lumley2010); [Lohr 2022](#ref-lohr2022)).
 
 This vignette answers one question: *given my data, which constructor do
 I call and how do I call it?*
 
-It is written for three audiences:
-
-- **Academic researchers** working with named public surveys (NHANES,
-  ANES, ACS, GSS). Jump to the relevant worked example in each section.
-- **Practitioners** running surveys of schools, businesses, or
-  organizations. The conceptual explanations in each section are for
-  you.
-- **Non-probability panel users** — if you run message-testing or
-  attitudinal research on Lucid, Dynata, or a similar platform and have
-  vendor-provided raking weights, skip ahead to [Section
-  6](#sec-calibrated).
-
-This vignette covers object *creation* only. Estimation functions
+This vignette covers object *creation* only. Two things not covered
+are: - How to create weights and how different weighting mechanisms
+work. - What the different analysis/estimation functions
 ([`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
-etc.) are covered in
+etc.) do. Those are covered in
 [`vignette("getting-started")`](https://jdenn0514.github.io/surveycore/articles/getting-started.md).
 
 ------------------------------------------------------------------------
@@ -44,10 +34,11 @@ Read the first row that matches your data.
 
 | My data… | Constructor | Why |
 |----|----|----|
-| Has cluster IDs, strata, and/or design weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Taylor series linearization — the general case |
-| Comes with pre-built replicate weight columns (repwt_1, repwt_2, …) | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Uses the agency-supplied variance replicates |
-| Is a pure SRS — equal probability, no clustering, no strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Omit `ids` and `strata`; creates an SRS design |
-| Is a non-probability panel or opt-in sample with calibration weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Calibrated design; SEs are approximate |
+| Is a probability sample and has weights and/or cluster IDs, strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Taylor series linearization — the general case |
+| Is a probability sample and has replicate weight columns (repwt_1, repwt_2, …) | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Uses the agency-supplied variance replicates |
+| Is a pure simple random sample with no clustering or strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) | Omit `ids` and `strata`; creates an SRS design |
+| Is a non-probability sample with weights but no replicate weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | SRS-approximation variance; SEs understate calibration uncertainty |
+| Is a non-probability panel with replicate weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Bootstrap/jackknife variance includes calibration uncertainty |
 | Was sampled in two stages with an expensive Phase 2 measurement | [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) | Two-phase variance accounting for both stages |
 
 ### Common surveys at a glance
@@ -63,7 +54,7 @@ Read the first row that matches your data.
 | BRFSS | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Bootstrap replicate weights |
 | NAEP / PISA | [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | JK2 jackknife replicate weights |
 | Nationscape (Democracy Fund + UCLA) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability quota panel; ACS-calibrated raking weights |
-| Opt-in online panels | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability; vendor-supplied raking weights |
+| Opt-in online panels | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability |
 
 ------------------------------------------------------------------------
 
@@ -490,7 +481,7 @@ your codebook’s technical documentation specifies custom values ([Wolter
 
 > **If you are not sure whether your design is two-phase, it almost
 > certainly is not.** Skip to [Section 5](#sec-srs) or [Section
-> 6](#sec-calibrated).
+> 6](#sec-nps).
 
 ### 4.1 What two-phase sampling is
 
@@ -702,16 +693,17 @@ sampling.
 
 ------------------------------------------------------------------------
 
-## 6. `as_survey_nonprob()` — Non-Probability and Calibrated Samples
+## 6. `as_survey_nonprob()` — Non-Probability Samples
 
-If you conduct research on opt-in panels — Lucid, Dynata, Qualtrics
-panels, Prolific, or similar — and your vendor has provided raking or
-post-stratification weights, this section is for you.
+If you conduct surveys with non-probability samples, like with opt-in
+panels such as Cint, Dynata, Qualtrics panels, Prolific, or others, then
+this section is for you.
 
-The short answer: **you are probably doing it roughly right, and
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-is the correct constructor to use.** Here is what you can and cannot
-claim from your estimates, and how to report them honestly.
+This section assumes you have, at a minimum, either calibration (raking)
+weights or inverse-probability weights (IPW) via propensity scoring, but
+ideally you will also have replicate weights based on the calibration
+weights or IPW you already have. I’ll go into more detail on why you
+want to have replicate weights in §6.2.
 
 ### 6.1 The fundamental distinction
 
@@ -721,47 +713,52 @@ are valid because the randomness that justifies them comes from the
 sampling mechanism itself ([Cochran 1977](#ref-cochran1977), ch. 1;
 [Lohr 2022](#ref-lohr2022), ch. 1).
 
-A **non-probability sample** — an opt-in online panel — has unknown
+A **non-probability sample**, like an opt-in online panel, has unknown
 inclusion probabilities. The decision to join a panel and to complete a
 particular survey is self-selected. No mechanical property of the data
 guarantees representativeness ([Baker et al. 2013](#ref-baker2013);
-[Elliott and Valliant 2017](#ref-elliott2017)).
+[Elliott and Valliant 2017](#ref-elliott2017)). As a result, there is
+additional uncertainty associated with non-probability samples that is
+not fully captured by traditional design-based variance estimation.
 
-### 6.2 What your vendor’s weights actually are
+### 6.2 Variance estimation: two modes
 
-Regardless of where they come from,
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-is the right constructor whenever weights were derived *after* data
-collection to make the sample resemble a target population. Common forms
-include ([Valliant and Dever 2018](#ref-valliant2018), ch. 3):
+has two variance estimation modes:
 
-- **Raking** (iterative proportional fitting): adjusts sample marginals
-  to match population marginals on age, gender, education,
-  race/ethnicity, etc. The standard approach used by most panel vendors.
-- **Post-stratification**: assigns a single weight to all respondents
-  within a demographic cell defined by the cross-product of variables.
-- **Propensity score weighting (PSW)**: fits a model predicting the
-  probability of being in the sample, then weights each respondent by
-  the inverse of their predicted probability. Functionally equivalent to
-  calibration — the weights make the sample resemble the population on
-  the modeled covariates.
-- **Matching-based weights**: assigns weights based on similarity to a
-  reference population sample (e.g., entropy balancing, MatchIt
-  outputs). Another approach to demographic alignment.
+**SRS approximation** (`repweights = NULL`, the default): If replicate
+weights are not supplied to `repweights` (i.e., `repweights = NULL`),
+then the standard errors treat the calibrated weights as fixed and apply
+a simple random sampling formula. This is convenient but underestimates
+the standard errors as the calibration step itself introduces additional
+uncertainty that the SRS formula does not capture ([Elliott and Valliant
+2017](#ref-elliott2017); [Kolenikov 2014](#ref-kolenikov2014)).
 
-All four share the same fundamental property: the weights were computed
-from the data, not fixed by the sampling protocol. Use
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-for all of them.
+**Bootstrap or jackknife replicate variance** (`repweights` supplied):
+If replicate weights are supplied in the `repweights` argument, the
+replicate weight variance estimation is used. This approach properly
+includes the uncertainty that comes from the calibration into the
+variance estimate and is the recommended method when replicate weights
+are available ([Elliott and Valliant 2017](#ref-elliott2017); [Kolenikov
+2014](#ref-kolenikov2014); [Chrostowski et al.
+2025](#ref-chrostowski2025)).
 
-What calibration weights accomplish ([Mercer et al.
-2018](#ref-mercer2018); [McPhee et al. 2023](#ref-mcphee2023)):
+Neither mode resolves the fundamental limitation common to all
+non-probability samples: standard errors cannot capture uncertainty from
+the unknown selection mechanism itself ([Baker et al.
+2013](#ref-baker2013); [Elliott and Valliant 2017](#ref-elliott2017)).
 
-- They reduce bias from *measured* demographic confounders
-- Point estimates for outcomes correlated with calibration variables
-  improve meaningfully compared to unweighted estimates
-- They do **not** correct for selection on unobserved variables
-- They do **not** make the design a probability sample
+#### Choosing `type`
+
+When `repweights` is supplied, the `type` argument selects the replicate
+scheme. Four types are supported for `survey_nonprob` objects:
+
+| `type` | Description | Default `scale` | When to use |
+|----|----|----|----|
+| `"bootstrap"` | Bootstrap resampling | `1/R` | Most vendor-supplied replicates |
+| `"JK1"` | Delete-one jackknife (`"jackknife"` is an alias) | `(R-1)/R` | Some research panels |
+| `"JK2"` | Stratified jackknife; requires explicit `rscales` | `1` | Clustered nonprob designs |
+| `"JKn"` | Equivalent to JK2 | `1` | Same as JK2 |
 
 ### 6.3 What you can and cannot claim
 
@@ -769,31 +766,28 @@ What calibration weights accomplish ([Mercer et al.
 |----|----|----|
 | Point estimates representative of calibration margins | ✅ Yes | Calibrated to age, gender, education, etc. targets |
 | Estimates more accurate than unweighted | ✅ Usually | Especially for outcomes correlated with demographic variables |
-| Standard errors reflect true sampling uncertainty | ⚠️ Approximately | SEs computed under approximate variance model; likely underestimated |
+| Standard errors (SRS approx., no `repweights`) | ⚠️ Understated | Treats calibrated weights as fixed; calibration variance not propagated |
+| Standard errors (with `repweights`, calibration re-applied per replicate) | ⚠️ Approximately | Captures calibration uncertainty; cannot address selection mechanism uncertainty |
 | Results equivalent to a probability-sample estimate | ❌ No | Selection mechanism is unknown and cannot be fully corrected |
 
 This is the standard practice across the industry — used routinely by
 academic researchers, major survey organizations, and commercial firms
 ([Baker et al. 2013](#ref-baker2013); [McPhee et al.
 2023](#ref-mcphee2023)). The key is transparency: **your methods section
-should state that you used a non-probability sample with vendor-supplied
-calibration weights, describe the calibration targets, and acknowledge
-that standard errors are approximate.**
+should state that you used a non-probability sample, detail how the
+weights were created, and acknowledge that standard errors are
+approximate.**
 
-### 6.4 Worked example: Democracy Fund + UCLA Nationscape
+### 6.4 Worked example: Democracy Fund + UCLA Nationscape (SRS approximation)
 
 The Nationscape is a large-scale non-probability survey conducted by
 Democracy Fund + UCLA, fielded weekly from July 2019 through January
-2021. Each wave recruited approximately 6,250 respondents from the Lucid
-respondent exchange using a quota design, with raking weights calibrated
-to American Community Survey (ACS) marginals for age, gender, education,
-race/ethnicity, and region, plus 2016 presidential vote choice. This is
-the textbook use case for
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md).
-
-| Variable | Role | Argument |
-|----|----|----|
-| `weight` | Raking weight calibrated to ACS demographic targets and 2016 presidential vote | `weights` |
+2021. Each wave used quota sampling to ensure that the data was
+representative and consisted of approximately 6,250 respondents from
+Lucid (now known as Cint). The data also contains weights created by
+raking the data to the American Community Survey across age, gender,
+education, race/ethnicity, region, and 2016 presidential vote choice.
+The variable name for these weights is `weight`.
 
 ``` r
 
@@ -865,134 +859,113 @@ get_freqs(svy_ns, pres_approval)
     ## 4 Strongly disapprove 0.415   2799
     ## 5 Not sure            0.0445   230
 
-This produces a `survey_nonprob` object. Use it with
+This produces a `survey_nonprob` object using SRS-approximation variance
+because no replicate weights were supplied. As a result, the standard
+errors will be too small as they do not take into account the additional
+variance introduced by the raking procedure.
+
+### 6.5 Worked example: Bootstrap replicate weights
+
+When your data provider supplies bootstrap replicate weight columns —
+each representing one round of calibration re-applied to a bootstrap
+resample of the respondents — use `repweights` with
+`type = "bootstrap"`. The resulting variance estimates properly account
+for calibration uncertainty rather than treating the weights as fixed
+([Kolenikov 2014](#ref-kolenikov2014); [Chrostowski et al.
+2025](#ref-chrostowski2025)).
+
+The example below uses synthetic data to illustrate the interface. In
+practice the replicate weight columns come from your vendor alongside
+the main calibration weight column.
+
+``` r
+
+set.seed(1)
+n <- 200
+R <- 50
+
+ns_synthetic <- data.frame(
+  pres_approval = sample(c("Approve", "Disapprove", "DK"), n, replace = TRUE),
+  age_grp = sample(c("18-34", "35-54", "55+"), n, replace = TRUE),
+  weight = runif(n, 0.5, 2.5)
+)
+
+# Replicate columns: calibration re-applied on each bootstrap draw.
+# In practice these come from your vendor alongside the main weight column.
+rep_mat <- matrix(runif(n * R, 0.3, 3.0), nrow = n)
+colnames(rep_mat) <- paste0("repwt_", seq_len(R))
+ns_synthetic <- cbind(ns_synthetic, as.data.frame(rep_mat))
+
+svy_np_boot <- as_survey_nonprob(
+  ns_synthetic,
+  weights = weight,
+  repweights = starts_with("repwt_"),
+  type = "bootstrap"
+)
+svy_np_boot
+```
+
+    ## 
+
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
+
+    ## <survey_nonprob> (non-probability, BOOTSTRAP, 50 replicates) [experimental]
+
+    ## Sample size: 200
+
+    ## 
+
+    ## # A tibble: 200 × 53
+    ##    pres_approval age_grp weight repwt_1 repwt_2 repwt_3 repwt_4 repwt_5 repwt_6
+    ##    <chr>         <chr>    <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>   <dbl>
+    ##  1 Approve       18-34    2.41    1.47    1.66    1.03    0.403   1.84    2.03 
+    ##  2 DK            18-34    2.49    0.439   1.46    1.19    2.58    2.90    2.48 
+    ##  3 Approve       18-34    1.71    2.27    1.95    2.63    1.31    2.88    2.78 
+    ##  4 Disapprove    18-34    0.559   1.78    2.80    0.597   2.68    1.07    0.458
+    ##  5 Approve       18-34    1.17    2.33    0.948   1.39    0.544   2.30    1.59 
+    ##  6 DK            18-34    1.06    0.437   1.03    1.40    1.64    0.491   2.18 
+    ##  7 DK            35-54    0.734   2.23    2.28    1.48    2.34    2.73    0.421
+    ##  8 Disapprove    35-54    0.586   1.10    2.33    0.778   1.94    0.660   2.34 
+    ##  9 Disapprove    35-54    1.24    1.07    2.81    1.02    1.73    1.80    1.90 
+    ## 10 DK            18-34    1.17    2.54    1.55    2.08    2.76    1.92    1.68 
+    ## # ℹ 190 more rows
+    ## # ℹ 44 more variables: repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>,
+    ## #   repwt_10 <dbl>, repwt_11 <dbl>, repwt_12 <dbl>, repwt_13 <dbl>,
+    ## #   repwt_14 <dbl>, repwt_15 <dbl>, repwt_16 <dbl>, repwt_17 <dbl>,
+    ## #   repwt_18 <dbl>, repwt_19 <dbl>, repwt_20 <dbl>, repwt_21 <dbl>,
+    ## #   repwt_22 <dbl>, repwt_23 <dbl>, repwt_24 <dbl>, repwt_25 <dbl>,
+    ## #   repwt_26 <dbl>, repwt_27 <dbl>, repwt_28 <dbl>, repwt_29 <dbl>, …
+
+Use `svy_np_boot` with
 [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
 [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
-and other estimation functions exactly as you would any other survey
-object. Standard errors are computed under an approximate variance model
-and should be interpreted with appropriate caution and disclosed in your
-methods section.
+and other estimation functions exactly as you would a plain
+`survey_nonprob` object — the variance estimator switches from SRS
+approximation to bootstrap automatically.
 
-The `weight` column is a raking weight, not a design weight — it was
-computed after data collection to match population marginals, not fixed
-by the sampling protocol. Using
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-makes this explicit to both R and future readers of your code.
+### 6.6 Worked example: University snowball sample
 
-### 6.5 What not to do
+A university sends an email to 100 students inviting them to take part
+in a survey. At the end of the survey, they encourage the students to
+share the survey with other students. In the end they end up recruiting
+500 respondents. This is known as a snowball sample and is another
+example of non-probability sampling.
 
-Do not use
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
-for a non-probability sample and present standard errors as if the
-design were a probability sample:
+If the sample was weighted to represent the broader student body
+population, then weights should be applied as shown below:
 
 ``` r
 
-# Creates a survey_taylor object, which misrepresents the design
-svy_wrong <- as_survey(ns_wave1, weights = weight)
+svy_campus <- as_survey_nonprob(campus_survey, weights = weight)
 ```
-
-Using
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-makes the non-probability nature of the design explicit — both to R and
-to future readers of your code. This distinction matters for
-transparency in reporting and for correctly interpreting what your
-uncertainty estimates actually mean ([Elliott and Valliant
-2017](#ref-elliott2017); [Baker et al. 2013](#ref-baker2013)).
-
-### 6.6 Worked example: University voluntary response survey
-
-A university sends an email to all 8,000 enrolled students inviting them
-to complete a campus climate survey. 2,400 respond (30%). The response
-is self-selected — students with strong opinions are more likely to
-complete the survey than those who are neutral.
-
-**If calibration weights are available:** If the university has computed
-post-stratification or raking weights using registrar demographics
-(year, major, housing status), use
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md).
-This is the appropriate constructor whenever the weights were derived to
-make the respondents resemble the full student body:
-
-``` r
-
-svy_campus <- as_survey_nonprob(campus_survey, weights = ps_weight)
-```
-
-**If no calibration weights are available and you still want to use
-surveycore functions:** Add a column of 1s and use
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
-without `ids` or `strata`:
-
-``` r
-
-campus_survey$wt <- 1
-svy_campus <- as_survey(campus_survey, weights = wt)
-```
-
-This treats all respondents as equally weighted. The SEs it produces
-reflect variability *among the 2,400 respondents* — they do not measure
-how representative those respondents are of the full student body. This
-framing is valid when your target population is “students who chose to
-respond,” not “all students at the university.”
-
-**Disclosure:** Whether you use calibration weights or equal weights,
-your methods section should state the response rate, describe the
-weighting approach, and acknowledge the limitation: voluntary response
-bias cannot be fully corrected by any weighting strategy ([Baker et al.
-2013](#ref-baker2013)).
 
 ------------------------------------------------------------------------
 
-## 7. Probability, SRS, and calibration weights: understanding the distinction
-
-The two constructor families most users encounter —
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
-/
-[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
-and
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-— differ in one fundamental way: *where the weights come from*.
-
-|  | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) / [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
-|----|----|----|
-| Weight source | Sampling protocol (1/π_i) | Post-hoc adjustment |
-| Selection probabilities | Known and controlled | Unknown or overridden by calibration |
-| Weight values | Vary across respondents (or uniform for SRS) | Vary (reflect adjustment, not design) |
-| Variance estimator | Design-based (exact) | Approximate |
-
-In
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
-every weight traces back to a specific moment in the sampling protocol —
-the moment each unit’s selection probability was fixed. A PSU drawn with
-probability 1-in-10 gets weight 10. A school drawn from a roster of 400
-with probability 1-in-5 gets weight 5. SRS designs are the special case
-where all weights are equal because every unit had the same selection
-probability. The randomness that makes design-based inference valid is
-mechanical and recorded.
-
-In
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
-weights were computed *after* data collection to make the sample
-resemble a target population. The underlying selection mechanism is
-either unknown (opt-in panel, voluntary response) or was overridden by
-the calibration adjustment. Standard errors are approximate because the
-calibration step itself introduces additional uncertainty that standard
-variance formulas do not fully capture.
-
-The practical test: **if you can point to the sampling protocol that
-fixed each unit’s probability of selection, use
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).**
-If the weights were derived from the data after collection, use
-[`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md).
-
-------------------------------------------------------------------------
-
-## 8. When no constructor applies: convenience and purposive samples
+## 7. When no constructor applies: convenience and purposive samples
 
 Not every data collection fits the survey design framework.
 
-### 8.1 Example: program evaluation classrooms
+### 7.1 Example: program evaluation classrooms
 
 A researcher surveys students in five classrooms that volunteered to
 participate in a new educational program and wants to assess whether the
@@ -1022,15 +995,14 @@ Equal weights treat all participants as equally represented. The SEs
 reflect variation *among participants*. Do not interpret results as
 representative of all students at the school.
 
-### 8.2 General decision rule
+### 7.2 General decision rule
 
 | Design | Appropriate tool | Notes |
 |----|----|----|
 | Probability sample with design weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) | Exact variance |
 | Pure SRS — equal probability, no clustering/strata | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) (no `ids` or `strata`) | Exact variance; SRS special case of Taylor |
-| Any sample with calibration/raking/PSW/matching weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Approximate variance |
+| Any non-probability sample with weights | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Approximate variance |
 | Voluntary response or convenience sample, no weights | [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md) with `weights = 1` (no `ids`/`strata`) | Conditional inference only; disclose |
-| Causal inference (treatment effect estimation) | Not surveycore | Use MatchIt, WeightIt, lme4, etc. |
 
 When you use
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
@@ -1042,7 +1014,7 @@ unless the sample can be independently defended as representative.
 
 ------------------------------------------------------------------------
 
-## 9. Reference: Common Codebook Variables
+## 8. Reference: Common Codebook Variables
 
 A lookup table for common codebook terms and how they map to constructor
 arguments:
@@ -1072,6 +1044,11 @@ Breslow, Norman E., and Kevin C. Cain. 1988. “Logistic Regression for
 Two-Stage Case-Control Data.” *Biometrika* 75 (1): 11–20.
 <https://doi.org/10.1093/biomet/75.1.11>.
 
+Chrostowski, Matthew J., Cary A. Guzman, and Lara Malm. 2025. “Variance
+Estimation for Non-Probability Surveys.” *Journal of Survey Statistics
+and Methodology*, ahead of print.
+<https://doi.org/10.1093/jssam/smaf003>.
+
 Cochran, William G. 1977. *Sampling Techniques*. 3rd ed. John Wiley &
 Sons.
 
@@ -1086,6 +1063,9 @@ Methods*, 212–17.
 Judkins, David R. 1990. “Fay’s Method for Variance Estimation.” *Journal
 of Official Statistics* 6 (3): 223–39.
 
+Kolenikov, Stas. 2014. “Calibrating Variance Estimation with Proxy
+Variables.” *Survey Methodology* 40 (1): 21–38.
+
 Lohr, Sharon L. 2022. *Sampling: Design and Analysis*. 3rd ed. CRC
 Press.
 
@@ -1097,10 +1077,6 @@ Quality Metrics for Online Samples: Considerations for Study Design &
 Analysis*. American Association for Public Opinion Research.
 <https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf>.
 
-Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. *For Weighting
-Online Opt-in Samples, What Matters Most?* Pew Research Center.
-<https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/>.
-
 Saegusa, Takumi, and Jon A. Wellner. 2013. “Weighted Likelihood
 Estimation Under Two-Phase Sampling.” *Annals of Statistics* 41 (1):
 269–95. <https://doi.org/10.1214/12-AOS1073>.
@@ -1108,9 +1084,6 @@ Estimation Under Two-Phase Sampling.” *Annals of Statistics* 41 (1):
 U.S. Census Bureau. 2022. *American Community Survey Design and
 Methodology, Chapter 12: Variance Estimation*. U.S. Census Bureau.
 <https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf>.
-
-Valliant, Richard, and Jill A. Dever. 2018. *Survey Weights: A
-Step-by-Step Guide to Calculation*. Stata Press.
 
 Wolter, Kirk M. 2007. *Introduction to Variance Estimation*. 2nd ed.
 Springer. <https://doi.org/10.1007/978-0-387-35099-8>.

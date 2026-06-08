@@ -43,9 +43,13 @@ get_corr(
 
   A survey design object: `survey_taylor`, `survey_replicate`,
   `survey_twophase`, or `survey_nonprob`. `method` values `"polychoric"`
-  and `"polyserial"` are supported on `survey_taylor` and
-  `survey_replicate` only; other design classes raise
-  `surveycore_error_polychoric_design_unsupported`.
+  and `"polyserial"` are supported on `survey_taylor`,
+  `survey_replicate`, and `survey_nonprob` designs that supply replicate
+  weights (`repweights` argument in
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)).
+  `survey_nonprob` without replicate weights and `survey_twophase`
+  designs raise `surveycore_error_polychoric_design_unsupported` for
+  latent methods.
 
 - x:
 
@@ -110,7 +114,9 @@ get_corr(
 
   Integer or `NULL`. If an integer, rounds all numeric output columns
   (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal places.
-  Default `NULL` (no rounding).
+  Default `NULL` (no rounding). Silently ignored when `format = "wide"`
+  (the wide matrix contains only `r` values, which are not rounded by
+  this argument).
 
 - min_cell_n:
 
@@ -119,12 +125,13 @@ get_corr(
 
 - na.rm:
 
-  Logical. If `TRUE` (default), pairs use complete cases for each
-  variable pair separately (pairwise deletion), and observations where
-  any group variable is `NA` are excluded from the output. If `FALSE`,
-  pairwise complete cases are still used for each variable pair, and
-  observations where a group variable is `NA` are collected into their
-  own group row in the output (appearing after all non-`NA` group rows).
+  Logical. Controls `NA` handling for group variables and the
+  computation domain. Pairwise complete-case deletion is always applied
+  for the correlation variables themselves regardless of this flag. If
+  `TRUE` (default), observations where any group variable is `NA` are
+  excluded from the output. If `FALSE`, observations where a group
+  variable is `NA` are collected into their own group row in the output
+  (appearing after all non-`NA` group rows).
 
 - label_values:
 
@@ -188,16 +195,21 @@ other columns in both long and wide formats.
 
 - `var1`, `var2` — variable names (or labels when `label_vars = TRUE`).
 
-- `r` — Pearson correlation coefficient.
+- `r` — correlation coefficient. For `method = "pearson"`, the weighted
+  product-moment correlation; for `"polychoric"` / `"polyserial"`, the
+  MLE of `rho` under a bivariate-normal latent model.
 
 - Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
   `deff`) — only those requested via `variance`.
 
 - `p_value` — two-tailed p-value.
 
-- `statistic` — t-statistic.
+- `statistic` — test statistic. A t-statistic for `method = "pearson"`;
+  a Wald z-statistic for latent methods.
 
-- `df` — degrees of freedom for the t-test (n minus 2).
+- `df` — degrees of freedom. `n - 2` for `method = "pearson"`;
+  `NA_integer_` for `"polychoric"` and `"polyserial"` (asymptotic normal
+  distribution is used).
 
 - `n` — pairwise unweighted count.
 
@@ -284,8 +296,13 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 get_corr(d, x = c(ridageyr, bpxsy1))
 #> # A tibble: 1 × 9
 #>   var1                  var2      r ci_low ci_high p_value statistic    df     n
@@ -303,8 +320,12 @@ get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 #> #   ²​`Systolic: Blood pres (1st rdg) mm Hg`
 
 # AAPOR-compliant
-get_corr(d, x = c(ridageyr, bpxsy1),
-         variance = c("ci", "moe"), n_weighted = TRUE)
+get_corr(
+  d,
+  x = c(ridageyr, bpxsy1),
+  variance = c("ci", "moe"),
+  n_weighted = TRUE
+)
 #> # A tibble: 1 × 11
 #>   var1           var2      r ci_low ci_high    moe p_value statistic    df     n
 #>   <fct>          <fct> <dbl>  <dbl>   <dbl>  <dbl>   <dbl>     <dbl> <int> <int>
@@ -321,7 +342,7 @@ df <- data.frame(
 d_ord <- as_survey(df, weights = wt)
 get_corr(d_ord, x = c(o1, o2), method = "polychoric")
 #> # A tibble: 1 × 9
-#>   var1  var2        r ci_low ci_high p_value statistic    df     n
-#>   <fct> <fct>   <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
-#> 1 o1    o2    -0.0149 -0.298   0.271   0.921   -0.0997    NA   200
+#>   var1  var2       r ci_low ci_high p_value statistic    df     n
+#>   <fct> <fct>  <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
+#> 1 o1    o2    0.0460 -0.233   0.318   0.750     0.319    NA   200
 ```

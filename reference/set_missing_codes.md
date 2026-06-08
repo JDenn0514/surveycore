@@ -43,6 +43,9 @@ variable, a bare named atomic vector is accepted in addition to a list.
 
 ## See also
 
+[`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
+to retrieve missing value codes
+
 Other metadata:
 [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md),
 [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md),
@@ -70,8 +73,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_missing_codes(d, happy = c(Refused = -1L, DK = -2L))
 extract_missing_codes(d, happy)
 #> $happy

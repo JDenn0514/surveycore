@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Creating Survey Objects in surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/vignettes/creating-survey-objects.Rmd" class="external-link"><code>vignettes/creating-survey-objects.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/creating-survey-objects.Rmd" class="external-link"><code>vignettes/creating-survey-objects.Rmd</code></a></small>
       <div class="d-none name"><code>creating-survey-objects.Rmd</code></div>
     </div>
 
@@ -70,29 +70,18 @@
 <code><a href="../reference/get_totals.html">get_totals()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>,
 <code><a href="../reference/get_ratios.html">get_ratios()</a></code>, <code><a href="../reference/get_corr.html">get_corr()</a></code> — takes a
 <strong>survey design object</strong> as its first argument. That object
-encodes how your data was collected: which units were clustered
-together, which strata were defined, what weights apply, and how
-variance should be estimated. Without it, point estimates may be biased
-and standard errors are almost certainly wrong <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>; <a href="#ref-lohr2022">Lohr 2022</a>)</span>.</p>
+includes things like which units were clustered together, which strata
+were defined, what weights apply, and other relevant information so that
+point and variance estimation can be properly calculated. Without it,
+point estimates may be biased and standard errors are almost certainly
+wrong <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>;
+<a href="#ref-lohr2022">Lohr 2022</a>)</span>.</p>
 <p>This vignette answers one question: <em>given my data, which
 constructor do I call and how do I call it?</em></p>
-<p>It is written for three audiences:</p>
-<ul>
-<li>
-<strong>Academic researchers</strong> working with named public
-surveys (NHANES, ANES, ACS, GSS). Jump to the relevant worked example in
-each section.</li>
-<li>
-<strong>Practitioners</strong> running surveys of schools,
-businesses, or organizations. The conceptual explanations in each
-section are for you.</li>
-<li>
-<strong>Non-probability panel users</strong> — if you run
-message-testing or attitudinal research on Lucid, Dynata, or a similar
-platform and have vendor-provided raking weights, skip ahead to <a href="#sec-calibrated">Section 6</a>.</li>
-</ul>
-<p>This vignette covers object <em>creation</em> only. Estimation
-functions (<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, etc.)
+<p>This vignette covers object <em>creation</em> only. Two things not
+covered are: - How to create weights and how different weighting
+mechanisms work. - What the different analysis/estimation functions
+(<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_totals.html">get_totals()</a></code>, etc.) do. Those
 are covered in <code><a href="../articles/getting-started.html">vignette("getting-started")</a></code>.</p>
 <hr>
 </div>
@@ -102,9 +91,9 @@ are covered in <code><a href="../articles/getting-started.html">vignette("gettin
 <p>Read the first row that matches your data.</p>
 <table class="table">
 <colgroup>
-<col width="47%">
-<col width="17%">
-<col width="34%">
+<col width="46%">
+<col width="14%">
+<col width="39%">
 </colgroup>
 <thead><tr class="header">
 <th>My data…</th>
@@ -113,29 +102,36 @@ are covered in <code><a href="../articles/getting-started.html">vignette("gettin
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Has cluster IDs, strata, and/or design weights</td>
+<td>Is a probability sample and has weights and/or cluster IDs,
+strata</td>
 <td><code><a href="../reference/as_survey.html">as_survey()</a></code></td>
 <td>Taylor series linearization — the general case</td>
 </tr>
 <tr class="even">
-<td>Comes with pre-built replicate weight columns (repwt_1, repwt_2,
-…)</td>
+<td>Is a probability sample and has replicate weight columns (repwt_1,
+repwt_2, …)</td>
 <td><code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code></td>
 <td>Uses the agency-supplied variance replicates</td>
 </tr>
 <tr class="odd">
-<td>Is a pure SRS — equal probability, no clustering, no strata</td>
+<td>Is a pure simple random sample with no clustering or strata</td>
 <td><code><a href="../reference/as_survey.html">as_survey()</a></code></td>
 <td>Omit <code>ids</code> and <code>strata</code>; creates an SRS
 design</td>
 </tr>
 <tr class="even">
-<td>Is a non-probability panel or opt-in sample with calibration
+<td>Is a non-probability sample with weights but no replicate
 weights</td>
 <td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
-<td>Calibrated design; SEs are approximate</td>
+<td>SRS-approximation variance; SEs understate calibration
+uncertainty</td>
 </tr>
 <tr class="odd">
+<td>Is a non-probability panel with replicate weights</td>
+<td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
+<td>Bootstrap/jackknife variance includes calibration uncertainty</td>
+</tr>
+<tr class="even">
 <td>Was sampled in two stages with an expensive Phase 2 measurement</td>
 <td><code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code></td>
 <td>Two-phase variance accounting for both stages</td>
@@ -147,9 +143,9 @@ weights</td>
 </h3>
 <table class="table">
 <colgroup>
-<col width="27%">
-<col width="26%">
-<col width="47%">
+<col width="30%">
+<col width="20%">
+<col width="49%">
 </colgroup>
 <thead><tr class="header">
 <th>Survey</th>
@@ -205,7 +201,7 @@ weights</td>
 <tr class="even">
 <td>Opt-in online panels</td>
 <td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
-<td>Non-probability; vendor-supplied raking weights</td>
+<td>Non-probability</td>
 </tr>
 </tbody>
 </table>
@@ -819,7 +815,7 @@ documentation specifies custom values <span class="citation">(<a href="#ref-wolt
 <blockquote>
 <p><strong>If you are not sure whether your design is two-phase, it
 almost certainly is not.</strong> Skip to <a href="#sec-srs">Section
-5</a> or <a href="#sec-calibrated">Section 6</a>.</p>
+5</a> or <a href="#sec-nps">Section 6</a>.</p>
 </blockquote>
 <div class="section level3">
 <h3 id="what-two-phase-sampling-is">4.1 What two-phase sampling is<a class="anchor" aria-label="anchor" href="#what-two-phase-sampling-is"></a>
@@ -1044,16 +1040,16 @@ simple random sampling.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="sec-calibrated">6. <code>as_survey_nonprob()</code> — Non-Probability and Calibrated
-Samples<a class="anchor" aria-label="anchor" href="#sec-calibrated"></a>
+<h2 id="sec-nps">6. <code>as_survey_nonprob()</code> — Non-Probability Samples<a class="anchor" aria-label="anchor" href="#sec-nps"></a>
 </h2>
-<p>If you conduct research on opt-in panels — Lucid, Dynata, Qualtrics
-panels, Prolific, or similar — and your vendor has provided raking or
-post-stratification weights, this section is for you.</p>
-<p>The short answer: <strong>you are probably doing it roughly right,
-and <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> is the correct constructor to
-use.</strong> Here is what you can and cannot claim from your estimates,
-and how to report them honestly.</p>
+<p>If you conduct surveys with non-probability samples, like with opt-in
+panels such as Cint, Dynata, Qualtrics panels, Prolific, or others, then
+this section is for you.</p>
+<p>This section assumes you have, at a minimum, either calibration
+(raking) weights or inverse-probability weights (IPW) via propensity
+scoring, but ideally you will also have replicate weights based on the
+calibration weights or IPW you already have. I’ll go into more detail on
+why you want to have replicate weights in §6.2.</p>
 <div class="section level3">
 <h3 id="the-fundamental-distinction">6.1 The fundamental distinction<a class="anchor" aria-label="anchor" href="#the-fundamental-distinction"></a>
 </h3>
@@ -1061,61 +1057,95 @@ and how to report them honestly.</p>
 population a known, positive inclusion probability. Design-based
 variance estimators are valid because the randomness that justifies them
 comes from the sampling mechanism itself <span class="citation">(<a href="#ref-cochran1977">Cochran 1977</a>, ch. 1; <a href="#ref-lohr2022">Lohr 2022</a>, ch. 1)</span>.</p>
-<p>A <strong>non-probability sample</strong> — an opt-in online panel —
-has unknown inclusion probabilities. The decision to join a panel and to
-complete a particular survey is self-selected. No mechanical property of
-the data guarantees representativeness <span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>; <a href="#ref-elliott2017">Elliott and Valliant 2017</a>)</span>.</p>
+<p>A <strong>non-probability sample</strong>, like an opt-in online
+panel, has unknown inclusion probabilities. The decision to join a panel
+and to complete a particular survey is self-selected. No mechanical
+property of the data guarantees representativeness <span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>; <a href="#ref-elliott2017">Elliott and Valliant 2017</a>)</span>. As a
+result, there is additional uncertainty associated with non-probability
+samples that is not fully captured by traditional design-based variance
+estimation.</p>
 </div>
 <div class="section level3">
-<h3 id="what-your-vendors-weights-actually-are">6.2 What your vendor’s weights actually are<a class="anchor" aria-label="anchor" href="#what-your-vendors-weights-actually-are"></a>
+<h3 id="sec-nonprob-variance">6.2 Variance estimation: two modes<a class="anchor" aria-label="anchor" href="#sec-nonprob-variance"></a>
 </h3>
-<p>Regardless of where they come from, <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>
-is the right constructor whenever weights were derived <em>after</em>
-data collection to make the sample resemble a target population. Common
-forms include <span class="citation">(<a href="#ref-valliant2018">Valliant and Dever 2018</a>, ch. 3)</span>:</p>
-<ul>
-<li>
-<strong>Raking</strong> (iterative proportional fitting): adjusts
-sample marginals to match population marginals on age, gender,
-education, race/ethnicity, etc. The standard approach used by most panel
-vendors.</li>
-<li>
-<strong>Post-stratification</strong>: assigns a single weight to all
-respondents within a demographic cell defined by the cross-product of
-variables.</li>
-<li>
-<strong>Propensity score weighting (PSW)</strong>: fits a model
-predicting the probability of being in the sample, then weights each
-respondent by the inverse of their predicted probability. Functionally
-equivalent to calibration — the weights make the sample resemble the
-population on the modeled covariates.</li>
-<li>
-<strong>Matching-based weights</strong>: assigns weights based on
-similarity to a reference population sample (e.g., entropy balancing,
-MatchIt outputs). Another approach to demographic alignment.</li>
-</ul>
-<p>All four share the same fundamental property: the weights were
-computed from the data, not fixed by the sampling protocol. Use
-<code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> for all of them.</p>
-<p>What calibration weights accomplish <span class="citation">(<a href="#ref-mercer2018">Mercer et al. 2018</a>; <a href="#ref-mcphee2023">McPhee et al. 2023</a>)</span>:</p>
-<ul>
-<li>They reduce bias from <em>measured</em> demographic confounders</li>
-<li>Point estimates for outcomes correlated with calibration variables
-improve meaningfully compared to unweighted estimates</li>
-<li>They do <strong>not</strong> correct for selection on unobserved
-variables</li>
-<li>They do <strong>not</strong> make the design a probability
-sample</li>
-</ul>
+<p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> has two variance estimation
+modes:</p>
+<p><strong>SRS approximation</strong> (<code>repweights = NULL</code>,
+the default): If replicate weights are not supplied to
+<code>repweights</code> (i.e., <code>repweights = NULL</code>), then the
+standard errors treat the calibrated weights as fixed and apply a simple
+random sampling formula. This is convenient but underestimates the
+standard errors as the calibration step itself introduces additional
+uncertainty that the SRS formula does not capture <span class="citation">(<a href="#ref-elliott2017">Elliott and Valliant
+2017</a>; <a href="#ref-kolenikov2014">Kolenikov 2014</a>)</span>.</p>
+<p><strong>Bootstrap or jackknife replicate variance</strong>
+(<code>repweights</code> supplied): If replicate weights are supplied in
+the <code>repweights</code> argument, the replicate weight variance
+estimation is used. This approach properly includes the uncertainty that
+comes from the calibration into the variance estimate and is the
+recommended method when replicate weights are available <span class="citation">(<a href="#ref-elliott2017">Elliott and Valliant
+2017</a>; <a href="#ref-kolenikov2014">Kolenikov 2014</a>; <a href="#ref-chrostowski2025">Chrostowski et al. 2025</a>)</span>.</p>
+<p>Neither mode resolves the fundamental limitation common to all
+non-probability samples: standard errors cannot capture uncertainty from
+the unknown selection mechanism itself <span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>; <a href="#ref-elliott2017">Elliott and Valliant 2017</a>)</span>.</p>
+<div class="section level4">
+<h4 id="choosing-type">Choosing <code>type</code><a class="anchor" aria-label="anchor" href="#choosing-type"></a>
+</h4>
+<p>When <code>repweights</code> is supplied, the <code>type</code>
+argument selects the replicate scheme. Four types are supported for
+<code>survey_nonprob</code> objects:</p>
+<table class="table">
+<colgroup>
+<col width="15%">
+<col width="25%">
+<col width="33%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th><code>type</code></th>
+<th>Description</th>
+<th>Default <code>scale</code>
+</th>
+<th>When to use</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>"bootstrap"</code></td>
+<td>Bootstrap resampling</td>
+<td><code>1/R</code></td>
+<td>Most vendor-supplied replicates</td>
+</tr>
+<tr class="even">
+<td><code>"JK1"</code></td>
+<td>Delete-one jackknife (<code>"jackknife"</code> is an alias)</td>
+<td><code>(R-1)/R</code></td>
+<td>Some research panels</td>
+</tr>
+<tr class="odd">
+<td><code>"JK2"</code></td>
+<td>Stratified jackknife; requires explicit <code>rscales</code>
+</td>
+<td><code>1</code></td>
+<td>Clustered nonprob designs</td>
+</tr>
+<tr class="even">
+<td><code>"JKn"</code></td>
+<td>Equivalent to JK2</td>
+<td><code>1</code></td>
+<td>Same as JK2</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section level3">
 <h3 id="what-you-can-and-cannot-claim">6.3 What you can and cannot claim<a class="anchor" aria-label="anchor" href="#what-you-can-and-cannot-claim"></a>
 </h3>
 <table class="table">
 <colgroup>
-<col width="42%">
-<col width="10%">
-<col width="47%">
+<col width="40%">
+<col width="9%">
+<col width="50%">
 </colgroup>
 <thead><tr class="header">
 <th>Claim</th>
@@ -1134,12 +1164,19 @@ sample</li>
 <td>Especially for outcomes correlated with demographic variables</td>
 </tr>
 <tr class="odd">
-<td>Standard errors reflect true sampling uncertainty</td>
-<td>⚠️ Approximately</td>
-<td>SEs computed under approximate variance model; likely
-underestimated</td>
+<td>Standard errors (SRS approx., no <code>repweights</code>)</td>
+<td>⚠️ Understated</td>
+<td>Treats calibrated weights as fixed; calibration variance not
+propagated</td>
 </tr>
 <tr class="even">
+<td>Standard errors (with <code>repweights</code>, calibration
+re-applied per replicate)</td>
+<td>⚠️ Approximately</td>
+<td>Captures calibration uncertainty; cannot address selection mechanism
+uncertainty</td>
+</tr>
+<tr class="odd">
 <td>Results equivalent to a probability-sample estimate</td>
 <td>❌ No</td>
 <td>Selection mechanism is unknown and cannot be fully corrected</td>
@@ -1151,38 +1188,21 @@ academic researchers, major survey organizations, and commercial firms
 <span class="citation">(<a href="#ref-baker2013">Baker et al. 2013</a>;
 <a href="#ref-mcphee2023">McPhee et al. 2023</a>)</span>. The key is
 transparency: <strong>your methods section should state that you used a
-non-probability sample with vendor-supplied calibration weights,
-describe the calibration targets, and acknowledge that standard errors
-are approximate.</strong></p>
+non-probability sample, detail how the weights were created, and
+acknowledge that standard errors are approximate.</strong></p>
 </div>
 <div class="section level3">
-<h3 id="worked-example-democracy-fund-ucla-nationscape">6.4 Worked example: Democracy Fund + UCLA Nationscape<a class="anchor" aria-label="anchor" href="#worked-example-democracy-fund-ucla-nationscape"></a>
+<h3 id="sec-nonprob-nationscape">6.4 Worked example: Democracy Fund + UCLA Nationscape (SRS
+approximation)<a class="anchor" aria-label="anchor" href="#sec-nonprob-nationscape"></a>
 </h3>
 <p>The Nationscape is a large-scale non-probability survey conducted by
 Democracy Fund + UCLA, fielded weekly from July 2019 through January
-2021. Each wave recruited approximately 6,250 respondents from the Lucid
-respondent exchange using a quota design, with raking weights calibrated
-to American Community Survey (ACS) marginals for age, gender, education,
-race/ethnicity, and region, plus 2016 presidential vote choice. This is
-the textbook use case for <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>.</p>
-<table class="table">
-<colgroup>
-<col width="10%">
-<col width="78%">
-<col width="11%">
-</colgroup>
-<thead><tr class="header">
-<th>Variable</th>
-<th>Role</th>
-<th>Argument</th>
-</tr></thead>
-<tbody><tr class="odd">
-<td><code>weight</code></td>
-<td>Raking weight calibrated to ACS demographic targets and 2016
-presidential vote</td>
-<td><code>weights</code></td>
-</tr></tbody>
-</table>
+2021. Each wave used quota sampling to ensure that the data was
+representative and consisted of approximately 6,250 respondents from
+Lucid (now known as Cint). The data also contains weights created by
+raking the data to the American Community Survey across age, gender,
+education, race/ethnicity, region, and 2016 presidential vote choice.
+The variable name for these weights is <code>weight</code>.</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">svy_ns</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span><span class="va">svy_ns</span></span></code></pre></div>
@@ -1238,140 +1258,101 @@ presidential vote</td>
 <span><span class="co">## <span style="color: #BCBCBC;">3</span> Somewhat disapprove 0.152    871</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">4</span> Strongly disapprove 0.415   <span style="text-decoration: underline;">2</span>799</span></span>
 <span><span class="co">## <span style="color: #BCBCBC;">5</span> Not sure            0.044<span style="text-decoration: underline;">5</span>   230</span></span></code></pre>
-<p>This produces a <code>survey_nonprob</code> object. Use it with
-<code><a href="../reference/get_means.html">get_means()</a></code>, <code><a href="../reference/get_freqs.html">get_freqs()</a></code>, and other estimation
-functions exactly as you would any other survey object. Standard errors
-are computed under an approximate variance model and should be
-interpreted with appropriate caution and disclosed in your methods
-section.</p>
-<p>The <code>weight</code> column is a raking weight, not a design
-weight — it was computed after data collection to match population
-marginals, not fixed by the sampling protocol. Using
-<code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> makes this explicit to both R and
-future readers of your code.</p>
+<p>This produces a <code>survey_nonprob</code> object using
+SRS-approximation variance because no replicate weights were supplied.
+As a result, the standard errors will be too small as they do not take
+into account the additional variance introduced by the raking
+procedure.</p>
 </div>
 <div class="section level3">
-<h3 id="what-not-to-do">6.5 What not to do<a class="anchor" aria-label="anchor" href="#what-not-to-do"></a>
+<h3 id="sec-nonprob-repweights">6.5 Worked example: Bootstrap replicate weights<a class="anchor" aria-label="anchor" href="#sec-nonprob-repweights"></a>
 </h3>
-<p>Do not use <code><a href="../reference/as_survey.html">as_survey()</a></code> for a non-probability sample and
-present standard errors as if the design were a probability sample:</p>
+<p>When your data provider supplies bootstrap replicate weight columns —
+each representing one round of calibration re-applied to a bootstrap
+resample of the respondents — use <code>repweights</code> with
+<code>type = "bootstrap"</code>. The resulting variance estimates
+properly account for calibration uncertainty rather than treating the
+weights as fixed <span class="citation">(<a href="#ref-kolenikov2014">Kolenikov 2014</a>; <a href="#ref-chrostowski2025">Chrostowski et al. 2025</a>)</span>.</p>
+<p>The example below uses synthetic data to illustrate the interface. In
+practice the replicate weight columns come from your vendor alongside
+the main calibration weight column.</p>
 <div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Creates a survey_taylor object, which misrepresents the design</span></span>
-<span><span class="va">svy_wrong</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
-<p>Using <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> makes the non-probability
-nature of the design explicit — both to R and to future readers of your
-code. This distinction matters for transparency in reporting and for
-correctly interpreting what your uncertainty estimates actually mean
-<span class="citation">(<a href="#ref-elliott2017">Elliott and Valliant
-2017</a>; <a href="#ref-baker2013">Baker et al. 2013</a>)</span>.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
+<span><span class="va">R</span> <span class="op">&lt;-</span> <span class="fl">50</span></span>
+<span></span>
+<span><span class="va">ns_synthetic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  pres_approval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Approve"</span>, <span class="st">"Disapprove"</span>, <span class="st">"DK"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  age_grp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"18-34"</span>, <span class="st">"35-54"</span>, <span class="st">"55+"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.5</span>, <span class="fl">2.5</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Replicate columns: calibration re-applied on each bootstrap draw.</span></span>
+<span><span class="co"># In practice these come from your vendor alongside the main weight column.</span></span>
+<span><span class="va">rep_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">R</span>, <span class="fl">0.3</span>, <span class="fl">3.0</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="va">n</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rep_mat</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"repwt_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">R</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ns_synthetic</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">ns_synthetic</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">rep_mat</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">svy_np_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span></span>
+<span>  <span class="va">ns_synthetic</span>,</span>
+<span>  weights <span class="op">=</span> <span class="va">weight</span>,</span>
+<span>  repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"repwt_"</span><span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"bootstrap"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">svy_np_boot</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> (non-probability, BOOTSTRAP, 50 replicates) [experimental]</span></span></code></pre>
+<pre><code><span><span class="co">## Sample size: <span style="color: #0000BB;">200</span></span></span></code></pre>
+<pre><code><span><span class="co">## </span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 200 × 53</span></span></span>
+<span><span class="co">##    pres_approval age_grp weight repwt_1 repwt_2 repwt_3 repwt_4 repwt_5 repwt_6</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> Approve       18-34    2.41    1.47    1.66    1.03    0.403   1.84    2.03 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> DK            18-34    2.49    0.439   1.46    1.19    2.58    2.90    2.48 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> Approve       18-34    1.71    2.27    1.95    2.63    1.31    2.88    2.78 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> Disapprove    18-34    0.559   1.78    2.80    0.597   2.68    1.07    0.458</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> Approve       18-34    1.17    2.33    0.948   1.39    0.544   2.30    1.59 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> DK            18-34    1.06    0.437   1.03    1.40    1.64    0.491   2.18 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> DK            35-54    0.734   2.23    2.28    1.48    2.34    2.73    0.421</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> Disapprove    35-54    0.586   1.10    2.33    0.778   1.94    0.660   2.34 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> Disapprove    35-54    1.24    1.07    2.81    1.02    1.73    1.80    1.90 </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> DK            18-34    1.17    2.54    1.55    2.08    2.76    1.92    1.68 </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 190 more rows</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 44 more variables: repwt_7 &lt;dbl&gt;, repwt_8 &lt;dbl&gt;, repwt_9 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   repwt_10 &lt;dbl&gt;, repwt_11 &lt;dbl&gt;, repwt_12 &lt;dbl&gt;, repwt_13 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   repwt_14 &lt;dbl&gt;, repwt_15 &lt;dbl&gt;, repwt_16 &lt;dbl&gt;, repwt_17 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   repwt_18 &lt;dbl&gt;, repwt_19 &lt;dbl&gt;, repwt_20 &lt;dbl&gt;, repwt_21 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   repwt_22 &lt;dbl&gt;, repwt_23 &lt;dbl&gt;, repwt_24 &lt;dbl&gt;, repwt_25 &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   repwt_26 &lt;dbl&gt;, repwt_27 &lt;dbl&gt;, repwt_28 &lt;dbl&gt;, repwt_29 &lt;dbl&gt;, …</span></span></span></code></pre>
+<p>Use <code>svy_np_boot</code> with <code><a href="../reference/get_means.html">get_means()</a></code>,
+<code><a href="../reference/get_freqs.html">get_freqs()</a></code>, and other estimation functions exactly as you
+would a plain <code>survey_nonprob</code> object — the variance
+estimator switches from SRS approximation to bootstrap
+automatically.</p>
 </div>
 <div class="section level3">
-<h3 id="worked-example-university-voluntary-response-survey">6.6 Worked example: University voluntary response survey<a class="anchor" aria-label="anchor" href="#worked-example-university-voluntary-response-survey"></a>
+<h3 id="worked-example-university-snowball-sample">6.6 Worked example: University snowball sample<a class="anchor" aria-label="anchor" href="#worked-example-university-snowball-sample"></a>
 </h3>
-<p>A university sends an email to all 8,000 enrolled students inviting
-them to complete a campus climate survey. 2,400 respond (30%). The
-response is self-selected — students with strong opinions are more
-likely to complete the survey than those who are neutral.</p>
-<p><strong>If calibration weights are available:</strong> If the
-university has computed post-stratification or raking weights using
-registrar demographics (year, major, housing status), use
-<code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>. This is the appropriate constructor
-whenever the weights were derived to make the respondents resemble the
-full student body:</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">ps_weight</span><span class="op">)</span></span></code></pre></div>
-<p><strong>If no calibration weights are available and you still want to
-use surveycore functions:</strong> Add a column of 1s and use
-<code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
-<code>strata</code>:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">campus_survey</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
-<p>This treats all respondents as equally weighted. The SEs it produces
-reflect variability <em>among the 2,400 respondents</em> — they do not
-measure how representative those respondents are of the full student
-body. This framing is valid when your target population is “students who
-chose to respond,” not “all students at the university.”</p>
-<p><strong>Disclosure:</strong> Whether you use calibration weights or
-equal weights, your methods section should state the response rate,
-describe the weighting approach, and acknowledge the limitation:
-voluntary response bias cannot be fully corrected by any weighting
-strategy <span class="citation">(<a href="#ref-baker2013">Baker et al.
-2013</a>)</span>.</p>
+<p>A university sends an email to 100 students inviting them to take
+part in a survey. At the end of the survey, they encourage the students
+to share the survey with other students. In the end they end up
+recruiting 500 respondents. This is known as a snowball sample and is
+another example of non-probability sampling.</p>
+<p>If the sample was weighted to represent the broader student body
+population, then weights should be applied as shown below:</p>
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">svy_campus</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">campus_survey</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="sec-weight-types">7. Probability, SRS, and calibration weights: understanding the
-distinction<a class="anchor" aria-label="anchor" href="#sec-weight-types"></a>
-</h2>
-<p>The two constructor families most users encounter —
-<code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> and
-<code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> — differ in one fundamental way:
-<em>where the weights come from</em>.</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr class="header">
-<th></th>
-<th>
-<code><a href="../reference/as_survey.html">as_survey()</a></code> / <code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>
-</th>
-<th><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Weight source</td>
-<td>Sampling protocol (1/π_i)</td>
-<td>Post-hoc adjustment</td>
-</tr>
-<tr class="even">
-<td>Selection probabilities</td>
-<td>Known and controlled</td>
-<td>Unknown or overridden by calibration</td>
-</tr>
-<tr class="odd">
-<td>Weight values</td>
-<td>Vary across respondents (or uniform for SRS)</td>
-<td>Vary (reflect adjustment, not design)</td>
-</tr>
-<tr class="even">
-<td>Variance estimator</td>
-<td>Design-based (exact)</td>
-<td>Approximate</td>
-</tr>
-</tbody>
-</table>
-<p>In <code><a href="../reference/as_survey.html">as_survey()</a></code>, every weight traces back to a specific
-moment in the sampling protocol — the moment each unit’s selection
-probability was fixed. A PSU drawn with probability 1-in-10 gets weight
-10. A school drawn from a roster of 400 with probability 1-in-5 gets
-weight 5. SRS designs are the special case where all weights are equal
-because every unit had the same selection probability. The randomness
-that makes design-based inference valid is mechanical and recorded.</p>
-<p>In <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>, weights were computed
-<em>after</em> data collection to make the sample resemble a target
-population. The underlying selection mechanism is either unknown (opt-in
-panel, voluntary response) or was overridden by the calibration
-adjustment. Standard errors are approximate because the calibration step
-itself introduces additional uncertainty that standard variance formulas
-do not fully capture.</p>
-<p>The practical test: <strong>if you can point to the sampling protocol
-that fixed each unit’s probability of selection, use
-<code><a href="../reference/as_survey.html">as_survey()</a></code>.</strong> If the weights were derived from the
-data after collection, use <code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>.</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="sec-no-constructor">8. When no constructor applies: convenience and purposive
+<h2 id="sec-no-constructor">7. When no constructor applies: convenience and purposive
 samples<a class="anchor" aria-label="anchor" href="#sec-no-constructor"></a>
 </h2>
 <p>Not every data collection fits the survey design framework.</p>
 <div class="section level3">
-<h3 id="example-program-evaluation-classrooms">8.1 Example: program evaluation classrooms<a class="anchor" aria-label="anchor" href="#example-program-evaluation-classrooms"></a>
+<h3 id="example-program-evaluation-classrooms">7.1 Example: program evaluation classrooms<a class="anchor" aria-label="anchor" href="#example-program-evaluation-classrooms"></a>
 </h3>
 <p>A researcher surveys students in five classrooms that volunteered to
 participate in a new educational program and wants to assess whether the
@@ -1389,7 +1370,7 @@ attitudes of students in these specific classrooms without generalizing
 — you can treat the participants as a census. Add a column of 1s and use
 <code><a href="../reference/as_survey.html">as_survey()</a></code> without <code>ids</code> or
 <code>strata</code>:</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">classroom_data</span><span class="op">$</span><span class="va">wt</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">svy_participants</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">classroom_data</span>, weights <span class="op">=</span> <span class="va">wt</span><span class="op">)</span></span></code></pre></div>
 <p>Equal weights treat all participants as equally represented. The SEs
@@ -1397,7 +1378,7 @@ reflect variation <em>among participants</em>. Do not interpret results
 as representative of all students at the school.</p>
 </div>
 <div class="section level3">
-<h3 id="general-decision-rule">8.2 General decision rule<a class="anchor" aria-label="anchor" href="#general-decision-rule"></a>
+<h3 id="general-decision-rule">7.2 General decision rule<a class="anchor" aria-label="anchor" href="#general-decision-rule"></a>
 </h3>
 <table class="table">
 <colgroup>
@@ -1426,7 +1407,7 @@ as representative of all students at the school.</p>
 <td>Exact variance; SRS special case of Taylor</td>
 </tr>
 <tr class="odd">
-<td>Any sample with calibration/raking/PSW/matching weights</td>
+<td>Any non-probability sample with weights</td>
 <td><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></td>
 <td>Approximate variance</td>
 </tr>
@@ -1436,11 +1417,6 @@ as representative of all students at the school.</p>
 <code><a href="../reference/as_survey.html">as_survey()</a></code> with <code>weights = 1</code> (no
 <code>ids</code>/<code>strata</code>)</td>
 <td>Conditional inference only; disclose</td>
-</tr>
-<tr class="odd">
-<td>Causal inference (treatment effect estimation)</td>
-<td>Not surveycore</td>
-<td>Use MatchIt, WeightIt, lme4, etc.</td>
 </tr>
 </tbody>
 </table>
@@ -1454,15 +1430,15 @@ unless the sample can be independently defended as representative.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="sec-reference">9. Reference: Common Codebook Variables<a class="anchor" aria-label="anchor" href="#sec-reference"></a>
+<h2 id="sec-reference">8. Reference: Common Codebook Variables<a class="anchor" aria-label="anchor" href="#sec-reference"></a>
 </h2>
 <p>A lookup table for common codebook terms and how they map to
 constructor arguments:</p>
 <table class="table">
 <colgroup>
-<col width="44%">
-<col width="25%">
-<col width="29%">
+<col width="40%">
+<col width="33%">
+<col width="26%">
 </colgroup>
 <thead><tr class="header">
 <th>Codebook term</th>
@@ -1542,6 +1518,12 @@ Breslow, Norman E., and Kevin C. Cain. 1988. <span>“Logistic Regression
 for Two-Stage Case-Control Data.”</span> <em>Biometrika</em> 75 (1):
 11–20. <a href="https://doi.org/10.1093/biomet/75.1.11" class="external-link">https://doi.org/10.1093/biomet/75.1.11</a>.
 </div>
+<div id="ref-chrostowski2025" class="csl-entry">
+Chrostowski, Matthew J., Cary A. Guzman, and Lara Malm. 2025.
+<span>“Variance Estimation for Non-Probability Surveys.”</span>
+<em>Journal of Survey Statistics and Methodology</em>, ahead of print.
+<a href="https://doi.org/10.1093/jssam/smaf003" class="external-link">https://doi.org/10.1093/jssam/smaf003</a>.
+</div>
 <div id="ref-cochran1977" class="csl-entry">
 Cochran, William G. 1977. <em>Sampling Techniques</em>. 3rd ed. John
 Wiley &amp; Sons.
@@ -1561,6 +1543,10 @@ Judkins, David R. 1990. <span>“<span class="nocase">Fay’s</span> Method
 for Variance Estimation.”</span> <em>Journal of Official Statistics</em>
 6 (3): 223–39.
 </div>
+<div id="ref-kolenikov2014" class="csl-entry">
+Kolenikov, Stas. 2014. <span>“Calibrating Variance Estimation with Proxy
+Variables.”</span> <em>Survey Methodology</em> 40 (1): 21–38.
+</div>
 <div id="ref-lohr2022" class="csl-entry">
 Lohr, Sharon L. 2022. <em>Sampling: Design and Analysis</em>. 3rd ed.
 CRC Press.
@@ -1575,11 +1561,6 @@ Quality Metrics for Online Samples: Considerations for Study Design
 &amp; Analysis</em>. American Association for Public Opinion Research.
 <a href="https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf" class="external-link">https://aapor.org/wp-content/uploads/2023/02/Task-Force-Report-FINAL.pdf</a>.
 </div>
-<div id="ref-mercer2018" class="csl-entry">
-Mercer, Andrew, Arnold Lau, and Courtney Kennedy. 2018. <em>For
-Weighting Online Opt-in Samples, What Matters Most?</em> Pew Research
-Center. <a href="https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/" class="external-link">https://www.pewresearch.org/methods/2018/01/26/for-weighting-online-opt-in-samples-what-matters-most/</a>.
-</div>
 <div id="ref-saegusa2013" class="csl-entry">
 Saegusa, Takumi, and Jon A. Wellner. 2013. <span>“Weighted Likelihood
 Estimation Under Two-Phase Sampling.”</span> <em>Annals of
@@ -1589,10 +1570,6 @@ Statistics</em> 41 (1): 269–95. <a href="https://doi.org/10.1214/12-AOS1073" c
 U.S. Census Bureau. 2022. <em>American Community Survey Design and
 Methodology, Chapter 12: Variance Estimation</em>. U.S. Census Bureau.
 <a href="https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf" class="external-link">https://www2.census.gov/programs-surveys/acs/methodology/design_and_methodology/2022/acs_design_methodology_ch12_2022.pdf</a>.
-</div>
-<div id="ref-valliant2018" class="csl-entry">
-Valliant, Richard, and Jill A. Dever. 2018. <em>Survey Weights: A
-Step-by-Step Guide to Calculation</em>. Stata Press.
 </div>
 <div id="ref-wolter2007" class="csl-entry">
 Wolter, Kirk M. 2007. <em>Introduction to Variance Estimation</em>. 2nd

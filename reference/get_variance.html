@@ -15,7 +15,7 @@ replicate, twophase, and nonprob designs."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@ replicate, twophase, and nonprob designs."><meta property="og:image" content="ht
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Design-Based Population Variance for a Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-variance.R" class="external-link"><code>R/analysis-variance.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-variance.R" class="external-link"><code>R/analysis-variance.R</code></a></small>
       <div class="d-none name"><code>get_variance.Rd</code></div>
     </div>
 
@@ -133,8 +133,9 @@ variables (<code>"listwise"</code>). Ignored when <code>na.rm = FALSE</code>.</p
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity; used to
-convert grouping-variable codes to value labels. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Accepted for API consistency across <code>get_*()</code>
+functions. Used to convert grouping-variable codes to value labels.
+Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -172,13 +173,19 @@ Ignored when <code>design</code> is a single survey.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>survey_variance</code> tibble (also inheriting <code>survey_result</code>).
-Columns, in order:</p><ul><li><p><code>[group_cols...]</code> — group variable columns (when active), first.</p></li>
+Columns, in order:</p><ul><li><p><code>[.id]</code> — survey identifier column, only when <code>design</code> is a
+<code><a href="survey_collection.html">survey_collection</a></code>.</p></li>
+<li><p><code>[group_cols...]</code> — group variable columns (when active), first.</p></li>
 <li><p><code>name</code> — focal variable name (or its label when <code>label_vars = TRUE</code>).</p></li>
 <li><p><code>variance</code> — design-based point estimate of the finite-population
-variance. <code>NaN</code> for degenerate cells; exact <code>0</code> for constant-in-domain
+variance. Note: the column is always named <code>variance</code> regardless of the
+<code>variance</code> parameter (which controls uncertainty columns, not this
+column). <code>NaN</code> for degenerate cells; exact <code>0</code> for constant-in-domain
 variables.</p></li>
 <li><p>Uncertainty columns (<code>se</code>, <code>var</code>, <code>cv</code>, <code>ci_low</code>, <code>ci_high</code>,
-<code>moe</code>, <code>deff</code>) — only those requested via <code>variance</code>.</p></li>
+<code>moe</code>, <code>deff</code>) — only those requested via the <code>variance</code> parameter.
+The <code>var</code> uncertainty column is the variance of the estimated variance,
+distinct from the <code>variance</code> point estimate column.</p></li>
 <li><p><code>n</code> — unweighted count of non-NA observations used.</p></li>
 <li><p><code>n_weighted</code> — sum of weights (only when <code>n_weighted = TRUE</code>).</p></li>
 </ul></div>
@@ -246,7 +253,6 @@ excluded from every variable's calculation.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        1 Age in years at screening     505.   481.    530.  <span style="text-decoration: underline;">4</span>557</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        2 Age in years at screening     523.   502.    544.  <span style="text-decoration: underline;">4</span>697</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

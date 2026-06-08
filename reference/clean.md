@@ -97,8 +97,13 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 fit <- survey_glm(d, age ~ sex)
 clean(fit)
 #> # A tibble: 2 × 11

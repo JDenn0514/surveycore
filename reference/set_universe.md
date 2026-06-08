@@ -42,6 +42,9 @@ for details.
 
 ## See also
 
+[`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md)
+to retrieve universe descriptions
+
 Other metadata:
 [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md),
 [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md),
@@ -69,8 +72,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_universe(d, age = "All respondents 18+")
 extract_metadata(d, age)
 #> $age

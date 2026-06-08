@@ -15,7 +15,7 @@ changed variables."><meta property="og:image" content="https://jdenn0514.github.
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@ changed variables."><meta property="og:image" content="https://jdenn0514.github.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Update Design Variables on an Existing Survey Object</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/update-design.R" class="external-link"><code>R/update-design.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/update-design.R" class="external-link"><code>R/update-design.R</code></a></small>
       <div class="d-none name"><code>update_design.Rd</code></div>
     </div>
 
@@ -99,19 +99,23 @@ used for <code>survey_replicate</code> objects.</p></dd>
 
 
 <dt id="arg-validate">validate<a class="anchor" aria-label="anchor" href="#arg-validate"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), re-runs the S7 class
-validator after updating, which checks structural invariants (column
-existence, weight column type and positivity, etc.).</p></dd>
+<dd><p>Logical. If <code>FALSE</code>, temporarily marks the object to
+suppress validation during the variable update. In practice this has
+no observable effect on the returned object; <code>validate</code> is accepted
+for interface compatibility. Default <code>TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>The modified survey object, invisibly.</p>
+    <p>The modified survey object, invisibly. As a side effect, a
+<code>cli_inform()</code> message is printed listing each changed design variable
+(old name → new name).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="as_survey.html">as_survey()</a></code> to create a <code>survey_taylor</code> object,
-<code><a href="as_survey_replicate.html">as_survey_replicate()</a></code> to create a <code>survey_replicate</code> object</p></div>
+<code><a href="as_survey_replicate.html">as_survey_replicate()</a></code> to create a <code>survey_replicate</code> object,
+<code><a href="as_survey_twophase.html">as_survey_twophase()</a></code> to create a <code>survey_twophase</code> object</p></div>
     </div>
 
     <div class="section level2">
@@ -119,14 +123,18 @@ existence, weight column type and positivity, etc.).</p></dd>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># NHANES has two weight columns for different analysis types;</span></span></span>
 <span class="r-in"><span><span class="co"># start with the MEC examination weight for exam participants</span></span></span>
 <span class="r-in"><span><span class="va">exam</span> <span class="op">&lt;-</span> <span class="va">nhanes_2017</span><span class="op">[</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">ridstatr</span> <span class="op">==</span> <span class="fl">2</span>, <span class="op">]</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">exam</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">exam</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Switch to interview weight for interview-based variables</span></span></span>
 <span class="r-in"><span><span class="va">d_updated</span> <span class="op">&lt;-</span> <span class="fu">update_design</span><span class="op">(</span><span class="va">d</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Survey design updated. This may affect statistical validity.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Updated: <span style="color: #00BB00;">weights</span></span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

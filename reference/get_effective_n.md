@@ -140,8 +140,13 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Kish effective N (weight-only approximation)
 get_effective_n(d)

@@ -15,7 +15,7 @@ interface for weight and replicate-weight columns."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@ interface for weight and replicate-weight columns."><meta property="og:image" co
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Create a Replicate Weights Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/core-constructors.R" class="external-link"><code>R/core-constructors.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-constructors.R" class="external-link"><code>R/core-constructors.R</code></a></small>
       <div class="d-none name"><code>as_survey_replicate.Rd</code></div>
     </div>
 
@@ -59,7 +59,8 @@ interface for weight and replicate-weight columns.</p>
 <span>  rscales <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fpc <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fpctype <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fraction"</span>, <span class="st">"correction"</span><span class="op">)</span>,</span>
-<span>  mse <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  mse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  calibration <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -95,9 +96,9 @@ or <code>"other"</code> (user-specified scale). Case-sensitive.</p></dd>
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
 <dd><p>Numeric. Scaling factor applied to the replicate variance
 formula. If <code>NULL</code> (default), computed automatically from <code>type</code> and
-the number of replicates: <code>(R-1)/R</code> for jackknife methods, <code>1/4</code> for
-BRR/Fay, <code>1/R</code> for bootstrap/ACS, <code>2/R</code> for successive-difference,
-<code>1</code> for other.</p></dd>
+the number of replicates <code>R</code>: <code>(R-1)/R</code> for <code>"JK1"</code>, <code>"JK2"</code>, and
+<code>"JKn"</code>; <code>1/R</code> for <code>"BRR"</code>, <code>"Fay"</code>, <code>"bootstrap"</code>, and <code>"ACS"</code>;
+<code>2/R</code> for <code>"successive-difference"</code>; <code>1</code> for <code>"other"</code>.</p></dd>
 
 
 <dt id="arg-rscales">rscales<a class="anchor" aria-label="anchor" href="#arg-rscales"></a></dt>
@@ -122,6 +123,19 @@ Default <code>"fraction"</code>. Case-sensitive.</p></dd>
 <dd><p>Logical. If <code>TRUE</code> (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
 when computing variance). Recommended for most designs.</p></dd>
+
+
+<dt id="arg-calibration">calibration<a class="anchor" aria-label="anchor" href="#arg-calibration"></a></dt>
+<dd><p>A list of calibration data elements, each produced by
+<code><a href="as_caldata.html">as_caldata()</a></code>, or <code>NULL</code> (default). Stored at <code>@calibration</code> for
+provenance and reproducibility. <strong>Not used in variance estimation</strong>: the
+replicate variance estimator ignores <code>@calibration</code> entirely — calibration
+is already encoded in the replicate weights.</p>
+<p><strong>Known limitations</strong> (not validated at construction time):</p><ul><li><p><em>Weight consistency</em>: surveycore cannot verify that <code>cd$w</code> encodes the
+same base weights as the design weight column.</p></li>
+<li><p><em>Stale calibration after <code><a href="update_design.html">update_design()</a></code></em>: changing the weight column
+makes <code>@calibration</code> stale; clear it manually.</p></li>
+</ul></dd>
 
 </dl></div>
     <div class="section level2">
@@ -164,11 +178,20 @@ This behaviour matches the <code>survey</code> package reference implementation.
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Judkins, D.R. (1990) Fay's method for variance estimation.
+    <p>Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
+<p>Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. <em>Journal of the American Statistical Association</em>
+<b>87</b>(418), 376–382.</p>
+<p>Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. <em>Journal of the American Statistical
+Association</em> <b>88</b>(423), 1013–1020.</p>
+<p>Judkins, D.R. (1990) Fay's method for variance estimation.
 <em>Journal of the American Statistical Association</em>
 <b>85</b>(410), 895–904.</p>
-<p>Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
-for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
+<p>Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
+methods for complex surveys. <em>Survey Methodology</em> <b>18</b>(2),
+209–217.</p>
 <p>Shao, J. and Tu, D. (1995) <em>The Jackknife and Bootstrap</em>. Springer.</p>
     </div>
     <div class="section level2">
@@ -177,10 +200,10 @@ for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code> for two-phase designs,
 <code><a href="set_var_label.html">set_var_label()</a></code> to add variable labels</p>
 <p>Other constructors:
+<code><a href="as_caldata.html">as_caldata()</a></code>,
 <code><a href="as_survey.html">as_survey()</a></code>,
 <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
 <code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
@@ -194,19 +217,18 @@ for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># ACS PUMS Wyoming: 80 successive-difference replicate weights</span></span></span>
 <span class="r-in"><span><span class="va">d_acs</span> <span class="op">&lt;-</span> <span class="fu">as_survey_replicate</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">acs_pums_wy</span>,</span></span>
-<span class="r-in"><span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
 <span class="r-in"><span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span></span>
-<span class="r-in"><span>  type       <span class="op">=</span> <span class="st">"successive-difference"</span></span></span>
+<span class="r-in"><span>  type <span class="op">=</span> <span class="st">"successive-difference"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Explicit replicate columns using c()</span></span></span>
 <span class="r-in"><span><span class="va">d_sub</span> <span class="op">&lt;-</span> <span class="fu">as_survey_replicate</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">acs_pums_wy</span>,</span></span>
-<span class="r-in"><span>  weights    <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
 <span class="r-in"><span>  repweights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">pwgtp1</span>, <span class="va">pwgtp2</span>, <span class="va">pwgtp3</span>, <span class="va">pwgtp4</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  type       <span class="op">=</span> <span class="st">"JK1"</span></span></span>
+<span class="r-in"><span>  type <span class="op">=</span> <span class="st">"JK1"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

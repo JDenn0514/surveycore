@@ -92,10 +92,20 @@ Other collections:
 ## Examples
 
 ``` r
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
-d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
+d2 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 
 # Explicit names
 coll <- as_survey_collection("2020" = d1, "2024" = d2)
@@ -109,6 +119,10 @@ names(coll2)
 
 # Uniform grouping across members
 coll3 <- as_survey_collection(d1, d2, group = vstrat)
-coll3@groups
-#> [1] "vstrat"
+names(survey_data(coll3[[1L]]))
+#>  [1] "vpsu"     "vstrat"   "wtssps"   "wtssnrps" "ballot"   "year"    
+#>  [7] "id"       "age"      "sex"      "race"     "hispanic" "educ"    
+#> [13] "degree"   "income16" "marital"  "wrkstat"  "hrs1"     "adults"  
+#> [19] "partyid"  "polviews" "happy"    "health"   "trust"    "natfare" 
+#> [25] "abany"    "attend"   "relig"   
 ```

@@ -51,8 +51,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
-survey_weighting_history(d)   # list() — no weighting history
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+survey_weighting_history(d) # list() — no weighting history
 #> list()
 ```

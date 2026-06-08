@@ -84,9 +84,9 @@ get_means(
 
 - label_values:
 
-  Logical. Accepted for API uniformity; has no visible effect since
-  `get_means()` output contains no categorical value cells. Default
-  `TRUE`.
+  Logical. Accepted for API consistency across `get_*()` functions. For
+  `get_means()`, no value-level cells appear in the output, so this
+  parameter has no effect. Default `TRUE`.
 
 - label_vars:
 
@@ -132,12 +132,17 @@ A `survey_means` tibble (also inheriting `survey_result`). Columns:
 - Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
   `deff`) — only those requested via `variance`.
 
+- `df` — degrees of freedom used for CI calculation. Present only for
+  `survey_taylor` designs with an active `@calibration` object
+  (GREG-corrected SE). For all other designs the normal approximation
+  (`Inf`) is used and `df` is not included.
+
 - `n` — unweighted count of non-NA observations used in the estimate.
 
 - `n_weighted` — sum of weights (only when requested).
 
-The variable name is stored in `meta(result)$variable`, not as a column.
-Use `meta(result)` to access design type, variable labels, and other
+The variable name is stored in `meta(result)$x`, not as a column. Use
+`meta(result)` to access design type, variable labels, and other
 metadata.
 
 ## See also
@@ -161,8 +166,13 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 get_means(d, ridageyr)
 #> # A tibble: 1 × 4
 #>    mean ci_low ci_high     n

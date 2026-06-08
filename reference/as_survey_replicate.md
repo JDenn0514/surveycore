@@ -19,7 +19,8 @@ as_survey_replicate(
   rscales = NULL,
   fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse = TRUE
+  mse = TRUE,
+  calibration = NULL
 )
 ```
 
@@ -56,8 +57,9 @@ as_survey_replicate(
 
   Numeric. Scaling factor applied to the replicate variance formula. If
   `NULL` (default), computed automatically from `type` and the number of
-  replicates: `(R-1)/R` for jackknife methods, `1/4` for BRR/Fay, `1/R`
-  for bootstrap/ACS, `2/R` for successive-difference, `1` for other.
+  replicates `R`: `(R-1)/R` for `"JK1"`, `"JK2"`, and `"JKn"`; `1/R` for
+  `"BRR"`, `"Fay"`, `"bootstrap"`, and `"ACS"`; `2/R` for
+  `"successive-difference"`; `1` for `"other"`.
 
 - rscales:
 
@@ -83,6 +85,25 @@ as_survey_replicate(
   Logical. If `TRUE` (default), use mean-squared-error estimates
   (subtract the full-sample estimate rather than the mean replicate
   estimate when computing variance). Recommended for most designs.
+
+- calibration:
+
+  A list of calibration data elements, each produced by
+  [`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
+  or `NULL` (default). Stored at `@calibration` for provenance and
+  reproducibility. **Not used in variance estimation**: the replicate
+  variance estimator ignores `@calibration` entirely — calibration is
+  already encoded in the replicate weights.
+
+  **Known limitations** (not validated at construction time):
+
+  - *Weight consistency*: surveycore cannot verify that `cd$w` encodes
+    the same base weights as the design weight column.
+
+  - *Stale calibration after
+    [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)*:
+    changing the weight column makes `@calibration` stale; clear it
+    manually.
 
 ## Value
 
@@ -122,12 +143,24 @@ implementation.
 
 ## References
 
-Judkins, D.R. (1990) Fay's method for variance estimation. *Journal of
-the American Statistical Association* **85**(410), 895–904.
-
 Canty, A.J. and Davison, A.C. (1999) Resampling-based variance
 estimation for labour force surveys. *The Statistician* **48**(3),
 379–391.
+
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in
+survey sampling. *Journal of the American Statistical Association*
+**87**(418), 376–382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. *Journal of the American Statistical
+Association* **88**(423), 1013–1020.
+
+Judkins, D.R. (1990) Fay's method for variance estimation. *Journal of
+the American Statistical Association* **85**(410), 895–904.
+
+Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on
+resampling methods for complex surveys. *Survey Methodology* **18**(2),
+209–217.
 
 Shao, J. and Tu, D. (1995) *The Jackknife and Bootstrap*. Springer.
 
@@ -141,10 +174,10 @@ for two-phase designs,
 to add variable labels
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
@@ -158,16 +191,16 @@ Other constructors:
 # ACS PUMS Wyoming: 80 successive-difference replicate weights
 d_acs <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
-  type       = "successive-difference"
+  type = "successive-difference"
 )
 
 # Explicit replicate columns using c()
 d_sub <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-  type       = "JK1"
+  type = "JK1"
 )
 ```

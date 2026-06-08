@@ -60,12 +60,14 @@ survey_glm_fit(
 
 - degf:
 
-  Raw design degrees of freedom (positive scalar): number of PSUs minus
-  number of strata for Taylor designs, number of replicates minus one
-  for replicate designs, and `n - 1` for SRS designs. This is *not* the
-  residual degrees of freedom used for t-statistics and confidence
-  intervals; those are computed as `degf - (p - 1)` where `p` is the
-  number of model coefficients.
+  Raw design degrees of freedom (positive scalar). For `survey_taylor`
+  designs (including SRS, which is absorbed into Taylor): number of PSUs
+  minus number of strata. For `survey_replicate` designs: number of
+  replicates minus one. For `survey_twophase`: Phase 1 PSUs minus Phase
+  1 strata. For `survey_nonprob`: `Inf` (no design-based df). This is
+  *not* the residual degrees of freedom used for t-statistics and
+  confidence intervals; those are computed as `degf - (p - 1)` where `p`
+  is the number of model coefficients.
 
 - family:
 
@@ -131,11 +133,11 @@ A `survey_glm_fit` object.
 to create a `survey_glm_fit`.
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
@@ -146,8 +148,13 @@ Other constructors:
 
 ``` r
 # survey_glm_fit objects are created by survey_glm(), not directly
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 fit <- survey_glm(d, age ~ sex)
 fit@coefficients
 #> (Intercept)         sex 

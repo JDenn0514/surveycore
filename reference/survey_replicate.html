@@ -9,7 +9,7 @@ Create with as_survey_replicate()."><meta property="og:image" content="https://j
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ Create with as_survey_replicate()."><meta property="og:image" content="https://j
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Replicate Weights Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/core-classes.R" class="external-link"><code>R/core-classes.R</code></a></small>
       <div class="d-none name"><code>survey_replicate.Rd</code></div>
     </div>
 
@@ -45,7 +45,8 @@ Create with <code><a href="as_survey_replicate.html">as_survey_replicate()</a></
 <span>  metadata <span class="op">=</span> <span class="fu"><a href="survey_metadata.html">survey_metadata</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  groups <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
-<span>  call <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  call <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  calibration <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -76,6 +77,13 @@ standalone surveycore use.</p></dd>
 
 <dt id="arg-call">call<a class="anchor" aria-label="anchor" href="#arg-call"></a></dt>
 <dd><p>Language object capturing the construction call.</p></dd>
+
+
+<dt id="arg-calibration">calibration<a class="anchor" aria-label="anchor" href="#arg-calibration"></a></dt>
+<dd><p>A list of calibration data elements produced by
+<code><a href="as_caldata.html">as_caldata()</a></code>, or <code>NULL</code> (default) for no calibration. When non-<code>NULL</code>,
+variance estimation routines apply a Deville-Sarndal calibration
+correction.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -119,14 +127,32 @@ a property.</p></dd>
 
 </dl></div>
     <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. <em>The Statistician</em> <b>48</b>(3), 379–391.</p>
+<p>Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. <em>Journal of the American Statistical Association</em>
+<b>87</b>(418), 376–382.</p>
+<p>Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. <em>Journal of the American Statistical
+Association</em> <b>88</b>(423), 1013–1020.</p>
+<p>Judkins, D.R. (1990) Fay's method for variance estimation.
+<em>Journal of the American Statistical Association</em>
+<b>85</b>(410), 895–904.</p>
+<p>Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
+methods for complex surveys. <em>Survey Methodology</em> <b>18</b>(2),
+209–217.</p>
+<p>Shao, J. and Tu, D. (1995) <em>The Jackknife and Bootstrap</em>. Springer.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="as_survey_replicate.html">as_survey_replicate()</a></code> to create a <code>survey_replicate</code> object.</p>
 <p>Other constructors:
+<code><a href="as_caldata.html">as_caldata()</a></code>,
 <code><a href="as_survey.html">as_survey()</a></code>,
 <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
 <code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_glm_fit.html">survey_glm_fit()</a></code>,
 <code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
@@ -138,14 +164,21 @@ a property.</p></dd>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Prefer as_survey_replicate() over calling survey_replicate() directly</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>, wt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                 rep1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>, rep2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span><span class="va">df</span>, weights <span class="op">=</span> <span class="va">wt</span>,</span></span>
-<span class="r-in"><span>                         repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"rep"</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"BRR"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  wt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  rep1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  rep2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">0.5</span>, <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">df</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wt</span>,</span></span>
+<span class="r-in"><span>  repweights <span class="op">=</span> <span class="fu">starts_with</span><span class="op">(</span><span class="st">"rep"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  type <span class="op">=</span> <span class="st">"BRR"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "surveycore::survey_replicate" "surveycore::survey_base"     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [3] "S7_object"                   </span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

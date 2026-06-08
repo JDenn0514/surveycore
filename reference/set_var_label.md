@@ -80,11 +80,19 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_var_label(d, indfmpir = "Income-to-poverty ratio")
 
 # Multiple variables
-d <- set_var_label(d, bpxsy1 = "Systolic BP (1st reading)",
-                      bpxdi1 = "Diastolic BP (1st reading)")
+d <- set_var_label(
+  d,
+  bpxsy1 = "Systolic BP (1st reading)",
+  bpxdi1 = "Diastolic BP (1st reading)"
+)
 ```

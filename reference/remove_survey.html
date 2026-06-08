@@ -9,7 +9,7 @@ survey_collection. Errors if any requested name is not present."><meta property=
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ survey_collection. Errors if any requested name is not present."><meta property=
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Remove Surveys from a <code>survey_collection</code></h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/survey-collection.R" class="external-link"><code>R/survey-collection.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/survey-collection.R" class="external-link"><code>R/survey-collection.R</code></a></small>
       <div class="d-none name"><code>remove_survey.Rd</code></div>
     </div>
 
@@ -60,7 +60,8 @@ present in <code>names(x)</code>.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A new <code>survey_collection</code> without the dropped surveys. Errors
 <code>surveycore_error_collection_empty</code> if removing would leave the
-collection empty.</p>
+collection empty. This error is raised by the S7 class validator, not
+by <code>remove_survey()</code> itself.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -75,15 +76,24 @@ collection empty.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d1</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>, ids <span class="op">=</span> <span class="va">vpsu</span>, weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
-<span class="r-in"><span>                strata <span class="op">=</span> <span class="va">vstrat</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">d2</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>, ids <span class="op">=</span> <span class="va">vpsu</span>, weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
-<span class="r-in"><span>                strata <span class="op">=</span> <span class="va">vstrat</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d1</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">gss_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d2</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">gss_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">coll</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_collection.html">as_survey_collection</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">d1</span>, b <span class="op">=</span> <span class="va">d2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">coll2</span> <span class="op">&lt;-</span> <span class="fu">remove_survey</span><span class="op">(</span><span class="va">coll</span>, <span class="st">"a"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">coll2</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "b"</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

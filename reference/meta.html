@@ -9,7 +9,7 @@ returned by any get_*() analysis function."><meta property="og:image" content="h
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,7 +29,7 @@ returned by any get_*() analysis function."><meta property="og:image" content="h
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Extract Metadata from a Survey Result</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-meta.R" class="external-link"><code>R/analysis-meta.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-meta.R" class="external-link"><code>R/analysis-meta.R</code></a></small>
       <div class="d-none name"><code>meta.Rd</code></div>
     </div>
 
@@ -62,7 +62,9 @@ returned by any <code>get_*()</code> analysis function.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named list. Common fields present on every result:</p><dl><dt><code>design_type</code></dt>
 <dd><p>Character(1). Design class: <code>"taylor"</code>,
-<code>"replicate"</code>, <code>"twophase"</code>, <code>"srs"</code>, or <code>"nonprob"</code>.</p></dd>
+<code>"replicate"</code>, <code>"twophase"</code>, or <code>"nonprob"</code>. SRS designs are
+represented as <code>survey_taylor</code> (no IDs/strata) and report
+<code>"taylor"</code>.</p></dd>
 
 <dt><code>conf_level</code></dt>
 <dd><p>Numeric(1). Confidence level used (e.g. <code>0.95</code>).</p></dd>
@@ -131,25 +133,27 @@ with keys <code>name</code>, <code>variable_label</code>, <code>question_preface
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/structure.html" class="external-link">structure</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">42.0</span>, se <span class="op">=</span> <span class="fl">1.5</span>, n <span class="op">=</span> <span class="fl">100L</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  .meta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    design_type   <span class="op">=</span> <span class="st">"taylor"</span>,</span></span>
-<span class="r-in"><span>    conf_level    <span class="op">=</span> <span class="fl">0.95</span>,</span></span>
-<span class="r-in"><span>    call          <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/substitute.html" class="external-link">quote</a></span><span class="op">(</span><span class="fu"><a href="get_means.html">get_means</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    design_type <span class="op">=</span> <span class="st">"taylor"</span>,</span></span>
+<span class="r-in"><span>    conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span></span>
+<span class="r-in"><span>    call <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/substitute.html" class="external-link">quote</a></span><span class="op">(</span><span class="fu"><a href="get_means.html">get_means</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    n_respondents <span class="op">=</span> <span class="fl">100L</span>,</span></span>
-<span class="r-in"><span>    group         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>    x             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>      x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>variable_label <span class="op">=</span> <span class="cn">NULL</span>, question_preface <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
-<span class="r-in"><span>               value_labels <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>        variable_label <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
+<span class="r-in"><span>        question_preface <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
+<span class="r-in"><span>        value_labels <span class="op">=</span> <span class="cn">NULL</span></span></span>
+<span class="r-in"><span>      <span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  class <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"survey_means"</span>, <span class="st">"survey_result"</span>, <span class="st">"tbl_df"</span>, <span class="st">"tbl"</span>, <span class="st">"data.frame"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">design_type</span>    <span class="co"># "taylor"</span></span></span>
+<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">design_type</span> <span class="co"># "taylor"</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "taylor"</span>
-<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">n_respondents</span>  <span class="co"># 100L</span></span></span>
+<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">n_respondents</span> <span class="co"># 100L</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 100</span>
-<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">conf_level</span>     <span class="co"># 0.95</span></span></span>
+<span class="r-in"><span><span class="fu">meta</span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">$</span><span class="va">conf_level</span> <span class="co"># 0.95</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.95</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

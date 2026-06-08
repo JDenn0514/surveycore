@@ -42,8 +42,13 @@ Other conversion:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- as_svydesign(d)
   survey::svymean(~ridageyr, sv, na.rm = TRUE)

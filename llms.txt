@@ -279,10 +279,11 @@ interface — bare column names, no formula syntax.
 - [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
   : Create a Two-Phase Survey Design
 - [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-  **\[experimental\]** : Create a Calibrated / Non-Probability Survey
-  Design
+  : Create a Non-probability Survey Design
 - [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
   : Update Design Variables on an Existing Survey Object
+- [`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md)
+  : Build a Calibration Data Element
 
 ## Survey collections
 
@@ -341,7 +342,7 @@ Compute weighted estimates with design-correct standard errors.
 - [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)
   : All-Pairs Pairwise T-Tests for Survey Designs
 - [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
-  : Design-Based Analysis of Variance for Survey GLM Fits
+  : Design-Based Analysis of Variance and Wald Tests for Survey GLM Fits
 - [`get_effective_n()`](https://jdenn0514.github.io/surveycore/reference/get_effective_n.md)
   : Effective Sample Size for a Survey Design
 
@@ -443,11 +444,29 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
 - [`survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/survey_twophase.md)
   : Two-Phase Survey Design
 - [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md)
-  : Calibrated / Non-Probability Survey Design
+  : Non-probability Samples
 - [`survey_metadata()`](https://jdenn0514.github.io/surveycore/reference/survey_metadata.md)
   : Survey Metadata Container
 - [`survey_collection()`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md)
   : Multi-Survey Container
+
+## Print methods
+
+S3 print methods for surveycore result objects. Called automatically
+when objects are printed; documented here for reference.
+
+- [`print(`*`<survey_result>`*`)`](https://jdenn0514.github.io/surveycore/reference/print.survey_result.md)
+  : Print a Survey Result Object
+- [`print(`*`<survey_diffs>`*`)`](https://jdenn0514.github.io/surveycore/reference/print.survey_diffs.md)
+  : Print a Survey Diffs Result
+- [`print(`*`<survey_t_test>`*`)`](https://jdenn0514.github.io/surveycore/reference/print.survey_t_test.md)
+  : Print method for survey_t_test objects.
+- [`print(`*`<survey_pairwise>`*`)`](https://jdenn0514.github.io/surveycore/reference/print.survey_pairwise.md)
+  : Print method for survey_pairwise objects.
+- [`print(`*`<survey_anova>`*`)`](https://jdenn0514.github.io/surveycore/reference/print.survey_anova.md)
+  : Print Method for survey_anova Objects
+- [`anova(`*`<survey_glm_fit>`*`)`](https://jdenn0514.github.io/surveycore/reference/anova.survey_glm_fit.md)
+  : ANOVA Method for Survey GLM Fits
 
 ## Utilities
 
@@ -478,6 +497,8 @@ Real-world survey datasets included for testing and illustration.
   : Pew NPORS 2025: National Public Opinion Reference Survey
 - [`ns_wave1`](https://jdenn0514.github.io/surveycore/reference/ns_wave1.md)
   : Nationscape Wave 1: July 18, 2019
+- [`ca_api_2000`](https://jdenn0514.github.io/surveycore/reference/ca_api_2000.md)
+  : California Academic Performance Index 2000: Simple Random Sample
 
 # Articles
 

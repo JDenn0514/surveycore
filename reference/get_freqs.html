@@ -11,7 +11,7 @@ quantification, and metadata-driven labelling."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,7 @@ quantification, and metadata-driven labelling."><meta property="og:image" conten
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Weighted Frequency Tables for Categorical Survey Variables</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-freqs.R" class="external-link"><code>R/analysis-freqs.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-freqs.R" class="external-link"><code>R/analysis-freqs.R</code></a></small>
       <div class="d-none name"><code>get_freqs.Rd</code></div>
     </div>
 
@@ -81,8 +81,9 @@ is activated (see Details).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to tidy-select (future-proof;
-currently unused).</p></dd>
+<dd><p>Additional arguments forwarded to <code>.dispatch_over_collection()</code>
+when <code>design</code> is a <code><a href="survey_collection.html">survey_collection</a></code>. For single-survey inputs these
+arguments are ignored.</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
@@ -223,8 +224,13 @@ not physically removed for domain/group subsets.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># NHANES exam weights are 0 for non-examined participants; filter first</span></span></span>
 <span class="r-in"><span><span class="va">nhanes_sub</span> <span class="op">&lt;-</span> <span class="va">nhanes_2017</span><span class="op">[</span><span class="va">nhanes_2017</span><span class="op">$</span><span class="va">wtmec2yr</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="op">]</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_sub</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_sub</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtmec2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Single variable</span></span></span>
 <span class="r-in"><span><span class="fu">get_freqs</span><span class="op">(</span><span class="va">d</span>, <span class="va">riagendr</span><span class="op">)</span></span></span>
@@ -272,7 +278,6 @@ not physically removed for domain/group subsets.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> ridreth3 4     0.118   <span style="text-decoration: underline;">2</span>010</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> ridreth3 6     0.055<span style="text-decoration: underline;">9</span>  <span style="text-decoration: underline;">1</span>086</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span> ridreth3 7     0.053<span style="text-decoration: underline;">2</span>   606</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

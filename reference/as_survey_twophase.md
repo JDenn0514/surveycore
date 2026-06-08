@@ -79,8 +79,7 @@ A `survey_twophase` object.
 - `"full"` — Full two-phase variance formula. Accounts for variability
   in both phases. Requires Phase 2 design information (`probs2`, `ids2`,
   `strata2`) when Phase 2 is not a simple random subsample. If none of
-  these are provided, a warning is issued and Phase 2 selection is
-  treated as SRS within Phase 1 strata.
+  these are provided, an error is raised.
 
 - `"approx"` — Approximation that ignores Phase 1 sampling variability.
   Faster but less accurate than `"full"` when the Phase 1 sampling
@@ -114,10 +113,10 @@ for Taylor series designs,
 for replicate-weight designs
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
@@ -130,29 +129,29 @@ Other constructors:
 ``` r
 # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
 df <- data.frame(
-  id        = 1:20,
-  wt        = rep(2, 20),
+  id = 1:20,
+  wt = rep(2, 20),
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
-  y         = rnorm(20)
+  y = rnorm(20)
 )
 phase1 <- as_survey(df, ids = id, weights = wt)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 
 # With Phase 2 stratification and inclusion probabilities
 df2 <- data.frame(
-  id          = 1:30,
-  wt          = rep(3, 30),
-  in_phase2   = c(rep(TRUE, 15), rep(FALSE, 15)),
-  arm         = rep(c("A", "B", "C"), 10),
+  id = 1:30,
+  wt = rep(3, 30),
+  in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
+  arm = rep(c("A", "B", "C"), 10),
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
-  y           = rnorm(30)
+  y = rnorm(30)
 )
 phase1b <- as_survey(df2, ids = id, weights = wt)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,
-  probs2  = subsamprate,
-  subset  = in_phase2,
-  method  = "full"
+  probs2 = subsamprate,
+  subset = in_phase2,
+  method = "full"
 )
 ```

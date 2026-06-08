@@ -24,7 +24,8 @@ remove_survey(x, name)
 
 A new `survey_collection` without the dropped surveys. Errors
 `surveycore_error_collection_empty` if removing would leave the
-collection empty.
+collection empty. This error is raised by the S7 class validator, not by
+`remove_survey()` itself.
 
 ## See also
 
@@ -41,10 +42,20 @@ Other collections:
 ## Examples
 
 ``` r
-d1 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
-d2 <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-                strata = vstrat, nest = TRUE)
+d1 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
+d2 <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 coll <- as_survey_collection(a = d1, b = d2)
 coll2 <- remove_survey(coll, "a")
 names(coll2)

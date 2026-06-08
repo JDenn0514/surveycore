@@ -105,8 +105,7 @@ sum(acs_pums_wy$pwgtp)
 #> [1] 581381
 
 # Age distribution
-hist(acs_pums_wy$agep, main = "Age distribution, Wyoming 2022",
-     xlab = "Age")
+hist(acs_pums_wy$agep, main = "Age distribution, Wyoming 2022", xlab = "Age")
 
 
 # Confirm 80 replicate weights are present

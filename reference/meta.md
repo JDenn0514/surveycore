@@ -29,7 +29,8 @@ A named list. Common fields present on every result:
 - `design_type`:
 
   Character(1). Design class: `"taylor"`, `"replicate"`, `"twophase"`,
-  `"srs"`, or `"nonprob"`.
+  or `"nonprob"`. SRS designs are represented as `survey_taylor` (no
+  IDs/strata) and report `"taylor"`.
 
 - `conf_level`:
 
@@ -106,22 +107,25 @@ Other analysis:
 result <- structure(
   tibble::tibble(mean = 42.0, se = 1.5, n = 100L),
   .meta = list(
-    design_type   = "taylor",
-    conf_level    = 0.95,
-    call          = quote(get_means(d, x)),
+    design_type = "taylor",
+    conf_level = 0.95,
+    call = quote(get_means(d, x)),
     n_respondents = 100L,
-    group         = list(),
-    x             = list(
-      x = list(variable_label = NULL, question_preface = NULL,
-               value_labels = NULL)
+    group = list(),
+    x = list(
+      x = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
     )
   ),
   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 )
-meta(result)$design_type    # "taylor"
+meta(result)$design_type # "taylor"
 #> [1] "taylor"
-meta(result)$n_respondents  # 100L
+meta(result)$n_respondents # 100L
 #> [1] 100
-meta(result)$conf_level     # 0.95
+meta(result)$conf_level # 0.95
 #> [1] 0.95
 ```

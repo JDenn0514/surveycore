@@ -16,7 +16,8 @@ as_survey(
   weights = NULL,
   strata = NULL,
   fpc = NULL,
-  nest = FALSE
+  nest = FALSE,
+  calibration = NULL
 )
 ```
 
@@ -71,6 +72,29 @@ as_survey(
   NHANES, where PSU IDs restart from 1 in each stratum). Requires
   `strata` to be specified. Default `FALSE`.
 
+- calibration:
+
+  A list of calibration data elements, each produced by
+  [`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
+  or `NULL` (default) for no calibration adjustment. When non-`NULL`,
+  variance estimation applies a Deville-Sarndal GREG projection that
+  reduces standard errors proportional to the correlation between the
+  auxiliary variables and the outcome. Equivalent to assigning
+  `design@calibration <- list(cd)` after construction.
+
+  **Known limitations** (not validated at construction time):
+
+  - *Weight consistency*: surveycore cannot verify that `cd$w` encodes
+    the same base weights as the design weight column. Mismatched base
+    weights produce incorrect variance estimates.
+
+  - *Stale calibration after
+    [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)*:
+    changing the weight column on a calibrated design with
+    [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
+    makes `@calibration` stale. Clear `@calibration` manually after any
+    weight column change.
+
 ## Value
 
 A `survey_taylor` object.
@@ -116,14 +140,26 @@ and convert it with
 
 ## References
 
-Sarndal, C-E., Swensson, B. and Wretman, J. (1991) *Model Assisted
-Survey Sampling*. Springer.
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in
+survey sampling. *Journal of the American Statistical Association*
+**87**(418), 376–382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. *Journal of the American Statistical
+Association* **88**(423), 1013–1020.
 
 Lumley, T. (2004) Analysis of complex survey samples. *Journal of
 Statistical Software* **9**(1), 1–19.
 
 Lumley, T. (2010) *Complex Surveys: A Guide to Analysis Using R*. John
 Wiley and Sons.
+
+Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations
+for the analysis of survey data using poststratification information.
+*Sankhya* **64-A**, 22–36.
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992) *Model Assisted
+Survey Sampling*. Springer.
 
 ## See also
 
@@ -135,10 +171,10 @@ for two-phase designs,
 to add variable labels
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
@@ -152,10 +188,10 @@ Other constructors:
 # Full NHANES design: stratified cluster with PSU IDs nested within strata
 d <- as_survey(
   nhanes_2017,
-  ids     = sdmvpsu,
+  ids = sdmvpsu,
   weights = wtint2yr,
-  strata  = sdmvstra,
-  nest    = TRUE
+  strata = sdmvstra,
+  nest = TRUE
 )
 
 # Stratified design without PSU cluster IDs
@@ -163,14 +199,19 @@ d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 
 # Blood pressure analysis: filter to exam participants, use MEC weight
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-                  strata = sdmvstra, nest = TRUE)
+d_bp <- as_survey(
+  exam,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # c() to combine multiple columns — sketched on a synthetic two-stage frame
 df <- data.frame(
   psu = rep(1:5, each = 4),
   ssu = 1:20,
-  wt  = runif(20, 0.5, 2)
+  wt = runif(20, 0.5, 2)
 )
 d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 

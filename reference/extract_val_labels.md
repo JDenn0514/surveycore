@@ -36,7 +36,8 @@ extract_val_labels(x, ..., format = "list", fill = NULL)
 
   Scalar or `NULL`. How to handle variables with no labels: `NULL`
   (default) omits them; `NA_character_` includes them as `NULL` entries
-  in `"list"` format.
+  in `"list"` format. In `"data_frame"` format, variables with no labels
+  are always excluded regardless of `fill`.
 
 ## Value
 
@@ -78,8 +79,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 extract_val_labels(d, riagendr)
 #> named list()
 extract_val_labels(d, riagendr, format = "data_frame")

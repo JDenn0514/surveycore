@@ -17,6 +17,8 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/acs_pums_wy.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/add_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/anes_2024.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/anova.survey_glm_fit.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/as_caldata.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_collection.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.html</loc></url>
@@ -24,6 +26,7 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_svydesign.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/ca_api_2000.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/classify_question_type.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/clean.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/dot-get_design_vars_flat.html</loc></url>
@@ -60,8 +63,12 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/ns_wave1.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/pew_jewish_2020.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/pew_npors_2025.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_anova.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_diffs.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_effective_n.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_pairwise.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_result.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/print.survey_t_test.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/remove_survey.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_collection_id.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/set_collection_if_missing_var.html</loc></url>

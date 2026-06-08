@@ -87,8 +87,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_sata(d, riagendr, ridageyr)
 d <- set_sata(d, riagendr, sata = FALSE)
 ```

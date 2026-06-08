@@ -94,8 +94,8 @@ get_variance(
 
 - label_values:
 
-  Logical. Accepted for API uniformity; used to convert
-  grouping-variable codes to value labels. Default `TRUE`.
+  Logical. Accepted for API consistency across `get_*()` functions. Used
+  to convert grouping-variable codes to value labels. Default `TRUE`.
 
 - label_vars:
 
@@ -135,16 +135,23 @@ get_variance(
 A `survey_variance` tibble (also inheriting `survey_result`). Columns,
 in order:
 
+- `[.id]` — survey identifier column, only when `design` is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+
 - `[group_cols...]` — group variable columns (when active), first.
 
 - `name` — focal variable name (or its label when `label_vars = TRUE`).
 
 - `variance` — design-based point estimate of the finite-population
-  variance. `NaN` for degenerate cells; exact `0` for constant-in-domain
+  variance. Note: the column is always named `variance` regardless of
+  the `variance` parameter (which controls uncertainty columns, not this
+  column). `NaN` for degenerate cells; exact `0` for constant-in-domain
   variables.
 
 - Uncertainty columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
-  `deff`) — only those requested via `variance`.
+  `deff`) — only those requested via the `variance` parameter. The `var`
+  uncertainty column is the variance of the estimated variance, distinct
+  from the `variance` point estimate column.
 
 - `n` — unweighted count of non-NA observations used.
 

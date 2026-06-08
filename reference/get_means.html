@@ -11,7 +11,7 @@ labelling."><meta property="og:image" content="https://jdenn0514.github.io/surve
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,7 @@ labelling."><meta property="og:image" content="https://jdenn0514.github.io/surve
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Weighted Mean for a Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-means.R" class="external-link"><code>R/analysis-means.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-means.R" class="external-link"><code>R/analysis-means.R</code></a></small>
       <div class="d-none name"><code>get_means.Rd</code></div>
     </div>
 
@@ -120,9 +120,9 @@ variable is <code>NA</code> are collected into their own group row in the output
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity; has no visible
-effect since <code>get_means()</code> output contains no categorical value cells.
-Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Accepted for API consistency across <code>get_*()</code>
+functions. For <code>get_means()</code>, no value-level cells appear in the output,
+so this parameter has no effect. Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -163,9 +163,13 @@ Ignored when <code>design</code> is a single survey.</p></dd>
 <li><p><code>mean</code> — weighted mean estimate.</p></li>
 <li><p>Variance columns (<code>se</code>, <code>var</code>, <code>cv</code>, <code>ci_low</code>, <code>ci_high</code>, <code>moe</code>,
 <code>deff</code>) — only those requested via <code>variance</code>.</p></li>
+<li><p><code>df</code> — degrees of freedom used for CI calculation. Present only for
+<code>survey_taylor</code> designs with an active <code>@calibration</code> object
+(GREG-corrected SE). For all other designs the normal approximation
+(<code>Inf</code>) is used and <code>df</code> is not included.</p></li>
 <li><p><code>n</code> — unweighted count of non-NA observations used in the estimate.</p></li>
 <li><p><code>n_weighted</code> — sum of weights (only when requested).</p></li>
-</ul><p>The variable name is stored in <code>meta(result)$variable</code>, not as a column.
+</ul><p>The variable name is stored in <code>meta(result)$x</code>, not as a column.
 Use <code>meta(result)</code> to access design type, variable labels, and other
 metadata.</p>
     </div>
@@ -190,8 +194,13 @@ metadata.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">nhanes_2017</span>, ids <span class="op">=</span> <span class="va">sdmvpsu</span>, weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">sdmvstra</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">nhanes_2017</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">sdmvpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtint2yr</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">sdmvstra</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">get_means</span><span class="op">(</span><span class="va">d</span>, <span class="va">ridageyr</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 4</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    mean ci_low ci_high     n</span>
@@ -212,7 +221,6 @@ metadata.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    mean ci_low ci_high   moe     n n_weighted</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>  38.4   37.4    39.5  1.03  <span style="text-decoration: underline;">9</span>254  320<span style="text-decoration: underline;">842</span>721</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

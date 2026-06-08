@@ -103,8 +103,10 @@ get_t_test(
 
 - ...:
 
-  Unused. Reserved so that `.id` and `.if_missing_var` remain named-only
-  when a `survey_collection` is passed as `design`.
+  Additional arguments forwarded to `.dispatch_over_collection()` when
+  `design` is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  For single-survey inputs these arguments are ignored.
 
 - .id:
 
@@ -154,9 +156,18 @@ Other analysis:
 
 ``` r
 gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-gss_design <- as_survey(gss_sub,
-  ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+gss_sub$sex <- factor(
+  gss_sub$sex,
+  levels = c(1, 2),
+  labels = c("Male", "Female")
+)
+gss_design <- as_survey(
+  gss_sub,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 get_t_test(gss_design, age, by = sex)
 #> # A tibble: 1 × 13
 #>   level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high t_stat    df

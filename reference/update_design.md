@@ -60,20 +60,25 @@ update_design(
 
 - validate:
 
-  Logical. If `TRUE` (default), re-runs the S7 class validator after
-  updating, which checks structural invariants (column existence, weight
-  column type and positivity, etc.).
+  Logical. If `FALSE`, temporarily marks the object to suppress
+  validation during the variable update. In practice this has no
+  observable effect on the returned object; `validate` is accepted for
+  interface compatibility. Default `TRUE`.
 
 ## Value
 
-The modified survey object, invisibly.
+The modified survey object, invisibly. As a side effect, a
+`cli_inform()` message is printed listing each changed design variable
+(old name → new name).
 
 ## See also
 
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 to create a `survey_taylor` object,
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
-to create a `survey_replicate` object
+to create a `survey_replicate` object,
+[`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+to create a `survey_twophase` object
 
 ## Examples
 
@@ -81,8 +86,13 @@ to create a `survey_replicate` object
 # NHANES has two weight columns for different analysis types;
 # start with the MEC examination weight for exam participants
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-d <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  exam,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Switch to interview weight for interview-based variables
 d_updated <- update_design(d, weights = wtint2yr)

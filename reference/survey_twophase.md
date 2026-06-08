@@ -77,11 +77,11 @@ A `survey_twophase` object.
 to create a `survey_twophase` object.
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
@@ -93,9 +93,13 @@ Other constructors:
 ``` r
 # Prefer as_survey_twophase() over calling survey_twophase() directly
 set.seed(1)
-df <- data.frame(id = 1:100, y = rnorm(100), x = rnorm(100),
-                 wt = runif(100, 1, 3),
-                 in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60)))
+df <- data.frame(
+  id = 1:100,
+  y = rnorm(100),
+  x = rnorm(100),
+  wt = runif(100, 1, 3),
+  in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60))
+)
 phase1 <- as_survey(df, weights = wt)
 d <- as_survey_twophase(phase1, subset = in_phase2)
 class(d)

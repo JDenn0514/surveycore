@@ -21,7 +21,7 @@ classes."><meta property="og:image" content="https://jdenn0514.github.io/surveyc
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@ classes."><meta property="og:image" content="https://jdenn0514.github.io/surveyc
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Survey-Weighted Ratio Estimation</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-ratios.R" class="external-link"><code>R/analysis-ratios.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-ratios.R" class="external-link"><code>R/analysis-ratios.R</code></a></small>
       <div class="d-none name"><code>get_ratios.Rd</code></div>
     </div>
 
@@ -146,8 +146,9 @@ variable is <code>NA</code> are collected into their own group row in the output
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity; has no visible
-effect on <code>get_ratios()</code> output. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Accepted for API consistency across <code>get_*()</code>
+functions. For <code>get_ratios()</code>, no value-level cells appear in the output,
+so this parameter has no effect. Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -244,7 +245,6 @@ as output columns. Use <code>meta(result)$numerator</code> and
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ratio ci_low ci_high    moe     n n_weighted</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> 0.871  0.808   0.935 0.063<span style="text-decoration: underline;">7</span>  <span style="text-decoration: underline;">5</span>022      <span style="text-decoration: underline;">5</span>022.</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

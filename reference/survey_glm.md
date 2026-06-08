@@ -2,7 +2,10 @@
 
 Fits a GLM to survey data, producing design-based coefficient estimates
 and variance-covariance matrix via the Binder (1983) sandwich estimator.
-All five surveycore design classes are supported.
+All four concrete surveycore design classes are supported
+(`survey_taylor`, `survey_replicate`, `survey_twophase`,
+`survey_nonprob`). `survey_collection` inputs are rejected; call
+`survey_glm()` on each element individually.
 
 ## Usage
 
@@ -203,11 +206,11 @@ Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
 ## See also
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),
@@ -217,8 +220,13 @@ Other constructors:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat,
-               nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 
 # Linear model: respondent age predicted by education and sex
 fit <- survey_glm(d, age ~ educ + sex)

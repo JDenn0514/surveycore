@@ -95,10 +95,18 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
-d <- set_question_preface(d, riagendr = "Demographics",
-                             ridageyr = "Demographics")
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+d <- set_question_preface(
+  d,
+  riagendr = "Demographics",
+  ridageyr = "Demographics"
+)
 d <- set_sata(d, riagendr, ridageyr)
 classify_question_type(d, riagendr, ridageyr, bpxsy1)
 #> # A tibble: 3 × 4

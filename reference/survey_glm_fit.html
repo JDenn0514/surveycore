@@ -13,7 +13,7 @@ model metadata."><meta property="og:image" content="https://jdenn0514.github.io/
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ model metadata."><meta property="og:image" content="https://jdenn0514.github.io/
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Survey-Weighted GLM Fit Object</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/glm.R" class="external-link"><code>R/glm.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/glm.R" class="external-link"><code>R/glm.R</code></a></small>
       <div class="d-none name"><code>survey_glm_fit.Rd</code></div>
     </div>
 
@@ -96,12 +96,14 @@ model metadata.</p>
 
 
 <dt id="arg-degf">degf<a class="anchor" aria-label="anchor" href="#arg-degf"></a></dt>
-<dd><p>Raw design degrees of freedom (positive scalar): number of
-PSUs minus number of strata for Taylor designs, number of replicates
-minus one for replicate designs, and <code>n - 1</code> for SRS designs. This is
-<em>not</em> the residual degrees of freedom used for t-statistics and confidence
-intervals; those are computed as <code>degf - (p - 1)</code> where <code>p</code> is the number
-of model coefficients.</p></dd>
+<dd><p>Raw design degrees of freedom (positive scalar). For
+<code>survey_taylor</code> designs (including SRS, which is absorbed into Taylor):
+number of PSUs minus number of strata. For <code>survey_replicate</code> designs:
+number of replicates minus one. For <code>survey_twophase</code>: Phase 1 PSUs
+minus Phase 1 strata. For <code>survey_nonprob</code>: <code>Inf</code> (no design-based
+df). This is <em>not</em> the residual degrees of freedom used for
+t-statistics and confidence intervals; those are computed as
+<code>degf - (p - 1)</code> where <code>p</code> is the number of model coefficients.</p></dd>
 
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
@@ -158,11 +160,11 @@ survives in this slot. Default <code>integer(0)</code>.</p></dd>
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="survey_glm.html">survey_glm()</a></code> to create a <code>survey_glm_fit</code>.</p>
 <p>Other constructors:
+<code><a href="as_caldata.html">as_caldata()</a></code>,
 <code><a href="as_survey.html">as_survey()</a></code>,
 <code><a href="as_survey_nonprob.html">as_survey_nonprob()</a></code>,
 <code><a href="as_survey_replicate.html">as_survey_replicate()</a></code>,
 <code><a href="as_survey_twophase.html">as_survey_twophase()</a></code>,
-<code><a href="survey_data.html">survey_data()</a></code>,
 <code><a href="survey_glm.html">survey_glm()</a></code>,
 <code><a href="survey_nonprob.html">survey_nonprob()</a></code>,
 <code><a href="survey_replicate.html">survey_replicate()</a></code>,
@@ -173,13 +175,17 @@ survives in this slot. Default <code>integer(0)</code>.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># survey_glm_fit objects are created by survey_glm(), not directly</span></span></span>
-<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span><span class="va">gss_2024</span>, ids <span class="op">=</span> <span class="va">vpsu</span>, weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
-<span class="r-in"><span>               strata <span class="op">=</span> <span class="va">vstrat</span>, nest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey.html">as_survey</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">gss_2024</span>,</span></span>
+<span class="r-in"><span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span></span>
+<span class="r-in"><span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="survey_glm.html">survey_glm</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">age</span> <span class="op">~</span> <span class="va">sex</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span><span class="op">@</span><span class="va">coefficients</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)         sex </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  47.5603545   0.2595301 </span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

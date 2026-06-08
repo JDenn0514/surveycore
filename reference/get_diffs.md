@@ -198,18 +198,16 @@ access design type, family, reference level, and other metadata.
 
 `get_diffs()` uses two estimation paths:
 
-- **Clean path** (bivariate Gaussian, no group): extracts coefficients
-  directly from
+- **Clean path** (bivariate Gaussian with no covariates and no group, OR
+  any family with `scale = "link"`): extracts coefficients directly from
   [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md).
   The intercept is the reference group mean; treatment coefficients are
-  differences from reference.
+  differences from reference. When `scale = "link"` and the family is
+  non-Gaussian, `mean` and `pct_change` are suppressed.
 
 - **Marginaleffects path** (covariates, non-Gaussian with
-  `scale = "ame"`, or group): uses
-  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
-  for estimates and
-  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
-  for means.
+  `scale = "ame"`, or group): uses `avg_slopes()` for estimates and
+  `avg_predictions()` for means.
 
 ### Link-Scale Suppression
 
@@ -257,12 +255,11 @@ Other analysis:
 ## Examples
 
 ``` r
-library(marginaleffects)
-
 # Create survey design with treatment groups
 set.seed(42)
 df <- data.frame(
-  id = 1:200, wt = runif(200, 0.5, 2),
+  id = 1:200,
+  wt = runif(200, 0.5, 2),
   dv = rnorm(200, 50, 10),
   arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
 )

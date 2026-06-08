@@ -13,7 +13,7 @@ labelling."><meta property="og:image" content="https://jdenn0514.github.io/surve
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +33,7 @@ labelling."><meta property="og:image" content="https://jdenn0514.github.io/surve
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Weighted Total for a Survey Design</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/R/analysis-totals.R" class="external-link"><code>R/analysis-totals.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/R/analysis-totals.R" class="external-link"><code>R/analysis-totals.R</code></a></small>
       <div class="d-none name"><code>get_totals.Rd</code></div>
     </div>
 
@@ -122,7 +122,9 @@ variable is <code>NA</code> are collected into their own group row in the output
 
 
 <dt id="arg-label-values">label_values<a class="anchor" aria-label="anchor" href="#arg-label-values"></a></dt>
-<dd><p>Logical. Accepted for API uniformity. Default <code>TRUE</code>.</p></dd>
+<dd><p>Logical. Accepted for API consistency across <code>get_*()</code>
+functions. For <code>get_totals()</code>, no value-level cells appear in the output,
+so this parameter has no effect. Default <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-label-vars">label_vars<a class="anchor" aria-label="anchor" href="#arg-label-vars"></a></dt>
@@ -134,8 +136,9 @@ variable is <code>NA</code> are collected into their own group row in the output
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Unused. Reserved so that <code>.id</code> and <code>.if_missing_var</code> remain
-named-only when a <code>survey_collection</code> is passed as <code>design</code>.</p></dd>
+<dd><p>Additional arguments forwarded to <code>.dispatch_over_collection()</code>
+when <code>design</code> is a <code><a href="survey_collection.html">survey_collection</a></code>. For single-survey inputs these
+arguments are ignored.</p></dd>
 
 
 <dt id="arg--id">.id<a class="anchor" aria-label="anchor" href="#arg--id"></a></dt>
@@ -162,7 +165,7 @@ Ignored when <code>design</code> is a single survey.</p></dd>
 <li><p><code>n</code> — unweighted count (omitted in no-variable mode).</p></li>
 <li><p><code>n_weighted</code> — sum of weights (only when requested).</p></li>
 </ul><p>The variable name (or <code>NULL</code> for no-variable mode) is in
-<code>meta(result)$variable</code>. Use <code>meta(result)</code> for additional metadata.</p>
+<code>meta(result)$x</code>. Use <code>meta(result)</code> for additional metadata.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -185,9 +188,12 @@ Ignored when <code>design</code> is a single survey.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span><span class="va">acs_pums_wy</span>, weights <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
-<span class="r-in"><span>                   repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span></span>
-<span class="r-in"><span>                   type <span class="op">=</span> <span class="st">"successive-difference"</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">acs_pums_wy</span>,</span></span>
+<span class="r-in"><span>  weights <span class="op">=</span> <span class="va">pwgtp</span>,</span></span>
+<span class="r-in"><span>  repweights <span class="op">=</span> <span class="va">pwgtp1</span><span class="op">:</span><span class="va">pwgtp80</span>,</span></span>
+<span class="r-in"><span>  type <span class="op">=</span> <span class="st">"successive-difference"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Population size</span></span></span>
 <span class="r-in"><span><span class="fu">get_totals</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span></span>
@@ -210,7 +216,6 @@ Ignored when <code>design</code> is a single survey.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1 11<span style="text-decoration: underline;">652</span>675 11<span style="text-decoration: underline;">570</span>321. 11<span style="text-decoration: underline;">735</span>029.  <span style="text-decoration: underline;">2</span>985</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>     2 11<span style="text-decoration: underline;">436</span>498 11<span style="text-decoration: underline;">365</span>701. 11<span style="text-decoration: underline;">507</span>295.  <span style="text-decoration: underline;">2</span>977</span>
-<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

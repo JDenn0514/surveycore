@@ -1,6 +1,6 @@
-# Design-Based Analysis of Variance for Survey GLM Fits
+# Design-Based Analysis of Variance and Wald Tests for Survey GLM Fits
 
-Rao-Scott design-based ANOVA for
+Rao-Scott design-based ANOVA and design-based Wald tests for
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
 fits. Accepts three input shapes on `object`:
 
@@ -105,7 +105,9 @@ get_anova(
 ## Value
 
 A `survey_anova` tibble with columns `term`, `statistic`, `df`, `ddf`,
-`deff`, `p_value`, `stars` and a `.meta` attribute.
+`deff`, `p_value`, `stars` and a `.meta` attribute. When
+`name_style = "broom"`, `p_value` is renamed to `p.value` and `ddf` is
+renamed to `df.residual`.
 
 ## Details
 
@@ -151,12 +153,13 @@ Other analysis:
 ## Examples
 
 ``` r
-gss_cc <- gss_2024[
-  stats::complete.cases(gss_2024[, c("age", "sex", "educ")]),
-]
+gss_cc <- gss_2024[stats::complete.cases(gss_2024[, c("age", "sex", "educ")]), ]
 gss_design <- as_survey(
-  gss_cc, ids = vpsu, weights = wtssps,
-  strata = vstrat, nest = TRUE
+  gss_cc,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
 )
 
 # Single fit

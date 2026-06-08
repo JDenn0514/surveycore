@@ -80,8 +80,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_var_note(d, age = "Top-coded at 89")
 extract_var_note(d, age)
 #>               age 

@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,30 +57,24 @@
       <img src="../logo.png" class="logo" alt=""><h1>Getting Started with surveycore</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/vignettes/getting-started.Rmd" class="external-link"><code>vignettes/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
     </div>
 
     
     
-<p><code>surveycore</code> gives you a (mostly) complete workflow for
-survey data analysis. This vignette is designed to give you a quick
-overview of the main functionality present in this package. It is
-comprised of two main sections:</p>
+<p><code>surveycore</code> is a tidyverse-compatible alternative to
+<code>survey</code> and <code>srvyr</code>, covering the full workflow
+for survey data analysis. The variance estimation code for probability
+samples is vendored from <code>survey</code> and tested against it, so
+estimates using <code><a href="../reference/as_survey.html">as_survey()</a></code>,
+<code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code>, and
+<code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code> match the reference implementation.
+This vignette covers two things:</p>
 <ol style="list-style-type: decimal">
 <li><p>Creating survey objects</p></li>
-<li><p>Conducting simple analysis</p></li>
+<li><p>Conducting analysis</p></li>
 </ol>
-<p><strong>Quick PSA before jumping in:</strong></p>
-<p><code>surveycore</code> was built as an alternative to
-<code>survey</code> and <code>srvyr</code>. However, the code powering
-the variance estimation and analysis is vendored from the
-<code>survey</code> package. Every aspect of this package that
-calculates anything has been tested to ensure it provides the same
-numerical results. This means every estimate <code>surveycore</code>
-produces has been numerically verified to match <code>survey</code>
-output. Without Thomas Lumley’s work on that package, surveycore would
-not be possible.</p>
 <hr>
 <div class="section level2">
 <h2 id="creating-the-survey-object">Creating the survey object<a class="anchor" aria-label="anchor" href="#creating-the-survey-object"></a>
@@ -90,10 +84,9 @@ survey object where we specify the sampling design, weights, and
 whatever other information is needed. Without this information, point
 estimates may be biased and standard errors are almost certainly wrong
 <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>; <a href="#ref-lohr2022">Lohr 2022</a>)</span>.</p>
-<p>Fortunately, we don’t have to calculate that uncertainty ourselves!
-That’s what the survey objects are for. They tell the analysis functions
-how to conduct their analysis so they can properly take into account the
-variance and bias from the survey design.</p>
+<p>Fortunately, we don’t have to worry about that — that’s what survey
+objects are for. They give the analysis functions everything they need
+to correctly account for variance and bias from the sampling design.</p>
 <p><code>surveycore</code> has four different survey object
 constructors:</p>
 <ol style="list-style-type: decimal">
@@ -102,28 +95,37 @@ constructors:</p>
 <li><p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code></p></li>
 <li><p><code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code></p></li>
 </ol>
-<p>Rather than going into detail on each constructor, I’m just going to
-provide a quick overview of each. For more information visit
-<code><a href="../articles/creating-survey-objects.html">vignette("creating-survey-objects")</a></code>.</p>
+<p>Rather than going into detail on each constructor, here is a quick
+overview of each. For more information on the different constructors
+visit <code><a href="../articles/creating-survey-objects.html">vignette("creating-survey-objects")</a></code>.</p>
 <div class="section level3">
 <h3 id="as_survey">
 <code>as_survey()</code><a class="anchor" aria-label="anchor" href="#as_survey"></a>
 </h3>
-<p>You want to use this if you used a probability sample and the data
-you have has cluster IDs, strata, and/or design weights. In this example
-we’ll use the General Social Survey which has variables for clustering,
-strata, and design weights.</p>
+<p>Use <code><a href="../reference/as_survey.html">as_survey()</a></code> for two types of designs:</p>
+<ol style="list-style-type: decimal">
+<li><p>A stratified or clustered sample</p></li>
+<li><p>A simple random sample (SRS)</p></li>
+</ol>
+<p>If you know your data is a stratified/clustered sample or your data
+comes with variables identifying the cluster IDs or strata, use this
+function. All datasets used in this vignette are bundled with
+<code>surveycore</code>. In this first example, we’ll use the General
+Social Survey, which has variables for clustering, strata, and design
+weights.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gss_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
 <span>  <span class="va">gss_2024</span>,</span>
+<span>  <span class="co"># the cluster ids</span></span>
 <span>  ids <span class="op">=</span> <span class="va">vpsu</span>,</span>
+<span>  <span class="co"># the strata</span></span>
 <span>  strata <span class="op">=</span> <span class="va">vstrat</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">wtssps</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> Some PSUs appear in more than one stratum: <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>. If PSUs are nested</span></span>
-<span><span class="co">#&gt;   within strata, set `nest = TRUE`.</span></span></code></pre>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gss_svy</span></span></code></pre></div>
+<span>  <span class="co"># the weights</span></span>
+<span>  weights <span class="op">=</span> <span class="va">wtssps</span>,</span>
+<span>  nest <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">gss_svy</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_taylor&gt;</span> (Taylor series linearization)</span></span></code></pre>
@@ -147,26 +149,68 @@ strata, and design weights.</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   wrkstat &lt;dbl&gt;, hrs1 &lt;dbl&gt;, adults &lt;dbl&gt;, partyid &lt;dbl&gt;, polviews &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   happy &lt;dbl&gt;, health &lt;dbl&gt;, trust &lt;dbl&gt;, natfare &lt;dbl&gt;, abany &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   attend &lt;dbl&gt;, relig &lt;dbl&gt;</span></span></span></code></pre>
+<p>Each survey object has a print method that shows the first 10 rows of
+the data, similar to a tibble, but also includes a brief description of
+the survey design.</p>
+<p>If your data doesn’t have strata or clusters, but each respondent had
+equal probability of being sampled (a simple random sample), then you
+still want to use this function. However, unlike before, you leave
+<code>strata</code> and <code>ids</code> NULL since you don’t have any.
+A good example of this is the 2000 California API survey.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ca_api_2000_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
+<span>  <span class="va">ca_api_2000</span>,</span>
+<span>  weights <span class="op">=</span> <span class="va">pw</span>,</span>
+<span>  fpc <span class="op">=</span> <span class="va">fpc</span> <span class="co"># reduces SEs</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ca_api_2000_svy</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; </span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_taylor&gt;</span> (Taylor series linearization)</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">200</span></span></span></code></pre>
+<pre><code><span><span class="co">#&gt; </span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 200 × 38</span></span></span>
+<span><span class="co">#&gt;    cds       stype name  sname  snum dname  dnum cname  cnum pcttest api00 api99</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 15739081…     2 <span style="color: #949494;">"</span>McF… McFa…  <span style="text-decoration: underline;">1</span>039 McFa…   432 Kern     14      98   462   448</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 19642126…     1 <span style="color: #949494;">"</span>Sto… Stow…  <span style="text-decoration: underline;">1</span>124 ABC …     1 Los …    18     100   878   831</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 30664493…     2 <span style="color: #949494;">"</span>Bre… Brea…  <span style="text-decoration: underline;">2</span>868 Brea…    79 Oran…    29      98   734   742</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 19644516…     1 <span style="color: #949494;">"</span>Ala… Alam…  <span style="text-decoration: underline;">1</span>273 Down…   187 Los …    18      99   772   657</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 40688096…     1 <span style="color: #949494;">"</span>Sun… Sunn…  <span style="text-decoration: underline;">4</span>926 San …   640 San …    39      99   739   719</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 19734456…     1 <span style="color: #949494;">"</span>Los… Los …  <span style="text-decoration: underline;">2</span>463 Haci…   284 Los …    18      93   835   822</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 19647336…     3 <span style="color: #949494;">"</span>Nor… Nort…  <span style="text-decoration: underline;">2</span>031 Los …   401 Los …    18      98   456   472</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 19647336…     1 <span style="color: #949494;">"</span>Gla… Glas…  <span style="text-decoration: underline;">1</span>736 Los …   401 Los …    18      99   506   474</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 19648166…     1 <span style="color: #949494;">"</span>Max… Maxs…  <span style="text-decoration: underline;">2</span>142 Moun…   470 Los …    18     100   543   458</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 38684786…     1 <span style="color: #949494;">"</span>Tre… Trea…  <span style="text-decoration: underline;">4</span>754 San …   632 San …    37      90   649   604</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 190 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 26 more variables: target &lt;int&gt;, growth &lt;int&gt;, sch_wide &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   comp_imp &lt;int&gt;, both &lt;int&gt;, awards &lt;int&gt;, meals &lt;int&gt;, ell &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   yr_rnd &lt;int&gt;, mobility &lt;int&gt;, acs_k3 &lt;int&gt;, acs_46 &lt;int&gt;, acs_core &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   pct_resp &lt;int&gt;, not_hsg &lt;int&gt;, hsg &lt;int&gt;, some_col &lt;int&gt;, col_grad &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   grad_sch &lt;int&gt;, avg_ed &lt;dbl&gt;, full &lt;int&gt;, emer &lt;int&gt;, enroll &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   api_stu &lt;int&gt;, pw &lt;dbl&gt;, fpc &lt;dbl&gt;</span></span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="as_survey_replicate">
 <code>as_survey_replicate()</code><a class="anchor" aria-label="anchor" href="#as_survey_replicate"></a>
 </h3>
-<p>Use this when the data you have comes with pre-built replicate weight
-columns like <code>repwt_1</code>, <code>repwt_2</code>. For example,
-Pew’s Jewish American study from 2020 uses replicate weights.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>Use this when the data you have is from a probability sample and has
+replicate weight columns like <code>repwt_1</code>,
+<code>repwt_2</code>. For example, Pew’s Jewish American study from 2020
+uses replicate weights.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_replicate.html">as_survey_replicate</a></span><span class="op">(</span></span>
 <span>  <span class="va">pew_jewish_2020</span>,</span>
 <span>  weights <span class="op">=</span> <span class="va">extweight</span>,</span>
 <span>  repweights <span class="op">=</span> <span class="va">extweight1</span><span class="op">:</span><span class="va">extweight100</span>,</span>
-<span>  type <span class="op">=</span> <span class="st">"JK1"</span></span>
+<span>  type <span class="op">=</span> <span class="st">"JK2"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pew_jewish_svy</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_replicate&gt;</span> (JK1, 100 replicates)</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_replicate&gt;</span> (JK2, 100 replicates)</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">5881</span></span></span></code></pre>
 <pre><code><span><span class="co">#&gt; </span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5,881 × 130</span></span></span>
@@ -191,65 +235,14 @@ Pew’s Jewish American study from 2020 uses replicate weights.</p>
 <span><span class="co">#&gt; <span style="color: #949494;">#   extweight26 &lt;dbl&gt;, extweight27 &lt;dbl&gt;, extweight28 &lt;dbl&gt;, …</span></span></span></code></pre>
 </div>
 <div class="section level3">
-<h3 id="srs-designs-with-as_survey">SRS designs with <code>as_survey()</code><a class="anchor" aria-label="anchor" href="#srs-designs-with-as_survey"></a>
-</h3>
-<p>When your survey was a pure simple random sample — each respondent
-had equal probability of selection, no clustering, no strata — use
-<code><a href="../reference/as_survey.html">as_survey()</a></code> without specifying <code>ids</code> or
-<code>strata</code>. Omitting both creates a <code>survey_taylor</code>
-object with no cluster or stratum structure, which is the SRS special
-case.</p>
-<p>Here is a synthetic school district survey to illustrate:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">101</span><span class="op">)</span></span>
-<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">400</span> <span class="co"># total schools in district</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">80</span> <span class="co"># schools sampled</span></span>
-<span></span>
-<span><span class="va">school_survey</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  school_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span>,</span>
-<span>  avg_score <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, mean <span class="op">=</span> <span class="fl">72</span>, sd <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  pct_frpl <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.10</span>, <span class="fl">0.85</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, <span class="co"># % free/reduced price lunch</span></span>
-<span>  enrollment <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">180</span>, <span class="fl">850</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  sw <span class="op">=</span> <span class="va">N</span> <span class="op">/</span> <span class="va">n</span>, <span class="co"># equal sampling weight = 400/80 = 5.0</span></span>
-<span>  fpc <span class="op">=</span> <span class="va">N</span> <span class="co"># population size for FPC</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">school_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey.html">as_survey</a></span><span class="op">(</span></span>
-<span>  <span class="va">school_survey</span>,</span>
-<span>  weights <span class="op">=</span> <span class="va">sw</span>, <span class="co"># each sampled school represents 5 schools in the population</span></span>
-<span>  fpc <span class="op">=</span> <span class="va">fpc</span> <span class="co"># reduces SEs: we sampled 20% of the population</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">school_svy</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; </span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────────────</span></span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #0000BB;">&lt;survey_taylor&gt;</span> (Taylor series linearization)</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; Sample size: <span style="color: #0000BB;">80</span></span></span></code></pre>
-<pre><code><span><span class="co">#&gt; </span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 80 × 6</span></span></span>
-<span><span class="co">#&gt;    school_id avg_score pct_frpl enrollment    sw   fpc</span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>       329      72.3     0.55        610     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>       313      75.2     0.36        294     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>        95      60.1     0.17        187     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>       209      73.4     0.24        729     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>       351      81.6     0.18        324     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>       317      71.3     0.38        296     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>       315      57.4     0.11        188     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>       246      68.3     0.16        545     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>       355      66.2     0.32        531     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>       128      71.5     0.54        656     5   400</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 70 more rows</span></span></span></code></pre>
-</div>
-<div class="section level3">
 <h3 id="as_survey_nonprob">
 <code>as_survey_nonprob()</code><a class="anchor" aria-label="anchor" href="#as_survey_nonprob"></a>
 </h3>
-<p>Use this when you used a non-probability panel (e.g., Qualtrics
-Panels, Cint/Lucid, Dynata, YouGov, etc.) and have created weights
-designed to ensure the sample is representative of the population you
-are interested in.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p>Use this if your data comes from a non-probability sample (e.g., via
+an opt-in panel like Qualtrics Panels, Cint/Lucid, Dynata, etc.) and has
+weights (e.g., calibration weights, inverse-probability weights, etc.).
+To illustrate we’ll use Wave 1 from the Nationscape dataset.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ns_wave1_svy</span></span></code></pre></div>
@@ -284,14 +277,15 @@ are interested in.</p>
 <h3 id="as_survey_twophase">
 <code>as_survey_twophase()</code><a class="anchor" aria-label="anchor" href="#as_survey_twophase"></a>
 </h3>
-<p>This is very rare, so it’s unlikely you have this. But, if you took a
-large sample of a population and then resampled a subset of them, then
-you might have a two-phase design. Some common contexts are: case-cohort
-studies, medical validation studies, or surveys with a screening
-phase.</p>
+<p>Two-phase sampling involves collecting a large initial sample, then
+sampling a subset of those respondents as a follow-up. This is not a
+very common survey method, but common examples include case-cohort
+studies, medical validation studies, or surveys with a screening phase.
+If your data is a two-phase sample, use
+<code><a href="../reference/as_survey_twophase.html">as_survey_twophase()</a></code>.</p>
 <p>We will use the nwtco data from the <code>survival</code>
 package.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nwtco</span> <span class="op">&lt;-</span> <span class="fu">survival</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/survival/man/nwtco.html" class="external-link">nwtco</a></span></span>
 <span></span>
 <span><span class="co"># in.subcohort is stored as 0/1 — must be logical for as_survey_twophase()</span></span>
@@ -303,7 +297,7 @@ package.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Treating as equal-probability sampling within clusters (unknown population</span></span>
 <span><span class="co">#&gt;   size).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Population totals will equal sample totals, not estimated population totals.</span></span></code></pre>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Phase 2: subcohort, with Phase 2 sampling stratified by relapse status</span></span>
 <span><span class="va">nwtco_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_twophase.html">as_survey_twophase</a></span><span class="op">(</span></span>
 <span>  <span class="va">phase1</span>,</span>
@@ -334,14 +328,11 @@ package.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>    10      2      1     2     3     0  <span style="text-decoration: underline;">1</span>381    31 FALSE       </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4,018 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: ..surveycore_wt.. &lt;int&gt;</span></span></span></code></pre>
-<p>As you may have noticed, each survey object has a print method that
-shows the first 10 rows of each data set, similar to a tibble, but also
-includes a brief description of the survey design.</p>
 <hr>
 </div>
 </div>
 <div class="section level2">
-<h2 id="conducting-simple-analysis">Conducting Simple Analysis<a class="anchor" aria-label="anchor" href="#conducting-simple-analysis"></a>
+<h2 id="analysis-functions">Analysis functions<a class="anchor" aria-label="anchor" href="#analysis-functions"></a>
 </h2>
 <p>In addition to creating survey objects, <code>surveycore</code> has
 several functions designed to make analysis easier:</p>
@@ -352,6 +343,10 @@ several functions designed to make analysis easier:</p>
 <li><p><code><a href="../reference/get_corr.html">get_corr()</a></code></p></li>
 <li><p><code><a href="../reference/get_ratios.html">get_ratios()</a></code></p></li>
 <li><p><code><a href="../reference/get_quantiles.html">get_quantiles()</a></code></p></li>
+<li><p><code><a href="../reference/get_diffs.html">get_diffs()</a></code></p></li>
+<li><p><code><a href="../reference/get_t_test.html">get_t_test()</a></code></p></li>
+<li><p><code><a href="../reference/get_pairwise.html">get_pairwise()</a></code></p></li>
+<li><p><code><a href="../reference/get_variance.html">get_variance()</a></code></p></li>
 </ul>
 <div class="section level3">
 <h3 id="frequency-tables-get_freqs">Frequency tables — <code>get_freqs()</code><a class="anchor" aria-label="anchor" href="#frequency-tables-get_freqs"></a>
@@ -359,9 +354,9 @@ several functions designed to make analysis easier:</p>
 <p><code><a href="../reference/get_freqs.html">get_freqs()</a></code> calculates weighted frequencies (aka
 proportions). The first argument is the survey design, the second is the
 variable you want to get the frequencies for. Here’s a simple example
-where we calculate whether or not people are willing to consider voting
-for Trump.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+where we calculate whether people are willing to consider voting for
+Trump.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">consider_trump</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
@@ -378,15 +373,17 @@ for Trump.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Yes            0.321  <span style="text-decoration: underline;">2</span>087</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> No             0.555  <span style="text-decoration: underline;">3</span>615</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Don't know     0.125   705</span></span></code></pre>
-<p><strong>Analyzing multiple variables at once</strong></p>
+<div class="section level4">
+<h4 id="analyzing-multiple-variables-at-once">Analyzing multiple variables at once<a class="anchor" aria-label="anchor" href="#analyzing-multiple-variables-at-once"></a>
+</h4>
 <p>A key piece of survey research involves select-all-that-apply style
 questions. For example, the Nationscape data asked people: “We’re
 interested in where you might have heard news about politics in the last
 week. Please indicate which of the following sources you used.” Rather
-than looking at each one individually, <code><a href="../reference/get_freqs.html">get_freqs()</a></code> allows
-you to pass in multiple variables (it uses <code>tidy-select</code>
-under the hood to do this). Let’s look at an example:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+than looking at each one individually, <code><a href="../reference/get_freqs.html">get_freqs()</a></code> accepts
+<code>tidy-select</code> expressions, which allows you to pass in
+multiple variables. Let’s look at an example:</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">news_sources_facebook</span><span class="op">:</span><span class="va">news_sources_other</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
@@ -477,7 +474,7 @@ under the hood to do this). Let’s look at an example:</p>
 <p>The <code>name</code> column identifies which variable each row
 belongs to; <code>value</code> holds the response code. You can also
 change the name of the columns if you want. For example:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">news_sources_facebook</span><span class="op">:</span><span class="va">news_sources_other</span><span class="op">)</span>,</span>
@@ -571,73 +568,77 @@ change the name of the columns if you want. For example:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Network news (ABC, CBS, NBC) or PBS    No     0.420  <span style="text-decoration: underline;">2</span>711</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 14 more rows</span></span></span></code></pre>
 </div>
+</div>
 <div class="section level3">
 <h3 id="weighted-means-get_means">Weighted means — <code>get_means()</code><a class="anchor" aria-label="anchor" href="#weighted-means-get_means"></a>
 </h3>
 <p><code><a href="../reference/get_means.html">get_means()</a></code> estimates the survey-weighted mean of a
 continuous variable.</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Mean discrimination against blacks</span></span>
-<span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">discrimination_blacks</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Average favorability towards Biden</span></span>
+<span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># remove those who said "Not sure" (coded as 999)</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter_out</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;    mean ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  2.41   2.36    2.47  <span style="text-decoration: underline;">6</span>364</span></span></code></pre>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  2.44   2.39    2.49  <span style="text-decoration: underline;">5</span>371</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="population-totals-get_totals">Population totals — <code>get_totals()</code><a class="anchor" aria-label="anchor" href="#population-totals-get_totals"></a>
 </h3>
-<p><code><a href="../reference/get_totals.html">get_totals()</a></code> estimates the weighted sum: the total count
-or aggregate for the target population. It’s important to note that the
-weights typically used in non-probability samples are calibration
-weights which are designed to ensure the sample is representative of the
-population it is sampled from. These weights will not give you accurate
-population totals. However, design weights scaled to represent the
-target population will give estimated population size.</p>
-<p>To show the difference, we will use Pew’s Jewish-Americans Study from
-2020 to show a study with weights that show population totals and the
-Nationscape data to show how calibrated weights do not.</p>
-<p>First, we will look at the Nationscape data. Since these are
-calibration weights, the totals will add up to the number of rows
-(6,422).</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
-<span><span class="co">#&gt;   total ci_low ci_high</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  <span style="text-decoration: underline;">6</span>422  <span style="text-decoration: underline;">6</span>192.   <span style="text-decoration: underline;">6</span>652.</span></span></code></pre>
-<p>However, the Pew Jewish-Americans study shows us the estimated total
-population of Jews in the US:</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/get_totals.html">get_totals()</a></code> estimates the weighted total for the target
+population. When called without <code>x</code>, it simply provides a sum
+of the weights. The meaning of the result depends on how the weights are
+scaled. Pew’s Jewish-American study scales the weights so it gives the
+estimated size of the Jewish- American population:</p>
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># only include jews by religion and jews of no religion to match Pew's report</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">jewishcat</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
 <span><span class="co">#&gt;      total   ci_low  ci_high</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 9<span style="text-decoration: underline;">971</span>358. 9<span style="text-decoration: underline;">971</span>322. 9<span style="text-decoration: underline;">971</span>394.</span></span></code></pre>
-<p>Note how we did not use any variables. That’s because we are
-interested in the sample’s population size. However, if we are
-interested in the estimated total income or age, we can do that by
-specifying it in the <code>x</code> argument.</p>
-<p>If we wanted to understand how many estimated people selected a
-specific response option, we use the <code>group</code> argument. For
-example: if we wanted to know how many Jews are in each age category we
-would calculate it like this:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span>, group <span class="op">=</span> <span class="va">age4cat</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 5<span style="text-decoration: underline;">782</span>142. 5<span style="text-decoration: underline;">597</span>865. 5<span style="text-decoration: underline;">966</span>419.</span></span></code></pre>
+<p>Compare that to the GSS data from earlier, where the weights are
+scaled to the sample size (N = 3,309):</p>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">gss_svy</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
+<span><span class="co">#&gt;   total ci_low ci_high</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  <span style="text-decoration: underline;">3</span>309  <span style="text-decoration: underline;">3</span>132.   <span style="text-decoration: underline;">3</span>486.</span></span></code></pre>
+<p>Specifying a variable in <code>x</code> computes the weighted total
+for that variable. To show this, we’ll use the
+<code>ca_api_2000_svy</code> object from before to determine how many
+students are enrolled in the California API system.</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span><span class="va">ca_api_2000_svy</span>, x <span class="op">=</span> <span class="va">enroll</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;      total   ci_low  ci_high     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 3<span style="text-decoration: underline;">621</span>074. 3<span style="text-decoration: underline;">288</span>822. 3<span style="text-decoration: underline;">953</span>327.   200</span></span></code></pre>
+<p>To see the weighted total within each level of a categorical
+variable, use the <code>group</code> argument. To show this, we’ll look
+at how how many Jewish-Americans fall in each age category:</p>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pew_jewish_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># only include jews by religion and jews of no religion to match Pew's report</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">jewishcat</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_totals.html">get_totals</a></span><span class="op">(</span>group <span class="op">=</span> <span class="va">age4cat</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   age4cat      total   ci_low  ci_high</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 18-29     1<span style="text-decoration: underline;">916</span>708. 1<span style="text-decoration: underline;">752</span>196. 2<span style="text-decoration: underline;">081</span>221.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 30-49     3<span style="text-decoration: underline;">129</span>220. 2<span style="text-decoration: underline;">977</span>800. 3<span style="text-decoration: underline;">280</span>639.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 50-64     2<span style="text-decoration: underline;">300</span>014. 2<span style="text-decoration: underline;">181</span>724. 2<span style="text-decoration: underline;">418</span>305.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 65+       2<span style="text-decoration: underline;">406</span>454. 2<span style="text-decoration: underline;">293</span>478. 2<span style="text-decoration: underline;">519</span>431.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> No Answer  <span style="text-decoration: underline;">218</span>962.  <span style="text-decoration: underline;">163</span>386.  <span style="text-decoration: underline;">274</span>537.</span></span></code></pre>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 18-29     1<span style="text-decoration: underline;">035</span>017.  <span style="text-decoration: underline;">941</span>600. 1<span style="text-decoration: underline;">128</span>434.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 30-49     1<span style="text-decoration: underline;">830</span>689. 1<span style="text-decoration: underline;">729</span>928. 1<span style="text-decoration: underline;">931</span>451.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 50-64     1<span style="text-decoration: underline;">144</span>573. 1<span style="text-decoration: underline;">055</span>704. 1<span style="text-decoration: underline;">233</span>441.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 65+       1<span style="text-decoration: underline;">656</span>759. 1<span style="text-decoration: underline;">556</span>108. 1<span style="text-decoration: underline;">757</span>411.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> No Answer  <span style="text-decoration: underline;">115</span>103.   <span style="text-decoration: underline;">81</span>093.  <span style="text-decoration: underline;">149</span>113.</span></span></code></pre>
 <hr>
 </div>
 <div class="section level3">
@@ -647,20 +648,20 @@ would calculate it like this:</p>
 correlations between two or more continuous variables. Confidence
 intervals use the Fisher Z transformation, guaranteeing bounds in (−1,
 1).</p>
-<p>Let’s look at approval for Trump and Biden. First we clean the
-underlying data frame — dropping rows with missing values and removing
-“Not sure” responses (coded <code>999</code>) — then rebuild the survey
-object.</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ns_wave1_clean</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
-<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">)</span>,</span>
-<span>    <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span><span class="op">)</span>,</span>
-<span>    <span class="va">cand_favorability_trump</span> <span class="op">!=</span> <span class="fl">999</span>,</span>
-<span>    <span class="va">cand_favorability_biden</span> <span class="op">!=</span> <span class="fl">999</span></span>
+<p>Let’s look at favorability for Trump and Biden. First we clean the
+underlying data frame using the <code>surveytidy</code> package by
+dropping rows with missing values and removing “Not sure” responses
+(coded <code>999</code>).</p>
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ns_wave1_clean_svy</span> <span class="op">&lt;-</span> <span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/drop_na.html" class="external-link">drop_na</a></span><span class="op">(</span></span>
+<span>    <span class="va">cand_favorability_trump</span>,</span>
+<span>    <span class="va">cand_favorability_biden</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter_out</a></span><span class="op">(</span></span>
+<span>    <span class="va">cand_favorability_trump</span> <span class="op">==</span> <span class="fl">999</span>,</span>
+<span>    <span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span></span>
 <span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="va">ns_wave1_clean_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1_clean</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_clean_svy</span>,</span>
@@ -670,27 +671,34 @@ object.</p>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
-<span><span class="co">#&gt;   var1         var2           r ci_low ci_high p_value statistic    df     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Donald Trump Joe Biden -<span style="color: #BB0000;">0.495</span> -<span style="color: #BB0000;">0.524</span>  -<span style="color: #BB0000;">0.464</span>       0     -<span style="color: #BB0000;">41.3</span>  <span style="text-decoration: underline;">5</span>276  <span style="text-decoration: underline;">5</span>278</span></span></code></pre>
+<span><span class="co">#&gt;   var1         var2            r  ci_low ci_high p_value statistic    df     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Donald Trump Joe Biden -<span style="color: #BB0000;">0.035</span><span style="color: #BB0000; text-decoration: underline;">1</span> -<span style="color: #BB0000;">0.043</span><span style="color: #BB0000; text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.026</span><span style="color: #BB0000; text-decoration: underline;">7</span> 0.006<span style="text-decoration: underline;">22</span>     -<span style="color: #BB0000;">2.74</span>  <span style="text-decoration: underline;">6</span>078  <span style="text-decoration: underline;">6</span>080</span></span></code></pre>
 <p>Next, let’s look at favorability across multiple variables.</p>
-<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fav_vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"cand_favorability_trump"</span>, <span class="st">"cand_favorability_biden"</span>,</span>
-<span>  <span class="st">"cand_favorability_harris"</span>, <span class="st">"cand_favorability_sanders"</span>,</span>
-<span>  <span class="st">"cand_favorability_warren"</span>, <span class="st">"cand_favorability_buttigieg"</span>,</span>
+<span>  <span class="st">"cand_favorability_trump"</span>,</span>
+<span>  <span class="st">"cand_favorability_biden"</span>,</span>
+<span>  <span class="st">"cand_favorability_harris"</span>,</span>
+<span>  <span class="st">"cand_favorability_sanders"</span>,</span>
+<span>  <span class="st">"cand_favorability_warren"</span>,</span>
+<span>  <span class="st">"cand_favorability_buttigieg"</span>,</span>
 <span>  <span class="st">"cand_favorability_pence"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">ns_wave1_multi</span> <span class="op">&lt;-</span> <span class="va">ns_wave1</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">if_all</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of</a></span><span class="op">(</span><span class="va">fav_vars</span><span class="op">)</span>, <span class="op">~</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.x</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">.x</span> <span class="op">!=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="va">ns_wave1_multi</span> <span class="op">&lt;-</span> <span class="va">ns_wave1_clean_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># remove NAs from all variables of interest</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/drop_na.html" class="external-link">drop_na</a></span><span class="op">(</span><span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of</a></span><span class="op">(</span><span class="va">fav_vars</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># remove those who said "not sure" to any variable of interest</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter_out</a></span><span class="op">(</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">if_any</a></span><span class="op">(</span></span>
+<span>      <span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/all_of.html" class="external-link">all_of</a></span><span class="op">(</span><span class="va">fav_vars</span><span class="op">)</span>,</span>
+<span>      \<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">==</span> <span class="fl">999</span></span>
+<span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
-<span><span class="va">ns_wave1_multi_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_survey_nonprob.html">as_survey_nonprob</a></span><span class="op">(</span><span class="va">ns_wave1_multi</span>, weights <span class="op">=</span> <span class="va">weight</span><span class="op">)</span></span>
-<span></span>
 <span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
-<span>  <span class="va">ns_wave1_multi_svy</span>,</span>
+<span>  <span class="va">ns_wave1_multi</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
@@ -820,9 +828,9 @@ variable pair. It shows the correlation in <code>r</code>, the
 confidence intervals, p-values, and other relevant information.</p>
 <p>Switch to wide format for a more familiar correlation-matrix
 layout:</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_corr.html">get_corr</a></span><span class="op">(</span></span>
-<span>  <span class="va">ns_wave1_multi_svy</span>,</span>
+<span>  <span class="va">ns_wave1_multi</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">cand_favorability_trump</span><span class="op">:</span><span class="va">cand_favorability_pence</span><span class="op">)</span>,</span>
 <span>  format <span class="op">=</span> <span class="st">"wide"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -954,23 +962,20 @@ layout:</p>
 <div class="section level3">
 <h3 id="ratio-estimation-get_ratios">Ratio estimation — <code>get_ratios()</code><a class="anchor" aria-label="anchor" href="#ratio-estimation-get_ratios"></a>
 </h3>
-<p><code><a href="../reference/get_ratios.html">get_ratios()</a></code> estimates the ratio of two weighted
-totals:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>R</mi><mo accent="true">̂</mo></mover><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.167em"></mspace><msub><mi>y</mi><mi>i</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.167em"></mspace><msub><mi>x</mi><mi>i</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">\hat{R} = \frac{\sum_i w_i \, y_i}{\sum_i w_i \, x_i}</annotation></semantics></math></p>
-<p>Variance is estimated via the delta method (linearization),
-equivalent to <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> <span class="citation">(<a href="#ref-lumley2010">Lumley 2010</a>)</span>.</p>
-<p>Ratios are useful when you want an estimate that is invariant to the
-scale of the weights — for example, wages per hour, spending per
-household member, or disease prevalence ratios.</p>
-<p>A good example uses the Nationscape data. The favorability scale runs
-from 1 (Very favorable) to 4 (Very unfavorable), so we can estimate the
-ratio of Trump’s aggregate favorability score to Biden’s. A ratio less
-than 1 means Trump’s aggregate score is lower — i.e., he is viewed more
-favorably on average; a ratio greater than 1 means Biden is viewed more
-favorably.</p>
-<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/get_ratios.html">get_ratios()</a></code> estimates the ratio of two weighted totals.
+This is useful when you want an estimate that doesn’t change relative to
+the scale of the weights, like wages per hour, spending per household
+member, or disease prevalence ratios.</p>
+<p>We’ll illustrate this with a less conventional example, comparing
+Trump’s favorability to Biden’s favorability. In this example, a score
+below 1 would mean that Trump is viewed more favorably, and a score
+above 1 would mean Biden is viewed more favorably. We’ll also use the
+<code>ns_wave1_multi</code> object from the <code><a href="../reference/get_corr.html">get_corr()</a></code>
+section since it already has missing values and “Not sure” responses
+(999) removed.</p>
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_ratios.html">get_ratios</a></span><span class="op">(</span></span>
-<span>  <span class="va">ns_wave1_clean_svy</span>,</span>
+<span>  <span class="va">ns_wave1_multi</span>,</span>
 <span>  numerator <span class="op">=</span> <span class="va">cand_favorability_trump</span>,</span>
 <span>  denominator <span class="op">=</span> <span class="va">cand_favorability_biden</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -986,12 +991,11 @@ favorably.</p>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   ratio ci_low ci_high     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  1.16   1.12    1.20  <span style="text-decoration: underline;">5</span>278</span></span></code></pre>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  1.09   1.03    1.14  <span style="text-decoration: underline;">2</span>748</span></span></code></pre>
 <hr>
 </div>
 <div class="section level3">
-<h3 id="get_quantiles">
-<code>get_quantiles()</code><a class="anchor" aria-label="anchor" href="#get_quantiles"></a>
+<h3 id="weighted-quantiles-get_quantiles">Weighted quantiles — <code>get_quantiles()</code><a class="anchor" aria-label="anchor" href="#weighted-quantiles-get_quantiles"></a>
 </h3>
 <p><code><a href="../reference/get_quantiles.html">get_quantiles()</a></code> estimates survey-weighted quantiles
 using the Woodruff (1952) confidence interval method. Confidence
@@ -999,7 +1003,7 @@ intervals are derived by inverting the weighted CDF rather than assuming
 normality, so they are generally <strong>asymmetric</strong> around the
 estimate and always respect the range of the data. By default, it
 calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
-<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Quartiles and median of age (default probs = c(0.25, 0.5, 0.75))</span></span>
 <span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
@@ -1017,63 +1021,137 @@ calculates the quantiles at the 25th, 50th, and 75th percentile.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> p25            32     31      34  <span style="text-decoration: underline;">6</span>422</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> p50            47     46      49  <span style="text-decoration: underline;">6</span>422</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> p75            62     62      63  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
-<div class="section level4">
-<h4 id="choosing-quantiles">Choosing quantiles<a class="anchor" aria-label="anchor" href="#choosing-quantiles"></a>
-</h4>
-<p>Pass any numeric vector to <code>probs</code>. For the median
-alone:</p>
-<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="treatment-effects-get_diffs">Treatment effects — <code>get_diffs()</code><a class="anchor" aria-label="anchor" href="#treatment-effects-get_diffs"></a>
+</h3>
+<p><code><a href="../reference/get_diffs.html">get_diffs()</a></code> estimates the difference in means between
+each group and a reference group using survey-weighted regression. Use
+it when you have a categorical treatment variable with two or more
+levels and want to compare each group against a baseline.</p>
+<p>Here we estimate how Biden favorability differs by party
+identification. The first factor level is used as the reference group by
+default; use <code>ref_level</code> to change it.</p>
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter_out</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_diffs.html">get_diffs</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span>, treats <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #00BB00;">pid3</span> coerced to factor.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 8</span></span></span>
+<span><span class="co">#&gt;   pid3           estimate  mean     n ci_low ci_high    p_value stars</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Democrat          0      1.80  <span style="text-decoration: underline;">2</span>064 <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>   <span style="color: #949494;"> </span>     <span style="color: #949494;">""</span>   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Republican        1.27   3.07  <span style="text-decoration: underline;">1</span>625  1.16    1.38   1.75<span style="color: #949494;">e</span><span style="color: #BB0000;">-121</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Independent       0.721  2.52  <span style="text-decoration: underline;">1</span>477  0.604   0.837  6.66<span style="color: #949494;">e</span><span style="color: #BB0000;">- 34</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Something else    0.859  2.66   274  0.648   1.07   1.30<span style="color: #949494;">e</span><span style="color: #BB0000;">- 15</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span></code></pre>
+<p>Use <code>show_pct_change = TRUE</code> to add a column showing how
+much each group differs from the reference mean in percentage terms:</p>
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ns_wave1_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter_out</a></span><span class="op">(</span><span class="va">cand_favorability_biden</span> <span class="op">==</span> <span class="fl">999</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/get_diffs.html">get_diffs</a></span><span class="op">(</span></span>
+<span>    <span class="va">cand_favorability_biden</span>,</span>
+<span>    treats <span class="op">=</span> <span class="va">pid3</span>,</span>
+<span>    show_pct_change <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #00BB00;">pid3</span> coerced to factor.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
+<span><span class="co">#&gt;   pid3           estimate pct_change  mean     n ci_low ci_high    p_value stars</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Democrat          0         <span style="color: #BB0000;">NA</span>      1.80  <span style="text-decoration: underline;">2</span>064 <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>     <span style="color: #BB0000;">NA</span>   <span style="color: #949494;"> </span>     <span style="color: #949494;">""</span>   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Republican        1.27       0.706  3.07  <span style="text-decoration: underline;">1</span>625  1.16    1.38   1.75<span style="color: #949494;">e</span><span style="color: #BB0000;">-121</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Independent       0.721      0.400  2.52  <span style="text-decoration: underline;">1</span>477  0.604   0.837  6.66<span style="color: #949494;">e</span><span style="color: #BB0000;">- 34</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Something else    0.859      0.477  2.66   274  0.648   1.07   1.30<span style="color: #949494;">e</span><span style="color: #BB0000;">- 15</span> <span style="color: #949494;">"</span>***<span style="color: #949494;">"</span></span></span></code></pre>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="two-sample-t-test-get_t_test">Two-sample t-test — <code>get_t_test()</code><a class="anchor" aria-label="anchor" href="#two-sample-t-test-get_t_test"></a>
+</h3>
+<p><code><a href="../reference/get_t_test.html">get_t_test()</a></code> compares weighted means between exactly two
+groups using a design-based t-test. The <code>by</code> variable must
+have exactly two levels.</p>
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_t_test.html">get_t_test</a></span><span class="op">(</span><span class="va">gss_svy</span>, <span class="va">hrs1</span>, by <span class="op">=</span> <span class="va">sex</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #00BB00;">sex</span> coerced to factor. Level order:</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">"1"</span> and <span style="color: #0000BB;">"2"</span>.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 13</span></span></span>
+<span><span class="co">#&gt;   level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high t_stat    df</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> male    female     -<span style="color: #BB0000;">5.32</span>   42.6   37.3   869   891  -<span style="color: #BB0000;">7.13</span>   -<span style="color: #BB0000;">3.51</span>  -<span style="color: #BB0000;">5.88</span>    66</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: p_value &lt;dbl&gt;, stars &lt;chr&gt;</span></span></span></code></pre>
+<p>The output includes the estimated difference, the mean for each
+group, standard error/confidence interval, t-statistic, degrees of
+freedom, and p-value.</p>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="all-pairs-comparisons-get_pairwise">All-pairs comparisons — <code>get_pairwise()</code><a class="anchor" aria-label="anchor" href="#all-pairs-comparisons-get_pairwise"></a>
+</h3>
+<p>When your grouping variable has more than two levels,
+<code><a href="../reference/get_pairwise.html">get_pairwise()</a></code> runs all k(k−1)/2 pairwise t-tests in one
+call. P-values are adjusted for multiple comparisons using the Holm
+method by default.</p>
+<div class="sourceCode" id="cb86"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_pairwise.html">get_pairwise</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, by <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #00BB00;">pid3</span> coerced to factor. Level order:</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">"1"</span>, <span style="color: #0000BB;">"2"</span>, <span style="color: #0000BB;">"3"</span>, and <span style="color: #0000BB;">"4"</span>.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
+<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 13</span></span></span>
+<span><span class="co">#&gt;   level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high t_stat    df</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Democr… Republ…     4.56   46.8   51.4  <span style="text-decoration: underline;">2</span>291  <span style="text-decoration: underline;">1</span>819   2.64   6.47    4.67   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Democr… Indepe…    -<span style="color: #BB0000;">1.28</span>   46.8   45.6  <span style="text-decoration: underline;">2</span>291  <span style="text-decoration: underline;">1</span>868  -<span style="color: #BB0000;">3.27</span>   0.716  -<span style="color: #BB0000;">1.26</span>   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Democr… Someth…    -<span style="color: #BB0000;">6.53</span>   46.8   40.3  <span style="text-decoration: underline;">2</span>291   437  -<span style="color: #BB0000;">9.29</span>  -<span style="color: #BB0000;">3.77</span>   -<span style="color: #BB0000;">4.63</span>   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Republ… Indepe…    -<span style="color: #BB0000;">5.83</span>   51.4   45.6  <span style="text-decoration: underline;">1</span>819  <span style="text-decoration: underline;">1</span>868  -<span style="color: #BB0000;">7.83</span>  -<span style="color: #BB0000;">3.83</span>   -<span style="color: #BB0000;">5.72</span>   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Republ… Someth…   -<span style="color: #BB0000;">11.1</span>    51.4   40.3  <span style="text-decoration: underline;">1</span>819   437 -<span style="color: #BB0000;">13.9</span>   -<span style="color: #BB0000;">8.32</span>   -<span style="color: #BB0000;">7.85</span>   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> Indepe… Someth…    -<span style="color: #BB0000;">5.25</span>   45.6   40.3  <span style="text-decoration: underline;">1</span>868   437  -<span style="color: #BB0000;">8.08</span>  -<span style="color: #BB0000;">2.43</span>   -<span style="color: #BB0000;">3.65</span>   <span style="color: #BB0000;">Inf</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: p_value &lt;dbl&gt;, stars &lt;chr&gt;</span></span></span></code></pre>
+<p>Each row is one pair of groups. Use <code>pval_adj</code> to change
+the correction method: <code>"bonferroni"</code>, <code>"BH"</code>,
+<code>"none"</code>, etc.</p>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="population-variance-get_variance">Population variance — <code>get_variance()</code><a class="anchor" aria-label="anchor" href="#population-variance-get_variance"></a>
+</h3>
+<p><code><a href="../reference/get_variance.html">get_variance()</a></code> estimates the finite-population variance
+of a variable — how spread out the variable is in the population, not
+the uncertainty of the estimate. It accepts the same <code>group</code>,
+<code>variance</code>, and <code>n_weighted</code> arguments as the
+other functions.</p>
+<div class="sourceCode" id="cb90"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_variance.html">get_variance</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> p50            47     46      49  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
-<p>For deciles of age:</p>
-<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/get_quantiles.html">get_quantiles</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">age</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
-<span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 9 × 5</span></span></span>
-<span><span class="co">#&gt;   quantile estimate ci_low ci_high     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> p10            24     24      25  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> p20            29     29      31  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> p30            35     34      37  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> p40            40     40      42  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> p50            47     46      49  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> p60            53     52      55  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> p70            59     59      61  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> p80            64     63      66  <span style="text-decoration: underline;">6</span>422</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">9</span> p90            71     71      72  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
-</div>
+<span><span class="co">#&gt;   name                                             variance ci_low ci_high     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> What is your age? Provided by LUCID. Response i…     309.   296.    323.  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="subgroup-analysis-the-group-argument">Subgroup analysis — the <code>group</code> argument<a class="anchor" aria-label="anchor" href="#subgroup-analysis-the-group-argument"></a>
@@ -1082,7 +1160,7 @@ alone:</p>
 computing estimates separately within levels of a categorical variable.
 Pass a bare column name or multiple using <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code>. For example,
 we’ll look at Trump consideration by party identification.</p>
-<div class="sourceCode" id="cb82"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb93"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">ns_wave1_svy</span>, <span class="va">consider_trump</span>, group <span class="op">=</span> <span class="va">pid3</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> <span style="color: #0000BB;">&lt;survey_nonprob&gt;</span> object has no bootstrap replicate weights. Standard errors</span></span>
 <span><span class="co">#&gt;   use an SRS approximation that underestimates calibration uncertainty.</span></span>
@@ -1182,7 +1260,7 @@ You can request any combination of:</p>
 <p>The <code>conf_level</code> argument controls the confidence level
 for <code>"ci"</code> and <code>"moe"</code>. The default is
 <code>0.95</code>; for a 90% CI:</p>
-<div class="sourceCode" id="cb85"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb96"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_means.html">get_means</a></span><span class="op">(</span></span>
 <span>  <span class="va">ns_wave1_svy</span>,</span>
 <span>  <span class="va">age</span>,</span>
@@ -1198,20 +1276,12 @@ for <code>"ci"</code> and <code>"moe"</code>. The default is
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  47.2 0.396   46.5    47.8 0.651  <span style="text-decoration: underline;">6</span>422</span></span></code></pre>
 <p>Set <code>variance = NULL</code> to suppress all uncertainty columns
 and return point estimates and sample counts only.</p>
-</div>
-<div class="section level3">
-<h3 id="estimated-population-counts">Estimated population counts<a class="anchor" aria-label="anchor" href="#estimated-population-counts"></a>
-</h3>
-<p>Add <code>n_weighted = TRUE</code> to any function to include the
-estimated population count — the sum of weights — alongside the
-unweighted sample count <code>n</code>. Let’s look at Pew’s
-Jewish-Americans data again. Using <code><a href="../reference/get_freqs.html">get_freqs()</a></code> and
-<code>n_weighted = TRUE</code> we can see proportions and estimated
-populations. In this example, we’re looking at the proportion
-(<code>pct</code>), the number of people from the sample
-(<code>n</code>), and the estimated population size
-(<code>n_weighted</code>) of Jewish- Americans in each age category.</p>
-<div class="sourceCode" id="cb88"><pre class="downlit sourceCode r">
+<p>Add <code>n_weighted = TRUE</code> to include the estimated
+population count, the sum of weights, alongside the unweighted sample
+count <code>n</code>. Using <code><a href="../reference/get_freqs.html">get_freqs()</a></code> on Pew’s
+Jewish-Americans data, we can see both the proportion and the estimated
+population size for each age category:</p>
+<div class="sourceCode" id="cb99"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_freqs.html">get_freqs</a></span><span class="op">(</span><span class="va">pew_jewish_svy</span>, <span class="va">age4cat</span>, n_weighted <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 4</span></span></span>
 <span><span class="co">#&gt;   age4cat      pct     n n_weighted</span></span>
@@ -1223,6 +1293,54 @@ populations. In this example, we’re looking at the proportion
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> No Answer 0.022<span style="text-decoration: underline;">0</span>   130    <span style="text-decoration: underline;">218</span>962.</span></span></code></pre>
 <hr>
 </div>
+</div>
+<div class="section level2">
+<h2 id="regression">Regression<a class="anchor" aria-label="anchor" href="#regression"></a>
+</h2>
+<p>surveycore supports design-based regression via
+<code><a href="../reference/survey_glm.html">survey_glm()</a></code>. It fits a weighted generalized linear model
+with support for Gaussian (OLS), logistic, Poisson, and other methods,
+and returns a <code>survey_glm_fit</code> object.</p>
+<div class="sourceCode" id="cb101"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="va">gss_svy</span> <span class="op">|&gt;</span></span>
+<span>  <span class="co"># convert race to a factor so one variable is a factor</span></span>
+<span>  <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    race_f <span class="op">=</span> <span class="fu">surveytidy</span><span class="fu">::</span><span class="fu"><a href="https://jdenn0514.github.io/surveytidy/reference/make_factor.html" class="external-link">make_factor</a></span><span class="op">(</span><span class="va">race</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/survey_glm.html">survey_glm</a></span><span class="op">(</span><span class="va">hrs1</span> <span class="op">~</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">degree</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">race_f</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Survey-weighted GLM</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Family:  gaussian (identity link)</span></span>
+<span><span class="co">#&gt; Formula: hrs1 ~ sex + degree + age + race_f</span></span>
+<span><span class="co">#&gt; Design:  Taylor series</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Coefficients:</span></span>
+<span><span class="co">#&gt; (Intercept)         sex      degree         age race_fblack race_fother </span></span>
+<span><span class="co">#&gt;     48.7382     -5.0626     -0.0881     -0.0197     -1.3358     -0.2031 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Degrees of freedom: 67 (design-based)</span></span></code></pre>
+<p>Use <code><a href="../reference/clean.html">clean()</a></code> to tidy the output into a
+one-row-per-coefficient tibble with estimates, standard errors,
+confidence intervals, and p-values:</p>
+<div class="sourceCode" id="cb103"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/clean.html">clean</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 11</span></span></span>
+<span><span class="co">#&gt;   term       variable var_label label reference_row estimate std_error statistic</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">*</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercep… (Interc… <span style="color: #BB0000;">NA</span>        (Int… FALSE          48.7       1.80      27.1  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> sex        sex      responde… resp… FALSE          -<span style="color: #BB0000;">5.06</span>      0.943     -<span style="color: #BB0000;">5.37</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> degree     degree   r's high… r's … FALSE          -<span style="color: #BB0000;">0.088</span><span style="color: #BB0000; text-decoration: underline;">1</span>    0.321     -<span style="color: #BB0000;">0.275</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> age        age      age of r… age … FALSE          -<span style="color: #BB0000;">0.019</span><span style="color: #BB0000; text-decoration: underline;">7</span>    0.029<span style="text-decoration: underline;">0</span>    -<span style="color: #BB0000;">0.680</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> race_fwhi… race_f   race of … white TRUE           <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> race_fbla… race_f   race of … black FALSE          -<span style="color: #BB0000;">1.34</span>      1.41      -<span style="color: #BB0000;">0.949</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> race_foth… race_f   race of … other FALSE          -<span style="color: #BB0000;">0.203</span>     1.53      -<span style="color: #BB0000;">0.132</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: p_value &lt;dbl&gt;, conf_low &lt;dbl&gt;, conf_high &lt;dbl&gt;</span></span></span></code></pre>
+<p>For logistic or Poisson models, pass <code>exponentiate = TRUE</code>
+to <code><a href="../reference/clean.html">clean()</a></code> to report odds ratios or rate ratios instead of
+log-scale coefficients.</p>
+<hr>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -1250,16 +1368,38 @@ populations. In this example, we’re looking at the proportion
 <td>Population counts or aggregates — weighted sums</td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/get_ratios.html">get_ratios()</a></code></td>
-<td>Ratios of two weighted totals</td>
-</tr>
-<tr class="odd">
 <td><code><a href="../reference/get_corr.html">get_corr()</a></code></td>
 <td>Pairwise Pearson correlations</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/get_ratios.html">get_ratios()</a></code></td>
+<td>Ratios of two weighted totals</td>
 </tr>
 <tr class="even">
 <td><code><a href="../reference/get_quantiles.html">get_quantiles()</a></code></td>
 <td>Weighted quantiles and median — Woodruff CIs</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/get_diffs.html">get_diffs()</a></code></td>
+<td>Group comparisons — treatment effects vs. a reference group</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/get_t_test.html">get_t_test()</a></code></td>
+<td>Two-group mean comparison — design-based t-test</td>
+</tr>
+<tr class="odd">
+<td><code><a href="../reference/get_pairwise.html">get_pairwise()</a></code></td>
+<td>All-pairs t-tests with multiple-comparison adjustment</td>
+</tr>
+<tr class="even">
+<td><code><a href="../reference/get_variance.html">get_variance()</a></code></td>
+<td>Finite-population variance of a continuous variable</td>
+</tr>
+<tr class="odd">
+<td>
+<code><a href="../reference/survey_glm.html">survey_glm()</a></code> + <code><a href="../reference/clean.html">clean()</a></code>
+</td>
+<td>Design-based regression — OLS, logistic, Poisson</td>
 </tr>
 </tbody>
 </table>

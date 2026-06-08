@@ -1,8 +1,9 @@
-# Calibrated / Non-Probability Survey Design
+# Non-probability Samples
 
-A survey design object for non-probability samples and post-hoc
-calibrated designs (e.g., raked online panels, post-stratified samples).
-Create with
+A survey design object for non-probability samples (e.g., online panels,
+quota samples, volunteer panels) with calibration weights (including
+raking and post-stratification) or inverse probability weighting (IPW)
+pseudo-weights. Create with
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md).
 
 ## Usage
@@ -69,20 +70,28 @@ survey_nonprob(
 
 A `survey_nonprob` object.
 
-## Phase 2.5 skeleton
+## Variance estimation
 
-This class is a **skeleton** added in Phase 0 to reserve its place in
-the class hierarchy. The constructor
+Two modes are available, selected by whether `@variables$repweights` is
+`NULL`:
+
+- **SRS approximation** (no replicate weights):
+
+  Standard errors treat the calibrated weights as fixed and assume
+  simple random sampling. This understates calibration uncertainty and
+  should only be used when replicate weights are unavailable.
+
+- **Replicate variance** (repweights supplied):
+
+  Bootstrap or jackknife replicate weights propagate calibration
+  uncertainty into the variance estimate. Each replicate column must
+  contain calibrated weights re-estimated on one replicate draw. This is
+  the recommended approach.
+
+See
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
-accepts pre-computed calibration weights and stores calibration
-provenance from surveywts output.
-
-Full functionality — including bootstrap variance with re-calibration on
-each replicate — will be implemented in Phase 2.5 alongside the
-surveywts package. Until then, estimation uses SRS-based variance (same
-assumption as
-[`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
-with weights only).
+for the full parameter interface, including `type`, `scale`, `rscales`,
+and `mse`.
 
 ## Non-probability samples
 
@@ -91,12 +100,15 @@ Unlike
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 and
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-this class does **not** assume a probability sampling design. Standard
-errors produced from a `survey_nonprob` object rest on a model-assisted
+this class does **not** assume a probability sampling design. When no
+replicate weights are supplied, standard errors rest on a model-assisted
 SRS assumption, which is consistent with common practice for calibrated
-non-probability samples (e.g., raked online panels). See
+non-probability samples (e.g., raked online panels). When replicate
+weights are supplied, bootstrap or jackknife variance is used instead.
+See
 [`vignette("creating-survey-objects")`](https://jdenn0514.github.io/surveycore/articles/creating-survey-objects.md)
-for guidance on when this is appropriate and what the limitations are.
+for guidance on choosing between these modes and the limitations of
+each.
 
 ## Design variables (`@variables`)
 
@@ -111,7 +123,9 @@ for guidance on when this is appropriate and what the limitations are.
 
 - `type`:
 
-  Replicate type (`"bootstrap"`), or `NULL`.
+  Replicate type. Only `"bootstrap"` is supported for non-probability
+  samples (`"JK1"`, `"JK2"`, and `"JKn"` are not accepted); or `NULL`
+  when no replicate weights are present.
 
 - `scale`:
 
@@ -143,11 +157,11 @@ effect. `NULL` when calibration was performed externally (e.g., via
 to create a `survey_nonprob` object.
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/survey_replicate.md),

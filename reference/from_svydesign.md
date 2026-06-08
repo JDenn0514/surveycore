@@ -19,8 +19,11 @@ from_svydesign(x)
   A
   [`survey::svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html),
   [`survey::svrepdesign`](https://rdrr.io/pkg/survey/man/svrepdesign.html),
-  [`survey::twophase`](https://rdrr.io/pkg/survey/man/twophase.html), or
+  [`survey::twophase`](https://rdrr.io/pkg/survey/man/twophase.html),
+  `survey::twophase2`, or
   [`srvyr::tbl_svy`](http://gdfe.co/srvyr/reference/tbl_svy.md) object.
+  Both `"twophase"` and `"twophase2"` classes from the `survey` package
+  are dispatched to the two-phase conversion path.
 
 ## Value
 
@@ -49,8 +52,11 @@ Other conversion:
 ``` r
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(
-    ids = ~sdmvpsu, weights = ~wtint2yr, strata = ~sdmvstra,
-    data = nhanes_2017, nest = TRUE
+    ids = ~sdmvpsu,
+    weights = ~wtint2yr,
+    strata = ~sdmvstra,
+    data = nhanes_2017,
+    nest = TRUE
   )
   d <- from_svydesign(sv)
   survey_data(d)

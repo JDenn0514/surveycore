@@ -36,11 +36,18 @@ Other conversion:
 ## Examples
 
 ``` r
-if (requireNamespace("survey", quietly = TRUE) &&
-    requireNamespace("srvyr",  quietly = TRUE)) {
+if (
+  requireNamespace("survey", quietly = TRUE) &&
+    requireNamespace("srvyr", quietly = TRUE)
+) {
   ts <- srvyr::as_survey(
-    survey::svydesign(ids = ~sdmvpsu, weights = ~wtint2yr,
-      strata = ~sdmvstra, data = nhanes_2017, nest = TRUE)
+    survey::svydesign(
+      ids = ~sdmvpsu,
+      weights = ~wtint2yr,
+      strata = ~sdmvstra,
+      data = nhanes_2017,
+      nest = TRUE
+    )
   )
   d <- from_tbl_svy(ts)
 }

@@ -1,8 +1,90 @@
 # Changelog
 
+## surveycore 1.0.0
+
+### First stable release
+
+surveycore 1.0.0 is the first stable API release. The full set of survey
+design types (Taylor series linearization, replicate weights, two-phase,
+non-probability), variance estimators, analysis functions (means,
+totals, frequencies, quantiles, ratios, correlations, regression,
+t-tests, ANOVA, effective sample size), the metadata system, and
+calibration-adjusted variance are now complete and stable.
+
+### New features
+
+- [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  now accepts jackknife replicate schemes via `type = "JK1"`, `"JK2"`,
+  and `"JKn"`. All `get_*()` estimation functions dispatch to jackknife
+  variance when a `survey_nonprob` design carries jackknife replicate
+  weights. [`print()`](https://rdrr.io/r/base/print.html) displays the
+  replicate type and count for jackknife designs.
+  ([\#133](https://github.com/JDenn0514/surveycore/issues/133)–#136)
+
+- [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  now routes `survey_nonprob` designs that carry bootstrap replicate
+  weights through the replicate-weight variance estimator, matching the
+  behaviour of all other `get_*()` functions for such designs.
+  ([\#138](https://github.com/JDenn0514/surveycore/issues/138))
+
+- New dataset `ca_api_2000`: the 2000 California Academic Performance
+  Index (API) survey, structured as a simple random sample from
+  California schools. Used as a primary example for `survey_taylor` SRS
+  designs throughout the documentation and vignettes.
+  ([\#146](https://github.com/JDenn0514/surveycore/issues/146))
+
+### Bug fixes
+
+- [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md):
+  fixed a regex metacharacter injection when variable names contained
+  special characters (`.`, `*`, `?`, etc.), and fixed `pct_change`
+  returning `NA` for some group configurations.
+  ([\#145](https://github.com/JDenn0514/surveycore/issues/145))
+
+- Fixed six print/dispatch/error bugs (B1–B6) uncovered during a
+  documentation audit: `print.survey_nonprob` no longer errors on
+  designs with no repweights set; dispatch errors now surface the
+  correct class name in message text; three error classes that were
+  raised but never registered have been registered.
+  ([\#143](https://github.com/JDenn0514/surveycore/issues/143))
+
+### Documentation
+
+- Corrected roxygen text, stale cross-references, contradictory `@tags`,
+  and mismatched `@section` headings across 40+ R files (D1–D75).
+  ([\#143](https://github.com/JDenn0514/surveycore/issues/143)–#144)
+
+- The non-probability estimation vignette section has been rewritten
+  with a complete bootstrap variance example using
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  with `repweights`.
+
 ## surveycore 0.9.0
 
 ### New features
+
+- Raking oracle in `test-calibration.R` replaced with
+  `survey::calibrate(calfun = "raking")` combined-matrix approach,
+  matching the Architecture A variance formula.
+
+- [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
+  and
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  now validate the `calibration =` argument at construction time (errors
+  CAL-15, CAL-16).
+
+- [`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md)
+  constructs a calibration data element suitable for assignment to
+  `design@calibration` on `survey_taylor` and `survey_replicate`
+  objects. Both classes now carry a `@calibration` property (default
+  `NULL`) that will be consumed by the Taylor-series variance path in
+  the upcoming PR 2.
+
+- [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md)
+  with `method = "polychoric"` or `method = "polyserial"` now supports
+  `survey_nonprob` designs that supply bootstrap replicate weights via
+  `as_survey_nonprob(..., repweights = ...)`. Previously these designs
+  always raised `surveycore_error_polychoric_design_unsupported`.
 
 - [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md)
   and
@@ -488,12 +570,10 @@ CRAN release: 2026-05-05
   analysis. Two estimation paths: direct coefficients for simple models,
   and
   [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
-  /
-  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
-  for models with covariates or non-Gaussian AMEs. Returns a
-  `survey_diffs` tibble with optional `mean`, `pct_change`, `n_weighted`
-  columns, significance stars, and p-value adjustment. `marginaleffects`
-  moved from Suggests to Imports.
+  / `avg_predictions()` for models with covariates or non-Gaussian AMEs.
+  Returns a `survey_diffs` tibble with optional `mean`, `pct_change`,
+  `n_weighted` columns, significance stars, and p-value adjustment.
+  `marginaleffects` moved from Suggests to Imports.
 
 - [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
   now supports multi-column FPC for multi-stage designs (e.g.,
@@ -655,9 +735,7 @@ CRAN release: 2026-05-05
   [`update()`](https://rdrr.io/r/stats/update.html).
 
 - `survey_glm_fit` integrates with the `marginaleffects` package; when
-  `marginaleffects` is installed,
-  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
-  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
+  `marginaleffects` is installed, `avg_slopes()`, `avg_predictions()`,
   and the full marginaleffects API work directly on `survey_glm_fit`
   objects.
 

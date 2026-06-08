@@ -83,7 +83,9 @@ get_totals(
 
 - label_values:
 
-  Logical. Accepted for API uniformity. Default `TRUE`.
+  Logical. Accepted for API consistency across `get_*()` functions. For
+  `get_totals()`, no value-level cells appear in the output, so this
+  parameter has no effect. Default `TRUE`.
 
 - label_vars:
 
@@ -95,8 +97,10 @@ get_totals(
 
 - ...:
 
-  Unused. Reserved so that `.id` and `.if_missing_var` remain named-only
-  when a `survey_collection` is passed as `design`.
+  Additional arguments forwarded to `.dispatch_over_collection()` when
+  `design` is a
+  [`survey_collection`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md).
+  For single-survey inputs these arguments are ignored.
 
 - .id:
 
@@ -130,7 +134,7 @@ A `survey_totals` tibble (also inheriting `survey_result`). Columns:
 - `n_weighted` — sum of weights (only when requested).
 
 The variable name (or `NULL` for no-variable mode) is in
-`meta(result)$variable`. Use `meta(result)` for additional metadata.
+`meta(result)$x`. Use `meta(result)` for additional metadata.
 
 ## See also
 
@@ -153,9 +157,12 @@ Other analysis:
 ## Examples
 
 ``` r
-d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
-                   repweights = pwgtp1:pwgtp80,
-                   type = "successive-difference")
+d <- as_survey_replicate(
+  acs_pums_wy,
+  weights = pwgtp,
+  repweights = pwgtp1:pwgtp80,
+  type = "successive-difference"
+)
 
 # Population size
 get_totals(d)

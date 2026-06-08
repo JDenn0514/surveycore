@@ -80,8 +80,13 @@ Other metadata:
 ## Examples
 
 ``` r
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_question_preface(d, happy = "Taken all together...")
 extract_question_preface(d, happy)
 #>                   happy 

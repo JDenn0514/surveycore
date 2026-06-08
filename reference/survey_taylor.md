@@ -12,7 +12,8 @@ survey_taylor(
   metadata = survey_metadata(),
   variables = list(),
   groups = character(0),
-  call = NULL
+  call = NULL,
+  calibration = NULL
 )
 ```
 
@@ -45,6 +46,13 @@ survey_taylor(
 - call:
 
   Language object capturing the construction call.
+
+- calibration:
+
+  A list of calibration data elements produced by
+  [`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
+  or `NULL` (default) for no calibration. When non-`NULL`, variance
+  estimation routines apply a Deville-Sarndal calibration correction.
 
 ## Value
 
@@ -80,17 +88,37 @@ A `survey_taylor` object.
   Logical. `TRUE` if the user supplied `probs` rather than `weights` to
   [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).
 
+## References
+
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in
+survey sampling. *Journal of the American Statistical Association*
+**87**(418), 376–382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. *Journal of the American Statistical
+Association* **88**(423), 1013–1020.
+
+Lumley, T. (2010) *Complex Surveys: A Guide to Analysis Using R*. John
+Wiley and Sons.
+
+Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations
+for the analysis of survey data using poststratification information.
+*Sankhya* **64-A**, 22–36.
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992) *Model Assisted
+Survey Sampling*. Springer.
+
 ## See also
 
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md)
 to create a `survey_taylor` object.
 
 Other constructors:
+[`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
 [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md),
 [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
 [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md),
-[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md),
 [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md),
 [`survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/survey_glm_fit.md),
 [`survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/survey_nonprob.md),
@@ -101,8 +129,13 @@ Other constructors:
 
 ``` r
 # Prefer as_survey() over calling survey_taylor() directly
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 class(d)
 #> [1] "surveycore::survey_taylor" "surveycore::survey_base"  
 #> [3] "S7_object"                

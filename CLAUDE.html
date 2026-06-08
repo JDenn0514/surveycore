@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,7 +27,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>surveycore Package Development</h1>
-      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/v0.9.0/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/JDenn0514/surveycore/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
 <div id="surveycore-package-development" class="section level1">
@@ -59,13 +59,21 @@
 <td>✅ Complete</td>
 <td>v0.6.x</td>
 </tr><tr><td>T-tests and pairwise (<code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>)</td>
-<td>🔄 In Review</td>
-<td>PR #88; see <code>plans/spec-get-t-test-pairwise.md</code>
+<td>✅ Complete</td>
+<td>PR #88; see <code>archive/get-t-test-pairwise/</code>
+</td>
+</tr><tr><td>Effective sample size (<code><a href="reference/get_effective_n.html">get_effective_n()</a></code>)</td>
+<td>✅ Complete</td>
+<td>PR #122; see <code>archive/effective-n/</code>
+</td>
+</tr><tr><td>Design variance (<code><a href="reference/get_variance.html">get_variance()</a></code>)</td>
+<td>✅ Complete</td>
+<td>PRs #103, #104; see <code>archive/get-variance/</code>
 </td>
 </tr><tr><td>SATA metadata (<code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/classify_question_type.html">classify_question_type()</a></code>)</td>
 <td>✅ Complete</td>
 <td>PRs #89, #90, #91, #92</td>
-</tr><tr><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code>anova.survey_glm_fit()</code>)</td>
+</tr><tr><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code><a href="reference/anova.survey_glm_fit.html">anova.survey_glm_fit()</a></code>)</td>
 <td>✅ Complete</td>
 <td>PRs #93, #94, #95, #96</td>
 </tr><tr><td>
@@ -75,6 +83,36 @@
 </tr><tr><td>Polychoric / polyserial correlation (<code>get_corr(method = ...)</code>)</td>
 <td>✅ Complete</td>
 <td>PRs #107, #108, #109</td>
+</tr><tr><td>Variable direction metadata (<code><a href="reference/set_higher_is.html">set_higher_is()</a></code>, <code><a href="reference/set_reverse_coded.html">set_reverse_coded()</a></code>, <code>get_diffs(show_favorability)</code>)</td>
+<td>✅ Complete</td>
+<td>PRs #124, #125, #126; see <code>archive/variable-direction/</code>
+</td>
+</tr><tr><td>Non-probability bootstrap variance (<code>as_survey_nonprob(repweights = ...)</code>, bootstrap dispatch in <code>get_*()</code>)</td>
+<td>✅ Complete</td>
+<td>PRs #127, #130, #131; see <code>archive/nonprob-bootstrap-variance/</code>
+</td>
+</tr><tr><td>Polychoric/polyserial on <code>survey_nonprob</code> with repweights (<code>get_corr(method = "polychoric"/"polyserial")</code>)</td>
+<td>✅ Complete</td>
+<td>PR #137; see <code>archive/corr-nonprob-latent/</code>
+</td>
+</tr><tr><td>
+<code><a href="reference/survey_glm.html">survey_glm()</a></code> on <code>survey_nonprob</code> with repweights routed through replicate-weight estimator</td>
+<td>✅ Complete</td>
+<td>PR #138; see <code>archive/glm-nonprob-replicate/</code>
+</td>
+</tr><tr><td>Calibration-adjusted variance (<code><a href="reference/as_caldata.html">as_caldata()</a></code>, <code>@calibration</code> on <code>survey_taylor</code>/<code>survey_replicate</code>, GREG SE correction)</td>
+<td>✅ Complete</td>
+<td>PRs #139, #140; see <code>archive/calibrate-survey-taylor/</code>
+</td>
+</tr><tr><td>
+<code>calibration =</code> constructor validation (CAL-15, CAL-16) + raking oracle update</td>
+<td>✅ Complete</td>
+<td>PRs #141, #142; see <code>archive/surveywts-calibration/</code>
+</td>
+</tr><tr><td>Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc)</td>
+<td>✅ Complete</td>
+<td>PRs #143, #144; see <code>archive/doc-fixes/</code>
+</td>
 </tr></tbody></table><hr></div>
 <div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
@@ -125,6 +163,7 @@
 <div class="section level2">
 <h2 id="r-package-conventions">R Package Conventions<a class="anchor" aria-label="anchor" href="#r-package-conventions"></a></h2>
 <ul><li>Use the GSS dataset (not NHANES or gss_2024) for examples and tests unless told otherwise. Use rlang patterns over deparse().</li>
+<li>All R code written in any context — <code>.R</code> source files, roxygen2 <code>@examples</code> blocks, and <code>```r ```</code> blocks in <code>.md</code> spec and plan documents — must follow the rules in <code>.claude/rules/code-style.md</code>.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="general-behavior">General Behavior<a class="anchor" aria-label="anchor" href="#general-behavior"></a></h2>
@@ -143,7 +182,7 @@
 <ul><li>
 <code>plans/error-messages.md</code> — canonical error/warning class names and CLI message templates</li>
 <li>
-<code>plans/spec-get-t-test-pairwise.md</code> — spec for <code><a href="reference/get_t_test.html">get_t_test()</a></code> + <code><a href="reference/get_pairwise.html">get_pairwise()</a></code> (in review, PR #88)</li>
+<code>archive/get-t-test-pairwise/</code> — spec, plan, and decisions for <code><a href="reference/get_t_test.html">get_t_test()</a></code> + <code><a href="reference/get_pairwise.html">get_pairwise()</a></code> (shipped; PR #88)</li>
 <li>
 <code>archive/sata-metadata/</code> — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)</li>
 <li>
@@ -160,6 +199,20 @@
 <code>archive/polychoric-corr/</code> — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)</li>
 <li>
 <code>archive/variable-direction/</code> — <code><a href="reference/set_higher_is.html">set_higher_is()</a></code>, <code><a href="reference/set_reverse_coded.html">set_reverse_coded()</a></code>, and <code>get_diffs(show_favorability)</code> spec, plan, and decisions (shipped; PRs #124, #125, #126)</li>
+<li>
+<code>archive/nonprob-bootstrap-variance/</code> — non-probability bootstrap variance spec, impl plans, and decisions (shipped; PRs #127, #130, #131)</li>
+<li>
+<code>archive/nonprob-jackknife/</code> — non-probability jackknife variance spec, impl plan, comprehension, MI reviews, and decisions (shipped; PRs #133–#136)</li>
+<li>
+<code>archive/corr-nonprob-latent/</code> — polychoric/polyserial on <code>survey_nonprob</code> with repweights: spec, impl plan, test spec, plan review (shipped; PR #137)</li>
+<li>
+<code>archive/glm-nonprob-replicate/</code> — <code><a href="reference/survey_glm.html">survey_glm()</a></code> nonprob replicate routing: spec, test spec, impl plan, plan review (shipped; PR #138)</li>
+<li>
+<code>archive/calibrate-survey-taylor/</code> — calibration-adjusted variance (<code><a href="reference/as_caldata.html">as_caldata()</a></code>, GREG SE correction): spec, test spec, impl plan, comprehension, plan review, decisions (shipped; PRs #139, #140)</li>
+<li>
+<code>archive/surveywts-calibration/</code> — <code>calibration =</code> constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)</li>
+<li>
+<code>archive/doc-fixes/</code> — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)</li>
 <li>
 <code>archive/</code> — completed phase docs (specs, impl plans, decisions — all historical)</li>
 <li>
