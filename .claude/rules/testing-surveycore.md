@@ -24,20 +24,22 @@ first; this file covers only what is specific to surveycore.
 
 ## File mapping
 
-Phase 0 source-to-test mapping. Phase 1 and later follow the same one-to-one convention —
-each new `R/NN-name.R` gets a corresponding `tests/testthat/test-name.R`.
+Core source-to-test mapping. Analysis files (`R/analysis-*.R`) follow the same
+one-to-one convention — `R/analysis-means.R` → `tests/testthat/test-analysis-means.R`, etc.
 
 | Source file | Test file |
 |-------------|-----------|
-| `R/00-s7-classes.R` | `tests/testthat/test-s7-classes.R` |
-| `R/01-metadata-system.R` | `tests/testthat/test-metadata-system.R` |
-| `R/02-validators.R` | `tests/testthat/test-validators.R` |
-| `R/03-constructors.R` | `tests/testthat/test-constructors.R` |
-| `R/04-methods-print.R` | `tests/testthat/test-methods-print.R` |
-| `R/05-methods-conversion.R` | `tests/testthat/test-conversion.R` |
-| `R/06-variance-estimation.R` | `tests/testthat/test-variance-estimation.R` |
-| `R/07-utils.R` | (covered inline by other test files) |
-| `R/08-update-design.R` | `tests/testthat/test-update-design.R` |
+| `R/core-classes.R` | `tests/testthat/test-s7-classes.R` |
+| `R/core-metadata.R` | `tests/testthat/test-metadata-system.R` |
+| `R/core-validators.R` | `tests/testthat/test-validators.R` |
+| `R/core-constructors.R` | `tests/testthat/test-constructors.R` |
+| `R/methods-print.R` | `tests/testthat/test-methods-print.R` |
+| `R/methods-conversion.R` | `tests/testthat/test-conversion.R` |
+| `R/variance-taylor.R` | `tests/testthat/test-variance-taylor.R` |
+| `R/variance-replicate.R` | `tests/testthat/test-variance-replicate.R` |
+| `R/variance-twophase.R` | `tests/testthat/test-variance-twophase.R` |
+| `R/utils.R` | `tests/testthat/test-utils.R` |
+| `R/update-design.R` | `tests/testthat/test-update-design.R` |
 
 ---
 

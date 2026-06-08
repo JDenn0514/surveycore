@@ -48,13 +48,20 @@ get \code{type = "battery"}.
 Group numbers are assigned sequentially by first appearance in the input.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
-d <- set_question_preface(d, riagendr = "Demographics",
-                             ridageyr = "Demographics")
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
+d <- set_question_preface(
+  d,
+  riagendr = "Demographics",
+  ridageyr = "Demographics"
+)
 d <- set_sata(d, riagendr, ridageyr)
 classify_question_type(d, riagendr, ridageyr, bpxsy1)
-
 }
 \seealso{
 \code{\link[=set_sata]{set_sata()}}, \code{\link[=extract_sata]{extract_sata()}}, \code{\link[=set_question_preface]{set_question_preface()}}

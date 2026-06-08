@@ -96,9 +96,11 @@
 #'
 #' `get_diffs()` uses two estimation paths:
 #'
-#' - **Clean path** (bivariate Gaussian, no group): extracts coefficients
-#'   directly from `clean()`. The intercept is the reference group mean;
-#'   treatment coefficients are differences from reference.
+#' - **Clean path** (bivariate Gaussian with no covariates and no group, OR
+#'   any family with `scale = "link"`): extracts coefficients directly from
+#'   `clean()`. The intercept is the reference group mean; treatment
+#'   coefficients are differences from reference. When `scale = "link"` and
+#'   the family is non-Gaussian, `mean` and `pct_change` are suppressed.
 #' - **Marginaleffects path** (covariates, non-Gaussian with
 #'   `scale = "ame"`, or group): uses `avg_slopes()` for estimates and
 #'   `avg_predictions()` for means.
@@ -138,12 +140,11 @@
 #'   reference level, and other metadata.
 #'
 #' @examples
-#' library(marginaleffects)
-#'
 #' # Create survey design with treatment groups
 #' set.seed(42)
 #' df <- data.frame(
-#'   id = 1:200, wt = runif(200, 0.5, 2),
+#'   id = 1:200,
+#'   wt = runif(200, 0.5, 2),
 #'   dv = rnorm(200, 50, 10),
 #'   arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
 #' )
@@ -154,7 +155,6 @@
 #'
 #' # With percentage change and p-value adjustment
 #' get_diffs(d, dv, arm, show_pct_change = TRUE, pval_adj = "BH")
-#'
 #' @family analysis
 #' @export
 get_diffs <- function(
@@ -400,15 +400,20 @@ get_diffs <- function(
   # ── Step 11: Extract estimates ────────────────────────────────────────────
   if (!use_marginaleffects) {
     estimate_method <- "coefficient"
-    mean_method     <- "intercept"
-    estimate_scale  <- "coefficient"
+    mean_method <- "intercept"
+    estimate_scale <- "coefficient"
     result <- .extract_clean_estimates(fit, treats_name, conf_level)
   } else {
     estimate_method <- "avg_slopes"
-    mean_method     <- "avg_predictions"
-    estimate_scale  <- if (scale == "link") "coefficient" else "ame"
+    mean_method <- "avg_predictions"
+    estimate_scale <- if (scale == "link") "coefficient" else "ame"
     result <- .extract_me_estimates(
-      fit, treats_name, group_names, ref_level, scale, suppress_mean
+      fit,
+      treats_name,
+      group_names,
+      ref_level,
+      scale,
+      suppress_mean
     )
   }
 
@@ -416,23 +421,23 @@ get_diffs <- function(
   domain_mask <- .apply_domain(design)
   wt_var <- design@variables$weights
   out <- .build_diffs_output(
-    result              = result,
-    design              = design,
-    treats_name         = treats_name,
-    group_names         = group_names,
-    ref_level           = ref_level,
-    domain_mask         = domain_mask,
-    wt_var              = wt_var,
-    show_means          = show_means,
+    result = result,
+    design = design,
+    treats_name = treats_name,
+    group_names = group_names,
+    ref_level = ref_level,
+    domain_mask = domain_mask,
+    wt_var = wt_var,
+    show_means = show_means,
     use_marginaleffects = use_marginaleffects,
-    pval_adj            = pval_adj,
-    show_pct_change     = show_pct_change,
-    suppress_mean       = suppress_mean,
-    min_cell_n          = min_cell_n,
-    variance            = variance,
-    n_weighted          = n_weighted
+    pval_adj = pval_adj,
+    show_pct_change = show_pct_change,
+    suppress_mean = suppress_mean,
+    min_cell_n = min_cell_n,
+    variance = variance,
+    n_weighted = n_weighted
   )
-  col_vecs  <- out$col_vecs
+  col_vecs <- out$col_vecs
   groups_df <- out$groups_df
 
   # ── Step 17a: Apply label_values ──────────────────────────────────────────
@@ -443,7 +448,9 @@ get_diffs <- function(
   names(label_df) <- treats_name
 
   if (ncol(groups_df) > 0L) {
-    for (gn in group_names) label_df[[gn]] <- groups_df[[gn]]
+    for (gn in group_names) {
+      label_df[[gn]] <- groups_df[[gn]]
+    }
   }
 
   label_df <- .apply_group_labels(
@@ -456,7 +463,10 @@ get_diffs <- function(
 
   if (ncol(groups_df) > 0L) {
     groups_df <- .apply_group_labels(
-      groups_df, group_names, design, label_values
+      groups_df,
+      group_names,
+      design,
+      label_values
     )
   }
 
@@ -488,26 +498,26 @@ get_diffs <- function(
     sig <- !is.na(p_vals) & p_vals < alpha
 
     favorable <- logical(nrow(result))
-    backlash  <- logical(nrow(result))
+    backlash <- logical(nrow(result))
 
     if (!is.null(higher_is_val)) {
       est <- result$estimate
       if (higher_is_val == "better") {
         favorable[sig] <- est[sig] > 0
-        backlash[sig]  <- est[sig] < 0
+        backlash[sig] <- est[sig] < 0
       } else if (higher_is_val == "worse") {
         favorable[sig] <- est[sig] < 0
-        backlash[sig]  <- est[sig] > 0
+        backlash[sig] <- est[sig] > 0
       }
     }
 
     attr(favorable, "label") <- "Favorable"
-    attr(backlash,  "label") <- "Backlash"
+    attr(backlash, "label") <- "Backlash"
 
-    saved_meta  <- attr(result, ".meta")
+    saved_meta <- attr(result, ".meta")
     saved_class <- class(result)
     result$favorable <- favorable
-    result$backlash  <- backlash
+    result$backlash <- backlash
     attr(result, ".meta") <- saved_meta
     class(result) <- saved_class
   }
@@ -539,22 +549,22 @@ get_diffs <- function(
 
   # ── Step 21: Column-level labels ──────────────────────────────────────────
   col_labels <- list(
-    estimate   = paste0("Difference relative to ", ref_level),
+    estimate = paste0("Difference relative to ", ref_level),
     pct_change = "% Change",
-    mean       = "Mean",
-    n          = "N",
+    mean = "Mean",
+    n = "N",
     n_weighted = "N (weighted)",
-    se         = "Std. Error",
-    ci_low     = "Low CI",
-    ci_high    = "High CI",
-    p_value    = "P-Value",
-    stars      = ""
+    se = "Std. Error",
+    ci_low = "Low CI",
+    ci_high = "High CI",
+    p_value = "P-Value",
+    stars = ""
   )
   broom_labels <- list(
     std.error = "Std. Error",
-    conf.low  = "Low CI",
+    conf.low = "Low CI",
     conf.high = "High CI",
-    p.value   = "P-Value"
+    p.value = "P-Value"
   )
   treats_label <- design@metadata@variable_labels[[treats_name]]
   if (is.null(treats_label)) {

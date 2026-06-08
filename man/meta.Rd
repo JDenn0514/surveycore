@@ -18,7 +18,9 @@ meta(x, ...)
 A named list. Common fields present on every result:
 \describe{
 \item{\code{design_type}}{Character(1). Design class: \code{"taylor"},
-\code{"replicate"}, \code{"twophase"}, \code{"srs"}, or \code{"nonprob"}.}
+\code{"replicate"}, \code{"twophase"}, or \code{"nonprob"}. SRS designs are
+represented as \code{survey_taylor} (no IDs/strata) and report
+\code{"taylor"}.}
 \item{\code{conf_level}}{Numeric(1). Confidence level used (e.g. \code{0.95}).}
 \item{\code{call}}{Language. Matched call to the \verb{get_*()} function.}
 \item{\code{n_respondents}}{Integer(1). Total rows in the design, regardless
@@ -55,22 +57,24 @@ This is the \strong{only} supported way to access result metadata — do not use
 result <- structure(
   tibble::tibble(mean = 42.0, se = 1.5, n = 100L),
   .meta = list(
-    design_type   = "taylor",
-    conf_level    = 0.95,
-    call          = quote(get_means(d, x)),
+    design_type = "taylor",
+    conf_level = 0.95,
+    call = quote(get_means(d, x)),
     n_respondents = 100L,
-    group         = list(),
-    x             = list(
-      x = list(variable_label = NULL, question_preface = NULL,
-               value_labels = NULL)
+    group = list(),
+    x = list(
+      x = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
     )
   ),
   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 )
-meta(result)$design_type    # "taylor"
-meta(result)$n_respondents  # 100L
-meta(result)$conf_level     # 0.95
-
+meta(result)$design_type # "taylor"
+meta(result)$n_respondents # 100L
+meta(result)$conf_level # 0.95
 }
 \seealso{
 Other analysis: 

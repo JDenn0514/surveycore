@@ -797,10 +797,11 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' and `survey_glm()` function, before any other validation or tidy-select
 #' resolution.
 #'
-#' All five concrete design classes (`survey_taylor`, `survey_replicate`,
+#' All four concrete design classes (`survey_taylor`, `survey_replicate`,
 #' `survey_twophase`, `survey_nonprob`) and the abstract `survey_base` are
-#' accepted. Only objects that do not inherit from `survey_base` at all trigger
-#' the error.
+#' accepted. `survey_collection` is not accepted and is rejected by
+#' upstream dispatch logic before `.check_unsupported_class()` is called.
+#' Only objects that do not inherit from `survey_base` at all trigger the error.
 #'
 #' @param design  The first argument passed to a `get_*()` or fitting function.
 #' @param fn_name Character(1). Calling function name, used in error messages.
@@ -968,7 +969,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' - Taylor: `Σ_h(n_h - 1)` = total PSUs − number of strata.
 #' - Replicate: `R - 1` where `R` is the number of replicate weight columns.
 #' - Twophase: Phase-1 Taylor degrees of freedom.
-#' - SRS / Calibrated (`survey_nonprob`): `n - 1` (conservative approximation).
+#' - Non-probability (`survey_nonprob`): `Inf` — no design-based df.
 #'
 #' @param design A survey design object inheriting from `survey_base`.
 #' @return Numeric(1). Design-based degrees of freedom, always ≥ 1.
@@ -1018,13 +1019,17 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 # @return NULL (no action), or TRUE (all-NA sentinel).
 # @noRd
 .nonprob_rep_na_warn <- function(design, na_frac, na_dropped, R, scale) {
-  if (!S7::S7_inherits(design, survey_nonprob)) return(NULL)
-  if (na_frac == 0) return(NULL)
+  if (!S7::S7_inherits(design, survey_nonprob)) {
+    return(NULL)
+  }
+  if (na_frac == 0) {
+    return(NULL)
+  }
   if (na_frac > 0.05) {
     cli::cli_warn(
       c(
         "!" = paste0(
-          "{na_dropped} of {R} bootstrap replicates have no observations in ",
+          "{na_dropped} of {R} replicates have no observations in ",
           "this domain ({round(100 * na_frac, 1)}% of R)."
         ),
         "i" = paste0(

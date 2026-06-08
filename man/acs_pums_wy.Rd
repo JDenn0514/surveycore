@@ -86,8 +86,7 @@ in \code{data-raw/README.md}. Use \code{set_var_label()} and
 sum(acs_pums_wy$pwgtp)
 
 # Age distribution
-hist(acs_pums_wy$agep, main = "Age distribution, Wyoming 2022",
-     xlab = "Age")
+hist(acs_pums_wy$agep, main = "Age distribution, Wyoming 2022", xlab = "Age")
 
 # Confirm 80 replicate weights are present
 sum(grepl("^pwgtp[0-9]", names(acs_pums_wy)))

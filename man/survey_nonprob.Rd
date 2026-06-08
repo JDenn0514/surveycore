@@ -2,7 +2,7 @@
 % Please edit documentation in R/core-classes.R
 \name{survey_nonprob}
 \alias{survey_nonprob}
-\title{Calibrated / Non-Probability Survey Design}
+\title{Non-probability Samples}
 \usage{
 survey_nonprob(
   data = data.frame(),
@@ -43,33 +43,40 @@ calibration targets. Stored for reproducibility. Default \code{NULL}.}
 A \code{survey_nonprob} object.
 }
 \description{
-A survey design object for non-probability samples and post-hoc calibrated
-designs (e.g., raked online panels, post-stratified samples). Create with
+A survey design object for non-probability samples (e.g., online panels,
+quota samples, volunteer panels) with calibration weights (including raking
+and post-stratification) or inverse probability weighting (IPW)
+pseudo-weights. Create with
 \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}.
 }
-\section{Phase 2.5 skeleton}{
+\section{Variance estimation}{
 
-This class is a \strong{skeleton} added in Phase 0 to reserve its place in the
-class hierarchy. The constructor \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} accepts
-pre-computed calibration weights and stores calibration provenance from
-\pkg{surveywts} output.
-
-Full functionality — including bootstrap variance with re-calibration on
-each replicate — will be implemented in Phase 2.5 alongside the
-\pkg{surveywts} package. Until then, estimation uses SRS-based variance
-(same assumption as \code{\link[=as_survey]{as_survey()}} with weights only).
+Two modes are available, selected by whether \verb{@variables$repweights} is
+\code{NULL}:
+\describe{
+\item{\strong{SRS approximation} (no replicate weights)}{Standard errors treat
+the calibrated weights as fixed and assume simple random sampling. This
+understates calibration uncertainty and should only be used when replicate
+weights are unavailable.}
+\item{\strong{Replicate variance} (repweights supplied)}{Bootstrap or jackknife
+replicate weights propagate calibration uncertainty into the variance
+estimate. Each replicate column must contain calibrated weights
+re-estimated on one replicate draw. This is the recommended approach.}
+}
+See \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} for the full parameter interface, including
+\code{type}, \code{scale}, \code{rscales}, and \code{mse}.
 }
 
 \section{Non-probability samples}{
 
 Unlike \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_survey_replicate()}}, and \code{\link[=as_survey_twophase]{as_survey_twophase()}},
-this
-class does \strong{not} assume a probability sampling design. Standard errors
-produced from a \code{survey_nonprob} object rest on a model-assisted SRS
+this class does \strong{not} assume a probability sampling design. When no
+replicate weights are supplied, standard errors rest on a model-assisted SRS
 assumption, which is consistent with common practice for calibrated
-non-probability samples (e.g., raked online panels). See
-\code{vignette("creating-survey-objects")} for guidance on when this is
-appropriate and what the limitations are.
+non-probability samples (e.g., raked online panels). When replicate weights
+are supplied, bootstrap or jackknife variance is used instead. See
+\code{vignette("creating-survey-objects")} for guidance on choosing between these
+modes and the limitations of each.
 }
 
 \section{Design variables (\verb{@variables})}{
@@ -78,7 +85,9 @@ appropriate and what the limitations are.
 \item{\code{weights}}{Character string naming the (calibrated) weight column.}
 \item{\code{repweights}}{Character vector of bootstrap replicate weight column
 names, or \code{NULL} when no replicate weights are present.}
-\item{\code{type}}{Replicate type (\code{"bootstrap"}), or \code{NULL}.}
+\item{\code{type}}{Replicate type. Only \code{"bootstrap"} is supported for
+non-probability samples (\code{"JK1"}, \code{"JK2"}, and \code{"JKn"} are not
+accepted); or \code{NULL} when no replicate weights are present.}
 \item{\code{scale}}{Numeric scale factor for the variance formula, or \code{NULL}.}
 \item{\code{rscales}}{Per-replicate scale factors, or \code{NULL}.}
 \item{\code{mse}}{Logical. \code{TRUE} for MSE form of variance, or \code{NULL}.}
@@ -98,11 +107,11 @@ trimming cap, effective sample size before and after, and design effect.
 \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} to create a \code{survey_nonprob} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_replicate}()},
@@ -110,4 +119,3 @@ Other constructors:
 \code{\link{survey_twophase}()}
 }
 \concept{constructors}
-\keyword{internal}

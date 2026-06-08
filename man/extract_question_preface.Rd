@@ -34,11 +34,15 @@ Returns question preface text for one or more variables in a survey design
 object or data frame.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 d <- set_question_preface(d, happy = "Taken all together...")
 extract_question_preface(d, happy)
-
 }
 \seealso{
 \code{\link[=set_question_preface]{set_question_preface()}} to set a question preface

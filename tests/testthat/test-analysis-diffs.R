@@ -190,7 +190,11 @@ test_that("get_diffs() basic bivariate gaussian returns correct structure", {
 test_that("get_diffs() show_means = FALSE omits reference row and mean", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", show_means = FALSE
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    show_means = FALSE
   )
 
   expect_equal(nrow(result), 2L)
@@ -202,7 +206,11 @@ test_that("get_diffs() show_means = FALSE omits reference row and mean", {
 test_that("get_diffs() show_pct_change = TRUE adds pct_change column", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", show_pct_change = TRUE
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    show_pct_change = TRUE
   )
 
   expect_true("pct_change" %in% names(result))
@@ -225,7 +233,11 @@ test_that("get_diffs() ref_level changes reference row", {
 test_that("get_diffs() variance = 'se' includes SE, no CI", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", variance = "se"
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    variance = "se"
   )
 
   expect_true("se" %in% names(result))
@@ -236,7 +248,10 @@ test_that("get_diffs() variance = 'se' includes SE, no CI", {
 test_that("get_diffs() variance = c('se', 'ci') includes both", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control",
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
     variance = c("se", "ci")
   )
 
@@ -248,7 +263,11 @@ test_that("get_diffs() variance = c('se', 'ci') includes both", {
 test_that("get_diffs() variance = NULL includes no uncertainty", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", variance = NULL
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    variance = NULL
   )
 
   expect_false("se" %in% names(result))
@@ -259,7 +278,11 @@ test_that("get_diffs() variance = NULL includes no uncertainty", {
 test_that("get_diffs() decimals rounds correctly", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", decimals = 2
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    decimals = 2
   )
 
   # estimate rounded to 2 decimal places
@@ -276,8 +299,12 @@ test_that("get_diffs() decimals rounds correctly", {
 test_that("get_diffs() decimals + pct_change rounds to decimals + 2", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control",
-    show_pct_change = TRUE, decimals = 2
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    show_pct_change = TRUE,
+    decimals = 2
   )
 
   for (i in seq_len(nrow(result))) {
@@ -293,10 +320,17 @@ test_that("get_diffs() decimals + pct_change rounds to decimals + 2", {
 test_that("get_diffs() pval_adj = 'BH' adjusts p-values", {
   d <- .make_diffs_design()
   result_adj <- get_diffs(
-    d, dv, treats, ref_level = "Control", pval_adj = "BH"
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    pval_adj = "BH"
   )
   result_raw <- get_diffs(
-    d, dv, treats, ref_level = "Control"
+    d,
+    dv,
+    treats,
+    ref_level = "Control"
   )
 
   m <- meta(result_adj)
@@ -310,11 +344,15 @@ test_that("get_diffs() label_values = TRUE labels treats column", {
   # Set value labels
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   d <- set_val_labels(
-    d, treats = c("Control Group" = "Control", "Group A" = "A",
-                  "Group B" = "B")
+    d,
+    treats = c("Control Group" = "Control", "Group A" = "A", "Group B" = "B")
   )
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", label_values = TRUE
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    label_values = TRUE
   )
 
   expect_true(is.factor(result$treats))
@@ -323,7 +361,11 @@ test_that("get_diffs() label_values = TRUE labels treats column", {
 test_that("get_diffs() label_values = FALSE keeps raw codes", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", label_values = FALSE
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    label_values = FALSE
   )
   # treats column should be character or factor with raw level names
   expect_true(is.character(result$treats) || is.factor(result$treats))
@@ -332,8 +374,12 @@ test_that("get_diffs() label_values = FALSE keeps raw codes", {
 test_that("get_diffs() name_style = 'broom' renames columns, mean excluded", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control",
-    variance = c("se", "ci"), name_style = "broom"
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    variance = c("se", "ci"),
+    name_style = "broom"
   )
 
   expect_true("std.error" %in% names(result))
@@ -348,7 +394,11 @@ test_that("get_diffs() name_style = 'broom' renames columns, mean excluded", {
 test_that("get_diffs() n_weighted = TRUE adds n_weighted column", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, ref_level = "Control", n_weighted = TRUE
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    n_weighted = TRUE
   )
 
   expect_true("n_weighted" %in% names(result))
@@ -395,7 +445,11 @@ test_that("get_diffs() print snapshot", {
 test_that("get_diffs() with covariates uses marginaleffects path", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, dv, treats, covariates = "age", ref_level = "Control"
+    d,
+    dv,
+    treats,
+    covariates = "age",
+    ref_level = "Control"
   )
 
   m <- meta(result)
@@ -421,8 +475,12 @@ test_that("get_diffs() with covariates and group", {
   d <- .make_diffs_design()
   result <- suppressWarnings(
     get_diffs(
-      d, dv, treats, group = gender,
-      covariates = "age", ref_level = "Control"
+      d,
+      dv,
+      treats,
+      group = gender,
+      covariates = "age",
+      ref_level = "Control"
     )
   )
 
@@ -435,7 +493,10 @@ test_that("get_diffs() with covariates and group", {
 test_that("get_diffs() non-gaussian (quasibinomial) uses AME path", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, binary_dv, treats, ref_level = "Control",
+    d,
+    binary_dv,
+    treats,
+    ref_level = "Control",
     family = quasibinomial()
   )
 
@@ -450,8 +511,12 @@ test_that("get_diffs() non-gaussian (quasibinomial) uses AME path", {
 test_that("get_diffs() scale = 'link' + non-gaussian suppresses mean", {
   d <- .make_diffs_design()
   result <- get_diffs(
-    d, binary_dv, treats, ref_level = "Control",
-    scale = "link", family = quasibinomial()
+    d,
+    binary_dv,
+    treats,
+    ref_level = "Control",
+    scale = "link",
+    family = quasibinomial()
   )
 
   expect_false("mean" %in% names(result))
@@ -465,25 +530,41 @@ test_that("get_diffs() scale = 'link' + non-gaussian suppresses mean", {
 test_that("get_diffs() gaussian ame == link produces identical output", {
   d <- .make_diffs_design()
   result_ame <- get_diffs(
-    d, dv, treats, ref_level = "Control", scale = "ame"
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    scale = "ame"
   )
   result_link <- get_diffs(
-    d, dv, treats, ref_level = "Control", scale = "link"
+    d,
+    dv,
+    treats,
+    ref_level = "Control",
+    scale = "link"
   )
 
   expect_equal(result_ame$estimate, result_link$estimate, tolerance = 1e-10)
   expect_equal(
-    result_ame$ci_low, result_link$ci_low, tolerance = 1e-8
+    result_ame$ci_low,
+    result_link$ci_low,
+    tolerance = 1e-8
   )
   expect_equal(
-    result_ame$ci_high, result_link$ci_high, tolerance = 1e-8
+    result_ame$ci_high,
+    result_link$ci_high,
+    tolerance = 1e-8
   )
 })
 
 test_that("get_diffs() pval_adj with group adjusts within groups", {
   d <- .make_diffs_design()
   result_adj <- suppressWarnings(get_diffs(
-    d, dv, treats, group = gender, ref_level = "Control",
+    d,
+    dv,
+    treats,
+    group = gender,
+    ref_level = "Control",
     pval_adj = "BH"
   ))
 
@@ -504,8 +585,12 @@ test_that("get_diffs() works with survey_taylor design", {
 test_that("get_diffs() works with survey_replicate design", {
   df <- .make_diffs_data()
   df_rep <- make_survey_data(
-    n = 200, n_psu = 20, n_strata = 4,
-    design = "replicate", type = "jk1", seed = 42
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 42
   )
   df_rep$treats <- factor(
     sample(c("Control", "A", "B"), nrow(df_rep), replace = TRUE)
@@ -513,7 +598,8 @@ test_that("get_diffs() works with survey_replicate design", {
   df_rep$dv <- rnorm(nrow(df_rep), 50, 10)
 
   d <- as_survey_replicate(
-    df_rep, weights = wt,
+    df_rep,
+    weights = wt,
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
@@ -523,8 +609,11 @@ test_that("get_diffs() works with survey_replicate design", {
 
 test_that("get_diffs() works with survey_twophase design", {
   df <- make_survey_data(
-    n = 200, n_psu = 20, n_strata = 4,
-    design = "twophase", seed = 42
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "twophase",
+    seed = 42
   )
   df$treats <- factor(
     sample(c("Control", "A", "B"), nrow(df), replace = TRUE)
@@ -533,7 +622,9 @@ test_that("get_diffs() works with survey_twophase design", {
 
   phase1 <- as_survey(df, ids = psu, strata = strata)
   d <- as_survey_twophase(
-    phase1, subset = subset, probs2 = phase2_prob
+    phase1,
+    subset = subset,
+    probs2 = phase2_prob
   )
   result <- get_diffs(d, dv, treats, ref_level = "Control")
   expect_identical(meta(result)$design_type, "twophase")
@@ -583,7 +674,8 @@ test_that("get_diffs() works with many levels (10+)", {
   )
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
 
-  suppressWarnings(  # small cell warnings
+  suppressWarnings(
+    # small cell warnings
     result <- get_diffs(d, dv, many_arm)
   )
   # 1 ref + 9 treatment = 10 rows
@@ -614,8 +706,7 @@ test_that("get_diffs() warns when ref mean is 0 with show_pct_change", {
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
 
   expect_warning(
-    get_diffs(d, zero_dv, arm, ref_level = "Control",
-              show_pct_change = TRUE),
+    get_diffs(d, zero_dv, arm, ref_level = "Control", show_pct_change = TRUE),
     class = "surveycore_warning_pct_change_zero_ref"
   )
 })
@@ -777,7 +868,13 @@ test_that("get_diffs() show_favorability: custom alpha = 0.001 keeps highly sig 
 test_that("get_diffs() show_favorability + name_style='broom': favorable/backlash present, uses p.value", {
   d <- .make_fav_design()
   d <- set_higher_is(d, dv = "worse")
-  result <- get_diffs(d, dv, treats, show_favorability = TRUE, name_style = "broom")
+  result <- get_diffs(
+    d,
+    dv,
+    treats,
+    show_favorability = TRUE,
+    name_style = "broom"
+  )
   expect_true("favorable" %in% names(result))
   expect_true("backlash" %in% names(result))
   expect_true("p.value" %in% names(result))
@@ -801,7 +898,13 @@ test_that("get_diffs() show_favorability + group: columns present, aligned per g
 test_that("get_diffs() show_favorability + pval_adj: classification uses adjusted p-value", {
   d <- .make_fav_design()
   d <- set_higher_is(d, dv = "worse")
-  result <- get_diffs(d, dv, treats, show_favorability = TRUE, pval_adj = "bonferroni")
+  result <- get_diffs(
+    d,
+    dv,
+    treats,
+    show_favorability = TRUE,
+    pval_adj = "bonferroni"
+  )
   expect_true("favorable" %in% names(result))
   expect_true("backlash" %in% names(result))
   a_row <- result[result$treats == "A", ]
@@ -832,8 +935,10 @@ test_that("get_diffs() show_favorability: p_value == alpha → both FALSE (stric
   # Exclude the reference row (p_value = NA) before finding min p
   valid_pvals <- baseline$p_value[!is.na(baseline$p_value)]
   min_p <- min(valid_pvals)
-  skip_if(min_p == 0 || !is.finite(min_p),
-          "p-value is exactly 0 or non-finite; boundary cannot be tested")
+  skip_if(
+    min_p == 0 || !is.finite(min_p),
+    "p-value is exactly 0 or non-finite; boundary cannot be tested"
+  )
   skip_if(min_p >= 1, "p-value >= 1; outside valid alpha range")
   # With alpha == min_p: strict < means p is NOT < alpha → not significant
   result <- get_diffs(d, dv, treats, show_favorability = TRUE, alpha = min_p)
@@ -843,4 +948,95 @@ test_that("get_diffs() show_favorability: p_value == alpha → both FALSE (stric
     expect_false(obs_rows$favorable[[1]])
     expect_false(obs_rows$backlash[[1]])
   }
+})
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BUG FIXES
+# ═══════════════════════════════════════════════════════════════════════════
+
+test_that("get_diffs() strips metacharacter ref level from contrast label (ME path)", {
+  # Bug 1: ref_level containing regex metacharacters (e.g. "(Control)") must
+  # be treated as a literal string, not a regex pattern, when stripping the
+  # " - ref_level" suffix from contrast strings.
+  set.seed(42)
+  df <- data.frame(
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    age = rnorm(200, 40, 10),
+    arm = factor(sample(c("(Control)", "Treatment"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+
+  # covariates forces the marginaleffects path which calls avg_slopes() and
+  # parses contrast strings of the form "Treatment - (Control)"
+  result <- get_diffs(
+    d,
+    dv,
+    arm,
+    covariates = "age",
+    ref_level = "(Control)",
+    label_values = FALSE
+  )
+
+  # Treatment level should be "Treatment", not "Treatment - (Control)"
+  non_ref <- result[result$arm != "(Control)", ]
+  expect_equal(nrow(non_ref), 1L)
+  expect_identical(non_ref$arm[[1L]], "Treatment")
+})
+
+test_that("get_diffs() pct_change is non-NA with show_means = FALSE (ungrouped)", {
+  # Bug 2: when show_means = FALSE, reference rows are absent from all_rows;
+  # the fallback must read the reference mean from result$reference_mean (clean
+  # path) or preds_df (ME path) so pct_change is not NA.
+  set.seed(42)
+  df <- data.frame(
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+
+  result <- get_diffs(
+    d,
+    dv,
+    arm,
+    ref_level = "Control",
+    show_pct_change = TRUE,
+    show_means = FALSE
+  )
+
+  # No reference row present
+  expect_false(any(result$estimate == 0))
+  # pct_change must be non-NA for all non-reference rows
+  expect_false(any(is.na(result$pct_change)))
+  expect_equal(nrow(result), 2L)
+})
+
+test_that("get_diffs() pct_change is non-NA with show_means = FALSE (grouped)", {
+  # Bug 2: same fallback must work on the marginaleffects (grouped) path.
+  set.seed(42)
+  df <- data.frame(
+    wt = runif(300, 0.5, 2),
+    dv = rnorm(300, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 300, TRUE)),
+    grp = factor(sample(c("M", "F"), 300, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+
+  result <- suppressWarnings(get_diffs(
+    d,
+    dv,
+    arm,
+    group = grp,
+    ref_level = "Control",
+    show_pct_change = TRUE,
+    show_means = FALSE
+  ))
+
+  # grp column present (grouped output)
+  expect_true("grp" %in% names(result))
+  # No reference rows in output
+  expect_false(any(result$estimate == 0))
+  # pct_change non-NA for all rows (all are non-reference)
+  expect_false(any(is.na(result$pct_change)))
 })

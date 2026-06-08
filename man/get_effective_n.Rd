@@ -86,15 +86,19 @@ The \strong{DEFF method} (\code{method = "deff"}) computes effective N as
 It captures clustering, stratification, and weight variation jointly.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # Kish effective N (weight-only approximation)
 get_effective_n(d)
 
 # Full DEFF effective N for a specific variable
 get_effective_n(d, ridageyr, method = "deff")
-
 }
 \seealso{
 Other analysis: 

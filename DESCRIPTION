@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.9.0
+Version: 1.0.0
 Authors@R: c(
     person(
         "Jacob", "Dennen",
@@ -13,15 +13,20 @@ Authors@R: c(
         role = c("ctb", "cph"),
         comment = "Author of variance estimation code vendored from the 'survey' package"
     ))
-Description: Provides 'S7'-based infrastructure for survey analysis.
-    Supports Taylor series, replicate weight, and two-phase designs following
-    the methods in 'Lumley' (2004) <doi:10.18637/jss.v009.i08>. Includes
-    design-based estimators such as means, frequencies, and regression
-    models, with weighted 'polychoric' and 'polyserial' correlation following
+Description: A modern, 'S7'-based foundation for survey analysis
+    spanning both probability and non-probability samples. Probability
+    sample designs include Taylor series linearization, replicate
+    weights (BRR, Fay, jackknife, bootstrap), and two-phase
+    estimation, following 'Lumley' (2004) <doi:10.18637/jss.v009.i08>.
+    Non-probability sample designs support bootstrap and jackknife
+    variance estimation for opt-in panels and convenience samples.
+    Provides a unified estimator interface for means, frequencies,
+    totals, quantiles, ratios, correlations, regression, and t-tests,
+    with weighted 'polychoric' and 'polyserial' correlation following
     'Mannan' (2025) <doi:10.2139/ssrn.6580480>. A metadata system
-    automatically preserves 'haven'-style variable labels, value labels, and
-    question-preface attributes through all operations. Uses a 'tidyselect'
-    interface for design specification.
+    preserves 'haven'-style variable labels, value labels, and
+    question-preface attributes through all operations. Uses a
+    'tidyselect' interface throughout.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -40,9 +45,9 @@ Imports:
     stats,
     graphics
 Suggests:
-    surveytidy (>= 0.5.0),
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
+    surveytidy (>= 0.5.0),
     survey (>= 4.0),
     survival,
     srvyr (>= 1.0),

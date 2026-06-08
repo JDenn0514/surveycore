@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -uo pipefail
+ROOT=$(git rev-parse --show-toplevel)
+
+# Pass 1 — Air: format staged .R / .Rmd / .qmd files
+AIRFILES=$(git diff --cached --name-only | grep -E '\.(R|Rmd|qmd)$' || true)
+if [[ -n "$AIRFILES" ]]; then
+  air format $AIRFILES
+  git add $AIRFILES
+fi
+
+# Pass 2 — Extras: roxygen @examples + .md R chunks
+EXTRAFILES=$(git diff --cached --name-only | grep -E '\.(R|md)$' || true)
+if [[ -n "$EXTRAFILES" ]]; then
+  Rscript "$ROOT/tools/format-extras.R" $EXTRAFILES
+  git add $EXTRAFILES
+fi
+
+# Pass 3 — jarl: lint + auto-fix staged .R files (non-blocking)
+if [[ -n "$AIRFILES" ]]; then
+  jarl fix $AIRFILES --allow-dirty || true
+  git add $AIRFILES
+fi
+
+# Pass 4 — README staleness check
+README=($(git diff --cached --name-only | grep -Ei '^README\.[R]?md$' || true))
+if [[ ${#README[@]} -ge 1 ]]; then
+  if [[ README.Rmd -nt README.md ]]; then
+    echo "README.md is out of date; please re-knit README.Rmd"
+    exit 1
+  elif [[ ${#README[@]} -lt 2 ]]; then
+    echo "README.Rmd and README.md should both be staged"
+    exit 1
+  fi
+fi

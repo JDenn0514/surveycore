@@ -2,7 +2,7 @@
 % Please edit documentation in R/core-constructors.R
 \name{as_survey_nonprob}
 \alias{as_survey_nonprob}
-\title{Create a Calibrated / Non-Probability Survey Design}
+\title{Create a Non-probability Survey Design}
 \usage{
 as_survey_nonprob(
   data,
@@ -26,16 +26,32 @@ column (a single column, values strictly > 0). Typically produced by
 an external raking function (e.g., \code{anesrake::anesrake()}) or a
 \pkg{surveywts} calibration function.}
 
-\item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> Bootstrap
-replicate weight columns (at least 2). Each column must be numeric and
-represents one set of combined bootstrap weights (calibration already
-applied). Supply \code{NULL} (the default) to use SRS-based variance
-approximation. Columns are combined-weights: the calibration adjustment
-has already been re-applied within each replicate column.}
+\item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> Replicate weight
+columns (bootstrap or jackknife; at least 2). Each column must be numeric
+and represents one set of calibrated weights re-estimated on one replicate
+draw (calibration already applied within each replicate). Supply \code{NULL}
+(the default) to use SRS-based variance approximation. See \code{type} for
+supported replicate schemes.}
 
-\item{type}{Character. Replicate type. Must be \code{"bootstrap"} — jackknife
-and other replicate types are not supported for non-probability samples.
-Ignored when \code{repweights = NULL}. Default \code{"bootstrap"}.}
+\item{type}{Character scalar. Replicate variance type. When
+\code{repweights = NULL}, this argument is ignored. Case-sensitive.
+Valid values:
+\describe{
+\item{\code{"bootstrap"}}{Bootstrap variance. Default scale: \code{1/R}.
+Default value for \code{type}.}
+\item{\code{"JK1"}}{Delete-one jackknife for unclustered nonprob designs.
+Default scale: \code{(R-1)/R}. Appropriate when each unit is its own
+replication unit. For clustered designs, use \code{"JK2"} or
+\code{"JKn"} with explicit \code{rscales}.}
+\item{\code{"jackknife"}}{Alias for \code{"JK1"}. Normalized to
+\code{"JK1"} before storage — the stored value is always
+\code{"JK1"}, never \code{"jackknife"}.}
+\item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
+Requires explicit \code{rscales} (stratum-specific scale factors of
+the form \code{(n_h - 1) / n_h}).}
+\item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
+designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
+}}
 
 \item{scale}{Numeric scalar. Scaling factor for the replicate variance
 formula. Default \code{NULL}, which sets \code{scale = 1 / R} (where \code{R} is the
@@ -58,45 +74,51 @@ probability-based reference sample used to estimate propensity scores or
 calibration targets. Stored in \verb{@reference_sample} for reproducibility.
 Supply \code{NULL} (the default) when no reference sample is available.}
 
-\item{calibration}{Optional. The calibration provenance object returned by
-a \pkg{surveywts} calibration function (e.g.,
-\code{surveywts::create_bootstrap_weights()}). Stored in \verb{@calibration} for
-reproducibility. When \code{repweights} is also supplied, \code{calibration} is
-validated: \code{calibration$bootstrap} must be \code{TRUE} and \code{calibration$R}
-must equal the number of replicate columns. Supply \code{NULL} (the default)
-when calibration was performed externally and provenance metadata is not
-available.}
+\item{calibration}{Optional. A calibration provenance object returned by
+a \pkg{surveywts} weighting function. Stored in \verb{@calibration} for
+reproducibility only — it is not used in variance estimation (unlike
+\code{\link[=as_survey]{as_survey()}} where \verb{@calibration} drives GREG variance correction).
+When \code{repweights} is also supplied, two consistency checks are applied:
+for \code{type = "bootstrap"}, \code{calibration$bootstrap} must be \code{TRUE}; for
+all types, \code{calibration$R} must equal the number of replicate columns
+when \code{calibration$R} is non-\code{NULL}. Supply \code{NULL} (the default) when no
+provenance metadata is available.}
 }
 \value{
 A \code{survey_nonprob} object.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+Creates a survey design object for non-probability samples (e.g., online
+panels, quota samples, volunteer panels). Accepts pre-computed calibration
+weights (including raking and post-stratification) or inverse probability
+weighting (IPW) pseudo-weights.
 }
 \details{
-Creates a survey design object for non-probability samples and post-hoc
-calibrated designs (e.g., raked online panels, post-stratified samples).
-Accepts pre-computed calibration weights and optionally stores calibration
-provenance from \pkg{surveywts} output for reproducibility.
+Unlike probability samples, non-probability samples have no design weights
+derived from known selection probabilities, which means estimates carry
+additional uncertainty not captured by standard design-based variance
+formulas. Per Elliott and Valliant (2017), Valliant, Dever, and Kreuter
+(2018), and Brick (2015), bootstrap or jackknife replicate weights are the
+recommended approach for variance estimation — they propagate calibration
+uncertainty into standard errors. Note, however, that replicate variance
+addresses calibration uncertainty only; it does not resolve uncertainty about
+the selection mechanism itself, which requires untestable modeling
+assumptions about the relationship between sample membership and the survey
+variables of interest. Without replicate weights, standard errors use a
+model-assisted SRS approximation that systematically underestimates variance
+for non-probability samples.
 
-When \code{repweights} is supplied, the variance estimator uses the bootstrap
-replicate formula: \code{V = scale * sum(rscales * (theta_r - theta)^2)}.
-The default \code{scale = 1/R} follows Wu (2022) and Chen et al. (2021) for
-calibrated non-probability bootstrap variance.
+When \code{repweights} is supplied, the variance estimator uses the replicate
+formula: \code{V = scale * sum(rscales * (theta_r - theta)^2)}. For bootstrap
+replicates (\code{type = "bootstrap"}), the default \code{scale = 1/R} follows Wu
+(2022) and Chen et al. (2021). For jackknife replicates (\code{type = "JK1"},
+\code{"JK2"}, or \code{"JKn"}), scale and rscales follow the standard jackknife
+variance conventions; see \code{type} for defaults.
 
 When \code{repweights = NULL}, standard errors use an SRS approximation (treating
 each observation as its own PSU). This understates calibration uncertainty;
 see \code{vignette("creating-survey-objects")} for details.
 }
-\section{Phase 2.5 skeleton}{
-
-This constructor is a \strong{skeleton}. The resulting \code{survey_nonprob} object
-supports estimation via a model-assisted SRS variance assumption — the same
-as calling \code{\link[=as_survey]{as_survey()}} with weights only. Full bootstrap re-calibration
-variance (which re-applies the raking procedure on each replicate) will be
-implemented in Phase 2.5 alongside the \pkg{surveywts} package.
-}
-
 \section{When to use}{
 
 Use \code{as_survey_nonprob()} instead of \code{\link[=as_survey]{as_survey()}} when:
@@ -114,30 +136,89 @@ use \code{\link[=as_survey]{as_survey()}}, \code{\link[=as_survey_replicate]{as_
 instead.
 }
 
-\section{Variance estimation note}{
+\section{Variance estimation}{
 
-Standard errors from a \code{survey_nonprob} object assume simple random
-sampling within the calibrated weights. This is consistent with common
-applied practice for raked non-probability samples, but is technically
-a model-assisted approximation rather than design-based variance. See
-\code{vignette("creating-survey-objects")} for details and limitations.
+Two modes are available, depending on whether \code{repweights} is supplied:
+\describe{
+\item{\strong{SRS approximation} (\code{repweights = NULL}, the default)}{Standard
+errors treat the calibrated weights as fixed and assume simple random
+sampling. This is a model-assisted approximation that understates
+calibration uncertainty. Use this mode only when replicate weights are
+unavailable; interpret standard errors with caution (Valliant 2020;
+Elliott and Valliant 2017).}
+\item{\strong{Bootstrap variance} (\code{repweights} supplied)}{Each replicate weight
+column must contain calibrated weights re-estimated on one bootstrap
+draw (i.e., raking or post-stratification was re-applied within each
+replicate). This propagates calibration uncertainty into the variance
+estimate and is the recommended approach (Chrostowski et al. 2025;
+Kolenikov 2014).}
+}
+See \code{vignette("creating-survey-objects")} for guidance on choosing between
+these modes and on the limitations of SRS-based variance for calibrated
+non-probability samples.
 }
 
 \examples{
-# Minimal: pre-computed calibration weights from an external tool
+# Minimal: pre-computed calibration weights, SRS-based variance
 df <- data.frame(
-  y      = rnorm(200),
-  age    = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
+  y = rnorm(200),
+  age = sample(c("18-34", "35-54", "55+"), 200, replace = TRUE),
   cal_wt = runif(200, 0.5, 2.5)
 )
 d <- as_survey_nonprob(df, weights = cal_wt)
 
+# Bootstrap variance: replicate weights with calibration re-applied in each
+set.seed(1)
+R <- 50
+rep_cols <- setNames(
+  as.data.frame(
+    matrix(runif(200 * R, 0.5, 2.5), nrow = 200)
+  ),
+  paste0("rep_", seq_len(R))
+)
+df_rep <- cbind(df, rep_cols)
+d_boot <- as_survey_nonprob(
+  df_rep,
+  weights = cal_wt,
+  repweights = starts_with("rep_"),
+  type = "bootstrap"
+)
+
+# Jackknife variance (JK1): delete-one replicate weights
+d_jk <- as_survey_nonprob(
+  df_rep,
+  weights = cal_wt,
+  repweights = starts_with("rep_"),
+  type = "JK1"
+)
 }
 \references{
-Wu, C. (2022) Statistical inference with non-probability survey samples.
+Valliant, R. (2020). Comparing alternatives for estimation from
+nonprobability samples. \emph{Journal of Survey Statistics and Methodology}
+\bold{8}(2), 231--263. \doi{10.1093/jssam/smz003}
+
+Elliott, M.R. and Valliant, R. (2017). Inference for nonprobability
+samples. \emph{Statistical Science} \bold{32}(2), 249--264.
+
+Chrostowski, M.J., Guzman, C.A. and Malm, L. (2025). Variance estimation
+for non-probability surveys. \emph{Journal of Survey Statistics and
+Methodology} (forthcoming).
+
+Brick, J.M. (2015). Compositional model inference. In
+\emph{Proceedings of the Section on Survey Research Methods}, pp. 299--307.
+American Statistical Association, Alexandria, VA.
+
+Valliant, R., Dever, J.A. and Kreuter, F. (2018).
+\emph{Practical Tools for Designing and Weighting Survey Samples}, 2nd ed.
+Springer, New York.
+
+Kolenikov, S. (2014). Calibrating variance estimation with proxy variables.
+\emph{Survey Methodology} \bold{40}(1), 21--38.
+
+Wu, C. (2022). Statistical inference with non-probability survey samples.
 \emph{Survey Methodology} \bold{48}(2), 283--311.
 
-Chen, Y., Li, P. and Wu, C. (2021) Doubly robust inference with
+Chen, Y., Li, P. and Wu, C. (2021). Doubly robust inference with
 non-probability survey samples. \emph{Journal of the American Statistical
 Association} \bold{115}(532), 2011--2021.
 }
@@ -146,10 +227,10 @@ Association} \bold{115}(532), 2011--2021.
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

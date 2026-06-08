@@ -1575,3 +1575,245 @@ test_that(".corr_vcov_pair() errors for unsupported design class", {
     class = "surveycore_error_unsupported_class"
   )
 })
+
+# ---------------------------------------------------------------------------
+# Category: nonprob latent path (polychoric / polyserial on survey_nonprob
+# with bootstrap replicate weights)
+# ---------------------------------------------------------------------------
+
+test_that("get_corr() polychoric works for survey_nonprob with repweights", {
+  set.seed(101L)
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  result <- get_corr(d, x = c(ord1, ord2), method = "polychoric")
+  test_result_invariants(result, "survey_corr")
+  expect_equal(nrow(result), 1L)
+  expect_true(is.finite(result$r[[1L]]))
+  expect_true(result$r[[1L]] >= -1 && result$r[[1L]] <= 1)
+  expect_true(is.finite(result$ci_low[[1L]]))
+  expect_true(is.finite(result$ci_high[[1L]]))
+  expect_true(result$ci_low[[1L]] >= -1)
+  expect_true(result$ci_high[[1L]] <= 1)
+  expect_lt(result$ci_low[[1L]], result$ci_high[[1L]])
+})
+
+test_that("get_corr() polyserial works for survey_nonprob with repweights", {
+  set.seed(101L)
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  result <- get_corr(d, x = c(ord1, y2), method = "polyserial")
+  test_result_invariants(result, "survey_corr")
+  expect_equal(nrow(result), 1L)
+  expect_true(is.finite(result$r[[1L]]))
+  expect_true(result$r[[1L]] >= -1 && result$r[[1L]] <= 1)
+  expect_true(is.finite(result$ci_low[[1L]]))
+  expect_true(is.finite(result$ci_high[[1L]]))
+  expect_true(result$ci_low[[1L]] >= -1)
+  expect_true(result$ci_high[[1L]] <= 1)
+  expect_lt(result$ci_low[[1L]], result$ci_high[[1L]])
+})
+
+test_that("get_corr() polychoric raises PC-7 for survey_nonprob without repweights", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+  expect_error(
+    get_corr(d, x = c(ord1, ord2), method = "polychoric"),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(ord1, ord2), method = "polychoric")
+  )
+})
+
+test_that("get_corr() polyserial raises PC-7 for survey_nonprob without repweights", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+  expect_error(
+    get_corr(d, x = c(ord1, y2), method = "polyserial"),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(ord1, y2), method = "polyserial")
+  )
+})
+
+test_that("get_corr() polychoric raises PC-7 for survey_twophase (regression guard)", {
+  df <- make_survey_data(
+    design = "twophase",
+    n = 300L,
+    n_psu = 30L,
+    n_strata = 3L,
+    seed = 4L
+  )
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  ph1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  d <- as_survey_twophase(ph1, subset = subset, method = "approx")
+  expect_error(
+    get_corr(d, x = c(ord1, ord2), method = "polychoric"),
+    class = "surveycore_error_polychoric_design_unsupported"
+  )
+})
+
+test_that("get_corr() polychoric: survey_nonprob with repweights matches survey_replicate numerically", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord1 <- factor(df$ord1, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d_nonprob <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  result_nonprob <- get_corr(
+    d_nonprob,
+    x = c(ord1, ord2),
+    method = "polychoric"
+  )
+  result_rep <- get_corr(d_rep, x = c(ord1, ord2), method = "polychoric")
+  expect_equal(result_nonprob$r[[1L]], result_rep$r[[1L]], tolerance = 1e-10)
+  expect_equal(
+    result_nonprob$ci_low[[1L]],
+    result_rep$ci_low[[1L]],
+    tolerance = 1e-6
+  )
+})
+
+test_that("get_corr() PC-4 fires through nonprob latent path when ordinal has one level", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 201L)
+  df$ord_single <- factor(rep(1L, nrow(df)), levels = 1:3, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  expect_error(
+    get_corr(d, x = c(ord_single, ord2), method = "polychoric"),
+    class = "surveycore_error_polychoric_single_level_ordinal"
+  )
+})
+
+test_that("get_corr() nonprob with repweights + method = 'pearson' is unchanged (PC-7 not triggered)", {
+  df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  result <- get_corr(d, x = c(y1, y2), method = "pearson")
+  test_result_invariants(result, "survey_corr")
+  expect_true(is.finite(result$r[[1L]]))
+})
+
+test_that("get_corr() single-replicate column raises NB-3 at construction (not a get_corr error)", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 201L)
+  df$repwt_single <- df$wt * exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  expect_error(
+    as_survey_nonprob(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of("repwt_single"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_repweights_single"
+  )
+})
+
+test_that("get_corr() all-NA ordinal returns NA (early-exit) through nonprob latent path", {
+  df <- make_survey_data(n = 100L, design = "taylor", seed = 201L)
+  df$ord_na <- factor(rep(NA_integer_, nrow(df)), levels = 1:3, ordered = TRUE)
+  df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
+  df$ord2 <- factor(df$ord2, ordered = TRUE)
+  set.seed(42L)
+  for (r in seq_len(10L)) {
+    df[[paste0("repwt_", r)]] <- df$wt *
+      exp(rnorm(nrow(df), mean = 0, sd = 0.1))
+  }
+  repwt_cols <- paste0("repwt_", seq_len(10L))
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "bootstrap"
+  )
+  test_invariants(d)
+  # All-NA ordinal: pairwise-complete domain is empty, early return with NA.
+  result <- get_corr(d, x = c(ord_na, ord2), method = "polychoric")
+  test_result_invariants(result, "survey_corr")
+  expect_equal(nrow(result), 1L)
+  expect_true(is.na(result$r[[1L]]))
+})

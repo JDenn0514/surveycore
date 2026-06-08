@@ -49,6 +49,7 @@ reference:
       - as_survey_twophase
       - as_survey_nonprob
       - update_design
+      - as_caldata
 
   - title: "Survey collections"
     desc: >
@@ -145,6 +146,18 @@ reference:
       - survey_metadata
       - survey_collection
 
+  - title: "Print methods"
+    desc: >
+      S3 print methods for surveycore result objects. Called automatically when
+      objects are printed; documented here for reference.
+    contents:
+      - print.survey_result
+      - print.survey_diffs
+      - print.survey_t_test
+      - print.survey_pairwise
+      - print.survey_anova
+      - anova.survey_glm_fit
+
   - title: "Utilities"
     desc: Internal helpers exported for use in extension packages.
     contents:
@@ -163,3 +176,4 @@ reference:
       - pew_jewish_2020
       - pew_npors_2025
       - ns_wave1
+      - ca_api_2000

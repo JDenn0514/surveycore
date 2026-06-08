@@ -9,7 +9,8 @@ survey_taylor(
   metadata = survey_metadata(),
   variables = list(),
   groups = character(0),
-  call = NULL
+  call = NULL,
+  calibration = NULL
 )
 }
 \arguments{
@@ -26,6 +27,11 @@ strata, fpc, nest, probs_provided). Set automatically by \code{\link[=as_survey]
 standalone surveycore use.}
 
 \item{call}{Language object capturing the construction call.}
+
+\item{calibration}{A list of calibration data elements produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration. When non-\code{NULL},
+variance estimation routines apply a Deville-Sarndal calibration
+correction.}
 }
 \value{
 A \code{survey_taylor} object.
@@ -52,20 +58,43 @@ rather than \code{weights} to \code{\link[=as_survey]{as_survey()}}.}
 
 \examples{
 # Prefer as_survey() over calling survey_taylor() directly
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 class(d)
+}
+\references{
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. \emph{Journal of the American Statistical Association}
+\bold{87}(418), 376--382.
 
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. \emph{Journal of the American Statistical
+Association} \bold{88}(423), 1013--1020.
+
+Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
+John Wiley and Sons.
+
+Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations for
+the analysis of survey data using poststratification information.
+\emph{Sankhya} \bold{64-A}, 22--36.
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+\emph{Model Assisted Survey Sampling}. Springer.
 }
 \seealso{
 \code{\link[=as_survey]{as_survey()}} to create a \code{survey_taylor} object.
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

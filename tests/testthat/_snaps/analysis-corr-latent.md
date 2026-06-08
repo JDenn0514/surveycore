@@ -33,7 +33,7 @@
       get_corr(coll, x = c(o1, o2), method = "polychoric")
     Condition
       Error in `.corr_latent_pair()`:
-      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs in this release.
+      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs.
       v Use `method = "pearson"`, or call `get_corr()` on a <survey_taylor> or <survey_replicate> design.
 
 # PC-13 (unordered factor) surfaces via the public API (dual)
@@ -84,7 +84,7 @@
       get_corr(d_tp, x = c(o1, o2), method = "polychoric")
     Condition
       Error in `.corr_latent_pair()`:
-      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs in this release.
+      x `method = "polychoric"` is not supported for <surveycore::survey_twophase> designs.
       v Use `method = "pearson"`, or call `get_corr()` on a <survey_taylor> or <survey_replicate> design.
 
 # PC-8 (> 20% replicate failure) at public API (dual)
@@ -106,7 +106,7 @@
         invokeRestart("muffleWarning")
       }, warning = function(w) invokeRestart("muffleWarning")))
     Message
-      ! Estimated correlation for pair (o1, o2) is within "1e-6" of the boundary (0.999917287383696).
+      ! Estimated correlation for pair (o1, o2) is within "1e-4" of the boundary (0.999917287383696).
       i Standard errors based on the delta method or Fisher-z linearization are unreliable near "-1" and "1".
 
 # PC-10 (zero-count interior level) at public API (dual)

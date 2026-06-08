@@ -11,7 +11,8 @@ as_survey(
   weights = NULL,
   strata = NULL,
   fpc = NULL,
-  nest = FALSE
+  nest = FALSE,
+  calibration = NULL
 )
 }
 \arguments{
@@ -47,6 +48,23 @@ strata — i.e., the same ID value in two different strata refers to two
 distinct PSUs. Set \code{nest = TRUE} when PSU IDs are not globally unique
 (e.g., NHANES, where PSU IDs restart from 1 in each stratum). Requires
 \code{strata} to be specified. Default \code{FALSE}.}
+
+\item{calibration}{A list of calibration data elements, each produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default) for no calibration adjustment. When
+non-\code{NULL}, variance estimation applies a Deville-Sarndal GREG projection
+that reduces standard errors proportional to the correlation between the
+auxiliary variables and the outcome. Equivalent to assigning
+\code{design@calibration <- list(cd)} after construction.
+
+\strong{Known limitations} (not validated at construction time):
+\itemize{
+\item \emph{Weight consistency}: surveycore cannot verify that \code{cd$w} encodes the
+same base weights as the design weight column. Mismatched base weights
+produce incorrect variance estimates.
+\item \emph{Stale calibration after \code{update_design()}}: changing the weight column
+on a calibrated design with \code{\link[=update_design]{update_design()}} makes \verb{@calibration}
+stale. Clear \verb{@calibration} manually after any weight column change.
+}}
 }
 \value{
 A \code{survey_taylor} object.
@@ -99,10 +117,10 @@ d <- from_svydesign(d_survey)
 # Full NHANES design: stratified cluster with PSU IDs nested within strata
 d <- as_survey(
   nhanes_2017,
-  ids     = sdmvpsu,
+  ids = sdmvpsu,
   weights = wtint2yr,
-  strata  = sdmvstra,
-  nest    = TRUE
+  strata = sdmvstra,
+  nest = TRUE
 )
 
 # Stratified design without PSU cluster IDs
@@ -110,14 +128,19 @@ d_strat <- as_survey(nhanes_2017, weights = wtint2yr, strata = sdmvstra)
 
 # Blood pressure analysis: filter to exam participants, use MEC weight
 exam <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
-d_bp <- as_survey(exam, ids = sdmvpsu, weights = wtmec2yr,
-                  strata = sdmvstra, nest = TRUE)
+d_bp <- as_survey(
+  exam,
+  ids = sdmvpsu,
+  weights = wtmec2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 
 # c() to combine multiple columns — sketched on a synthetic two-stage frame
 df <- data.frame(
   psu = rep(1:5, each = 4),
   ssu = 1:20,
-  wt  = runif(20, 0.5, 2)
+  wt = runif(20, 0.5, 2)
 )
 d_ms <- as_survey(df, ids = c(psu, ssu), weights = wt)
 
@@ -129,17 +152,28 @@ d_h <- as_survey(
   weights = starts_with("wtssn"),
   nest = TRUE
 )
-
 }
 \references{
-Sarndal, C-E., Swensson, B. and Wretman, J. (1991)
-\emph{Model Assisted Survey Sampling}. Springer.
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. \emph{Journal of the American Statistical Association}
+\bold{87}(418), 376--382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. \emph{Journal of the American Statistical
+Association} \bold{88}(423), 1013--1020.
 
 Lumley, T. (2004) Analysis of complex survey samples.
 \emph{Journal of Statistical Software} \bold{9}(1), 1--19.
 
 Lumley, T. (2010) \emph{Complex Surveys: A Guide to Analysis Using R}.
 John Wiley and Sons.
+
+Rao, J.N.K., Yung, W. and Hidiroglou, M.A. (2002) Estimating equations for
+the analysis of survey data using poststratification information.
+\emph{Sankhya} \bold{64-A}, 22--36.
+
+Sarndal, C-E., Swensson, B. and Wretman, J. (1992)
+\emph{Model Assisted Survey Sampling}. Springer.
 }
 \seealso{
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs,
@@ -147,10 +181,10 @@ John Wiley and Sons.
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

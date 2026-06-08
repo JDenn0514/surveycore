@@ -29,3 +29,5 @@
 ^doc$
 ^Meta$
 ^CRAN-SUBMISSION$
+^implementation\.md$
+^tools$

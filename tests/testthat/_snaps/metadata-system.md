@@ -678,3 +678,20 @@
       Warning:
       ! 1 variable not found in `x` and was skipped: nonexistent_var_xyz.
 
+# .check_is_survey() error message uses single v bullet (no split ' ' key)
+
+    Code
+      surveycore:::.check_is_survey(list(x = 1))
+    Condition
+      Error:
+      x `x` must be a survey design object, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_sata() fill = TRUE errors with surveycore_error_fill_not_logical
+
+    Code
+      extract_sata(d, fill = TRUE)
+    Condition
+      Error:
+      x `fill` must be `FALSE` or `NULL`.
+

@@ -57,10 +57,15 @@
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @return A `data.frame` with all variables, including design variables.
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' head(survey_data(d))
-#' @family constructors
+#' @family accessors
 #' @export
 survey_data <- function(x) {
   if (!S7::S7_inherits(x, survey_base)) {
@@ -86,10 +91,14 @@ survey_data <- function(x) {
 #' @return A `list` of history entries, or `list()` if no history is present.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
-#' survey_weighting_history(d)   # list() — no weighting history
-#'
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
+#' survey_weighting_history(d) # list() — no weighting history
 #' @family metadata
 #' @export
 survey_weighting_history <- function(x) {
@@ -115,7 +124,6 @@ survey_weighting_history <- function(x) {
 #' packages (`surveytidy`, `surveywts`) can reference it without
 #' using `:::`.
 #'
-#' @keywords internal
 #' @export
 SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 
@@ -239,7 +247,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 #'
 #' @param design A survey design object (`survey_base` subclass).
 #' @return A character vector of column names.
-#' @keywords internal
 #' @export
 .get_design_vars_flat <- function(design) {
   if (S7::S7_inherits(design, survey_taylor)) {
@@ -517,4 +524,24 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 #' @noRd
 .get_data_for_select <- function(x) {
   if (is.data.frame(x)) x else x@data
+}
+
+# ── .compute_nonprob_scale() ──────────────────────────────────────────────────
+#
+# Computes the default variance scale factor for a survey_nonprob design.
+# Used by as_survey_nonprob() when scale = NULL.
+#
+# Args:
+#   type: character(1) — one of "bootstrap", "JK1", "JK2", "JKn"
+#   R:    integer(1)   — number of replicates
+#
+# Returns:
+#   numeric(1) — the default scale factor for the given type
+#     bootstrap: 1/R  (per Wu 2022 / Chen et al. 2021)
+#     JK1:       (R-1)/R
+#     JK2:       1
+#     JKn:       1
+#' @noRd
+.compute_nonprob_scale <- function(type, R) {
+  switch(type, bootstrap = 1 / R, JK1 = (R - 1) / R, JK2 = 1, JKn = 1)
 }

@@ -29,9 +29,11 @@ get_corr(
 \arguments{
 \item{design}{A survey design object: \code{survey_taylor}, \code{survey_replicate},
 \code{survey_twophase}, or \code{survey_nonprob}. \code{method} values \code{"polychoric"}
-and \code{"polyserial"} are supported on \code{survey_taylor} and
-\code{survey_replicate} only; other design classes raise
-\code{surveycore_error_polychoric_design_unsupported}.}
+and \code{"polyserial"} are supported on \code{survey_taylor}, \code{survey_replicate},
+and \code{survey_nonprob} designs that supply replicate weights
+(\code{repweights} argument in \code{as_survey_nonprob()}). \code{survey_nonprob}
+without replicate weights and \code{survey_twophase} designs raise
+\code{surveycore_error_polychoric_design_unsupported} for latent methods.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Two or more unquoted
 variable names. For \code{method = "pearson"}, non-numeric columns are dropped
@@ -77,17 +79,20 @@ pairwise sum of weights (both variables non-NA). Default \code{FALSE}.}
 
 \item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
 columns (e.g., \code{r}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
-places. Default \code{NULL} (no rounding).}
+places. Default \code{NULL} (no rounding). Silently ignored when
+\code{format = "wide"} (the wide matrix contains only \code{r} values, which are
+not rounded by this argument).}
 
 \item{min_cell_n}{Integer. Minimum pairwise unweighted count before
 \code{surveycore_warning_small_cell} fires. Default \code{30L} (AAPOR guidance).}
 
-\item{na.rm}{Logical. If \code{TRUE} (default), pairs use complete cases for
-each variable pair separately (pairwise deletion), and observations where
-any group variable is \code{NA} are excluded from the output. If \code{FALSE},
-pairwise complete cases are still used for each variable pair, and
-observations where a group variable is \code{NA} are collected into their own
-group row in the output (appearing after all non-\code{NA} group rows).}
+\item{na.rm}{Logical. Controls \code{NA} handling for group variables and the
+computation domain. Pairwise complete-case deletion is always applied
+for the correlation variables themselves regardless of this flag. If
+\code{TRUE} (default), observations where any group variable is \code{NA} are
+excluded from the output. If \code{FALSE}, observations where a group variable
+is \code{NA} are collected into their own group row in the output (appearing
+after all non-\code{NA} group rows).}
 
 \item{label_values}{Logical. If \code{TRUE} (default) and the grouping variable
 has value labels, the group column is converted to a labelled factor.
@@ -136,12 +141,18 @@ other columns in both long and wide formats.
 \item \verb{[group_cols...]} — group variable columns (when active), first.
 \item \code{var1}, \code{var2} — variable names (or labels when
 \code{label_vars = TRUE}).
-\item \code{r} — Pearson correlation coefficient.
+\item \code{r} — correlation coefficient. For \code{method = "pearson"}, the
+weighted product-moment correlation; for \code{"polychoric"} /
+\code{"polyserial"}, the MLE of \code{rho} under a bivariate-normal latent
+model.
 \item Variance columns (\code{se}, \code{var}, \code{cv}, \code{ci_low}, \code{ci_high}, \code{moe},
 \code{deff}) — only those requested via \code{variance}.
 \item \code{p_value} — two-tailed p-value.
-\item \code{statistic} — t-statistic.
-\item \code{df} — degrees of freedom for the t-test (n minus 2).
+\item \code{statistic} — test statistic. A t-statistic for
+\code{method = "pearson"}; a Wald z-statistic for latent methods.
+\item \code{df} — degrees of freedom. \code{n - 2} for \code{method = "pearson"};
+\code{NA_integer_} for \code{"polychoric"} and \code{"polyserial"} (asymptotic
+normal distribution is used).
 \item \code{n} — pairwise unweighted count.
 \item \code{n_weighted} — pairwise sum of weights (only when requested).
 }
@@ -204,16 +215,25 @@ replicates are admitted mechanically via the design's stored \code{scale}
 behaviour for this non-linear pseudo-likelihood estimator.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 get_corr(d, x = c(ridageyr, bpxsy1))
 
 # Wide correlation matrix
 get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 
 # AAPOR-compliant
-get_corr(d, x = c(ridageyr, bpxsy1),
-         variance = c("ci", "moe"), n_weighted = TRUE)
+get_corr(
+  d,
+  x = c(ridageyr, bpxsy1),
+  variance = c("ci", "moe"),
+  n_weighted = TRUE
+)
 
 # Polychoric correlation between two ordinal variables
 df <- data.frame(
@@ -224,7 +244,6 @@ df <- data.frame(
 )
 d_ord <- as_survey(df, weights = wt)
 get_corr(d_ord, x = c(o1, o2), method = "polychoric")
-
 }
 \references{
 Cox, N. R. (1974). Estimation of the correlation between a continuous

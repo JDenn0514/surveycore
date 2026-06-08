@@ -21,11 +21,20 @@ functions may be added but the existing structure will not change in breaking wa
 | Two-phase variance | ✅ Complete | v0.2.x |
 | Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
 | Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
-| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | 🔄 In Review | PR #88; see `plans/spec-get-t-test-pairwise.md` |
+| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | ✅ Complete | PR #88; see `archive/get-t-test-pairwise/` |
+| Effective sample size (`get_effective_n()`) | ✅ Complete | PR #122; see `archive/effective-n/` |
+| Design variance (`get_variance()`) | ✅ Complete | PRs #103, #104; see `archive/get-variance/` |
 | SATA metadata (`set_sata()`, `classify_question_type()`) | ✅ Complete | PRs #89, #90, #91, #92 |
 | Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
 | `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
 | Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
+| Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
+| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; see `archive/nonprob-bootstrap-variance/` |
+| Polychoric/polyserial on `survey_nonprob` with repweights (`get_corr(method = "polychoric"/"polyserial")`) | ✅ Complete | PR #137; see `archive/corr-nonprob-latent/` |
+| `survey_glm()` on `survey_nonprob` with repweights routed through replicate-weight estimator | ✅ Complete | PR #138; see `archive/glm-nonprob-replicate/` |
+| Calibration-adjusted variance (`as_caldata()`, `@calibration` on `survey_taylor`/`survey_replicate`, GREG SE correction) | ✅ Complete | PRs #139, #140; see `archive/calibrate-survey-taylor/` |
+| `calibration =` constructor validation (CAL-15, CAL-16) + raking oracle update | ✅ Complete | PRs #141, #142; see `archive/surveywts-calibration/` |
+| Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc) | ✅ Complete | PRs #143, #144; see `archive/doc-fixes/` |
 
 ---
 
@@ -77,6 +86,7 @@ internally (avoids collision with user columns named `.weights`).
 ## R Package Conventions
 
 - Use the GSS dataset (not NHANES or gss_2024) for examples and tests unless told otherwise. Use rlang patterns over deparse().
+- All R code written in any context — `.R` source files, roxygen2 `@examples` blocks, and ` ```r ``` ` blocks in `.md` spec and plan documents — must follow the rules in `.claude/rules/code-style.md`.
 
 ## General Behavior
 
@@ -96,7 +106,7 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `plans/spec-get-t-test-pairwise.md` — spec for `get_t_test()` + `get_pairwise()` (in review, PR #88)
+- `archive/get-t-test-pairwise/` — spec, plan, and decisions for `get_t_test()` + `get_pairwise()` (shipped; PR #88)
 - `archive/sata-metadata/` — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)
 - `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
 - `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)
@@ -105,5 +115,12 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/collection-uniform-groups/` — uniform `@groups` enforcement across `survey_collection` (shipped; PR #106)
 - `archive/polychoric-corr/` — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)
 - `archive/variable-direction/` — `set_higher_is()`, `set_reverse_coded()`, and `get_diffs(show_favorability)` spec, plan, and decisions (shipped; PRs #124, #125, #126)
+- `archive/nonprob-bootstrap-variance/` — non-probability bootstrap variance spec, impl plans, and decisions (shipped; PRs #127, #130, #131)
+- `archive/nonprob-jackknife/` — non-probability jackknife variance spec, impl plan, comprehension, MI reviews, and decisions (shipped; PRs #133–#136)
+- `archive/corr-nonprob-latent/` — polychoric/polyserial on `survey_nonprob` with repweights: spec, impl plan, test spec, plan review (shipped; PR #137)
+- `archive/glm-nonprob-replicate/` — `survey_glm()` nonprob replicate routing: spec, test spec, impl plan, plan review (shipped; PR #138)
+- `archive/calibrate-survey-taylor/` — calibration-adjusted variance (`as_caldata()`, GREG SE correction): spec, test spec, impl plan, comprehension, plan review, decisions (shipped; PRs #139, #140)
+- `archive/surveywts-calibration/` — `calibration =` constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)
+- `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy

@@ -83,7 +83,6 @@ m <- survey_metadata(
 )
 m@variable_labels$age
 m@value_labels$sex
-
 }
 \seealso{
 Other metadata: 

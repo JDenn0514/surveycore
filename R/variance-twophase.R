@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# R/06-variance-twophase.R
+# R/variance-twophase.R
 # ---------------------------------------------------------------------------
 # Two-phase sampling variance estimation for survey_twophase designs.
 #
@@ -78,14 +78,15 @@
 # Adapted from survey:::svyrecvar.phase1 / onestrat.phase1.
 # For "simple": standard .svy_recvar() with raw influence scores.
 # For "full"/"approx": implements the onestrat.phase1 formula directly:
-#   V1 = sum_s { nPSUfull_s/(nPSUfull_s-1) *
+#   V1 = sum_s { f_s * nPSUfull_s/(nPSUfull_s-1) *
 #                sum_j { ((x_j * pi2_j - xcenter_s) / sqrt(pi2_j))^2 } }
 # where nPSU_s = phase 2 PSUs in stratum, nPSUfull_s = phase 1 PSUs in stratum,
 # pi2_j = nPSU_s/nPSUfull_s (PSU-level stratum sampling fraction,
 # survey's `usu`),
-# and xcenter_s = mean(x_j * nPSU_s/nPSUfull_s) centering term.
+# xcenter_s = mean(x_j * nPSU_s/nPSUfull_s) centering term,
+# and f_s = (N_s - n_s) / N_s is the Phase 1 FPC factor for stratum s
+# (1 when no FPC column is provided).
 # Returns a numeric scalar.
-#' @noRd
 .twophase_phase1_var <- function(influence, design, method, lonely.psu) {
   ph1_data <- design@data
   ph1_vars <- design@variables$phase1

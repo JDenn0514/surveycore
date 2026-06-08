@@ -101,16 +101,16 @@
   result_means <- reference_mean + result_estimates
 
   list(
-    result_levels   = result_levels,
+    result_levels = result_levels,
     result_estimates = result_estimates,
-    result_ses      = result_ses,
-    result_ci_lows  = result_ci_lows,
+    result_ses = result_ses,
+    result_ci_lows = result_ci_lows,
     result_ci_highs = result_ci_highs,
     result_p_values = result_p_values,
-    result_means    = result_means,
-    result_groups   = NULL,
-    reference_mean  = reference_mean,
-    preds_df        = NULL
+    result_means = result_means,
+    result_groups = NULL,
+    reference_mean = reference_mean,
+    preds_df = NULL
   )
 }
 
@@ -146,18 +146,18 @@
     slopes <- marginaleffects::avg_slopes(
       fit,
       variables = treats_name,
-      by        = group_names,
-      type      = me_type,
-      wts       = fit@weights,
-      df        = res_df
+      by = group_names,
+      type = me_type,
+      wts = fit@weights,
+      df = res_df
     )
   } else {
     slopes <- marginaleffects::avg_slopes(
       fit,
       variables = treats_name,
-      type      = me_type,
-      wts       = fit@weights,
-      df        = res_df
+      type = me_type,
+      wts = fit@weights,
+      df = res_df
     )
   }
   slopes_df <- as.data.frame(slopes)
@@ -168,34 +168,38 @@
     if (has_group) {
       preds <- marginaleffects::avg_predictions(
         fit,
-        by   = c(treats_name, group_names),
+        by = c(treats_name, group_names),
         type = me_type,
-        wts  = fit@weights,
-        df   = res_df
+        wts = fit@weights,
+        df = res_df
       )
     } else {
       preds <- marginaleffects::avg_predictions(
         fit,
-        by   = treats_name,
+        by = treats_name,
         type = me_type,
-        wts  = fit@weights,
-        df   = res_df
+        wts = fit@weights,
+        df = res_df
       )
     }
     preds_df <- as.data.frame(preds)
   }
 
-  # Parse level names from "X - ref" contrast format
+  # Parse level names from "X - ref" contrast format.
+  # Use fixed = TRUE so ref_level metacharacters (e.g. "(Control)", "A.B")
+  # are treated as literal strings, not regex patterns.
+  ref_suffix <- paste0(" - ", ref_level)
   result_levels <- sub(
-    paste0("^(.+) - ", ref_level, "$"),
-    "\\1",
-    as.character(slopes_df$contrast)
+    ref_suffix,
+    "",
+    as.character(slopes_df$contrast),
+    fixed = TRUE
   )
   result_estimates <- slopes_df$estimate
-  result_ses       <- slopes_df$std.error
-  result_ci_lows   <- slopes_df$conf.low
-  result_ci_highs  <- slopes_df$conf.high
-  result_p_values  <- slopes_df$p.value
+  result_ses <- slopes_df$std.error
+  result_ci_lows <- slopes_df$conf.low
+  result_ci_highs <- slopes_df$conf.high
+  result_p_values <- slopes_df$p.value
 
   # Group columns from slopes output
   result_groups <- if (has_group) {
@@ -229,16 +233,16 @@
   }
 
   list(
-    result_levels   = result_levels,
+    result_levels = result_levels,
     result_estimates = result_estimates,
-    result_ses      = result_ses,
-    result_ci_lows  = result_ci_lows,
+    result_ses = result_ses,
+    result_ci_lows = result_ci_lows,
     result_ci_highs = result_ci_highs,
     result_p_values = result_p_values,
-    result_means    = result_means,
-    result_groups   = result_groups,
-    reference_mean  = NULL,
-    preds_df        = preds_df
+    result_means = result_means,
+    result_groups = result_groups,
+    reference_mean = NULL,
+    preds_df = preds_df
   )
 }
 
@@ -355,16 +359,16 @@
       }
 
       ref_row <- list(
-        level     = ref_level,
-        estimate  = 0,
-        mean      = ref_mean,
-        n         = as.integer(ref_n),
+        level = ref_level,
+        estimate = 0,
+        mean = ref_mean,
+        n = as.integer(ref_n),
         n_weighted = ref_nw,
-        se        = NA_real_,
-        ci_low    = NA_real_,
-        ci_high   = NA_real_,
-        p_value   = NA_real_,
-        stars     = ""
+        se = NA_real_,
+        ci_low = NA_real_,
+        ci_high = NA_real_,
+        p_value = NA_real_,
+        stars = ""
       )
       all_rows <- c(all_rows, list(ref_row))
       if (has_group) {
@@ -410,20 +414,20 @@
       }
 
       treat_row <- list(
-        level     = lvl,
-        estimate  = result$result_estimates[[i]],
-        mean      = if (!is.null(result$result_means)) {
+        level = lvl,
+        estimate = result$result_estimates[[i]],
+        mean = if (!is.null(result$result_means)) {
           result$result_means[[i]]
         } else {
           NA_real_
         },
-        n         = as.integer(lvl_n),
+        n = as.integer(lvl_n),
         n_weighted = lvl_nw,
-        se        = result$result_ses[[i]],
-        ci_low    = result$result_ci_lows[[i]],
-        ci_high   = result$result_ci_highs[[i]],
-        p_value   = result$result_p_values[[i]],
-        stars     = ""
+        se = result$result_ses[[i]],
+        ci_low = result$result_ci_lows[[i]],
+        ci_high = result$result_ci_highs[[i]],
+        p_value = result$result_p_values[[i]],
+        stars = ""
       )
       all_rows <- c(all_rows, list(treat_row))
       if (has_group) {
@@ -482,7 +486,9 @@
         }
         if (length(comp_idx) > 0L) {
           pvals <- vapply(
-            all_rows[comp_idx], function(r) r$p_value, double(1L)
+            all_rows[comp_idx],
+            function(r) r$p_value,
+            double(1L)
           )
           adj_pvals <- stats::p.adjust(pvals, method = pval_adj)
           for (j in seq_along(comp_idx)) {
@@ -613,10 +619,14 @@
   col_vecs <- list()
 
   col_vecs[[treats_name]] <- vapply(
-    all_rows, function(r) r$level, character(1L)
+    all_rows,
+    function(r) r$level,
+    character(1L)
   )
   col_vecs[["estimate"]] <- vapply(
-    all_rows, function(r) r$estimate, double(1L)
+    all_rows,
+    function(r) r$estimate,
+    double(1L)
   )
 
   if (show_pct_change && !suppress_mean) {
@@ -629,40 +639,56 @@
 
   if (show_means && !suppress_mean) {
     col_vecs[["mean"]] <- vapply(
-      all_rows, function(r) r$mean, double(1L)
+      all_rows,
+      function(r) r$mean,
+      double(1L)
     )
   }
 
   col_vecs[["n"]] <- vapply(
-    all_rows, function(r) r$n, integer(1L)
+    all_rows,
+    function(r) r$n,
+    integer(1L)
   )
 
   if (n_weighted) {
     col_vecs[["n_weighted"]] <- vapply(
-      all_rows, function(r) r$n_weighted, double(1L)
+      all_rows,
+      function(r) r$n_weighted,
+      double(1L)
     )
   }
 
   if (!is.null(variance) && "se" %in% variance) {
     col_vecs[["se"]] <- vapply(
-      all_rows, function(r) r$se, double(1L)
+      all_rows,
+      function(r) r$se,
+      double(1L)
     )
   }
 
   if (!is.null(variance) && "ci" %in% variance) {
     col_vecs[["ci_low"]] <- vapply(
-      all_rows, function(r) r$ci_low, double(1L)
+      all_rows,
+      function(r) r$ci_low,
+      double(1L)
     )
     col_vecs[["ci_high"]] <- vapply(
-      all_rows, function(r) r$ci_high, double(1L)
+      all_rows,
+      function(r) r$ci_high,
+      double(1L)
     )
   }
 
   col_vecs[["p_value"]] <- vapply(
-    all_rows, function(r) r$p_value, double(1L)
+    all_rows,
+    function(r) r$p_value,
+    double(1L)
   )
   col_vecs[["stars"]] <- vapply(
-    all_rows, function(r) r$stars, character(1L)
+    all_rows,
+    function(r) r$stars,
+    character(1L)
   )
 
   # ── Assemble groups_df ────────────────────────────────────────────────────

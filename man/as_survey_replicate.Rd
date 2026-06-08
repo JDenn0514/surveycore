@@ -14,7 +14,8 @@ as_survey_replicate(
   rscales = NULL,
   fpc = NULL,
   fpctype = c("fraction", "correction"),
-  mse = TRUE
+  mse = TRUE,
+  calibration = NULL
 )
 }
 \arguments{
@@ -37,9 +38,9 @@ or \code{"other"} (user-specified scale). Case-sensitive.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates: \code{(R-1)/R} for jackknife methods, \code{1/4} for
-BRR/Fay, \code{1/R} for bootstrap/ACS, \code{2/R} for successive-difference,
-\code{1} for other.}
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}, \code{"JK2"}, and
+\code{"JKn"}; \code{1/R} for \code{"BRR"}, \code{"Fay"}, \code{"bootstrap"}, and \code{"ACS"};
+\code{2/R} for \code{"successive-difference"}; \code{1} for \code{"other"}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
@@ -56,6 +57,20 @@ Default \code{"fraction"}. Case-sensitive.}
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
 when computing variance). Recommended for most designs.}
+
+\item{calibration}{A list of calibration data elements, each produced by
+\code{\link[=as_caldata]{as_caldata()}}, or \code{NULL} (default). Stored at \verb{@calibration} for
+provenance and reproducibility. \strong{Not used in variance estimation}: the
+replicate variance estimator ignores \verb{@calibration} entirely — calibration
+is already encoded in the replicate weights.
+
+\strong{Known limitations} (not validated at construction time):
+\itemize{
+\item \emph{Weight consistency}: surveycore cannot verify that \code{cd$w} encodes the
+same base weights as the design weight column.
+\item \emph{Stale calibration after \code{update_design()}}: changing the weight column
+makes \verb{@calibration} stale; clear it manually.
+}}
 }
 \value{
 A \code{survey_replicate} object.
@@ -104,27 +119,38 @@ This behaviour matches the \code{survey} package reference implementation.
 # ACS PUMS Wyoming: 80 successive-difference replicate weights
 d_acs <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = pwgtp1:pwgtp80,
-  type       = "successive-difference"
+  type = "successive-difference"
 )
 
 # Explicit replicate columns using c()
 d_sub <- as_survey_replicate(
   acs_pums_wy,
-  weights    = pwgtp,
+  weights = pwgtp,
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
-  type       = "JK1"
+  type = "JK1"
 )
-
 }
 \references{
+Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
+for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+
+Deville, J.-C. and Sarndal, C.-E. (1992) Calibration estimators in survey
+sampling. \emph{Journal of the American Statistical Association}
+\bold{87}(418), 376--382.
+
+Deville, J.-C., Sarndal, C.-E. and Sautory, O. (1993) Generalized raking
+procedures in survey sampling. \emph{Journal of the American Statistical
+Association} \bold{88}(423), 1013--1020.
+
 Judkins, D.R. (1990) Fay's method for variance estimation.
 \emph{Journal of the American Statistical Association}
 \bold{85}(410), 895--904.
 
-Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
-for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
+Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
+methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
+209--217.
 
 Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 }
@@ -134,10 +160,10 @@ Shao, J. and Tu, D. (1995) \emph{The Jackknife and Bootstrap}. Springer.
 \code{\link[=set_var_label]{set_var_label()}} to add variable labels
 
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},

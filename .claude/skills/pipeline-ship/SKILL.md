@@ -99,6 +99,7 @@ After all builders in the batch return:
 
 1. Verify each worktree merged back cleanly (no conflicts)
 2. Verify each `implementation.md` write surface matches the plan
+3. Remove each builder's worktree: `git worktree remove --force <worktree-path>` then `git worktree prune`
 
 Then dispatch `tester` agent for each PR (not in a worktree; tester reads the merged checkout):
 
@@ -160,7 +161,33 @@ Only then proceed to the next batch.
 After all batches complete and all plan checkboxes are `[x]`:
 
 1. Append `DONE` to `status.md`
-2. Return to user with summary: PRs merged, coverage delta, any STOPs encountered
+2. Proceed to Step 5 before returning to the user
+
+## Step 5 — Archive planning docs
+
+After DONE is written:
+
+1. **Derive the feature slug** from the implementation plan filename:
+   - Pattern: `plans/implementation-plan-{slug}.md` → slug = `{slug}`
+   - e.g., `plans/implementation-plan-nonprob-jackknife.md` → `nonprob-jackknife`
+   - If no implementation plan file is present at that path, skip archiving and note it in the summary.
+
+2. **Find matching files** in `plans/`:
+   ```bash
+   find plans/ -maxdepth 1 -name "*{slug}*" -type f
+   ```
+   This catches `spec-{slug}.md`, `decisions-{slug}.md`, `test-spec-{slug}.md`, `status-{slug}.md`, etc. Files whose names do not contain the slug are not moved — name them with the slug during planning to ensure they are picked up.
+
+3. **Move and commit** (only if matching files exist):
+   a. Create `archive/{slug}/`
+   b. `git mv plans/*{slug}* archive/{slug}/` for each matched file
+   c. Update `CLAUDE.md`:
+      - Status table row: replace `planning docs in \`plans/\`` with `see \`archive/{slug}/\``
+      - Reference Documents section: add `- \`archive/{slug}/\` — {one-line feature description} (shipped; PRs {merged PR numbers})`
+   d. `git add CLAUDE.md`
+   e. Commit: `chore(plans): archive {slug} planning docs`
+
+4. **Return to user** with summary: PRs merged, coverage delta, any STOPs, and which files were archived.
 
 ## Signal handling
 

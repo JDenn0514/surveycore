@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# R/06-variance-taylor.R
+# R/variance-taylor.R
 # ---------------------------------------------------------------------------
 # Taylor series variance estimation for survey_taylor designs.
 #
@@ -83,7 +83,7 @@
     ),
     cli::cli_abort(
       c("x" = "Unknown {.arg lonely.psu} value: {.val {lonely.psu}}."),
-      class = "surveycore_error_lonely_psu"
+      class = "surveycore_error_lonely_psu_unknown_option"
     )
   )
 }
@@ -193,7 +193,7 @@
   v
 }
 
-# Master variance function (pure R; no post-strata in Phase 0).
+# Master variance function (pure R; no post-strata).
 # Adapted from survey:::svyrecvar.
 # fpcs: list(sampsize = matrix, popsize = matrix or NULL)
 .svy_recvar <- function(
@@ -262,7 +262,7 @@
 # ===========================================================================
 
 # Compute weighted mean and its variance for a single numeric variable.
-# Returns list(mean, var, se).
+# Returns list(mean, var, se, df).
 .taylor_mean <- function(design, y_col, na.rm = TRUE) {
   inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
@@ -273,19 +273,45 @@
   average <- drop(crossprod(x, w) / psum) # weighted mean
 
   x_centered <- sweep(x, 2L, average)
+  linearized <- .maybe_apply_calibration(x_centered * w / psum, design)
+  cal_df_reduction <- .get_calibration_df_reduction(design)
+
   v <- .svy_recvar(
-    x_centered * w / psum,
+    linearized,
     inp$clusters,
     inp$stratas,
     inp$fpcs,
     lonely.psu = lonely.psu
   )
 
-  list(mean = average[[1L]], var = v[[1L, 1L]], se = sqrt(v[[1L, 1L]]))
+  df_design <- max(1L, .degf_taylor(design@data, design@variables))
+  df_final <- df_design - cal_df_reduction
+  if (df_final <= 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "Calibration reduces design df ({df_design}) to {df_final}."
+        ),
+        "i" = "CIs and p-values may be invalid.",
+        "v" = paste0(
+          "Reduce the number of calibration columns or use a larger design."
+        )
+      ),
+      class = "surveycore_warning_zero_df_after_calibration"
+    )
+    df_final <- max(1L, df_final)
+  }
+
+  list(
+    mean = average[[1L]],
+    var = v[[1L, 1L]],
+    se = sqrt(v[[1L, 1L]]),
+    df = df_final
+  )
 }
 
 # Compute weighted total and its variance for a single numeric variable.
-# Returns list(total, var, se).
+# Returns list(total, var, se, df).
 .taylor_total <- function(design, y_col, na.rm = TRUE) {
   inp <- .taylor_build_inputs(design, y_col, na.rm = na.rm)
   lonely.psu <- getOption("survey.lonely.psu", "remove")
@@ -294,15 +320,41 @@
   w <- inp$w
   total <- drop(crossprod(x, w)) # weighted total
 
+  linearized <- .maybe_apply_calibration(x * w, design)
+  cal_df_reduction <- .get_calibration_df_reduction(design)
+
   v <- .svy_recvar(
-    x * w,
+    linearized,
     inp$clusters,
     inp$stratas,
     inp$fpcs,
     lonely.psu = lonely.psu
   )
 
-  list(total = total[[1L]], var = v[[1L, 1L]], se = sqrt(v[[1L, 1L]]))
+  df_design <- max(1L, .degf_taylor(design@data, design@variables))
+  df_final <- df_design - cal_df_reduction
+  if (df_final <= 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "Calibration reduces design df ({df_design}) to {df_final}."
+        ),
+        "i" = "CIs and p-values may be invalid.",
+        "v" = paste0(
+          "Reduce the number of calibration columns or use a larger design."
+        )
+      ),
+      class = "surveycore_warning_zero_df_after_calibration"
+    )
+    df_final <- max(1L, df_final)
+  }
+
+  list(
+    total = total[[1L]],
+    var = v[[1L, 1L]],
+    se = sqrt(v[[1L, 1L]]),
+    df = df_final
+  )
 }
 
 
@@ -335,11 +387,9 @@
 #   $sigma      3x3 meta-vcov of (Var(X), Cov(X,Y), Var(Y))
 #   $n          Pairwise unweighted count (in-domain, non-NA for both)
 #   $n_weighted Pairwise weighted sum
-#' @noRd
 .vcov_pair_taylor <- function(design, x_col, y_col, domain, na.rm = TRUE) {
   data <- design@data
   vars <- design@variables
-  n_full <- nrow(data)
   w <- data[[vars$weights]]
   x_all <- data[[x_col]]
   y_all <- data[[y_col]]

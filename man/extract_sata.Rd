@@ -35,12 +35,16 @@ Returns the SATA status for one or more variables in a survey design object
 or a data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_sata(d, riagendr)
 extract_sata(d, riagendr)
 extract_sata(d, fill = NULL)
-
 }
 \seealso{
 \code{\link[=set_sata]{set_sata()}} to set SATA flags

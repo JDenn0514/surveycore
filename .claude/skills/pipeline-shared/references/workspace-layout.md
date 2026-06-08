@@ -27,14 +27,18 @@ Per-request runtime artifacts live under `.surveycore-workspace/`, a gitignored 
 │                   ├── review.md           reviewer output
 │                   └── shipper.md          ship record
 └── plans/                          (committed)
-    ├── spec-{id}.md                shipped spec, copied from workspace
-    ├── implementation-plan-{id}.md shipped plan
-    └── decisions-{id}.md           shipped decisions log
+    ├── spec-{slug}.md                shipped spec, copied from workspace
+    ├── test-spec-{slug}.md           shipped test-spec, copied from workspace
+    ├── comprehension-{slug}.md       shipped comprehension (if exists)
+    ├── implementation-plan-{slug}.md shipped plan
+    └── decisions-{slug}.md           shipped decisions log
 ```
 
 ## Request ID
 
 Format: `YYYY-MM-DD-{slug}` where slug is a short kebab-case name for the change. Example: `2026-04-21-get-anova`. Stable across the whole lifecycle — all artifacts for this request go in `runs/2026-04-21-get-anova/`.
+
+The date is part of the run folder name but is NOT included in durable artifact filenames in `plans/`. Artifacts use the slug alone: `spec-{slug}.md`, not `spec-{id}.md`. This keeps `plans/` filenames readable without redundant date prefixes.
 
 ## Gitignore
 

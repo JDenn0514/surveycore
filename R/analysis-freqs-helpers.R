@@ -153,9 +153,11 @@
   R <- ncol(rep_mat)
   na_dropped <- sum(is.na(rep_p))
   na_frac <- na_dropped / R
-  if (isTRUE(
-    .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
-  )) {
+  if (
+    isTRUE(
+      .nonprob_rep_na_warn(design, na_frac, na_dropped, R, vars$scale)
+    )
+  ) {
     return(list(
       pct = NA_real_,
       se = NA_real_,
@@ -262,10 +264,10 @@
 # ── .calibrated_freq_cell() ──────────────────────────────────────────────────
 #
 # Compute a weighted proportion and its HT standard error for one cell in a
-# calibrated (non-probability) design. Delegates to .calibrated_mean_cell()
-# since a proportion is the mean of a 0/1 indicator. This keeps survey_nonprob
-# dispatch consistent across all six analysis functions (all use the HT
-# variance path rather than Taylor linearization).
+# calibrated (non-probability) design. Uses the HT variance directly on the
+# 0/1 indicator. This keeps survey_nonprob dispatch consistent across all six
+# analysis functions (all use the HT variance path rather than Taylor
+# linearization).
 #
 # @param design  A survey_nonprob object.
 # @param num     Numeric vector (0/1): cell membership (level AND domain/group).

@@ -6,7 +6,6 @@
 # Internal helpers: analysis-corr-helpers.R (Pearson variance),
 # analysis-corr-latent.R (polychoric / polyserial MLE + variance paths).
 
-
 # ── .corr_extract_n_failed_from_condition() ──────────────────────────────────
 #
 # Parse the integer count of non-converged replicates from a
@@ -42,9 +41,11 @@
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
 #'   `survey_twophase`, or `survey_nonprob`. `method` values `"polychoric"`
-#'   and `"polyserial"` are supported on `survey_taylor` and
-#'   `survey_replicate` only; other design classes raise
-#'   `surveycore_error_polychoric_design_unsupported`.
+#'   and `"polyserial"` are supported on `survey_taylor`, `survey_replicate`,
+#'   and `survey_nonprob` designs that supply replicate weights
+#'   (`repweights` argument in `as_survey_nonprob()`). `survey_nonprob`
+#'   without replicate weights and `survey_twophase` designs raise
+#'   `surveycore_error_polychoric_design_unsupported` for latent methods.
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
 #'   variable names. For `method = "pearson"`, non-numeric columns are dropped
 #'   with a warning. For `method = "polychoric"`, every selected column must
@@ -79,15 +80,18 @@
 #'   pairwise sum of weights (both variables non-NA). Default `FALSE`.
 #' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
 #'   columns (e.g., `r`, `se`, `ci_low`, `ci_high`) to this many decimal
-#'   places. Default `NULL` (no rounding).
+#'   places. Default `NULL` (no rounding). Silently ignored when
+#'   `format = "wide"` (the wide matrix contains only `r` values, which are
+#'   not rounded by this argument).
 #' @param min_cell_n Integer. Minimum pairwise unweighted count before
 #'   `surveycore_warning_small_cell` fires. Default `30L` (AAPOR guidance).
-#' @param na.rm Logical. If `TRUE` (default), pairs use complete cases for
-#'   each variable pair separately (pairwise deletion), and observations where
-#'   any group variable is `NA` are excluded from the output. If `FALSE`,
-#'   pairwise complete cases are still used for each variable pair, and
-#'   observations where a group variable is `NA` are collected into their own
-#'   group row in the output (appearing after all non-`NA` group rows).
+#' @param na.rm Logical. Controls `NA` handling for group variables and the
+#'   computation domain. Pairwise complete-case deletion is always applied
+#'   for the correlation variables themselves regardless of this flag. If
+#'   `TRUE` (default), observations where any group variable is `NA` are
+#'   excluded from the output. If `FALSE`, observations where a group variable
+#'   is `NA` are collected into their own group row in the output (appearing
+#'   after all non-`NA` group rows).
 #' @param label_values Logical. If `TRUE` (default) and the grouping variable
 #'   has value labels, the group column is converted to a labelled factor.
 #'   Has no visible effect when no groups are active.
@@ -128,12 +132,18 @@
 #'     \item `[group_cols...]` — group variable columns (when active), first.
 #'     \item `var1`, `var2` — variable names (or labels when
 #'       `label_vars = TRUE`).
-#'     \item `r` — Pearson correlation coefficient.
+#'     \item `r` — correlation coefficient. For `method = "pearson"`, the
+#'       weighted product-moment correlation; for `"polychoric"` /
+#'       `"polyserial"`, the MLE of `rho` under a bivariate-normal latent
+#'       model.
 #'     \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'       `deff`) — only those requested via `variance`.
 #'     \item `p_value` — two-tailed p-value.
-#'     \item `statistic` — t-statistic.
-#'     \item `df` — degrees of freedom for the t-test (n minus 2).
+#'     \item `statistic` — test statistic. A t-statistic for
+#'       `method = "pearson"`; a Wald z-statistic for latent methods.
+#'     \item `df` — degrees of freedom. `n - 2` for `method = "pearson"`;
+#'       `NA_integer_` for `"polychoric"` and `"polyserial"` (asymptotic
+#'       normal distribution is used).
 #'     \item `n` — pairwise unweighted count.
 #'     \item `n_weighted` — pairwise sum of weights (only when requested).
 #'   }
@@ -195,16 +205,25 @@
 #'   correlation coefficient. *Psychometrika*, 44(4), 443-460.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' get_corr(d, x = c(ridageyr, bpxsy1))
 #'
 #' # Wide correlation matrix
 #' get_corr(d, x = c(ridageyr, bpxsy1), format = "wide")
 #'
 #' # AAPOR-compliant
-#' get_corr(d, x = c(ridageyr, bpxsy1),
-#'          variance = c("ci", "moe"), n_weighted = TRUE)
+#' get_corr(
+#'   d,
+#'   x = c(ridageyr, bpxsy1),
+#'   variance = c("ci", "moe"),
+#'   n_weighted = TRUE
+#' )
 #'
 #' # Polychoric correlation between two ordinal variables
 #' df <- data.frame(
@@ -215,7 +234,6 @@
 #' )
 #' d_ord <- as_survey(df, weights = wt)
 #' get_corr(d_ord, x = c(o1, o2), method = "polychoric")
-#'
 #' @family analysis
 #' @export
 get_corr <- function(
@@ -513,9 +531,7 @@ get_corr <- function(
     if (!identical(method, "pearson")) {
       meta_args_wide$bivariate_normal_cdf <- "pbivnorm"
     }
-    if (
-      !identical(method, "pearson") && n_failed_replicates_total > 0L
-    ) {
+    if (!identical(method, "pearson") && n_failed_replicates_total > 0L) {
       meta_args_wide$n_failed_replicates_total <- as.integer(
         n_failed_replicates_total
       )

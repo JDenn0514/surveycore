@@ -62,8 +62,9 @@
 #'   `"surveycore"` (default) or `"broom"` (renames `se` to `std.error`,
 #'   `ci_low` to `conf.low`, `ci_high` to `conf.high`, `p_value` to
 #'   `p.value`, `df` to `parameter`). `t_stat` is not renamed.
-#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
-#'   named-only when a `survey_collection` is passed as `design`.
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param .id Character(1) or `NULL`. Column name used to identify each
 #'   survey when `design` is a [`survey_collection`]. For collection inputs,
 #'   `NULL` (the default) resolves to the collection's stored `@id` property.
@@ -84,11 +85,19 @@
 #'
 #' @examples
 #' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-#' gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-#' gss_design <- as_survey(gss_sub,
-#'   ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' gss_sub$sex <- factor(
+#'   gss_sub$sex,
+#'   levels = c(1, 2),
+#'   labels = c("Male", "Female")
+#' )
+#' gss_design <- as_survey(
+#'   gss_sub,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' get_t_test(gss_design, age, by = sex)
-#'
 #' @family analysis
 #' @export
 get_t_test <- function(
@@ -261,7 +270,10 @@ get_t_test <- function(
           )
         } else {
           gv_str <- paste(
-            group_vars, group_vals, sep = " = ", collapse = ", "
+            group_vars,
+            group_vals,
+            sep = " = ",
+            collapse = ", "
           )
           cli::cli_abort(
             c(
@@ -329,8 +341,8 @@ get_t_test <- function(
     }
 
     # Step 9e: Extract statistics
-    beta <- stats::coef(fit)  # length 2: [intercept, slope]
-    V <- fit@vcov              # 2x2 design-based sandwich covariance
+    beta <- stats::coef(fit) # length 2: [intercept, slope]
+    V <- fit@vcov # 2x2 design-based sandwich covariance
 
     se_val <- sqrt(V[2L, 2L])
     t_stat_val <- beta[2L] / se_val
@@ -352,17 +364,22 @@ get_t_test <- function(
     level_b_val <- fac_levels[2L]
 
     n_a_val <- as.integer(sum(
-      by_col_active[active_mask] == level_a_val, na.rm = TRUE
+      by_col_active[active_mask] == level_a_val,
+      na.rm = TRUE
     ))
     n_b_val <- as.integer(sum(
-      by_col_active[active_mask] == level_b_val, na.rm = TRUE
+      by_col_active[active_mask] == level_b_val,
+      na.rm = TRUE
     ))
 
     # Step 9g: Handle label_values for level_a / level_b
     tmp_df <- data.frame(val = c(level_a_val, level_b_val))
     names(tmp_df) <- by_name
     converted_levels <- .apply_group_labels(
-      tmp_df, by_name, design, label_values
+      tmp_df,
+      by_name,
+      design,
+      label_values
     )[[1L]]
     level_a_out <- as.character(converted_levels[[1L]])
     level_b_out <- as.character(converted_levels[[2L]])
@@ -378,7 +395,9 @@ get_t_test <- function(
       n_b = n_b_val
     )
 
-    if ("se" %in% variance) row_list$se <- se_val
+    if ("se" %in% variance) {
+      row_list$se <- se_val
+    }
     if ("ci" %in% variance) {
       row_list$ci_low <- ci_low_val
       row_list$ci_high <- ci_high_val
@@ -415,7 +434,10 @@ get_t_test <- function(
   if (length(group_vars) > 0L) {
     groups_df <- result[group_vars]
     groups_df <- .apply_group_labels(
-      groups_df, group_vars, design, label_values
+      groups_df,
+      group_vars,
+      design,
+      label_values
     )
     result[group_vars] <- groups_df
   }
@@ -432,14 +454,20 @@ get_t_test <- function(
 
   # Step 14: Apply name_style
   result_class <- c(
-    "survey_t_test", "survey_result", "tbl_df", "tbl", "data.frame"
+    "survey_t_test",
+    "survey_result",
+    "tbl_df",
+    "tbl",
+    "data.frame"
   )
   class(result) <- result_class
   result <- .apply_name_style(result, name_style, exclude = NULL)
 
   # Attach column-level label attributes
   by_label <- design@metadata@variable_labels[[by_name]]
-  if (is.null(by_label) || identical(by_label, "")) by_label <- by_name
+  if (is.null(by_label) || identical(by_label, "")) {
+    by_label <- by_name
+  }
 
   col_labels <- list(
     level_a = paste0(by_label, " (A)"),
@@ -491,8 +519,31 @@ get_t_test <- function(
 }
 
 
+# ── .extract_print_label() ───────────────────────────────────────────────────
+#
+# Helper used by both print.survey_t_test and print.survey_pairwise.
+# Returns the by-variable label (from .meta) when one is set and non-empty;
+# otherwise falls back to the raw column name stored in the call.
+#
+# @param m The .meta list (attr(x, ".meta")).
+# @return A character string for display in the "By:" header line.
+.extract_print_label <- function(m) {
+  lbl <- m$by$variable_label
+  if (!is.null(lbl) && nzchar(lbl)) {
+    lbl
+  } else {
+    deparse(m$call$by)
+  }
+}
+
+
 # ── print.survey_t_test() ─────────────────────────────────────────────────────
 
+#' Print method for survey_t_test objects.
+#' @param x A `survey_t_test` object.
+#' @param ... Additional arguments (unused).
+#' @return `x`, invisibly.
+#' @method print survey_t_test
 #' @export
 print.survey_t_test <- function(x, ...) {
   m <- attr(x, ".meta")
@@ -508,10 +559,11 @@ print.survey_t_test <- function(x, ...) {
 
   x_name <- names(m$x)[[1L]]
   x_label <- m$x[[x_name]]$variable_label
-  if (is.null(x_label) || identical(x_label, "")) x_label <- x_name
+  if (is.null(x_label) || identical(x_label, "")) {
+    x_label <- x_name
+  }
 
-  by_label <- m$by$variable_label
-  if (is.null(by_label) || identical(by_label, "")) by_label <- by_label
+  by_label <- .extract_print_label(m)
 
   level_a_disp <- if (nrow(x) > 0L) x[["level_a"]][[1L]] else m$by$levels[[1L]]
   level_b_disp <- if (nrow(x) > 0L) x[["level_b"]][[1L]] else m$by$levels[[2L]]
@@ -520,7 +572,10 @@ print.survey_t_test <- function(x, ...) {
   cat(sprintf("# Design: %s | N: %s\n", design_label, n_fmt))
   cat(sprintf(
     "# DV: %s | By: %s (%s vs. %s)\n",
-    x_label, by_label, level_a_disp, level_b_disp
+    x_label,
+    by_label,
+    level_a_disp,
+    level_b_disp
   ))
 
   class(x) <- setdiff(class(x), c("survey_t_test", "survey_result"))
@@ -564,8 +619,9 @@ print.survey_t_test <- function(x, ...) {
 #' @param label_vars Logical(1). Accepted for API uniformity; no visible
 #'   effect. Default `TRUE`.
 #' @param name_style Character(1). `"surveycore"` (default) or `"broom"`.
-#' @param ... Unused. Reserved so that `.id` and `.if_missing_var` remain
-#'   named-only when a `survey_collection` is passed as `design`.
+#' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
+#'   when `design` is a [`survey_collection`]. For single-survey inputs these
+#'   arguments are ignored.
 #' @param .id Character(1) or `NULL`. Column name used to identify each
 #'   survey when `design` is a [`survey_collection`]. For collection inputs,
 #'   `NULL` (the default) resolves to the collection's stored `@id` property.
@@ -586,11 +642,19 @@ print.survey_t_test <- function(x, ...) {
 #'
 #' @examples
 #' gss_sub <- gss_2024[gss_2024$sex %in% c(1L, 2L) & !is.na(gss_2024$age), ]
-#' gss_sub$sex <- factor(gss_sub$sex, levels = c(1, 2), labels = c("Male", "Female"))
-#' gss_design <- as_survey(gss_sub,
-#'   ids = vpsu, weights = wtssps, strata = vstrat, nest = TRUE)
+#' gss_sub$sex <- factor(
+#'   gss_sub$sex,
+#'   levels = c(1, 2),
+#'   labels = c("Male", "Female")
+#' )
+#' gss_design <- as_survey(
+#'   gss_sub,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' get_pairwise(gss_design, age, by = sex)
-#'
 #' @family analysis
 #' @export
 get_pairwise <- function(
@@ -786,7 +850,10 @@ get_pairwise <- function(
     tmp_df <- data.frame(val = all_vals, stringsAsFactors = FALSE)
     names(tmp_df) <- by_name
     converted <- .apply_group_labels(
-      tmp_df, by_name, design, label_values
+      tmp_df,
+      by_name,
+      design,
+      label_values
     )[[1L]]
     lookup <- stats::setNames(as.character(converted), all_vals)
     result$level_a <- unname(lookup[result$level_a])
@@ -827,13 +894,19 @@ get_pairwise <- function(
 
   # Step 14: Apply name_style and column-level labels
   result_class <- c(
-    "survey_pairwise", "survey_result", "tbl_df", "tbl", "data.frame"
+    "survey_pairwise",
+    "survey_result",
+    "tbl_df",
+    "tbl",
+    "data.frame"
   )
   class(result) <- result_class
   result <- .apply_name_style(result, name_style, exclude = NULL)
 
   by_label <- design@metadata@variable_labels[[by_name]]
-  if (is.null(by_label) || identical(by_label, "")) by_label <- by_name
+  if (is.null(by_label) || identical(by_label, "")) {
+    by_label <- by_name
+  }
 
   col_labels <- list(
     level_a = paste0(by_label, " (A)"),
@@ -888,6 +961,11 @@ get_pairwise <- function(
 
 # ── print.survey_pairwise() ───────────────────────────────────────────────────
 
+#' Print method for survey_pairwise objects.
+#' @param x A `survey_pairwise` object.
+#' @param ... Additional arguments (unused).
+#' @return `x`, invisibly.
+#' @method print survey_pairwise
 #' @export
 print.survey_pairwise <- function(x, ...) {
   m <- attr(x, ".meta")
@@ -903,10 +981,11 @@ print.survey_pairwise <- function(x, ...) {
 
   x_name <- names(m$x)[[1L]]
   x_label <- m$x[[x_name]]$variable_label
-  if (is.null(x_label) || identical(x_label, "")) x_label <- x_name
+  if (is.null(x_label) || identical(x_label, "")) {
+    x_label <- x_name
+  }
 
-  by_label <- m$by$variable_label
-  if (is.null(by_label) || identical(by_label, "")) by_label <- by_label
+  by_label <- .extract_print_label(m)
 
   k <- length(m$by$levels)
   n_pairs <- k * (k - 1L) / 2L
@@ -915,7 +994,10 @@ print.survey_pairwise <- function(x, ...) {
   cat(sprintf("# Design: %s | N: %s\n", design_label, n_fmt))
   cat(sprintf(
     "# DV: %s | By: %s (%d levels, %d pairs)\n",
-    x_label, by_label, k, n_pairs
+    x_label,
+    by_label,
+    k,
+    n_pairs
   ))
   cat(sprintf("# Adjustment: %s\n", m$pval_adj))
 

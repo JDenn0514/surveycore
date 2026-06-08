@@ -12,11 +12,10 @@
 #
 # Error classes (A-21..A-25) defined in plans/error-messages.md.
 
-
-#' Design-Based Analysis of Variance for Survey GLM Fits
+#' Design-Based Analysis of Variance and Wald Tests for Survey GLM Fits
 #'
-#' Rao-Scott design-based ANOVA for [survey_glm()] fits. Accepts three input
-#' shapes on `object`:
+#' Rao-Scott design-based ANOVA and design-based Wald tests for
+#' [survey_glm()] fits. Accepts three input shapes on `object`:
 #'
 #' * A single [survey_glm_fit] — sequential mode, one row per term.
 #' * A list of [survey_glm_fit] objects — chained pairwise comparison,
@@ -60,15 +59,18 @@
 #' @param name_style Character(1). `"surveycore"` (default) or `"broom"`.
 #'
 #' @return A `survey_anova` tibble with columns `term`, `statistic`, `df`,
-#'   `ddf`, `deff`, `p_value`, `stars` and a `.meta` attribute.
+#'   `ddf`, `deff`, `p_value`, `stars` and a `.meta` attribute. When
+#'   `name_style = "broom"`, `p_value` is renamed to `p.value` and `ddf`
+#'   is renamed to `df.residual`.
 #'
 #' @examples
-#' gss_cc <- gss_2024[
-#'   stats::complete.cases(gss_2024[, c("age", "sex", "educ")]),
-#' ]
+#' gss_cc <- gss_2024[stats::complete.cases(gss_2024[, c("age", "sex", "educ")]), ]
 #' gss_design <- as_survey(
-#'   gss_cc, ids = vpsu, weights = wtssps,
-#'   strata = vstrat, nest = TRUE
+#'   gss_cc,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
 #' )
 #'
 #' # Single fit
@@ -82,7 +84,6 @@
 #' fit_s <- survey_glm(gss_design, age ~ sex)
 #' fit_b <- survey_glm(gss_design, age ~ sex + educ)
 #' get_anova(list(fit_s, fit_b))
-#'
 #' @family analysis
 #' @export
 get_anova <- function(
@@ -232,11 +233,13 @@ get_anova <- function(
     )
   }
 
-  bad_idx <- which(!vapply(
-    fits,
-    function(f) S7::S7_inherits(f, survey_glm_fit),
-    logical(1L)
-  ))
+  bad_idx <- which(
+    !vapply(
+      fits,
+      function(f) S7::S7_inherits(f, survey_glm_fit),
+      logical(1L)
+    )
+  )
   if (length(bad_idx) > 0L) {
     bad_classes <- vapply(
       fits[bad_idx],

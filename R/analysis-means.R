@@ -39,9 +39,9 @@
 #'   variable are included in calculations, and observations where a group
 #'   variable is `NA` are collected into their own group row in the output
 #'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API uniformity; has no visible
-#'   effect since `get_means()` output contains no categorical value cells.
-#'   Default `TRUE`.
+#' @param label_values Logical. Accepted for API consistency across `get_*()`
+#'   functions. For `get_means()`, no value-level cells appear in the output,
+#'   so this parameter has no effect. Default `TRUE`.
 #' @param label_vars Logical. Accepted for API uniformity; has no visible
 #'   effect since `get_means()` output contains no variable-name value cells.
 #'   Default `TRUE`.
@@ -66,16 +66,25 @@
 #'   \item `mean` — weighted mean estimate.
 #'   \item Variance columns (`se`, `var`, `cv`, `ci_low`, `ci_high`, `moe`,
 #'     `deff`) — only those requested via `variance`.
+#'   \item `df` — degrees of freedom used for CI calculation. Present only for
+#'     `survey_taylor` designs with an active `@calibration` object
+#'     (GREG-corrected SE). For all other designs the normal approximation
+#'     (`Inf`) is used and `df` is not included.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
-#' The variable name is stored in `meta(result)$variable`, not as a column.
+#' The variable name is stored in `meta(result)$x`, not as a column.
 #' Use `meta(result)` to access design type, variable labels, and other
 #' metadata.
 #'
 #' @examples
-#' d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-#'                strata = sdmvstra, nest = TRUE)
+#' d <- as_survey(
+#'   nhanes_2017,
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
 #' get_means(d, ridageyr)
 #'
 #' # With grouped estimate
@@ -83,7 +92,6 @@
 #'
 #' # AAPOR-compliant
 #' get_means(d, ridageyr, variance = c("ci", "moe"), n_weighted = TRUE)
-#'
 #' @family analysis
 #' @export
 get_means <- function(
@@ -200,6 +208,7 @@ get_means <- function(
   acc_sesrs <- numeric(0)
   acc_n <- integer(0)
   acc_nw <- numeric(0)
+  acc_df <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
 
   small_cell_ns <- integer(0)
@@ -226,6 +235,7 @@ get_means <- function(
     acc_sesrs <- c(acc_sesrs, cell$se_srs)
     acc_n <- c(acc_n, cell$n)
     acc_nw <- c(acc_nw, cell$n_weighted)
+    acc_df <- c(acc_df, if (!is.null(cell$df)) cell$df else Inf)
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -248,18 +258,29 @@ get_means <- function(
   }
 
   # ── Step 8: Build column vectors ────────────────────────────────────────────
+  # Use per-cell df from .taylor_mean_cell() when calibration is active;
+  # fall back to Inf (normal approximation) for non-Taylor or uncalibrated.
+  has_calibration <- S7::S7_inherits(design, survey_taylor) &&
+    !is.null(design@calibration) &&
+    length(design@calibration) > 0L
+  effective_degf <- if (has_calibration) acc_df else degf
+
   var_cols <- .add_variance_cols(
     se_vec = acc_se,
     estimate_vec = acc_mean,
     se_srs_vec = acc_sesrs,
     conf_level = conf_level,
-    degf = degf,
+    degf = effective_degf,
     variance = variance
   )
 
   col_vecs <- list()
   col_vecs$mean <- acc_mean
   col_vecs <- c(col_vecs, var_cols)
+  # Add df column only for calibrated Taylor designs
+  if (has_calibration) {
+    col_vecs$df <- acc_df
+  }
   col_vecs$n <- acc_n
 
   if (isTRUE(n_weighted)) {

@@ -82,19 +82,18 @@
 
 # ── .glm_value_label_for() ────────────────────────────────────────────────────
 #
-# Get the display label for a factor level. Checks design metadata value_labels
-# for a name matching `level_name` (haven convention: names = labels, values
-# = codes). Falls back to the level name itself.
+# Get the display label for a factor level. Currently always returns
+# level_name: in haven convention, factor level names are themselves the
+# display labels (they are stored as the names of the val_labels vector,
+# not as separate label strings). Both branches return level_name.
 #
 # @param design     A survey_base object.
 # @param var_name   Character(1): variable name.
 # @param level_name Character(1): factor level name.
-# @return Character(1): value label or level name.
-#' @noRd
+# @return Character(1): level_name (the level name is the display label).
 .glm_value_label_for <- function(design, var_name, level_name) {
   val_labels <- design@metadata@value_labels[[var_name]]
   if (!is.null(val_labels) && level_name %in% names(val_labels)) {
-    # In haven convention, names ARE the display labels
     level_name
   } else {
     level_name
@@ -345,12 +344,16 @@
 #'   Metadata is accessed via [meta()].
 #'
 #' @examples
-#' d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-#'                strata = vstrat, nest = TRUE)
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
 #' fit <- survey_glm(d, age ~ sex)
 #' clean(fit)
 #' clean(fit, conf_level = 0.99, exponentiate = FALSE)
-#'
 #' @seealso [survey_glm()] to fit the model, [meta()] to access metadata.
 #' @family analysis
 #' @export

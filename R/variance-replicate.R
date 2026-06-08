@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# R/06-variance-replicate.R
+# R/variance-replicate.R
 # ---------------------------------------------------------------------------
 # Replicate-weight variance estimation for survey_replicate designs.
 #
@@ -48,8 +48,8 @@
 
 # Shared scaffolding for replicate-weight variance estimation.
 #
-# Survey package default (combined.weights = TRUE): replicate weights are
-# full survey weights, so the replicate mean is sum(repwt * y) / sum(repwt).
+# Replicate weights are full survey weights (surveycore always uses the
+# combined.weights = TRUE mode): replicate mean is sum(repwt * y) / sum(repwt).
 # The base weights are used only for the full-sample statistic denominator.
 #
 # @param design       A survey_replicate object.
@@ -60,7 +60,6 @@
 #                     statistics, vectorised over the replicate weight matrix
 #                     using BLAS matrix operations.
 # @return list(stat, var, se) where stat is the full-sample estimate.
-#' @noRd
 .replicate_estimate <- function(
   design,
   y_col,
@@ -148,7 +147,6 @@
 # @param domain Numeric 0/1 vector (full length). Domain membership mask.
 # @param na.rm  Logical. If TRUE, exclude rows where x or y is NA.
 # @return Named list: $a, $b, $c, $sigma (3x3), $n, $n_weighted
-#' @noRd
 .vcov_pair_replicate <- function(design, x_col, y_col, domain, na.rm = TRUE) {
   data <- design@data
   vars <- design@variables
@@ -218,11 +216,17 @@
   ok <- apply(rep_abc, 1L, function(row) !any(is.na(row)))
   na_dropped_abc <- sum(!ok)
   na_frac_abc <- na_dropped_abc / n_rep
-  if (isTRUE(
-    .nonprob_rep_na_warn(
-      design, na_frac_abc, na_dropped_abc, n_rep, scale
+  if (
+    isTRUE(
+      .nonprob_rep_na_warn(
+        design,
+        na_frac_abc,
+        na_dropped_abc,
+        n_rep,
+        scale
+      )
     )
-  )) {
+  ) {
     sigma <- matrix(NA_real_, 3L, 3L)
     return(list(
       a = a,

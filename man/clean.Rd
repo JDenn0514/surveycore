@@ -54,12 +54,16 @@ predictors), design-based standard errors, confidence intervals, and
 structured metadata.
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps,
-               strata = vstrat, nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 fit <- survey_glm(d, age ~ sex)
 clean(fit)
 clean(fit, conf_level = 0.99, exponentiate = FALSE)
-
 }
 \seealso{
 \code{\link[=survey_glm]{survey_glm()}} to fit the model, \code{\link[=meta]{meta()}} to access metadata.

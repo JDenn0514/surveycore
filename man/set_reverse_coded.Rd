@@ -40,11 +40,15 @@ design |> set_reverse_coded(variable = vars)
 Setting \code{reverse_coded = FALSE} removes the flag.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 d <- set_reverse_coded(d, bpxsy1, ridageyr)
 d <- set_reverse_coded(d, bpxsy1, reverse_coded = FALSE)
-
 }
 \seealso{
 \code{\link[=extract_reverse_coded]{extract_reverse_coded()}} to retrieve reverse-coded flags

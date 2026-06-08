@@ -307,6 +307,27 @@ against the messages defined here.
 - Row 16 (`surveycore_error_repweights_empty`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
 - Row 17 (`surveycore_error_rscales_length`): trigger description extended — now fired by both `as_survey_replicate()` and `as_survey_nonprob()`.
 
+### calibrate-survey-taylor rows (PR 1 — class, constructor, as_caldata)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| CAL-1 | `as_caldata()` | `base_weights` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_weights_missing` | `"x" = "base_weights contains non-finite values ({sum(!is.finite(base_weights))} value(s))."` |
+| CAL-2 | `as_caldata()` | `base_weights` contains non-positive values (or length 0) | ERROR | `surveycore_error_caldata_weights_nonpositive` | `"x" = "base_weights must be strictly positive."` |
+| CAL-3 | `as_caldata()` | `g_weights` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_gweights_missing` | `"x" = "g_weights contains non-finite values."` |
+| CAL-4 | `as_caldata()` | `g_weights` contains non-positive values (or length 0) | ERROR | `surveycore_error_caldata_gweights_nonpositive` | `"x" = "g_weights must be strictly positive."` |
+| CAL-5 | `as_caldata()` | `length(g_weights) != length(base_weights)` | ERROR | `surveycore_error_caldata_gweights_length_mismatch` | `"x" = "g_weights length ({length(g_weights)}) must equal base_weights length ({length(base_weights)})."` |
+| CAL-6 | `as_caldata()` | `g_weights * sqrt(base_weights)` < `.Machine$double.eps^0.5` | ERROR | `surveycore_error_caldata_weights_near_zero` | `"x" = "g_weights * sqrt(base_weights) contains near-zero values ({sum(w_prod < .Machine$double.eps^0.5)} value(s))."` |
+| CAL-7 | `as_caldata()` | `nrow(model_matrix) != length(base_weights)` | ERROR | `surveycore_error_caldata_dimension_mismatch` | `"x" = "model_matrix has {nrow(model_matrix)} rows but base_weights has length {length(base_weights)}."` |
+| CAL-8 | `as_caldata()` | `model_matrix` has 0 columns | ERROR | `surveycore_error_caldata_empty_model_matrix` | `"x" = "model_matrix must have at least 1 column."` |
+| CAL-9 | `as_caldata()` | `model_matrix` contains `NA`, `NaN`, or `Inf` | ERROR | `surveycore_error_caldata_model_matrix_invalid` | `"x" = "model_matrix contains non-finite values."` |
+| CAL-10 | `.apply_caldata_projection()` | Any caldata element has `stage != 0L` | ERROR | `surveycore_error_caldata_within_stage_unsupported` | `"x" = "Within-PSU calibration (stage != 0) is not supported in v1."` |
+| CAL-11 | `.apply_caldata_projection()` | `nrow(u) != length(cd$w)` | ERROR | `surveycore_error_caldata_projection_dimension_mismatch` | `"x" = "Calibration projection dimension mismatch."` |
+| CAL-12 | `.apply_caldata_projection()` | NULL element found in caldata list | ERROR | `surveycore_error_caldata_invalid_element` | `"x" = "caldata element(s) {bad_idx} are NULL."` |
+| CAL-13 | `update_design()` | Weight column changes on a calibrated design | WARNING | `surveycore_warning_weight_change_invalidates_calibration` | `"!" = "Weight column changed on a calibrated design."` |
+| CAL-14 | `get_means()` / variance | Calibration df reduction >= design df | WARNING | `surveycore_warning_zero_df_after_calibration` | `"!" = "Calibration reduces design df ({df_design}) to {df_final}."` |
+| CAL-15 | `as_survey()`, `as_survey_replicate()` | `calibration` argument is non-`NULL` but not a list | ERROR | `surveycore_error_calibration_not_list` | `"x" = "{.arg calibration} must be a list of {.fn as_caldata} outputs or {.code NULL}.", "i" = "Got {.cls {class(calibration)[[1L]]}}."` |
+| CAL-16 | `as_survey()`, `as_survey_replicate()` | A list element of `calibration` fails the caldata structure check | ERROR | `surveycore_error_caldata_invalid_element` | `"x" = "Element {.val {i}} of {.arg calibration} is not a valid caldata object.", "i" = "Each element must be a named list with fields {.val qr}, {.val w}, {.val stage}, and {.val index}, produced by {.fn as_caldata}."` (reuses class from CAL-12) |
+
 ---
 
 ## Notes on Typed Errors
@@ -370,3 +391,16 @@ Which test files cover which error table rows:
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
 | `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
+| `test-calibration.R` | CAL-15, CAL-16 |
+
+### doc-fixes rows (2026-06-05)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| DF-1 | `update.survey_glm_fit` | `object@call` is `NULL` | ERROR | `surveycore_error_update_no_call` | `"Cannot update {.cls survey_glm_fit}: {.field @call} is NULL."` |
+| DF-2 | S7 validator (`survey_collection`) | `@surveys` list has missing/empty/NA names | ERROR | `surveycore_error_collection_unnamed` | `"All surveys in the collection must be named."` (renamed from `surveycore_error_collection_empty` — distinct from the empty-list condition) |
+| DF-3 | `remove_survey()` | `name` not a character vector | ERROR | `surveycore_error_invalid_name_type` | `"{.arg name} must be a character vector, not {.cls {class(name)[[1L]]}}."` |
+| DF-4 | `.vcov_pair_taylor()` / `.svy_onestrat()` | unknown `lonely.psu` value | ERROR | `surveycore_error_lonely_psu_unknown_option` | `"Unknown {.arg lonely.psu} value: {.val {lonely.psu}}."` |
+| DF-5 | `extract_sata()` | `fill` is not `FALSE` or `NULL` | ERROR | `surveycore_error_fill_not_logical` | `"{.arg fill} must be {.code FALSE} or {.code NULL}."` |
+| DF-6 | `.svy_onestrat()` | stratum with one PSU + `lonely.psu = "fail"` | ERROR | `surveycore_error_lonely_psu` | `"Stratum {.val {stratum}} has only one PSU at stage {stage}."` |
+| DF-7 | `.svy_rep_var()` | all replicate thetas are `NA` | ERROR | `surveycore_error_all_replicates_na` | `"All replicates produced NA estimates."` |

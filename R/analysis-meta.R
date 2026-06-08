@@ -19,7 +19,9 @@
 #' @return A named list. Common fields present on every result:
 #' \describe{
 #'   \item{`design_type`}{Character(1). Design class: `"taylor"`,
-#'     `"replicate"`, `"twophase"`, `"srs"`, or `"nonprob"`.}
+#'     `"replicate"`, `"twophase"`, or `"nonprob"`. SRS designs are
+#'     represented as `survey_taylor` (no IDs/strata) and report
+#'     `"taylor"`.}
 #'   \item{`conf_level`}{Numeric(1). Confidence level used (e.g. `0.95`).}
 #'   \item{`call`}{Language. Matched call to the `get_*()` function.}
 #'   \item{`n_respondents`}{Integer(1). Total rows in the design, regardless
@@ -48,22 +50,24 @@
 #' result <- structure(
 #'   tibble::tibble(mean = 42.0, se = 1.5, n = 100L),
 #'   .meta = list(
-#'     design_type   = "taylor",
-#'     conf_level    = 0.95,
-#'     call          = quote(get_means(d, x)),
+#'     design_type = "taylor",
+#'     conf_level = 0.95,
+#'     call = quote(get_means(d, x)),
 #'     n_respondents = 100L,
-#'     group         = list(),
-#'     x             = list(
-#'       x = list(variable_label = NULL, question_preface = NULL,
-#'                value_labels = NULL)
+#'     group = list(),
+#'     x = list(
+#'       x = list(
+#'         variable_label = NULL,
+#'         question_preface = NULL,
+#'         value_labels = NULL
+#'       )
 #'     )
 #'   ),
 #'   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 #' )
-#' meta(result)$design_type    # "taylor"
-#' meta(result)$n_respondents  # 100L
-#' meta(result)$conf_level     # 0.95
-#'
+#' meta(result)$design_type # "taylor"
+#' meta(result)$n_respondents # 100L
+#' meta(result)$conf_level # 0.95
 #' @family analysis
 #' @export
 meta <- function(x, ...) UseMethod("meta")
@@ -89,19 +93,24 @@ meta.survey_result <- function(x, ...) attr(x, ".meta")
 #' result <- structure(
 #'   tibble::tibble(mean = 42.0, se = 1.5, n = 100L),
 #'   .meta = list(
-#'     design_type = "taylor", conf_level = 0.95,
-#'     call = quote(get_means(d, x)), n_respondents = 100L,
+#'     design_type = "taylor",
+#'     conf_level = 0.95,
+#'     call = quote(get_means(d, x)),
+#'     n_respondents = 100L,
 #'     group = list(),
-#'     x = list(x = list(variable_label = NULL, question_preface = NULL,
-#'                        value_labels = NULL))
+#'     x = list(
+#'       x = list(
+#'         variable_label = NULL,
+#'         question_preface = NULL,
+#'         value_labels = NULL
+#'       )
+#'     )
 #'   ),
 #'   class = c("survey_means", "survey_result", "tbl_df", "tbl", "data.frame")
 #' )
 #' print(result)
-#'
 #' @method print survey_result
 #' @export
-#' @keywords internal
 print.survey_result <- function(x, ...) {
   cls <- class(x)[1L]
   dims <- paste(nrow(x), "\u00d7", ncol(x))
@@ -126,7 +135,6 @@ print.survey_result <- function(x, ...) {
 #'
 #' @method print survey_diffs
 #' @export
-#' @keywords internal
 print.survey_diffs <- function(x, ...) {
   m <- attr(x, ".meta")
 

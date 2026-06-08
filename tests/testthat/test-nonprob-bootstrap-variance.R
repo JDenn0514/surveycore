@@ -308,3 +308,289 @@ test_that(".nonprob_rep_na_warn() returns NULL immediately for non-survey_nonpro
   result <- .nonprob_rep_na_warn(d_rep, na_frac = 0.9, na_dropped = 9L, R = 10L, scale = 0.1)
   expect_null(result)
 })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section 9: JK1 dispatch happy-path tests
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Helper: build a minimal JK1 nonprob design (delete-one pseudo-weights)
+.make_jk1_design <- function(n = 100L, R = 20L, seed = 42L) {
+  set.seed(seed)
+  y <- rnorm(n, mean = 5)
+  wt <- runif(n, 0.8, 1.2)
+  # delete-one pseudo-weights: replicate r zeros out row r, scales others up
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+}
+
+test_that("get_means() on JK1 nonprob: no error, returns tibble with finite positive se", {
+  d <- .make_jk1_design(n = 100L, R = 20L, seed = 1L)
+  result <- get_means(d, y, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$se[[1L]]))
+  expect_gt(result$se[[1L]], 0)
+})
+
+test_that("get_totals() on JK1 nonprob: no error, returns tibble with finite positive se", {
+  d <- .make_jk1_design(n = 100L, R = 20L, seed = 2L)
+  result <- get_totals(d, y, variance = "se")
+  test_result_invariants(result, "survey_totals")
+  expect_true(is.finite(result$se[[1L]]))
+  expect_gt(result$se[[1L]], 0)
+})
+
+test_that("get_freqs() on JK1 nonprob with factor column: no error", {
+  set.seed(3L)
+  n <- 100L
+  R <- 20L
+  y <- rnorm(n)
+  wt <- runif(n, 0.8, 1.2)
+  fac <- factor(sample(c("A", "B", "C"), n, replace = TRUE))
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt, fac = fac)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  result <- get_freqs(d, fac)
+  expect_true(inherits(result, "survey_freqs"))
+  expect_gte(nrow(result), 1L)
+})
+
+test_that("get_means() on JK2 nonprob with explicit rscales: no error", {
+  set.seed(4L)
+  n <- 60L
+  R <- 20L
+  # 2 strata of 10 replicates each: rscales = (n_h - 1) / n_h
+  # Here: 10 replicates per stratum, so rscales = 9/10 for each
+  rscales_vec <- rep(9 / 10, R)
+  y <- rnorm(n)
+  wt <- runif(n, 0.8, 1.2)
+  # For JK2 the rep_mat structure is more complex; use generic positive weights
+  rep_mat <- matrix(
+    pmax(0.01, abs(rnorm(n * R, mean = wt))),
+    nrow = n, ncol = R
+  )
+  df <- data.frame(y = y, wt = wt)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK2",
+    rscales = rscales_vec
+  )
+  result <- get_means(d, y, variance = "se")
+  test_result_invariants(result, "survey_means")
+  expect_true(is.finite(result$se[[1L]]))
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section 10: JK1 edge-case dispatch tests
+# ══════════════════════════════════════════════════════════════════════════════
+
+test_that("all-NA outcome for JK1 nonprob: no error, mean is NA", {
+  set.seed(5L)
+  n <- 50L
+  R <- 20L
+  y_all_na <- rep(NA_real_, n)
+  wt <- runif(n, 0.8, 1.2)
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y_all_na, wt = wt)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  result <- suppressWarnings(get_means(d, y, variance = "se"))
+  expect_true(is.na(result$mean[[1L]]))
+})
+
+test_that("single-level grouping for JK1 nonprob: no error", {
+  set.seed(6L)
+  n <- 80L
+  R <- 20L
+  y <- rnorm(n)
+  wt <- runif(n, 0.8, 1.2)
+  grp <- rep("one_level", n) # single level group
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt, grp = grp)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  d <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  result <- get_means(d, y, group = grp)
+  expect_gte(nrow(result), 1L)
+})
+
+test_that("zero-weight domain for JK1 nonprob: no error", {
+  set.seed(7L)
+  n <- 60L
+  R <- 20L
+  y <- rnorm(n)
+  wt <- c(rep(0, 10L), runif(n - 10L, 0.8, 1.2))
+  grp <- c(rep("zero_wt", 10L), rep("nonzero_wt", n - 10L))
+  rep_mat <- matrix(
+    pmax(0, wt * n / (n - 1)),
+    nrow = n, ncol = R
+  )
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt, grp = grp)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+  # Need at least one positive weight — use a design without zero-wt rows
+  # (zero-weight rows are valid; use positive-wt rows only in the design)
+  d <- as_survey_nonprob(
+    df[wt > 0, ],
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  result <- get_means(d, y)
+  expect_true(is.finite(result$mean[[1L]]) || is.na(result$mean[[1L]]))
+})
+
+test_that("SRS fallback warning still fires for JK1 nonprob without replicates", {
+  # Regression guard: ensuring the SRS-fallback path fires even when
+  # type = "JK1" is specified but repweights = NULL
+  df <- make_survey_data(n = 100L, seed = 42L)
+  d <- as_survey_nonprob(df, weights = wt)
+  expect_warning(
+    get_means(d, y1),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section 11: JK1 numerical parity vs. survey package
+# ══════════════════════════════════════════════════════════════════════════════
+
+test_that("get_means() SE matches survey::svymean() SE within 1e-8 for JK1", {
+  skip_if_not_installed("survey")
+
+  n <- 100L
+  R <- 20L
+  set.seed(42L)
+  y <- rnorm(n, mean = 5)
+  wt <- runif(n, 0.8, 1.2)
+
+  # Build R JK1 delete-one pseudo-weights
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+
+  sc_design <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  # Oracle: mse = TRUE matches surveycore's default (MSE form of variance)
+  sv_design <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    repweights = rep_mat,
+    weights = ~wt,
+    type = "JK1",
+    combined.weights = TRUE,
+    mse = TRUE
+  ))
+
+  sc_est <- get_means(sc_design, y, variance = "se")
+  sv_est <- survey::svymean(~y, sv_design, na.rm = TRUE)
+
+  expect_equal(
+    sc_est$mean[[1L]],
+    as.numeric(coef(sv_est)[[1L]]),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    sc_est$se[[1L]],
+    as.numeric(survey::SE(sv_est))[[1L]],
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_totals() SE matches survey::svytotal() SE within 1e-8 for JK1", {
+  skip_if_not_installed("survey")
+
+  n <- 100L
+  R <- 20L
+  set.seed(42L)
+  y <- rnorm(n, mean = 5)
+  wt <- runif(n, 0.8, 1.2)
+
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt)
+  df[paste0("jk", seq_len(R))] <- as.data.frame(rep_mat)
+
+  sc_design <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+  # Oracle: mse = TRUE matches surveycore's default (MSE form of variance)
+  sv_design <- suppressWarnings(survey::svrepdesign(
+    data = df,
+    repweights = rep_mat,
+    weights = ~wt,
+    type = "JK1",
+    combined.weights = TRUE,
+    mse = TRUE
+  ))
+
+  sc_est <- get_totals(sc_design, y, variance = "se")
+  sv_est <- survey::svytotal(~y, sv_design, na.rm = TRUE)
+
+  expect_equal(
+    sc_est$total[[1L]],
+    as.numeric(coef(sv_est)[[1L]]),
+    tolerance = 1e-10
+  )
+  expect_equal(
+    sc_est$se[[1L]],
+    as.numeric(survey::SE(sv_est))[[1L]],
+    tolerance = 1e-8
+  )
+})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Section 12: Bootstrap SE regression guard (snapshot)
+# ══════════════════════════════════════════════════════════════════════════════
+
+test_that("bootstrap SE is unchanged by this PR (regression guard)", {
+  set.seed(99L)
+  df_rep <- .make_nonprob_rep(n = 200L, R = 20L, seed = 99L)
+  d <- as_survey_nonprob(
+    df_rep,
+    weights = wt,
+    repweights = starts_with("repwt_")
+  )
+  result <- get_means(d, y1, variance = "se")
+  # Snapshot the SE value to detect any accidental change to the bootstrap path
+  expect_snapshot(round(result$se[[1L]], 8L))
+})

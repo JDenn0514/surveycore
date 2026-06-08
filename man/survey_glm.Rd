@@ -70,7 +70,10 @@ A \link{survey_glm_fit} S7 object.
 \description{
 Fits a GLM to survey data, producing design-based coefficient estimates
 and variance-covariance matrix via the Binder (1983) sandwich estimator.
-All five surveycore design classes are supported.
+All four concrete surveycore design classes are supported
+(\code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, \code{survey_nonprob}).
+\code{survey_collection} inputs are rejected; call \code{survey_glm()} on each
+element individually.
 }
 \details{
 \strong{Variance estimation:} Uses the Binder (1983) sandwich estimator, which
@@ -142,8 +145,13 @@ number of replicates. The dominant cost for large \emph{n} is typically the
 \code{stats::glm()} IRLS fit (O(\emph{n} · \emph{p}² · \emph{I}) per IRLS iteration).
 }
 \examples{
-d <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat,
-               nest = TRUE)
+d <- as_survey(
+  gss_2024,
+  ids = vpsu,
+  weights = wtssps,
+  strata = vstrat,
+  nest = TRUE
+)
 
 # Linear model: respondent age predicted by education and sex
 fit <- survey_glm(d, age ~ educ + sex)
@@ -154,7 +162,6 @@ fit@vcov
 results <- lapply(c("age", "educ"), function(v) {
   survey_glm(d, response = v, predictors = "sex")
 })
-
 }
 \references{
 Binder, D.A. (1983) On the variances of asymptotically normal estimators
@@ -171,11 +178,11 @@ Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
 }
 \seealso{
 Other constructors: 
+\code{\link{as_caldata}()},
 \code{\link{as_survey}()},
 \code{\link{as_survey_nonprob}()},
 \code{\link{as_survey_replicate}()},
 \code{\link{as_survey_twophase}()},
-\code{\link{survey_data}()},
 \code{\link{survey_glm_fit}()},
 \code{\link{survey_nonprob}()},
 \code{\link{survey_replicate}()},

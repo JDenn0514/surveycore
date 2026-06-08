@@ -3,19 +3,23 @@
 # Internal primitives for weighted polychoric and polyserial correlation
 # under complex survey designs (Mannan 2025; Olsson 1979; Cox 1974).
 #
-# PR 1 scope: estimator primitives only. No user-visible API change.
-# Dispatcher (.corr_latent_pair), variance paths, and boundary detection
-# land in PR 2. Exported wiring via get_corr() lands in PR 3.
-#
 # Functions:
 #   .corr_detect_ordinal()           — classify a column by type
 #   .corr_canonicalize_polyserial()  — assign ordinal/continuous roles
 #   .corr_estimate_thresholds()      — weighted marginal threshold estimation
 #   .corr_weighted_standardize()     — weighted standardization (Cox 1974)
+#   .corr_bivnorm_cdf()              — bivariate-normal CDF wrapper
 #   .corr_polychoric_loglik()        — weighted log-likelihood (polychoric)
 #   .corr_polyserial_loglik()        — weighted log-likelihood (polyserial)
+#   .corr_count_sparse_cells()       — detect sparse ordinal cells
 #   .corr_polychoric_mle()           — MLE for polychoric rho
 #   .corr_polyserial_mle()           — MLE for polyserial rho
+#   .corr_detect_boundary_rho()      — detect boundary rho values
+#   .corr_fisher_ci()                — Fisher-z CI construction
+#   .corr_numerical_influence()      — perturbation-based influence function
+#   .corr_taylor_variance_latent()   — Taylor variance for latent methods
+#   .corr_replicate_variance_latent() — replicate variance for latent methods
+#   .corr_latent_pair()              — dispatcher for one variable pair
 
 # ── .corr_detect_ordinal() ────────────────────────────────────────────────────
 #
@@ -695,7 +699,9 @@
   n_sparse <- 0L
   for (m in seq_len(k_x)) {
     for (p in seq_len(k_y)) {
-      if (cell_counts[m, p] == 0) next
+      if (cell_counts[m, p] == 0) {
+        next
+      }
       a_hi <- tx_full[[m + 1L]]
       a_lo <- tx_full[[m]]
       b_hi <- ty_full[[p + 1L]]
@@ -860,7 +866,6 @@
 #   .corr_replicate_variance_latent()  — per-replicate MLE loop variance
 #   .corr_fisher_ci()                  — Fisher-z CI back-transform (shared)
 #   .corr_latent_pair()                — pair-level dispatcher
-
 
 # ── .corr_detect_boundary_rho() ──────────────────────────────────────────────
 #
@@ -1286,7 +1291,7 @@
 # Pair-level dispatcher for polychoric / polyserial correlation.
 #
 # Step order:
-#   1. PC-7 gate for survey_twophase / survey_nonprob (before any MLE work).
+#   1. PC-7 gate for survey_twophase and survey_nonprob without repweights.
 #   2. Canonicalize (polyserial only).
 #   3. PC-1 gate for polychoric (reject non-ordinal).
 #   4. PC-13 warning when any side is unordered factor.
@@ -1308,19 +1313,37 @@
   conf_level = 0.95
 ) {
   # 1. PC-7 gate — before any MLE work.
+  if (S7::S7_inherits(design, survey_twophase)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.code method = {.val {method}}} is not supported for ",
+          "{.cls {class(design)[[1L]]}} designs."
+        ),
+        "v" = paste0(
+          "Use {.code method = \"pearson\"}, or call {.fn get_corr} on a ",
+          "{.cls survey_taylor} or {.cls survey_replicate} design."
+        )
+      ),
+      class = "surveycore_error_polychoric_design_unsupported"
+    )
+  }
   if (
-    S7::S7_inherits(design, survey_twophase) ||
-      S7::S7_inherits(design, survey_nonprob)
+    S7::S7_inherits(design, survey_nonprob) &&
+      is.null(design@variables$repweights)
   ) {
     cli::cli_abort(
       c(
         "x" = paste0(
           "{.code method = {.val {method}}} is not supported for ",
-          "{.cls {class(design)[[1L]]}} designs in this release."
+          "{.cls {class(design)[[1L]]}} designs without replicate weights."
+        ),
+        "i" = paste0(
+          "Supply bootstrap replicate weights via {.arg repweights} in ",
+          "{.fn as_survey_nonprob} to use this method."
         ),
         "v" = paste0(
-          "Use {.code method = \"pearson\"}, or call {.fn get_corr} on a ",
-          "{.cls survey_taylor} or {.cls survey_replicate} design."
+          "Use {.code method = \"pearson\"}, or supply replicate weights."
         )
       ),
       class = "surveycore_error_polychoric_design_unsupported"
@@ -1561,7 +1584,10 @@
       w = w_full,
       active_domain = pair_active
     )
-  } else if (S7::S7_inherits(design, survey_replicate)) {
+  } else if (
+    S7::S7_inherits(design, survey_replicate) ||
+      S7::S7_inherits(design, survey_nonprob)
+  ) {
     var_out <- .corr_replicate_variance_latent(
       design,
       method = method,
@@ -1572,7 +1598,9 @@
     )
   } else {
     # nocov start
-    # Defensive: PC-7 gate above already rejects twophase / nonprob.
+    # Defensive: PC-7 gate above already rejects twophase and nonprob without
+    # repweights; only taylor, replicate, and nonprob with repweights reach
+    # here.
     cli::cli_abort(
       c(
         "x" = paste0(
@@ -1606,7 +1634,7 @@
       c(
         "!" = paste0(
           "Estimated correlation for pair ({.field {x_col}}, ",
-          "{.field {y_col}}) is within {.val 1e-6} of the boundary ",
+          "{.field {y_col}}) is within {.val 1e-4} of the boundary ",
           "({.val {rho_hat}})."
         ),
         "i" = paste0(

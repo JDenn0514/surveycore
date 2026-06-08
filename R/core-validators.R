@@ -7,9 +7,9 @@
 # on success; call cli_abort() or cli_warn() on failure.
 #
 # The 3-layer validator architecture (per phase-0-implementation-plan-v2.md):
-#   Layer 1 — S7 class validators    (R/00-s7-classes.R)
-#   Layer 2 — these helpers          (R/02-validators.R)  <-- this file
-#   Layer 3 — constructor validation (R/03-constructors.R)
+#   Layer 1 — S7 class validators    (R/core-classes.R)
+#   Layer 2 — these helpers          (R/core-validators.R)  <-- this file
+#   Layer 3 — constructor validation (R/core-constructors.R)
 #
 # No logic from one layer is duplicated in another.
 # Error classes match plans/error-messages.md exactly.

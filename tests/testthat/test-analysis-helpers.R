@@ -1422,3 +1422,79 @@ test_that("print.survey_result() outputs header with class and dims", {
   expect_true(any(grepl("survey_means", out)))
   expect_true(any(grepl("×", out))) # the dimension separator
 })
+
+
+# ── Category 15: .nonprob_rep_na_warn() message text ─────────────────────────
+
+# Helper: build a JK1 nonprob design where one domain has a given number of
+# NA replicates (achieved by zeroing out those replicate weights for the
+# domain rows — the downstream estimation will produce NA for those cells).
+.make_jk1_nonprob_na <- function(n = 50L, R = 20L, na_reps = 3L, seed = 42L) {
+  set.seed(seed)
+  y <- rnorm(n)
+  wt <- runif(n, 0.8, 1.2)
+  grp <- ifelse(seq_len(n) <= n %/% 2L, "A", "B")
+  # Delete-one JK1 pseudo-weights
+  rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
+  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  df <- data.frame(y = y, wt = wt, grp = grp)
+  repwt_names <- paste0("jk", seq_len(R))
+  df[repwt_names] <- as.data.frame(rep_mat)
+
+  # Zero out first `na_reps` replicates for group "A" rows — the domain will
+  # have NA estimates for those replicates (all group-A weights become 0,
+  # forcing the weighted sum to 0/0 = NaN, recorded as NA by get_means)
+  a_rows <- df$grp == "A"
+  if (na_reps > 0L) {
+    for (r in seq_len(na_reps)) {
+      df[[repwt_names[[r]]]][a_rows] <- 0
+    }
+  }
+
+  as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("jk"),
+    type = "JK1"
+  )
+}
+
+test_that(".nonprob_rep_na_warn() domain-NA warning does not say 'bootstrap' for JK1", {
+  # 3 of 20 replicates NA for group A = 15% → above 5% threshold
+  d <- .make_jk1_nonprob_na(n = 50L, R = 20L, na_reps = 3L, seed = 101L)
+
+  expect_warning(
+    get_means(d, y, group = grp),
+    class = "surveycore_warning_domain_replicates_na"
+  )
+
+  # Snapshot the warning message — must NOT contain "bootstrap"
+  expect_snapshot(
+    withCallingHandlers(
+      get_means(d, y, group = grp),
+      surveycore_warning_domain_replicates_na = function(w) {
+        message(conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+  )
+})
+
+test_that("domain-NA warning does NOT fire at exactly 5% NA rate (boundary)", {
+  # 1 of 20 replicates NA = 5.0% — not strictly above 5%, so no warning
+  d <- .make_jk1_nonprob_na(n = 50L, R = 20L, na_reps = 1L, seed = 102L)
+
+  # Check that domain_replicates_na class is NOT raised (other warnings OK)
+  domain_na_warned <- FALSE
+  withCallingHandlers(
+    get_means(d, y, group = grp),
+    surveycore_warning_domain_replicates_na = function(w) {
+      domain_na_warned <<- TRUE
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_false(
+    domain_na_warned,
+    label = "surveycore_warning_domain_replicates_na should not fire at 5%"
+  )
+})

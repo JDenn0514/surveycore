@@ -20,7 +20,8 @@ etc. If empty, returns metadata for all variables. Use
 
 \item{fill}{Scalar or \code{NULL}. How to handle variables with no labels:
 \code{NULL} (default) omits them; \code{NA_character_} includes them as \code{NULL}
-entries in \code{"list"} format.}
+entries in \code{"list"} format. In \code{"data_frame"} format, variables with
+no labels are always excluded regardless of \code{fill}.}
 }
 \value{
 \itemize{
@@ -34,11 +35,15 @@ Returns value labels for one or more variables in a survey design object
 or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 extract_val_labels(d, riagendr)
 extract_val_labels(d, riagendr, format = "data_frame")
-
 }
 \seealso{
 \code{\link[=set_val_labels]{set_val_labels()}} to set value labels

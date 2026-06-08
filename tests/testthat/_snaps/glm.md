@@ -135,3 +135,24 @@
       x `conf_level` must be a single number in (0, 1).
       i Got 1.5.
 
+# survey_glm() nonprob NULL repweights: warning snapshot matches NB-2 text
+
+    Code
+      survey_glm(fx$nonprob_no_rep, y1 ~ y2)
+    Condition
+      Warning:
+      ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+      i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+    Output
+      Survey-weighted GLM
+      
+      Family:  gaussian (identity link)
+      Formula: y1 ~ y2
+      Design:  Non-probability
+      
+      Coefficients:
+      (Intercept)          y2 
+          51.7939      0.2852 
+      
+      Degrees of freedom: Inf (design-based)
+

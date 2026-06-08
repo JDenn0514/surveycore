@@ -34,13 +34,17 @@ Returns variable labels for one or more variables in a survey design object
 or data frame.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-               strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 extract_var_label(d)
 extract_var_label(d, riagendr, ridageyr)
 extract_var_label(d, format = "data_frame")
 extract_var_label(d, fill = NA_character_)
-
 }
 \seealso{
 \code{\link[=set_var_label]{set_var_label()}} to set a variable label

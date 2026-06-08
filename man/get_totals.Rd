@@ -57,14 +57,17 @@ variable are included in calculations, and observations where a group
 variable is \code{NA} are collected into their own group row in the output
 (appearing after all non-\code{NA} group rows).}
 
-\item{label_values}{Logical. Accepted for API uniformity. Default \code{TRUE}.}
+\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
+functions. For \code{get_totals()}, no value-level cells appear in the output,
+so this parameter has no effect. Default \code{TRUE}.}
 
 \item{label_vars}{Logical. Accepted for API uniformity. Default \code{TRUE}.}
 
 \item{name_style}{\code{"surveycore"} (default) or \code{"broom"}.}
 
-\item{...}{Unused. Reserved so that \code{.id} and \code{.if_missing_var} remain
-named-only when a \code{survey_collection} is passed as \code{design}.}
+\item{...}{Additional arguments forwarded to \code{.dispatch_over_collection()}
+when \code{design} is a \code{\link{survey_collection}}. For single-survey inputs these
+arguments are ignored.}
 
 \item{.id}{Character(1) or \code{NULL}. Column name used to identify each
 survey when \code{design} is a \code{\link{survey_collection}}. For collection inputs,
@@ -88,7 +91,7 @@ A \code{survey_totals} tibble (also inheriting \code{survey_result}). Columns:
 \item \code{n_weighted} — sum of weights (only when requested).
 }
 The variable name (or \code{NULL} for no-variable mode) is in
-\code{meta(result)$variable}. Use \code{meta(result)} for additional metadata.
+\code{meta(result)$x}. Use \code{meta(result)} for additional metadata.
 }
 \description{
 Compute the estimated population total of a numeric variable in a survey
@@ -97,9 +100,12 @@ Supports optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
 \examples{
-d <- as_survey_replicate(acs_pums_wy, weights = pwgtp,
-                   repweights = pwgtp1:pwgtp80,
-                   type = "successive-difference")
+d <- as_survey_replicate(
+  acs_pums_wy,
+  weights = pwgtp,
+  repweights = pwgtp1:pwgtp80,
+  type = "successive-difference"
+)
 
 # Population size
 get_totals(d)
@@ -109,7 +115,6 @@ get_totals(d, agep)
 
 # Grouped
 get_totals(d, agep, group = sex)
-
 }
 \seealso{
 Other analysis: 

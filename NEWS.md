@@ -1,6 +1,72 @@
+# surveycore 1.0.0
+
+## First stable release
+
+surveycore 1.0.0 is the first stable API release. The full set of survey
+design types (Taylor series linearization, replicate weights, two-phase,
+non-probability), variance estimators, analysis functions (means, totals,
+frequencies, quantiles, ratios, correlations, regression, t-tests, ANOVA,
+effective sample size), the metadata system, and calibration-adjusted variance
+are now complete and stable.
+
+## New features
+
+* `as_survey_nonprob()` now accepts jackknife replicate schemes via
+  `type = "JK1"`, `"JK2"`, and `"JKn"`. All `get_*()` estimation functions
+  dispatch to jackknife variance when a `survey_nonprob` design carries
+  jackknife replicate weights. `print()` displays the replicate type and count
+  for jackknife designs. (#133–#136)
+
+* `survey_glm()` now routes `survey_nonprob` designs that carry bootstrap
+  replicate weights through the replicate-weight variance estimator, matching
+  the behaviour of all other `get_*()` functions for such designs. (#138)
+
+* New dataset `ca_api_2000`: the 2000 California Academic Performance Index
+  (API) survey, structured as a simple random sample from California schools.
+  Used as a primary example for `survey_taylor` SRS designs throughout the
+  documentation and vignettes. (#146)
+
+## Bug fixes
+
+* `get_diffs()`: fixed a regex metacharacter injection when variable names
+  contained special characters (`.`, `*`, `?`, etc.), and fixed `pct_change`
+  returning `NA` for some group configurations. (#145)
+
+* Fixed six print/dispatch/error bugs (B1–B6) uncovered during a documentation
+  audit: `print.survey_nonprob` no longer errors on designs with no repweights
+  set; dispatch errors now surface the correct class name in message text; three
+  error classes that were raised but never registered have been registered.
+  (#143)
+
+## Documentation
+
+* Corrected roxygen text, stale cross-references, contradictory `@tags`, and
+  mismatched `@section` headings across 40+ R files (D1–D75). (#143–#144)
+
+* The non-probability estimation vignette section has been rewritten with a
+  complete bootstrap variance example using `as_survey_nonprob()` with
+  `repweights`.
+
 # surveycore 0.9.0
 
 ## New features
+
+* Raking oracle in `test-calibration.R` replaced with
+  `survey::calibrate(calfun = "raking")` combined-matrix approach, matching
+  the Architecture A variance formula.
+
+* `as_survey()` and `as_survey_replicate()` now validate the `calibration =`
+  argument at construction time (errors CAL-15, CAL-16).
+
+* `as_caldata()` constructs a calibration data element suitable for assignment
+  to `design@calibration` on `survey_taylor` and `survey_replicate` objects.
+  Both classes now carry a `@calibration` property (default `NULL`) that will
+  be consumed by the Taylor-series variance path in the upcoming PR 2.
+
+* `get_corr()` with `method = "polychoric"` or `method = "polyserial"` now
+  supports `survey_nonprob` designs that supply bootstrap replicate weights
+  via `as_survey_nonprob(..., repweights = ...)`. Previously these designs
+  always raised `surveycore_error_polychoric_design_unsupported`.
 
 * `set_higher_is()` and `extract_higher_is()` store and retrieve a
   direction-of-improvement attribute (`"better"` or `"worse"`) for survey
