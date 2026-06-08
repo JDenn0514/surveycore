@@ -45,9 +45,9 @@ Imports:
     stats,
     graphics
 Suggests:
-    surveytidy (>= 0.5.0),
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
+    surveytidy (>= 0.5.0),
     survey (>= 4.0),
     survival,
     srvyr (>= 1.0),
