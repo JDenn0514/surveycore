@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 0.9.0.9000
+Version: 1.0.0
 Authors@R: c(
     person(
         "Jacob", "Dennen",
@@ -16,7 +16,7 @@ Authors@R: c(
 Description: A modern, 'S7'-based foundation for survey analysis
     spanning both probability and non-probability samples. Probability
     sample designs include Taylor series linearization, replicate
-    weights (BRR, Fay, JK1, JK2, JKn, bootstrap), and two-phase
+    weights (BRR, Fay, jackknife, bootstrap), and two-phase
     estimation, following 'Lumley' (2004) <doi:10.18637/jss.v009.i08>.
     Non-probability sample designs support bootstrap and jackknife
     variance estimation for opt-in panels and convenience samples.
