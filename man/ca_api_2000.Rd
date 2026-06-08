@@ -120,7 +120,7 @@ via the \code{fpc} argument:
 \strong{Missing values:} Several columns have \code{NA} for schools where the value is
 inapplicable: \code{acs_k3} (grades K--3) is \code{NA} for high schools and middle
 schools, where those grade spans do not exist; \code{acs_46} (grades 4--6) is
-\code{NA} for most elementary and some middle schools; \code{acs_core} is \code{NA} for
+\code{NA} for all high schools and some elementary and middle schools; \code{acs_core} is \code{NA} for
 elementary schools.
 
 \strong{Metadata:} All 39 columns carry \code{"label"} attributes (human-readable
