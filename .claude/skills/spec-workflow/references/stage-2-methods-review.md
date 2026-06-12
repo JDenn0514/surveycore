@@ -210,7 +210,7 @@ regression coefficients or model-based estimators.
 - **Non-convergence or degenerate conditions:** Is behavior specified for
   replicate subsets that produce degenerate estimates?
 
-### Lens 5 — Established Practice and Literature
+### Lens 5 — Established Practice
 
 Compare the spec's approach to the `survey` package convention for each
 estimand. For each material deviation:
@@ -222,6 +222,44 @@ estimand. For each material deviation:
 Flag any area where the methodological literature is genuinely uncertain
 (e.g., exact df formula for Wald tests in complex designs). Note these as
 ADVISORY with citations. Mark uncertain citations as `[verify]`.
+
+### Lens 6 — Literature Cross-Check
+
+**Run only when** a paper, PDF, or `comprehension.md` is available in the
+workspace. If no paper was attached and no `comprehension.md` exists, skip
+this lens and note "Lens 6 not applicable: no literature attached."
+
+This lens verifies that the spec's formulas, algorithms, and design decisions
+match the attached paper or `comprehension.md`. Its job is to catch divergence
+between what the paper says and what the spec specifies — before code is written.
+
+**Questions to answer:**
+
+1. **Formula fidelity** — For each formula in the spec, does it match the
+   corresponding formula in `comprehension.md` or the paper? Are all symbols
+   defined the same way? Is the normalization convention consistent?
+
+2. **Gotcha coverage** — For each gotcha listed in `comprehension.md`, is
+   there a corresponding edge case in the spec that specifies the behavior?
+   If a gotcha is intentionally out of scope, is that stated explicitly?
+
+3. **Reference mapping completeness** — For each design decision in the spec
+   that references the literature (`comprehension.md §Reference mapping`), is
+   the citation traceable to a specific equation or section? Vague references
+   like "following Binder (1983)" without a specific equation are a gap.
+
+4. **Assumption alignment** — Are all assumptions from `comprehension.md
+   §Assumptions` either reflected in the spec's contracts or explicitly
+   documented as deferred?
+
+5. **Open question resolution** — For each open question in `comprehension.md
+   §Open questions`, did the spec resolve it? If not, is it logged in
+   `decisions-{id}.md`?
+
+**Issue format for Lens 6:**
+
+Use the standard issue format below. For Lens 6, the "correct formula or fix"
+is always a direct quote from the paper or comprehension.md — not a guess.
 
 ---
 
@@ -381,6 +419,7 @@ implementation and the methodology lock needs a targeted update.
 3. End the session with:
 
    > "Methodology review Pass [N] complete: {N} issues ({X} blocking, {Y} required,
-   > {Z} advisory). Start a new session with `/spec-workflow stage 2 resolve`
-   > to lock the methodology. Review saved to
+   > {Z} advisory). Lenses applied: {list of lenses 1–5 that were applicable +
+   > 'Lens 6 (Literature)' if comprehension.md was present}. Start a new session
+   > with `/spec-workflow stage 2 resolve` to lock the methodology. Review saved to
    > `plans/spec-methods-review-{id}.md`."
