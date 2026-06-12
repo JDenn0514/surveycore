@@ -44,7 +44,12 @@ for each PR (sequential or parallel per topology):
    │     │
    │     ├─ verdict=BLOCK → re-dispatch builder or pipeline-spec
    │     ├─ verdict=STOP → HOLD pipeline; user override required
-   │     └─ verdict=PASS → continue
+   │     └─ verdict=PASS → pre-PR gate ↓
+   │
+   ├─ pre-PR gate (devtools::check + pkgdown::check_pkgdown)
+   │     │
+   │     ├─ fails → HOLD pre-pr-check-failure; fix → re-run gate
+   │     └─ passes → continue
    │
    └─ shipper → PR, CI, merge → plan[x]
 
@@ -81,6 +86,8 @@ For each batch in order:
 
 ### 2a. Dispatch builders (parallel)
 
+Tell the user: "Dispatching builder(s) for batch {N}: {PR slugs}. Builders run in isolated worktrees — expect 10–25 min per PR."
+
 For each PR in the batch, dispatch `builder` agent with `isolation: "worktree"`:
 
 > PR: {number} — {slug}
@@ -94,6 +101,8 @@ For each PR in the batch, dispatch `builder` agent with `isolation: "worktree"`:
 Each builder returns `implementation.md` with the PR's write surface changes merged back via the worktree protocol.
 
 ### 2b. Merge-back and dispatch testers (parallel)
+
+Tell the user: "Builder(s) returned for batch {N}. Merging back and dispatching tester(s)."
 
 After all builders in the batch return:
 
@@ -121,6 +130,8 @@ If an audit returns BLOCK:
 
 ### 2d. Dispatch reviewer (sequential per PR, after its audit passes)
 
+Tell the user: "Tester(s) returned for batch {N}. Dispatching reviewer(s) — expect 5–10 min."
+
 For each PR with audit verdict=PASS, dispatch `reviewer`:
 
 > PR: {number} — {slug}
@@ -131,9 +142,25 @@ Reviewer returns `review.md` with verdict PASS / BLOCK / STOP.
 
 ### 2e. Review verdict handling
 
-- **PASS** → proceed to shipper
+Tell the user: "Reviewer returned for PR {N} ({slug}) — verdict: {PASS/BLOCK/STOP}."
+
+- **PASS** → proceed to pre-PR gate (2e.5)
 - **BLOCK** → re-dispatch the agent reviewer identified (builder or planner). Increment BLOCK counter. Max 3 cycles per PR.
 - **STOP** → pipeline halts. Write HOLD to `decisions.md`. User must resolve before resume.
+
+### 2e.5. Pre-PR gate
+
+Before dispatching the shipper, run on the feature branch:
+
+```bash
+Rscript -e 'devtools::check()'
+Rscript -e 'pkgdown::check_pkgdown()'
+```
+
+If either fails → HOLD with classification `pre-pr-check-failure`. Diagnose
+and fix (re-dispatch builder if a code change is needed; fix `_pkgdown.yml`
+directly if it is a reference-index issue). Re-run the gate after the fix.
+Do not dispatch the shipper until both commands exit clean.
 
 ### 2f. Dispatch shipper
 
@@ -210,6 +237,6 @@ After DONE is written:
 
 - Dispatch a tester before the corresponding builder's worktree has merged back
 - Dispatch a reviewer before the corresponding tester's audit.md is written
-- Dispatch a shipper without review.md verdict=PASS
+- Dispatch a shipper without review.md verdict=PASS **and** pre-PR gate passing
 - Dispatch two builders in parallel on overlapping write surfaces
 - Advance to DONE while any PR checkbox is `[ ]`

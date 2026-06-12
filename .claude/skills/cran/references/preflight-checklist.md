@@ -161,6 +161,57 @@ If writing roxygen examples for un-exported functions, either:
 
 ---
 
+## Spell-check
+
+Run before submission — CRAN reviewers run this and will request fixes.
+
+```r
+spelling::spell_check_package()
+```
+
+This checks DESCRIPTION, all man pages, and vignettes. Output lists words it
+doesn't recognize. Two categories of results:
+
+**Real typos** — fix them in the source.
+
+**Domain-specific terms** — add to `inst/WORDLIST` (one word per line, sorted).
+Create the file if it doesn't exist. `spelling` reads it automatically.
+
+```bash
+# Create or open the wordlist
+mkdir -p inst
+# Then edit inst/WORDLIST
+```
+
+surveycore starter WORDLIST (copy to `inst/WORDLIST` if starting fresh):
+
+```
+BRR
+calibrated
+FPC
+GLM
+GREG
+JK
+JKn
+nonprob
+PSU
+raking
+repweights
+rlang
+SRS
+S7
+surveycore
+svydesign
+tbl
+tidyverse
+twophase
+```
+
+After adding terms, re-run `spelling::spell_check_package()` to confirm it
+returns no remaining issues.
+
+---
+
 ## URL validation
 
 **All URLs must use `https://`**. HTTP links will be rejected.
@@ -262,6 +313,11 @@ There are no published references describing the methods in this package.
 - [ ] No example sections contain commented-out code
 - [ ] `\dontrun{}` used only where truly necessary
 - [ ] Examples requiring suggested packages use `@examplesIf` or `if` guards
+
+### Spell-check
+
+- [ ] `spelling::spell_check_package()` run with no remaining issues
+- [ ] Domain-specific terms added to `inst/WORDLIST` (see Spell-check section above)
 
 ### URLs
 

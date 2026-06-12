@@ -31,6 +31,28 @@ Choose the tier based on change size. When in doubt, go one tier higher.
 | **3 — Direct** | Clear bug fixes localized to 1–2 functions, test additions, roxygen changes | branch → `/r-implement` → `/commit-and-pr` |
 | **0 — Commit** | Typos, comments, `.gitignore`, README tweaks | direct commit to `develop` (no branch) |
 
+### Worked Examples
+
+Use these to calibrate. When in doubt about a tier, find the closest example below.
+
+**Tier 1 — New exported function `get_contrasts()`**
+New API surface, behavior not fully specified, multiple design choices (contrast coding, CI method, interaction with domain estimation). → spec → implementation plan → `/r-implement`
+
+**Tier 1 — Adding `method =` to `get_quantiles()` for interpolation strategy**
+Multiple valid approaches exist in the survey literature (linear, Type 7, Woodruff). Correct behavior is genuinely undecided until it's specified. Feels like "one argument" but it's actually a behavioral commitment. → Tier 1, not Tier 2.
+
+**Tier 2 — Adding `variance =` argument to `get_means()`**
+Behavior is obvious: let the caller pick Taylor vs. replicate variance when both are available. But the approach isn't: how does it interact with `survey_twophase`, what's the default, what error fires when the requested method isn't supported? Write an implementation plan to settle these before touching code. → implementation plan → `/r-implement`
+
+**Tier 2 → Tier 3 boundary — Adding `na.rm =` to `get_freqs()`**
+One new argument, behavior obvious (`TRUE` drops NA cells). But wiring it through all design paths and deciding whether NA gets its own frequency row or disappears entirely isn't obvious. → Tier 2 (plan first), not Tier 3.
+
+**Tier 3 — `get_means()` returns wrong SE when `nest = TRUE` is omitted on NHANES data**
+Clear bug, localized to the variance calculation in `R/variance-taylor.R`. The correct behavior is known (match `survey::svymean`). Fix the logic, add a regression test. → branch → `/r-implement` → `/commit-and-pr`
+
+**Tier 0 — Fix a typo in the `@param fpc` description**
+One-word change in roxygen comment. No branch, no PR needed. → direct commit to `develop`
+
 ---
 
 ## Branching Model
