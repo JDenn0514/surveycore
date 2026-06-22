@@ -522,12 +522,60 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 }
 
 
+#' Build the .survey_result attribute for a result tibble
+#'
+#' Internal helper. Constructs the structured metadata list that is attached as
+#' `attr(result, ".survey_result")`. Called by `.make_result_tibble()` when
+#' `estimate_cols` is supplied.
+#'
+#' Programmer-error guards (via `stopifnot()`):
+#' - `length(estimate_cols) >= 1L`
+#' - `length(statistic) == 1L`
+#' - `!is.na(statistic)`
+#'
+#' @param estimate_cols Character vector. Column name(s) of the point
+#'   estimate(s) in the result tibble. Length >= 1.
+#' @param group_cols Character vector. Column names of the grouping variables.
+#'   `character(0)` when no groups.
+#' @param statistic Character(1). Short label for the statistic (e.g.,
+#'   `"mean"`, `"total"`, `"freq"`).
+#' @param cell_df Numeric vector. Per-parameter degrees of freedom of length
+#'   `p`. For non-calibrated designs, pass `rep(Inf, p)`. For calibrated Taylor,
+#'   pass the per-cell df vector already computed by the `get_*()` function.
+#' @return Named list with elements `estimate_cols`, `group_cols`, `statistic`,
+#'   `df`.
+#' @noRd
+.build_survey_result_attr <- function(
+  estimate_cols,
+  group_cols,
+  statistic,
+  cell_df
+) {
+  stopifnot(
+    length(estimate_cols) >= 1L,
+    length(statistic) == 1L,
+    !is.na(statistic)
+  )
+  list(
+    estimate_cols = estimate_cols,
+    group_cols = group_cols,
+    statistic = statistic,
+    df = cell_df
+  )
+}
+
+
 #' Assemble a survey_result tibble with a .meta attribute
 #'
 #' Builds a `survey_result` tibble from pre-computed column vectors, attaches
 #' the `.meta` attribute via `.build_meta()`, and assigns the S3 class. Uses
 #' column-by-column list accumulation to avoid a `vctrs` or `dplyr` runtime
 #' dependency.
+#'
+#' When `estimate_cols` is non-`NULL`, also attaches `attr(result,
+#' ".survey_result")` via `.build_survey_result_attr()`. This attribute
+#' enables `coef()`, `vcov()`, `SE()`, and `confint()` dispatch on result
+#' objects.
 #'
 #' @param col_vecs Named list. One named vector per result column (e.g.,
 #'   `mean`, `se`, `ci_low`, `ci_high`, `n`). Vectors must be the same length.
@@ -540,9 +588,20 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' @param required_meta_keys Character vector of required function-specific
 #'   keys that must be present in `meta_args`. Always pass the relevant
 #'   `*_META_KEYS` constant; omitting this argument is a programmer error.
+#' @param estimate_cols Character vector or `NULL`. Column name(s) of the point
+#'   estimate(s) in `col_vecs`. When non-`NULL`,
+#'   `.build_survey_result_attr()` is called and the result is attached as
+#'   `attr(result, ".survey_result")`. Default `NULL`.
+#' @param statistic Character(1) or `NULL`. Short statistic label forwarded to
+#'   `.build_survey_result_attr()`. Required when `estimate_cols` is non-`NULL`;
+#'   programmer error if one is supplied without the other. Default `NULL`.
+#' @param cell_df Numeric vector or `NULL`. Per-parameter df vector of length
+#'   `p`. When `NULL` and `estimate_cols` is non-`NULL`, defaults to
+#'   `rep(Inf, p)` (non-calibrated designs). Default `NULL`.
 #' @return A tibble with class
 #'   `c(class_name, "survey_result", "tbl_df", "tbl", "data.frame")` and a
-#'   `.meta` attribute.
+#'   `.meta` attribute. When `estimate_cols` is non-`NULL`, also carries a
+#'   `.survey_result` attribute.
 #' @noRd
 .make_result_tibble <- function(
   col_vecs,
@@ -550,12 +609,37 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
   class_name,
   design,
   meta_args,
-  required_meta_keys
+  required_meta_keys,
+  estimate_cols = NULL,
+  statistic = NULL,
+  cell_df = NULL
 ) {
   stopifnot(all(required_meta_keys %in% names(meta_args)))
+  stopifnot(
+    "Both 'estimate_cols' and 'statistic' must be supplied together, or both must be NULL." = is.null(
+      estimate_cols
+    ) ==
+      is.null(statistic)
+  )
+
   result <- tibble::as_tibble(c(as.list(groups_df), col_vecs))
   attr(result, ".meta") <- .build_meta(design, meta_args)
   class(result) <- c(class_name, "survey_result", "tbl_df", "tbl", "data.frame")
+
+  if (!is.null(estimate_cols)) {
+    group_cols <- names(groups_df)
+    p <- nrow(result) * length(estimate_cols)
+    if (is.null(cell_df)) {
+      cell_df <- rep(Inf, p)
+    }
+    attr(result, ".survey_result") <- .build_survey_result_attr(
+      estimate_cols = estimate_cols,
+      group_cols = group_cols,
+      statistic = statistic,
+      cell_df = cell_df
+    )
+  }
+
   result
 }
 
