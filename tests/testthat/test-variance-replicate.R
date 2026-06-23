@@ -231,6 +231,200 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
 
 
 # ---------------------------------------------------------------------------
+# Block 11: successive-difference and ACS scale factor oracle tests
+# ---------------------------------------------------------------------------
+
+test_that("as_survey_replicate() stores scale = 4/n_rep for successive-difference", {
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    design = "replicate",
+    type = "brr",
+    seed = 200
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  n_rep <- length(repwt_cols)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "successive-difference"
+  )
+
+  expect_equal(sc@variables$scale, 4 / n_rep)
+})
+
+test_that("as_survey_replicate() stores scale = 4/n_rep for ACS", {
+  d <- make_survey_data(
+    n = 100,
+    n_psu = 10,
+    design = "replicate",
+    type = "brr",
+    seed = 201
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  n_rep <- length(repwt_cols)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "ACS"
+  )
+
+  expect_equal(sc@variables$scale, 4 / n_rep)
+})
+
+test_that("get_means() successive-difference SE matches survey::svymean()", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "brr",
+    seed = 300
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "successive-difference",
+    mse = TRUE
+  )
+  sv <- survey::svrepdesign(
+    weights = d$wt,
+    repweights = d[, repwt_cols],
+    type = "successive-difference",
+    mse = TRUE,
+    data = d
+  )
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_totals() successive-difference SE matches survey::svytotal()", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "brr",
+    seed = 301
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "successive-difference",
+    mse = TRUE
+  )
+  sv <- survey::svrepdesign(
+    weights = d$wt,
+    repweights = d[, repwt_cols],
+    type = "successive-difference",
+    mse = TRUE,
+    data = d
+  )
+
+  sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
+  sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_total$total, coef(sv_total)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se, as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low, confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() ACS SE matches survey::svymean()", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "brr",
+    seed = 302
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "ACS",
+    mse = TRUE
+  )
+  sv <- survey::svrepdesign(
+    weights = d$wt,
+    repweights = d[, repwt_cols],
+    type = "ACS",
+    mse = TRUE,
+    data = d
+  )
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_totals() ACS SE matches survey::svytotal()", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "brr",
+    seed = 303
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "ACS",
+    mse = TRUE
+  )
+  sv <- survey::svrepdesign(
+    weights = d$wt,
+    repweights = d[, repwt_cols],
+    type = "ACS",
+    mse = TRUE,
+    data = d
+  )
+
+  sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
+  sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_total$total, coef(sv_total)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se, as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low, confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
+})
+
+# ---------------------------------------------------------------------------
 # Block 12: na.rm = FALSE paths
 # ---------------------------------------------------------------------------
 

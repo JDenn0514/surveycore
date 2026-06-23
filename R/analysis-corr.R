@@ -800,6 +800,18 @@ get_corr <- function(
     statistic = "corr"
   )
 
+  # For Taylor/twophase designs, store finite design df in .survey_result.
+  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
+    S7::S7_inherits(design, survey_twophase)
+  if (is_taylor_like) {
+    design_df <- .degf(design)
+    sr <- attr(result, ".survey_result")
+    if (!is.null(sr)) {
+      sr$df <- rep(design_df, nrow(result))
+      attr(result, ".survey_result") <- sr
+    }
+  }
+
   # ── Step 22: Convert var1/var2 to factors (levels in variable supply order) ─
   # Display strings determine the factor level values; supply order is
   # preserved.

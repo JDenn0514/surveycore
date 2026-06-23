@@ -313,11 +313,19 @@ get_means <- function(
   )
 
   # ── Step 11: Assemble result ────────────────────────────────────────────────
-  # Thread per-cell df for calibrated Taylor designs; NULL defaults to Inf.
-  cal_df <- if (has_calibration) {
+  # Determine cell_df for .survey_result attribute:
+  #   - Calibrated Taylor: per-cell df from .taylor_mean_cell()
+  #   - Non-calibrated Taylor / twophase: design df (finite, from .degf())
+  #   - Replicate / nonprob: Inf (normal approximation)
+  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
+    S7::S7_inherits(design, survey_twophase)
+  cell_df_attr <- if (has_calibration) {
     cell_df_vec <- acc_df
     cell_df_vec[is.na(cell_df_vec)] <- Inf
     cell_df_vec
+  } else if (is_taylor_like) {
+    design_df <- .degf(design)
+    rep(design_df, n_combos)
   } else {
     NULL
   }
@@ -331,7 +339,7 @@ get_means <- function(
     MEANS_META_KEYS,
     estimate_cols = c("mean"),
     statistic = "mean",
-    cell_df = cal_df
+    cell_df = cell_df_attr
   )
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────

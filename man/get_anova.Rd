@@ -109,6 +109,7 @@ get_anova(list(fit_s, fit_b))
 }
 \seealso{
 Other analysis: 
+\code{\link{SE}()},
 \code{\link{clean}()},
 \code{\link{get_corr}()},
 \code{\link{get_covariance}()},
