@@ -96,5 +96,6 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/calibrate-survey-taylor/` — calibration-adjusted variance (`as_caldata()`, GREG SE correction): spec, test spec, impl plan, comprehension, plan review, decisions (shipped; PRs #139, #140)
 - `archive/surveywts-calibration/` — `calibration =` constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)
 - `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)
+- `archive/coef-vcov-methods/` — `SE()` generic and `coef`/`vcov`/`SE`/`confint` methods for `survey_result`: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #148, #149, #150)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
