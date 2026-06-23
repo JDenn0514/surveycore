@@ -1040,3 +1040,62 @@ test_that("get_diffs() pct_change is non-NA with show_means = FALSE (grouped)", 
   # pct_change non-NA for all rows (all are non-reference)
   expect_false(any(is.na(result$pct_change)))
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_diffs() attaches non-NULL .survey_result attribute", {
+  set.seed(42)
+  df <- data.frame(
+    id = 1:200,
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+  result <- get_diffs(d, dv, arm)
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+})
+
+test_that("get_diffs() .survey_result$estimate_cols == c('estimate')", {
+  set.seed(42)
+  df <- data.frame(
+    id = 1:200,
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+  result <- get_diffs(d, dv, arm)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$estimate_cols, c("estimate"))
+})
+
+test_that("get_diffs() .survey_result$statistic == 'diffs'", {
+  set.seed(42)
+  df <- data.frame(
+    id = 1:200,
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+  result <- get_diffs(d, dv, arm)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "diffs")
+})
+
+test_that("get_diffs() .survey_result$df is numeric vector of length p", {
+  set.seed(42)
+  df <- data.frame(
+    id = 1:200,
+    wt = runif(200, 0.5, 2),
+    dv = rnorm(200, 50, 10),
+    arm = factor(sample(c("Control", "A", "B"), 200, TRUE))
+  )
+  d <- as_survey(df, weights = wt)
+  result <- get_diffs(d, dv, arm)
+  sr <- attr(result, ".survey_result")
+  expect_true(is.numeric(sr$df))
+  expect_equal(length(sr$df), nrow(result))
+})

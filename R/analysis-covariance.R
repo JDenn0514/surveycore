@@ -609,7 +609,9 @@ get_covariance <- function(
     "survey_covariance",
     design,
     meta_args,
-    COVARIANCE_META_KEYS
+    COVARIANCE_META_KEYS,
+    estimate_cols = c("covariance"),
+    statistic = "covariance"
   )
 
   # ── Step 20: Convert var1/var2 to factors (supply order) ────────────────────

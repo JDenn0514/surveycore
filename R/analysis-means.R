@@ -313,13 +313,25 @@ get_means <- function(
   )
 
   # ── Step 11: Assemble result ────────────────────────────────────────────────
+  # Thread per-cell df for calibrated Taylor designs; NULL defaults to Inf.
+  cal_df <- if (has_calibration) {
+    cell_df_vec <- acc_df
+    cell_df_vec[is.na(cell_df_vec)] <- Inf
+    cell_df_vec
+  } else {
+    NULL
+  }
+
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
     "survey_means",
     design,
     meta_args,
-    MEANS_META_KEYS
+    MEANS_META_KEYS,
+    estimate_cols = c("mean"),
+    statistic = "mean",
+    cell_df = cal_df
   )
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────

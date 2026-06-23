@@ -2173,3 +2173,37 @@ test_that("get_freqs() on SRS design with non-proportional weights matches surve
   expect_equal(sc_b$pct, as.numeric(coef(sv_est)["xB"]), tolerance = 1e-10)
   expect_equal(sc_b$se, as.numeric(survey::SE(sv_est)["xB"]), tolerance = 1e-8)
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_freqs() attaches .survey_result attribute with estimate_cols = c('pct')", {
+  df <- make_survey_data(n = 200, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  # Add a categorical variable
+  df2 <- df
+  df2$cat <- factor(sample(c("A", "B", "C"), 200, replace = TRUE))
+  d2 <- as_survey(df2, ids = psu, weights = wt, strata = strata)
+  result <- get_freqs(d2, cat)
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("pct"))
+})
+
+test_that("get_freqs() attaches .survey_result attribute with statistic = 'freq'", {
+  df <- make_survey_data(n = 200, seed = 2)
+  df$cat <- factor(sample(c("A", "B"), 200, replace = TRUE))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_freqs(d, cat)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "freq")
+})
+
+test_that("get_freqs() .survey_result$df is rep(Inf, p) for non-calibrated design", {
+  df <- make_survey_data(n = 200, seed = 3)
+  df$cat <- factor(sample(c("A", "B"), 200, replace = TRUE))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_freqs(d, cat)
+  sr <- attr(result, ".survey_result")
+  expect_true(all(is.infinite(sr$df)))
+  expect_equal(length(sr$df), nrow(result))
+})
