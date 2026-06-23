@@ -1,26 +1,31 @@
 ---
 name: spec-workflow
 description: >
-  Use this skill for any surveyverse spec work: drafting a new spec, running
-  methodology or code/architecture reviews, or resolving issues interactively.
-  Trigger when the user says "draft spec", "review the spec", "resolve spec
-  issues", "start planning", or references a phase number (e.g. "phase 2").
-  Five stages in order: Stage 1 (draft), Stage 2 (methodology review —
-  conditional for statistical specs), Stage 2 Resolve (lock methodology),
-  Stage 3 (code/architecture review — may run multiple times), Stage 4
-  (resolve + decisions log). After the spec is approved, move to
-  /implementation-workflow.
+  Use this skill for any surveycore spec work: drafting a new spec, running
+  deep comprehension on an attached paper, running methodology or
+  code/architecture reviews, or resolving issues interactively. Trigger when
+  the user says "draft spec", "review the spec", "resolve spec issues", "start
+  planning", or references a phase number (e.g. "phase 2"). Six stages in
+  order: Stage 0 (deep comprehension — conditional for methods-heavy or
+  paper-attached), Stage 1 (draft — produces spec.md AND test-spec.md),
+  Stage 2 (methodology review — conditional for statistical specs), Stage 2
+  Resolve (lock methodology), Stage 3 (code/architecture review — may run
+  multiple times), Stage 4 (resolve + decisions log). After the spec is
+  approved, move to /implementation-workflow.
 ---
 
-# Surveyverse Spec Workflow
+# Surveycore Spec Workflow
 
 **Announce at start:** "Running spec-workflow Stage N — [stage name]."
 
-Five stages, always in order. Stages 2 and 2 Resolve are conditional — skip
-them if the spec contains no variance estimation, estimators, or statistical
-inference:
+Six stages, always in order. Stage 0 is conditional (methods-heavy or paper
+attached). Stages 2 and 2 Resolve are conditional (spec contains variance
+estimation or inference). Stage 1 produces TWO artifacts:
 
-1. **Stage 1 — Draft:** Write the spec
+0. **Stage 0 — Deep Comprehension:** Extract formulas, gotchas, and reference
+   mappings from an attached paper or PDF *(conditional)*
+1. **Stage 1 — Draft:** Write `spec-{id}.md` (behavioral contract) AND
+   `test-spec-{id}.md` (validation scenarios) as two independent artifacts
 2. **Stage 2 — Methodology review:** Single exhaustive statistical pass *(conditional)*
 3. **Stage 2 Resolve — Lock methodology:** Resolve all methodology issues; spec is methodology-locked after this
 4. **Stage 3 — Code review:** Adversarial architecture/API pass *(may run multiple times)*
@@ -31,16 +36,18 @@ After the spec is approved, move to `/implementation-workflow`.
 ```dot
 digraph spec_stages {
     rankdir=LR;
-    S1 [label="Stage 1\nDraft", shape=box];
-    S2 [label="Stage 2\nMethodology Review", shape=box];
+    S0 [label="Stage 0\nDeep Comprehension\n(conditional)", shape=box];
+    S1 [label="Stage 1\nDraft\n(spec + test-spec)", shape=box];
+    S2 [label="Stage 2\nMethodology Review\n(+Literature Lens)", shape=box];
     S2R [label="Stage 2 Resolve\nLock Methodology", shape=box];
     S3 [label="Stage 3\nCode Review", shape=box];
     S4 [label="Stage 4\nResolve + Log", shape=box];
     done [label="→ /implementation-workflow", shape=doublecircle];
 
+    S0 -> S1 [label="methods-heavy or paper"];
     S1 -> S2;
     S2 -> S2R [label="issues found"];
-    S2 -> S3 [label="N/A"];
+    S2 -> S3 [label="N/A or PASS"];
     S2R -> S3;
     S3 -> S4 [label="issues found"];
     S3 -> done [label="clean"];
@@ -66,10 +73,12 @@ question: "Which stage of the spec workflow do you want to run?"
 header: "Stage"
 multiSelect: false
 options:
-  - label: "Stage 1 — Draft the spec"
-    description: "Write a new spec from scratch."
+  - label: "Stage 0 — Deep Comprehension (paper/methods-heavy)"
+    description: "Extract formulas, gotchas, and reference mappings from an attached paper or PDF. Produces comprehension.md before drafting begins."
+  - label: "Stage 1 — Draft spec + test-spec"
+    description: "Write spec-{id}.md (behavioral contract) and test-spec-{id}.md (validation scenarios) as two independent artifacts."
   - label: "Stage 2 — Methodology review"
-    description: "Statistical correctness pass (conditional: only for specs with variance estimation or inference). Single exhaustive pass — finds all issues before concluding."
+    description: "Statistical correctness pass (conditional: only for specs with variance estimation or inference). Includes Literature Lens if comprehension.md exists. Single exhaustive pass."
   - label: "Stage 2 Resolve — Resolve methodology issues"
     description: "Work through the methodology review file. Methodology-locks the spec after completion."
   - label: "Stage 3 — Code/architecture review"
@@ -82,6 +91,7 @@ Then read the corresponding reference file before doing anything else:
 
 | Stage | Reference file |
 |---|---|
+| 0 | `.claude/skills/spec-workflow/references/stage-0-comprehension.md` |
 | 1 | `.claude/skills/spec-workflow/references/stage-1-draft.md` |
 | 2 | `.claude/skills/spec-workflow/references/stage-2-methods-review.md` |
 | 2 Resolve | `.claude/skills/spec-workflow/references/stage-2-methods-resolve.md` |

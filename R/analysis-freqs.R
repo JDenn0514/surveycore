@@ -496,7 +496,9 @@ get_freqs <- function(
     "survey_freqs",
     design,
     meta_args,
-    required_keys
+    required_keys,
+    estimate_cols = c("pct"),
+    statistic = "freq"
   )
 
   # ── Step 13: Apply decimals and name style ──────────────────────────────────

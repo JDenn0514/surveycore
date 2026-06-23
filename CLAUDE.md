@@ -8,33 +8,9 @@ metadata/label system, and vendored variance estimation code. License: GPL-3.
 
 ---
 
-## Implementation Status
-
 The package API is stable. All core functionality is complete. New analysis
 functions may be added but the existing structure will not change in breaking ways.
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | v0.1.0 |
-| surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
-| SRS support | ✅ Complete | Absorbed into `survey_taylor`; no ids/strata |
-| Two-phase variance | ✅ Complete | v0.2.x |
-| Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
-| Regression (`survey_glm_fit`, `survey_glm()`) | ✅ Complete | v0.6.x |
-| T-tests and pairwise (`get_t_test()`, `get_pairwise()`) | ✅ Complete | PR #88; see `archive/get-t-test-pairwise/` |
-| Effective sample size (`get_effective_n()`) | ✅ Complete | PR #122; see `archive/effective-n/` |
-| Design variance (`get_variance()`) | ✅ Complete | PRs #103, #104; see `archive/get-variance/` |
-| SATA metadata (`set_sata()`, `classify_question_type()`) | ✅ Complete | PRs #89, #90, #91, #92 |
-| Design-based ANOVA (`get_anova()`, `anova.survey_glm_fit()`) | ✅ Complete | PRs #93, #94, #95, #96 |
-| `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs #97, #98 |
-| Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs #107, #108, #109 |
-| Variable direction metadata (`set_higher_is()`, `set_reverse_coded()`, `get_diffs(show_favorability)`) | ✅ Complete | PRs #124, #125, #126; see `archive/variable-direction/` |
-| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs #127, #130, #131; see `archive/nonprob-bootstrap-variance/` |
-| Polychoric/polyserial on `survey_nonprob` with repweights (`get_corr(method = "polychoric"/"polyserial")`) | ✅ Complete | PR #137; see `archive/corr-nonprob-latent/` |
-| `survey_glm()` on `survey_nonprob` with repweights routed through replicate-weight estimator | ✅ Complete | PR #138; see `archive/glm-nonprob-replicate/` |
-| Calibration-adjusted variance (`as_caldata()`, `@calibration` on `survey_taylor`/`survey_replicate`, GREG SE correction) | ✅ Complete | PRs #139, #140; see `archive/calibrate-survey-taylor/` |
-| `calibration =` constructor validation (CAL-15, CAL-16) + raking oracle update | ✅ Complete | PRs #141, #142; see `archive/surveywts-calibration/` |
-| Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc) | ✅ Complete | PRs #143, #144; see `archive/doc-fixes/` |
+For implementation history, see `git log`, release tags (`v0.1.0`–`v1.0.0`), and `archive/` planning directories.
 
 ---
 
@@ -69,10 +45,8 @@ internally (avoids collision with user columns named `.weights`).
 ## Workflow Requirements
 
 - Every non-trivial change lives on a feature branch — never commit implementation code to `main`
-- Branch naming: `feature/`, `fix/`, `test/`, `docs/`, `chore/`
-- All commits use Conventional Commits format: `feat(scope): description`
-- Run `devtools::document()` before committing any file with roxygen2 changes
-- Run `devtools::check()` before opening a PR
+
+See `.claude/rules/github-strategy.md` for branching model, branch naming, and Conventional Commits format. See `.claude/rules/r-package-conventions.md` for `devtools::document()` and `devtools::check()` cadence.
 
 ## Git Workflow
 

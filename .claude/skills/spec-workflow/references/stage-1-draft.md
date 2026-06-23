@@ -7,23 +7,23 @@ anything:
 
 ```
 questions:
-  - question: "Which package is this spec for?"
-    header: "Package"
+  - question: "Which feature or phase is this spec for?"
+    header: "Phase"
     multiSelect: false
     options:
-      - label: "surveycore"
-        description: "Core infrastructure: S7 classes, constructors, analysis functions, regression (GLM), or variance estimation. Next up: Phase 2 — survey_glm()."
-      - label: "surveytidy"
-        description: "dplyr/tidyr verbs for survey design objects (filter, select, mutate, group_by). Phase 0.5 is complete; future phases TBD."
-      - label: "Other surveyverse package"
-        description: "surveywts, the surveyverse meta-package, or a new package in the ecosystem."
+      - label: "Current phase / next up"
+        description: "The next logical addition to surveycore. Check CLAUDE.md and git log for context."
+      - label: "Later phase"
+        description: "A subsequent phase not yet started."
+      - label: "Feature / bug fix"
+        description: "A targeted feature or fix outside the main phase structure."
 
-  - question: "Is there an existing roadmap or prior phase spec to reference?"
-    header: "Reference documents"
+  - question: "Is there an existing roadmap or upstream spec to reference?"
+    header: "Reference docs"
     multiSelect: false
     options:
-      - label: "Yes — I'll share the path(s) or paste the content"
-        description: "Provide all reference documents before the draft begins."
+      - label: "Yes — I'll share the path or paste the content"
+        description: "Provide the document before the draft begins."
       - label: "No — draft from scratch based on this conversation"
         description: "This spec is self-contained."
 
@@ -37,18 +37,36 @@ questions:
         description: "This phase is self-contained."
 ```
 
-Confirm the `{id}` with the user if not obvious from context. Default patterns:
-"phase 2" → `phase-2`, "survey-srs" → `survey-srs`. The output file will be
-`plans/spec-{id}.md` — establish this before writing anything.
+Wait for the user to provide any referenced documents. If a `comprehension.md`
+exists from Stage 0, read it before drafting. Read all provided context before
+writing a single line of either artifact.
 
-Wait for the user to provide any referenced documents. Read all provided
-context before writing a single line of the spec.
+Confirm the `{id}` with the user if not obvious from context. Default patterns:
+"phase 2" → `phase-2`, "survey-glm" → `survey-glm`. Stage 1 produces TWO
+output files:
+- `plans/spec-{id}.md` — behavioral contract (what builder reads)
+- `plans/test-spec-{id}.md` — validation scenarios (what tester reads)
+
+Establish both file paths before writing anything.
 
 ---
 
-## Spec Structure
+## Two-artifact rule
 
-Model every spec on the Phase 1 structure. Required sections:
+Stage 1 always produces BOTH artifacts. They must be independently sufficient:
+- `spec-{id}.md` contains NO test cases, NO tolerances, NO test datasets
+- `test-spec-{id}.md` contains NO file paths from `R/`, NO internal helper names
+- Neither file says "see the other document"
+
+Think of them as two separate briefs for two different readers who will never
+talk to each other: the builder implements from the spec; the tester validates
+from the test-spec. They should arrive at the same behavior independently.
+
+---
+
+## `spec-{id}.md` structure
+
+Model every spec on this structure. Required sections:
 
 | Section | Content |
 |---|---|
@@ -63,7 +81,7 @@ Model every spec on the Phase 1 structure. Required sections:
 
 ---
 
-## Spec Writing Rules
+## `spec-{id}.md` writing rules
 
 - Every public function gets a full argument table: name, type, default,
   one-sentence description. Argument order must follow `code-style.md`:
@@ -88,12 +106,45 @@ Model every spec on the Phase 1 structure. Required sections:
 
 ---
 
+## `test-spec-{id}.md` structure
+
+Required sections:
+
+| Section | Content |
+|---------|---------|
+| Reference oracle | Which package/function provides the ground truth (e.g., `survey::svymean`, `survey::svyglm`) |
+| Datasets | Which datasets to use for each test scenario (real datasets for numerical oracle tests; `make_survey_data()` for unit tests) |
+| Per-function test plan | Happy path, error paths, warning paths, edge cases, invariants |
+| Tolerances | Default: point 1e-10, SE 1e-8, CI 1e-6. Deviations require justification. |
+| Profile gates | Full list per `testing-surveycore.md §Profile gates` |
+
+---
+
+## `test-spec-{id}.md` writing rules
+
+- Every error class in the spec gets: `expect_error(class = ...)` AND
+  `expect_snapshot(error = TRUE)` (dual pattern from `testing-surveycore.md §Layer 3`)
+- S7 validator errors (Layer 1) get `expect_error(class = ...)` ONLY — no snapshot
+- Every edge case in the spec gets a test row
+- `test_invariants(obj)` is the first assertion for every test that constructs
+  a `survey_taylor`, `survey_replicate`, or `survey_twophase` object
+- Every numerical oracle test cites the oracle function (e.g., `survey::svymean`)
+  and states the tolerance
+- If `comprehension.md` exists: every gotcha listed there gets a test row or
+  an explicit "out of scope" note with justification
+- No file paths from `R/`. No internal function names.
+
+---
+
 ## After the Draft
 
 Tell the user:
 
-> "This is a first draft. I expect there are gaps. Next steps:
-> - If this spec contains variance estimation, estimators, or statistical inference:
->   run Stage 2 (methodology review) in a new session.
+> "spec-{id}.md and test-spec-{id}.md are drafted. I expect there are gaps.
+> Next steps:
+> - If this spec contains variance estimation, estimators, or statistical
+>   inference: run Stage 2 (methodology review) in a new session. The
+>   Literature Lens will cross-check formulas against comprehension.md if
+>   it exists.
 > - Otherwise: run Stage 3 (code/architecture review) in a new session.
 > Either way, do not resolve anything until the review is complete."

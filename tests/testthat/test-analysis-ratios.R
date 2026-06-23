@@ -1406,3 +1406,31 @@ test_that("get_ratios() replicate single-row domain hits se_srs=0 path in .repli
   result <- suppressWarnings(get_ratios(sc, numerator = y1, denominator = y2))
   expect_true(is.finite(result$ratio[[1L]]) || is.na(result$ratio[[1L]]))
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_ratios() attaches .survey_result with estimate_cols = c('ratio')", {
+  df <- make_survey_data(n = 200, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_ratios(d, numerator = y1, denominator = y2)
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("ratio"))
+})
+
+test_that("get_ratios() attaches .survey_result with statistic = 'ratio'", {
+  df <- make_survey_data(n = 200, seed = 2)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_ratios(d, numerator = y1, denominator = y2)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "ratio")
+})
+
+test_that("get_ratios() .survey_result$df is rep(Inf, p) for non-calibrated design", {
+  df <- make_survey_data(n = 200, seed = 3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_ratios(d, numerator = y1, denominator = y2)
+  sr <- attr(result, ".survey_result")
+  expect_true(all(is.infinite(sr$df)))
+  expect_equal(length(sr$df), nrow(result))
+})

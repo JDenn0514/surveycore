@@ -322,7 +322,9 @@ get_totals <- function(
     "survey_totals",
     design,
     meta_args,
-    TOTALS_META_KEYS
+    TOTALS_META_KEYS,
+    estimate_cols = c("total"),
+    statistic = "total"
   )
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────

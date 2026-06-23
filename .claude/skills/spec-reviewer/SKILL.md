@@ -52,8 +52,11 @@ For every exported function in the spec, check whether a test plan exists
 for each of these categories:
 
 1. **Happy path** — standard inputs, expected output
-2. **Numerical oracle** (if the function returns numeric estimates) — are
-   tolerances stated explicitly? (`1e-10` for point, `1e-8` for SE)
+2. **Numerical oracle** — tolerances stated explicitly? (`1e-10` for point,
+   `1e-8` for SE, `1e-6` for CI). **REQUIRED — cannot be marked N/A** for
+   any function whose output includes numeric estimates, standard errors,
+   variances, or confidence intervals. If the spec has no oracle test
+   scenario, this is a BLOCK finding.
 3. **Grouped analysis** — if `group_by()` is supported, is it tested?
 4. **Domain estimation** — if `filter()`-based domains are supported, tested?
 5. **`variance` argument** — if multiple variance methods exist, each covered?

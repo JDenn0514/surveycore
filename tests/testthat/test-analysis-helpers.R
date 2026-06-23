@@ -727,15 +727,25 @@ test_that(".degf() returns Inf for survey_nonprob with repweights", {
   R <- 10L
   set.seed(77L)
   repwt_data <- matrix(
-    pmax(0.1, df$wt * matrix(
-      rexp(nrow(df) * R, rate = 1),
-      nrow = nrow(df), ncol = R
-    )),
-    nrow = nrow(df), ncol = R
+    pmax(
+      0.1,
+      df$wt *
+        matrix(
+          rexp(nrow(df) * R, rate = 1),
+          nrow = nrow(df),
+          ncol = R
+        )
+    ),
+    nrow = nrow(df),
+    ncol = R
   )
   colnames(repwt_data) <- paste0("repwt_", seq_len(R))
   df_rep <- cbind(df, as.data.frame(repwt_data))
-  d <- as_survey_nonprob(df_rep, weights = wt, repweights = starts_with("repwt_"))
+  d <- as_survey_nonprob(
+    df_rep,
+    weights = wt,
+    repweights = starts_with("repwt_")
+  )
   test_invariants(d)
 
   expect_equal(.degf(d), Inf)
@@ -1436,7 +1446,9 @@ test_that("print.survey_result() outputs header with class and dims", {
   grp <- ifelse(seq_len(n) <= n %/% 2L, "A", "B")
   # Delete-one JK1 pseudo-weights
   rep_mat <- matrix(wt * n / (n - 1), nrow = n, ncol = R)
-  for (r in seq_len(R)) rep_mat[r, r] <- 0
+  for (r in seq_len(R)) {
+    rep_mat[r, r] <- 0
+  }
   df <- data.frame(y = y, wt = wt, grp = grp)
   repwt_names <- paste0("jk", seq_len(R))
   df[repwt_names] <- as.data.frame(rep_mat)
@@ -1497,4 +1509,212 @@ test_that("domain-NA warning does NOT fire at exactly 5% NA rate (boundary)", {
     domain_na_warned,
     label = "surveycore_warning_domain_replicates_na should not fire at 5%"
   )
+})
+
+
+# ── Category 10: .build_survey_result_attr() and .make_result_tibble() new params
+
+# Helper: minimal valid meta_args for .make_result_tibble()
+.make_minimal_meta_args <- function() {
+  list(
+    conf_level = 0.95,
+    call = quote(get_means(d, y1)),
+    group = list(),
+    x = list(
+      y1 = list(
+        variable_label = NULL,
+        question_preface = NULL,
+        value_labels = NULL
+      )
+    )
+  )
+}
+
+test_that(".make_result_tibble() attaches .survey_result attr with correct names", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  result <- .make_result_tibble(
+    col_vecs = list(mean = 42.0, n = 50L),
+    groups_df = data.frame(),
+    class_name = "survey_means",
+    design = d,
+    meta_args = .make_minimal_meta_args(),
+    required_meta_keys = MEANS_META_KEYS,
+    estimate_cols = c("mean"),
+    statistic = "mean"
+  )
+
+  attr_val <- attr(result, ".survey_result")
+  expect_false(is.null(attr_val))
+  expect_identical(
+    sort(names(attr_val)),
+    sort(c("estimate_cols", "group_cols", "statistic", "df"))
+  )
+  # no $var field
+  expect_false("var" %in% names(attr_val))
+})
+
+test_that(".make_result_tibble() sets df = rep(Inf, 1) when cell_df = NULL and one row", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  result <- .make_result_tibble(
+    col_vecs = list(mean = 42.0, n = 50L),
+    groups_df = data.frame(),
+    class_name = "survey_means",
+    design = d,
+    meta_args = .make_minimal_meta_args(),
+    required_meta_keys = MEANS_META_KEYS,
+    estimate_cols = c("mean"),
+    statistic = "mean",
+    cell_df = NULL
+  )
+
+  df_val <- attr(result, ".survey_result")$df
+  expect_equal(df_val, rep(Inf, 1L))
+  expect_length(df_val, 1L)
+})
+
+test_that(".make_result_tibble() stopifnot fires when estimate_cols given but statistic NULL", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  expect_error(
+    .make_result_tibble(
+      col_vecs = list(mean = 42.0, n = 50L),
+      groups_df = data.frame(),
+      class_name = "survey_means",
+      design = d,
+      meta_args = .make_minimal_meta_args(),
+      required_meta_keys = MEANS_META_KEYS,
+      estimate_cols = c("mean"),
+      statistic = NULL
+    ),
+    regexp = "Both 'estimate_cols' and 'statistic' must be supplied together"
+  )
+})
+
+test_that(".make_result_tibble() stopifnot fires when statistic given but estimate_cols NULL", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  expect_error(
+    .make_result_tibble(
+      col_vecs = list(mean = 42.0, n = 50L),
+      groups_df = data.frame(),
+      class_name = "survey_means",
+      design = d,
+      meta_args = .make_minimal_meta_args(),
+      required_meta_keys = MEANS_META_KEYS,
+      estimate_cols = NULL,
+      statistic = "mean"
+    ),
+    regexp = "Both 'estimate_cols' and 'statistic' must be supplied together"
+  )
+})
+
+test_that(".make_result_tibble() without new params produces no .survey_result attribute", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  result <- .make_result_tibble(
+    col_vecs = list(mean = 42.0, n = 50L),
+    groups_df = data.frame(),
+    class_name = "survey_means",
+    design = d,
+    meta_args = .make_minimal_meta_args(),
+    required_meta_keys = MEANS_META_KEYS
+  )
+
+  expect_true(is.null(attr(result, ".survey_result")))
+})
+
+test_that(".build_survey_result_attr() returns list with correct names and values", {
+  result <- .build_survey_result_attr(
+    estimate_cols = c("mean"),
+    group_cols = character(0),
+    statistic = "mean",
+    cell_df = rep(Inf, 1L)
+  )
+
+  expect_identical(
+    sort(names(result)),
+    sort(c("estimate_cols", "group_cols", "statistic", "df"))
+  )
+  expect_identical(result$estimate_cols, c("mean"))
+  expect_identical(result$group_cols, character(0))
+  expect_identical(result$statistic, "mean")
+  expect_equal(result$df, rep(Inf, 1L))
+})
+
+test_that(".build_survey_result_attr() stopifnot fires for empty estimate_cols", {
+  expect_error(
+    .build_survey_result_attr(
+      estimate_cols = character(0),
+      group_cols = character(0),
+      statistic = "mean",
+      cell_df = numeric(0)
+    )
+  )
+})
+
+test_that(".build_survey_result_attr() stopifnot fires for length-2 statistic", {
+  expect_error(
+    .build_survey_result_attr(
+      estimate_cols = c("mean"),
+      group_cols = character(0),
+      statistic = c("mean", "other"),
+      cell_df = rep(Inf, 1L)
+    )
+  )
+})
+
+test_that(".build_survey_result_attr() stopifnot fires for NA statistic", {
+  expect_error(
+    .build_survey_result_attr(
+      estimate_cols = c("mean"),
+      group_cols = character(0),
+      statistic = NA_character_,
+      cell_df = rep(Inf, 1L)
+    )
+  )
+})
+
+test_that(".make_result_tibble() computes p = nrow * length(estimate_cols) for df default", {
+  designs <- make_all_designs(seed = 42L)
+  d <- designs$taylor
+
+  # Two rows, one estimate col -> p = 2
+  result <- .make_result_tibble(
+    col_vecs = list(mean = c(10.0, 20.0), n = c(50L, 50L)),
+    groups_df = data.frame(group = c("A", "B"), stringsAsFactors = FALSE),
+    class_name = "survey_means",
+    design = d,
+    meta_args = list(
+      conf_level = 0.95,
+      call = quote(get_means(d, y1)),
+      group = list(
+        group = list(
+          variable_label = NULL,
+          question_preface = NULL,
+          value_labels = NULL
+        )
+      ),
+      x = list(
+        y1 = list(
+          variable_label = NULL,
+          question_preface = NULL,
+          value_labels = NULL
+        )
+      )
+    ),
+    required_meta_keys = MEANS_META_KEYS,
+    estimate_cols = c("mean"),
+    statistic = "mean"
+  )
+
+  df_val <- attr(result, ".survey_result")$df
+  expect_equal(df_val, rep(Inf, 2L))
+  expect_length(df_val, 2L)
 })
