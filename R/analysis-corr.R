@@ -795,7 +795,9 @@ get_corr <- function(
     "survey_corr",
     design,
     meta_args,
-    CORR_META_KEYS
+    CORR_META_KEYS,
+    estimate_cols = c("r"),
+    statistic = "corr"
   )
 
   # ── Step 22: Convert var1/var2 to factors (levels in variable supply order) ─

@@ -420,7 +420,9 @@ get_quantiles <- function(
     "survey_quantiles",
     design,
     meta_args,
-    QUANTILES_META_KEYS
+    QUANTILES_META_KEYS,
+    estimate_cols = c("estimate"),
+    statistic = "quantile"
   )
 
   # ── Step 13: Apply decimals and name style ──────────────────────────────────

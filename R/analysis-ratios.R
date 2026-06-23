@@ -426,7 +426,9 @@ get_ratios <- function(
     "survey_ratios",
     design,
     meta_args,
-    RATIOS_META_KEYS
+    RATIOS_META_KEYS,
+    estimate_cols = c("ratio"),
+    statistic = "ratio"
   )
 
   # ── Step 13: Apply decimals and name style ────────────────────────────────
