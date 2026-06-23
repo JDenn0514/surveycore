@@ -11,6 +11,15 @@ are now complete and stable.
 
 ## New features
 
+* New `SE()` generic and `coef()`, `vcov()`, `SE()`, `confint()` S3 methods
+  for all `survey_result` objects produced by `get_*()` functions. `SE()`
+  masks `survey::SE`; `SE.default()` falls back to `sqrt(diag(vcov(...)))` for
+  all other objects. `vcov.survey_result()` returns a named diagonal matrix
+  (`se^2` on-diagonal, structural zeros off-diagonal). `confint.survey_result()`
+  uses the t-distribution with per-parameter degrees of freedom stored in the
+  `.survey_result` attribute. `coef()` follows variable-major, group-secondary
+  naming matching `survey::coef.svyby()`. (#150)
+
 * `as_survey_nonprob()` now accepts jackknife replicate schemes via
   `type = "JK1"`, `"JK2"`, and `"JKn"`. All `get_*()` estimation functions
   dispatch to jackknife variance when a `survey_nonprob` design carries
