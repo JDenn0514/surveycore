@@ -88,7 +88,11 @@
 
   # Phase guard: multi-estimate-column not yet supported
   if (length(sr$estimate_cols) > 1L) {
+    # nocov start
+    # Phase guard: multi-estimate-column support is deferred to a future phase.
+    # Reached only if a get_*() function incorrectly sets multiple estimate_cols.
     stop("multi-estimate-column coef() not yet supported")
+    # nocov end
   }
 
   # Template 3: broom-renamed estimate column
@@ -129,7 +133,11 @@
   n_rows <- nrow(object)
 
   if (n_rows == 0L) {
+    # nocov start
+    # Defensive: coef.survey_result() returns early for zero-row objects before
+    # calling .build_coef_names(), so this branch is unreachable via public API.
     return(character(0))
+    # nocov end
   }
 
   # Build the row identifier (intra-row label) for each row
@@ -399,7 +407,11 @@ vcov.survey_result <- function(object, ...) {
 
   # Phase guard
   if (length(sr$estimate_cols) > 1L) {
+    # nocov start
+    # Phase guard: multi-estimate-column support is deferred to a future phase.
+    # Reached only if a get_*() function incorrectly sets multiple estimate_cols.
     stop("multi-estimate-column vcov() not yet supported")
+    # nocov end
   }
 
   # Check if se column is present

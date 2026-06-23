@@ -163,3 +163,13 @@
       x `coef()` requires a <survey_result> built with `get_means()`, `get_totals()`, or another supported `get_*()` function.
       i The `.survey_result` metadata attribute is absent.
 
+# coef() works before broom rename and throws SCR-1 after rename
+
+    Code
+      coef(result_broom)
+    Condition
+      Error in `.check_result_preconditions()`:
+      x `coef()` cannot find estimate column mean in <survey_means>.
+      i Column was renamed by `name_style = "broom"`. The original column name mean is stored in `attr(x, '.survey_result')$estimate_cols`.
+      v Call `coef()` before applying `name_style = "broom"`, or access the estimate directly.
+

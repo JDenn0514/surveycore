@@ -589,8 +589,9 @@ as_survey <- function(
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
 #'   the number of replicates `R`: `(R-1)/R` for `"JK1"`, `"JK2"`, and
-#'   `"JKn"`; `1/R` for `"BRR"`, `"Fay"`, `"bootstrap"`, and `"ACS"`;
-#'   `2/R` for `"successive-difference"`; `1` for `"other"`.
+#'   `"JKn"`; `1/R` for `"BRR"`, `"Fay"`, and `"bootstrap"`; `4/R` for
+#'   `"ACS"` and `"successive-difference"` (per Ash 2014 / Fay & Train 1995);
+#'   `1` for `"other"`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
 #'   replicate weight columns selected by `repweights`.
@@ -778,8 +779,8 @@ as_survey_replicate <- function(
       BRR = 1 / n_rep,
       Fay = 1 / n_rep,
       bootstrap = 1 / n_rep,
-      ACS = 1 / n_rep,
-      `successive-difference` = 2 / n_rep,
+      ACS = 4 / n_rep,
+      `successive-difference` = 4 / n_rep,
       other = 1
     )
   }

@@ -598,9 +598,12 @@ test_that("coef() matches survey::svytotal for acs_pums_wy replicate [numerical]
     as.numeric(coef(sv_tot)),
     tolerance = 1e-6
   )
-  # Verify SE is finite and positive
-  expect_true(is.finite(as.numeric(SE(sc_tot))))
-  expect_true(as.numeric(SE(sc_tot)) > 0)
+  # SE oracle: successive-difference SE is a pre-existing divergence from the
+  # survey package (surveycore: ~40,315; survey: ~54,359) due to
+  # combined.weights convention differences. Replaced with structural check
+  # pending replicate-variance consistency audit.
+  se_val <- as.numeric(SE(sc_tot))
+  expect_true(is.finite(se_val) && se_val > 0)
 })
 
 # ── 11. coef() naming by result class ─────────────────────────────────────────
@@ -1122,4 +1125,111 @@ test_that("coef() for get_diffs() two-group names are correct", {
   nms <- names(cf)
   # Both rows should end with " - aaa" (the reference level)
   expect_true(all(grepl(" - aaa$", nms)))
+})
+
+# ── §19 — broom-rename error path ─────────────────────────────────────────────
+
+test_that("coef() works before broom rename and throws SCR-1 after rename", {
+  df <- make_survey_data(seed = 19L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  test_invariants(d)
+  result <- suppressWarnings(get_means(d, y1, variance = "se"))
+  # Works before broom rename
+  expect_no_error(coef(result))
+  # Apply broom rename: rename "mean" -> "estimate"
+  result_broom <- result
+  names(result_broom)[names(result_broom) == "mean"] <- "estimate"
+  attr(result_broom, ".survey_result") <- attr(result, ".survey_result")
+  attr(result_broom, ".meta") <- attr(result, ".meta")
+  class(result_broom) <- class(result)
+  # coef() should throw SCR-1 with broom-specific message
+  expect_error(
+    coef(result_broom),
+    class = "surveycore_error_result_method_unsupported"
+  )
+  expect_snapshot(error = TRUE, coef(result_broom))
+})
+
+# ── §A2 — Multi-var freqs non_estimate_cols branches ─────────────────────────
+
+test_that("coef() names for multi-var get_freqs() use names_to.values_to format", {
+  # This exercises the length >= 2L branch of .build_coef_names for freq stat
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 178L)
+  df$cat1 <- as.factor(rep(c("a", "b", "c"), length.out = nrow(df)))
+  df$cat2 <- as.factor(rep(c("x", "y"), length.out = nrow(df)))
+  d <- suppressWarnings(
+    as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  )
+  r <- suppressWarnings(get_freqs(d, c(cat1, cat2), variance = "se"))
+  cf <- coef(r)
+  # Multi-var freqs: names follow "variable_name.level" format derived from
+  # the names_to (first) and values_to (second) non-estimate columns
+  expect_true(is.numeric(cf))
+  expect_true(length(cf) >= 1L)
+  # All names should contain a "." separator
+  expect_true(all(grepl("\\.", names(cf))))
+})
+
+test_that("coef() names for freqs with mismatched meta use non_estimate fallback", {
+  # This exercises the length == 1L branch of .build_coef_names for freq stat:
+  # x_names[[1L]] is not in names(object) but there is exactly 1 non-estimate col.
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 183L)
+  df$cat1 <- as.factor(rep(c("a", "b"), length.out = nrow(df)))
+  d <- suppressWarnings(
+    as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  )
+  r <- suppressWarnings(get_freqs(d, cat1, variance = "se"))
+  # Manipulate .meta so x_names[[1L]] doesn't match any column
+  meta_mod <- attr(r, ".meta")
+  meta_mod$x <- list(nonexistent_col = "foo")
+  attr(r, ".meta") <- meta_mod
+  cf <- coef(r)
+  # Falls into length==1 branch: uses non_estimate_cols[[1L]] as the column name
+  expect_true(is.numeric(cf))
+  expect_true(length(cf) >= 1L)
+  expect_true(all(grepl("^cat1\\.", names(cf))))
+})
+
+# ── §A3a — Fallback switch: unknown statistic type ────────────────────────────
+
+test_that("coef.survey_result() uses sequential row names for unknown statistic", {
+  # Exercises the default branch of switch(statistic, ...) — line 225 equivalent
+  df <- make_survey_data(seed = 225L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- suppressWarnings(get_means(d, y1, variance = "se"))
+  # Override statistic to something not handled by the switch
+  sr_mod <- attr(result, ".survey_result")
+  sr_mod$statistic <- "unknown_type_xyz"
+  attr(result, ".survey_result") <- sr_mod
+  cv <- coef(result)
+  # Should return a named numeric with sequential integer names
+  expect_true(is.numeric(cv))
+  expect_equal(length(cv), 1L)
+  expect_identical(names(cv), "1")
+})
+
+# ── §A3b — Fallback freq: empty non_estimate_cols ─────────────────────────────
+
+test_that("coef() for freq uses sequential row names when non_estimate_cols is empty", {
+  # Exercises the length == 0 fallback inside the freq else-branch (line 192).
+  # Constructed by removing all non-standard columns so non_estimate_cols = 0.
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 192L)
+  df$cat1 <- as.factor(rep(c("a", "b", "c"), length.out = nrow(df)))
+  d <- suppressWarnings(
+    as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  )
+  r <- suppressWarnings(get_freqs(d, cat1, variance = "se"))
+  # Remove the focal (cat1) column to strip non_estimate_cols to empty
+  r2 <- r[, c("pct", "se", "n")]
+  attr(r2, ".survey_result") <- attr(r, ".survey_result")
+  # Point meta$x to a nonexistent column so the single-var path is skipped
+  meta_mod <- attr(r, ".meta")
+  meta_mod$x <- list(nonexistent_col = "foo")
+  attr(r2, ".meta") <- meta_mod
+  class(r2) <- class(r)
+  cv <- coef(r2)
+  # Fallback: sequential integer names
+  expect_true(is.numeric(cv))
+  expect_equal(length(cv), nrow(r))
+  expect_identical(names(cv), as.character(seq_len(nrow(r))))
 })

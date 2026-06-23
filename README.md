@@ -15,9 +15,9 @@ developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.re
 coverage](https://codecov.io/gh/JDenn0514/surveycore/graph/badge.svg)](https://app.codecov.io/gh/JDenn0514/surveycore)
 <!-- badges: end -->
 
-**surveycore** is the foundation of the surveyverse ecosystem — a
-modern, tidyverse-compatible replacement for the `survey` and `srvyr`
-packages in R.
+**surveycore** is the foundation of the surveyverse ecosystem, a modern
+tidyverse-compatible replacement for the `survey` and `srvyr` packages
+in R.
 
 It provides S7-based survey design objects with:
 
@@ -43,18 +43,28 @@ For a side-by-side comparison with `survey` and `srvyr`, see
 ## What surveycore provides
 
 - **S7 survey objects**: `survey_taylor`, `survey_replicate`,
-  `survey_twophase`, `survey_nonprob`
+  `survey_twophase`, `survey_nonprob`, `survey_collection`
 - **Constructors**: `as_survey()`, `as_survey_replicate()`,
-  `as_survey_twophase()`, `as_survey_nonprob()`
-- **Metadata system**: `set_var_label()`, `set_val_labels()`,
-  `extract_var_label()`, `extract_val_labels()` — with automatic haven
-  attribute import
+  `as_survey_twophase()`, `as_survey_nonprob()`,
+  `as_survey_collection()`
+- **Metadata system**: variable labels, value labels, question prefaces,
+  notes, universe annotations, missing codes, SATA flags, and direction
+  metadata. Set via `set_var_label()`, `set_val_labels()`, `set_sata()`,
+  `set_higher_is()`, `set_universe()`, and more; extract with the
+  matching `extract_*()` family. Haven-style label attributes are
+  imported automatically.
 - **Analysis functions**: `get_freqs()`, `get_means()`, `get_totals()`,
-  `get_corr()`, `get_quantiles()`, `get_ratios()`, `get_diffs()`
+  `get_corr()`, `get_quantiles()`, `get_ratios()`, `get_diffs()`,
+  `get_t_test()`, `get_pairwise()`, `get_variance()`,
+  `get_covariance()`, `get_anova()`, `get_effective_n()`
 - **Regression**: `survey_glm()` for survey-weighted GLMs with `clean()`
   for tidy coefficient tables
+- **Calibration**: `as_caldata()` constructs calibration data for
+  GREG-corrected variance on Taylor and replicate designs
 - **Design utilities**: `update_design()`, `as_svydesign()`,
   `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()`
+- **Bundled datasets**: `ca_api_2000`, `nhanes_2017`, `acs_pums_wy`,
+  `anes_2024`, `gss_2024`, and more
 
 ## Who is this for?
 
@@ -79,102 +89,55 @@ FPC). It supports:
   `.xpt` or `.sav` files read with `haven`).
 - Grouped analyses (via `surveytidy::group_by()`).
 
-Each analysis function accepts specific types of outcome variables:
-
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr>
-<th>Function</th>
-<th>Accepts</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>get_freqs()</code></td>
-<td>Categorical or coded integer variables</td>
-</tr>
-<tr>
-<td><code>get_means()</code></td>
-<td>Numeric variables</td>
-</tr>
-<tr>
-<td><code>get_totals()</code></td>
-<td>Numeric variables</td>
-</tr>
-<tr>
-<td><code>get_corr()</code></td>
-<td>Pairs of numeric variables</td>
-</tr>
-<tr>
-<td><code>get_quantiles()</code></td>
-<td>Numeric variables</td>
-</tr>
-<tr>
-<td><code>get_ratios()</code></td>
-<td>Two numeric variables (numerator / denominator)</td>
-</tr>
-<tr>
-<td><code>get_diffs()</code></td>
-<td>A categorical grouping variable + one or more numeric outcomes</td>
-</tr>
-<tr>
-<td><code>survey_glm()</code></td>
-<td>Numeric or binary response, numeric or categorical predictors</td>
-</tr>
-</tbody>
-</table>
+Thirteen analysis functions cover means, totals, frequencies,
+correlations, ratios, differences, t-tests, pairwise comparisons, ANOVA,
+variance, covariance, quantiles, and effective sample size.
+`survey_glm()` fits survey-weighted generalized linear models.
 
 ## Basic usage
 
     library(surveycore)
 
-    # ── Simple SRS design ──────────────────────────────────────────────────────────
-    set.seed(42)
-    df <- data.frame(
-      psu = rep(1:10, each = 10),
-      strata = rep(c("A", "B"), each = 50),
-      weight = runif(100, 0.5, 2),
-      income = rnorm(100, 50000, 10000),
-      age = sample(18:80, 100, replace = TRUE)
-    )
-
-    d <- as_survey(df, ids = psu, weights = weight, strata = strata, nest = TRUE)
+    # Simple random sample: 2000 California API schools
+    d <- as_survey(ca_api_2000, weights = pw, fpc = fpc)
     d
     #> 
     #> ── Survey Design ───────────────────────────────────────────────────────────────
     #> <survey_taylor> (Taylor series linearization)
-    #> Sample size: 100
+    #> Sample size: 200
     #> 
-    #> # A tibble: 100 × 5
-    #>      psu strata weight income   age
-    #>    <int> <chr>   <dbl>  <dbl> <int>
-    #>  1     1 A       1.87  53219.    42
-    #>  2     1 A       1.91  42162.    33
-    #>  3     1 A       0.929 65757.    71
-    #>  4     1 A       1.75  56429.    41
-    #>  5     1 A       1.46  50898.    50
-    #>  6     1 A       1.28  52766.    78
-    #>  7     1 A       1.60  56793.    55
-    #>  8     1 A       0.702 50898.    60
-    #>  9     1 A       1.49  20069.    58
-    #> 10     1 A       1.56  52849.    39
-    #> # ℹ 90 more rows
+    #> # A tibble: 200 × 38
+    #>    cds       stype name  sname  snum dname  dnum cname  cnum pcttest api00 api99
+    #>    <chr>     <int> <chr> <chr> <dbl> <chr> <int> <chr> <int>   <int> <int> <int>
+    #>  1 15739081…     2 "McF… McFa…  1039 McFa…   432 Kern     14      98   462   448
+    #>  2 19642126…     1 "Sto… Stow…  1124 ABC …     1 Los …    18     100   878   831
+    #>  3 30664493…     2 "Bre… Brea…  2868 Brea…    79 Oran…    29      98   734   742
+    #>  4 19644516…     1 "Ala… Alam…  1273 Down…   187 Los …    18      99   772   657
+    #>  5 40688096…     1 "Sun… Sunn…  4926 San …   640 San …    39      99   739   719
+    #>  6 19734456…     1 "Los… Los …  2463 Haci…   284 Los …    18      93   835   822
+    #>  7 19647336…     3 "Nor… Nort…  2031 Los …   401 Los …    18      98   456   472
+    #>  8 19647336…     1 "Gla… Glas…  1736 Los …   401 Los …    18      99   506   474
+    #>  9 19648166…     1 "Max… Maxs…  2142 Moun…   470 Los …    18     100   543   458
+    #> 10 38684786…     1 "Tre… Trea…  4754 San …   632 San …    37      90   649   604
+    #> # ℹ 190 more rows
+    #> # ℹ 26 more variables: target <int>, growth <int>, sch_wide <int>,
+    #> #   comp_imp <int>, both <int>, awards <int>, meals <int>, ell <int>,
+    #> #   yr_rnd <int>, mobility <int>, acs_k3 <int>, acs_46 <int>, acs_core <int>,
+    #> #   pct_resp <int>, not_hsg <int>, hsg <int>, some_col <int>, col_grad <int>,
+    #> #   grad_sch <int>, avg_ed <dbl>, full <int>, emer <int>, enroll <int>,
+    #> #   api_stu <int>, pw <dbl>, fpc <dbl>
 
-    # ── Weighted mean and total ────────────────────────────────────────────────────
-    get_means(d, income)
+    # Weighted mean API score and total enrollment
+    get_means(d, api00)
     #> # A tibble: 1 × 4
-    #>     mean ci_low ci_high     n
-    #>    <dbl>  <dbl>   <dbl> <int>
-    #> 1 50206. 47921.  52490.   100
-    get_totals(d, income)
+    #>    mean ci_low ci_high     n
+    #>   <dbl>  <dbl>   <dbl> <int>
+    #> 1  657.   638.    675.   200
+    get_totals(d, enroll)
     #> # A tibble: 1 × 4
     #>      total   ci_low  ci_high     n
     #>      <dbl>    <dbl>    <dbl> <int>
-    #> 1 6460063. 5906356. 7013770.   100
+    #> 1 3621074. 3288822. 3953327.   200
 
 ## Complex survey designs
 
@@ -201,34 +164,41 @@ Each analysis function accepts specific types of outcome variables:
     #> Sample size: 20
     #> 
     #> # A tibble: 20 × 6
-    #>         y    wt  rep1  rep2  rep3  rep4
-    #>     <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    #>  1 -2.00   2.30 1.09  0.849 0.705 1.71 
-    #>  2  0.334  2.84 0.619 1.37  0.766 1.90 
-    #>  3  1.17   1.73 1.74  1.76  1.28  1.75 
-    #>  4  2.06   2.71 0.609 0.698 1.72  0.691
-    #>  5 -1.38   1.60 0.672 1.84  0.673 1.47 
-    #>  6 -1.15   1.93 1.46  1.18  1.84  1.54 
-    #>  7 -0.706  1.29 0.981 1.84  1.36  0.548
-    #>  8 -1.05   2.62 0.783 0.873 0.720 1.88 
-    #>  9 -0.646  2.33 1.09  0.626 1.85  1.22 
-    #> 10 -0.185  1.12 1.79  0.573 0.880 0.900
+    #>          y    wt  rep1  rep2  rep3  rep4
+    #>      <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    #>  1 -0.634   1.10 0.653 0.690 1.09  0.968
+    #>  2  0.642   1.05 1.48  1.14  1.97  0.688
+    #>  3  0.0802  2.96 1.18  0.582 1.92  1.22 
+    #>  4  0.270   2.68 1.44  1.79  0.947 1.31 
+    #>  5 -0.251   2.24 0.665 1.29  1.95  0.546
+    #>  6 -0.131   2.69 0.632 0.773 0.508 1.03 
+    #>  7 -1.64    2.69 1.41  1.58  1.56  1.78 
+    #>  8 -0.919   1.41 0.656 1.18  1.52  0.818
+    #>  9 -0.325   1.08 1.91  0.998 1.13  0.954
+    #> 10  0.285   2.09 1.82  1.68  1.70  1.09 
     #> # ℹ 10 more rows
+
+`survey_collection` groups multiple designs for comparative analysis
+across waves or design variants. All analysis functions dispatch across
+members and return a combined result:
+
+    coll <- as_survey_collection(wave1 = d_wave1, wave2 = d_wave2)
+    get_means(coll, api00)
 
 ## Variable labels
 
 surveycore preserves haven-style labels automatically when reading
 `.xpt` or `.sav` files. You can also set labels manually:
 
-    d2 <- set_var_label(d, income = "Annual household income (USD)")
-    d2 <- set_var_label(d2, age = "Respondent age in years")
+    d2 <- set_var_label(d, api00 = "Academic Performance Index score (2000)")
+    d2 <- set_var_label(d2, enroll = "Number of students enrolled")
 
-    extract_var_label(d2, income)
-    #>                          income 
-    #> "Annual household income (USD)"
-    extract_var_label(d2, age)
-    #>                       age 
-    #> "Respondent age in years"
+    extract_var_label(d2, api00)
+    #>                                     api00 
+    #> "Academic Performance Index score (2000)"
+    extract_var_label(d2, enroll)
+    #>                        enroll 
+    #> "Number of students enrolled"
 
 ## Conversion to/from survey and srvyr
 
@@ -243,21 +213,23 @@ surveycore preserves haven-style labels automatically when reading
 
 ## The surveyverse ecosystem
 
-surveycore is the foundation of the surveyverse — a family of packages
+surveycore is the foundation of the surveyverse, a family of packages
 built around it:
 
-- **[surveytidy](https://jdenn0514.github.io/surveytidy/)** — dplyr
-  verbs (`filter()`, `select()`, `mutate()`, `group_by()`) that respect
-  survey design structure, so grouped summaries and subsetting always
-  propagate weights and strata correctly.
-- **surveywts** — calibration and post-stratification for survey
-  weights. Coming soon.
+- **[surveytidy](https://jdenn0514.github.io/surveytidy/)**: dplyr verbs
+  (`filter()`, `select()`, `mutate()`, `group_by()`) that respect survey
+  design structure, so grouped summaries and subsetting always propagate
+  weights and strata correctly.
+- **surveywts**: weight adjustment utilities for survey data.
+  Calibration-adjusted variance is already available in surveycore via
+  `as_caldata()`; additional weight adjustment methods are in
+  development.
 
 ## Development status
 
-The package API is stable. The core classes, constructors, and analysis
-functions (`get_freqs()` through `get_diffs()`) are not expected to
-change in breaking ways. New analysis functions may be added in future
+The package API is stable (v1.0.0). All classes, constructors, metadata
+functions, and analysis functions are not expected to change in breaking
+ways. New analysis functions and utilities may be added in future
 releases. See `NEWS.md` for the full changelog.
 
 ## Code of Conduct
@@ -271,7 +243,7 @@ By contributing to this project, you agree to abide by its terms.
 
 GPL-3. Variance estimation code vendored from the
 [`survey`](https://cran.r-project.org/package=survey) package (Thomas
-Lumley, GPL-2/GPL-3) — see `VENDORED.md` for full attribution.
+Lumley, GPL-2/GPL-3); see `VENDORED.md` for full attribution.
 
 ## References
 
