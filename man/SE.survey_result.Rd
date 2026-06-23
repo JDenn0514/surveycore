@@ -27,9 +27,13 @@ the off-diagonal structure is irrelevant when only standard errors are
 requested. Call \code{vcov(result)} directly to observe this warning.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-  strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 result <- get_means(d, ridageyr, variance = "se")
 SE(result)
-
 }

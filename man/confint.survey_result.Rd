@@ -37,10 +37,14 @@ used.
 When \code{SE(object)[i]} is \code{NA}, the corresponding CI row is \code{c(NA, NA)}.
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-  strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 result <- get_means(d, ridageyr, variance = "se")
 confint(result)
 confint(result, level = 0.90)
-
 }

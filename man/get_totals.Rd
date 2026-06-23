@@ -118,6 +118,7 @@ get_totals(d, agep, group = sex)
 }
 \seealso{
 Other analysis: 
+\code{\link{SE}()},
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},

@@ -1240,12 +1240,14 @@ test_that("get_means() attaches .survey_result attribute with statistic = 'mean'
   expect_identical(sr$statistic, "mean")
 })
 
-test_that("get_means() .survey_result$df is rep(Inf, p) for non-calibrated design", {
+test_that("get_means() .survey_result$df is finite for non-calibrated Taylor design", {
   df <- make_survey_data(n = 100, seed = 3)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_means(d, y1)
   sr <- attr(result, ".survey_result")
-  expect_true(all(is.infinite(sr$df)))
+  # Non-calibrated Taylor designs now store finite design df (not Inf).
+  expect_true(all(is.finite(sr$df)))
+  expect_true(all(sr$df >= 1))
   expect_equal(length(sr$df), nrow(result))
 })
 

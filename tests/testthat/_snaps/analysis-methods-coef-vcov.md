@@ -113,8 +113,8 @@
       ! `parm` contains 1 `NA` element(s).
       i `NA` elements are dropped before parameter selection.
     Output
-           2.5 %   97.5 %
-      y1 49.1289 51.57648
+            2.5 %   97.5 %
+      y1 49.02904 51.67635
 
 # confint() with partially unmatched parm emits surveycore_warning_parm_unmatched
 
@@ -126,8 +126,8 @@
       i Unmatched names: "not_a_param".
       i These parameters are dropped. Check `names(coef(result))` for valid names.
     Output
-             2.5 %   97.5 %
-      A:y1 47.7703 52.24965
+              2.5 %   97.5 %
+      A:y1 47.58754 52.43242
 
 # confint() with all unmatched parm emits warning and returns 0x2 matrix
 
@@ -135,4 +135,31 @@
       suppressWarnings(confint(r, parm = c("no_match_1", "no_match_2")))
     Output
            2.5 % 97.5 %
+
+# confint(result, level = 1.1) throws surveycore_error_invalid_conf_level
+
+    Code
+      confint(r, level = 1.1)
+    Condition
+      Error in `confint()`:
+      x `level` must be a single number strictly between 0 and 1.
+      i Got 1.1.
+
+# vcov() and confint() on stripped-attribute result have correct error snapshots
+
+    Code
+      vcov(r)
+    Condition
+      Error in `.check_result_preconditions()`:
+      x `vcov()` requires a <survey_result> built with `get_means()`, `get_totals()`, or another supported `get_*()` function.
+      i The `.survey_result` metadata attribute is absent.
+
+---
+
+    Code
+      confint(r)
+    Condition
+      Error in `.check_result_preconditions()`:
+      x `coef()` requires a <survey_result> built with `get_means()`, `get_totals()`, or another supported `get_*()` function.
+      i The `.survey_result` metadata attribute is absent.
 

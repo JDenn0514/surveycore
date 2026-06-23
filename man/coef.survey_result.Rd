@@ -32,9 +32,13 @@ throw this error. For those objects, access columns directly (e.g.,
 \code{result$estimate}, \code{result$se}).
 }
 \examples{
-d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtint2yr,
-  strata = sdmvstra, nest = TRUE)
+d <- as_survey(
+  nhanes_2017,
+  ids = sdmvpsu,
+  weights = wtint2yr,
+  strata = sdmvstra,
+  nest = TRUE
+)
 result <- get_means(d, ridageyr, variance = "se")
 coef(result)
-
 }

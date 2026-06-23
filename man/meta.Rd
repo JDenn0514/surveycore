@@ -78,6 +78,7 @@ meta(result)$conf_level # 0.95
 }
 \seealso{
 Other analysis: 
+\code{\link{SE}()},
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},

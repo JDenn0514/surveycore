@@ -209,6 +209,7 @@ get_diffs(d, dv, arm, show_pct_change = TRUE, pval_adj = "BH")
 }
 \seealso{
 Other analysis: 
+\code{\link{SE}()},
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_corr}()},

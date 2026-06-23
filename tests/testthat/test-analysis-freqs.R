@@ -2198,12 +2198,14 @@ test_that("get_freqs() attaches .survey_result attribute with statistic = 'freq'
   expect_identical(sr$statistic, "freq")
 })
 
-test_that("get_freqs() .survey_result$df is rep(Inf, p) for non-calibrated design", {
+test_that("get_freqs() .survey_result$df is finite for non-calibrated Taylor design", {
   df <- make_survey_data(n = 200, seed = 3)
   df$cat <- factor(sample(c("A", "B"), 200, replace = TRUE))
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_freqs(d, cat)
   sr <- attr(result, ".survey_result")
-  expect_true(all(is.infinite(sr$df)))
+  # Non-calibrated Taylor designs now store finite design df (not Inf).
+  expect_true(all(is.finite(sr$df)))
+  expect_true(all(sr$df >= 1))
   expect_equal(length(sr$df), nrow(result))
 })

@@ -614,6 +614,16 @@ get_covariance <- function(
     statistic = "covariance"
   )
 
+  # For Taylor/twophase designs, store finite design df in .survey_result.
+  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
+    S7::S7_inherits(design, survey_twophase)
+  if (is_taylor_like) {
+    design_df <- .degf(design)
+    sr <- attr(result, ".survey_result")
+    sr$df <- rep(design_df, nrow(result))
+    attr(result, ".survey_result") <- sr
+  }
+
   # ── Step 20: Convert var1/var2 to factors (supply order) ────────────────────
   uniq_display <- unique(display_names)
   result$var1 <- factor(result$var1, levels = uniq_display)
