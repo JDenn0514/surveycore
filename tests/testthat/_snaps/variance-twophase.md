@@ -1,7 +1,7 @@
-# .twophase_mean() errors for method = "full" with no phase 2 design info
+# get_means() errors for method = "full" with no phase 2 design info
 
     Code
-      .twophase_mean(d, "y1")
+      get_means(d, y1)
     Condition
       Error in `.twophasevar()`:
       x Two-phase variance method "full" requires phase 2 design structure.
