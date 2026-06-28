@@ -1,6 +1,30 @@
 # Changelog
 
+## surveycore 1.1.0
+
+### New features
+
+- [`coef()`](https://rdrr.io/r/stats/coef.html),
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html),
+  [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md), and
+  [`confint()`](https://rdrr.io/r/stats/confint.html) methods are now
+  available for all `survey_result` objects produced by `get_*()`
+  functions. The `.survey_result` attribute carrying degrees of freedom
+  and parameter metadata is now wired into every estimation function.
+  ([\#148](https://github.com/JDenn0514/surveycore/issues/148),
+  [\#149](https://github.com/JDenn0514/surveycore/issues/149))
+
+### Bug fixes
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  now uses the correct default scale factor for `"ACS"` and
+  `"successive-difference"` replicate types (`4/R` per Ash (2014) / Fay
+  & Train (1995)), fixing underestimated standard errors for these
+  designs. ([\#150](https://github.com/JDenn0514/surveycore/issues/150))
+
 ## surveycore 1.0.0
+
+CRAN release: 2026-06-08
 
 ### First stable release
 
@@ -12,6 +36,27 @@ t-tests, ANOVA, effective sample size), the metadata system, and
 calibration-adjusted variance are now complete and stable.
 
 ### New features
+
+- New [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md)
+  generic and [`coef()`](https://rdrr.io/r/stats/coef.html),
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html),
+  [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md),
+  [`confint()`](https://rdrr.io/r/stats/confint.html) S3 methods for all
+  `survey_result` objects produced by `get_*()` functions.
+  [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md) masks
+  [`survey::SE`](https://rdrr.io/pkg/survey/man/SE.html);
+  [`SE.default()`](https://jdenn0514.github.io/surveycore/reference/SE.default.md)
+  falls back to `sqrt(diag(vcov(...)))` for all other objects.
+  [`vcov.survey_result()`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md)
+  returns a named diagonal matrix (`se^2` on-diagonal, structural zeros
+  off-diagonal).
+  [`confint.survey_result()`](https://jdenn0514.github.io/surveycore/reference/confint.survey_result.md)
+  uses the t-distribution with per-parameter degrees of freedom stored
+  in the `.survey_result` attribute.
+  [`coef()`](https://rdrr.io/r/stats/coef.html) follows variable-major,
+  group-secondary naming matching
+  [`survey::coef.svyby()`](https://rdrr.io/pkg/survey/man/svyby.html).
+  ([\#150](https://github.com/JDenn0514/surveycore/issues/150))
 
 - [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
   now accepts jackknife replicate schemes via `type = "JK1"`, `"JK2"`,

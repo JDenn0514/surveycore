@@ -122,6 +122,7 @@ jointly.
 ## See also
 
 Other analysis:
+[`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md),
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),

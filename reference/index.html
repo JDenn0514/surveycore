@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -528,6 +528,57 @@
 
         </dt>
         <dd>Multi-Survey Container</dd>
+      </dl></div><div class="section level2">
+      <h2 id="result-methods">Result methods<a class="anchor" aria-label="anchor" href="#result-methods"></a></h2>
+
+      <div class="section-desc"><p>S3 methods for extracting model-like summaries from <code>survey_result</code> objects. <code><a href="../reference/SE.html">SE()</a></code> is a new generic that masks <code><a href="https://rdrr.io/pkg/survey/man/SE.html" class="external-link">survey::SE</a></code>; <code><a href="../reference/SE.default.html">SE.default()</a></code> delegates to <code>sqrt(diag(vcov(object, ...)))</code> for non-<code>survey_result</code> objects.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="SE.html">SE()</a></code>
+
+        </dt>
+        <dd>Extract standard errors from a model or result object</dd>
+
+        <dt>
+
+          <code><a href="SE.default.html">SE(<i>&lt;default&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Default SE method: extracts from vcov diagonal</dd>
+
+        <dt>
+
+          <code><a href="coef.survey_result.html">coef(<i>&lt;survey_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Extract coefficients from a survey result object</dd>
+
+        <dt>
+
+          <code><a href="vcov.survey_result.html">vcov(<i>&lt;survey_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Extract variance-covariance matrix from a survey result object</dd>
+
+        <dt>
+
+          <code><a href="SE.survey_result.html">SE(<i>&lt;survey_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Extract standard errors from a survey result object</dd>
+
+        <dt>
+
+          <code><a href="confint.survey_result.html">confint(<i>&lt;survey_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Confidence intervals for survey result objects</dd>
       </dl></div><div class="section level2">
       <h2 id="print-methods">Print methods<a class="anchor" aria-label="anchor" href="#print-methods"></a></h2>
 

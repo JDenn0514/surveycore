@@ -13,6 +13,9 @@
 <url><loc>https://jdenn0514.github.io/surveycore/authors.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/index.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/news/index.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/SE.default.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/SE.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/SE.survey_result.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/SURVEYCORE_DOMAIN_COL.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/acs_pums_wy.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/add_survey.html</loc></url>
@@ -29,6 +32,8 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/ca_api_2000.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/classify_question_type.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/clean.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/coef.survey_result.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/confint.survey_result.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/dot-get_design_vars_flat.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_higher_is.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/extract_metadata.html</loc></url>
@@ -93,5 +98,6 @@
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_twophase.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.html</loc></url>
 <url><loc>https://jdenn0514.github.io/surveycore/reference/update_design.html</loc></url>
+<url><loc>https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.html</loc></url>
 </urlset>
 

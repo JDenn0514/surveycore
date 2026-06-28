@@ -139,6 +139,7 @@ The variable name (or `NULL` for no-variable mode) is in
 ## See also
 
 Other analysis:
+[`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md),
 [`clean()`](https://jdenn0514.github.io/surveycore/reference/clean.md),
 [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md),
 [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md),
@@ -176,13 +177,13 @@ get_totals(d, agep)
 #> # A tibble: 1 × 4
 #>      total    ci_low   ci_high     n
 #>      <dbl>     <dbl>     <dbl> <int>
-#> 1 23089173 23010158. 23168188.  5962
+#> 1 23089173 22977428. 23200918.  5962
 
 # Grouped
 get_totals(d, agep, group = sex)
 #> # A tibble: 2 × 5
 #>     sex    total    ci_low   ci_high     n
 #>   <int>    <dbl>     <dbl>     <dbl> <int>
-#> 1     1 11652675 11570321. 11735029.  2985
-#> 2     2 11436498 11365701. 11507295.  2977
+#> 1     1 11652675 11536209. 11769141.  2985
+#> 2     2 11436498 11336376. 11536620.  2977
 ```

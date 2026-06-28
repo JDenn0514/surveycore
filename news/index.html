@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,14 +31,28 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.0.0" id="surveycore-100">surveycore 1.0.0<a class="anchor" aria-label="anchor" href="#surveycore-100"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.1.0" id="surveycore-110">surveycore 1.1.0<a class="anchor" aria-label="anchor" href="#surveycore-110"></a></h2>
+<div class="section level3">
+<h3 id="new-features-1-1-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-1-0"></a></h3>
+<ul><li>
+<code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, <code><a href="../reference/SE.html">SE()</a></code>, and <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> methods are now available for all <code>survey_result</code> objects produced by <code>get_*()</code> functions. The <code>.survey_result</code> attribute carrying degrees of freedom and parameter metadata is now wired into every estimation function. (<a href="https://github.com/JDenn0514/surveycore/issues/148" class="external-link">#148</a>, <a href="https://github.com/JDenn0514/surveycore/issues/149" class="external-link">#149</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-1-1-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-1-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/as_survey_replicate.html">as_survey_replicate()</a></code> now uses the correct default scale factor for <code>"ACS"</code> and <code>"successive-difference"</code> replicate types (<code>4/R</code> per Ash (2014) / Fay &amp; Train (1995)), fixing underestimated standard errors for these designs. (<a href="https://github.com/JDenn0514/surveycore/issues/150" class="external-link">#150</a>)</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.0.0" id="surveycore-100">surveycore 1.0.0<a class="anchor" aria-label="anchor" href="#surveycore-100"></a></h2><p class="text-muted">CRAN release: 2026-06-08</p>
 <div class="section level3">
 <h3 id="first-stable-release-1-0-0">First stable release<a class="anchor" aria-label="anchor" href="#first-stable-release-1-0-0"></a></h3>
 <p>surveycore 1.0.0 is the first stable API release. The full set of survey design types (Taylor series linearization, replicate weights, two-phase, non-probability), variance estimators, analysis functions (means, totals, frequencies, quantiles, ratios, correlations, regression, t-tests, ANOVA, effective sample size), the metadata system, and calibration-adjusted variance are now complete and stable.</p>
 </div>
 <div class="section level3">
 <h3 id="new-features-1-0-0">New features<a class="anchor" aria-label="anchor" href="#new-features-1-0-0"></a></h3>
-<ul><li><p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> now accepts jackknife replicate schemes via <code>type = "JK1"</code>, <code>"JK2"</code>, and <code>"JKn"</code>. All <code>get_*()</code> estimation functions dispatch to jackknife variance when a <code>survey_nonprob</code> design carries jackknife replicate weights. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> displays the replicate type and count for jackknife designs. (<a href="https://github.com/JDenn0514/surveycore/issues/133" class="external-link">#133</a>–#136)</p></li>
+<ul><li><p>New <code><a href="../reference/SE.html">SE()</a></code> generic and <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code>, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>, <code><a href="../reference/SE.html">SE()</a></code>, <code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> S3 methods for all <code>survey_result</code> objects produced by <code>get_*()</code> functions. <code><a href="../reference/SE.html">SE()</a></code> masks <code><a href="https://rdrr.io/pkg/survey/man/SE.html" class="external-link">survey::SE</a></code>; <code><a href="../reference/SE.default.html">SE.default()</a></code> falls back to <code>sqrt(diag(vcov(...)))</code> for all other objects. <code><a href="../reference/vcov.survey_result.html">vcov.survey_result()</a></code> returns a named diagonal matrix (<code>se^2</code> on-diagonal, structural zeros off-diagonal). <code><a href="../reference/confint.survey_result.html">confint.survey_result()</a></code> uses the t-distribution with per-parameter degrees of freedom stored in the <code>.survey_result</code> attribute. <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> follows variable-major, group-secondary naming matching <code><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">survey::coef.svyby()</a></code>. (<a href="https://github.com/JDenn0514/surveycore/issues/150" class="external-link">#150</a>)</p></li>
+<li><p><code><a href="../reference/as_survey_nonprob.html">as_survey_nonprob()</a></code> now accepts jackknife replicate schemes via <code>type = "JK1"</code>, <code>"JK2"</code>, and <code>"JKn"</code>. All <code>get_*()</code> estimation functions dispatch to jackknife variance when a <code>survey_nonprob</code> design carries jackknife replicate weights. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> displays the replicate type and count for jackknife designs. (<a href="https://github.com/JDenn0514/surveycore/issues/133" class="external-link">#133</a>–#136)</p></li>
 <li><p><code><a href="../reference/survey_glm.html">survey_glm()</a></code> now routes <code>survey_nonprob</code> designs that carry bootstrap replicate weights through the replicate-weight variance estimator, matching the behaviour of all other <code>get_*()</code> functions for such designs. (<a href="https://github.com/JDenn0514/surveycore/issues/138" class="external-link">#138</a>)</p></li>
 <li><p>New dataset <code>ca_api_2000</code>: the 2000 California Academic Performance Index (API) survey, structured as a simple random sample from California schools. Used as a primary example for <code>survey_taylor</code> SRS designs throughout the documentation and vignettes. (<a href="https://github.com/JDenn0514/surveycore/issues/146" class="external-link">#146</a>)</p></li>
 </ul></div>

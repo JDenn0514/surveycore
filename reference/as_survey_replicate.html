@@ -15,7 +15,7 @@ interface for weight and replicate-weight columns."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,8 +97,9 @@ or <code>"other"</code> (user-specified scale). Case-sensitive.</p></dd>
 <dd><p>Numeric. Scaling factor applied to the replicate variance
 formula. If <code>NULL</code> (default), computed automatically from <code>type</code> and
 the number of replicates <code>R</code>: <code>(R-1)/R</code> for <code>"JK1"</code>, <code>"JK2"</code>, and
-<code>"JKn"</code>; <code>1/R</code> for <code>"BRR"</code>, <code>"Fay"</code>, <code>"bootstrap"</code>, and <code>"ACS"</code>;
-<code>2/R</code> for <code>"successive-difference"</code>; <code>1</code> for <code>"other"</code>.</p></dd>
+<code>"JKn"</code>; <code>1/R</code> for <code>"BRR"</code>, <code>"Fay"</code>, and <code>"bootstrap"</code>; <code>4/R</code> for
+<code>"ACS"</code> and <code>"successive-difference"</code> (per Ash 2014 / Fay &amp; Train 1995);
+<code>1</code> for <code>"other"</code>.</p></dd>
 
 
 <dt id="arg-rscales">rscales<a class="anchor" aria-label="anchor" href="#arg-rscales"></a></dt>

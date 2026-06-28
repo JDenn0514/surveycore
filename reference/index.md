@@ -183,6 +183,30 @@ Use `S7::S7_inherits(x, survey_taylor)` for class testing.
 - [`survey_collection()`](https://jdenn0514.github.io/surveycore/reference/survey_collection.md)
   : Multi-Survey Container
 
+## Result methods
+
+S3 methods for extracting model-like summaries from `survey_result`
+objects.
+[`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md) is a
+new generic that masks
+[`survey::SE`](https://rdrr.io/pkg/survey/man/SE.html);
+[`SE.default()`](https://jdenn0514.github.io/surveycore/reference/SE.default.md)
+delegates to `sqrt(diag(vcov(object, ...)))` for non-`survey_result`
+objects.
+
+- [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md) :
+  Extract standard errors from a model or result object
+- [`SE(`*`<default>`*`)`](https://jdenn0514.github.io/surveycore/reference/SE.default.md)
+  : Default SE method: extracts from vcov diagonal
+- [`coef(`*`<survey_result>`*`)`](https://jdenn0514.github.io/surveycore/reference/coef.survey_result.md)
+  : Extract coefficients from a survey result object
+- [`vcov(`*`<survey_result>`*`)`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md)
+  : Extract variance-covariance matrix from a survey result object
+- [`SE(`*`<survey_result>`*`)`](https://jdenn0514.github.io/surveycore/reference/SE.survey_result.md)
+  : Extract standard errors from a survey result object
+- [`confint(`*`<survey_result>`*`)`](https://jdenn0514.github.io/surveycore/reference/confint.survey_result.md)
+  : Confidence intervals for survey result objects
+
 ## Print methods
 
 S3 print methods for surveycore result objects. Called automatically

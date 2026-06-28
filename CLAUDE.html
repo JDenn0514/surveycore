@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,87 +34,8 @@
 
 <p><strong>Part of the <a href="../survey-standards/ECOSYSTEM.html">surveyverse ecosystem</a> — see there for ecosystem vision, architecture, and how surveycore relates to other packages.</strong></p>
 <p>surveycore is the foundation package of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for <code>survey</code> and <code>srvyr</code>. It provides S7-based survey design objects, a metadata/label system, and vendored variance estimation code. License: GPL-3.</p>
+<hr><p>The package API is stable. All core functionality is complete. New analysis functions may be added but the existing structure will not change in breaking ways. For implementation history, see <code>git log</code>, release tags (<code>v0.1.0</code>–<code>v1.0.0</code>), and <code>archive/</code> planning directories.</p>
 <hr><div class="section level2">
-<h2 id="implementation-status">Implementation Status<a class="anchor" aria-label="anchor" href="#implementation-status"></a></h2>
-<p>The package API is stable. All core functionality is complete. New analysis functions may be added but the existing structure will not change in breaking ways.</p>
-<table class="table"><colgroup><col width="42%"><col width="30%"><col width="26%"></colgroup><thead><tr><th>Component</th>
-<th>Status</th>
-<th>Notes</th>
-</tr></thead><tbody><tr><td>S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion</td>
-<td>✅ Complete</td>
-<td>v0.1.0</td>
-</tr><tr><td>surveytidy dplyr verbs (<code>filter</code>, <code>select</code>, <code>mutate</code>, <code>group_by</code>)</td>
-<td>✅ Complete</td>
-<td>Separate <code>surveytidy</code> package</td>
-</tr><tr><td>SRS support</td>
-<td>✅ Complete</td>
-<td>Absorbed into <code>survey_taylor</code>; no ids/strata</td>
-</tr><tr><td>Two-phase variance</td>
-<td>✅ Complete</td>
-<td>v0.2.x</td>
-</tr><tr><td>Analysis functions (<code>get_freqs</code>, <code>get_means</code>, <code>get_totals</code>, <code>get_corr</code>, <code>get_quantiles</code>, <code>get_ratios</code>)</td>
-<td>✅ Complete</td>
-<td>v0.3.0</td>
-</tr><tr><td>Regression (<code>survey_glm_fit</code>, <code><a href="reference/survey_glm.html">survey_glm()</a></code>)</td>
-<td>✅ Complete</td>
-<td>v0.6.x</td>
-</tr><tr><td>T-tests and pairwise (<code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>)</td>
-<td>✅ Complete</td>
-<td>PR #88; see <code>archive/get-t-test-pairwise/</code>
-</td>
-</tr><tr><td>Effective sample size (<code><a href="reference/get_effective_n.html">get_effective_n()</a></code>)</td>
-<td>✅ Complete</td>
-<td>PR #122; see <code>archive/effective-n/</code>
-</td>
-</tr><tr><td>Design variance (<code><a href="reference/get_variance.html">get_variance()</a></code>)</td>
-<td>✅ Complete</td>
-<td>PRs #103, #104; see <code>archive/get-variance/</code>
-</td>
-</tr><tr><td>SATA metadata (<code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/classify_question_type.html">classify_question_type()</a></code>)</td>
-<td>✅ Complete</td>
-<td>PRs #89, #90, #91, #92</td>
-</tr><tr><td>Design-based ANOVA (<code><a href="reference/get_anova.html">get_anova()</a></code>, <code><a href="reference/anova.survey_glm_fit.html">anova.survey_glm_fit()</a></code>)</td>
-<td>✅ Complete</td>
-<td>PRs #93, #94, #95, #96</td>
-</tr><tr><td>
-<code>survey_collection</code> container + <code>get_*()</code> dispatch</td>
-<td>✅ Complete</td>
-<td>PRs #97, #98</td>
-</tr><tr><td>Polychoric / polyserial correlation (<code>get_corr(method = ...)</code>)</td>
-<td>✅ Complete</td>
-<td>PRs #107, #108, #109</td>
-</tr><tr><td>Variable direction metadata (<code><a href="reference/set_higher_is.html">set_higher_is()</a></code>, <code><a href="reference/set_reverse_coded.html">set_reverse_coded()</a></code>, <code>get_diffs(show_favorability)</code>)</td>
-<td>✅ Complete</td>
-<td>PRs #124, #125, #126; see <code>archive/variable-direction/</code>
-</td>
-</tr><tr><td>Non-probability bootstrap variance (<code>as_survey_nonprob(repweights = ...)</code>, bootstrap dispatch in <code>get_*()</code>)</td>
-<td>✅ Complete</td>
-<td>PRs #127, #130, #131; see <code>archive/nonprob-bootstrap-variance/</code>
-</td>
-</tr><tr><td>Polychoric/polyserial on <code>survey_nonprob</code> with repweights (<code>get_corr(method = "polychoric"/"polyserial")</code>)</td>
-<td>✅ Complete</td>
-<td>PR #137; see <code>archive/corr-nonprob-latent/</code>
-</td>
-</tr><tr><td>
-<code><a href="reference/survey_glm.html">survey_glm()</a></code> on <code>survey_nonprob</code> with repweights routed through replicate-weight estimator</td>
-<td>✅ Complete</td>
-<td>PR #138; see <code>archive/glm-nonprob-replicate/</code>
-</td>
-</tr><tr><td>Calibration-adjusted variance (<code><a href="reference/as_caldata.html">as_caldata()</a></code>, <code>@calibration</code> on <code>survey_taylor</code>/<code>survey_replicate</code>, GREG SE correction)</td>
-<td>✅ Complete</td>
-<td>PRs #139, #140; see <code>archive/calibrate-survey-taylor/</code>
-</td>
-</tr><tr><td>
-<code>calibration =</code> constructor validation (CAL-15, CAL-16) + raking oracle update</td>
-<td>✅ Complete</td>
-<td>PRs #141, #142; see <code>archive/surveywts-calibration/</code>
-</td>
-</tr><tr><td>Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc)</td>
-<td>✅ Complete</td>
-<td>PRs #143, #144; see <code>archive/doc-fixes/</code>
-</td>
-</tr></tbody></table><hr></div>
-<div class="section level2">
 <h2 id="class-naming-conventions">Class Naming Conventions<a class="anchor" aria-label="anchor" href="#class-naming-conventions"></a></h2>
 <ul><li>S7 classes: <code>survey_base</code>, <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_metadata</code>, <code>survey_nonprob</code>
 </li>
@@ -144,13 +65,8 @@
 <h2 id="workflow-requirements">Workflow Requirements<a class="anchor" aria-label="anchor" href="#workflow-requirements"></a></h2>
 <ul><li>Every non-trivial change lives on a feature branch — never commit implementation code to <code>main</code>
 </li>
-<li>Branch naming: <code>feature/</code>, <code>fix/</code>, <code>test/</code>, <code>docs/</code>, <code>chore/</code>
-</li>
-<li>All commits use Conventional Commits format: <code>feat(scope): description</code>
-</li>
-<li>Run <code>devtools::document()</code> before committing any file with roxygen2 changes</li>
-<li>Run <code>devtools::check()</code> before opening a PR</li>
-</ul></div>
+</ul><p>See <code>.claude/rules/github-strategy.md</code> for branching model, branch naming, and Conventional Commits format. See <code>.claude/rules/r-package-conventions.md</code> for <code>devtools::document()</code> and <code>devtools::check()</code> cadence.</p>
+</div>
 <div class="section level2">
 <h2 id="git-workflow">Git Workflow<a class="anchor" aria-label="anchor" href="#git-workflow"></a></h2>
 <ul><li>When asked to commit and create a PR, always target the <code>develop</code> branch unless explicitly told otherwise. Never assume <code>main</code> is the target.</li>
@@ -213,6 +129,8 @@
 <code>archive/surveywts-calibration/</code> — <code>calibration =</code> constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)</li>
 <li>
 <code>archive/doc-fixes/</code> — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)</li>
+<li>
+<code>archive/coef-vcov-methods/</code> — <code><a href="reference/SE.html">SE()</a></code> generic and <code>coef</code>/<code>vcov</code>/<code>SE</code>/<code>confint</code> methods for <code>survey_result</code>: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #148, #149, #150)</li>
 <li>
 <code>archive/</code> — completed phase docs (specs, impl plans, decisions — all historical)</li>
 <li>

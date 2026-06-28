@@ -58,8 +58,9 @@ as_survey_replicate(
   Numeric. Scaling factor applied to the replicate variance formula. If
   `NULL` (default), computed automatically from `type` and the number of
   replicates `R`: `(R-1)/R` for `"JK1"`, `"JK2"`, and `"JKn"`; `1/R` for
-  `"BRR"`, `"Fay"`, `"bootstrap"`, and `"ACS"`; `2/R` for
-  `"successive-difference"`; `1` for `"other"`.
+  `"BRR"`, `"Fay"`, and `"bootstrap"`; `4/R` for `"ACS"` and
+  `"successive-difference"` (per Ash 2014 / Fay & Train 1995); `1` for
+  `"other"`.
 
 - rscales:
 

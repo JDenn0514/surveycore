@@ -12,34 +12,10 @@ vendored variance estimation code. License: GPL-3.
 
 ------------------------------------------------------------------------
 
-## Implementation Status
-
 The package API is stable. All core functionality is complete. New
 analysis functions may be added but the existing structure will not
-change in breaking ways.
-
-| Component | Status | Notes |
-|----|----|----|
-| S7 classes, metadata, constructors, variance (Taylor + replicate), print, conversion | ✅ Complete | v0.1.0 |
-| surveytidy dplyr verbs (`filter`, `select`, `mutate`, `group_by`) | ✅ Complete | Separate `surveytidy` package |
-| SRS support | ✅ Complete | Absorbed into `survey_taylor`; no ids/strata |
-| Two-phase variance | ✅ Complete | v0.2.x |
-| Analysis functions (`get_freqs`, `get_means`, `get_totals`, `get_corr`, `get_quantiles`, `get_ratios`) | ✅ Complete | v0.3.0 |
-| Regression (`survey_glm_fit`, [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)) | ✅ Complete | v0.6.x |
-| T-tests and pairwise ([`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md), [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)) | ✅ Complete | PR \#88; see `archive/get-t-test-pairwise/` |
-| Effective sample size ([`get_effective_n()`](https://jdenn0514.github.io/surveycore/reference/get_effective_n.md)) | ✅ Complete | PR \#122; see `archive/effective-n/` |
-| Design variance ([`get_variance()`](https://jdenn0514.github.io/surveycore/reference/get_variance.md)) | ✅ Complete | PRs \#103, \#104; see `archive/get-variance/` |
-| SATA metadata ([`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md), [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)) | ✅ Complete | PRs \#89, \#90, \#91, \#92 |
-| Design-based ANOVA ([`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md), [`anova.survey_glm_fit()`](https://jdenn0514.github.io/surveycore/reference/anova.survey_glm_fit.md)) | ✅ Complete | PRs \#93, \#94, \#95, \#96 |
-| `survey_collection` container + `get_*()` dispatch | ✅ Complete | PRs \#97, \#98 |
-| Polychoric / polyserial correlation (`get_corr(method = ...)`) | ✅ Complete | PRs \#107, \#108, \#109 |
-| Variable direction metadata ([`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md), [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md), `get_diffs(show_favorability)`) | ✅ Complete | PRs \#124, \#125, \#126; see `archive/variable-direction/` |
-| Non-probability bootstrap variance (`as_survey_nonprob(repweights = ...)`, bootstrap dispatch in `get_*()`) | ✅ Complete | PRs \#127, \#130, \#131; see `archive/nonprob-bootstrap-variance/` |
-| Polychoric/polyserial on `survey_nonprob` with repweights (`get_corr(method = "polychoric"/"polyserial")`) | ✅ Complete | PR \#137; see `archive/corr-nonprob-latent/` |
-| [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md) on `survey_nonprob` with repweights routed through replicate-weight estimator | ✅ Complete | PR \#138; see `archive/glm-nonprob-replicate/` |
-| Calibration-adjusted variance ([`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md), `@calibration` on `survey_taylor`/`survey_replicate`, GREG SE correction) | ✅ Complete | PRs \#139, \#140; see `archive/calibrate-survey-taylor/` |
-| `calibration =` constructor validation (CAL-15, CAL-16) + raking oracle update | ✅ Complete | PRs \#141, \#142; see `archive/surveywts-calibration/` |
-| Documentation corrections (D1–D75 roxygen text, W1–W3 weight cols, S1–S7 stale refs, T1–T5 contradictory tags, M1–M4 mixed comments, X1–X13 misc) | ✅ Complete | PRs \#143, \#144; see `archive/doc-fixes/` |
+change in breaking ways. For implementation history, see `git log`,
+release tags (`v0.1.0`–`v1.0.0`), and `archive/` planning directories.
 
 ------------------------------------------------------------------------
 
@@ -100,12 +76,11 @@ columns named `.weights`).
 
 - Every non-trivial change lives on a feature branch — never commit
   implementation code to `main`
-- Branch naming: `feature/`, `fix/`, `test/`, `docs/`, `chore/`
-- All commits use Conventional Commits format:
-  `feat(scope): description`
-- Run `devtools::document()` before committing any file with roxygen2
-  changes
-- Run `devtools::check()` before opening a PR
+
+See `.claude/rules/github-strategy.md` for branching model, branch
+naming, and Conventional Commits format. See
+`.claude/rules/r-package-conventions.md` for `devtools::document()` and
+`devtools::check()` cadence.
 
 ## Git Workflow
 
@@ -206,6 +181,11 @@ so this rarely bites — but keep it in mind.
 - `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3,
   S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl
   plan, plan review, decisions (shipped; PRs \#143, \#144)
+- `archive/coef-vcov-methods/` —
+  [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md)
+  generic and `coef`/`vcov`/`SE`/`confint` methods for `survey_result`:
+  spec, test-spec, impl plan, plan review, decisions (shipped; PRs
+  \#148, \#149, \#150)
 - `archive/` — completed phase docs (specs, impl plans, decisions — all
   historical)
 - `.claude/rules/` — code style, testing standards, R package

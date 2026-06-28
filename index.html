@@ -32,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">surveycore</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
 </div>
 <!-- badges: start -->
 
-<p><strong>surveycore</strong> is the foundation of the surveyverse ecosystem — a modern, tidyverse-compatible replacement for the <code>survey</code> and <code>srvyr</code> packages in R.</p>
+<p><strong>surveycore</strong> is the foundation of the surveyverse ecosystem, a modern tidyverse-compatible replacement for the <code>survey</code> and <code>srvyr</code> packages in R.</p>
 <p>It provides S7-based survey design objects with:</p>
 <ul>
 <li>A tidy-select interface (<code>ids = c(psu, ssu)</code>, no formula syntax)</li>
@@ -87,21 +87,25 @@
 </h2>
 <ul>
 <li>
-<strong>S7 survey objects</strong>: <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>
+<strong>S7 survey objects</strong>: <code>survey_taylor</code>, <code>survey_replicate</code>, <code>survey_twophase</code>, <code>survey_nonprob</code>, <code>survey_collection</code>
 </li>
 <li>
-<strong>Constructors</strong>: <code><a href="reference/as_survey.html">as_survey()</a></code>, <code><a href="reference/as_survey_replicate.html">as_survey_replicate()</a></code>, <code><a href="reference/as_survey_twophase.html">as_survey_twophase()</a></code>, <code><a href="reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>
+<strong>Constructors</strong>: <code><a href="reference/as_survey.html">as_survey()</a></code>, <code><a href="reference/as_survey_replicate.html">as_survey_replicate()</a></code>, <code><a href="reference/as_survey_twophase.html">as_survey_twophase()</a></code>, <code><a href="reference/as_survey_nonprob.html">as_survey_nonprob()</a></code>, <code><a href="reference/as_survey_collection.html">as_survey_collection()</a></code>
 </li>
 <li>
-<strong>Metadata system</strong>: <code><a href="reference/set_var_label.html">set_var_label()</a></code>, <code><a href="reference/set_val_labels.html">set_val_labels()</a></code>, <code><a href="reference/extract_var_label.html">extract_var_label()</a></code>, <code><a href="reference/extract_val_labels.html">extract_val_labels()</a></code> — with automatic haven attribute import</li>
+<strong>Metadata system</strong>: variable labels, value labels, question prefaces, notes, universe annotations, missing codes, SATA flags, and direction metadata. Set via <code><a href="reference/set_var_label.html">set_var_label()</a></code>, <code><a href="reference/set_val_labels.html">set_val_labels()</a></code>, <code><a href="reference/set_sata.html">set_sata()</a></code>, <code><a href="reference/set_higher_is.html">set_higher_is()</a></code>, <code><a href="reference/set_universe.html">set_universe()</a></code>, and more; extract with the matching <code>extract_*()</code> family. Haven-style label attributes are imported automatically.</li>
 <li>
-<strong>Analysis functions</strong>: <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_means.html">get_means()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code>, <code><a href="reference/get_corr.html">get_corr()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>, <code><a href="reference/get_diffs.html">get_diffs()</a></code>
+<strong>Analysis functions</strong>: <code><a href="reference/get_freqs.html">get_freqs()</a></code>, <code><a href="reference/get_means.html">get_means()</a></code>, <code><a href="reference/get_totals.html">get_totals()</a></code>, <code><a href="reference/get_corr.html">get_corr()</a></code>, <code><a href="reference/get_quantiles.html">get_quantiles()</a></code>, <code><a href="reference/get_ratios.html">get_ratios()</a></code>, <code><a href="reference/get_diffs.html">get_diffs()</a></code>, <code><a href="reference/get_t_test.html">get_t_test()</a></code>, <code><a href="reference/get_pairwise.html">get_pairwise()</a></code>, <code><a href="reference/get_variance.html">get_variance()</a></code>, <code><a href="reference/get_covariance.html">get_covariance()</a></code>, <code><a href="reference/get_anova.html">get_anova()</a></code>, <code><a href="reference/get_effective_n.html">get_effective_n()</a></code>
 </li>
 <li>
 <strong>Regression</strong>: <code><a href="reference/survey_glm.html">survey_glm()</a></code> for survey-weighted GLMs with <code><a href="reference/clean.html">clean()</a></code> for tidy coefficient tables</li>
 <li>
+<strong>Calibration</strong>: <code><a href="reference/as_caldata.html">as_caldata()</a></code> constructs calibration data for GREG-corrected variance on Taylor and replicate designs</li>
+<li>
 <strong>Design utilities</strong>: <code><a href="reference/update_design.html">update_design()</a></code>, <code><a href="reference/as_svydesign.html">as_svydesign()</a></code>, <code><a href="reference/from_svydesign.html">from_svydesign()</a></code>, <code><a href="reference/as_tbl_svy.html">as_tbl_svy()</a></code>, <code><a href="reference/from_tbl_svy.html">from_tbl_svy()</a></code>
 </li>
+<li>
+<strong>Bundled datasets</strong>: <code>ca_api_2000</code>, <code>nhanes_2017</code>, <code>acs_pums_wy</code>, <code>anes_2024</code>, <code>gss_2024</code>, and more</li>
 </ul>
 </div>
 <div class="section level2">
@@ -122,136 +126,53 @@
 <li>Variables with haven-style variable labels and value labels (e.g. from <code>.xpt</code> or <code>.sav</code> files read with <code>haven</code>).</li>
 <li>Grouped analyses (via <code><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">surveytidy::group_by()</a></code>).</li>
 </ul>
-<p>Each analysis function accepts specific types of outcome variables:</p>
-<table class="table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead><tr>
-<th>
-Function
-</th>
-<th>
-Accepts
-</th>
-</tr></thead>
-<tbody>
-<tr>
-<td>
-<code><a href="reference/get_freqs.html">get_freqs()</a></code>
-</td>
-<td>
-Categorical or coded integer variables
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_means.html">get_means()</a></code>
-</td>
-<td>
-Numeric variables
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_totals.html">get_totals()</a></code>
-</td>
-<td>
-Numeric variables
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_corr.html">get_corr()</a></code>
-</td>
-<td>
-Pairs of numeric variables
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_quantiles.html">get_quantiles()</a></code>
-</td>
-<td>
-Numeric variables
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_ratios.html">get_ratios()</a></code>
-</td>
-<td>
-Two numeric variables (numerator / denominator)
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/get_diffs.html">get_diffs()</a></code>
-</td>
-<td>
-A categorical grouping variable + one or more numeric outcomes
-</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/survey_glm.html">survey_glm()</a></code>
-</td>
-<td>
-Numeric or binary response, numeric or categorical predictors
-</td>
-</tr>
-</tbody>
-</table>
+<p>Thirteen analysis functions cover means, totals, frequencies, correlations, ratios, differences, t-tests, pairwise comparisons, ANOVA, variance, covariance, quantiles, and effective sample size. <code><a href="reference/survey_glm.html">survey_glm()</a></code> fits survey-weighted generalized linear models.</p>
 </div>
 <div class="section level2">
 <h2 id="basic-usage">Basic usage<a class="anchor" aria-label="anchor" href="#basic-usage"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(surveycore)</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># ── Simple SRS design ──────────────────────────────────────────────────────────</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">psu =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">each =</span> <span class="dv">10</span>),</span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">strata =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"A"</span>, <span class="st">"B"</span>), <span class="at">each =</span> <span class="dv">50</span>),</span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">weight =</span> <span class="fu">runif</span>(<span class="dv">100</span>, <span class="fl">0.5</span>, <span class="dv">2</span>),</span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">income =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="dv">50000</span>, <span class="dv">10000</span>),</span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">age =</span> <span class="fu">sample</span>(<span class="dv">18</span><span class="sc">:</span><span class="dv">80</span>, <span class="dv">100</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>)</span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as_survey</span>(df, <span class="at">ids =</span> psu, <span class="at">weights =</span> weight, <span class="at">strata =</span> strata, <span class="at">nest =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>d</span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; ── Survey Design ───────────────────────────────────────────────────────────────</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; &lt;survey_taylor&gt; (Taylor series linearization)</span></span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; Sample size: 100</span></span>
-<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 100 × 5</span></span>
-<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;      psu strata weight income   age</span></span>
-<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;    &lt;int&gt; &lt;chr&gt;   &lt;dbl&gt;  &lt;dbl&gt; &lt;int&gt;</span></span>
-<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt;  1     1 A       1.87  53219.    42</span></span>
-<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt;  2     1 A       1.91  42162.    33</span></span>
-<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt;  3     1 A       0.929 65757.    71</span></span>
-<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt;  4     1 A       1.75  56429.    41</span></span>
-<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt;  5     1 A       1.46  50898.    50</span></span>
-<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt;  6     1 A       1.28  52766.    78</span></span>
-<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt;  7     1 A       1.60  56793.    55</span></span>
-<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt;  8     1 A       0.702 50898.    60</span></span>
-<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a><span class="co">#&gt;  9     1 A       1.49  20069.    58</span></span>
-<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co">#&gt; 10     1 A       1.56  52849.    39</span></span>
-<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="co">#&gt; # ℹ 90 more rows</span></span>
-<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a></span>
-<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a><span class="co"># ── Weighted mean and total ────────────────────────────────────────────────────</span></span>
-<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a><span class="fu">get_means</span>(d, income)</span>
-<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 4</span></span>
-<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a><span class="co">#&gt;     mean ci_low ci_high     n</span></span>
-<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a><span class="co">#&gt;    &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;</span></span>
-<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a><span class="co">#&gt; 1 50206. 47921.  52490.   100</span></span>
-<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a><span class="fu">get_totals</span>(d, income)</span>
-<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 4</span></span>
-<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="co">#&gt;      total   ci_low  ci_high     n</span></span>
-<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a><span class="co">#&gt;      &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;</span></span>
-<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="co">#&gt; 1 6460063. 5906356. 7013770.   100</span></span></code></pre></div>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># Simple random sample: 2000 California API schools</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as_survey</span>(ca_api_2000, <span class="at">weights =</span> pw, <span class="at">fpc =</span> fpc)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>d</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; ── Survey Design ───────────────────────────────────────────────────────────────</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; &lt;survey_taylor&gt; (Taylor series linearization)</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; Sample size: 200</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; # A tibble: 200 × 38</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;    cds       stype name  sname  snum dname  dnum cname  cnum pcttest api00 api99</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;int&gt; &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt; &lt;int&gt; &lt;chr&gt; &lt;int&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;  1 15739081…     2 "McF… McFa…  1039 McFa…   432 Kern     14      98   462   448</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  2 19642126…     1 "Sto… Stow…  1124 ABC …     1 Los …    18     100   878   831</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt;  3 30664493…     2 "Bre… Brea…  2868 Brea…    79 Oran…    29      98   734   742</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt;  4 19644516…     1 "Ala… Alam…  1273 Down…   187 Los …    18      99   772   657</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;  5 40688096…     1 "Sun… Sunn…  4926 San …   640 San …    39      99   739   719</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;  6 19734456…     1 "Los… Los …  2463 Haci…   284 Los …    18      93   835   822</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt;  7 19647336…     3 "Nor… Nort…  2031 Los …   401 Los …    18      98   456   472</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;  8 19647336…     1 "Gla… Glas…  1736 Los …   401 Los …    18      99   506   474</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;  9 19648166…     1 "Max… Maxs…  2142 Moun…   470 Los …    18     100   543   458</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; 10 38684786…     1 "Tre… Trea…  4754 San …   632 San …    37      90   649   604</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; # ℹ 190 more rows</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; # ℹ 26 more variables: target &lt;int&gt;, growth &lt;int&gt;, sch_wide &lt;int&gt;,</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; #   comp_imp &lt;int&gt;, both &lt;int&gt;, awards &lt;int&gt;, meals &lt;int&gt;, ell &lt;int&gt;,</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; #   yr_rnd &lt;int&gt;, mobility &lt;int&gt;, acs_k3 &lt;int&gt;, acs_46 &lt;int&gt;, acs_core &lt;int&gt;,</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt; #   pct_resp &lt;int&gt;, not_hsg &lt;int&gt;, hsg &lt;int&gt;, some_col &lt;int&gt;, col_grad &lt;int&gt;,</span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt; #   grad_sch &lt;int&gt;, avg_ed &lt;dbl&gt;, full &lt;int&gt;, emer &lt;int&gt;, enroll &lt;int&gt;,</span></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt; #   api_stu &lt;int&gt;, pw &lt;dbl&gt;, fpc &lt;dbl&gt;</span></span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co"># Weighted mean API score and total enrollment</span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="fu">get_means</span>(d, api00)</span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a><span class="co">#&gt;    mean ci_low ci_high     n</span></span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;</span></span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a><span class="co">#&gt; 1  657.   638.    675.   200</span></span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a><span class="fu">get_totals</span>(d, enroll)</span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a><span class="co">#&gt;      total   ci_low  ci_high     n</span></span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a><span class="co">#&gt;      &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;</span></span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="co">#&gt; 1 3621074. 3288822. 3953327.   200</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="complex-survey-designs">Complex survey designs<a class="anchor" aria-label="anchor" href="#complex-survey-designs"></a>
@@ -279,61 +200,64 @@ Numeric or binary response, numeric or categorical predictors
 <span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt; Sample size: 20</span></span>
 <span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20 × 6</span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;         y    wt  rep1  rep2  rep3  rep4</span></span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt;  1 -2.00   2.30 1.09  0.849 0.705 1.71 </span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt;  2  0.334  2.84 0.619 1.37  0.766 1.90 </span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt;  3  1.17   1.73 1.74  1.76  1.28  1.75 </span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt;  4  2.06   2.71 0.609 0.698 1.72  0.691</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt;  5 -1.38   1.60 0.672 1.84  0.673 1.47 </span></span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt;  6 -1.15   1.93 1.46  1.18  1.84  1.54 </span></span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt;  7 -0.706  1.29 0.981 1.84  1.36  0.548</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt;  8 -1.05   2.62 0.783 0.873 0.720 1.88 </span></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#&gt;  9 -0.646  2.33 1.09  0.626 1.85  1.22 </span></span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt; 10 -0.185  1.12 1.79  0.573 0.880 0.900</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;          y    wt  rep1  rep2  rep3  rep4</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt;  1 -0.634   1.10 0.653 0.690 1.09  0.968</span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt;  2  0.642   1.05 1.48  1.14  1.97  0.688</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt;  3  0.0802  2.96 1.18  0.582 1.92  1.22 </span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt;  4  0.270   2.68 1.44  1.79  0.947 1.31 </span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt;  5 -0.251   2.24 0.665 1.29  1.95  0.546</span></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt;  6 -0.131   2.69 0.632 0.773 0.508 1.03 </span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt;  7 -1.64    2.69 1.41  1.58  1.56  1.78 </span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt;  8 -0.919   1.41 0.656 1.18  1.52  0.818</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#&gt;  9 -0.325   1.08 1.91  0.998 1.13  0.954</span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt; 10  0.285   2.09 1.82  1.68  1.70  1.09 </span></span>
 <span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#&gt; # ℹ 10 more rows</span></span></code></pre></div>
+<p><code>survey_collection</code> groups multiple designs for comparative analysis across waves or design variants. All analysis functions dispatch across members and return a combined result:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>coll <span class="ot">&lt;-</span> <span class="fu">as_survey_collection</span>(<span class="at">wave1 =</span> d_wave1, <span class="at">wave2 =</span> d_wave2)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">get_means</span>(coll, api00)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="variable-labels">Variable labels<a class="anchor" aria-label="anchor" href="#variable-labels"></a>
 </h2>
 <p>surveycore preserves haven-style labels automatically when reading <code>.xpt</code> or <code>.sav</code> files. You can also set labels manually:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="fu">set_var_label</span>(d, <span class="at">income =</span> <span class="st">"Annual household income (USD)"</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="fu">set_var_label</span>(d2, <span class="at">age =</span> <span class="st">"Respondent age in years"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">extract_var_label</span>(d2, income)</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt;                          income </span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; "Annual household income (USD)"</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">extract_var_label</span>(d2, age)</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;                       age </span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; "Respondent age in years"</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="fu">set_var_label</span>(d, <span class="at">api00 =</span> <span class="st">"Academic Performance Index score (2000)"</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="fu">set_var_label</span>(d2, <span class="at">enroll =</span> <span class="st">"Number of students enrolled"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">extract_var_label</span>(d2, api00)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt;                                     api00 </span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; "Academic Performance Index score (2000)"</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">extract_var_label</span>(d2, enroll)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt;                        enroll </span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; "Number of students enrolled"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="conversion-tofrom-survey-and-srvyr">Conversion to/from survey and srvyr<a class="anchor" aria-label="anchor" href="#conversion-tofrom-survey-and-srvyr"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># To survey::svydesign</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>svy <span class="ot">&lt;-</span> <span class="fu">as_svydesign</span>(d)</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">class</span>(svy)</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; [1] "survey.design2" "survey.design"</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co"># Back to surveycore</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>d_rt <span class="ot">&lt;-</span> <span class="fu">from_svydesign</span>(svy)</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>d_rt</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># To survey::svydesign</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>svy <span class="ot">&lt;-</span> <span class="fu">as_svydesign</span>(d)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">class</span>(svy)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] "survey.design2" "survey.design"</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co"># Back to surveycore</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>d_rt <span class="ot">&lt;-</span> <span class="fu">from_svydesign</span>(svy)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>d_rt</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="the-surveyverse-ecosystem">The surveyverse ecosystem<a class="anchor" aria-label="anchor" href="#the-surveyverse-ecosystem"></a>
 </h2>
-<p>surveycore is the foundation of the surveyverse — a family of packages built around it:</p>
+<p>surveycore is the foundation of the surveyverse, a family of packages built around it:</p>
 <ul>
 <li>
-<strong><a href="https://jdenn0514.github.io/surveytidy/" class="external-link">surveytidy</a></strong> — dplyr verbs (<code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>, <code>select()</code>, <code>mutate()</code>, <code>group_by()</code>) that respect survey design structure, so grouped summaries and subsetting always propagate weights and strata correctly.</li>
+<strong><a href="https://jdenn0514.github.io/surveytidy/" class="external-link">surveytidy</a></strong>: dplyr verbs (<code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>, <code>select()</code>, <code>mutate()</code>, <code>group_by()</code>) that respect survey design structure, so grouped summaries and subsetting always propagate weights and strata correctly.</li>
 <li>
-<strong>surveywts</strong> — calibration and post-stratification for survey weights. Coming soon.</li>
+<strong>surveywts</strong>: weight adjustment utilities for survey data. Calibration-adjusted variance is already available in surveycore via <code><a href="reference/as_caldata.html">as_caldata()</a></code>; additional weight adjustment methods are in development.</li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="development-status">Development status<a class="anchor" aria-label="anchor" href="#development-status"></a>
 </h2>
-<p>The package API is stable. The core classes, constructors, and analysis functions (<code><a href="reference/get_freqs.html">get_freqs()</a></code> through <code><a href="reference/get_diffs.html">get_diffs()</a></code>) are not expected to change in breaking ways. New analysis functions may be added in future releases. See <code>NEWS.md</code> for the full changelog.</p>
+<p>The package API is stable (v1.0.0). All classes, constructors, metadata functions, and analysis functions are not expected to change in breaking ways. New analysis functions and utilities may be added in future releases. See <code>NEWS.md</code> for the full changelog.</p>
 </div>
 <div class="section level2">
 <h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
@@ -343,7 +267,7 @@ Numeric or binary response, numeric or categorical predictors
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>GPL-3. Variance estimation code vendored from the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package (Thomas Lumley, GPL-2/GPL-3) — see <code>VENDORED.md</code> for full attribution.</p>
+<p>GPL-3. Variance estimation code vendored from the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package (Thomas Lumley, GPL-2/GPL-3); see <code>VENDORED.md</code> for full attribution.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
