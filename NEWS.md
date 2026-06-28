@@ -1,3 +1,18 @@
+# surveycore 1.1.0
+
+## New features
+
+* `coef()`, `vcov()`, `SE()`, and `confint()` methods are now available for all
+  `survey_result` objects produced by `get_*()` functions. The `.survey_result`
+  attribute carrying degrees of freedom and parameter metadata is now wired into
+  every estimation function. (#148, #149)
+
+## Bug fixes
+
+* `as_survey_replicate()` now uses the correct default scale factor for `"ACS"`
+  and `"successive-difference"` replicate types (`4/R` per Ash (2014) / Fay &
+  Train (1995)), fixing underestimated standard errors for these designs. (#150)
+
 # surveycore 1.0.0
 
 ## First stable release
