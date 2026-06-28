@@ -316,13 +316,27 @@ get_totals <- function(
   )
 
   # ── Step 11: Assemble result ────────────────────────────────────────────────
+  # For Taylor/twophase designs, store finite design df in .survey_result.
+  # Replicate and nonprob designs use Inf (NULL defaults to Inf in helper).
+  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
+    S7::S7_inherits(design, survey_twophase)
+  cell_df_attr <- if (is_taylor_like) {
+    design_df <- .degf(design)
+    rep(design_df, n_combos)
+  } else {
+    NULL
+  }
+
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
     "survey_totals",
     design,
     meta_args,
-    TOTALS_META_KEYS
+    TOTALS_META_KEYS,
+    estimate_cols = c("total"),
+    statistic = "total",
+    cell_df = cell_df_attr
   )
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────

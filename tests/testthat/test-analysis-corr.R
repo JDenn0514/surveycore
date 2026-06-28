@@ -1817,3 +1817,29 @@ test_that("get_corr() all-NA ordinal returns NA (early-exit) through nonprob lat
   expect_equal(nrow(result), 1L)
   expect_true(is.na(result$r[[1L]]))
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_corr() long format attaches .survey_result with estimate_cols = c('r')", {
+  df <- make_survey_data(n = 200, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_corr(d, x = c(y1, y2), format = "long")
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("r"))
+})
+
+test_that("get_corr() long format attaches .survey_result with statistic = 'corr'", {
+  df <- make_survey_data(n = 200, seed = 2)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_corr(d, x = c(y1, y2), format = "long")
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "corr")
+})
+
+test_that("get_corr() wide format has NULL .survey_result attribute", {
+  df <- make_survey_data(n = 200, seed = 3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_corr(d, x = c(y1, y2), format = "wide")
+  expect_null(attr(result, ".survey_result"))
+})

@@ -70,7 +70,10 @@ why it's N/A, it probably applies.
 
 1. **Happy path** — standard inputs, expected output
 2. **Numerical oracle** — estimates match a reference implementation at the
-   appropriate tolerance (point: 1e-10, SE: 1e-8, CI: 1e-6)
+   appropriate tolerance (point: 1e-10, SE: 1e-8, CI: 1e-6). **REQUIRED —
+   cannot be marked N/A** for any function whose output includes numeric
+   estimates, standard errors, variances, or confidence intervals. If the
+   spec has no oracle test scenario, this is a BLOCK finding.
 3. **Grouped analysis** — behavior with `group` argument specified
 4. **Domain estimation** — behavior when a domain column is present
 5. **Variance argument** — each supported variance type

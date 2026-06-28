@@ -596,5 +596,19 @@ get_diffs <- function(
     "tbl",
     "data.frame"
   )
+
+  # ── Step 23: Attach .survey_result attribute ──────────────────────────────
+  # fit@degf is design-based residual df from survey_glm(); p = nrow(result).
+  # group_cols derived from .meta$group keys (empty character(0) when no group).
+  df_val <- as.numeric(fit@degf)
+  p_diffs <- nrow(result)
+  group_cols_diffs <- names(attr(result, ".meta")$group)
+  attr(result, ".survey_result") <- .build_survey_result_attr(
+    estimate_cols = c("estimate"),
+    group_cols = group_cols_diffs,
+    statistic = "diffs",
+    cell_df = rep(df_val, p_diffs)
+  )
+
   result
 }

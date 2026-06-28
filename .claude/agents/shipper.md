@@ -106,7 +106,6 @@ See review.md — verdict PASS.
 ## Test results
 - devtools::test(): PASS
 - R CMD check --as-cran: {note summary from audit.md}
-- pkgcheck: PASS
 - pkgdown: PASS (or SKIPPED — scope)
 - covr: {%}
 
@@ -125,16 +124,34 @@ EOF
 
 ## Step 6 — Monitor CI
 
-Poll CI states with `gh pr checks {pr-number}`:
+Check once immediately after the PR opens:
+
+```bash
+gh pr checks {pr-number}
+```
+
+Then **always use ScheduleWakeup** — never poll in a loop:
+
+- First wakeup: 600 s (10 min)
+- Subsequent wakeups: 300 s (5 min) each
+- On each wakeup: call `gh pr checks {pr-number}` once, then either merge or schedule the next wakeup
+- After 4 total wakeups with no resolution (10 + 15 + 20 + 25 min elapsed): HOLD with classification `ci-timeout`
+
+**Forbidden patterns — never do these:**
+```bash
+until gh pr checks ...; do sleep N; done
+sleep N && gh pr checks ...
+gh run list   # in any loop
+```
+
+Required checks: `R-CMD-check` (all OS matrix), `pkgdown`. `pkgcheck` is NOT a required check — ignore it.
 
 | CI state | Action |
 |---|---|
-| `in_progress` / `queued` | Wait. Use ScheduleWakeup for long waits (>5 min). |
-| `success` across all required checks | Proceed to merge |
-| `failure` + obvious infra flake (GitHub outage, rate limit) | `gh run rerun {run-id} --failed` — ONCE. If still failing, HOLD. |
-| `failure` + real | HOLD with classification `ci-failure`. Do not merge. |
-
-CI checks to require: `R-CMD-check` (all OS matrix), `test-coverage`, `pkgdown`, `lint` (whatever `.github/workflows/` defines).
+| Any required check `in_progress` / `queued` | Schedule next wakeup |
+| All required checks `success` | Proceed to merge |
+| Any required check `failure` + obvious infra flake | `gh run rerun {run-id} --failed` — ONCE. If still failing, HOLD. |
+| Any required check `failure` + real | HOLD with classification `ci-failure`. Do not merge. |
 
 ## Step 7 — Squash merge
 

@@ -1,3 +1,18 @@
+# surveycore 1.1.0
+
+## New features
+
+* `coef()`, `vcov()`, `SE()`, and `confint()` methods are now available for all
+  `survey_result` objects produced by `get_*()` functions. The `.survey_result`
+  attribute carrying degrees of freedom and parameter metadata is now wired into
+  every estimation function. (#148, #149)
+
+## Bug fixes
+
+* `as_survey_replicate()` now uses the correct default scale factor for `"ACS"`
+  and `"successive-difference"` replicate types (`4/R` per Ash (2014) / Fay &
+  Train (1995)), fixing underestimated standard errors for these designs. (#150)
+
 # surveycore 1.0.0
 
 ## First stable release
@@ -10,6 +25,15 @@ effective sample size), the metadata system, and calibration-adjusted variance
 are now complete and stable.
 
 ## New features
+
+* New `SE()` generic and `coef()`, `vcov()`, `SE()`, `confint()` S3 methods
+  for all `survey_result` objects produced by `get_*()` functions. `SE()`
+  masks `survey::SE`; `SE.default()` falls back to `sqrt(diag(vcov(...)))` for
+  all other objects. `vcov.survey_result()` returns a named diagonal matrix
+  (`se^2` on-diagonal, structural zeros off-diagonal). `confint.survey_result()`
+  uses the t-distribution with per-parameter degrees of freedom stored in the
+  `.survey_result` attribute. `coef()` follows variable-major, group-secondary
+  naming matching `survey::coef.svyby()`. (#150)
 
 * `as_survey_nonprob()` now accepts jackknife replicate schemes via
   `type = "JK1"`, `"JK2"`, and `"JKn"`. All `get_*()` estimation functions

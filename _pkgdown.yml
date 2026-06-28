@@ -146,6 +146,19 @@ reference:
       - survey_metadata
       - survey_collection
 
+  - title: "Result methods"
+    desc: >
+      S3 methods for extracting model-like summaries from `survey_result` objects.
+      `SE()` is a new generic that masks `survey::SE`; `SE.default()` delegates
+      to `sqrt(diag(vcov(object, ...)))` for non-`survey_result` objects.
+    contents:
+      - SE
+      - SE.default
+      - coef.survey_result
+      - vcov.survey_result
+      - SE.survey_result
+      - confint.survey_result
+
   - title: "Print methods"
     desc: >
       S3 print methods for surveycore result objects. Called automatically when

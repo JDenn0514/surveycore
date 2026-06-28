@@ -1418,3 +1418,33 @@ test_that("get_quantiles() single-row SRS domain: CI collapses to point estimate
   expect_equal(result$ci_low[[1L]], result$estimate[[1L]])
   expect_equal(result$ci_high[[1L]], result$estimate[[1L]])
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_quantiles() attaches .survey_result with estimate_cols = c('estimate')", {
+  df <- make_survey_data(n = 200, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_quantiles(d, y1)
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("estimate"))
+})
+
+test_that("get_quantiles() attaches .survey_result with statistic = 'quantile'", {
+  df <- make_survey_data(n = 200, seed = 2)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_quantiles(d, y1)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "quantile")
+})
+
+test_that("get_quantiles() .survey_result$df is finite for non-calibrated Taylor design", {
+  df <- make_survey_data(n = 200, seed = 3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_quantiles(d, y1)
+  sr <- attr(result, ".survey_result")
+  # Non-calibrated Taylor designs now store finite design df (not Inf).
+  expect_true(all(is.finite(sr$df)))
+  expect_true(all(sr$df >= 1))
+  expect_equal(length(sr$df), nrow(result))
+})

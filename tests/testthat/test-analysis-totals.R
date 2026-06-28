@@ -1057,3 +1057,33 @@ test_that(".total_cell() errors for unsupported design class", {
     class = "surveycore_error_unsupported_class"
   )
 })
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_totals() attaches .survey_result attribute with estimate_cols = c('total')", {
+  df <- make_survey_data(n = 100, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_totals(d, y1)
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("total"))
+})
+
+test_that("get_totals() attaches .survey_result attribute with statistic = 'total'", {
+  df <- make_survey_data(n = 100, seed = 2)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_totals(d, y1)
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "total")
+})
+
+test_that("get_totals() .survey_result$df is finite for non-calibrated Taylor design", {
+  df <- make_survey_data(n = 100, seed = 3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_totals(d, y1)
+  sr <- attr(result, ".survey_result")
+  # Non-calibrated Taylor designs now store finite design df (not Inf).
+  expect_true(all(is.finite(sr$df)))
+  expect_true(all(sr$df >= 1))
+  expect_equal(length(sr$df), nrow(result))
+})

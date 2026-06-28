@@ -117,7 +117,11 @@ test_that("get_covariance() diagonal-parity gate — Taylor", {
     ,
     drop = FALSE
   ]
-  expect_equal(diag_y1$covariance[[1L]], var_y1$variance[[1L]], tolerance = 1e-10)
+  expect_equal(
+    diag_y1$covariance[[1L]],
+    var_y1$variance[[1L]],
+    tolerance = 1e-10
+  )
   expect_equal(diag_y1$se[[1L]], var_y1$se[[1L]], tolerance = 1e-8)
 })
 
@@ -159,7 +163,11 @@ test_that("get_covariance() diagonal-parity gate — replicate (BRR)", {
     ,
     drop = FALSE
   ]
-  expect_equal(diag_y1$covariance[[1L]], var_y1$variance[[1L]], tolerance = 1e-10)
+  expect_equal(
+    diag_y1$covariance[[1L]],
+    var_y1$variance[[1L]],
+    tolerance = 1e-10
+  )
   expect_equal(diag_y1$se[[1L]], var_y1$se[[1L]], tolerance = 1e-8)
 })
 
@@ -520,7 +528,10 @@ test_that("get_covariance() .meta$x has one entry per resolved numeric variable 
   expect_identical(names(m$x), c("y1", "y2", "y3"))
   for (nm in names(m$x)) {
     expect_true(
-      all(c("variable_label", "question_preface", "value_labels") %in% names(m$x[[nm]]))
+      all(
+        c("variable_label", "question_preface", "value_labels") %in%
+          names(m$x[[nm]])
+      )
     )
   }
 })
@@ -598,7 +609,15 @@ test_that("get_covariance() decimals = 3 rounds every numeric output column", {
     decimals = 3
   )
 
-  for (nm in c("covariance", "se", "ci_low", "ci_high", "moe", "deff", "n_weighted")) {
+  for (nm in c(
+    "covariance",
+    "se",
+    "ci_low",
+    "ci_high",
+    "moe",
+    "deff",
+    "n_weighted"
+  )) {
     if (is.finite(res_full[[nm]][[1L]])) {
       expect_identical(
         res_r[[nm]][[1L]],
@@ -1302,4 +1321,34 @@ test_that("get_covariance() collection diagonal-parity matches per-survey get_va
       tolerance = 1e-8
     )
   }
+})
+
+# ── .survey_result attribute tests ────────────────────────────────────────────
+
+test_that("get_covariance() attaches .survey_result with estimate_cols = c('covariance')", {
+  df <- make_survey_data(n = 200, seed = 1)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_covariance(d, x = c(y1, y2))
+  sr <- attr(result, ".survey_result")
+  expect_false(is.null(sr))
+  expect_identical(sr$estimate_cols, c("covariance"))
+})
+
+test_that("get_covariance() attaches .survey_result with statistic = 'covariance'", {
+  df <- make_survey_data(n = 200, seed = 2)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_covariance(d, x = c(y1, y2))
+  sr <- attr(result, ".survey_result")
+  expect_identical(sr$statistic, "covariance")
+})
+
+test_that("get_covariance() .survey_result$df is finite for non-calibrated Taylor design", {
+  df <- make_survey_data(n = 200, seed = 3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  result <- get_covariance(d, x = c(y1, y2))
+  sr <- attr(result, ".survey_result")
+  # Non-calibrated Taylor designs now store finite design df (not Inf).
+  expect_true(all(is.finite(sr$df)))
+  expect_true(all(sr$df >= 1))
+  expect_equal(length(sr$df), nrow(result))
 })

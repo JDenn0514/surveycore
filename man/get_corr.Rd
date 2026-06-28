@@ -258,6 +258,7 @@ correlation coefficient. \emph{Psychometrika}, 44(4), 443-460.
 }
 \seealso{
 Other analysis: 
+\code{\link{SE}()},
 \code{\link{clean}()},
 \code{\link{get_anova}()},
 \code{\link{get_covariance}()},

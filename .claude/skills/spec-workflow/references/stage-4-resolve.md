@@ -124,7 +124,7 @@ Severity: BLOCKING | REQUIRED | SUGGESTION
 
 Options:
 - **[A]** [Description] — Effort: [low/medium/high], Risk: [low/medium/high],
-  Impact: [what this affects]
+  Impact: [what this affects], Maintenance: [ongoing burden]
 - **[B]** [Description]
 - **[C] Do nothing** — [consequences of not addressing this]
 
@@ -139,7 +139,7 @@ header: "Issue [N]"
 multiSelect: false
 options:
   - label: "Issue [N] — Option [Rec]: [short label] (Recommended)"
-    description: "[effort/risk/impact summary]"
+    description: "[effort/risk/impact/maintenance summary]"
   - label: "Issue [N] — Option [Alt]: [short label]"
     description: "[trade-offs]"
   - label: "Issue [N] — Option C: Do nothing"

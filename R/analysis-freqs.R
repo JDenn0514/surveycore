@@ -496,8 +496,21 @@ get_freqs <- function(
     "survey_freqs",
     design,
     meta_args,
-    required_keys
+    required_keys,
+    estimate_cols = c("pct"),
+    statistic = "freq"
   )
+
+  # For Taylor/twophase designs, store finite design df in .survey_result.
+  # Replicate and nonprob designs use Inf (default from .make_result_tibble).
+  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
+    S7::S7_inherits(design, survey_twophase)
+  if (is_taylor_like) {
+    design_df <- .degf(design)
+    sr <- attr(result, ".survey_result")
+    sr$df <- rep(design_df, nrow(result))
+    attr(result, ".survey_result") <- sr
+  }
 
   # ── Step 13: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
