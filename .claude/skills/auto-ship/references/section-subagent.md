@@ -142,7 +142,7 @@ on develop after the merge.
 git commit -m "$(cat <<'EOF'
 feat(scope): short description
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <trailer from session guidance>
 EOF
 )"
 ```

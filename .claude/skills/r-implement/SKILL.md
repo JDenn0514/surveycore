@@ -12,8 +12,6 @@ description: >
 
 # R Implementation Skill
 
----
-
 ## Entry Mode — Determine This First
 
 **Mode A: Normal** — implementing a single plan section in this session.
@@ -85,8 +83,12 @@ NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
 Write code before the test? Delete it. Start over. No exceptions.
-
 Do not keep it "as reference" — delete means delete. Implement fresh from tests.
+
+The red phase is proof, not ceremony. A test written after implementation
+almost always passes immediately, which tells you nothing about whether it
+tests real behavior. Watching it fail proves the test exercises what you
+think it does.
 
 | Rationalization | Reality |
 |---|---|
@@ -99,17 +101,6 @@ Do not keep it "as reference" — delete means delete. Implement fresh from test
 ---
 
 ## Implementation
-
-```
-NO TEST FILE WRITTEN = NO SOURCE FILE WRITTEN
-Watch the tests fail before writing a single function.
-```
-
-The red phase isn't ceremony — it's proof. A test written after implementation almost
-always passes immediately, which tells you nothing about whether it's testing real
-behavior. Watching it fail proves the test is exercising what you think it is.
-
-Follow TDD order — tests before source, always.
 
 1. Write the test file (from the spec's test categories for this section)
 2. Run `devtools::test()` — **confirm all new tests fail (red phase)**
@@ -181,8 +172,8 @@ Do not mark the section complete until ALL are true:
 - [ ] `devtools::check()` — 0 errors, 0 warnings, ≤2 notes
 - [ ] `devtools::document()` run (if roxygen2 changed); `_pkgdown.yml` updated (if new exports)
 - [ ] `plans/error-messages.md` updated (if new error classes added)
-- [ ] Stage 1 spec compliance review: all items checked
-- [ ] Stage 2 code quality review: all items checked
+- [ ] Sub-task Self-Check passed on every sub-task (spec compliance +
+      conventions; in Mode C, the 2b/2c reviews)
 - [ ] Implementation plan section marked `[x]`
 
 ---

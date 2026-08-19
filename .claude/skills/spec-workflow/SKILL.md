@@ -1,17 +1,10 @@
 ---
 name: spec-workflow
 description: >
-  Use this skill for any surveycore spec work: drafting a new spec, running
-  deep comprehension on an attached paper, running methodology or
-  code/architecture reviews, or resolving issues interactively. Trigger when
-  the user says "draft spec", "review the spec", "resolve spec issues", "start
-  planning", or references a phase number (e.g. "phase 2"). Six stages in
-  order: Stage 0 (deep comprehension — conditional for methods-heavy or
-  paper-attached), Stage 1 (draft — produces spec.md AND test-spec.md),
-  Stage 2 (methodology review — conditional for statistical specs), Stage 2
-  Resolve (lock methodology), Stage 3 (code/architecture review — may run
-  multiple times), Stage 4 (resolve + decisions log). After the spec is
-  approved, move to /implementation-workflow.
+  Legacy interactive spec workflow, superseded by pipeline-spec (which still
+  reads this skill's references/ protocol files). Six stages: comprehension,
+  draft, methods review, methods resolve, spec review, resolve.
+disable-model-invocation: true
 ---
 
 # Surveycore Spec Workflow

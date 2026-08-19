@@ -1,6 +1,8 @@
 # Signal System
 
-Three named signals govern all inter-agent and agent-to-user communication. Every pause, block, or halt in the pipeline MUST use one of these. No ad-hoc `AskUserQuestion` calls.
+Three named signals govern all inter-agent and agent-to-user communication during pipeline execution. Every pause, block, or halt in the pipeline MUST use one of these. No ad-hoc `AskUserQuestion` calls.
+
+Planning-stage reviews (methods review, spec review, plan review) do NOT use these signals as verdicts — they use the review verdicts defined at the bottom of this file.
 
 ## HOLD
 
@@ -32,11 +34,13 @@ Write to `decisions.md` AND return to leader:
 
 ## BLOCK
 
-**Emitted by:** tester only
-**Means:** Code does not satisfy the test-spec.
-**Outcome:** builder is re-dispatched for this PR with the audit.md attached (NOT the test-spec — isolation preserved). Max 3 BLOCK cycles per PR.
+**Emitted by:** tester (in `audit.md`) or reviewer (in `review.md`)
+**Means:** Code does not satisfy the test-spec (tester), or a convergence check failed (reviewer).
+**Outcome:** builder is re-dispatched for this PR with the BLOCK body only (NOT audit.md, NOT test-spec.md — isolation preserved; see pipeline-isolation.md rule 4). A reviewer BLOCK may instead route to pipeline-spec when the defect is in the spec.
 
-### Valid triggers
+**Cycle limit (authoritative):** 3 BLOCKs per PR. BLOCKs 1 and 2 trigger re-dispatch; the 3rd escalates to HOLD with classification `repeated-block`. Other documents point here — do not restate the number elsewhere.
+
+### Valid triggers (tester)
 
 - A numerical test failed outside tolerance
 - A named error class test failed (wrong class thrown, or no error thrown)
@@ -63,7 +67,7 @@ Tester does NOT tell builder *how* to fix. Tester does NOT suggest code. Tester 
 
 ### Escalation
 
-After 3 BLOCKs on the same PR, tester escalates to HOLD with classification `repeated-block` and the user decides: extend cycles, re-spec, or abandon.
+On the 3rd BLOCK for the same PR (see cycle limit above), the orchestrating skill escalates to HOLD with classification `repeated-block` and the user decides: extend cycles, re-spec, or abandon.
 
 ## STOP
 
@@ -109,3 +113,13 @@ After the user resolves a HOLD or overrides a STOP, the resolving decision is ap
 ```
 
 The skill then advances the pipeline from the recorded state.
+
+## Review verdicts (planning stages)
+
+Methods reviews, spec reviews, and plan reviews aggregate their lens findings into one of three verdicts. These are verdicts on a document, not pipeline signals — the words BLOCK and HOLD are reserved for the signals above.
+
+| Verdict | Condition | Routing |
+|---|---|---|
+| **PASS** | No BLOCKING finding, no REQUIRED-UNAMBIGUOUS finding, no JUDGMENT_CALL finding | Freeze stage may run |
+| **FAIL** | Any BLOCKING or REQUIRED-UNAMBIGUOUS finding | Route to the stage's resolve counterpart; loop until PASS |
+| **NEEDS-DECISION** | Any JUDGMENT_CALL finding | Orchestrating skill raises a HOLD signal; user decides; then resolve and re-review |

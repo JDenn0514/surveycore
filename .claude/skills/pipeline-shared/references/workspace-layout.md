@@ -52,8 +52,12 @@ Add to `.gitignore` at repo root (one line):
 
 - **At request start**: orchestrating skill creates `runs/{id}/`, writes `request.md` + `impact.md` + `status.md` (with line `NEW`)
 - **During work**: agents write their outputs into the run directory. Status transitions appended to `status.md`.
-- **At DONE**: orchestrating skill copies durable artifacts (`spec.md`, `implementation-plan.md`, `decisions.md`) into `plans/` with `-{id}` suffix. Workspace entry is kept for forensics.
-- **Archiving**: after the change has been released (ships reach `main`), the run directory may be deleted or moved to an archive location. Committed artifacts in `plans/` are moved to `archive/{slug}/` per existing project convention (see CLAUDE.md reference docs).
+- **At each freeze**: the orchestrating skill copies the durable artifacts into `plans/` with `-{slug}` suffix, so each phase's output is saved even when the next phase runs in a fresh session:
+  - At SPEC_READY: `spec.md`, `test-spec.md`, `comprehension.md` (if present), `decisions.md`
+  - At PLAN_READY: `implementation-plan.md`, updated `decisions.md`
+  - At DONE: final `decisions.md`
+  A later copy overwrites the earlier one. The workspace entry is kept for forensics.
+- **Archiving**: after the final PR merges, committed artifacts in `plans/` are moved to `archive/{slug}/` per `references/archive-plans.md`. The run directory may then be deleted or moved to an archive location.
 
 ## Per-PR subdirectories
 

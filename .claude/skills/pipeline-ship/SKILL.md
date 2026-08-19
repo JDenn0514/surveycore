@@ -1,6 +1,13 @@
 ---
 name: pipeline-ship
-description: Drives an implementation plan end-to-end through pipelined agents. For each PR: baseline check, dispatch builder (spec.md only) in a worktree, dispatch tester (test-spec.md only) after merge-back, dispatch reviewer (all artifacts) for convergence verdict, dispatch shipper for branch/commit/PR/CI/merge. Supports parallel PR dispatch when write surfaces are disjoint. Marks plan [x] on merge.
+description: >
+  Executes a PLAN_READY implementation plan end-to-end through pipelined
+  agents. For each PR — baseline check, builder (spec only, in a worktree),
+  tester (test-spec only, after merge-back), reviewer (all artifacts,
+  convergence verdict), shipper (branch, commit, PR, CI, merge). Dispatches
+  PRs in parallel when write surfaces are disjoint. Marks plan checkboxes on
+  merge. Use when the user says "ship the plan", "execute the plan", "run the
+  PRs", or after pipeline-implement has reached PLAN_READY.
 ---
 
 # Skill: pipeline-ship
@@ -37,7 +44,7 @@ for each PR (sequential or parallel per topology):
    │     ▼
    ├─ tester (merged checkout) → audit.md
    │     │
-   │     ├─ verdict=BLOCK → re-dispatch builder (max 3 cycles) → HOLD on 4th
+   │     ├─ verdict=BLOCK → re-dispatch builder → HOLD on 3rd BLOCK
    │     └─ verdict=PASS → continue
    │
    ├─ reviewer (all artifacts) → review.md
@@ -63,9 +70,10 @@ Before any PR starts:
 ```bash
 Rscript -e 'devtools::test()'
 Rscript -e 'devtools::check()'
+Rscript -e 'covr::package_coverage()'
 ```
 
-If either fails, HOLD with classification `dirty-baseline`. Do not begin.
+If tests or check fail, HOLD with classification `dirty-baseline`. Do not begin.
 
 Cache the baseline results (tests passing count, coverage %) for Before/After comparison in each audit.
 
@@ -125,8 +133,8 @@ Each tester returns `audit.md` with verdict PASS or BLOCK.
 If an audit returns BLOCK:
 
 1. Increment BLOCK counter for that PR
-2. If counter ≤ 3: re-dispatch builder for that PR with the BLOCK body (NOT the full audit.md, NOT test-spec.md) per signals.md
-3. If counter = 4: emit HOLD classification `repeated-block`; pause the pipeline for user decision
+2. If counter < 3: re-dispatch builder for that PR with the BLOCK body (NOT the full audit.md, NOT test-spec.md) per signals.md
+3. If counter = 3: emit HOLD classification `repeated-block`; pause the pipeline for user decision (limit defined in signals.md §BLOCK)
 
 ### 2d. Dispatch reviewer (sequential per PR, after its audit passes)
 
@@ -145,7 +153,7 @@ Reviewer returns `review.md` with verdict PASS / BLOCK / STOP.
 Tell the user: "Reviewer returned for PR {N} ({slug}) — verdict: {PASS/BLOCK/STOP}."
 
 - **PASS** → proceed to pre-PR gate (2e.5)
-- **BLOCK** → re-dispatch the agent reviewer identified (builder or planner). Increment BLOCK counter. Max 3 cycles per PR.
+- **BLOCK** → re-dispatch the target the reviewer identified: builder (code fix) or pipeline-spec (spec defect). Increment the BLOCK counter; same limit as 2c.
 - **STOP** → pipeline halts. Write HOLD to `decisions.md`. User must resolve before resume.
 
 ### 2e.5. Pre-PR gate
@@ -194,49 +202,30 @@ After all batches complete and all plan checkboxes are `[x]`:
 
 After DONE is written:
 
-1. **Derive the feature slug** from the implementation plan filename:
-   - Pattern: `plans/implementation-plan-{slug}.md` → slug = `{slug}`
-   - e.g., `plans/implementation-plan-nonprob-jackknife.md` → `nonprob-jackknife`
-   - If no implementation plan file is present at that path, skip archiving and note it in the summary.
+1. Run the archive procedure in
+   `.claude/skills/pipeline-shared/references/archive-plans.md`. The slug comes
+   from the implementation plan filename
+   (`plans/implementation-plan-{slug}.md`). If no plan file exists at that
+   path, skip archiving and note it in the summary.
 
-2. **Find matching files** in `plans/`:
-   ```bash
-   find plans/ -maxdepth 1 -name "*{slug}*" -type f
-   ```
-   This catches `spec-{slug}.md`, `decisions-{slug}.md`, `test-spec-{slug}.md`, `status-{slug}.md`, etc. Files whose names do not contain the slug are not moved — name them with the slug during planning to ensure they are picked up.
-
-3. **Move and commit** (only if matching files exist):
-   a. Create `archive/{slug}/`
-   b. `git mv plans/*{slug}* archive/{slug}/` for each matched file
-   c. Update `CLAUDE.md`:
-      - Status table row: replace `planning docs in \`plans/\`` with `see \`archive/{slug}/\``
-      - Reference Documents section: add `- \`archive/{slug}/\` — {one-line feature description} (shipped; PRs {merged PR numbers})`
-   d. `git add CLAUDE.md`
-   e. Commit: `chore(plans): archive {slug} planning docs`
-
-4. **Return to user** with summary: PRs merged, coverage delta, any STOPs, and which files were archived.
+2. **Return to user** with summary: PRs merged, coverage delta, any STOPs, and which files were archived.
 
 ## Signal handling
 
 - **HOLD** — any stage. Pause, write to decisions.md, ask user.
-- **BLOCK** (from tester) — route back to builder. Max 3 per PR.
-- **BLOCK** (from reviewer) — route back to builder OR pipeline-spec depending on classification. Max 3 per PR.
+- **BLOCK** (from tester) — route back to builder per 2c.
+- **BLOCK** (from reviewer) — route back to builder or pipeline-spec per 2e.
 - **STOP** (from reviewer) — halt pipeline. HOLD with full STOP body. User must override in decisions.md to resume.
+
+BLOCK cycle limit and body schemas: signals.md.
 
 ## References
 
-- `skills/pipeline-shared/references/state-model.md`
-- `skills/pipeline-shared/references/signals.md`
-- `skills/pipeline-shared/references/pipeline-isolation.md`
-- `skills/pipeline-shared/references/artifact-schemas.md`
-- `skills/pipeline-shared/references/r-package-profile.md`
-- `skills/pipeline-shared/references/workspace-layout.md`
+- `.claude/skills/pipeline-shared/references/state-model.md`
+- `.claude/skills/pipeline-shared/references/signals.md`
+- `.claude/skills/pipeline-shared/references/pipeline-isolation.md`
+- `.claude/skills/pipeline-shared/references/artifact-schemas.md`
+- `.claude/skills/pipeline-shared/references/r-package-profile.md`
+- `.claude/skills/pipeline-shared/references/workspace-layout.md`
+- `.claude/skills/pipeline-shared/references/archive-plans.md`
 - `.claude/agents/builder.md`, `tester.md`, `reviewer.md`, `shipper.md`
-
-## Must not
-
-- Dispatch a tester before the corresponding builder's worktree has merged back
-- Dispatch a reviewer before the corresponding tester's audit.md is written
-- Dispatch a shipper without review.md verdict=PASS **and** pre-PR gate passing
-- Dispatch two builders in parallel on overlapping write surfaces
-- Advance to DONE while any PR checkbox is `[ ]`

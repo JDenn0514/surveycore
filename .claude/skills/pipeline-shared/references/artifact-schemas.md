@@ -28,7 +28,7 @@ Every `.md` artifact in the workspace follows a fixed schema. Orchestrating skil
 - New dependencies: {list or "none"}
 - CRAN-relevant: {yes/no — DESCRIPTION change, export change, new vignette}
 
-## Smallness test (see pipeline-simplified/references/smallness-test.md)
+## Smallness test (criteria: pipeline-simplified/SKILL.md §Smallness criteria)
 - Result: eligible-simplified | full-required
 - Rationale: {one sentence}
 ```
@@ -270,9 +270,7 @@ Example:
 2026-04-21T14:38:00Z  COMPREHENDED  (no methods — auto)
 2026-04-21T15:10:22Z  SPEC_READY    (spec-review PASS)
 2026-04-21T15:45:03Z  PLAN_READY    (plan-review PASS)
-2026-04-21T17:22:18Z  PIPELINES_COMPLETE  (PR 1, PR 2 audits PASS)
-2026-04-21T17:30:44Z  REVIEW_PASSED
-2026-04-21T17:55:00Z  DONE
+2026-04-21T17:55:00Z  DONE          (PR 1, PR 2 merged)
 ```
 
 ## `decisions.md`

@@ -5,7 +5,7 @@ description: >
   ship to `main`. Handles the full release workflow: NEWS.md update, version
   bump, develop → main PR, CI monitoring, merge, tagging, and post-release
   dev version bump. Trigger when the user says "merge to main", "release time",
-  "prepare release", "ship this", "release vX.Y.Z", or "merge develop to main".
+  "prepare release", "release vX.Y.Z", or "merge develop to main".
   CRITICAL: This skill only edits NEWS.md and DESCRIPTION. It does NOT write
   or edit R source files, test files, or any other source code.
 ---
@@ -33,15 +33,22 @@ address it before proceeding with the release.
 
 ## Session Recovery — Check This Before Starting
 
-Call `TaskList` first. If a "Release:" task already exists `in_progress`:
+The environment is the source of truth. Derive the resume point:
 
-| Task state | What to do |
+```bash
+grep "^Version:" DESCRIPTION
+gh pr list --base main --head develop --state all --limit 1
+git tag -l "v*" --sort=-creatordate | head -3
+```
+
+| Observation | Resume point |
 |---|---|
-| Release task `in_progress`, no PR yet | Resume from Step 3 |
-| Release task `in_progress`, PR exists, CI pending | Resume CI monitoring (Step 6) |
-| Release task `in_progress`, PR merged, not tagged | Resume from Step 7 |
-| Release task `completed` | Report that the release is done — nothing to do |
-| No tasks | Fresh start — proceed to Step 1 |
+| Version is `X.Y.Z.9000`, no release PR | Step 1 (fresh start) |
+| Version bumped to `X.Y.Z`, no release PR yet | Step 4 (check, then commit and PR) |
+| Release PR open, CI pending or running | Step 7 (monitor CI) |
+| Release PR merged, tag `vX.Y.Z` absent | Step 9 (tag) |
+| Tag exists, `develop` version not yet `.9000` | Step 10 (dev bump) |
+| Tag exists, `develop` version back to `.9000` | Release is done — report, nothing to do |
 
 ---
 
@@ -81,18 +88,6 @@ Show the user what's changed since that tag:
 
 ```bash
 git log <last-tag>..develop --oneline
-```
-
-Create the main tracking task:
-
-```
-TaskCreate:
-  subject:    "Release: vX.Y.Z"
-  description: "Full release workflow for vX.Y.Z."
-  activeForm: "Preparing release vX.Y.Z"
-
-TaskUpdate:
-  status: in_progress
 ```
 
 ---
@@ -165,7 +160,7 @@ Commit:
 git commit -m "$(cat <<'EOF'
 chore(release): bump version to X.Y.Z
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <trailer from session guidance>
 EOF
 )"
 
@@ -206,30 +201,11 @@ EOF
 )"
 ```
 
-Store the PR URL:
-
-```
-TaskUpdate:
-  metadata: { prUrl: "<url>", prNumber: <N> }
-```
-
 Report the PR URL to the user.
 
 ---
 
 ## Step 7: Monitor CI
-
-Create a CI tracking task:
-
-```
-TaskCreate:
-  subject:    "CI: release vX.Y.Z"
-  description: "Monitoring CI for release PR #N"
-  activeForm: "Monitoring CI for release vX.Y.Z"
-
-TaskUpdate:
-  status: in_progress
-```
 
 Wait for the run to appear, then watch it:
 
@@ -268,14 +244,6 @@ On confirmation:
 
 ```bash
 gh pr merge <pr-number> --merge
-```
-
-Mark the CI task complete:
-
-```
-TaskUpdate (CI task):
-  status: completed
-  metadata: { status: "passed" }
 ```
 
 ---
@@ -328,7 +296,7 @@ git add DESCRIPTION
 git commit -m "$(cat <<'EOF'
 chore(post-release): bump version to X.Y.Z.9000
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <trailer from session guidance>
 EOF
 )"
 
@@ -338,13 +306,6 @@ git push origin develop
 ---
 
 ## Step 11: Done
-
-Mark the release task complete:
-
-```
-TaskUpdate (release task):
-  status: completed
-```
 
 Report:
 

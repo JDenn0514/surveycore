@@ -1,5 +1,8 @@
 # Mode C: Subagent-Driven Development
 
+`pipeline-ship` is the canonical autonomous execution path. Use this mode
+only when the user explicitly asks for it (e.g., "subagent mode").
+
 Use this mode to implement all remaining plan sections autonomously, dispatching
 a fresh subagent per section with two-stage review after each.
 
