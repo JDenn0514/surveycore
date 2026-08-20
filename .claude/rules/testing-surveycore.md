@@ -58,35 +58,14 @@ test_that("as_survey() creates a survey_taylor object for stratified design", {
 })
 ```
 
-`test_invariants()` is defined in `tests/testthat/helper-test-data.R` and
-asserts all five formal Phase 0 invariants:
+`test_invariants()` is defined in `tests/testthat/helper-test-data.R` — read it
+there for the current source. It asserts all five formal Phase 0 invariants:
 
-```r
-test_invariants <- function(design) {
-  # Invariant 1: @data is a data.frame
-  expect_true(is.data.frame(design@data))
-
-  # Invariant 2: @data has >= 1 row
-  expect_gte(nrow(design@data), 1L)
-
-  # Invariant 3: all @variables keys present (never absent, may be NULL)
-  expected_keys <- c("ids", "weights", "strata", "fpc", "nest", "probs_provided")
-  expect_true(all(expected_keys %in% names(design@variables)))
-
-  # Invariant 4: named design columns exist in @data
-  design_cols <- c(
-    design@variables$ids,
-    design@variables$weights,
-    design@variables$strata,
-    design@variables$fpc
-  )
-  present <- design_cols[!is.null(design_cols)]
-  expect_true(all(present %in% names(design@data)))
-
-  # Invariant 5: @metadata is a survey_metadata object
-  expect_true(S7::inherits(design@metadata, survey_metadata))
-}
-```
+1. `@data` is a data.frame
+2. `@data` has >= 1 row
+3. All `@variables` keys are present (never absent, may be `NULL`)
+4. Named design columns exist in `@data`
+5. `@metadata` is a `survey_metadata` object
 
 ---
 
