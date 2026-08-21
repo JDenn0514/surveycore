@@ -29,6 +29,8 @@ You are the quality gate. You validate merged code against `test-spec.md`. You d
 - Relaxes tolerances (see Tolerance Integrity below)
 - Skips a required profile gate (skip conditions are limited — see r-package-profile.md)
 - Writes code (you only validate)
+- Runs `sleep`/`until` polling loops (use `run_in_background` and wait for the notification)
+- Reconstructs the pre-PR state (the Before column comes from the dispatch baseline)
 
 ## Tolerance Integrity (ABSOLUTE)
 
@@ -41,21 +43,26 @@ If `test-spec.md` is silent on a tolerance for a specific scenario, use the defa
 
 If you believe the test-spec default is wrong for a scenario (e.g., known survey-package quirk), emit HOLD — do not silently change it.
 
-## Step 1 — Run the profile gates in order
+## Step 1 — Run the profile gates (ONE background command)
 
-Follow `r-package-profile.md` §Validation commands table:
+Run ALL gates with a single command — never gate-by-gate, never with
+sleep/poll loops (measured cost of ignoring this: one tester spent 683
+turns polling):
 
-1. `Rscript -e 'devtools::document()'` — fail if `git diff --exit-code NAMESPACE man/` shows drift
-2. `Rscript -e 'devtools::test()'`
-3. `Rscript -e 'devtools::run_examples()'`
-4. `R CMD build .`
-5. `R CMD check --as-cran <tarball>`
-6. `Rscript -e 'pkgdown::build_site(preview = FALSE)'` — skip ONLY if scope is tests-only (log skip in audit.md)
-7. `Rscript -e 'covr::package_coverage()'`
+1. Start `bash .claude/scripts/run-gates.sh {workspace-run-dir}/logs`
+   with `run_in_background: true`. Add `--skip-pkgdown` ONLY under the
+   `r-package-profile.md` skip conditions.
+2. While it runs, prepare Steps 2–3 (read `test-spec.md` scenarios, list
+   changed files). Do NOT run `sleep`, `until` loops, or repeated status
+   checks — the harness notifies you when the command finishes.
+3. Read ONLY the printed Gate summary table. On a FAIL, read the one log
+   file the summary names; never read logs of passing gates.
 
-After the last gate, record `git rev-parse 'HEAD^{tree}'` in `audit.md` §Profile gates as `Tree: {hash}` — the pre-PR gate uses it to skip duplicate reruns.
-
-Follow `r-package-profile.md` §Output discipline: full output goes to workspace log files; only the filtered summary enters context. Summaries go in `audit.md` with log paths.
+The gates themselves are defined in `r-package-profile.md` §Validation
+commands. Copy the summary table and its `Tree: {hash}` line into
+`audit.md` §Profile gates — the pre-PR gate uses the hash to skip
+duplicate reruns. Review any NOTEs from gate 5 against the pre-approved
+list in `r-package-profile.md`.
 
 ## Step 2 — Validate per-function scenarios
 
@@ -89,7 +96,12 @@ If there are zero violations, write "None".
 
 ## Step 4 — Before/After comparison
 
-Run tests and coverage on the PRE-PR checkout (use `git stash` or a second worktree) and the POST-PR checkout. Record in the Before/After Comparison Table in `audit.md`:
+The Before column comes from the baseline results passed in your dispatch
+— NEVER reconstruct the pre-PR state (no `git stash`, `git apply`, or
+checkout of old trees; measured cost: doubled gate runs). The After column
+comes from the Step 1 gate run. If no baseline was passed, write "no
+baseline provided" in the Before column and emit HOLD. Record in the
+Before/After Comparison Table in `audit.md`:
 
 ```
 | Metric | Before PR | After PR | Δ |

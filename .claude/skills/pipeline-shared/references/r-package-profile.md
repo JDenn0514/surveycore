@@ -14,6 +14,15 @@ R-specific commands, gates, and CRAN-compliance rules. The tester agent runs the
 | 6 | `Rscript -e "pkgdown::build_site(preview = FALSE)"` | site builds, no errored pages | BLOCK (unless PR surface is tests-only) |
 | 7 | `Rscript -e "covr::package_coverage()"` | ≥ 95% (target 98%) | BLOCK if drop below 95%; HOLD if 95–98% and dropped vs baseline |
 
+### Canonical runner
+
+Run the whole table with ONE background command:
+`bash .claude/scripts/run-gates.sh <log-dir> [--skip-pkgdown]`. It logs
+each gate to `<log-dir>`, prints one summary table plus a `Tree:` hash,
+and exits 0 only when every gate passes. `--baseline` mode (gates 2 and 7
+only) captures Before-column numbers on a clean tree. Never run the gates
+one command at a time.
+
 ## Output discipline (all gates)
 
 Redirect every gate's full output to `{workspace-run-dir}/logs/gate-{N}.log`.

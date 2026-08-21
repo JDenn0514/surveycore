@@ -99,6 +99,20 @@ when to read it.
    fresh builder. A fresh dispatch is used only if the original agent is gone.
    Cap unchanged: 3 cycles, then HOLD.
 
+**Added 2026-08-21 after validation** (the test run's tester spent 683
+turns polling — 60% of the run's cost):
+
+4. `.claude/scripts/run-gates.sh` runs all gates in ONE background
+   command, logs per gate, and prints one summary table plus the `Tree:`
+   hash. The tester starts it with `run_in_background` and waits for the
+   notification — `sleep`/`until` polling loops are banned in `tester.md`.
+5. The tester's Before column comes from baseline results passed in the
+   dispatch — reconstructing the pre-PR state is banned. `pipeline-simplified`
+   captures the baseline in the background (`--baseline` mode) while
+   planner-lite runs.
+6. Stale `.claude/rules/` re-read removed from `pipeline-simplified`'s
+   builder dispatch (missed by the Group C sweep).
+
 ### Group E — Gate deduplication
 
 1. **Remove `pkgcheck::pkgcheck()` entirely** (gate 6 in
