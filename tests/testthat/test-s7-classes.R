@@ -1263,3 +1263,84 @@ test_that("survey_metadata validator accepts field_end with field_start absent",
   )
   expect_identical(m@dataset_metadata$field_end, as.Date("2026-03-04"))
 })
+
+
+# ── survey_metadata validator: date pair (check 8) and re-validation ──────────
+
+test_that("survey_metadata validator rejects a reversed field date pair", {
+  reversed <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = reversed),
+    class = "surveycore_error_field_dates_reversed"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = reversed),
+    regexp = "field_start is after field_end."
+  )
+})
+
+test_that("survey_metadata validator accepts field_start equal to field_end", {
+  same_day <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+  m <- survey_metadata(dataset_metadata = same_day)
+  expect_identical(m@dataset_metadata, same_day)
+})
+
+test_that("survey_metadata validator accepts field_start before field_end", {
+  ordered_pair <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-03-04")
+  )
+  m <- survey_metadata(dataset_metadata = ordered_pair)
+  expect_identical(m@dataset_metadata, ordered_pair)
+})
+
+test_that("survey_metadata re-validates @dataset_metadata on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(mode = "web"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata re-validates a bad value type on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(vendor = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata re-validates a reversed date pair on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(
+      field_start = as.Date("2026-03-04"),
+      field_end = as.Date("2026-02-10")
+    ),
+    class = "surveycore_error_field_dates_reversed"
+  )
+})
+
+test_that("survey_metadata assignment round-trips a valid dataset metadata list", {
+  m <- survey_metadata()
+  m@dataset_metadata <- full_keys
+  expect_identical(m@dataset_metadata, full_keys)
+})
+
+test_that("a design's @metadata re-validates @dataset_metadata on assignment", {
+  df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 12)
+  design <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  test_invariants(design)
+  expect_error(
+    design@metadata@dataset_metadata <- list(vendor = NA_character_),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  design@metadata@dataset_metadata <- list(vendor = "Ipsos")
+  expect_identical(design@metadata@dataset_metadata, list(vendor = "Ipsos"))
+})

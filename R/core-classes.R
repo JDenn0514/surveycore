@@ -242,6 +242,17 @@ survey_metadata <- S7::new_class(
       )
     }
 
+    # Check 8 — when both dates are present, field_start must not be after
+    # field_end. A single date needs no comparison.
+    if (all(.dataset_date_keys %in% nms)) {
+      if (dm[["field_start"]] > dm[["field_end"]]) {
+        cli::cli_abort(
+          "field_start is after field_end.",
+          class = "surveycore_error_field_dates_reversed"
+        )
+      }
+    }
+
     NULL
   }
 )
