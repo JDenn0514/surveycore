@@ -205,6 +205,43 @@ survey_metadata <- S7::new_class(
       )
     }
 
+    # Check 7 — every present key's value passes the canonical value table.
+    for (key in nms) {
+      value <- dm[[key]]
+
+      # Validator narrowing: a STORED date is always a Date scalar, because
+      # only coerced values reach storage. Keep this narrowing here even when
+      # the shared checker happens to enforce the same rule — the checker
+      # widens to accept ISO strings for setter callers, and this branch is
+      # what keeps the class layer rejecting them.
+      if (key %in% .dataset_date_keys) {
+        date_ok <- inherits(value, "Date") &&
+          length(value) == 1L &&
+          !is.na(value)
+        if (!date_ok) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      }
+
+      # Delegate to the shared checker, then re-raise its CLI-formatted error
+      # as the plain Layer 1 one-liner.
+      tryCatch(
+        .check_dataset_key_value(key, value, mode = "error"),
+        surveycore_error_dataset_metadata_bad_type = function(cnd) {
+          cli::cli_abort(
+            paste0(
+              "Dataset metadata key {key} must be a single non-NA ",
+              "character string."
+            ),
+            class = "surveycore_error_dataset_metadata_bad_type"
+          )
+        }
+      )
+    }
+
     NULL
   }
 )

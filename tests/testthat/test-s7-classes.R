@@ -1178,3 +1178,88 @@ test_that("survey_metadata validator rejects a NULL element on a date key", {
     class = "surveycore_error_dataset_metadata_bad_type"
   )
 })
+
+
+# ── survey_metadata validator: per-key value rules (spec III.3 check 7) ───────
+
+test_that("survey_metadata validator rejects a non-character vendor", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = 1L)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = 1L)),
+    regexp = paste(
+      "Dataset metadata key vendor must be a single non-NA",
+      "character string."
+    )
+  )
+})
+
+test_that("survey_metadata validator rejects an NA survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = c("a", "b"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a zero-length field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = character(0))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an ISO string on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = "2026-02-10")),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = "2026-02-10")),
+    regexp = "Dataset metadata key field_start must be a Date scalar."
+  )
+})
+
+test_that("survey_metadata validator rejects a numeric field_end", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_end = 20000)),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA Date on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = as.Date(NA))),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 Date on a date key", {
+  two_dates <- as.Date(c("2026-02-10", "2026-02-11"))
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = two_dates)),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator accepts field_start with field_end absent", {
+  m <- survey_metadata(
+    dataset_metadata = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_identical(m@dataset_metadata$field_start, as.Date("2026-02-10"))
+})
+
+test_that("survey_metadata validator accepts field_end with field_start absent", {
+  m <- survey_metadata(
+    dataset_metadata = list(field_end = as.Date("2026-03-04"))
+  )
+  expect_identical(m@dataset_metadata$field_end, as.Date("2026-03-04"))
+})
