@@ -57,6 +57,20 @@
 #'   parameters, effective sample size before/after, and design effect.
 #'   Always `list()` until a \pkg{surveywts} weighting function is
 #'   applied. Reserved for Phase 2.5.
+#' @param dataset_metadata A named list of whole-dataset facts. The key
+#'   vocabulary is **closed** — exactly six keys are valid, each with a
+#'   declared type:
+#'   * `survey_name` — `character(1)`, the full formal survey name.
+#'   * `data_name` — `character(1)`, the display label for this dataset.
+#'   * `vendor` — `character(1)`, the fielding vendor.
+#'   * `field_start` — `Date` of length 1, the first day in the field.
+#'   * `field_end` — `Date` of length 1, the last day in the field.
+#'   * `field_period` — `character(1)`, the prose field period.
+#'
+#'   No value may be `NA` and no element may be `NULL`. Any other key is
+#'   rejected. `survey_name` and `data_name` are independent: no function
+#'   derives one from the other. Use `set_dataset_metadata()` to write keys
+#'   and `extract_dataset_metadata()` to read them; the default is `list()`.
 #'
 #' @return A `survey_metadata` object.
 #'
@@ -72,6 +86,10 @@
 #' )
 #' m@variable_labels$age
 #' m@value_labels$sex
+#'
+#' # Dataset-level metadata (closed six-key vocabulary)
+#' m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+#' m@dataset_metadata$vendor
 #' @family metadata
 #' @export
 survey_metadata <- S7::new_class(
@@ -122,6 +140,12 @@ survey_metadata <- S7::new_class(
     # with parameters, effective n before/after, and design effect.
     # Always list() until surveywts writes to it.
     weighting_history = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    # Dataset-level metadata. Closed vocabulary — exactly six valid keys:
+    # survey_name, data_name, vendor, field_start, field_end, field_period.
+    dataset_metadata = S7::new_property(
       S7::class_list,
       default = quote(list())
     )

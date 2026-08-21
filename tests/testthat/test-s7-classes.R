@@ -1035,3 +1035,52 @@ test_that("survey_replicate S7 validator passes when @calibration is a non-empty
   design@calibration <- list(cd)
   expect_no_error(S7::check_is_S7(design))
 })
+
+
+# ── survey_metadata @dataset_metadata property ────────────────────────────────
+
+test_that("survey_metadata() defaults @dataset_metadata to an empty list", {
+  m <- survey_metadata()
+  expect_identical(m@dataset_metadata, list())
+})
+
+test_that("survey_metadata() stores a single dataset metadata key", {
+  m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+  expect_identical(m@dataset_metadata, list(vendor = "Ipsos"))
+})
+
+test_that("survey_metadata() accepts all six canonical dataset keys", {
+  m <- survey_metadata(dataset_metadata = full_keys)
+  expect_identical(m@dataset_metadata, full_keys)
+  expect_identical(names(m@dataset_metadata), names(full_keys))
+})
+
+test_that("survey_metadata() accepts an unrelated survey_name / data_name pair", {
+  m <- survey_metadata(
+    dataset_metadata = list(
+      survey_name = "Formal Survey Name 2026",
+      data_name = "Something Completely Different"
+    )
+  )
+  expect_identical(m@dataset_metadata$survey_name, "Formal Survey Name 2026")
+  expect_identical(
+    m@dataset_metadata$data_name,
+    "Something Completely Different"
+  )
+})
+
+test_that("survey_metadata() keeps other properties intact alongside @dataset_metadata", {
+  m <- survey_metadata(
+    variable_labels = list(age = "Age in years"),
+    dataset_metadata = list(vendor = "Ipsos")
+  )
+  expect_identical(m@variable_labels, list(age = "Age in years"))
+  expect_identical(m@dataset_metadata, list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() designs start with an empty @dataset_metadata", {
+  df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 11)
+  design <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  test_invariants(design)
+  expect_identical(design@metadata@dataset_metadata, list())
+})
