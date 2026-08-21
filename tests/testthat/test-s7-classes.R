@@ -1084,3 +1084,97 @@ test_that("as_survey() designs start with an empty @dataset_metadata", {
   test_invariants(design)
   expect_identical(design@metadata@dataset_metadata, list())
 })
+
+
+# ── survey_metadata validator: structural checks (spec III.3 checks 2-6) ──────
+
+test_that("survey_metadata validator accepts an explicitly empty dataset list", {
+  m <- survey_metadata()
+  m@dataset_metadata <- list()
+  expect_identical(m@dataset_metadata, list())
+})
+
+test_that("survey_metadata validator rejects an unnamed dataset metadata entry", {
+  expect_error(
+    survey_metadata(dataset_metadata = list("Ipsos")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects a partially named dataset metadata list", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = "Ipsos", "Cint")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA dataset metadata key name", {
+  bad <- stats::setNames(list("Ipsos"), NA_character_)
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects an empty dataset metadata key name", {
+  bad <- stats::setNames(list("Ipsos"), "")
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    regexp = "All dataset metadata entries must have a non-empty name."
+  )
+})
+
+test_that("survey_metadata validator rejects a duplicated dataset metadata key", {
+  bad <- list(vendor = "Ipsos", vendor = "Cint")
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    regexp = "Duplicate dataset metadata key\\(s\\): vendor."
+  )
+})
+
+test_that("survey_metadata validator rejects a key outside the closed vocabulary", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(mode = "web")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(mode = "web")),
+    regexp = "Unknown dataset metadata key: mode."
+  )
+})
+
+test_that("survey_metadata validator rejects the legacy dates key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(dates = "February-March 2026")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata validator rejects a key that names a base attribute", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(class = "tbl_df")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata validator rejects a NULL dataset metadata element", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = NULL)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a NULL element on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = NULL)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})

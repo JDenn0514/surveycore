@@ -149,7 +149,64 @@ survey_metadata <- S7::new_class(
       S7::class_list,
       default = quote(list())
     )
-  )
+  ),
+  # Layer 1 validator. Checks @dataset_metadata only. Messages are plain
+  # one-line text (the C1 / C4 / G1 precedent), not the CLI x/i/v register.
+  # S7 runs this on construction and again on every @<- assignment.
+  validator = function(self) {
+    dm <- self@dataset_metadata
+
+    # Every check below applies to a non-empty list only.
+    if (length(dm) == 0L) {
+      return(NULL)
+    }
+
+    nms <- names(dm)
+
+    # Checks 2-3 — every element has a name, and no name is NA or empty.
+    if (is.null(nms) || anyNA(nms) || !all(nzchar(nms))) {
+      cli::cli_abort(
+        "All dataset metadata entries must have a non-empty name.",
+        class = "surveycore_error_dataset_metadata_unnamed"
+      )
+    }
+
+    # Check 4 — no name is duplicated.
+    dupes <- unique(nms[duplicated(nms)])
+    if (length(dupes) > 0L) {
+      dupes_txt <- paste(dupes, collapse = ", ")
+      cli::cli_abort(
+        "Duplicate dataset metadata key(s): {dupes_txt}.",
+        class = "surveycore_error_dataset_metadata_duplicate_key"
+      )
+    }
+
+    # Check 5 — every name is one of the six valid keys.
+    unknown <- setdiff(nms, .dataset_metadata_keys)
+    if (length(unknown) > 0L) {
+      key <- unknown[[1L]]
+      cli::cli_abort(
+        "Unknown dataset metadata key: {key}.",
+        class = "surveycore_error_dataset_key_unknown"
+      )
+    }
+
+    # Check 6 — no element is NULL. Deletion removes the element; it never
+    # stores a NULL.
+    null_elements <- vapply(dm, is.null, logical(1L))
+    if (any(null_elements)) {
+      key <- nms[null_elements][[1L]]
+      cli::cli_abort(
+        paste0(
+          "Dataset metadata key {key} must be a single non-NA ",
+          "character string."
+        ),
+        class = "surveycore_error_dataset_metadata_bad_type"
+      )
+    }
+
+    NULL
+  }
 )
 
 

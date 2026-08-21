@@ -357,6 +357,25 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
+# ── Internal: dataset-level metadata ──────────────────────────────────────────
+#
+# The dataset metadata key vocabulary is CLOSED: exactly these six keys are
+# valid, and this vector is their canonical order. Read by the survey_metadata
+# validator (R/core-classes.R) and by the dataset metadata setters and
+# extractors (R/core-metadata.R), so it lives here per the 2+-files rule.
+.dataset_metadata_keys <- c(
+  "survey_name",
+  "data_name",
+  "vendor",
+  "field_start",
+  "field_end",
+  "field_period"
+)
+
+# The two date-typed keys. The other four keys are character(1).
+.dataset_date_keys <- c("field_start", "field_end")
+
+
 # ── .build_cluster_matrices() ───────────────────────────────────────────────
 #
 # Build the clusters, strata, and FPC matrices needed by the multi-stage
