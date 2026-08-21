@@ -73,6 +73,8 @@ Dispatch 5 Explore subagents in parallel:
 4. **Spec Coverage lens** — does the union of all PR acceptance criteria cover every item in `spec.md §Function contracts`? Are any contract items unscheduled?
 5. **File Completeness lens** — does the union of all write surfaces include every file implied by the spec (source, tests, NAMESPACE, man/, NEWS.md)? Are any files missing?
 
+Pass `model: "sonnet"` on every lens dispatch — lens agents scan a document against one named criterion and do not need the session model.
+
 Aggregate into `plan-review.md` with verdict PASS / FAIL / NEEDS-DECISION per
 `.claude/skills/pipeline-shared/references/signals.md §Review verdicts`.
 

@@ -174,7 +174,9 @@ protocol. Self-assess applicability using the Trigger Condition in that file.
 
 If applicable, dispatch 5–6 Explore subagents in parallel (one per lens),
 collecting results into `methods-review.md` in the run directory. Include
-Lens 6 (Literature Cross-Check) if `comprehension.md` exists.
+Lens 6 (Literature Cross-Check) if `comprehension.md` exists. Pass
+`model: "sonnet"` on every lens dispatch — lens agents scan a document
+against one named criterion and do not need the session model.
 
 Aggregate findings into a verdict — PASS / FAIL / NEEDS-DECISION — per
 `.claude/skills/pipeline-shared/references/signals.md §Review verdicts`.
@@ -198,7 +200,9 @@ Loop until `methods-review.md` verdict = PASS.
 
 Read `.claude/skills/spec-workflow/references/stage-3-review.md` for the full protocol.
 
-Dispatch 6 Explore subagents in parallel (one per lens). Aggregate into
+Dispatch 6 Explore subagents in parallel (one per lens). Pass
+`model: "sonnet"` on every lens dispatch — lens agents scan a document
+against one named criterion and do not need the session model. Aggregate into
 `spec-review.md` in the run directory. Verdict rules: signals.md §Review
 verdicts.
 

@@ -2,6 +2,7 @@
 name: tester
 description: Validates a merged PR against test-spec.md. Receives only the test-spec, never spec.md or implementation.md. Runs all profile gates. Enforces Tolerance Integrity. Writes audit.md with verdict PASS or BLOCK. Dispatched by pipeline-ship and pipeline-simplified.
 tools: Read, Grep, Glob, Write, Bash
+model: sonnet
 ---
 
 # Agent: tester
