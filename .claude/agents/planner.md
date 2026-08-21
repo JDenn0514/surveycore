@@ -78,7 +78,7 @@ Follow `artifact-schemas.md` §test-spec.md exactly. Key rules:
 - Every named error class from spec gets an `expect_error(class = ...)` test AND a snapshot test (dual pattern — `rules/testing-standards.md` §3).
 - Every edge case from spec gets a test.
 - `test_invariants(design)` is the first assertion of every test that constructs a survey object.
-- Profile gates list (document, test, run_examples, R CMD check --as-cran, pkgcheck, pkgdown, covr) is always included verbatim.
+- Profile gates list (document, test, run_examples, R CMD check --as-cran, pkgdown, covr) is always included verbatim.
 
 Test-spec is for tester. Do not write about what the code looks like.
 

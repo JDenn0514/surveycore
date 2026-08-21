@@ -104,7 +104,7 @@ Dispatch `tester` agent:
 > Read: .claude/agents/tester.md, r-package-profile.md
 > Validate that:
 > 1. Each acceptance criterion from request.md holds
-> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgcheck, pkgdown if in scope, covr)
+> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgdown if in scope, covr)
 > 3. CRAN cookbook scan is clean on the modified files
 > 4. No regression in tests that were passing before the PR
 > Write audit.md with verdict PASS or BLOCK.

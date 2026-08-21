@@ -121,7 +121,6 @@ No test cases. No tolerances. No references to test-spec.md.
 - [ ] devtools::test() all pass
 - [ ] devtools::run_examples() all pass
 - [ ] R CMD check --as-cran (0 err, 0 warn, notes reviewed)
-- [ ] pkgcheck PASS
 - [ ] pkgdown::build_site() clean
 - [ ] covr::package_coverage() ≥ 95% (target 98%)
 - [ ] CRAN cookbook scan clean (see r-package-profile.md)
@@ -196,10 +195,11 @@ Builder does NOT write about test results here. Builder's local unit tests run; 
 |---|---|---|
 | devtools::test() | PASS/FAIL | {summary} |
 | R CMD check --as-cran | PASS/FAIL | {errors, warnings, notes} |
-| pkgcheck | PASS/FAIL | {standards violated} |
 | pkgdown | PASS/FAIL | {errored pages} |
 | covr | {%} | {drop vs baseline} |
 | CRAN cookbook scan | PASS/FAIL | {violations} |
+
+Tree: {git tree hash at gate time — `git rev-parse 'HEAD^{tree}'`}
 
 ## BLOCKs (if any)
 (See signals.md BLOCK schema)

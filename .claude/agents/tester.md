@@ -50,9 +50,10 @@ Follow `r-package-profile.md` §Validation commands table:
 3. `Rscript -e 'devtools::run_examples()'`
 4. `R CMD build .`
 5. `R CMD check --as-cran <tarball>`
-6. `Rscript -e 'pkgcheck::pkgcheck()'`
-7. `Rscript -e 'pkgdown::build_site(preview = FALSE)'` — skip ONLY if scope is tests-only (log skip in audit.md)
-8. `Rscript -e 'covr::package_coverage()'`
+6. `Rscript -e 'pkgdown::build_site(preview = FALSE)'` — skip ONLY if scope is tests-only (log skip in audit.md)
+7. `Rscript -e 'covr::package_coverage()'`
+
+After the last gate, record `git rev-parse 'HEAD^{tree}'` in `audit.md` §Profile gates as `Tree: {hash}` — the pre-PR gate uses it to skip duplicate reruns.
 
 Follow `r-package-profile.md` §Output discipline: full output goes to workspace log files; only the filtered summary enters context. Summaries go in `audit.md` with log paths.
 

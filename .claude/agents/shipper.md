@@ -145,7 +145,7 @@ sleep N && gh pr checks ...
 gh run list   # in any loop
 ```
 
-Required checks: `R-CMD-check` (all OS matrix), `pkgdown`. `pkgcheck` is NOT a required check — ignore it.
+Required checks: `R-CMD-check` (all OS matrix), `pkgdown`.
 
 | CI state | Action |
 |---|---|

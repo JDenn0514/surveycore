@@ -164,6 +164,13 @@ Tell the user: "Reviewer returned for PR {N} ({slug}) — verdict: {PASS/BLOCK/S
 
 ### 2e.5. Pre-PR gate
 
+Skip check first: read `Tree:` from this PR's `audit.md` and compare to
+`git rev-parse 'HEAD^{tree}'` on the feature branch. If they match, the
+tester already ran these gates on this exact tree — skip the rerun and
+proceed to the shipper (log "pre-PR gate: SKIPPED — tree unchanged since
+audit"). If they differ (or `audit.md` has no `Tree:` line), run the gate
+as below.
+
 Before dispatching the shipper, run on the feature branch:
 
 ```bash
