@@ -54,7 +54,7 @@ Follow `r-package-profile.md` §Validation commands table:
 7. `Rscript -e 'pkgdown::build_site(preview = FALSE)'` — skip ONLY if scope is tests-only (log skip in audit.md)
 8. `Rscript -e 'covr::package_coverage()'`
 
-Capture full output of each command. Summaries go in `audit.md`; full logs stay in the workspace directory for forensics.
+Follow `r-package-profile.md` §Output discipline: full output goes to workspace log files; only the filtered summary enters context. Summaries go in `audit.md` with log paths.
 
 ## Step 2 — Validate per-function scenarios
 

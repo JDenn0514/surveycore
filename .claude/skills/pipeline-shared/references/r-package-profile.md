@@ -15,6 +15,16 @@ R-specific commands, gates, and CRAN-compliance rules. The tester agent runs the
 | 7 | `Rscript -e "pkgdown::build_site(preview = FALSE)"` | site builds, no errored pages | BLOCK (unless PR surface is tests-only) |
 | 8 | `Rscript -e "covr::package_coverage()"` | ≥ 95% (target 98%) | BLOCK if drop below 95%; HOLD if 95–98% and dropped vs baseline |
 
+## Output discipline (all gates)
+
+Redirect every gate's full output to `{workspace-run-dir}/logs/gate-{N}.log`.
+Bring into context ONLY:
+- `tail -25` of the log, and
+- `grep -E "FAIL|ERROR|WARNING|NOTE"` of the log.
+
+Record each log path in `audit.md` §Profile gates. Read a full log only when
+diagnosing that gate's failure.
+
 ### pkgdown skip condition
 
 pkgdown build is slow (2–5 min). Tester MAY skip gate 7 when the PR's write surface does not touch:
