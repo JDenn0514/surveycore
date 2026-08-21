@@ -11,6 +11,23 @@
 # devtools::test() / devtools::load_all().
 
 # ------------------------------------------------------------------------------
+# full_keys - dataset-level metadata fixture
+# ------------------------------------------------------------------------------
+
+# The six valid @dataset_metadata keys, in canonical order, each holding a
+# valid value. This is the single definition of the fixture; every test that
+# needs a complete dataset-metadata list uses it, and names(full_keys) is the
+# canonical key order.
+full_keys <- list(
+  survey_name = "Antisemitic Attitudes in America 2026",
+  data_name = "AAA Ipsos (February-March 2026)",
+  vendor = "Ipsos KnowledgePanel Omnibus",
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04"),
+  field_period = "February-March 2026"
+)
+
+# ------------------------------------------------------------------------------
 # make_survey_data()
 # ------------------------------------------------------------------------------
 
