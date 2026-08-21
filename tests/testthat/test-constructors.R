@@ -1152,6 +1152,25 @@ test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 
   )
 })
 
+# Warning 26: phase-2 design column all NA within the phase-2 subset
+test_that("as_survey_twophase() warns when a phase-2 design column is all NA in the subset", {
+  df <- data.frame(
+    wt = rep(1, 10),
+    ph2 = c(rep(TRUE, 5), rep(FALSE, 5)),
+    ph2_str = rep(NA_character_, 10), # all NA within phase 2 rows
+    y = 1:10,
+    stringsAsFactors = FALSE
+  )
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  expect_warning(
+    d2 <- as_survey_twophase(phase1, strata2 = ph2_str, subset = ph2),
+    class = "surveycore_warning_phase2_all_na"
+  )
+  test_invariants(d2)
+  expect_true(S7::S7_inherits(d2, survey_twophase))
+  expect_identical(d2@variables$phase2$strata, "ph2_str")
+})
+
 
 # ── Error paths ───────────────────────────────────────────────────────────────
 
