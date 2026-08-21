@@ -1,9 +1,7 @@
 # surveycore GitHub Strategy
 
-**Version:** 2.0
+**Version:** 2.1
 **Status:** Decided — do not re-litigate without updating this document
-
----
 
 ## Quick Reference
 
@@ -18,11 +16,9 @@
 | CI | R-CMD-check required on `main` and `develop`; all PRs |
 | Release workflow | Use `/merge-main` |
 
----
+## Workflow tiers
 
-## Workflow Tiers
-
-Choose the tier based on change size. When in doubt, go one tier higher.
+Choose by change size. When in doubt, go one tier higher.
 
 | Tier | When to use | Workflow |
 |------|-------------|----------|
@@ -31,31 +27,7 @@ Choose the tier based on change size. When in doubt, go one tier higher.
 | **3 — Direct** | Clear bug fixes localized to 1–2 functions, test additions, roxygen changes | branch → `/r-implement` → `/commit-and-pr` |
 | **0 — Commit** | Typos, comments, `.gitignore`, README tweaks | direct commit to `develop` (no branch) |
 
-### Worked Examples
-
-Use these to calibrate. When in doubt about a tier, find the closest example below.
-
-**Tier 1 — New exported function `get_contrasts()`**
-New API surface, behavior not fully specified, multiple design choices (contrast coding, CI method, interaction with domain estimation). → spec → implementation plan → `/r-implement`
-
-**Tier 1 — Adding `method =` to `get_quantiles()` for interpolation strategy**
-Multiple valid approaches exist in the survey literature (linear, Type 7, Woodruff). Correct behavior is genuinely undecided until it's specified. Feels like "one argument" but it's actually a behavioral commitment. → Tier 1, not Tier 2.
-
-**Tier 2 — Adding `variance =` argument to `get_means()`**
-Behavior is obvious: let the caller pick Taylor vs. replicate variance when both are available. But the approach isn't: how does it interact with `survey_twophase`, what's the default, what error fires when the requested method isn't supported? Write an implementation plan to settle these before touching code. → implementation plan → `/r-implement`
-
-**Tier 2 → Tier 3 boundary — Adding `na.rm =` to `get_freqs()`**
-One new argument, behavior obvious (`TRUE` drops NA cells). But wiring it through all design paths and deciding whether NA gets its own frequency row or disappears entirely isn't obvious. → Tier 2 (plan first), not Tier 3.
-
-**Tier 3 — `get_means()` returns wrong SE when `nest = TRUE` is omitted on NHANES data**
-Clear bug, localized to the variance calculation in `R/variance-taylor.R`. The correct behavior is known (match `survey::svymean`). Fix the logic, add a regression test. → branch → `/r-implement` → `/commit-and-pr`
-
-**Tier 0 — Fix a typo in the `@param fpc` description**
-One-word change in roxygen comment. No branch, no PR needed. → direct commit to `develop`
-
----
-
-## Branching Model
+## Branching model
 
 ```
 main          ← always stable; every commit is a tagged release
@@ -68,8 +40,6 @@ hotfix/*      ← urgent fixes only; branch from main
 
 Feature branches always cut from `develop` and merge back to `develop`.
 Never open a feature PR directly against `main`.
-
-Hotfixes branch from `main`, merge to `main`, then also merge to `develop` to stay in sync.
 
 ### What gets a branch vs. direct push
 
@@ -84,9 +54,7 @@ Hotfixes branch from `main`, merge to `main`, then also merge to `develop` to st
 | `.Rbuildignore` / `.gitignore` | No |
 | Version bump + NEWS.md (release prep) | Direct commit to `develop` |
 
----
-
-## Branch Naming
+## Branch naming
 
 Format: `{type}/{short-description}`
 
@@ -100,13 +68,9 @@ Format: `{type}/{short-description}`
 | `chore/` | `develop` | Maintenance (CI config, build tooling) |
 | `refactor/` | `develop` | Internal restructuring, no behavioral change |
 
----
+## Commit format (Conventional Commits)
 
-## Commit Format (Conventional Commits)
-
-```
-{type}({scope}): {short description}
-```
+`{type}({scope}): {short description}`
 
 | Type | Use for |
 |------|---------|
@@ -117,48 +81,20 @@ Format: `{type}/{short-description}`
 | `chore` | CI config, DESCRIPTION, NAMESPACE, build tooling |
 | `refactor` | Internal restructuring with no behavioral change |
 
-Scopes: `classes`, `constructors`, `metadata`, `validators`, `variance`, `analysis`, `utils`
+Scopes: `classes`, `constructors`, `metadata`, `validators`, `variance`,
+`analysis`, `utils`
 
-Squash merge commit = one conventional commit summarizing the whole PR:
-```
-feat(analysis): implement survey_glm() with Wald confidence intervals (#42)
-```
+## Merge strategy and versioning
 
----
-
-## Merge Strategy
-
-**Feature → develop:** Squash and merge. `develop` history = one squash commit per
-feature PR.
-
-**Develop → main (releases only):** Regular merge. `main` history = one merge commit per
-release, plus the feature-level squash commits from develop. This avoids the SHA
-divergence that squash merges create between the two branches.
-
-GitHub settings: allow both squash merges and merge commits; auto-delete head branches.
+- **Feature → develop:** squash merge; the squash commit is one conventional
+  commit summarizing the PR, e.g.
+  `feat(analysis): implement survey_glm() with Wald confidence intervals (#42)`.
+- **Develop → main (releases only):** regular merge — avoids SHA divergence
+  between the branches.
+- Versions: `X.Y.Z.9000` during development on `develop`; `X.Y.Z` on `main`
+  after release. Releases via `/merge-main`.
 
 ---
-
-## Versioning
-
-| Context | Format | Example |
-|---------|--------|---------|
-| Active development on `develop` | `X.Y.Z.9000` | `0.3.0.9000` |
-| Released on `main` | `X.Y.Z` | `0.3.0` |
-
-| Tag | Milestone |
-|-----|-----------|
-| `v0.1.0` | Phase 0 complete — core infrastructure |
-| `v0.2.0` | Phase 0.5 complete — surveytidy |
-| `v0.3.0` | Phase 1 complete — estimation functions |
-| `v0.4.0` | Phase 2 complete — regression |
-| `v1.0.0` | Stable API, CRAN submission |
-
----
-
-## Release Preparation
-
-Use `/merge-main`. It handles: NEWS.md update → version bump → `devtools::check()` →
-PR `develop` → `main` → tag → post-release `.9000` bump.
-
-PR template for feature PRs lives in `.github/PULL_REQUEST_TEMPLATE.md`.
+Worked tier examples (which tier for which change) and release detail:
+`.claude/references/github-strategy-detail.md`. Read it when choosing a tier
+for a borderline change or preparing a release.

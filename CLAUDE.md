@@ -82,3 +82,4 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
 - `archive/` — completed phase docs, one directory per shipped feature (spec, impl plan, decisions); `ls archive/` lists them and `git log` has the PR numbers
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
+- `.claude/references/` — worked examples and rationale moved out of `.claude/rules/`; read when a rule's application is unclear
