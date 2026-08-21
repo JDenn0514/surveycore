@@ -63,6 +63,21 @@ Dispatch `planner`:
 > - Acceptance criteria are observable outcomes (test names, metric values), not implementation hints
 > - Write surfaces of concurrent PRs do not overlap
 
+## Review-loop budget (applies to Stages 2 and 3)
+
+Measured cost of unbounded loops: one feature ran 7 review passes (~$300
+API-equivalent). These rules cap the loop:
+
+1. **Maximum 3 passes** per review stage. If findings remain open after
+   pass 3, HOLD — ask the user instead of running pass 4.
+2. **Pass 1 is the only full-panel pass** (all lenses, whole document).
+3. **Passes 2+ are delta passes**: at most 2 Explore agents. They review
+   ONLY the sections changed by the resolver (the resolver lists changed
+   section headings at the top of its response) plus the specific findings
+   they verify. They do not re-read the whole document.
+4. **Early exit**: a pass whose findings require no change to the artifact
+   ends the loop — the verdict is PASS.
+
 ## Stage 2 — Plan review
 
 Dispatch 5 Explore subagents in parallel:
@@ -83,7 +98,7 @@ Aggregate into `plan-review.md` with verdict PASS / FAIL / NEEDS-DECISION per
 BIG mode (>8 findings) or SMALL mode (≤8), per
 `.claude/skills/spec-workflow/references/stage-4-resolve.md`.
 
-Loop until plan-review.md verdict=PASS.
+Loop until plan-review.md verdict=PASS. Respect the Review-loop budget above.
 
 ## Stage 4 — Freeze
 
