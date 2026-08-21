@@ -103,7 +103,7 @@ For each PR in the batch, dispatch `builder` agent with `isolation: "worktree"`:
 > Write surface: {exact files from plan}
 > Tasks: {tasks from plan}
 > Acceptance criteria: {from plan}
-> Read: .claude/agents/builder.md, .claude/rules/, r-package-profile.md
+> Read: .claude/agents/builder.md, r-package-profile.md (rules auto-load — do not re-read .claude/rules/)
 > DO NOT read test-spec.md. DO NOT read any other PR's implementation.md.
 
 Each builder returns `implementation.md` with the PR's write surface changes merged back via the worktree protocol.
@@ -144,7 +144,7 @@ For each PR with audit verdict=PASS, dispatch `reviewer`:
 
 > PR: {number} — {slug}
 > All artifacts: spec.md, test-spec.md, implementation.md, audit.md, comprehension.md (if present)
-> Read: .claude/agents/reviewer.md, ALL references from pipeline-shared
+> Read: .claude/agents/reviewer.md, plus signals.md, artifact-schemas.md, and r-package-profile.md from pipeline-shared/references
 
 Reviewer returns `review.md` with verdict PASS / BLOCK / STOP.
 

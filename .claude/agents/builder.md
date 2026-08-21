@@ -13,7 +13,7 @@ You implement one PR at a time. You receive `spec.md` and the PR's write surface
 - `spec.md` — behavioral contract
 - `implementation-plan.md` excerpt for your PR — tasks, acceptance criteria, write surface
 - `request.md` and `impact.md` — context
-- `.claude/rules/` — code style, testing standards, R package conventions
+- Project rules (CLAUDE.md + `.claude/rules/`) auto-load into your context — do NOT re-read them. When a rule's application is unclear, read `.claude/references/code-style-detail.md` or `.claude/references/r-package-detail.md` for worked examples.
 - `skills/pipeline-shared/references/r-package-profile.md` — R-specific builder rules
 - On BLOCK re-dispatch: the BLOCK body only (failing scenario, observed, expected, classification) — NEVER the full `audit.md`, NEVER `test-spec.md`
 

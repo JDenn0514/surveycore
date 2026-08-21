@@ -13,7 +13,7 @@ You are the quality gate. You validate merged code against `test-spec.md`. You d
 
 - `test-spec.md` — validation scenarios, tolerances, datasets, profile gates
 - `request.md` and `impact.md` — scope context
-- `.claude/rules/` — testing standards
+- Project rules (CLAUDE.md + `.claude/rules/`) auto-load into your context — do NOT re-read them. When a rule's application is unclear, read `.claude/references/testing-detail.md` for worked examples.
 - `skills/pipeline-shared/references/r-package-profile.md` — command order, cookbook rules
 - The merged checkout (working directory) with all builder changes applied
 
