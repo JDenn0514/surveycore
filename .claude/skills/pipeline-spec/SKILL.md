@@ -167,6 +167,21 @@ Dispatch `planner`:
 On return, verify both artifacts exist and contain all required sections
 (mechanical check — not a quality review). Append `DRAFT` to `status.md`.
 
+## Review-loop budget (applies to Stages 2/2r and 3/3r)
+
+Measured cost of unbounded loops: one feature ran 7 review passes (~$300
+API-equivalent). These rules cap the loop:
+
+1. **Maximum 3 passes** per review stage. If findings remain open after
+   pass 3, HOLD — ask the user instead of running pass 4.
+2. **Pass 1 is the only full-panel pass** (all lenses, whole document).
+3. **Passes 2+ are delta passes**: at most 2 Explore agents. They review
+   ONLY the sections changed by the resolver (the resolver lists changed
+   section headings at the top of its response) plus the specific findings
+   they verify. They do not re-read the whole document.
+4. **Early exit**: a pass whose findings require no change to the artifact
+   ends the loop — the verdict is PASS.
+
 ## Stage 2 — Methods review
 
 Read `.claude/skills/spec-workflow/references/stage-2-methods-review.md` for the full
@@ -174,7 +189,9 @@ protocol. Self-assess applicability using the Trigger Condition in that file.
 
 If applicable, dispatch 5–6 Explore subagents in parallel (one per lens),
 collecting results into `methods-review.md` in the run directory. Include
-Lens 6 (Literature Cross-Check) if `comprehension.md` exists.
+Lens 6 (Literature Cross-Check) if `comprehension.md` exists. Pass
+`model: "sonnet"` on every lens dispatch — lens agents scan a document
+against one named criterion and do not need the session model.
 
 Aggregate findings into a verdict — PASS / FAIL / NEEDS-DECISION — per
 `.claude/skills/pipeline-shared/references/signals.md §Review verdicts`.
@@ -192,13 +209,16 @@ Two modes:
 - **JUDGMENT_CALL per-issue**: Ask user via `AskUserQuestion`, one at a time.
   Record resolution in `decisions.md`. Apply fix. Mini-pass affected lens.
 
-Loop until `methods-review.md` verdict = PASS.
+Loop until `methods-review.md` verdict = PASS. Respect the Review-loop
+budget above.
 
 ## Stage 3 — Spec review
 
 Read `.claude/skills/spec-workflow/references/stage-3-review.md` for the full protocol.
 
-Dispatch 6 Explore subagents in parallel (one per lens). Aggregate into
+Dispatch 6 Explore subagents in parallel (one per lens). Pass
+`model: "sonnet"` on every lens dispatch — lens agents scan a document
+against one named criterion and do not need the session model. Aggregate into
 `spec-review.md` in the run directory. Verdict rules: signals.md §Review
 verdicts.
 
@@ -209,7 +229,7 @@ Read `.claude/skills/spec-workflow/references/stage-4-resolve.md` for the full p
 for this stage.)
 
 Use BIG mode (>8 findings) or SMALL mode (≤8 findings). Loop until
-`spec-review.md` verdict = PASS.
+`spec-review.md` verdict = PASS. Respect the Review-loop budget above.
 
 ## Stage 4 — Freeze & advance
 

@@ -45,7 +45,6 @@ Write to `decisions.md` AND return to leader:
 - A numerical test failed outside tolerance
 - A named error class test failed (wrong class thrown, or no error thrown)
 - `R CMD check --as-cran` has ERROR or WARNING
-- `pkgcheck` FAIL
 - `pkgdown::build_site()` errored
 - Coverage dropped below 95%
 

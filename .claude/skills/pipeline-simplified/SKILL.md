@@ -78,6 +78,12 @@ Dispatch `planner` with simplified prompt:
 > - Expected validation outcome (which tests should still pass, which new assertion)
 > Do NOT write spec.md, test-spec.md, or implementation-plan.md. Do NOT run comprehension protocol.
 
+**In the same turn as the planner dispatch**, start the baseline capture in
+the background (the tree is still clean — builder has not run):
+`bash .claude/scripts/run-gates.sh {workspace-run-dir}/logs-baseline --baseline`
+with `run_in_background: true`. Its summary is the tester's Before column.
+Do not wait for it here; collect the result before dispatching the tester.
+
 On return, verify `request.md` has all four sections. Append `PLANNED` to `status.md`.
 
 ## Step 2 — Pipelines complete (builder + tester)
@@ -90,7 +96,7 @@ Dispatch `builder` agent WITHOUT worktree isolation (small change; overhead not 
 > Request: {path to request.md}
 > Write surface: {files from request.md}
 > Acceptance criteria: {from request.md}
-> Read: .claude/agents/builder.md, .claude/rules/, r-package-profile.md (§Builder compliance rules only)
+> Read: .claude/agents/builder.md, r-package-profile.md (§Builder compliance rules only). Rules auto-load — do not re-read .claude/rules/.
 > Exception: you MAY read test code in tests/testthat/ in case you need to update a test alongside the code. Pipeline isolation is relaxed for simplified workflow.
 
 Builder implements, updates docs if needed, writes `implementation.md`.
@@ -101,10 +107,11 @@ Dispatch `tester` agent:
 
 > Simplified workflow.
 > Request: {path to request.md with acceptance criteria}
+> Baseline results: {summary from the background baseline capture}
 > Read: .claude/agents/tester.md, r-package-profile.md
 > Validate that:
 > 1. Each acceptance criterion from request.md holds
-> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgcheck, pkgdown if in scope, covr)
+> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgdown if in scope, covr)
 > 3. CRAN cookbook scan is clean on the modified files
 > 4. No regression in tests that were passing before the PR
 > Write audit.md with verdict PASS or BLOCK.

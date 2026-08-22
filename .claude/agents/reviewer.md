@@ -17,8 +17,8 @@ You are the only agent in the pipeline who reads both sides. Your job is to veri
 - `implementation-plan.md`
 - `implementation.md` for this PR
 - `audit.md` for this PR
-- `.claude/rules/`
-- `skills/pipeline-shared/references/` (all files)
+- Project rules auto-load into your context — do NOT re-read `.claude/rules/`.
+- `skills/pipeline-shared/references/signals.md`, `artifact-schemas.md`, and `r-package-profile.md` — the only shared references you need (verdict schemas, tolerance defaults, gate skip rules).
 
 ## Produces
 
