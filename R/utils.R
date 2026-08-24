@@ -383,15 +383,17 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # @param key       character(1). One of .dataset_metadata_keys.
 # @param value     The candidate value (never NULL — callers screen NULL first,
 #                  because NULL means "delete", not "bad value").
-# @param mode      "error" raises the typed error for the key; "skip" returns
-#                  NULL instead, for the warn-and-skip callers.
+# @param mode      "error" raises the typed error for the key. The "skip"
+#                  branch, which returns NULL instead for the warn-and-skip
+#                  callers, arrives with its first caller in the setter and
+#                  promotion work; only "error" behaves here.
 # @param key_style How the error message names the offender. "val" renders the
 #                  key as a value ({.val {key}}); "arg" renders it as a
 #                  function argument ({.arg {key}}), which is what a wrapper
 #                  whose argument name IS the key needs.
 # @param call      Passed to cli_abort() so the error reports the user-facing
 #                  caller rather than this helper.
-# @return The checked value on success; NULL on failure when mode = "skip".
+# @return The checked value on success; an error otherwise.
 #
 # Date branch note: this branch currently accepts a non-NA Date of length 1
 # only. Strict-ISO character coercion is a setter service and arrives with the
@@ -414,9 +416,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
       !is.na(value)
     if (valid) {
       return(value)
-    }
-    if (mode == "skip") {
-      return(NULL)
     }
     lead <- if (key_style == "arg") "{.arg {key}}" else "{.val {key}}"
     bullets <- c(
@@ -441,9 +440,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   valid <- is.character(value) && length(value) == 1L && !is.na(value)
   if (valid) {
     return(value)
-  }
-  if (mode == "skip") {
-    return(NULL)
   }
   cli::cli_abort(
     c(
