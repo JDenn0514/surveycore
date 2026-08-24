@@ -178,12 +178,16 @@ make_stale_metadata_design <- function(
 #' attributes on the input data: attribute promotion is a separate contract, and
 #' a fixture that seeded state through attributes would silently test it.
 #'
-#' `state` values:
+#' `state` values. The two single-key states are drawn from `full_keys` the
+#' same way, and they are independent of each other: `data_name` and
+#' `survey_name` are separate keys, so neither state implies the other.
 #' \describe{
 #'   \item{`"none"`}{Nothing set. `@dataset_metadata` is `list()`.}
+#'   \item{`"data_name"`}{`data_name` alone — a one-key case with no
+#'     `survey_name`.}
+#'   \item{`"survey_name"`}{`survey_name` alone — a one-key case with no
+#'     `data_name`.}
 #'   \item{`"full"`}{All six canonical keys, from `full_keys`.}
-#'   \item{`"name_only"`}{`survey_name` alone — the one-key case, and the
-#'     display-name fallback (no `data_name`).}
 #'   \item{`"partial"`}{`data_name`, `vendor`, `field_start`, and
 #'     `field_period` — no `survey_name` and only one of the two dates.}
 #' }
@@ -191,13 +195,14 @@ make_stale_metadata_design <- function(
 #' @param design One of "taylor", "replicate", "twophase", "nonprob", or
 #'   "nonprob_rep". All five are supported so every design class, including a
 #'   nonprob design with replicate weights, can be exercised.
-#' @param state  One of "none", "full", "name_only", or "partial".
+#' @param state  One of "none", "data_name", "survey_name", "full", or
+#'   "partial".
 #' @param seed   Random seed. Default 42.
 #' @return A survey design object of the requested class.
 #' @keywords internal
 make_dataset_design <- function(
   design = c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep"),
-  state = c("none", "full", "name_only", "partial"),
+  state = c("none", "data_name", "survey_name", "full", "partial"),
   seed = 42L
 ) {
   design <- match.arg(design)
@@ -263,8 +268,9 @@ make_dataset_design <- function(
   keys <- switch(
     state,
     "none" = NULL,
+    "data_name" = full_keys["data_name"],
+    "survey_name" = full_keys["survey_name"],
     "full" = full_keys,
-    "name_only" = full_keys["survey_name"],
     "partial" = full_keys[c(
       "data_name",
       "vendor",

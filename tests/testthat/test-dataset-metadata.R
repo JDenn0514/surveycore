@@ -1989,7 +1989,7 @@ test_that("bulk deletion via key and a NULL value works on a design", {
 })
 
 test_that("bulk deletion tolerates an absent key among the names", {
-  d <- make_dataset_design("taylor", "name_only")
+  d <- make_dataset_design("taylor", "survey_name")
   test_invariants(d)
 
   d <- set_dataset_metadata(d, key = c("vendor", "data_name"), value = NULL)
@@ -2238,7 +2238,7 @@ test_that("one date alone never triggers the pair check on a design", {
 })
 
 test_that("a rejected value in a multi-key call writes nothing on a design", {
-  d <- make_dataset_design("taylor", "name_only")
+  d <- make_dataset_design("taylor", "survey_name")
   test_invariants(d)
 
   expect_error(
@@ -2361,7 +2361,8 @@ test_that("make_dataset_design() applies each state through the setter", {
   d_none <- make_dataset_design("taylor", "none")
   test_invariants(d_none)
   d_full <- make_dataset_design("taylor", "full")
-  d_name <- make_dataset_design("taylor", "name_only")
+  d_name <- make_dataset_design("taylor", "survey_name")
+  d_data <- make_dataset_design("taylor", "data_name")
   d_part <- make_dataset_design("taylor", "partial")
 
   expect_identical(extract_dataset_metadata(d_none), list())
@@ -2370,10 +2371,22 @@ test_that("make_dataset_design() applies each state through the setter", {
     extract_dataset_metadata(d_name),
     full_keys["survey_name"]
   )
+  # The two single-key states are independent: neither sets the other's key.
+  expect_identical(
+    extract_dataset_metadata(d_data),
+    full_keys["data_name"]
+  )
   expect_identical(
     names(extract_dataset_metadata(d_part)),
     c("data_name", "vendor", "field_start", "field_period")
   )
+})
+
+test_that("make_dataset_design() applies a state on a nonprob_rep design", {
+  d <- make_dataset_design("nonprob_rep", "data_name")
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
 })
 
 # ── 16. set_dataset_metadata() — data-frame write-path guarantees ─────────────
