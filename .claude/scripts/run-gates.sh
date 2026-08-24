@@ -113,7 +113,12 @@ else
   # --- Gate 5: R CMD check --as-cran ------------------------------------
   log="$LOGDIR/gate-5-check.log"
   if [ -n "$TARBALL" ]; then
-    R CMD check --as-cran "$TARBALL" > "$log" 2>&1
+    # --no-manual mirrors CI (.github/workflows/R-CMD-check.yaml passes
+    # c("--as-cran", "--no-manual")). Without it the PDF-manual step needs a
+    # LaTeX toolchain; where none is installed it raises 1 ERROR + 1 WARNING
+    # and leaves surveycore-manual.tex behind as a third NOTE — none of which
+    # CI ever sees, and none of which a builder can fix.
+    R CMD check --as-cran --no-manual "$TARBALL" > "$log" 2>&1
     CHECKDIR=$(ls -dt ./*.Rcheck 2>/dev/null | head -1)
     [ -n "$CHECKDIR" ] && cp "$CHECKDIR/00check.log" "$LOGDIR/gate-5-00check.log" 2>/dev/null
     status_line=$(grep -E '^Status:' "$log" | tail -1)
