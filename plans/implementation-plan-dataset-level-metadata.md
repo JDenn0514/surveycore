@@ -463,7 +463,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
   - **Pipeline split**: recommended (ten new exported functions)
 
-- [ ] PR 5: `feature/dataset-metadata-promotion` — construction promotion in three constructors, the nonprob weighting-history fix, DM-7 rows
+- [x] PR 5: `feature/dataset-metadata-promotion` — construction promotion in three constructors, the nonprob weighting-history fix, DM-7 rows
 
   - **Tasks** (8)
     1. Add the DM-7a, DM-7b, DM-7c, DM-7d rows to `plans/error-messages.md` (moved here from the class PR per plan-review S4 — this PR's code first raises them). Extend the file's `## Coverage Map` with the owning test files for the four rows (plan-review 3S16).
