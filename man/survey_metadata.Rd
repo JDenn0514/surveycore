@@ -15,7 +15,8 @@ survey_metadata(
   higher_is = list(),
   reverse_coded = list(),
   transformations = list(),
-  weighting_history = list()
+  weighting_history = list(),
+  dataset_metadata = list()
 )
 }
 \arguments{
@@ -61,6 +62,23 @@ a \pkg{surveywts} function and contains the operation name,
 parameters, effective sample size before/after, and design effect.
 Always \code{list()} until a \pkg{surveywts} weighting function is
 applied. Reserved for Phase 2.5.}
+
+\item{dataset_metadata}{A named list of whole-dataset facts. The key
+vocabulary is \strong{closed} — exactly six keys are valid, each with a
+declared type:
+\itemize{
+\item \code{survey_name} — \code{character(1)}, the full formal survey name.
+\item \code{data_name} — \code{character(1)}, the display label for this dataset.
+\item \code{vendor} — \code{character(1)}, the fielding vendor.
+\item \code{field_start} — \code{Date} of length 1, the first day in the field.
+\item \code{field_end} — \code{Date} of length 1, the last day in the field.
+\item \code{field_period} — \code{character(1)}, the prose field period.
+}
+
+No value may be \code{NA} and no element may be \code{NULL}. Any other key is
+rejected. \code{survey_name} and \code{data_name} are independent: no function
+derives one from the other. Use \code{set_dataset_metadata()} to write keys
+and \code{extract_dataset_metadata()} to read them; the default is \code{list()}.}
 }
 \value{
 A \code{survey_metadata} object.
@@ -83,6 +101,10 @@ m <- survey_metadata(
 )
 m@variable_labels$age
 m@value_labels$sex
+
+# Dataset-level metadata (closed six-key vocabulary)
+m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+m@dataset_metadata$vendor
 }
 \seealso{
 Other metadata:

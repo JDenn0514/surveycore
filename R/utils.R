@@ -357,6 +357,108 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
+# ── Internal: dataset-level metadata ──────────────────────────────────────────
+#
+# The dataset metadata key vocabulary is CLOSED: exactly these six keys are
+# valid, and this vector is their canonical order. Read by the survey_metadata
+# validator (R/core-classes.R) and by the dataset metadata setters and
+# extractors (R/core-metadata.R), so it lives here per the 2+-files rule.
+.dataset_metadata_keys <- c(
+  "survey_name",
+  "data_name",
+  "vendor",
+  "field_start",
+  "field_end",
+  "field_period"
+)
+
+# The two date-typed keys. The other four keys are character(1).
+.dataset_date_keys <- c("field_start", "field_end")
+
+
+# The single valid-key value checker for dataset metadata. Every path that
+# writes or resolves a dataset metadata value goes through here, so the per-key
+# type rules exist in exactly one place.
+#
+# @param key       character(1). One of .dataset_metadata_keys.
+# @param value     The candidate value (never NULL — callers screen NULL first,
+#                  because NULL means "delete", not "bad value").
+# @param mode      "error" raises the typed error for the key. The "skip"
+#                  branch, which returns NULL instead for the warn-and-skip
+#                  callers, arrives with its first caller in the setter and
+#                  promotion work; only "error" behaves here.
+# @param key_style How the error message names the offender. "val" renders the
+#                  key as a value ({.val {key}}); "arg" renders it as a
+#                  function argument ({.arg {key}}), which is what a wrapper
+#                  whose argument name IS the key needs.
+# @param call      Passed to cli_abort() so the error reports the user-facing
+#                  caller rather than this helper.
+# @return The checked value on success; an error otherwise.
+#
+# Date branch note: this branch currently accepts a non-NA Date of length 1
+# only. Strict-ISO character coercion is a setter service and arrives with the
+# setter work. The survey_metadata validator narrows to Date on its own side
+# and must keep doing so after that widening.
+#' @noRd
+.check_dataset_key_value <- function(
+  key,
+  value,
+  mode = c("error", "skip"),
+  key_style = c("val", "arg"),
+  call = rlang::caller_env()
+) {
+  mode <- match.arg(mode)
+  key_style <- match.arg(key_style)
+
+  if (key %in% .dataset_date_keys) {
+    valid <- inherits(value, "Date") &&
+      length(value) == 1L &&
+      !is.na(value)
+    if (valid) {
+      return(value)
+    }
+    lead <- if (key_style == "arg") "{.arg {key}}" else "{.val {key}}"
+    bullets <- c(
+      "x" = paste0(
+        lead,
+        " must be a Date scalar or an ISO 8601 date string ",
+        "(YYYY-MM-DD), not {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "i" = "Got {.val {value}}."
+    )
+    if (length(value) == 1L && is.na(value)) {
+      bullets <- c(bullets, "i" = "The value is NA.")
+    }
+    cli::cli_abort(
+      bullets,
+      class = "surveycore_error_field_date_invalid",
+      call = call
+    )
+  }
+
+  valid <- is.character(value) && length(value) == 1L && !is.na(value)
+  if (valid) {
+    return(value)
+  }
+  cli::cli_abort(
+    c(
+      "x" = paste0(
+        "Dataset metadata key {.val {key}} must be a single non-NA ",
+        "character string, not {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "v" = paste0(
+        "Supply a single non-NA character value, or {.code NULL} to ",
+        "delete the key."
+      )
+    ),
+    class = "surveycore_error_dataset_metadata_bad_type",
+    call = call
+  )
+}
+
+
 # ── .build_cluster_matrices() ───────────────────────────────────────────────
 #
 # Build the clusters, strata, and FPC matrices needed by the multi-stage
