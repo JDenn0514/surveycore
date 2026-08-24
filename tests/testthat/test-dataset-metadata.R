@@ -1420,3 +1420,134 @@ test_that("the dates alias resolves before the duplicate check on a frame", {
     class = "surveycore_error_dataset_metadata_duplicate_key"
   )
 })
+
+# ── 12. set_dataset_metadata() — unknown keys ─────────────────────────────────
+
+test_that("set_dataset_metadata() rejects an unknown key on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, mode = "web"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, mode = "web"))
+})
+
+test_that("set_dataset_metadata() rejects an unknown key on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, mode = "web"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("an unknown key with the wrong case shows the did-you-mean hint", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, Vendor = "Ipsos"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, Vendor = "Ipsos"))
+})
+
+test_that("a misspelled unknown key shows the did-you-mean hint", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vender = "Ipsos"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, vender = "Ipsos"))
+})
+
+test_that("the did-you-mean hint also fires on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_snapshot(error = TRUE, set_dataset_metadata(df, vender = "Ipsos"))
+})
+
+test_that("a non-NULL dates value is an unknown key naming field_period", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, dates = "February-March 2026"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, dates = "February-March 2026")
+  )
+})
+
+test_that("a non-NULL dates value is an unknown key on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, dates = "February-March 2026"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("an unknown key equal to a data column leaves the column alone", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  before <- df$y1
+
+  expect_error(
+    set_dataset_metadata(df, y1 = "not a key"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_identical(df$y1, before)
+  expect_null(attr(df, "y1", exact = TRUE))
+})
+
+test_that("a non-character key is coerced and then fails as unknown", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  # A non-character `key` passes through as.character() and then fails the
+  # closed-vocabulary check, matching the extractor's convention.
+  expect_error(
+    set_dataset_metadata(d, key = 1L, value = list("Ipsos")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, key = 1L, value = list("Ipsos"))
+  )
+})
+
+test_that("a non-character key is coerced and fails as unknown on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, key = 1L, value = list("Ipsos")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("the extractor renders the completed unknown-key hint on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  expect_error(
+    extract_dataset_metadata(d, vender),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(error = TRUE, extract_dataset_metadata(d, vender))
+})
+
+test_that("the extractor renders the completed unknown-key hint on a frame", {
+  df <- make_dataset_df()
+
+  expect_error(
+    extract_dataset_metadata(df, vender),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_snapshot(error = TRUE, extract_dataset_metadata(df, vender))
+})

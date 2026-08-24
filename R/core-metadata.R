@@ -1030,16 +1030,57 @@ extract_metadata <- function(x, ..., fill = NULL) {
   .read_dataset_attributes(x)$values
 }
 
+# The nearest valid dataset key within Levenshtein distance 1 of the lowercased
+# candidate, or NULL when nothing is that close. Lowercasing is what catches a
+# capitalization slip such as `Vendor`; distance 1 catches `vender`.
+#
+# @param key character(1). The rejected key name.
+# @return character(1) or NULL.
+.dataset_key_suggestion <- function(key) {
+  distances <- as.integer(
+    utils::adist(tolower(key), .dataset_metadata_keys)
+  )
+  if (min(distances) > 1L) {
+    return(NULL)
+  }
+  .dataset_metadata_keys[[which.min(distances)]]
+}
+
 # Raise the unknown-key error for a requested or supplied dataset key. The
 # parameter is named `key` so the message template reads as the error table
 # states it.
-.abort_dataset_key_unknown <- function(key, call) {
+#
+# Two bullets are always present: the rejection and the valid-key list. Two
+# layers sit on top of them:
+#   * the did-you-mean hint, whenever the key is a near miss;
+#   * the legacy-`dates` explanation, which only a setter can trigger, because
+#     it needs a non-NULL value. `dates = NULL` never reaches here — it resolves
+#     to field_period. An extractor has no value at all, so it never sets
+#     `legacy_alias`.
+.abort_dataset_key_unknown <- function(key, call, legacy_alias = FALSE) {
   valid_keys <- .dataset_metadata_keys
+  bullets <- c(
+    "x" = "{.val {key}} is not a dataset metadata key.",
+    "i" = "Valid keys: {.val {valid_keys}}."
+  )
+
+  suggestion <- .dataset_key_suggestion(key)
+  if (!is.null(suggestion)) {
+    bullets <- c(bullets, "i" = "Did you mean {.val {suggestion}}?")
+  }
+
+  if (legacy_alias) {
+    bullets <- c(
+      bullets,
+      "i" = paste0(
+        "The legacy {.val dates} attribute maps to {.val field_period}."
+      ),
+      "v" = "Use {.fn set_field_period}, or {.code dates = NULL} to delete."
+    )
+  }
+
   cli::cli_abort(
-    c(
-      "x" = "{.val {key}} is not a dataset metadata key.",
-      "i" = "Valid keys: {.val {valid_keys}}."
-    ),
+    bullets,
     class = "surveycore_error_dataset_key_unknown",
     call = call
   )
@@ -1342,6 +1383,18 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
       ),
       class = "surveycore_error_dataset_metadata_duplicate_key",
       call = call
+    )
+  }
+
+  # Rule 10: every key name is one of the six. A `dates` key surviving the
+  # alias step necessarily carries a non-NULL value, which is the condition the
+  # legacy explanation reports.
+  unknown <- setdiff(keys, .dataset_metadata_keys)
+  if (length(unknown) > 0L) {
+    .abort_dataset_key_unknown(
+      unknown[[1L]],
+      call,
+      legacy_alias = identical(unknown[[1L]], .dataset_legacy_period_attr)
     )
   }
 

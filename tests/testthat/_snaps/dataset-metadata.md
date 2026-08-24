@@ -200,3 +200,82 @@
       x Duplicate dataset metadata key: "field_period".
       i Each key must appear exactly once.
 
+# set_dataset_metadata() rejects an unknown key on a design
+
+    Code
+      set_dataset_metadata(d, mode = "web")
+    Condition
+      Error:
+      x "mode" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
+# an unknown key with the wrong case shows the did-you-mean hint
+
+    Code
+      set_dataset_metadata(d, Vendor = "Ipsos")
+    Condition
+      Error:
+      x "Vendor" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# a misspelled unknown key shows the did-you-mean hint
+
+    Code
+      set_dataset_metadata(d, vender = "Ipsos")
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# the did-you-mean hint also fires on a frame
+
+    Code
+      set_dataset_metadata(df, vender = "Ipsos")
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# a non-NULL dates value is an unknown key naming field_period
+
+    Code
+      set_dataset_metadata(d, dates = "February-March 2026")
+    Condition
+      Error:
+      x "dates" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i The legacy "dates" attribute maps to "field_period".
+      v Use `set_field_period()`, or `dates = NULL` to delete.
+
+# a non-character key is coerced and then fails as unknown
+
+    Code
+      set_dataset_metadata(d, key = 1L, value = list("Ipsos"))
+    Condition
+      Error:
+      x "1" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
+# the extractor renders the completed unknown-key hint on a design
+
+    Code
+      extract_dataset_metadata(d, vender)
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# the extractor renders the completed unknown-key hint on a frame
+
+    Code
+      extract_dataset_metadata(df, vender)
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
