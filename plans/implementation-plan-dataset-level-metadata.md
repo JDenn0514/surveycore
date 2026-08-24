@@ -329,7 +329,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
   - **Pipeline split**: recommended (class contract change; new validator behavior)
 
-- [ ] PR 2: `feature/dataset-metadata-read-path` — guarded reader, date coercion, attribute reader, fill widening, and `extract_dataset_metadata()`
+- [x] PR 2: `feature/dataset-metadata-read-path` — guarded reader, date coercion, attribute reader, fill widening, and `extract_dataset_metadata()`
 
   - **Tasks** (10)
     1. Add fixtures `make_dataset_df()` and `make_stale_metadata_design()` to `tests/testthat/helper-test-data.R` (each defined once; `make_stale_metadata_design()` supports all four design classes per test-spec §2). Create `tests/testthat/test-dataset-metadata.R` with the B0 fixture guard; verify B0 passes.
