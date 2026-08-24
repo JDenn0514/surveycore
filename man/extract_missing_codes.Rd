@@ -52,6 +52,7 @@ extract_missing_codes(d, ridageyr, format = "data_frame")
 
 Other metadata:
 \code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_metadata]{extract_metadata()}},
 \code{\link[=extract_question_preface]{extract_question_preface()}},

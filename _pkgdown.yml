@@ -121,6 +121,7 @@ reference:
       - extract_higher_is
       - extract_reverse_coded
       - extract_metadata
+      - extract_dataset_metadata
       - classify_question_type
       - survey_weighting_history
 

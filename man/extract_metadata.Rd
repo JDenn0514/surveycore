@@ -44,6 +44,7 @@ extract_metadata(d, fill = "include")
 \seealso{
 Other metadata:
 \code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_missing_codes]{extract_missing_codes()}},
 \code{\link[=extract_question_preface]{extract_question_preface()}},

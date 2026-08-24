@@ -67,6 +67,7 @@ classify_question_type(d, riagendr, ridageyr, bpxsy1)
 \code{\link[=set_sata]{set_sata()}}, \code{\link[=extract_sata]{extract_sata()}}, \code{\link[=set_question_preface]{set_question_preface()}}
 
 Other metadata:
+\code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_metadata]{extract_metadata()}},
 \code{\link[=extract_missing_codes]{extract_missing_codes()}},
