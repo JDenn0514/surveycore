@@ -67,6 +67,11 @@ the canonical order above.
 \code{survey_name} and \code{data_name} are independent. This function never reads one
 to fill or check the other.
 
+Each key also has a convenience setter that takes one value:
+\code{\link[=set_survey_name]{set_survey_name()}}, \code{\link[=set_data_name]{set_data_name()}}, \code{\link[=set_vendor]{set_vendor()}}, \code{\link[=set_field_dates]{set_field_dates()}},
+and \code{\link[=set_field_period]{set_field_period()}}. Use \code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}} to read the keys
+back.
+
 A \code{NULL} value deletes a key. Deleting a key that is not set does nothing and
 raises no condition. A zero-length value such as \code{character(0)} is not a
 deletion — it is an invalid value.
@@ -84,7 +89,8 @@ whole-object attributes, one per key, and the columns are left untouched —
 even a column whose name matches a key.
 
 \code{dates} is the pre-1.2.0 attribute name for the prose field period. Setting
-it is an error that points at \code{field_period}. Deleting it is allowed:
+it is an error that points at \code{field_period} and \code{\link[=set_field_period]{set_field_period()}}.
+Deleting it is allowed:
 \code{dates = NULL} is an alias for \code{field_period = NULL}, and either spelling
 removes both the \code{field_period} and the legacy \code{dates} attribute from a data
 frame.
@@ -130,27 +136,37 @@ extract_dataset_metadata(d, vendor)
 \seealso{
 Other metadata:
 \code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_data_name]{extract_data_name()}},
 \code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
+\code{\link[=extract_field_dates]{extract_field_dates()}},
+\code{\link[=extract_field_period]{extract_field_period()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_metadata]{extract_metadata()}},
 \code{\link[=extract_missing_codes]{extract_missing_codes()}},
 \code{\link[=extract_question_preface]{extract_question_preface()}},
 \code{\link[=extract_reverse_coded]{extract_reverse_coded()}},
 \code{\link[=extract_sata]{extract_sata()}},
+\code{\link[=extract_survey_name]{extract_survey_name()}},
 \code{\link[=extract_universe]{extract_universe()}},
 \code{\link[=extract_val_labels]{extract_val_labels()}},
 \code{\link[=extract_var_label]{extract_var_label()}},
 \code{\link[=extract_var_note]{extract_var_note()}},
+\code{\link[=extract_vendor]{extract_vendor()}},
 \code{\link[=infer_question_prefaces]{infer_question_prefaces()}},
+\code{\link[=set_data_name]{set_data_name()}},
+\code{\link[=set_field_dates]{set_field_dates()}},
+\code{\link[=set_field_period]{set_field_period()}},
 \code{\link[=set_higher_is]{set_higher_is()}},
 \code{\link[=set_missing_codes]{set_missing_codes()}},
 \code{\link[=set_question_preface]{set_question_preface()}},
 \code{\link[=set_reverse_coded]{set_reverse_coded()}},
 \code{\link[=set_sata]{set_sata()}},
+\code{\link[=set_survey_name]{set_survey_name()}},
 \code{\link[=set_universe]{set_universe()}},
 \code{\link[=set_val_labels]{set_val_labels()}},
 \code{\link[=set_var_label]{set_var_label()}},
 \code{\link[=set_var_note]{set_var_note()}},
+\code{\link[=set_vendor]{set_vendor()}},
 \code{\link[=survey_metadata]{survey_metadata()}},
 \code{\link[=survey_weighting_history]{survey_weighting_history()}}
 }
