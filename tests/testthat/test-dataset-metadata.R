@@ -1628,6 +1628,77 @@ test_that("a zero-length value is rejected on a frame", {
   )
 })
 
+test_that("a zero-length value is rejected for character keys on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  # character(0) is not a deletion for any of the three remaining character
+  # keys either. Only NULL deletes.
+  expect_error(
+    set_dataset_metadata(d, survey_name = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    set_dataset_metadata(d, data_name = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    set_dataset_metadata(d, field_period = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  # Atomic: none of the rejected calls wrote anything.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("a zero-length value is rejected for character keys on a frame", {
+  df <- make_dataset_df()
+
+  expect_error(
+    set_dataset_metadata(df, survey_name = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    set_dataset_metadata(df, data_name = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    set_dataset_metadata(df, field_period = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_identical(extract_dataset_metadata(df), full_keys)
+})
+
+test_that("a zero-length value is rejected for date keys on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  # The date keys carry their own class, so a zero-length Date is rejected as
+  # an invalid field date rather than as a bad type.
+  expect_error(
+    set_dataset_metadata(d, field_start = as.Date(character(0))),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_error(
+    set_dataset_metadata(d, field_end = as.Date(character(0))),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("a zero-length value is rejected for date keys on a frame", {
+  df <- make_dataset_df()
+
+  expect_error(
+    set_dataset_metadata(df, field_start = as.Date(character(0))),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_error(
+    set_dataset_metadata(df, field_end = as.Date(character(0))),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_identical(extract_dataset_metadata(df), full_keys)
+})
+
 test_that("a bare number for a date key is rejected", {
   d <- make_dataset_design("taylor", "none")
   test_invariants(d)
@@ -1937,6 +2008,46 @@ test_that("bulk deletion via key and a NULL value works on a frame", {
   )
 })
 
+test_that("bulk deletion mixes a present and an absent key on a design", {
+  d <- make_dataset_design("taylor", "partial")
+  test_invariants(d)
+
+  # The "partial" state sets `vendor` but not `survey_name`, so this one call
+  # covers both halves of the rule: the set key is deleted, and the absent key
+  # is a silent no-op rather than an error.
+  expect_no_condition(
+    result <- set_dataset_metadata(
+      d,
+      key = c("survey_name", "vendor"),
+      value = NULL
+    )
+  )
+
+  expect_identical(
+    extract_dataset_metadata(result),
+    full_keys[c("data_name", "field_start", "field_period")]
+  )
+})
+
+test_that("bulk deletion mixes a present and an absent key on a frame", {
+  df <- make_dataset_df(
+    keys = full_keys[c("data_name", "vendor", "field_start", "field_period")]
+  )
+
+  expect_no_condition(
+    result <- set_dataset_metadata(
+      df,
+      key = c("survey_name", "vendor"),
+      value = NULL
+    )
+  )
+
+  expect_identical(
+    extract_dataset_metadata(result),
+    full_keys[c("data_name", "field_start", "field_period")]
+  )
+})
+
 test_that("a NULL element inside a value list deletes that key", {
   d <- make_dataset_design("taylor", "full")
   test_invariants(d)
@@ -2051,6 +2162,38 @@ test_that("deleting the end date frees a later start on a frame", {
   stored <- extract_dataset_metadata(df)
   expect_identical(stored$field_start, as.Date("2026-06-01"))
   expect_false("field_end" %in% names(stored))
+})
+
+test_that("deleting the start date frees an earlier end on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  # The mirror of the delete-end case. The stored start is 2026-02-10, so
+  # 2026-01-05 would reverse the pair; the deletion removes the start from the
+  # effective pair, so no comparison runs.
+  d <- set_dataset_metadata(
+    d,
+    field_start = NULL,
+    field_end = as.Date("2026-01-05")
+  )
+
+  stored <- extract_dataset_metadata(d)
+  expect_identical(stored$field_end, as.Date("2026-01-05"))
+  expect_false("field_start" %in% names(stored))
+})
+
+test_that("deleting the start date frees an earlier end on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(
+    df,
+    field_start = NULL,
+    field_end = as.Date("2026-01-05")
+  )
+
+  stored <- extract_dataset_metadata(df)
+  expect_identical(stored$field_end, as.Date("2026-01-05"))
+  expect_false("field_start" %in% names(stored))
 })
 
 test_that("deleting both dates always succeeds on a design", {
