@@ -3314,3 +3314,191 @@ test_that("as_survey() ignores an attribute outside the seven recognized names",
   expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
   expect_false("weight_scheme" %in% names(extract_dataset_metadata(d)))
 })
+
+
+# Row DM-7a — a canonical attribute with a wrong-typed, NA, unparseable, or
+# length > 1 value.
+
+test_that("as_survey() warns and drops a wrong-typed canonical attribute", {
+  keys <- list(vendor = 42)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a canonical attribute of length > 1", {
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an NA canonical attribute", {
+  keys <- list(vendor = NA_character_)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an unparseable date attribute", {
+  # "2026/02/10" is not strict ISO 8601, so .coerce_field_date() rejects it.
+  # The message must name the date expectation, not the character one.
+  keys <- list(field_start = "2026/02/10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() keeps the valid attributes when another one is dropped", {
+  # The drop is per key: a bad field_start must not cost the good vendor.
+  keys <- list(vendor = "Ipsos", field_start = "not a date")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() warns once per dropped attribute", {
+  keys <- list(survey_name = 1L, vendor = 2L)
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 2L)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+
+# Row DM-7b — a canonical attribute with a zero-length value. Loss is
+# signalled, never silent: only an ABSENT attribute is skipped quietly.
+
+test_that("as_survey() warns and drops a zero-length canonical attribute", {
+  keys <- list(vendor = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# Row DM-7c — the coerced date pair is reversed; BOTH keys are dropped with
+# ONE warning.
+
+test_that("as_survey() warns once and drops both dates when the pair is reversed", {
+  keys <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() judges the reversed pair on the coerced ISO strings", {
+  # Both values are strings, so the comparison only works after coercion.
+  keys <- list(field_start = "2026-03-04", field_end = "2026-02-10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() promotes an equal date pair without warning", {
+  # The rule is strictly `start > end`, so a single-day field period is valid.
+  keys <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  expect_no_warning(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), keys)
+})
+
+
+# Row DM-7d — the legacy `dates` attribute with ANY invalid value. This
+# variant takes precedence over DM-7a and DM-7b, so the remedy points at
+# set_field_period() rather than at the rejected legacy name.
+
+test_that("as_survey() warns with the legacy variant for a wrong-typed dates attribute", {
+  keys <- list(dates = 1L)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a zero-length dates attribute", {
+  # A zero-length value on a canonical name is DM-7b, but on the legacy name
+  # the DM-7d variant wins.
+  keys <- list(dates = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a dates attribute of length > 1", {
+  keys <- list(dates = c("February 2026", "March 2026"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns once for an invalid field_period and never falls back to dates", {
+  # A present-but-invalid field_period stops the legacy fallback: repairing
+  # from `dates` would hide the invalid value. So exactly one warning fires,
+  # it is the canonical DM-7a variant, and field_period stays unset.
+  keys <- list(field_period = 99, dates = "February-March 2026")
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
