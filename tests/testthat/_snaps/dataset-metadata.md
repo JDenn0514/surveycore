@@ -307,3 +307,12 @@
       i Got NA.
       i The value is NA.
 
+# a reversed date pair in one call is rejected on a design
+
+    Code
+      set_dataset_metadata(d, field_start = "2026-03-04", field_end = "2026-02-10")
+    Condition
+      Error:
+      x "field_start" (2026-03-04) is after "field_end" (2026-02-10).
+      v Swap the two dates, or correct the wrong one.
+

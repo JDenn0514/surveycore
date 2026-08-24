@@ -1762,3 +1762,360 @@ test_that("no base as.Date() condition escapes an invalid date value", {
     try(set_dataset_metadata(d, field_start = "not a date"), silent = TRUE)
   )
 })
+
+# ── 14. set_dataset_metadata() — merge, deletion, and the date pair ───────────
+
+test_that("a second call merges into the stored keys on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Ipsos")
+  d <- set_dataset_metadata(d, survey_name = "AAA 2026")
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("a second call merges into the stored keys on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos")
+  df <- set_dataset_metadata(df, survey_name = "AAA 2026")
+
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("overwriting a key keeps its canonical position on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Cint")
+
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+  expect_identical(extract_dataset_metadata(d)$vendor, "Cint")
+})
+
+test_that("overwriting a key keeps its canonical position on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  df <- set_dataset_metadata(df, vendor = "Cint")
+
+  expect_identical(names(extract_dataset_metadata(df)), names(full_keys))
+  expect_identical(extract_dataset_metadata(df)$vendor, "Cint")
+})
+
+test_that("keys written out of order are stored canonically on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    field_period = "February-March 2026",
+    vendor = "Ipsos",
+    survey_name = "AAA 2026"
+  )
+
+  expect_identical(
+    names(extract_dataset_metadata(d)),
+    c("survey_name", "vendor", "field_period")
+  )
+})
+
+test_that("keys written out of order are read canonically on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(
+    df,
+    field_period = "February-March 2026",
+    vendor = "Ipsos",
+    survey_name = "AAA 2026"
+  )
+
+  expect_identical(
+    names(extract_dataset_metadata(df)),
+    c("survey_name", "vendor", "field_period")
+  )
+})
+
+test_that("a NULL value deletes a stored key on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = NULL)
+
+  expect_false("vendor" %in% names(extract_dataset_metadata(d)))
+  expect_identical(
+    names(extract_dataset_metadata(d)),
+    setdiff(names(full_keys), "vendor")
+  )
+})
+
+test_that("a NULL value deletes a stored key on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(df, vendor = NULL)
+
+  expect_null(attr(df, "vendor", exact = TRUE))
+  expect_false("vendor" %in% names(extract_dataset_metadata(df)))
+})
+
+test_that("deleting an unset key is a silent no-op on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_no_condition(result <- set_dataset_metadata(d, vendor = NULL))
+  expect_identical(extract_dataset_metadata(result), list())
+})
+
+test_that("deleting an unset key is a silent no-op on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_no_condition(result <- set_dataset_metadata(df, vendor = NULL))
+  expect_identical(extract_dataset_metadata(result), list())
+})
+
+test_that("one call can set one key and delete another on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Cint", data_name = NULL)
+
+  stored <- extract_dataset_metadata(d)
+  expect_identical(stored$vendor, "Cint")
+  expect_false("data_name" %in% names(stored))
+})
+
+test_that("one call can set one key and delete another on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(df, vendor = "Cint", data_name = NULL)
+
+  stored <- extract_dataset_metadata(df)
+  expect_identical(stored$vendor, "Cint")
+  expect_false("data_name" %in% names(stored))
+})
+
+test_that("bulk deletion via key and a NULL value works on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, key = c("vendor", "data_name"), value = NULL)
+
+  expect_identical(
+    names(extract_dataset_metadata(d)),
+    setdiff(names(full_keys), c("vendor", "data_name"))
+  )
+})
+
+test_that("bulk deletion tolerates an absent key among the names", {
+  d <- make_dataset_design("taylor", "name_only")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, key = c("vendor", "data_name"), value = NULL)
+
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("bulk deletion via key and a NULL value works on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(df, key = c("vendor", "data_name"), value = NULL)
+
+  expect_identical(
+    names(extract_dataset_metadata(df)),
+    setdiff(names(full_keys), c("vendor", "data_name"))
+  )
+})
+
+test_that("a NULL element inside a value list deletes that key", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    key = c("vendor", "data_name"),
+    value = list("Cint", NULL)
+  )
+
+  stored <- extract_dataset_metadata(d)
+  expect_identical(stored$vendor, "Cint")
+  expect_false("data_name" %in% names(stored))
+})
+
+test_that("a NULL element inside a value list deletes that key on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(
+    df,
+    key = c("vendor", "data_name"),
+    value = list("Cint", NULL)
+  )
+
+  stored <- extract_dataset_metadata(df)
+  expect_identical(stored$vendor, "Cint")
+  expect_false("data_name" %in% names(stored))
+})
+
+test_that("a reversed date pair in one call is rejected on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(
+      d,
+      field_start = "2026-03-04",
+      field_end = "2026-02-10"
+    ),
+    class = "surveycore_error_field_dates_reversed"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, field_start = "2026-03-04", field_end = "2026-02-10")
+  )
+})
+
+test_that("a reversed date pair in one call is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(
+      df,
+      field_start = "2026-03-04",
+      field_end = "2026-02-10"
+    ),
+    class = "surveycore_error_field_dates_reversed"
+  )
+})
+
+test_that("a new start after the stored end is rejected on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, field_start = "2026-06-01"),
+    class = "surveycore_error_field_dates_reversed"
+  )
+  # Atomic: the rejected call wrote nothing.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("a new start after the stored end is rejected on a frame", {
+  df <- make_dataset_df()
+
+  expect_error(
+    set_dataset_metadata(df, field_start = "2026-06-01"),
+    class = "surveycore_error_field_dates_reversed"
+  )
+  expect_identical(extract_dataset_metadata(df), full_keys)
+})
+
+test_that("deleting the end date frees a later start on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  # The deleted date is absent from the effective pair, so no comparison runs.
+  d <- set_dataset_metadata(
+    d,
+    field_end = NULL,
+    field_start = as.Date("2026-06-01")
+  )
+
+  stored <- extract_dataset_metadata(d)
+  expect_identical(stored$field_start, as.Date("2026-06-01"))
+  expect_false("field_end" %in% names(stored))
+})
+
+test_that("deleting the end date frees a later start on a frame", {
+  df <- make_dataset_df()
+
+  df <- set_dataset_metadata(
+    df,
+    field_end = NULL,
+    field_start = as.Date("2026-06-01")
+  )
+
+  stored <- extract_dataset_metadata(df)
+  expect_identical(stored$field_start, as.Date("2026-06-01"))
+  expect_false("field_end" %in% names(stored))
+})
+
+test_that("deleting both dates always succeeds on a design", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, field_start = NULL, field_end = NULL)
+
+  stored <- extract_dataset_metadata(d)
+  expect_false(any(c("field_start", "field_end") %in% names(stored)))
+})
+
+test_that("an equal start and end pair is accepted on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    field_start = "2026-02-10",
+    field_end = "2026-02-10"
+  )
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(
+      field_start = as.Date("2026-02-10"),
+      field_end = as.Date("2026-02-10")
+    )
+  )
+})
+
+test_that("one date alone never triggers the pair check on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, field_end = "2026-02-10")
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(field_end = as.Date("2026-02-10"))
+  )
+})
+
+test_that("a rejected value in a multi-key call writes nothing on a design", {
+  d <- make_dataset_design("taylor", "name_only")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = "Ipsos", data_name = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("a rejected value in a multi-key call writes nothing on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  df <- set_dataset_metadata(df, survey_name = full_keys$survey_name)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = "Ipsos", data_name = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_identical(extract_dataset_metadata(df), full_keys["survey_name"])
+  expect_null(attr(df, "vendor", exact = TRUE))
+})
+
+test_that("a rejected unknown key in a multi-key call writes nothing", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = "Ipsos", mode = "web"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_identical(extract_dataset_metadata(df), list())
+  expect_null(attr(df, "vendor", exact = TRUE))
+})

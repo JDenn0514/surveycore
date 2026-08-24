@@ -1413,8 +1413,40 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
     }
   }
 
+  # The effective key-value list of `x`, read the same way in both input modes.
+  stored <- .get_dataset_metadata_list(x)
+
+  # Rule 12: the effective date pair, per the three-way rule. A key the call
+  # supplies takes its new value; a key the call sets to NULL counts as ABSENT,
+  # because the deletion counts; a key the call does not mention keeps the value
+  # already stored. The comparison runs only when both effective values exist,
+  # so one call can repair a reversed stored pair by deleting one date and
+  # setting the other, and deleting both dates always succeeds.
+  effective <- lapply(
+    .dataset_date_keys,
+    function(k) if (k %in% names(pairs)) pairs[[k]] else stored[[k]]
+  )
+  names(effective) <- .dataset_date_keys
+
+  if (!is.null(effective$field_start) && !is.null(effective$field_end)) {
+    if (effective$field_start > effective$field_end) {
+      start <- format(effective$field_start)
+      end <- format(effective$field_end)
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.val field_start} ({start}) is after {.val field_end} ({end})."
+          ),
+          "v" = "Swap the two dates, or correct the wrong one."
+        ),
+        class = "surveycore_error_field_dates_reversed",
+        call = call
+      )
+    }
+  }
+
+  # Every check has passed, so the writes below cannot fail part-way.
   if (S7::S7_inherits(x, survey_base)) {
-    stored <- .dataset_metadata_or_empty(x@metadata)
     for (k in names(pairs)) {
       stored[[k]] <- pairs[[k]]
     }
@@ -1424,6 +1456,9 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
     return(invisible(x))
   }
 
+  # A data frame carries one whole-object attribute per key. Only the keys the
+  # call names are written, so an attribute the call does not mention keeps its
+  # value even when that value would fail the table.
   for (k in names(pairs)) {
     attr(x, k) <- pairs[[k]]
   }
