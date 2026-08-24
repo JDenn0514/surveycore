@@ -293,7 +293,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
 ## PR map
 
-- [ ] PR 1: `feature/dataset-metadata-class` — `@dataset_metadata` property, `survey_metadata` validator, value checker (error/val, catch-and-re-raise register split), and the non-DM-7 error-table rows
+- [x] PR 1: `feature/dataset-metadata-class` — `@dataset_metadata` property, `survey_metadata` validator, value checker (error/val, catch-and-re-raise register split), and the non-DM-7 error-table rows
 
   - **Tasks** (7)
     1. Add the `full_keys` fixture to `tests/testthat/helper-test-data.R` (single definition; the six canonical keys in canonical order; test-spec §2).
