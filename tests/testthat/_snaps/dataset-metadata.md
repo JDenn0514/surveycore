@@ -62,3 +62,49 @@
       x `extract_dataset_metadata()` does not accept `fill = "none"`.
       i Valid values for `extract_dataset_metadata()`: "NULL" (omit), `NA`, or `NA_character_` (include with NA).
 
+# set_var_label() keeps the default setter_ambiguous wording
+
+    Code
+      set_var_label(d, y1 = "A", variable = "y2")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+      i Use named `...` args, a named vector in `...`, or `variable` + `label` — not a mix.
+
+# set_var_label() keeps the default setter_empty wording
+
+    Code
+      set_var_label(d)
+    Condition
+      Error:
+      x `set_var_label()` requires at least one variable-label pair.
+      v Use named `...` args: `set_var_label(x, age = 'Age in years')`.
+
+# set_var_label() keeps the default empty_variables wording
+
+    Code
+      set_var_label(d, variable = character(0))
+    Condition
+      Warning:
+      ! `set_var_label()` was called with `variable` of length 0.
+      i No metadata was set. Did you accidentally filter all variable names out?
+
+# set_var_label() keeps the default mismatched_lengths wording
+
+    Code
+      set_var_label(d, variable = c("y1", "y2"), label = "A")
+    Condition
+      Error:
+      x `variable` has 2 elements but `label` has 1 element.
+      i They must be the same length (one content value per variable name).
+
+# set_var_label() keeps the default mixed_dots wording
+
+    Code
+      set_var_label(d, "y1", "y2", "y3")
+    Condition
+      Error:
+      x All `...` arguments must be named when using Convention 1.
+      i Got 0 named and 3 unnamed elements.
+      v Use `set_var_label(x, age = 'Age', income = 'Annual income')` or a fully named vector.
+

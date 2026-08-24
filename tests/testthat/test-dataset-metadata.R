@@ -897,3 +897,72 @@ test_that("a stale design fills the full schema when fill = NA", {
     names(full_keys)
   )
 })
+
+# ── 8. Sibling setter regression guard ────────────────────────────────────────
+#
+# .parse_setter_input() is shared with seven per-variable setters.
+# set_dataset_metadata() parameterizes its five convention messages, so these
+# blocks pin the DEFAULT rendering — the `variable` / "variable-label pair" /
+# "vector" wording — through one sibling setter. They were written and confirmed
+# green BEFORE the parameters were added, and their snapshots must stay
+# byte-identical afterwards.
+
+test_that("set_var_label() keeps the default setter_ambiguous wording", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+
+  expect_error(
+    set_var_label(d, y1 = "A", variable = "y2"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+  expect_snapshot(error = TRUE, set_var_label(d, y1 = "A", variable = "y2"))
+})
+
+test_that("set_var_label() keeps the default setter_empty wording", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+
+  expect_error(set_var_label(d), class = "surveycore_error_setter_empty")
+  expect_snapshot(error = TRUE, set_var_label(d))
+})
+
+test_that("set_var_label() keeps the default empty_variables wording", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+
+  expect_warning(
+    set_var_label(d, variable = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+  expect_snapshot(set_var_label(d, variable = character(0)))
+})
+
+test_that("set_var_label() keeps the default mismatched_lengths wording", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+
+  expect_error(
+    set_var_label(d, variable = c("y1", "y2"), label = "A"),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_var_label(d, variable = c("y1", "y2"), label = "A")
+  )
+})
+
+test_that("set_var_label() keeps the default mixed_dots wording", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+
+  expect_error(
+    set_var_label(d, "y1", "y2", "y3"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+  expect_snapshot(error = TRUE, set_var_label(d, "y1", "y2", "y3"))
+})
