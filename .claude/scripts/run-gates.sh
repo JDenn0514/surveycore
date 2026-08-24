@@ -63,13 +63,26 @@ gate_covr() {
   # skip_on_cran(); without the variable they skip, roughly 3300 lines of
   # source read as untested, and coverage reports ~93.7% instead of ~95.9%
   # — a false failure against the 95% floor below.
-  NOT_CRAN=true Rscript -e 'cat(sprintf("COVERAGE_PCT=%.2f\n", covr::percent_coverage(covr::package_coverage())))' > "$log" 2>&1
+  # Report the package total AND per-file coverage plus uncovered line numbers
+  # for the R/ files this branch changed. The plan states the bar as "98%+ on
+  # the NEW code; blocked below 95%" — the package total alone cannot answer
+  # that, so covr-report.R adds the per-file and per-line detail.
+  local changed
+  changed=$(git diff --name-only develop...HEAD -- 'R/*.R' 2>/dev/null | tr '\n' ',')
+  NOT_CRAN=true CHANGED_R_FILES="$changed" \
+    Rscript .claude/scripts/covr-report.R > "$log" 2>&1
   local pct
   pct=$(grep -oE 'COVERAGE_PCT=[0-9.]+' "$log" | tail -1 | cut -d= -f2)
+  local nunc
+  nunc=$(grep -oE 'UNCOVERED_COUNT=[0-9]+' "$log" | tail -1 | cut -d= -f2)
+  local detail="${pct}%"
+  if [ -n "$nunc" ]; then
+    detail="${detail}; changed R/ files: $(grep -c '^CHANGED_FILE_PCT' "$log"), uncovered lines in them: ${nunc}"
+  fi
   if [ -z "$pct" ]; then
     fail_gate "covr" "$log" "coverage did not run"
   elif awk "BEGIN{exit !($pct >= 95)}"; then
-    pass_gate "covr" "${pct}%"
+    pass_gate "covr" "$detail"
   else
     fail_gate "covr" "$log" "coverage ${pct}% is below the 95% floor"
   fi
