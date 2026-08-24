@@ -3490,6 +3490,158 @@ test_that("as_survey() warns with the legacy variant for a dates attribute of le
   expect_snapshot(d2 <- .promo_design(keys))
 })
 
+# Round trip and non-destructive promotion (spec section V.4).
+
+test_that("all six keys survive the setter-to-constructor round trip", {
+  expect_dataset_roundtrip(full_keys)
+})
+
+test_that("a single key survives the round trip", {
+  expect_dataset_roundtrip(full_keys["vendor"])
+})
+
+test_that("an ISO date string set on a frame round trips as a Date", {
+  # The setter coerces on the way in, so the attribute is already a Date and
+  # promotion stores a Date, not the string.
+  d <- expect_dataset_roundtrip(
+    list(field_start = "2026-02-10"),
+    expected = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_s3_class(extract_dataset_metadata(d)$field_start, "Date")
+})
+
+test_that("promotion leaves the original attributes on @data", {
+  # Promotion COPIES; it never strips. Every one of the six attributes holds a
+  # genuine value going in, so a stripping implementation would fail here.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  for (key in names(full_keys)) {
+    expect_identical(
+      attr(d@data, key, exact = TRUE),
+      full_keys[[key]],
+      info = key
+    )
+  }
+})
+
+test_that("promotion leaves the caller's data frame unchanged", {
+  df <- make_dataset_df(full_keys)
+  before <- attributes(df)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(d)
+
+  expect_identical(attributes(df), before)
+})
+
+test_that("promotion keeps a dropped attribute on @data even though the key is unset", {
+  # The warning reports that the key was not promoted; the attribute itself is
+  # still there for the user to inspect and fix.
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_identical(attr(d@data, "vendor", exact = TRUE), c("Ipsos", "Cint"))
+})
+
+test_that("rebuilding from @data resurrects an edited key", {
+  # Documented consequence of section V.4: the design's metadata changed, the
+  # data frame's attribute did not, so a rebuild re-promotes the ORIGINAL.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  d2 <- set_vendor(d, "Cint")
+  expect_identical(extract_vendor(d2), "Cint")
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+  expect_false(identical(extract_vendor(rebuilt), "Cint"))
+})
+
+test_that("rebuilding from @data resurrects a deleted key", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  d2 <- set_vendor(d, NULL)
+  expect_identical(extract_vendor(d2), NA_character_)
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+})
+
+test_that("column subsetting @data drops the attributes, so a rebuild promotes nothing", {
+  # Whole-object attributes are fragile: selecting columns with base `[` builds
+  # a new frame without them, so nothing is left to promote. This is why the
+  # roxygen advises setting dataset metadata last.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+  expect_identical(extract_vendor(d), full_keys$vendor)
+
+  stripped <- d@data[, names(d@data), drop = FALSE]
+  expect_null(attr(stripped, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    stripped,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("merge() drops the attributes, so a rebuild promotes nothing", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  lookup <- data.frame(strata = unique(d@data$strata))
+  lookup$region <- seq_len(nrow(lookup))
+  merged <- merge(d@data, lookup, by = "strata")
+  expect_null(attr(merged, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    merged,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
 test_that("as_survey() warns once for an invalid field_period and never falls back to dates", {
   # A present-but-invalid field_period stops the legacy fallback: repairing
   # from `dates` would hide the invalid value. So exactly one warning fires,
