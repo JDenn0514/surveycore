@@ -966,3 +966,322 @@ test_that("set_var_label() keeps the default mixed_dots wording", {
   )
   expect_snapshot(error = TRUE, set_var_label(d, "y1", "y2", "y3"))
 })
+
+# ── 9. set_dataset_metadata() — class guard and conventions ───────────────────
+
+test_that("set_dataset_metadata() rejects a non-survey, non-frame x", {
+  expect_error(
+    set_dataset_metadata(1L, vendor = "Ipsos"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+  expect_error(
+    set_dataset_metadata("a", vendor = "Ipsos"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_dataset_metadata() rejects a survey_collection", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+  coll <- survey_collection(list(a = d, b = d))
+
+  expect_error(
+    set_dataset_metadata(coll, vendor = "Ipsos"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("set_dataset_metadata() rejects both ... and key on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = "Ipsos", key = "vendor"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, vendor = "Ipsos", key = "vendor")
+  )
+})
+
+test_that("set_dataset_metadata() rejects both ... and key on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = "Ipsos", key = "vendor"),
+    class = "surveycore_error_setter_ambiguous"
+  )
+})
+
+test_that("set_dataset_metadata() rejects a call with no key at all", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d),
+    class = "surveycore_error_setter_empty"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d))
+})
+
+test_that("set_dataset_metadata() rejects an empty call on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df),
+    class = "surveycore_error_setter_empty"
+  )
+})
+
+test_that("set_dataset_metadata() warns and no-ops for a length-0 key", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  expect_warning(
+    result <- set_dataset_metadata(d, key = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+  expect_identical(extract_dataset_metadata(result), full_keys)
+  expect_snapshot(set_dataset_metadata(d, key = character(0)))
+})
+
+test_that("a length-0 key on a frame warns and leaves attributes alone", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  df <- set_dataset_metadata(df, vendor = "Ipsos")
+
+  expect_warning(
+    result <- set_dataset_metadata(df, key = character(0)),
+    class = "surveycore_warning_setter_empty_variables"
+  )
+  expect_identical(extract_dataset_metadata(result), list(vendor = "Ipsos"))
+})
+
+test_that("set_dataset_metadata() rejects mismatched key and value lengths", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(
+      d,
+      key = c("vendor", "data_name"),
+      value = list("Ipsos")
+    ),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, key = c("vendor", "data_name"), value = list("Ipsos"))
+  )
+})
+
+test_that("mismatched key and value lengths are rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(
+      df,
+      key = c("vendor", "data_name"),
+      value = list("Ipsos")
+    ),
+    class = "surveycore_error_setter_mismatched_lengths"
+  )
+})
+
+test_that("set_dataset_metadata() rejects unnamed ... elements", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, "vendor", "data_name"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, "vendor", "data_name")
+  )
+})
+
+test_that("unnamed ... elements are rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, "vendor", "data_name"),
+    class = "surveycore_error_setter_mixed_dots"
+  )
+})
+
+# ── 10. set_dataset_metadata() — the minimal write ────────────────────────────
+
+test_that("Convention 1 writes one key on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Ipsos KnowledgePanel Omnibus")
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(vendor = "Ipsos KnowledgePanel Omnibus")
+  )
+})
+
+test_that("Convention 1 writes one key on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos KnowledgePanel Omnibus")
+
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(vendor = "Ipsos KnowledgePanel Omnibus")
+  )
+  expect_identical(
+    attr(df, "vendor", exact = TRUE),
+    "Ipsos KnowledgePanel Omnibus"
+  )
+})
+
+test_that("Convention 1 writes several keys at once on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Ipsos", data_name = "AAA (Feb 2026)")
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(data_name = "AAA (Feb 2026)", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 1 writes several keys at once on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos", data_name = "AAA (Feb 2026)")
+
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(data_name = "AAA (Feb 2026)", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 2 accepts one named list in ... on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, list(vendor = "Ipsos", survey_name = "AAA 2026"))
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 2 accepts one named list in ... on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(
+    df,
+    list(vendor = "Ipsos", survey_name = "AAA 2026")
+  )
+
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 2 accepts a spliced list on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!list(vendor = "Ipsos"))
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("Convention 3 writes key and value pairs on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    key = c("vendor", "survey_name"),
+    value = list("Ipsos", "AAA 2026")
+  )
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 3 writes key and value pairs on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(
+    df,
+    key = c("vendor", "survey_name"),
+    value = list("Ipsos", "AAA 2026")
+  )
+
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 3 coerces an atomic value with as.list()", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    key = c("vendor", "survey_name"),
+    value = c("Ipsos", "AAA 2026")
+  )
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(survey_name = "AAA 2026", vendor = "Ipsos")
+  )
+})
+
+test_that("Convention 3 coerces an atomic value on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(df, key = "vendor", value = "Ipsos")
+
+  expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
+})
+
+test_that("Convention 3 ignores names on value; key wins", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(
+    d,
+    key = "vendor",
+    value = list(survey_name = "Ipsos")
+  )
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("set_dataset_metadata() returns the design invisibly", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  # The sibling extractors return visibly; the setters must not.
+  seen <- withVisible(set_dataset_metadata(d, vendor = "Ipsos"))
+
+  expect_false(seen$visible)
+  expect_identical(extract_dataset_metadata(seen$value), list(vendor = "Ipsos"))
+})
+
+test_that("set_dataset_metadata() returns the frame invisibly", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  seen <- withVisible(set_dataset_metadata(df, vendor = "Ipsos"))
+
+  expect_false(seen$visible)
+  expect_identical(extract_dataset_metadata(seen$value), list(vendor = "Ipsos"))
+})

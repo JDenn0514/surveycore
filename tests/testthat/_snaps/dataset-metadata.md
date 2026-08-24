@@ -108,3 +108,49 @@
       i Got 0 named and 3 unnamed elements.
       v Use `set_var_label(x, age = 'Age', income = 'Annual income')` or a fully named vector.
 
+# set_dataset_metadata() rejects both ... and key on a design
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos", key = "vendor")
+    Condition
+      Error:
+      x Provide key names via `...` or via `key`, not both.
+      i Use named `...` args, a named list in `...`, or `key` + `value` — not a mix.
+
+# set_dataset_metadata() rejects a call with no key at all
+
+    Code
+      set_dataset_metadata(d)
+    Condition
+      Error:
+      x `set_dataset_metadata()` requires at least one key-value pair.
+      v Use named `...` args: `set_dataset_metadata(x, vendor = 'Ipsos')`.
+
+# set_dataset_metadata() warns and no-ops for a length-0 key
+
+    Code
+      set_dataset_metadata(d, key = character(0))
+    Condition
+      Warning:
+      ! `set_dataset_metadata()` was called with `key` of length 0.
+      i No metadata was set. Did you accidentally filter all key names out?
+
+# set_dataset_metadata() rejects mismatched key and value lengths
+
+    Code
+      set_dataset_metadata(d, key = c("vendor", "data_name"), value = list("Ipsos"))
+    Condition
+      Error:
+      x `key` has 2 elements but `value` has 1 element.
+      i They must be the same length (one content value per key name).
+
+# set_dataset_metadata() rejects unnamed ... elements
+
+    Code
+      set_dataset_metadata(d, "vendor", "data_name")
+    Condition
+      Error:
+      x All `...` arguments must be named when using Convention 1.
+      i Got 0 named and 2 unnamed elements.
+      v Use `set_dataset_metadata(x, vendor = 'Ipsos', data_name = 'AAA Ipsos (February-March 2026)')` or a fully named list.
+

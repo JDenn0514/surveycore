@@ -1275,6 +1275,54 @@ extract_dataset_metadata <- function(
 }
 
 
+set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
+  call <- rlang::caller_env()
+
+  # Rule 1: x is a survey object or a data frame.
+  .check_is_survey_or_df(x, call = call)
+
+  # Rules 3-7 run inside the shared parser, in the key/key-value/list register.
+  dots <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots = dots,
+    variable = key,
+    content = value,
+    content_arg_name = "value",
+    content_type = "vector",
+    fn_name = "set_dataset_metadata",
+    name_arg_name = "key",
+    pair_noun = "key-value",
+    example_pairs = c(
+      "vendor = 'Ipsos'",
+      "vendor = 'Ipsos', data_name = 'AAA Ipsos (February-March 2026)'"
+    ),
+    container_noun = "list",
+    call = call
+  )
+
+  # A length-0 `key` warned inside the parser and returns nothing to write.
+  if (length(pairs) == 0L) {
+    return(invisible(x))
+  }
+
+  if (S7::S7_inherits(x, survey_base)) {
+    stored <- .dataset_metadata_or_empty(x@metadata)
+    for (k in names(pairs)) {
+      stored[[k]] <- pairs[[k]]
+    }
+    x@metadata@dataset_metadata <- stored[
+      intersect(.dataset_metadata_keys, names(stored))
+    ]
+    return(invisible(x))
+  }
+
+  for (k in names(pairs)) {
+    attr(x, k) <- pairs[[k]]
+  }
+  invisible(x)
+}
+
+
 # ── Unified setters ───────────────────────────────────────────────────────────
 
 # Internal helper: shared scalar validation for set_var_label(),
