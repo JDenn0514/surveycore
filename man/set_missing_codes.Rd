@@ -58,6 +58,7 @@ Other metadata:
 \code{\link[=extract_var_label]{extract_var_label()}},
 \code{\link[=extract_var_note]{extract_var_note()}},
 \code{\link[=infer_question_prefaces]{infer_question_prefaces()}},
+\code{\link[=set_dataset_metadata]{set_dataset_metadata()}},
 \code{\link[=set_higher_is]{set_higher_is()}},
 \code{\link[=set_question_preface]{set_question_preface()}},
 \code{\link[=set_reverse_coded]{set_reverse_coded()}},

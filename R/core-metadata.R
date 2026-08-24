@@ -75,7 +75,8 @@
 }
 
 # .parse_setter_input(dots, variable, content, content_arg_name,
-#                     content_type, fn_name, call)
+#                     content_type, fn_name, name_arg_name, pair_noun,
+#                     example_pairs, container_noun, call)
 # Shared convention detection for all unified setters. Receives `dots` as an
 # evaluated list (rlang::list2(...) at the caller). Returns a named list
 # mapping variable names to content values; NULL values signal deletion.
@@ -83,6 +84,23 @@
 # content_type:
 #   "scalar" — Convention 2 expects a named character vector in ...
 #   "vector" — Convention 2 expects a named list in ...
+#
+# Message parameterization. The seven per-variable setters name a variable and
+# set a label, so their five convention messages read in that register. The
+# dataset-metadata setter names a KEY and sets a value, and its Convention 2
+# container is a list rather than a vector. Four parameters carry the
+# difference:
+#
+#   name_arg_name  — the name-bearing argument: "variable" / "key"
+#   pair_noun      — the pair being set: "variable-label" / "key-value"
+#   example_pairs  — two example argument strings, one pair then two pairs,
+#                    used in the setter_empty and setter_mixed_dots remedies
+#   container_noun — the Convention 2 container noun: "vector" / "list"
+#
+# The defaults render all five templates byte-identically to their pre-1.2.0
+# text, so no existing setter's message changes. The container noun cannot be
+# derived from content_type — a "scalar" content type still takes a named
+# vector in Convention 2 — so it is its own parameter.
 .parse_setter_input <- function(
   dots,
   variable,
@@ -90,23 +108,36 @@
   content_arg_name,
   content_type = c("scalar", "vector"),
   fn_name,
+  name_arg_name = "variable",
+  pair_noun = "variable-label",
+  example_pairs = c(
+    "age = 'Age in years'",
+    "age = 'Age', income = 'Annual income'"
+  ),
+  container_noun = "vector",
   call = rlang::caller_env()
 ) {
   content_type <- match.arg(content_type)
   dots_len <- length(dots)
   var_provided <- !is.null(variable)
 
+  # The two example calls are composed here rather than inline, so each cli
+  # template interpolates one finished data variable.
+  example_call_1 <- paste0(fn_name, "(x, ", example_pairs[[1L]], ")")
+  example_call_2 <- paste0(fn_name, "(x, ", example_pairs[[2L]], ")")
+
   # Ambiguity: both ... and variable provided
   if (dots_len > 0L && var_provided) {
     cli::cli_abort(
       c(
         "x" = paste0(
-          "Provide variable names via {.arg ...} or via ",
-          "{.arg variable}, not both."
+          "Provide {name_arg_name} names via {.arg ...} or via ",
+          "{.arg {name_arg_name}}, not both."
         ),
         "i" = paste0(
-          "Use named {.arg ...} args, a named vector in {.arg ...}, or",
-          " {.arg variable} + {.arg {content_arg_name}} \u2014 not a mix."
+          "Use named {.arg ...} args, a named {container_noun} in",
+          " {.arg ...}, or {.arg {name_arg_name}} +",
+          " {.arg {content_arg_name}} \u2014 not a mix."
         )
       ),
       class = "surveycore_error_setter_ambiguous",
@@ -118,10 +149,10 @@
   if (dots_len == 0L && !var_provided) {
     cli::cli_abort(
       c(
-        "x" = "{.fn {fn_name}} requires at least one variable-label pair.",
+        "x" = "{.fn {fn_name}} requires at least one {pair_noun} pair.",
         "v" = paste0(
           "Use named {.arg ...} args: ",
-          "{.code {fn_name}(x, age = 'Age in years')}."
+          "{.code {example_call_1}}."
         )
       ),
       class = "surveycore_error_setter_empty",
@@ -134,10 +165,13 @@
     if (length(variable) == 0L) {
       cli::cli_warn(
         c(
-          "!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.",
+          "!" = paste0(
+            "{.fn {fn_name}} was called with {.arg {name_arg_name}} of",
+            " length 0."
+          ),
           "i" = paste0(
             "No metadata was set. Did you accidentally filter ",
-            "all variable names out?"
+            "all {name_arg_name} names out?"
           )
         ),
         class = "surveycore_warning_setter_empty_variables",
@@ -149,12 +183,12 @@
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.arg variable} has {length(variable)} element{?s} but",
+            "{.arg {name_arg_name}} has {length(variable)} element{?s} but",
             " {.arg {content_arg_name}} has {length(content)} element{?s}."
           ),
           "i" = paste0(
             "They must be the same length ",
-            "(one content value per variable name)."
+            "(one content value per {name_arg_name} name)."
           )
         ),
         class = "surveycore_error_setter_mismatched_lengths",
@@ -199,8 +233,8 @@
         "x" = "All {.arg ...} arguments must be named when using Convention 1.",
         "i" = "Got {n_named} named and {n_unnamed} unnamed element{?s}.",
         "v" = paste0(
-          "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')}",
-          " or a fully named vector."
+          "Use {.code {example_call_2}}",
+          " or a fully named {container_noun}."
         )
       ),
       class = "surveycore_error_setter_mixed_dots",
@@ -996,16 +1030,92 @@ extract_metadata <- function(x, ..., fill = NULL) {
   .read_dataset_attributes(x)$values
 }
 
+# Refuse a dataset-metadata WRITE on a survey object whose stored class predates
+# the property. Reads are guarded and simply report nothing (see
+# .dataset_metadata_or_empty()), but a write has nowhere to go, so it fails with
+# a surveycore error naming the remedy rather than with S7's raw property error.
+# The membership test is the same one the guarded reader uses.
+#
+# A data frame is always writable: attributes need no class property.
+#
+# @param x    A survey design object or a data frame.
+# @param call The user-facing caller.
+# @return Invisibly NULL, or an error.
+.check_dataset_metadata_writable <- function(x, call = rlang::caller_env()) {
+  if (!S7::S7_inherits(x, survey_base)) {
+    return(invisible(NULL))
+  }
+  if ("dataset_metadata" %in% S7::prop_names(x@metadata)) {
+    return(invisible(NULL))
+  }
+  cli::cli_abort(
+    c(
+      "x" = "This object cannot store dataset metadata.",
+      "i" = paste0(
+        "It was created by surveycore <= 1.1.0, before the ",
+        "{.field dataset_metadata} property existed."
+      ),
+      "v" = paste0(
+        "Rebuild the object with {.fn as_survey} (or the matching ",
+        "constructor), then set the metadata."
+      )
+    ),
+    class = "surveycore_error_dataset_metadata_unavailable",
+    call = call
+  )
+}
+
+# The nearest valid dataset key within Levenshtein distance 1 of the lowercased
+# candidate, or NULL when nothing is that close. Lowercasing is what catches a
+# capitalization slip such as `Vendor`; distance 1 catches `vender`.
+#
+# @param key character(1). The rejected key name.
+# @return character(1) or NULL.
+.dataset_key_suggestion <- function(key) {
+  distances <- as.integer(
+    utils::adist(tolower(key), .dataset_metadata_keys)
+  )
+  if (min(distances) > 1L) {
+    return(NULL)
+  }
+  .dataset_metadata_keys[[which.min(distances)]]
+}
+
 # Raise the unknown-key error for a requested or supplied dataset key. The
 # parameter is named `key` so the message template reads as the error table
 # states it.
-.abort_dataset_key_unknown <- function(key, call) {
+#
+# Two bullets are always present: the rejection and the valid-key list. Two
+# layers sit on top of them:
+#   * the did-you-mean hint, whenever the key is a near miss;
+#   * the legacy-`dates` explanation, which only a setter can trigger, because
+#     it needs a non-NULL value. `dates = NULL` never reaches here — it resolves
+#     to field_period. An extractor has no value at all, so it never sets
+#     `legacy_alias`.
+.abort_dataset_key_unknown <- function(key, call, legacy_alias = FALSE) {
   valid_keys <- .dataset_metadata_keys
+  bullets <- c(
+    "x" = "{.val {key}} is not a dataset metadata key.",
+    "i" = "Valid keys: {.val {valid_keys}}."
+  )
+
+  suggestion <- .dataset_key_suggestion(key)
+  if (!is.null(suggestion)) {
+    bullets <- c(bullets, "i" = "Did you mean {.val {suggestion}}?")
+  }
+
+  if (legacy_alias) {
+    bullets <- c(
+      bullets,
+      "i" = paste0(
+        "The legacy {.val dates} attribute maps to {.val field_period}."
+      ),
+      "v" = "Use {.fn set_field_period}, or {.code dates = NULL} to delete."
+    )
+  }
+
   cli::cli_abort(
-    c(
-      "x" = "{.val {key}} is not a dataset metadata key.",
-      "i" = "Valid keys: {.val {valid_keys}}."
-    ),
+    bullets,
     class = "surveycore_error_dataset_key_unknown",
     call = call
   )
@@ -1238,6 +1348,290 @@ extract_dataset_metadata <- function(
     out_keys
   )
   .format_dataset_result(result_list, format, fill)
+}
+
+
+#' Set Dataset-Level Metadata
+#'
+#' Sets whole-dataset metadata — the survey name, the display name, the fielding
+#' vendor, and the field dates — on a survey design object or a data frame,
+#' using one of three conventions.
+#'
+#' **Convention 1 (named `...`)** — recommended:
+#' ```r
+#' set_dataset_metadata(x, vendor = "Ipsos", field_start = "2026-02-10")
+#' ```
+#'
+#' **Convention 2 (single named list in `...`)**:
+#' ```r
+#' set_dataset_metadata(x, list(vendor = "Ipsos"))
+#' ```
+#'
+#' **Convention 3 (`key` + `value`)**:
+#' ```r
+#' set_dataset_metadata(x, key = "vendor", value = "Ipsos")
+#' ```
+#'
+#' @details
+#' The key vocabulary is closed. Exactly six keys are valid, and this is their
+#' canonical order:
+#'
+#' \describe{
+#'   \item{`survey_name`}{`character(1)`. Full formal survey name.}
+#'   \item{`data_name`}{`character(1)`. Display label for this dataset.}
+#'   \item{`vendor`}{`character(1)`. Fielding vendor.}
+#'   \item{`field_start`}{`Date(1)`. First day in the field.}
+#'   \item{`field_end`}{`Date(1)`. Last day in the field.}
+#'   \item{`field_period`}{`character(1)`. Prose field period, for display.}
+#' }
+#'
+#' Any other key is an error. The four character keys take one non-`NA` string.
+#' The two date keys take a `Date` scalar or an ISO 8601 string
+#' (`"YYYY-MM-DD"`), which is stored as a `Date`; a looser string such as
+#' `"2026/02/10"` or `"2026-2-1"` is rejected. Stored keys are always kept in
+#' the canonical order above.
+#'
+#' `survey_name` and `data_name` are independent. This function never reads one
+#' to fill or check the other.
+#'
+#' A `NULL` value deletes a key. Deleting a key that is not set does nothing and
+#' raises no condition. A zero-length value such as `character(0)` is not a
+#' deletion — it is an invalid value.
+#'
+#' `field_start` must not be after `field_end`. The comparison uses the
+#' *effective* value of each date: the new value when the call supplies one, no
+#' value when the call supplies `NULL`, and the stored value otherwise. So one
+#' call can repair a reversed stored pair by deleting one date and setting the
+#' other. Every check runs before any write, so a rejected call changes nothing.
+#'
+#' On a survey design object the values go into the design's metadata, which is
+#' the single source of truth on every read path; attributes on the underlying
+#' data frame are neither read nor written. On a data frame the values go into
+#' whole-object attributes, one per key, and the columns are left untouched —
+#' even a column whose name matches a key.
+#'
+#' `dates` is the pre-1.2.0 attribute name for the prose field period. Setting
+#' it is an error that points at `field_period`. Deleting it is allowed:
+#' `dates = NULL` is an alias for `field_period = NULL`, and either spelling
+#' removes both the `field_period` and the legacy `dates` attribute from a data
+#' frame.
+#'
+#' A design object restored from a file written by surveycore 1.1.0 or earlier
+#' cannot store dataset metadata. Reading such an object works, but a write
+#' raises an error naming the remedy: rebuild the object with a constructor.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... Named arguments where the name is a dataset metadata key and the
+#'   value is the value to store. A single named list is also accepted.
+#'   Supports `!!!` list splicing. A `NULL` value deletes the key.
+#' @param key `character` vector of key names, or `NULL` (default). Use with
+#'   `value`. Must be supplied by name, because it follows `...`.
+#' @param value A list with one element per element of `key`, or `NULL`
+#'   (default). An atomic vector is coerced with `as.list()`. Names on `value`
+#'   are ignored — `key` supplies the names. A `NULL` element deletes that one
+#'   key; `value = NULL` deletes every key in `key` and skips the length check.
+#'   Must be supplied by name, because it follows `...`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' # On a data frame, dataset metadata lives in whole-object attributes.
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_dataset_metadata(
+#'   df,
+#'   survey_name = "Example Attitudes Survey 2026",
+#'   vendor = "Ipsos KnowledgePanel"
+#' )
+#' extract_dataset_metadata(df)
+#'
+#' # An ISO 8601 string is stored as a Date.
+#' df <- set_dataset_metadata(df, field_start = "2026-02-10")
+#' extract_dataset_metadata(df, field_start)
+#'
+#' # Convention 2: one named list.
+#' df <- set_dataset_metadata(df, list(field_end = "2026-03-04"))
+#'
+#' # Convention 3: key plus value.
+#' df <- set_dataset_metadata(
+#'   df,
+#'   key = c("data_name", "field_period"),
+#'   value = list("Example (February-March 2026)", "February-March 2026")
+#' )
+#' extract_dataset_metadata(df, format = "data_frame")
+#'
+#' # A NULL value deletes a key.
+#' df <- set_dataset_metadata(df, vendor = NULL)
+#' extract_dataset_metadata(df, vendor, fill = NA)
+#'
+#' # The same API works on a survey design object.
+#' d <- as_survey(df, weights = w)
+#' d <- set_dataset_metadata(d, vendor = "Cint")
+#' extract_dataset_metadata(d, vendor)
+#' @family metadata
+#' @export
+set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
+  call <- rlang::caller_env()
+
+  # Rule 1: x is a survey object or a data frame.
+  .check_is_survey_or_df(x, call = call)
+
+  # Rule 2: the metadata object carries the property. This runs before any input
+  # parsing, so an object restored from a pre-1.2.0 file reports the one problem
+  # the caller has to fix first.
+  .check_dataset_metadata_writable(x, call = call)
+
+  # Rules 3-7 run inside the shared parser, in the key/key-value/list register.
+  dots <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots = dots,
+    variable = key,
+    content = value,
+    content_arg_name = "value",
+    content_type = "vector",
+    fn_name = "set_dataset_metadata",
+    name_arg_name = "key",
+    pair_noun = "key-value",
+    example_pairs = c(
+      "vendor = 'Ipsos'",
+      "vendor = 'Ipsos', data_name = 'AAA Ipsos (February-March 2026)'"
+    ),
+    container_noun = "list",
+    call = call
+  )
+
+  # A length-0 `key` warned inside the parser and returns nothing to write.
+  if (length(pairs) == 0L) {
+    return(invisible(x))
+  }
+
+  # Rule 8: every resulting key name is non-NA and non-empty. Conventions 1-2
+  # cannot reach this: a blank or missing name there fails inside the parser as
+  # surveycore_error_setter_mixed_dots. Convention 3 carries the names in `key`,
+  # so it is the reachable route.
+  keys <- names(pairs)
+  bad <- is.na(keys) | !nzchar(keys)
+  if (any(bad)) {
+    n_bad <- sum(bad)
+    cli::cli_abort(
+      c(
+        "x" = "All dataset metadata keys must have a non-empty name.",
+        "i" = "Found {n_bad} unnamed or blank-named entr{?y/ies}."
+      ),
+      class = "surveycore_error_dataset_metadata_unnamed",
+      call = call
+    )
+  }
+
+  # Legacy alias. `dates = NULL` is the one accepted spelling of the pre-1.2.0
+  # name: it is an explicit alias for `field_period = NULL`. It resolves BEFORE
+  # the duplicate check, so a call naming both spellings names one key twice. A
+  # non-NULL `dates` keeps its own name and falls to the unknown-key rule.
+  alias <- keys == .dataset_legacy_period_attr &
+    vapply(pairs, is.null, logical(1L))
+  keys[alias] <- "field_period"
+  names(pairs) <- keys
+
+  # Rule 9: no key name appears twice in one call.
+  dupes <- unique(keys[duplicated(keys)])
+  if (length(dupes) > 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "Duplicate dataset metadata key{?s}: {.val {dupes}}.",
+        "i" = "Each key must appear exactly once."
+      ),
+      class = "surveycore_error_dataset_metadata_duplicate_key",
+      call = call
+    )
+  }
+
+  # Rule 10: every key name is one of the six. A `dates` key surviving the
+  # alias step necessarily carries a non-NULL value, which is the condition the
+  # legacy explanation reports.
+  unknown <- setdiff(keys, .dataset_metadata_keys)
+  if (length(unknown) > 0L) {
+    .abort_dataset_key_unknown(
+      unknown[[1L]],
+      call,
+      legacy_alias = identical(unknown[[1L]], .dataset_legacy_period_attr)
+    )
+  }
+
+  # Rule 11: every non-NULL value passes the canonical per-key value table. A
+  # NULL value is a deletion, not a value, so it is not checked. Every check
+  # runs before any write, which is what makes a rejected call atomic.
+  for (k in names(pairs)) {
+    if (!is.null(pairs[[k]])) {
+      pairs[[k]] <- .check_dataset_key_value(
+        k,
+        pairs[[k]],
+        mode = "error",
+        key_style = "val",
+        call = call
+      )
+    }
+  }
+
+  # The effective key-value list of `x`, read the same way in both input modes.
+  stored <- .get_dataset_metadata_list(x)
+
+  # Rule 12: the effective date pair, per the three-way rule. A key the call
+  # supplies takes its new value; a key the call sets to NULL counts as ABSENT,
+  # because the deletion counts; a key the call does not mention keeps the value
+  # already stored. The comparison runs only when both effective values exist,
+  # so one call can repair a reversed stored pair by deleting one date and
+  # setting the other, and deleting both dates always succeeds.
+  effective <- lapply(
+    .dataset_date_keys,
+    function(k) if (k %in% names(pairs)) pairs[[k]] else stored[[k]]
+  )
+  names(effective) <- .dataset_date_keys
+
+  if (!is.null(effective$field_start) && !is.null(effective$field_end)) {
+    if (effective$field_start > effective$field_end) {
+      start <- format(effective$field_start)
+      end <- format(effective$field_end)
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.val field_start} ({start}) is after {.val field_end} ({end})."
+          ),
+          "v" = "Swap the two dates, or correct the wrong one."
+        ),
+        class = "surveycore_error_field_dates_reversed",
+        call = call
+      )
+    }
+  }
+
+  # Every check has passed, so the writes below cannot fail part-way.
+  if (S7::S7_inherits(x, survey_base)) {
+    for (k in names(pairs)) {
+      stored[[k]] <- pairs[[k]]
+    }
+    x@metadata@dataset_metadata <- stored[
+      intersect(.dataset_metadata_keys, names(stored))
+    ]
+    return(invisible(x))
+  }
+
+  # A data frame carries one whole-object attribute per key. Only the keys the
+  # call names are written, so an attribute the call does not mention keeps its
+  # value even when that value would fail the table.
+  for (k in names(pairs)) {
+    attr(x, k) <- pairs[[k]]
+  }
+
+  # Legacy cleanup. Deleting field_period removes the pre-1.2.0 `dates`
+  # attribute too, so the deletion is idempotent and construction cannot
+  # resurrect the value through the legacy read. Only a deletion cleans up;
+  # writing a new field_period leaves `dates` in place, and the reader ignores
+  # it because field_period is then present.
+  if (
+    "field_period" %in% names(pairs) && is.null(pairs[["field_period"]])
+  ) {
+    attr(x, .dataset_legacy_period_attr) <- NULL
+  }
+  invisible(x)
 }
 
 

@@ -167,6 +167,125 @@ make_stale_metadata_design <- function(
 }
 
 # ------------------------------------------------------------------------------
+# make_dataset_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design carrying dataset-level metadata
+#'
+#' Returns a survey design object of the requested class whose
+#' `@dataset_metadata` holds the requested state. State is applied with
+#' `set_dataset_metadata()` on the CONSTRUCTED design, never with whole-frame
+#' attributes on the input data: attribute promotion is a separate contract, and
+#' a fixture that seeded state through attributes would silently test it.
+#'
+#' `state` values. The two single-key states are drawn from `full_keys` the
+#' same way, and they are independent of each other: `data_name` and
+#' `survey_name` are separate keys, so neither state implies the other.
+#' \describe{
+#'   \item{`"none"`}{Nothing set. `@dataset_metadata` is `list()`.}
+#'   \item{`"data_name"`}{`data_name` alone — a one-key case with no
+#'     `survey_name`.}
+#'   \item{`"survey_name"`}{`survey_name` alone — a one-key case with no
+#'     `data_name`.}
+#'   \item{`"full"`}{All six canonical keys, from `full_keys`.}
+#'   \item{`"partial"`}{`data_name`, `vendor`, `field_start`, and
+#'     `field_period` — no `survey_name` and only one of the two dates.}
+#' }
+#'
+#' @param design One of "taylor", "replicate", "twophase", "nonprob", or
+#'   "nonprob_rep". All five are supported so every design class, including a
+#'   nonprob design with replicate weights, can be exercised.
+#' @param state  One of "none", "data_name", "survey_name", "full", or
+#'   "partial".
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class.
+#' @keywords internal
+make_dataset_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep"),
+  state = c("none", "data_name", "survey_name", "full", "partial"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+  state <- match.arg(state)
+
+  df_design <- switch(
+    design,
+    "replicate" = "replicate",
+    "twophase" = "twophase",
+    "taylor"
+  )
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = df_design,
+    type = "brr",
+    seed = seed
+  )
+
+  d <- switch(
+    design,
+    "taylor" = as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    "replicate" = as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(grep("^repwt_", names(df), value = TRUE)),
+      type = "BRR"
+    ),
+    "twophase" = as_survey_twophase(
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      ),
+      subset = subset,
+      method = "approx"
+    ),
+    "nonprob" = as_survey_nonprob(df, weights = wt),
+    "nonprob_rep" = {
+      df$rw1 <- df$wt * 1.02
+      df$rw2 <- df$wt * 0.98
+      df$rw3 <- df$wt * 1.01
+      as_survey_nonprob(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(c("rw1", "rw2", "rw3")),
+        type = "bootstrap"
+      )
+    }
+  )
+
+  keys <- switch(
+    state,
+    "none" = NULL,
+    "data_name" = full_keys["data_name"],
+    "survey_name" = full_keys["survey_name"],
+    "full" = full_keys,
+    "partial" = full_keys[c(
+      "data_name",
+      "vendor",
+      "field_start",
+      "field_period"
+    )]
+  )
+  if (!is.null(keys)) {
+    d <- set_dataset_metadata(d, !!!keys)
+  }
+
+  d
+}
+
+# ------------------------------------------------------------------------------
 # make_survey_data()
 # ------------------------------------------------------------------------------
 
