@@ -3654,3 +3654,100 @@ test_that("as_survey() warns once for an invalid field_period and never falls ba
   expect_identical(extract_dataset_metadata(d), list())
   expect_snapshot(d2 <- .promo_design(keys))
 })
+
+
+# The other two constructors that accept a raw data frame (spec section V.1).
+
+test_that("as_survey_replicate() promotes the dataset attributes", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 202L
+  )
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_replicate() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 203L
+  )
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1"
+    ),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the dataset attributes", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 204L)
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_nonprob() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 205L)
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_nonprob(df, weights = wt),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the weighting_history attribute", {
+  # This branch never promoted weighting history, unlike as_survey() and
+  # as_survey_replicate(). The missing call is a pre-existing inconsistency,
+  # fixed here. `history` holds a genuine non-empty list, so the assertion
+  # fails against the unfixed constructor.
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 206L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_nonprob() leaves weighting_history as list() with no attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 207L)
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(d@metadata@weighting_history, list())
+})
