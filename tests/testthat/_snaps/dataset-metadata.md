@@ -279,3 +279,31 @@
       i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
       i Did you mean "vendor"?
 
+# a non-character value for a character key is rejected
+
+    Code
+      set_dataset_metadata(d, vendor = 1L)
+    Condition
+      Error:
+      x Dataset metadata key "vendor" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# a bare number for a date key is rejected
+
+    Code
+      set_dataset_metadata(d, field_start = 20260210)
+    Condition
+      Error:
+      x "field_start" must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <numeric> of length 1.
+      i Got 20260210.
+
+# an NA value for a date key is rejected with the NA bullet
+
+    Code
+      set_dataset_metadata(d, field_start = NA)
+    Condition
+      Error:
+      x "field_start" must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <logical> of length 1.
+      i Got NA.
+      i The value is NA.
+

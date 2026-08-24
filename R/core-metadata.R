@@ -1398,6 +1398,21 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
     )
   }
 
+  # Rule 11: every non-NULL value passes the canonical per-key value table. A
+  # NULL value is a deletion, not a value, so it is not checked. Every check
+  # runs before any write, which is what makes a rejected call atomic.
+  for (k in names(pairs)) {
+    if (!is.null(pairs[[k]])) {
+      pairs[[k]] <- .check_dataset_key_value(
+        k,
+        pairs[[k]],
+        mode = "error",
+        key_style = "val",
+        call = call
+      )
+    }
+  }
+
   if (S7::S7_inherits(x, survey_base)) {
     stored <- .dataset_metadata_or_empty(x@metadata)
     for (k in names(pairs)) {

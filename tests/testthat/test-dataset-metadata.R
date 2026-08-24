@@ -1551,3 +1551,214 @@ test_that("the extractor renders the completed unknown-key hint on a frame", {
   )
   expect_snapshot(error = TRUE, extract_dataset_metadata(df, vender))
 })
+
+# ── 13. set_dataset_metadata() — per-key value rules ──────────────────────────
+
+test_that("a non-character value for a character key is rejected", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, vendor = 1L))
+})
+
+test_that("a non-character value for a character key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("a length-2 value for a character key is rejected", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = c("Ipsos", "Cint")),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("a length-2 value for a character key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = c("Ipsos", "Cint")),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("an NA value for a character key is rejected", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = NA_character_),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("a zero-length value is rejected rather than treated as deletion", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  # character(0) is not a deletion. Only NULL deletes.
+  expect_error(
+    set_dataset_metadata(d, vendor = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("a zero-length value is rejected on a frame", {
+  df <- make_dataset_df()
+
+  expect_error(
+    set_dataset_metadata(df, vendor = character(0)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("a bare number for a date key is rejected", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, field_start = 20260210),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, field_start = 20260210))
+})
+
+test_that("a bare number for a date key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, field_start = 20260210),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("an NA value for a date key is rejected with the NA bullet", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, field_start = NA),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, field_start = NA))
+})
+
+test_that("an NA value for a date key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, field_start = NA),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("a Date value for a date key is stored as given on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, field_start = as.Date("2026-02-10"))
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(field_start = as.Date("2026-02-10"))
+  )
+})
+
+test_that("an ISO string for a date key is stored as a Date on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, field_start = "2026-02-10")
+
+  stored <- extract_dataset_metadata(d)
+  expect_s3_class(stored$field_start, "Date")
+  expect_identical(stored$field_start, as.Date("2026-02-10"))
+})
+
+test_that("an ISO string for a date key is stored as a Date on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  df <- set_dataset_metadata(df, field_start = "2026-02-10")
+
+  expect_identical(attr(df, "field_start", exact = TRUE), as.Date("2026-02-10"))
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(field_start = as.Date("2026-02-10"))
+  )
+})
+
+test_that("a non-strict slash date is rejected on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, field_start = "2026/02/10"),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("a non-strict slash date is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, field_start = "2026/02/10"),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("an unpadded date string fails the round trip on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  # as.Date() parses "2026-2-1", but it does not round-trip through format(),
+  # so the strict ISO rule rejects it.
+  expect_error(
+    set_dataset_metadata(d, field_start = "2026-2-1"),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("an unpadded date string fails the round trip on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, field_start = "2026-2-1"),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("an impossible calendar date is rejected on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, field_start = "2026-02-30"),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("no base as.Date() condition escapes an invalid date value", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  # The only condition raised is surveycore's own.
+  expect_error(
+    set_dataset_metadata(d, field_start = "not a date"),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_no_warning(
+    try(set_dataset_metadata(d, field_start = "not a date"), silent = TRUE)
+  )
+})
