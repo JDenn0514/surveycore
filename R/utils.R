@@ -375,10 +375,10 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # The two date-typed keys. The other four keys are character(1).
 .dataset_date_keys <- c("field_start", "field_end")
 
-# The seven whole-data-frame attribute names the reader recognizes, in read
-# order. The first six are the canonical keys; "dates" is the pre-1.2.0
-# spelling of the prose field period. surveycore claims no attribute name
-# beyond these seven — every other attribute is ignored entirely.
+# The pre-1.2.0 attribute name for the prose field period. The attribute reader
+# recognizes exactly seven whole-data-frame names: the six canonical keys above,
+# then this one. surveycore claims no attribute name beyond those seven — every
+# other attribute is ignored entirely, never promoted and never warned about.
 .dataset_legacy_period_attr <- "dates"
 
 
