@@ -69,8 +69,13 @@
 #'
 #'   No value may be `NA` and no element may be `NULL`. Any other key is
 #'   rejected. `survey_name` and `data_name` are independent: no function
-#'   derives one from the other. Use `set_dataset_metadata()` to write keys
-#'   and `extract_dataset_metadata()` to read them; the default is `list()`.
+#'   derives one from the other. Use [set_dataset_metadata()] to write keys
+#'   and [extract_dataset_metadata()] to read them; the default is `list()`.
+#'   Each key also has a convenience pair: [set_survey_name()],
+#'   [set_data_name()], [set_vendor()], [set_field_dates()],
+#'   [set_field_period()], and the matching [extract_survey_name()],
+#'   [extract_data_name()], [extract_vendor()], [extract_field_dates()],
+#'   [extract_field_period()].
 #'
 #' @return A `survey_metadata` object.
 #'

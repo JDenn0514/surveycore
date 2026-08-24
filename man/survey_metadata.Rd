@@ -77,8 +77,13 @@ declared type:
 
 No value may be \code{NA} and no element may be \code{NULL}. Any other key is
 rejected. \code{survey_name} and \code{data_name} are independent: no function
-derives one from the other. Use \code{set_dataset_metadata()} to write keys
-and \code{extract_dataset_metadata()} to read them; the default is \code{list()}.}
+derives one from the other. Use \code{\link[=set_dataset_metadata]{set_dataset_metadata()}} to write keys
+and \code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}} to read them; the default is \code{list()}.
+Each key also has a convenience pair: \code{\link[=set_survey_name]{set_survey_name()}},
+\code{\link[=set_data_name]{set_data_name()}}, \code{\link[=set_vendor]{set_vendor()}}, \code{\link[=set_field_dates]{set_field_dates()}},
+\code{\link[=set_field_period]{set_field_period()}}, and the matching \code{\link[=extract_survey_name]{extract_survey_name()}},
+\code{\link[=extract_data_name]{extract_data_name()}}, \code{\link[=extract_vendor]{extract_vendor()}}, \code{\link[=extract_field_dates]{extract_field_dates()}},
+\code{\link[=extract_field_period]{extract_field_period()}}.}
 }
 \value{
 A \code{survey_metadata} object.
@@ -109,28 +114,38 @@ m@dataset_metadata$vendor
 \seealso{
 Other metadata:
 \code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_data_name]{extract_data_name()}},
 \code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
+\code{\link[=extract_field_dates]{extract_field_dates()}},
+\code{\link[=extract_field_period]{extract_field_period()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_metadata]{extract_metadata()}},
 \code{\link[=extract_missing_codes]{extract_missing_codes()}},
 \code{\link[=extract_question_preface]{extract_question_preface()}},
 \code{\link[=extract_reverse_coded]{extract_reverse_coded()}},
 \code{\link[=extract_sata]{extract_sata()}},
+\code{\link[=extract_survey_name]{extract_survey_name()}},
 \code{\link[=extract_universe]{extract_universe()}},
 \code{\link[=extract_val_labels]{extract_val_labels()}},
 \code{\link[=extract_var_label]{extract_var_label()}},
 \code{\link[=extract_var_note]{extract_var_note()}},
+\code{\link[=extract_vendor]{extract_vendor()}},
 \code{\link[=infer_question_prefaces]{infer_question_prefaces()}},
+\code{\link[=set_data_name]{set_data_name()}},
 \code{\link[=set_dataset_metadata]{set_dataset_metadata()}},
+\code{\link[=set_field_dates]{set_field_dates()}},
+\code{\link[=set_field_period]{set_field_period()}},
 \code{\link[=set_higher_is]{set_higher_is()}},
 \code{\link[=set_missing_codes]{set_missing_codes()}},
 \code{\link[=set_question_preface]{set_question_preface()}},
 \code{\link[=set_reverse_coded]{set_reverse_coded()}},
 \code{\link[=set_sata]{set_sata()}},
+\code{\link[=set_survey_name]{set_survey_name()}},
 \code{\link[=set_universe]{set_universe()}},
 \code{\link[=set_val_labels]{set_val_labels()}},
 \code{\link[=set_var_label]{set_var_label()}},
 \code{\link[=set_var_note]{set_var_note()}},
+\code{\link[=set_vendor]{set_vendor()}},
 \code{\link[=survey_weighting_history]{survey_weighting_history()}}
 }
 \concept{metadata}

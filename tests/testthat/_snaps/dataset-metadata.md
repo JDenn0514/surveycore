@@ -326,3 +326,158 @@
       i It was created by surveycore <= 1.1.0, before the dataset_metadata property existed.
       v Rebuild the object with `as_survey()` (or the matching constructor), then set the metadata.
 
+# set_vendor() with no value raises the wrapper setter_empty
+
+    Code
+      set_vendor(d)
+    Condition
+      Error:
+      x `set_vendor()` requires a value for `vendor`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_vendor() rejects a non-character value on a design
+
+    Code
+      set_vendor(d, 1L)
+    Condition
+      Error in `set_vendor()`:
+      x Dataset metadata key "vendor" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_survey_name() with no value raises setter_empty
+
+    Code
+      set_survey_name(d)
+    Condition
+      Error:
+      x `set_survey_name()` requires a value for `name`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_data_name() with no value raises setter_empty
+
+    Code
+      set_data_name(d)
+    Condition
+      Error:
+      x `set_data_name()` requires a value for `name`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_survey_name() rejects a non-character value on a design
+
+    Code
+      set_survey_name(d, 1L)
+    Condition
+      Error in `set_survey_name()`:
+      x Dataset metadata key "survey_name" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_data_name() rejects a non-character value on a design
+
+    Code
+      set_data_name(d, 1L)
+    Condition
+      Error in `set_data_name()`:
+      x Dataset metadata key "data_name" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_field_period() with no value raises setter_empty
+
+    Code
+      set_field_period(d)
+    Condition
+      Error:
+      x `set_field_period()` requires a value for `period`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_field_period() rejects a non-character value on a design
+
+    Code
+      set_field_period(d, 1L)
+    Condition
+      Error in `set_field_period()`:
+      x Dataset metadata key "field_period" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_field_dates() with no arguments raises setter_empty
+
+    Code
+      set_field_dates(d)
+    Condition
+      Error:
+      x `set_field_dates()` requires at least one of `field_start` or `field_end`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_field_dates() rejects a non-strict ISO start on a design
+
+    Code
+      set_field_dates(d, field_start = "2026/02/10")
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <character> of length 1.
+      i Got "2026/02/10".
+
+# set_field_dates() rejects a non-strict ISO end on a design
+
+    Code
+      set_field_dates(d, field_end = "2026-3-4")
+    Condition
+      Error:
+      x `field_end` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <character> of length 1.
+      i Got "2026-3-4".
+
+# set_field_dates() rejects a numeric date on a design
+
+    Code
+      set_field_dates(d, field_start = 20260210)
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <numeric> of length 1.
+      i Got 20260210.
+
+# set_field_dates() rejects an NA date with its own bullet
+
+    Code
+      set_field_dates(d, field_start = NA)
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <logical> of length 1.
+      i Got NA.
+      i The value is NA.
+
+# a reversed pair in one set_field_dates() call is rejected
+
+    Code
+      set_field_dates(d, "2026-03-04", "2026-02-10")
+    Condition
+      Error in `set_field_dates()`:
+      x "field_start" (2026-03-04) is after "field_end" (2026-02-10).
+      v Swap the two dates, or correct the wrong one.
+
+# a start after the STORED end is rejected on a design
+
+    Code
+      set_field_dates(d, field_start = "2026-06-01")
+    Condition
+      Error in `set_field_dates()`:
+      x "field_start" (2026-06-01) is after "field_end" (2026-03-04).
+      v Swap the two dates, or correct the wrong one.
+
+# set_vendor() on a stale design names the rebuild remedy
+
+    Code
+      set_vendor(d, "x")
+    Condition
+      Error:
+      x This object cannot store dataset metadata.
+      i It was created by surveycore <= 1.1.0, before the dataset_metadata property existed.
+      v Rebuild the object with `as_survey()` (or the matching constructor), then set the metadata.
+
+# a distant unknown key renders the base unknown-key message
+
+    Code
+      set_dataset_metadata(d, zzz = "x")
+    Condition
+      Error:
+      x "zzz" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
