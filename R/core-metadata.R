@@ -911,6 +911,11 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
 #' survey design object or data frame. Useful for auditing metadata state or
 #' building codebooks.
 #'
+#' @details
+#' This function reports per-variable fields only; dataset-level keys such as
+#' `vendor` and `field_start` are not variables, so they are excluded — read
+#' them with [extract_dataset_metadata()].
+#'
 #' @param x A survey design object or `data.frame`.
 #' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
 #'   Supports selection helpers: [tidyselect::starts_with()],
@@ -1229,8 +1234,12 @@ extract_metadata <- function(x, ..., fill = NULL) {
 #' A design object restored from a file written by surveycore 1.1.0 or earlier
 #' reports no dataset metadata rather than failing.
 #'
-#' `extract_metadata()` is deliberately separate: it reports per-variable
+#' [extract_metadata()] is deliberately separate: it reports per-variable
 #' fields only, and a dataset-level key is not a variable.
+#'
+#' Each key also has a convenience extractor that returns one scalar:
+#' [extract_survey_name()], [extract_data_name()], [extract_vendor()],
+#' [extract_field_dates()], and [extract_field_period()].
 #'
 #' @param x A survey design object or `data.frame`.
 #' @param ... Keys to return, as bare names (`vendor`) or strings
@@ -1394,6 +1403,11 @@ extract_dataset_metadata <- function(
 #' `survey_name` and `data_name` are independent. This function never reads one
 #' to fill or check the other.
 #'
+#' Each key also has a convenience setter that takes one value:
+#' [set_survey_name()], [set_data_name()], [set_vendor()], [set_field_dates()],
+#' and [set_field_period()]. Use [extract_dataset_metadata()] to read the keys
+#' back.
+#'
 #' A `NULL` value deletes a key. Deleting a key that is not set does nothing and
 #' raises no condition. A zero-length value such as `character(0)` is not a
 #' deletion — it is an invalid value.
@@ -1411,7 +1425,8 @@ extract_dataset_metadata <- function(
 #' even a column whose name matches a key.
 #'
 #' `dates` is the pre-1.2.0 attribute name for the prose field period. Setting
-#' it is an error that points at `field_period`. Deleting it is allowed:
+#' it is an error that points at `field_period` and [set_field_period()].
+#' Deleting it is allowed:
 #' `dates = NULL` is an alias for `field_period = NULL`, and either spelling
 #' removes both the `field_period` and the legacy `dates` attribute from a data
 #' frame.
@@ -1632,6 +1647,509 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
     attr(x, .dataset_legacy_period_attr) <- NULL
   }
   invisible(x)
+}
+
+
+# ── Dataset-level metadata: convenience wrappers ──────────────────────────────
+
+# Raise the setter_empty error a convenience setter owns. This is the WRAPPER's
+# own message, not the general setter's key-value template: a wrapper has one
+# named argument and no conventions, so the useful thing to report is the
+# function the caller wrote and the argument the caller left out. A missing
+# value is therefore a typed surveycore error, never a base "argument missing"
+# error.
+#
+# @param fn_name character(1). The wrapper's own name.
+# @param args    character. The wrapper's value argument(s): one name for the
+#                four scalar setters, both date names for set_field_dates().
+# @param call    The user-facing caller.
+# @return Never returns; always raises.
+.abort_wrapper_setter_empty <- function(fn_name, args, call) {
+  headline <- if (length(args) == 1L) {
+    "{.fn {fn_name}} requires a value for {.arg {args}}."
+  } else {
+    paste0(
+      "{.fn {fn_name}} requires at least one of {.arg {args[[1L]]}} or ",
+      "{.arg {args[[2L]]}}."
+    )
+  }
+  cli::cli_abort(
+    c(
+      "x" = headline,
+      "v" = paste0(
+        "Supply a single character value, or {.code NULL} to delete the key."
+      )
+    ),
+    class = "surveycore_error_setter_empty",
+    call = call
+  )
+}
+
+# The two guards every convenience setter runs before its own argument guard, in
+# the order spec section VII fixes: the `x` class check first, then the
+# stale-object property check. Running them here rather than relying on the
+# delegated call is what makes a stale object report the rebuild remedy even
+# when the caller also forgot the value.
+.check_wrapper_target <- function(x, call) {
+  .check_is_survey_or_df(x, call = call)
+  .check_dataset_metadata_writable(x, call = call)
+  invisible(NULL)
+}
+
+# Read one dataset metadata key as a scalar, filling an unset key with a
+# type-matched NA. Delegating to extract_dataset_metadata() keeps ONE key
+# resolution path: the guarded property read on a survey object and the silent
+# seven-attribute read on a data frame, with the same value rules in both. The
+# caller has already run the class check, and a fixed valid key with a fixed
+# valid `fill` cannot fail, so the delegated call raises nothing.
+.extract_dataset_scalar <- function(x, key) {
+  extract_dataset_metadata(x, key = key, fill = NA)[[key]]
+}
+
+# Validate and coerce one supplied set_field_dates() argument. NULL is a
+# deletion, not a value, so it passes straight through. Anything else goes
+# through the canonical value table in the argument register, which is what
+# makes the message name `field_start` / `field_end` as this function's own
+# argument rather than as a stored key.
+.coerce_wrapper_field_date <- function(key, value, call) {
+  if (is.null(value)) {
+    return(NULL)
+  }
+  .check_dataset_key_value(
+    key,
+    value,
+    mode = "error",
+    key_style = "arg",
+    call = call
+  )
+}
+
+
+#' Set the Fielding Vendor
+#'
+#' Sets the `vendor` dataset-level metadata key — the company that fielded the
+#' survey — on a survey design object or a data frame.
+#'
+#' @details
+#' A convenience wrapper for
+#' `set_dataset_metadata(x, vendor = vendor)`. It writes only the `vendor` key
+#' and leaves every other key untouched.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param vendor `character(1)`, non-`NA`, or `NULL` to delete the key.
+#'   Omitting it is an error, not a deletion.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_vendor(df, "Ipsos KnowledgePanel")
+#' extract_vendor(df)
+#'
+#' # NULL deletes the key.
+#' df <- set_vendor(df, NULL)
+#' extract_vendor(df)
+#'
+#' # The same call works on a survey design object.
+#' d <- as_survey(df, weights = w)
+#' d <- set_vendor(d, "Cint")
+#' extract_vendor(d)
+#' @family metadata
+#' @export
+set_vendor <- function(x, vendor) {
+  call <- rlang::caller_env()
+  .check_wrapper_target(x, call)
+  if (rlang::is_missing(vendor)) {
+    .abort_wrapper_setter_empty("set_vendor", "vendor", call)
+  }
+  invisible(set_dataset_metadata(x, vendor = vendor))
+}
+
+
+#' Extract the Fielding Vendor
+#'
+#' Returns the `vendor` dataset-level metadata key from a survey design object
+#' or a data frame.
+#'
+#' @details
+#' Returns the stored value only. This function never composes a value from
+#' another key, and it never warns: an unset key is a normal state, reported as
+#' `NA_character_`. A design object restored from a file written by surveycore
+#' 1.1.0 or earlier reports `NA_character_` rather than failing.
+#'
+#' @param x A survey design object or `data.frame`.
+#'
+#' @return `character(1)`: the stored vendor, or `NA_character_` when the key is
+#'   not set.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' extract_vendor(df)
+#'
+#' df <- set_vendor(df, "Ipsos KnowledgePanel")
+#' extract_vendor(df)
+#' @family metadata
+#' @export
+extract_vendor <- function(x) {
+  .check_is_survey_or_df(x, call = rlang::caller_env())
+  .extract_dataset_scalar(x, "vendor")
+}
+
+
+#' Set the Formal Survey Name
+#'
+#' Sets the `survey_name` dataset-level metadata key — the full formal name of
+#' the survey — on a survey design object or a data frame.
+#'
+#' @details
+#' A convenience wrapper for
+#' `set_dataset_metadata(x, survey_name = name)`.
+#'
+#' `survey_name` and `data_name` are independent keys. This function writes
+#' `survey_name` and nothing else: it never reads, fills, or checks
+#' `data_name`. Use [set_data_name()] for the display label. The two values may
+#' drift, and no function in the package reconciles them.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param name `character(1)`, non-`NA`, or `NULL` to delete the key. Omitting
+#'   it is an error, not a deletion.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_survey_name(df, "Example Attitudes Survey 2026")
+#' extract_survey_name(df)
+#'
+#' # The display label is a separate key and stays unset.
+#' extract_data_name(df)
+#'
+#' d <- as_survey(df, weights = w)
+#' d <- set_survey_name(d, "Example Attitudes Survey, Wave 2")
+#' extract_survey_name(d)
+#' @family metadata
+#' @export
+set_survey_name <- function(x, name) {
+  call <- rlang::caller_env()
+  .check_wrapper_target(x, call)
+  if (rlang::is_missing(name)) {
+    .abort_wrapper_setter_empty("set_survey_name", "name", call)
+  }
+  invisible(set_dataset_metadata(x, survey_name = name))
+}
+
+
+#' Extract the Formal Survey Name
+#'
+#' Returns the `survey_name` dataset-level metadata key from a survey design
+#' object or a data frame.
+#'
+#' @details
+#' Returns the stored `survey_name` only. When the key is not set this function
+#' returns `NA_character_` even if `data_name` is set: the two keys are
+#' independent, and no extractor substitutes one for the other. A design object
+#' restored from a file written by surveycore 1.1.0 or earlier reports
+#' `NA_character_` rather than failing.
+#'
+#' @param x A survey design object or `data.frame`.
+#'
+#' @return `character(1)`: the stored survey name, or `NA_character_` when the
+#'   key is not set.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' extract_survey_name(df)
+#'
+#' df <- set_survey_name(df, "Example Attitudes Survey 2026")
+#' extract_survey_name(df)
+#' @family metadata
+#' @export
+extract_survey_name <- function(x) {
+  .check_is_survey_or_df(x, call = rlang::caller_env())
+  .extract_dataset_scalar(x, "survey_name")
+}
+
+
+#' Set the Dataset Display Name
+#'
+#' Sets the `data_name` dataset-level metadata key — the display label for this
+#' particular dataset — on a survey design object or a data frame.
+#'
+#' @details
+#' A convenience wrapper for `set_dataset_metadata(x, data_name = name)`.
+#'
+#' `data_name` is usually a short name plus the field period, for example
+#' `"AAA Ipsos (February-March 2026)"`. It is independent of `survey_name`:
+#' this function writes `data_name` and nothing else, and it never reads,
+#' fills, or checks `survey_name`. Use [set_survey_name()] for the formal name.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param name `character(1)`, non-`NA`, or `NULL` to delete the key. Omitting
+#'   it is an error, not a deletion.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_data_name(df, "Example (February-March 2026)")
+#' extract_data_name(df)
+#'
+#' # The formal survey name is a separate key and stays unset.
+#' extract_survey_name(df)
+#'
+#' d <- as_survey(df, weights = w)
+#' d <- set_data_name(d, "Example (March 2026)")
+#' extract_data_name(d)
+#' @family metadata
+#' @export
+set_data_name <- function(x, name) {
+  call <- rlang::caller_env()
+  .check_wrapper_target(x, call)
+  if (rlang::is_missing(name)) {
+    .abort_wrapper_setter_empty("set_data_name", "name", call)
+  }
+  invisible(set_dataset_metadata(x, data_name = name))
+}
+
+
+#' Extract the Dataset Display Name
+#'
+#' Returns the `data_name` dataset-level metadata key from a survey design
+#' object or a data frame.
+#'
+#' @details
+#' Returns the stored `data_name` only. When the key is not set this function
+#' returns `NA_character_` even when `survey_name`, `field_start`, `field_end`,
+#' and `field_period` are all set. It never composes a label from the other
+#' keys. A design object restored from a file written by surveycore 1.1.0 or
+#' earlier reports `NA_character_` rather than failing.
+#'
+#' @param x A survey design object or `data.frame`.
+#'
+#' @return `character(1)`: the stored display name, or `NA_character_` when the
+#'   key is not set.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_survey_name(df, "Example Attitudes Survey 2026")
+#'
+#' # A set survey_name does not fill data_name.
+#' extract_data_name(df)
+#'
+#' df <- set_data_name(df, "Example (February-March 2026)")
+#' extract_data_name(df)
+#' @family metadata
+#' @export
+extract_data_name <- function(x) {
+  .check_is_survey_or_df(x, call = rlang::caller_env())
+  .extract_dataset_scalar(x, "data_name")
+}
+
+
+#' Set the Prose Field Period
+#'
+#' Sets the `field_period` dataset-level metadata key — the field period
+#' written for display, such as `"February-March 2026"` — on a survey design
+#' object or a data frame.
+#'
+#' @details
+#' A convenience wrapper for
+#' `set_dataset_metadata(x, field_period = period)`.
+#'
+#' The argument is named `period` because the function name already carries the
+#' `field_` context; the stored key is `field_period`. This function never
+#' touches the two structured dates — use [set_field_dates()] for those.
+#'
+#' On a data frame, deleting the key also removes the pre-1.2.0 `dates`
+#' attribute, so the deletion is idempotent and a later
+#' [as_survey()] call cannot restore the old value.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param period `character(1)`, non-`NA`, or `NULL` to delete the key.
+#'   Omitting it is an error, not a deletion.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_field_period(df, "February-March 2026")
+#' extract_field_period(df)
+#'
+#' d <- as_survey(df, weights = w)
+#' d <- set_field_period(d, "Spring 2026")
+#' extract_field_period(d)
+#' @family metadata
+#' @export
+set_field_period <- function(x, period) {
+  call <- rlang::caller_env()
+  .check_wrapper_target(x, call)
+  if (rlang::is_missing(period)) {
+    .abort_wrapper_setter_empty("set_field_period", "period", call)
+  }
+  invisible(set_dataset_metadata(x, field_period = period))
+}
+
+
+#' Extract the Prose Field Period
+#'
+#' Returns the `field_period` dataset-level metadata key from a survey design
+#' object or a data frame.
+#'
+#' @details
+#' Returns the stored `field_period` only. It never composes a period from
+#' `field_start` and `field_end` — use [extract_field_dates()] for those. On a
+#' data frame the pre-1.2.0 attribute name `dates` is read as `field_period`
+#' when no `field_period` attribute is present. A design object restored from a
+#' file written by surveycore 1.1.0 or earlier reports `NA_character_` rather
+#' than failing.
+#'
+#' @param x A survey design object or `data.frame`.
+#'
+#' @return `character(1)`: the stored field period, or `NA_character_` when the
+#'   key is not set.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' extract_field_period(df)
+#'
+#' df <- set_field_period(df, "February-March 2026")
+#' extract_field_period(df)
+#' @family metadata
+#' @export
+extract_field_period <- function(x) {
+  .check_is_survey_or_df(x, call = rlang::caller_env())
+  .extract_dataset_scalar(x, "field_period")
+}
+
+
+#' Set the Field Dates
+#'
+#' Sets the `field_start` and `field_end` dataset-level metadata keys — the
+#' first and last day in the field — on a survey design object or a data frame.
+#'
+#' @details
+#' A convenience wrapper for `set_dataset_metadata()` that forwards **only the
+#' arguments the call supplies**. The three states of each argument are
+#' distinct:
+#'
+#' \describe{
+#'   \item{not supplied}{The stored key is left unchanged.}
+#'   \item{`NULL`}{The stored key is deleted.}
+#'   \item{a value}{The key is set, after validation and coercion.}
+#' }
+#'
+#' A value is either a `Date` scalar or an ISO 8601 string (`"YYYY-MM-DD"`),
+#' which is stored as a `Date`. A looser string such as `"2026/02/10"` or
+#' `"2026-2-1"` is rejected, and the error names this function's own argument.
+#'
+#' `field_start` must not be after `field_end`. The comparison uses the
+#' *effective* value of each key: the new value when the call supplies one, no
+#' value when the call supplies `NULL`, and the stored value when the call does
+#' not mention the key. So one call can repair a reversed stored pair by
+#' deleting one date and setting the other, and deleting both always succeeds.
+#'
+#' This function never touches `field_period` — the prose period has its own
+#' setter, [set_field_period()].
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param field_start `Date(1)`, an ISO 8601 `character(1)`, or `NULL` to
+#'   delete the key. Omit the argument to leave the stored value unchanged.
+#' @param field_end `Date(1)`, an ISO 8601 `character(1)`, or `NULL` to delete
+#'   the key. Omit the argument to leave the stored value unchanged.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_field_dates(df, "2026-02-10", "2026-03-04")
+#' extract_field_dates(df)
+#'
+#' # Supplying one argument leaves the other key unchanged.
+#' df <- set_field_dates(df, field_end = "2026-03-10")
+#' extract_field_dates(df)
+#'
+#' # NULL deletes a key.
+#' df <- set_field_dates(df, field_start = NULL)
+#' extract_field_dates(df)
+#'
+#' d <- as_survey(df, weights = w)
+#' d <- set_field_dates(d, field_start = as.Date("2026-02-11"))
+#' extract_field_dates(d)
+#' @family metadata
+#' @export
+set_field_dates <- function(x, field_start, field_end) {
+  call <- rlang::caller_env()
+  .check_wrapper_target(x, call)
+
+  # Missing is tested on the unevaluated arguments, so an omitted argument is
+  # never forced and never reaches the delegated call. That is what separates
+  # "leave the stored key alone" from the explicit NULL that deletes it.
+  supplied <- c(
+    field_start = !rlang::is_missing(field_start),
+    field_end = !rlang::is_missing(field_end)
+  )
+  if (!any(supplied)) {
+    .abort_wrapper_setter_empty(
+      "set_field_dates",
+      .dataset_date_keys,
+      call
+    )
+  }
+
+  # Pre-validate in the wrapper, in the argument register and with the
+  # wrapper's own `call`, so a bad value reports this function and this
+  # function's argument name. The delegated call then receives Date values that
+  # have already passed the canonical table.
+  #
+  # Each argument is read only inside its own branch: collecting both into one
+  # list first would force the unsupplied one. `[<-` with a one-element list is
+  # what keeps an explicit NULL in `pairs`, because `[[<-` would drop it and the
+  # deletion would silently become "leave the key alone".
+  pairs <- list()
+  if (supplied[["field_start"]]) {
+    pairs["field_start"] <- list(
+      .coerce_wrapper_field_date("field_start", field_start, call)
+    )
+  }
+  if (supplied[["field_end"]]) {
+    pairs["field_end"] <- list(
+      .coerce_wrapper_field_date("field_end", field_end, call)
+    )
+  }
+
+  invisible(set_dataset_metadata(x, !!!pairs))
+}
+
+
+#' Extract the Field Dates
+#'
+#' Returns the `field_start` and `field_end` dataset-level metadata keys from a
+#' survey design object or a data frame.
+#'
+#' @details
+#' Returns the two structured dates only. The prose field period has its own
+#' extractor, [extract_field_period()], and this function never derives one
+#' from the other. An unset key is a normal state, reported as `as.Date(NA)`;
+#' this function never warns. A design object restored from a file written by
+#' surveycore 1.1.0 or earlier reports both entries as `as.Date(NA)` rather
+#' than failing.
+#'
+#' @param x A survey design object or `data.frame`.
+#'
+#' @return A named list of length 2, `field_start` then `field_end`, each a
+#'   `Date` of length 1. An unset key is `as.Date(NA)`.
+#'
+#' @examples
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' extract_field_dates(df)
+#'
+#' df <- set_field_dates(df, "2026-02-10", "2026-03-04")
+#' extract_field_dates(df)
+#' @family metadata
+#' @export
+extract_field_dates <- function(x) {
+  .check_is_survey_or_df(x, call = rlang::caller_env())
+  extract_dataset_metadata(x, key = .dataset_date_keys, fill = NA)
 }
 
 
