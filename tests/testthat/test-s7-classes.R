@@ -1182,6 +1182,60 @@ test_that("survey_metadata validator rejects a NULL element on a date key", {
 
 # ── survey_metadata validator: per-key value rules (spec III.3 check 7) ───────
 
+# Each of the four character keys is violable three ways — non-character,
+# length 2, and NA. All twelve cases carry the same class, and all twelve are
+# asserted, because this suite is what guards the closed value contract on
+# every later change.
+
+test_that("survey_metadata validator rejects a non-character survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = 1L)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = 1L)),
+    regexp = paste(
+      "Dataset metadata key survey_name must be a single non-NA",
+      "character string."
+    )
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = c("a", "b"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a non-character data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = TRUE)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = c("a", "b"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
 test_that("survey_metadata validator rejects a non-character vendor", {
   expect_error(
     survey_metadata(dataset_metadata = list(vendor = 1L)),
@@ -1196,16 +1250,38 @@ test_that("survey_metadata validator rejects a non-character vendor", {
   )
 })
 
-test_that("survey_metadata validator rejects an NA survey_name", {
+test_that("survey_metadata validator rejects a length-2 vendor", {
   expect_error(
-    survey_metadata(dataset_metadata = list(survey_name = NA_character_)),
+    survey_metadata(dataset_metadata = list(vendor = c("Ipsos", "Cint"))),
     class = "surveycore_error_dataset_metadata_bad_type"
   )
 })
 
-test_that("survey_metadata validator rejects a length-2 data_name", {
+test_that("survey_metadata validator rejects an NA vendor", {
   expect_error(
-    survey_metadata(dataset_metadata = list(data_name = c("a", "b"))),
+    survey_metadata(dataset_metadata = list(vendor = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a non-character field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = 2026)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 field_period", {
+  bad <- list(field_period = c("February 2026", "March 2026"))
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = NA_character_)),
     class = "surveycore_error_dataset_metadata_bad_type"
   )
 })
