@@ -1435,6 +1435,27 @@ extract_dataset_metadata <- function(
 #' cannot store dataset metadata. Reading such an object works, but a write
 #' raises an error naming the remedy: rebuild the object with a constructor.
 #'
+#' @section Attribute persistence:
+#' On a data frame, dataset metadata lives in whole-object attributes, and
+#' those are fragile. Common operations return a new frame without them:
+#'
+#' - base `[` when it selects columns, as in `df[, cols]`
+#' - `merge()` and `subset()`
+#' - `tibble::as_tibble()`, which has dropped them in some versions and keeps
+#'   them in others, so neither behavior is safe to rely on
+#'
+#' So set dataset metadata **last**, directly before `usethis::use_data()`.
+#' Or set it on the survey design instead: there it lives in the design's
+#' metadata, where no data-frame operation can drop it.
+#'
+#' A constructor **copies** these attributes into the design; it never strips
+#' them. The data frame inside a design therefore still carries the values it
+#' was built with. A later `set_vendor()` call, or a deletion, changes the
+#' design's metadata only. Rebuilding a design from the data frame that
+#' [survey_data()] returns re-promotes the original attributes, so an edited or
+#' deleted key comes back. Avoid that round trip and keep working with the
+#' design object.
+#'
 #' @param x A survey design object or `data.frame`.
 #' @param ... Named arguments where the name is a dataset metadata key and the
 #'   value is the value to store. A single named list is also accepted.
