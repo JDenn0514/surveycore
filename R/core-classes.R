@@ -209,11 +209,33 @@ survey_metadata <- S7::new_class(
     for (key in nms) {
       value <- dm[[key]]
 
+      # Delegate to the shared checker FIRST, then re-raise each of its
+      # CLI-formatted errors as the matching plain Layer 1 one-liner. Every
+      # line the checker adds is reachable through this call.
+      tryCatch(
+        .check_dataset_key_value(key, value, mode = "error"),
+        surveycore_error_dataset_metadata_bad_type = function(cnd) {
+          cli::cli_abort(
+            paste0(
+              "Dataset metadata key {key} must be a single non-NA ",
+              "character string."
+            ),
+            class = "surveycore_error_dataset_metadata_bad_type"
+          )
+        },
+        surveycore_error_field_date_invalid = function(cnd) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      )
+
       # Validator narrowing: a STORED date is always a Date scalar, because
-      # only coerced values reach storage. Keep this narrowing here even when
-      # the shared checker happens to enforce the same rule — the checker
-      # widens to accept ISO strings for setter callers, and this branch is
-      # what keeps the class layer rejecting them.
+      # only coerced values reach storage. DO NOT deduplicate this against the
+      # checker's date branch, even while the two agree — the checker widens to
+      # accept strict-ISO strings for setter callers, and this branch is what
+      # keeps the class layer rejecting a stored ISO string after that.
       if (key %in% .dataset_date_keys) {
         date_ok <- inherits(value, "Date") &&
           length(value) == 1L &&
@@ -225,21 +247,6 @@ survey_metadata <- S7::new_class(
           )
         }
       }
-
-      # Delegate to the shared checker, then re-raise its CLI-formatted error
-      # as the plain Layer 1 one-liner.
-      tryCatch(
-        .check_dataset_key_value(key, value, mode = "error"),
-        surveycore_error_dataset_metadata_bad_type = function(cnd) {
-          cli::cli_abort(
-            paste0(
-              "Dataset metadata key {key} must be a single non-NA ",
-              "character string."
-            ),
-            class = "surveycore_error_dataset_metadata_bad_type"
-          )
-        }
-      )
     }
 
     # Check 8 — when both dates are present, field_start must not be after
