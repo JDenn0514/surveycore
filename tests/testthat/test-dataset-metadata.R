@@ -2364,3 +2364,72 @@ test_that("a tibble keeps its class through the write", {
   expect_s3_class(df, "tbl_df")
   expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
 })
+
+# ── 17. set_dataset_metadata() — stale (pre-1.2.0) objects ────────────────────
+
+test_that("a write on a stale design raises the unavailable error", {
+  d <- make_stale_metadata_design("taylor")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = "Ipsos"),
+    class = "surveycore_error_dataset_metadata_unavailable"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, vendor = "Ipsos"))
+})
+
+test_that("a write on a stale design of any class raises the same error", {
+  for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
+    d <- make_stale_metadata_design(cls)
+    test_invariants(d)
+
+    expect_error(
+      set_dataset_metadata(d, vendor = "Ipsos"),
+      class = "surveycore_error_dataset_metadata_unavailable"
+    )
+  }
+})
+
+test_that("the stale guard runs ahead of the convention rules", {
+  d <- make_stale_metadata_design("taylor")
+  test_invariants(d)
+
+  # An empty call and an ambiguous call both report the stale object, because
+  # the property guard runs before any input parsing.
+  expect_error(
+    set_dataset_metadata(d),
+    class = "surveycore_error_dataset_metadata_unavailable"
+  )
+  expect_error(
+    set_dataset_metadata(d, vendor = "Ipsos", key = "vendor"),
+    class = "surveycore_error_dataset_metadata_unavailable"
+  )
+})
+
+test_that("the stale guard runs ahead of the unknown-key rule", {
+  d <- make_stale_metadata_design("taylor")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, mode = "web"),
+    class = "surveycore_error_dataset_metadata_unavailable"
+  )
+})
+
+test_that("the stale guard runs after the x class check", {
+  # A wrong class is reported as a wrong class, not as a stale object.
+  expect_error(
+    set_dataset_metadata(1L, vendor = "Ipsos"),
+    class = "surveycore_error_not_survey_or_df"
+  )
+})
+
+test_that("a deletion on a stale design raises the unavailable error", {
+  d <- make_stale_metadata_design("taylor")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = NULL),
+    class = "surveycore_error_dataset_metadata_unavailable"
+  )
+})

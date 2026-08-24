@@ -1030,6 +1030,41 @@ extract_metadata <- function(x, ..., fill = NULL) {
   .read_dataset_attributes(x)$values
 }
 
+# Refuse a dataset-metadata WRITE on a survey object whose stored class predates
+# the property. Reads are guarded and simply report nothing (see
+# .dataset_metadata_or_empty()), but a write has nowhere to go, so it fails with
+# a surveycore error naming the remedy rather than with S7's raw property error.
+# The membership test is the same one the guarded reader uses.
+#
+# A data frame is always writable: attributes need no class property.
+#
+# @param x    A survey design object or a data frame.
+# @param call The user-facing caller.
+# @return Invisibly NULL, or an error.
+.check_dataset_metadata_writable <- function(x, call = rlang::caller_env()) {
+  if (!S7::S7_inherits(x, survey_base)) {
+    return(invisible(NULL))
+  }
+  if ("dataset_metadata" %in% S7::prop_names(x@metadata)) {
+    return(invisible(NULL))
+  }
+  cli::cli_abort(
+    c(
+      "x" = "This object cannot store dataset metadata.",
+      "i" = paste0(
+        "It was created by surveycore <= 1.1.0, before the ",
+        "{.field dataset_metadata} property existed."
+      ),
+      "v" = paste0(
+        "Rebuild the object with {.fn as_survey} (or the matching ",
+        "constructor), then set the metadata."
+      )
+    ),
+    class = "surveycore_error_dataset_metadata_unavailable",
+    call = call
+  )
+}
+
 # The nearest valid dataset key within Levenshtein distance 1 of the lowercased
 # candidate, or NULL when nothing is that close. Lowercasing is what catches a
 # capitalization slip such as `Vendor`; distance 1 catches `vender`.
@@ -1321,6 +1356,11 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
 
   # Rule 1: x is a survey object or a data frame.
   .check_is_survey_or_df(x, call = call)
+
+  # Rule 2: the metadata object carries the property. This runs before any input
+  # parsing, so an object restored from a pre-1.2.0 file reports the one problem
+  # the caller has to fix first.
+  .check_dataset_metadata_writable(x, call = call)
 
   # Rules 3-7 run inside the shared parser, in the key/key-value/list register.
   dots <- rlang::list2(...)

@@ -316,3 +316,13 @@
       x "field_start" (2026-03-04) is after "field_end" (2026-02-10).
       v Swap the two dates, or correct the wrong one.
 
+# a write on a stale design raises the unavailable error
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos")
+    Condition
+      Error:
+      x This object cannot store dataset metadata.
+      i It was created by surveycore <= 1.1.0, before the dataset_metadata property existed.
+      v Rebuild the object with `as_survey()` (or the matching constructor), then set the metadata.
+
