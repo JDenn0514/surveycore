@@ -3255,6 +3255,31 @@ test_that("as_survey() promotes only the attributes that are present", {
   )
 })
 
+test_that("as_survey() never derives data_name from the survey_name attribute", {
+  # Section II.1 independence rule, expressed on the promotion path. Only the
+  # `survey_name` attribute is attached, so `data_name` must stay unset.
+  # The second assertion is what makes the first one mean anything: the key
+  # that WAS set has to survive promotion, otherwise NA_character_ would only
+  # prove that nothing at all was promoted.
+  d <- .promo_design(full_keys["survey_name"])
+  test_invariants(d)
+
+  expect_identical(extract_data_name(d), NA_character_)
+  expect_identical(extract_survey_name(d), full_keys$survey_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("as_survey() never derives survey_name from the data_name attribute", {
+  # The mirror of the block above. Independence runs in both directions, so
+  # the reverse derivation needs its own assertion.
+  d <- .promo_design(full_keys["data_name"])
+  test_invariants(d)
+
+  expect_identical(extract_survey_name(d), NA_character_)
+  expect_identical(extract_data_name(d), full_keys$data_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
+})
+
 test_that("as_survey() skips an absent attribute silently", {
   # `survey_name` is absent, `vendor` is set. The absent key must produce no
   # warning at all — silence is reserved for absence (a zero-length value warns).
@@ -3265,7 +3290,10 @@ test_that("as_survey() skips an absent attribute silently", {
 })
 
 test_that("as_survey() leaves @dataset_metadata empty when no attribute is set", {
-  d <- .promo_design(list())
+  # Section V.3 last bullet: with nothing to promote the helper returns the
+  # metadata object unchanged AND stays silent. Nothing was dropped, so a
+  # warning here would report a loss that never happened.
+  expect_no_warning(d <- .promo_design(list()))
   test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), list())
@@ -3291,10 +3319,16 @@ test_that("as_survey() promotes the legacy dates attribute as field_period", {
 })
 
 test_that("as_survey() prefers a present field_period over the legacy dates attribute", {
-  d <- .promo_design(list(
-    field_period = "February-March 2026",
-    dates = "some other period"
-  ))
+  # Section V.2 step 7 reads `dates` only when the `field_period` attribute is
+  # ABSENT. A present and valid `field_period` means `dates` is never read, so
+  # nothing was discarded and the construction must be silent. A warning here
+  # would mean the reader treats the unread `dates` as a dropped value.
+  expect_no_warning(
+    d <- .promo_design(list(
+      field_period = "February-March 2026",
+      dates = "some other period"
+    ))
+  )
   test_invariants(d)
 
   expect_identical(
@@ -3367,6 +3401,48 @@ test_that("as_survey() warns and drops an unparseable date attribute", {
   test_invariants(d)
   expect_identical(extract_dataset_metadata(d), list())
   expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a date attribute that is not date-shaped", {
+  # "sometime" does not parse at all. Section II.3 requires
+  # .coerce_field_date() to wrap as.Date() in tryCatch(), so no base condition
+  # reaches the caller: exactly one warning, ours, and no message.
+  keys <- list(field_start = "sometime")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() warns and drops an ISO-shaped date that does not exist", {
+  # "2026-02-30" MATCHES format = "%Y-%m-%d" and still yields NA, because
+  # February has no 30th. This is the calendar-validity branch, which neither
+  # a wrong-separator string nor an unparseable string reaches.
+  keys <- list(field_start = "2026-02-30")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
 })
 
 test_that("as_survey() keeps the valid attributes when another one is dropped", {
@@ -3489,6 +3565,53 @@ test_that("as_survey() warns with the legacy variant for a dates attribute of le
   expect_identical(extract_dataset_metadata(d), list())
   expect_snapshot(d2 <- .promo_design(keys))
 })
+
+test_that("haven column labels and dataset attributes both promote", {
+  # Section V.1: the per-column haven reader and the whole-object dataset
+  # reader are separate helpers running at the same constructor stage. Neither
+  # may interfere with the other, so this block asserts both halves at once.
+  df <- make_survey_data(
+    n = 20L,
+    n_psu = 6L,
+    n_strata = 2L,
+    with_labels = TRUE,
+    seed = 42L
+  )
+  for (key in names(full_keys)) {
+    attr(df, key) <- full_keys[[key]]
+  }
+
+  expect_no_warning(
+    d <- as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    )
+  )
+  test_invariants(d)
+
+  # Per-variable metadata: variable labels and value labels.
+  expect_identical(
+    extract_var_label(d, y1),
+    c(y1 = "Outcome variable 1 (continuous)")
+  )
+  expect_identical(
+    extract_var_label(d, y3, group),
+    c(
+      y3 = "Outcome variable 3 (binary, 0/1)",
+      group = "Demographic group"
+    )
+  )
+  expect_identical(extract_val_labels(d, y3)$y3, c(No = 0L, Yes = 1L))
+
+  # Dataset-level metadata: all six keys, in canonical order.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
 
 # Round trip and non-destructive promotion (spec section V.4).
 
