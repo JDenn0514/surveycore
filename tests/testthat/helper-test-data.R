@@ -28,6 +28,145 @@ full_keys <- list(
 )
 
 # ------------------------------------------------------------------------------
+# make_dataset_df()
+# ------------------------------------------------------------------------------
+
+#' Build a plain data frame carrying whole-frame dataset-metadata attributes
+#'
+#' Returns a synthetic survey data frame with one whole-object attribute per
+#' element of `keys`. This is the read-path fixture for the data-frame mode of
+#' the dataset-metadata extractors: it attaches raw attributes with bare
+#' `attr()<-`, so a test can inject any value — valid, invalid, zero-length,
+#' or the legacy `dates` name — without going through a setter.
+#'
+#' Attributes are attached AFTER the frame is built, because base subsetting
+#' and `as_tibble()` drop whole-object attributes.
+#'
+#' @param keys A named list. One attribute per element, named by the attribute
+#'   name. Defaults to `full_keys` (the six canonical keys, canonical order).
+#'   A `NULL` element attaches nothing, so omitting a key and giving it `NULL`
+#'   are the same thing.
+#' @param n    Rows in the frame. Default 20.
+#' @param seed Random seed passed to `make_survey_data()`. Default 42.
+#' @return A plain `data.frame` with the requested attributes attached.
+#' @keywords internal
+make_dataset_df <- function(keys = full_keys, n = 20L, seed = 42L) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  for (nm in names(keys)) {
+    attr(df, nm) <- keys[[nm]]
+  }
+  df
+}
+
+# ------------------------------------------------------------------------------
+# make_stale_metadata_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design whose metadata object predates @dataset_metadata
+#'
+#' Simulates an object restored from a `.rds`/`.rda` file written by
+#' surveycore <= 1.1.0. Such an object carries a frozen copy of the old S7
+#' class, so `x@metadata@dataset_metadata` raises S7's "Can't find property"
+#' error rather than returning a value.
+#'
+#' The simulation removes `dataset_metadata` from the frozen class copy stored
+#' in the metadata object's `S7_class` attribute, and removes the matching
+#' property attribute. It then re-attaches the stripped metadata object with
+#' `attr()<-` rather than `@<-`, because `@<-` would re-validate and restore
+#' the current class.
+#'
+#' @param design One of "taylor", "replicate", "twophase", or "nonprob". All
+#'   four are supported so every print, summary, and extractor path can be
+#'   exercised against a stale object of its own class.
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class whose `@metadata`
+#'   lacks the `dataset_metadata` property.
+#' @keywords internal
+make_stale_metadata_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+
+  d <- switch(
+    design,
+    "taylor" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+    },
+    "replicate" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "replicate",
+        type = "brr",
+        seed = seed
+      )
+      repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "BRR"
+      )
+    },
+    "twophase" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "twophase",
+        seed = seed
+      )
+      phase1 <- as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+      as_survey_twophase(phase1, subset = subset, method = "approx")
+    },
+    "nonprob" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey_nonprob(df, weights = wt)
+    }
+  )
+
+  md <- d@metadata
+  old_class <- attr(md, "S7_class")
+  old_props <- attr(old_class, "properties")
+  old_props$dataset_metadata <- NULL
+  attr(old_class, "properties") <- old_props
+  attr(md, "dataset_metadata") <- NULL
+  attr(md, "S7_class") <- old_class
+  attr(d, "metadata") <- md
+
+  d
+}
+
+# ------------------------------------------------------------------------------
 # make_survey_data()
 # ------------------------------------------------------------------------------
 

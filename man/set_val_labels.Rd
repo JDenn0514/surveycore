@@ -54,6 +54,7 @@ d <- set_val_labels(d, riagendr = c(Male = 1L, Female = 2L))
 
 Other metadata:
 \code{\link[=classify_question_type]{classify_question_type()}},
+\code{\link[=extract_dataset_metadata]{extract_dataset_metadata()}},
 \code{\link[=extract_higher_is]{extract_higher_is()}},
 \code{\link[=extract_metadata]{extract_metadata()}},
 \code{\link[=extract_missing_codes]{extract_missing_codes()}},

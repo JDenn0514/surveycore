@@ -365,23 +365,39 @@
 
 # ── Extractors ────────────────────────────────────────────────────────────────
 
-# Shared fill validator for individual extractors
-# (accepts NULL or NA_character_).
-.check_extractor_fill <- function(fill, fn_name, call) {
-  if (!is.null(fill) && !identical(fill, NA_character_)) {
-    cli::cli_abort(
-      c(
-        "x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.",
-        "i" = paste0(
-          "Valid values for {.fn {fn_name}}: ",
-          "{.val NULL} (omit) or {.code NA_character_} (include with NA)."
-        )
-      ),
-      class = "surveycore_error_fill_invalid",
-      call = call
-    )
+# Shared fill validator for individual extractors.
+#
+# The default accepts NULL or NA_character_ and renders the two-value message,
+# byte-identically to every existing extractor. allow_na = TRUE widens the
+# accepted set with plain (logical) NA and lists all three in the message;
+# extract_dataset_metadata() is its only widened caller, because a
+# dataset-metadata fill has to type-match a Date key as well as a character
+# key, and `NA` is the only spelling that reads naturally for both.
+.check_extractor_fill <- function(fill, fn_name, call, allow_na = FALSE) {
+  accepted <- is.null(fill) ||
+    identical(fill, NA_character_) ||
+    (allow_na && identical(fill, NA))
+  if (accepted) {
+    return(invisible(NULL))
   }
-  invisible(NULL)
+
+  valid_values <- if (allow_na) {
+    paste0(
+      "{.val NULL} (omit), {.code NA}, or {.code NA_character_} ",
+      "(include with NA)."
+    )
+  } else {
+    "{.val NULL} (omit) or {.code NA_character_} (include with NA)."
+  }
+
+  cli::cli_abort(
+    c(
+      "x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.",
+      "i" = paste0("Valid values for {.fn {fn_name}}: ", valid_values)
+    ),
+    class = "surveycore_error_fill_invalid",
+    call = call
+  )
 }
 
 # Shared format validator. valid_formats must match the function's contract.
@@ -963,6 +979,265 @@ extract_metadata <- function(x, ..., fill = NULL) {
     if (length(result) == 0L) return(list())
   }
   result
+}
+
+
+# ── Dataset-level metadata ────────────────────────────────────────────────────
+
+# Resolve the effective dataset key-value list for either input mode. A survey
+# object reads its metadata property through the guarded reader, so an object
+# restored from a pre-1.2.0 file yields list(). A data frame reads the seven
+# recognized whole-object attributes; the `dropped` report is discarded here,
+# because extractors never warn.
+.get_dataset_metadata_list <- function(x) {
+  if (S7::S7_inherits(x, survey_base)) {
+    return(.dataset_metadata_or_empty(x@metadata))
+  }
+  .read_dataset_attributes(x)$values
+}
+
+# Raise the unknown-key error for a requested or supplied dataset key. The
+# parameter is named `key` so the message template reads as the error table
+# states it.
+.abort_dataset_key_unknown <- function(key, call) {
+  valid_keys <- .dataset_metadata_keys
+  cli::cli_abort(
+    c(
+      "x" = "{.val {key}} is not a dataset metadata key.",
+      "i" = "Valid keys: {.val {valid_keys}}."
+    ),
+    class = "surveycore_error_dataset_key_unknown",
+    call = call
+  )
+}
+
+# Resolve one captured `...` element to a key name. Bare symbols and character
+# scalars are names; anything else — a call, a tidyselect helper, a number — is
+# not, and a dataset key is not a column, so no helper can apply.
+.dataset_key_from_expr <- function(expr, call) {
+  if (rlang::is_symbol(expr)) {
+    return(rlang::as_string(expr))
+  }
+  if (is.character(expr) && length(expr) == 1L && !is.na(expr)) {
+    return(expr)
+  }
+  cli::cli_abort(
+    c(
+      "x" = "{.arg ...} must contain bare key names or strings.",
+      "i" = paste0(
+        "Tidy-select helpers do not apply here: a dataset metadata key is ",
+        "not a column."
+      ),
+      "v" = paste0(
+        "Use bare names ({.code vendor}), strings ({.val vendor}), or the ",
+        "{.arg key} argument."
+      )
+    ),
+    class = "surveycore_error_dataset_key_not_name",
+    call = call
+  )
+}
+
+# Convert a resolved dataset-metadata list to the requested output shape.
+#
+# `result_list` arrives in output order, holding NULL for every key that is not
+# set. A NULL fill drops those entries; a non-NULL fill keeps them, type-matched
+# per key in "list" format and always NA_character_ in "data_frame" format.
+#
+# .format_scalar_result() is not reusable here: it names the first column
+# `variable`, and its data_frame branch coerces through a character(1) vapply
+# that cannot carry Date values or type-matched fills.
+.format_dataset_result <- function(result_list, format, fill) {
+  if (is.null(fill)) {
+    result_list <- result_list[!vapply(result_list, is.null, logical(1L))]
+  }
+  keys <- names(result_list)
+
+  if (format == "list") {
+    if (length(keys) == 0L) {
+      return(list())
+    }
+    filled <- lapply(keys, function(k) {
+      value <- result_list[[k]]
+      if (!is.null(value)) {
+        return(value)
+      }
+      if (k %in% .dataset_date_keys) as.Date(NA) else NA_character_
+    })
+    return(stats::setNames(filled, keys))
+  }
+
+  # "data_frame": two columns, `key` and `value`, value always character.
+  if (length(keys) == 0L) {
+    return(tibble::tibble(key = character(0L), value = character(0L)))
+  }
+  values <- vapply(
+    keys,
+    function(k) {
+      value <- result_list[[k]]
+      if (is.null(value)) {
+        return(NA_character_)
+      }
+      if (inherits(value, "Date")) format(value) else as.character(value)
+    },
+    character(1L),
+    USE.NAMES = FALSE
+  )
+  tibble::tibble(key = keys, value = values)
+}
+
+
+#' Extract Dataset-Level Metadata
+#'
+#' Returns whole-dataset metadata — the survey name, the display name, the
+#' fielding vendor, and the field dates — from a survey design object or a
+#' data frame.
+#'
+#' @details
+#' The key vocabulary is closed. Exactly six keys are valid, and this is their
+#' canonical order:
+#'
+#' \describe{
+#'   \item{`survey_name`}{`character(1)`. Full formal survey name.}
+#'   \item{`data_name`}{`character(1)`. Display label for this dataset.}
+#'   \item{`vendor`}{`character(1)`. Fielding vendor.}
+#'   \item{`field_start`}{`Date(1)`. First day in the field.}
+#'   \item{`field_end`}{`Date(1)`. Last day in the field.}
+#'   \item{`field_period`}{`character(1)`. Prose field period, for display.}
+#' }
+#'
+#' `survey_name` and `data_name` are independent. This function never reads one
+#' to compute the other, and it never composes a label from the field dates.
+#'
+#' On a survey design object the stored metadata is the single source of truth;
+#' attributes on the underlying data frame are not consulted. On a data frame
+#' the six attribute names above are read directly, plus the pre-1.2.0 name
+#' `dates`, which is read as `field_period` when no `field_period` attribute is
+#' present. Any other attribute is ignored. An attribute whose value fails the
+#' type rules above is dropped silently — this function never warns.
+#'
+#' A design object restored from a file written by surveycore 1.1.0 or earlier
+#' reports no dataset metadata rather than failing.
+#'
+#' `extract_metadata()` is deliberately separate: it reports per-variable
+#' fields only, and a dataset-level key is not a variable.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... Keys to return, as bare names (`vendor`) or strings
+#'   (`"vendor"`). Supports `!!!` splicing of a character vector of names.
+#'   Matching is by plain name and is **not** tidy-select: a key is not a
+#'   column, so selection helpers such as `all_of()` are rejected. Repeated
+#'   requests are deduplicated, keeping the first position. If empty, returns
+#'   every key that is set.
+#' @param key `character` vector of key names, or `NULL` (default). A
+#'   programmatic alternative to `...`; supplying both is an error. Must be
+#'   supplied by name, because it follows `...`.
+#' @param format `character(1)`. Output shape: `"list"` (default) or
+#'   `"data_frame"`. Must be supplied by name, because it follows `...`.
+#' @param fill `NULL` (default), `NA`, or `NA_character_`. Has two effects.
+#'   For keys named in `...` or `key` that are not set: `NULL` omits them,
+#'   while `NA` and `NA_character_` include them with a missing value. With an
+#'   empty request, a non-`NULL` `fill` returns the full six-key schema with
+#'   every absent key filled — the codebook idiom. Must be supplied by name,
+#'   because it follows `...`.
+#'
+#' @return
+#' - `"list"` (default): named list of the stored values, in request order, or
+#'   canonical key order for an empty request. Date keys are `Date(1)`. A
+#'   filled absent key is type-matched: `as.Date(NA)` for `field_start` and
+#'   `field_end`, `NA_character_` for the four character keys. Empty result:
+#'   `list()`.
+#' - `"data_frame"`: tibble with columns `key` and `value`, both character. A
+#'   `Date` renders through `format()` as `YYYY-MM-DD`, and a filled absent key
+#'   is always `NA_character_` regardless of its type. Empty result: zero-row
+#'   tibble with both columns.
+#'
+#' @examples
+#' # On a data frame, dataset metadata lives in whole-object attributes.
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' attr(df, "survey_name") <- "Example Attitudes Survey 2026"
+#' attr(df, "vendor") <- "Ipsos KnowledgePanel"
+#' attr(df, "field_start") <- as.Date("2026-02-10")
+#' attr(df, "field_end") <- as.Date("2026-03-04")
+#'
+#' extract_dataset_metadata(df)
+#' extract_dataset_metadata(df, vendor)
+#' extract_dataset_metadata(df, key = c("field_start", "field_end"))
+#' extract_dataset_metadata(df, format = "data_frame")
+#'
+#' # An unset key is omitted by default, or filled on request.
+#' extract_dataset_metadata(df, data_name)
+#' extract_dataset_metadata(df, data_name, fill = NA)
+#'
+#' # A non-NULL fill plus an empty request gives the whole six-key schema.
+#' extract_dataset_metadata(df, fill = NA, format = "data_frame")
+#' @family metadata
+#' @export
+extract_dataset_metadata <- function(
+  x,
+  ...,
+  key = NULL,
+  format = "list",
+  fill = NULL
+) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_dataset_metadata"
+
+  .check_is_survey_or_df(x, call = call)
+  .check_extractor_fill(fill, fn_name, call, allow_na = TRUE)
+  .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
+
+  dots <- rlang::enexprs(...)
+  if (length(dots) > 0L && !is.null(key)) {
+    cli::cli_abort(
+      c(
+        "x" = "Provide key names via {.arg ...} or via {.arg key}, not both.",
+        "i" = paste0(
+          "Use named {.arg ...} args, a named list in {.arg ...}, or the ",
+          "{.arg key} argument \u2014 not a mix."
+        )
+      ),
+      class = "surveycore_error_setter_ambiguous",
+      call = call
+    )
+  }
+
+  requested <- if (length(dots) > 0L) {
+    vapply(
+      dots,
+      function(expr) .dataset_key_from_expr(expr, call),
+      character(1L),
+      USE.NAMES = FALSE
+    )
+  } else if (!is.null(key)) {
+    as.character(key)
+  } else {
+    NULL
+  }
+
+  if (!is.null(requested)) {
+    requested <- requested[!duplicated(requested)]
+    unknown <- setdiff(requested, .dataset_metadata_keys)
+    if (length(unknown) > 0L) {
+      .abort_dataset_key_unknown(unknown[[1L]], call)
+    }
+  }
+
+  stored <- .get_dataset_metadata_list(x)
+
+  out_keys <- if (!is.null(requested)) {
+    requested
+  } else if (is.null(fill)) {
+    intersect(.dataset_metadata_keys, names(stored))
+  } else {
+    .dataset_metadata_keys
+  }
+
+  result_list <- stats::setNames(
+    lapply(out_keys, function(k) stored[[k]]),
+    out_keys
+  )
+  .format_dataset_result(result_list, format, fill)
 }
 
 
