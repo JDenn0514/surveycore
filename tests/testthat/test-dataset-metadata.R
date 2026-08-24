@@ -1285,3 +1285,138 @@ test_that("set_dataset_metadata() returns the frame invisibly", {
   expect_false(seen$visible)
   expect_identical(extract_dataset_metadata(seen$value), list(vendor = "Ipsos"))
 })
+
+# ── 11. set_dataset_metadata() — structural key rules ─────────────────────────
+#
+# A blank or missing name in Conventions 1-2 fails earlier, inside the parser,
+# as surveycore_error_setter_mixed_dots. Convention 3 is the only route that
+# reaches the blank-name rule, because `key` carries the names directly.
+
+test_that("set_dataset_metadata() rejects a blank key name on a design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, key = c("")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+  expect_snapshot(error = TRUE, set_dataset_metadata(d, key = c("")))
+})
+
+test_that("set_dataset_metadata() rejects a blank key name on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, key = c("")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("set_dataset_metadata() rejects an NA key name", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, key = NA_character_),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("set_dataset_metadata() counts every blank key name", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, key = c("", "vendor", ""))
+  )
+})
+
+test_that("set_dataset_metadata() rejects a duplicated named ... key", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, vendor = "Ipsos", vendor = "Cint"),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, vendor = "Ipsos", vendor = "Cint")
+  )
+})
+
+test_that("a duplicated named ... key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, vendor = "Ipsos", vendor = "Cint"),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+})
+
+test_that("set_dataset_metadata() rejects a duplicated Convention 3 key", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(
+      d,
+      key = c("vendor", "vendor"),
+      value = list("Ipsos", "Cint")
+    ),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(
+      d,
+      key = c("vendor", "vendor"),
+      value = list("Ipsos", "Cint")
+    )
+  )
+})
+
+test_that("a duplicated Convention 3 key is rejected on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, key = c("vendor", "vendor"), value = NULL),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+})
+
+test_that("a duplicated key in a Convention 2 list is rejected", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  expect_error(
+    set_dataset_metadata(d, list(vendor = "Ipsos", vendor = "Cint")),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+})
+
+test_that("the dates alias resolves before the duplicate check", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  # `dates` and `field_period` are two spellings of one key, so naming both in
+  # one call names that key twice.
+  expect_error(
+    set_dataset_metadata(d, dates = NULL, field_period = "Feb 2026"),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+  expect_snapshot(
+    error = TRUE,
+    set_dataset_metadata(d, dates = NULL, field_period = "Feb 2026")
+  )
+})
+
+test_that("the dates alias resolves before the duplicate check on a frame", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+
+  expect_error(
+    set_dataset_metadata(df, dates = NULL, field_period = "Feb 2026"),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+})

@@ -1305,6 +1305,46 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
     return(invisible(x))
   }
 
+  # Rule 8: every resulting key name is non-NA and non-empty. Conventions 1-2
+  # cannot reach this: a blank or missing name there fails inside the parser as
+  # surveycore_error_setter_mixed_dots. Convention 3 carries the names in `key`,
+  # so it is the reachable route.
+  keys <- names(pairs)
+  bad <- is.na(keys) | !nzchar(keys)
+  if (any(bad)) {
+    n_bad <- sum(bad)
+    cli::cli_abort(
+      c(
+        "x" = "All dataset metadata keys must have a non-empty name.",
+        "i" = "Found {n_bad} unnamed or blank-named entr{?y/ies}."
+      ),
+      class = "surveycore_error_dataset_metadata_unnamed",
+      call = call
+    )
+  }
+
+  # Legacy alias. `dates = NULL` is the one accepted spelling of the pre-1.2.0
+  # name: it is an explicit alias for `field_period = NULL`. It resolves BEFORE
+  # the duplicate check, so a call naming both spellings names one key twice. A
+  # non-NULL `dates` keeps its own name and falls to the unknown-key rule.
+  alias <- keys == .dataset_legacy_period_attr &
+    vapply(pairs, is.null, logical(1L))
+  keys[alias] <- "field_period"
+  names(pairs) <- keys
+
+  # Rule 9: no key name appears twice in one call.
+  dupes <- unique(keys[duplicated(keys)])
+  if (length(dupes) > 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "Duplicate dataset metadata key{?s}: {.val {dupes}}.",
+        "i" = "Each key must appear exactly once."
+      ),
+      class = "surveycore_error_dataset_metadata_duplicate_key",
+      call = call
+    )
+  }
+
   if (S7::S7_inherits(x, survey_base)) {
     stored <- .dataset_metadata_or_empty(x@metadata)
     for (k in names(pairs)) {

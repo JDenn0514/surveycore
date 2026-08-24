@@ -154,3 +154,49 @@
       i Got 0 named and 2 unnamed elements.
       v Use `set_dataset_metadata(x, vendor = 'Ipsos', data_name = 'AAA Ipsos (February-March 2026)')` or a fully named list.
 
+# set_dataset_metadata() rejects a blank key name on a design
+
+    Code
+      set_dataset_metadata(d, key = c(""))
+    Condition
+      Error:
+      x All dataset metadata keys must have a non-empty name.
+      i Found 1 unnamed or blank-named entry.
+
+# set_dataset_metadata() counts every blank key name
+
+    Code
+      set_dataset_metadata(d, key = c("", "vendor", ""))
+    Condition
+      Error:
+      x All dataset metadata keys must have a non-empty name.
+      i Found 2 unnamed or blank-named entries.
+
+# set_dataset_metadata() rejects a duplicated named ... key
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos", vendor = "Cint")
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "vendor".
+      i Each key must appear exactly once.
+
+# set_dataset_metadata() rejects a duplicated Convention 3 key
+
+    Code
+      set_dataset_metadata(d, key = c("vendor", "vendor"), value = list("Ipsos",
+        "Cint"))
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "vendor".
+      i Each key must appear exactly once.
+
+# the dates alias resolves before the duplicate check
+
+    Code
+      set_dataset_metadata(d, dates = NULL, field_period = "Feb 2026")
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "field_period".
+      i Each key must appear exactly once.
+
