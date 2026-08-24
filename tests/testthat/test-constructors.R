@@ -3209,3 +3209,668 @@ test_that("scale = 0 is accepted for JK1", {
   test_invariants(d)
   expect_equal(d@variables$scale, 0)
 })
+
+
+# ── Dataset-level metadata promotion (spec section V) ─────────────────────────
+#
+# Covers plans/error-messages.md rows DM-7a, DM-7b, DM-7c, and DM-7d.
+#
+# Construction NEVER fails because of a bad dataset attribute: every bad value
+# is skipped and reported as one surveycore_warning_dataset_metadata_dropped.
+# Reads go through extract_dataset_metadata(), the guarded public read path —
+# never through attr(d@data, ...), which section V.4 keeps as the untouched
+# original.
+#
+# No block here snapshots print() or summary() console output: the display
+# contract for a design carrying dataset metadata belongs to a separate PR, so
+# capturing it here would encode output that is about to change.
+
+# Build a taylor design from a frame carrying the requested attributes.
+.promo_design <- function(keys) {
+  as_survey(
+    make_dataset_df(keys = keys),
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+test_that("as_survey() promotes all six canonical attributes in canonical order", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+test_that("as_survey() promotes only the attributes that are present", {
+  d <- .promo_design(full_keys[c("vendor", "field_period")])
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    full_keys[c("vendor", "field_period")]
+  )
+})
+
+test_that("as_survey() never derives data_name from the survey_name attribute", {
+  # Section II.1 independence rule, expressed on the promotion path. Only the
+  # `survey_name` attribute is attached, so `data_name` must stay unset.
+  # The second assertion is what makes the first one mean anything: the key
+  # that WAS set has to survive promotion, otherwise NA_character_ would only
+  # prove that nothing at all was promoted.
+  d <- .promo_design(full_keys["survey_name"])
+  test_invariants(d)
+
+  expect_identical(extract_data_name(d), NA_character_)
+  expect_identical(extract_survey_name(d), full_keys$survey_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("as_survey() never derives survey_name from the data_name attribute", {
+  # The mirror of the block above. Independence runs in both directions, so
+  # the reverse derivation needs its own assertion.
+  d <- .promo_design(full_keys["data_name"])
+  test_invariants(d)
+
+  expect_identical(extract_survey_name(d), NA_character_)
+  expect_identical(extract_data_name(d), full_keys$data_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
+})
+
+test_that("as_survey() skips an absent attribute silently", {
+  # `survey_name` is absent, `vendor` is set. The absent key must produce no
+  # warning at all — silence is reserved for absence (a zero-length value warns).
+  expect_no_warning(d <- .promo_design(full_keys["vendor"]))
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys["vendor"])
+})
+
+test_that("as_survey() leaves @dataset_metadata empty when no attribute is set", {
+  # Section V.3 last bullet: with nothing to promote the helper returns the
+  # metadata object unchanged AND stays silent. Nothing was dropped, so a
+  # warning here would report a loss that never happened.
+  expect_no_warning(d <- .promo_design(list()))
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() coerces a strict-ISO character date attribute to Date", {
+  d <- .promo_design(list(field_start = "2026-02-10"))
+  test_invariants(d)
+
+  got <- extract_dataset_metadata(d)
+  expect_identical(got$field_start, as.Date("2026-02-10"))
+  expect_s3_class(got$field_start, "Date")
+})
+
+test_that("as_survey() promotes the legacy dates attribute as field_period", {
+  d <- .promo_design(list(vendor = "Ipsos", dates = "February-March 2026"))
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(vendor = "Ipsos", field_period = "February-March 2026")
+  )
+})
+
+test_that("as_survey() prefers a present field_period over the legacy dates attribute", {
+  # Section V.2 step 7 reads `dates` only when the `field_period` attribute is
+  # ABSENT. A present and valid `field_period` means `dates` is never read, so
+  # nothing was discarded and the construction must be silent. A warning here
+  # would mean the reader treats the unread `dates` as a dropped value.
+  expect_no_warning(
+    d <- .promo_design(list(
+      field_period = "February-March 2026",
+      dates = "some other period"
+    ))
+  )
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d)$field_period,
+    "February-March 2026"
+  )
+})
+
+test_that("as_survey() ignores an attribute outside the seven recognized names", {
+  # surveycore claims no attribute name beyond the seven: an unrecognized name
+  # is never promoted AND never warned about.
+  expect_no_warning(
+    d <- .promo_design(list(vendor = "Ipsos", weight_scheme = "raked"))
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+  expect_false("weight_scheme" %in% names(extract_dataset_metadata(d)))
+})
+
+
+# Row DM-7a — a canonical attribute with a wrong-typed, NA, unparseable, or
+# length > 1 value.
+
+test_that("as_survey() warns and drops a wrong-typed canonical attribute", {
+  keys <- list(vendor = 42)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a canonical attribute of length > 1", {
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an NA canonical attribute", {
+  keys <- list(vendor = NA_character_)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an unparseable date attribute", {
+  # "2026/02/10" is not strict ISO 8601, so .coerce_field_date() rejects it.
+  # The message must name the date expectation, not the character one.
+  keys <- list(field_start = "2026/02/10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a date attribute that is not date-shaped", {
+  # "sometime" does not parse at all. Section II.3 requires
+  # .coerce_field_date() to wrap as.Date() in tryCatch(), so no base condition
+  # reaches the caller: exactly one warning, ours, and no message.
+  keys <- list(field_start = "sometime")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() warns and drops an ISO-shaped date that does not exist", {
+  # "2026-02-30" MATCHES format = "%Y-%m-%d" and still yields NA, because
+  # February has no 30th. This is the calendar-validity branch, which neither
+  # a wrong-separator string nor an unparseable string reaches.
+  keys <- list(field_start = "2026-02-30")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() keeps the valid attributes when another one is dropped", {
+  # The drop is per key: a bad field_start must not cost the good vendor.
+  keys <- list(vendor = "Ipsos", field_start = "not a date")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() warns once per dropped attribute", {
+  keys <- list(survey_name = 1L, vendor = 2L)
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 2L)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+
+# Row DM-7b — a canonical attribute with a zero-length value. Loss is
+# signalled, never silent: only an ABSENT attribute is skipped quietly.
+
+test_that("as_survey() warns and drops a zero-length canonical attribute", {
+  keys <- list(vendor = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# Row DM-7c — the coerced date pair is reversed; BOTH keys are dropped with
+# ONE warning.
+
+test_that("as_survey() warns once and drops both dates when the pair is reversed", {
+  keys <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() judges the reversed pair on the coerced ISO strings", {
+  # Both values are strings, so the comparison only works after coercion.
+  keys <- list(field_start = "2026-03-04", field_end = "2026-02-10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() promotes an equal date pair without warning", {
+  # The rule is strictly `start > end`, so a single-day field period is valid.
+  keys <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  expect_no_warning(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), keys)
+})
+
+
+# Row DM-7d — the legacy `dates` attribute with ANY invalid value. This
+# variant takes precedence over DM-7a and DM-7b, so the remedy points at
+# set_field_period() rather than at the rejected legacy name.
+
+test_that("as_survey() warns with the legacy variant for a wrong-typed dates attribute", {
+  keys <- list(dates = 1L)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a zero-length dates attribute", {
+  # A zero-length value on a canonical name is DM-7b, but on the legacy name
+  # the DM-7d variant wins.
+  keys <- list(dates = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a dates attribute of length > 1", {
+  keys <- list(dates = c("February 2026", "March 2026"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("haven column labels and dataset attributes both promote", {
+  # Section V.1: the per-column haven reader and the whole-object dataset
+  # reader are separate helpers running at the same constructor stage. Neither
+  # may interfere with the other, so this block asserts both halves at once.
+  df <- make_survey_data(
+    n = 20L,
+    n_psu = 6L,
+    n_strata = 2L,
+    with_labels = TRUE,
+    seed = 42L
+  )
+  for (key in names(full_keys)) {
+    attr(df, key) <- full_keys[[key]]
+  }
+
+  expect_no_warning(
+    d <- as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    )
+  )
+  test_invariants(d)
+
+  # Per-variable metadata: variable labels and value labels.
+  expect_identical(
+    extract_var_label(d, y1),
+    c(y1 = "Outcome variable 1 (continuous)")
+  )
+  expect_identical(
+    extract_var_label(d, y3, group),
+    c(
+      y3 = "Outcome variable 3 (binary, 0/1)",
+      group = "Demographic group"
+    )
+  )
+  expect_identical(extract_val_labels(d, y3)$y3, c(No = 0L, Yes = 1L))
+
+  # Dataset-level metadata: all six keys, in canonical order.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+
+# Round trip and non-destructive promotion (spec section V.4).
+
+test_that("all six keys survive the setter-to-constructor round trip", {
+  expect_dataset_roundtrip(full_keys)
+})
+
+test_that("a single key survives the round trip", {
+  expect_dataset_roundtrip(full_keys["vendor"])
+})
+
+test_that("an ISO date string set on a frame round trips as a Date", {
+  # The setter coerces on the way in, so the attribute is already a Date and
+  # promotion stores a Date, not the string.
+  d <- expect_dataset_roundtrip(
+    list(field_start = "2026-02-10"),
+    expected = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_s3_class(extract_dataset_metadata(d)$field_start, "Date")
+})
+
+test_that("promotion leaves the original attributes on @data", {
+  # Promotion COPIES; it never strips. Every one of the six attributes holds a
+  # genuine value going in, so a stripping implementation would fail here.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  for (key in names(full_keys)) {
+    expect_identical(
+      attr(d@data, key, exact = TRUE),
+      full_keys[[key]],
+      info = key
+    )
+  }
+})
+
+test_that("promotion leaves the caller's data frame unchanged", {
+  df <- make_dataset_df(full_keys)
+  before <- attributes(df)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(d)
+
+  expect_identical(attributes(df), before)
+})
+
+test_that("promotion keeps a dropped attribute on @data even though the key is unset", {
+  # The warning reports that the key was not promoted; the attribute itself is
+  # still there for the user to inspect and fix.
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_identical(attr(d@data, "vendor", exact = TRUE), c("Ipsos", "Cint"))
+})
+
+test_that("rebuilding from @data resurrects an edited key", {
+  # Documented consequence of section V.4: the design's metadata changed, the
+  # data frame's attribute did not, so a rebuild re-promotes the ORIGINAL.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  d2 <- set_vendor(d, "Cint")
+  expect_identical(extract_vendor(d2), "Cint")
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+  expect_false(identical(extract_vendor(rebuilt), "Cint"))
+})
+
+test_that("rebuilding from @data resurrects a deleted key", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  d2 <- set_vendor(d, NULL)
+  expect_identical(extract_vendor(d2), NA_character_)
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+})
+
+test_that("column subsetting @data drops the attributes, so a rebuild promotes nothing", {
+  # Whole-object attributes are fragile: selecting columns with base `[` builds
+  # a new frame without them, so nothing is left to promote. This is why the
+  # roxygen advises setting dataset metadata last.
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+  expect_identical(extract_vendor(d), full_keys$vendor)
+
+  stripped <- d@data[, names(d@data), drop = FALSE]
+  expect_null(attr(stripped, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    stripped,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("merge() drops the attributes, so a rebuild promotes nothing", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  lookup <- data.frame(strata = unique(d@data$strata))
+  lookup$region <- seq_len(nrow(lookup))
+  merged <- merge(d@data, lookup, by = "strata")
+  expect_null(attr(merged, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    merged,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(rebuilt)
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("as_survey() warns once for an invalid field_period and never falls back to dates", {
+  # A present-but-invalid field_period stops the legacy fallback: repairing
+  # from `dates` would hide the invalid value. So exactly one warning fires,
+  # it is the canonical DM-7a variant, and field_period stays unset.
+  keys <- list(field_period = 99, dates = "February-March 2026")
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  test_invariants(d)
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# The other two constructors that accept a raw data frame (spec section V.1).
+
+test_that("as_survey_replicate() promotes the dataset attributes", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 202L
+  )
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_replicate() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 203L
+  )
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1"
+    ),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the dataset attributes", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 204L)
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_nonprob() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 205L)
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_nonprob(df, weights = wt),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the weighting_history attribute", {
+  # This branch never promoted weighting history, unlike as_survey() and
+  # as_survey_replicate(). The missing call is a pre-existing inconsistency,
+  # fixed here. `history` holds a genuine non-empty list, so the assertion
+  # fails against the unfixed constructor.
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 206L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_nonprob() leaves weighting_history as list() with no attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 207L)
+
+  d <- as_survey_nonprob(df, weights = wt)
+  test_invariants(d)
+
+  expect_identical(d@metadata@weighting_history, list())
+})

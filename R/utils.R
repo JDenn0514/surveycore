@@ -336,7 +336,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
-# ── Internal: weighting history promotion ────────────────────────────────────
+# ── Internal: constructor attribute promotion ────────────────────────────────
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey,
@@ -353,6 +353,139 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   if (is.list(history) && length(history) > 0L) {
     metadata@weighting_history <- history
   }
+  metadata
+}
+
+
+# The two fixed "expected value" strings the DM-7a message reports. Date keys
+# accept a wider set of inputs than the four character keys, so the sentence
+# has to differ.
+#
+# @param key character(1). One of .dataset_metadata_keys.
+# @return character(1).
+#' @noRd
+.dataset_expected_text <- function(key) {
+  if (key %in% .dataset_date_keys) {
+    return("a Date scalar or an ISO 8601 date string (YYYY-MM-DD)")
+  }
+  "a single non-NA character string"
+}
+
+
+# Report ONE dropped dataset attribute as a warning. The four message variants
+# are rows DM-7a to DM-7d of plans/error-messages.md, and the variant is chosen
+# by .read_dataset_attributes(), not here:
+#
+#   "a" — a canonical attribute whose value is wrong-typed, NA, unparseable, or
+#         longer than 1. The message reports what was expected and what came.
+#   "b" — a canonical attribute with a zero-length value. Its own variant,
+#         because there is no class or length worth reporting back.
+#   "c" — the coerced date pair is reversed. ONE warning covers BOTH keys.
+#   "d" — the legacy `dates` attribute with any invalid value. It takes
+#         precedence over "a" and "b", so the remedy names set_field_period()
+#         rather than the rejected legacy name.
+#
+# @param entry One element of the `dropped` report of
+#   .read_dataset_attributes().
+# @return Invisibly, NULL. Called for the warning.
+#' @noRd
+.warn_dataset_metadata_dropped <- function(entry) {
+  key <- entry$key
+  value <- entry$value
+
+  bullets <- if (identical(entry$variant, "b")) {
+    c(
+      "!" = paste0(
+        "Dataset attribute {.field {key}} has a zero-length value and was ",
+        "not promoted."
+      ),
+      "v" = "Set a single non-NA value, or remove the attribute."
+    )
+  } else if (identical(entry$variant, "c")) {
+    start <- format(entry$start)
+    end <- format(entry$end)
+    c(
+      "!" = paste0(
+        "Dataset attributes {.field field_start} and {.field field_end} are ",
+        "reversed ({start} is after {end}); neither was promoted."
+      ),
+      "v" = paste0(
+        "Correct the dates on the data frame, or set them later with ",
+        "{.fn set_field_dates}."
+      )
+    )
+  } else if (identical(entry$variant, "d")) {
+    c(
+      "!" = paste0(
+        "Legacy dataset attribute {.field dates} has an invalid value and ",
+        "was not promoted to {.val field_period}."
+      ),
+      "v" = "Set the period with {.fn set_field_period}."
+    )
+  } else {
+    expected <- .dataset_expected_text(key)
+    c(
+      "!" = paste0(
+        "Dataset attribute {.field {key}} has an invalid value and was not ",
+        "promoted."
+      ),
+      "i" = paste0(
+        "Expected {expected}; got {.cls {class(value)[[1L]]}} of length ",
+        "{length(value)}."
+      ),
+      "v" = paste0(
+        "Fix the attribute on the data frame, or set the key later with ",
+        "{.fn set_dataset_metadata}."
+      )
+    )
+  }
+
+  cli::cli_warn(
+    bullets,
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  invisible(NULL)
+}
+
+
+# Promote the seven recognized whole-data-frame dataset attributes into
+# metadata@dataset_metadata. Called by every constructor that accepts a raw
+# data frame (as_survey, as_survey_replicate, as_survey_nonprob), at the same
+# stage as .promote_weighting_history() above.
+#
+# The attribute read, the value rules, and the drop classification all live in
+# .read_dataset_attributes() (further down this file). This function adds
+# exactly two things: it writes the surviving values, and it reports each
+# dropped key as one warning.
+#
+# Two hard contracts:
+#   - It NEVER errors. Construction must never fail because of a bad label, so
+#     every rejected value is skipped and reported as a warning instead. The
+#     property write below cannot raise the survey_metadata validator either:
+#     the reader returns only coerced values under canonical key names, with
+#     unique names and a non-reversed date pair, which is exactly what the
+#     validator accepts.
+#   - It NEVER modifies `data`. Promotion copies; the original attributes stay
+#     on the data frame the constructor stores in @data.
+#
+# @param data     A data.frame (may carry none, some, or all seven attributes).
+# @param metadata A survey_metadata object (already populated by
+#                 .extract_haven_metadata()).
+# @return The survey_metadata object, with @dataset_metadata set when at least
+#   one attribute survived. Returned unchanged when none did, so a data frame
+#   with no recognized attribute leaves the object byte-identical.
+#' @noRd
+.promote_dataset_metadata <- function(data, metadata) {
+  found <- .read_dataset_attributes(data)
+
+  for (entry in found$dropped) {
+    .warn_dataset_metadata_dropped(entry)
+  }
+
+  if (length(found$values) > 0L) {
+    metadata@dataset_metadata <- found$values
+  }
+
   metadata
 }
 

@@ -286,6 +286,58 @@ make_dataset_design <- function(
 }
 
 # ------------------------------------------------------------------------------
+# expect_dataset_roundtrip()
+# ------------------------------------------------------------------------------
+
+#' Assert that dataset metadata survives the setter-to-constructor round trip
+#'
+#' Applies `keys` to a plain data frame with `set_dataset_metadata()`, builds a
+#' taylor design from that frame, and asserts that
+#' `extract_dataset_metadata()` returns `expected` — the same keys and values,
+#' in canonical order.
+#'
+#' This is the one assertion for the whole documented round trip
+#' `set_dataset_metadata(df, ...)` -> `as_survey(df, ...)` ->
+#' `extract_dataset_metadata(d)`. State is applied through the SETTER, never
+#' with a bare `attr()<-` write, so the frame carries exactly the attributes
+#' the public write path produces.
+#'
+#' `expected` defaults to `keys` and differs only when the setter coerces on
+#' the way in — an ISO 8601 date string is stored as a `Date`, so a caller that
+#' passes a string must pass the `Date` it expects back.
+#'
+#' @param keys     A named list of dataset metadata keys and values.
+#' @param expected The list `extract_dataset_metadata()` must return. Defaults
+#'   to `keys`.
+#' @param n        Rows in the frame. Default 20.
+#' @param seed     Random seed passed to `make_survey_data()`. Default 42.
+#' @return The constructed design, invisibly, so a caller can make further
+#'   assertions about it.
+#' @keywords internal
+expect_dataset_roundtrip <- function(
+  keys,
+  expected = keys,
+  n = 20L,
+  seed = 42L
+) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  df <- set_dataset_metadata(df, !!!keys)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(d)
+  testthat::expect_identical(extract_dataset_metadata(d), expected)
+
+  invisible(d)
+}
+
+# ------------------------------------------------------------------------------
 # make_survey_data()
 # ------------------------------------------------------------------------------
 

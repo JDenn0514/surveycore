@@ -4059,3 +4059,219 @@ test_that("a distant unknown key is rejected by the extractor too", {
     class = "surveycore_error_dataset_key_unknown"
   )
 })
+
+
+# ==============================================================================
+# 18. Inheritance, imports, and conversion (spec sections I.3, V.1)
+# ==============================================================================
+
+# as_survey_twophase() is a named no-change surface: it inherits the whole
+# metadata object from phase 1, and the phase-1 constructor already promoted.
+# from_svydesign() and from_tbl_svy() are named no-change surfaces too: they
+# build an empty survey_metadata(), whose default @dataset_metadata is list().
+
+test_that("as_survey_twophase() inherits the phase 1 dataset metadata", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 301L
+  )
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(phase1)
+  expect_identical(extract_dataset_metadata(phase1), full_keys)
+
+  d <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_twophase() reports no dataset metadata when phase 1 has none", {
+  d <- make_dataset_design("twophase", "none")
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("from_svydesign() produces a design with no dataset metadata", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 302L)
+  # The attributes are on the frame handed to survey::svydesign(), so a
+  # converter that promoted them would show them here.
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df,
+    nest = TRUE
+  )
+  # Not a vacuous check: the attributes really do reach the frame the
+  # converter reads, so a converter that promoted them would show them below.
+  expect_identical(attr(sv$variables, "vendor", exact = TRUE), full_keys$vendor)
+
+  d <- from_svydesign(sv)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("from_tbl_svy() produces a design with no dataset metadata", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 303L)
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+  ts <- srvyr::as_survey_design(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_identical(attr(ts$variables, "vendor", exact = TRUE), full_keys$vendor)
+
+  d <- from_tbl_svy(ts)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_tbl_svy() accepts a design carrying dataset metadata", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  expect_identical(extract_dataset_metadata(d), full_keys)
+
+  ts <- as_tbl_svy(d)
+  expect_true(inherits(ts, "tbl_svy"))
+
+  # The export must not disturb the source design's metadata.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_svydesign() accepts a design carrying dataset metadata", {
+  skip_if_not_installed("survey")
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  sv <- as_svydesign(d)
+  expect_true(inherits(sv, "survey.design"))
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+
+# ==============================================================================
+# 19. The data-frame setter feeds construction (spec sections VI.4, V)
+# ==============================================================================
+
+# Build a taylor design from a frame the setter has already written to.
+.build_from_frame <- function(df) {
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+test_that("every key written by the frame setter promotes at construction", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L, seed = 401L)
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  d <- .build_from_frame(df)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("a date the frame setter coerced from a string promotes as a Date", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L, seed = 402L)
+  df <- set_dataset_metadata(df, field_start = "2026-02-10")
+  # The setter stores the coerced value, so the attribute is already a Date.
+  expect_identical(
+    attr(df, "field_start", exact = TRUE),
+    as.Date("2026-02-10")
+  )
+
+  d <- .build_from_frame(df)
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(field_start = as.Date("2026-02-10"))
+  )
+})
+
+test_that("deleting field_period on a frame is idempotent through construction", {
+  # The frame carries BOTH the canonical name and the legacy one. Deleting
+  # field_period removes both attributes, so the legacy name cannot resurrect
+  # the period at construction.
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L, seed = 403L)
+  attr(df, "field_period") <- "February-March 2026"
+  attr(df, "dates") <- "February-March 2026"
+
+  # Positive control: without the deletion the period does promote, so the
+  # assertion below cannot pass vacuously.
+  control <- .build_from_frame(df)
+  test_invariants(control)
+  expect_identical(extract_field_period(control), "February-March 2026")
+
+  cleaned <- set_dataset_metadata(df, field_period = NULL)
+  expect_null(attr(cleaned, "field_period", exact = TRUE))
+  expect_null(attr(cleaned, "dates", exact = TRUE))
+
+  d <- .build_from_frame(cleaned)
+  test_invariants(d)
+  expect_identical(extract_field_period(d), NA_character_)
+  expect_false("field_period" %in% names(extract_dataset_metadata(d)))
+})
+
+test_that("the dates = NULL alias is idempotent through construction too", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L, seed = 404L)
+  attr(df, "dates") <- "February-March 2026"
+
+  control <- .build_from_frame(df)
+  test_invariants(control)
+  expect_identical(extract_field_period(control), "February-March 2026")
+
+  cleaned <- set_dataset_metadata(df, dates = NULL)
+  d <- .build_from_frame(cleaned)
+  test_invariants(d)
+
+  expect_identical(extract_field_period(d), NA_character_)
+})
+
+test_that("set_field_period(df, NULL) is idempotent through construction", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L, seed = 405L)
+  attr(df, "field_period") <- "February-March 2026"
+  attr(df, "dates") <- "an older period"
+
+  control <- .build_from_frame(df)
+  test_invariants(control)
+  expect_identical(extract_field_period(control), "February-March 2026")
+
+  cleaned <- set_field_period(df, NULL)
+  d <- .build_from_frame(cleaned)
+  test_invariants(d)
+
+  expect_identical(extract_field_period(d), NA_character_)
+})
