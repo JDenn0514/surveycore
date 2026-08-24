@@ -177,16 +177,16 @@ Lumley, T. and Scott, A. (2014) Tests in surveys with complex sampling.
 \bold{76}(2), 431--452.
 }
 \seealso{
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

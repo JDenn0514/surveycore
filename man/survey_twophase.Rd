@@ -66,16 +66,16 @@ class(d)
 \seealso{
 \code{\link[=as_survey_twophase]{as_survey_twophase()}} to create a \code{survey_twophase} object.
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{as_survey_twophase}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=as_survey_twophase]{as_survey_twophase()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}}
 }
 \concept{constructors}

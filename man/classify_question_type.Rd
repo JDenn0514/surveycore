@@ -11,7 +11,7 @@ classify_question_type(x, ..., variable = NULL)
 
 \item{...}{<\code{\link[tidyselect:language]{tidy-select}}> Variables to classify.
 Supports selection helpers: \code{\link[tidyselect:starts_with]{tidyselect::starts_with()}},
-\code{\link[tidyselect:all_of]{tidyselect::all_of()}}, \code{\link[tidyselect:all_of]{tidyselect::any_of()}}, etc. Cannot be combined
+\code{\link[tidyselect:all_of]{tidyselect::all_of()}}, \code{\link[tidyselect:any_of]{tidyselect::any_of()}}, etc. Cannot be combined
 with \code{variable}.}
 
 \item{variable}{\code{character}. Alternative programmatic interface: character
@@ -66,28 +66,28 @@ classify_question_type(d, riagendr, ridageyr, bpxsy1)
 \seealso{
 \code{\link[=set_sata]{set_sata()}}, \code{\link[=extract_sata]{extract_sata()}}, \code{\link[=set_question_preface]{set_question_preface()}}
 
-Other metadata: 
-\code{\link{extract_higher_is}()},
-\code{\link{extract_metadata}()},
-\code{\link{extract_missing_codes}()},
-\code{\link{extract_question_preface}()},
-\code{\link{extract_reverse_coded}()},
-\code{\link{extract_sata}()},
-\code{\link{extract_universe}()},
-\code{\link{extract_val_labels}()},
-\code{\link{extract_var_label}()},
-\code{\link{extract_var_note}()},
-\code{\link{infer_question_prefaces}()},
-\code{\link{set_higher_is}()},
-\code{\link{set_missing_codes}()},
-\code{\link{set_question_preface}()},
-\code{\link{set_reverse_coded}()},
-\code{\link{set_sata}()},
-\code{\link{set_universe}()},
-\code{\link{set_val_labels}()},
-\code{\link{set_var_label}()},
-\code{\link{set_var_note}()},
-\code{\link{survey_metadata}()},
-\code{\link{survey_weighting_history}()}
+Other metadata:
+\code{\link[=extract_higher_is]{extract_higher_is()}},
+\code{\link[=extract_metadata]{extract_metadata()}},
+\code{\link[=extract_missing_codes]{extract_missing_codes()}},
+\code{\link[=extract_question_preface]{extract_question_preface()}},
+\code{\link[=extract_reverse_coded]{extract_reverse_coded()}},
+\code{\link[=extract_sata]{extract_sata()}},
+\code{\link[=extract_universe]{extract_universe()}},
+\code{\link[=extract_val_labels]{extract_val_labels()}},
+\code{\link[=extract_var_label]{extract_var_label()}},
+\code{\link[=extract_var_note]{extract_var_note()}},
+\code{\link[=infer_question_prefaces]{infer_question_prefaces()}},
+\code{\link[=set_higher_is]{set_higher_is()}},
+\code{\link[=set_missing_codes]{set_missing_codes()}},
+\code{\link[=set_question_preface]{set_question_preface()}},
+\code{\link[=set_reverse_coded]{set_reverse_coded()}},
+\code{\link[=set_sata]{set_sata()}},
+\code{\link[=set_universe]{set_universe()}},
+\code{\link[=set_val_labels]{set_val_labels()}},
+\code{\link[=set_var_label]{set_var_label()}},
+\code{\link[=set_var_note]{set_var_note()}},
+\code{\link[=survey_metadata]{survey_metadata()}},
+\code{\link[=survey_weighting_history]{survey_weighting_history()}}
 }
 \concept{metadata}
