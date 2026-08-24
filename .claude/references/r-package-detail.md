@@ -123,8 +123,11 @@ Description: [1-2 sentence description of what the package does]
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.x.x
+Config/roxygen2/version: 8.x.x
 ```
+
+`devtools::document()` writes the version field itself. roxygen2 8.x uses
+`Config/roxygen2/version`; 7.x used `RoxygenNote`. Do not set either by hand.
 
 ## Package documentation template (surveypkg-package.R)
 
