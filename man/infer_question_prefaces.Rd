@@ -112,6 +112,7 @@ Other metadata:
 \code{\link[=extract_val_labels]{extract_val_labels()}},
 \code{\link[=extract_var_label]{extract_var_label()}},
 \code{\link[=extract_var_note]{extract_var_note()}},
+\code{\link[=set_dataset_metadata]{set_dataset_metadata()}},
 \code{\link[=set_higher_is]{set_higher_is()}},
 \code{\link[=set_missing_codes]{set_missing_codes()}},
 \code{\link[=set_question_preface]{set_question_preface()}},

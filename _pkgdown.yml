@@ -106,6 +106,7 @@ reference:
       - set_higher_is
       - set_reverse_coded
       - infer_question_prefaces
+      - set_dataset_metadata
 
   - title: "Metadata — extractors"
     desc: >

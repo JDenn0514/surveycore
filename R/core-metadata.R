@@ -1351,6 +1351,124 @@ extract_dataset_metadata <- function(
 }
 
 
+#' Set Dataset-Level Metadata
+#'
+#' Sets whole-dataset metadata — the survey name, the display name, the fielding
+#' vendor, and the field dates — on a survey design object or a data frame,
+#' using one of three conventions.
+#'
+#' **Convention 1 (named `...`)** — recommended:
+#' ```r
+#' set_dataset_metadata(x, vendor = "Ipsos", field_start = "2026-02-10")
+#' ```
+#'
+#' **Convention 2 (single named list in `...`)**:
+#' ```r
+#' set_dataset_metadata(x, list(vendor = "Ipsos"))
+#' ```
+#'
+#' **Convention 3 (`key` + `value`)**:
+#' ```r
+#' set_dataset_metadata(x, key = "vendor", value = "Ipsos")
+#' ```
+#'
+#' @details
+#' The key vocabulary is closed. Exactly six keys are valid, and this is their
+#' canonical order:
+#'
+#' \describe{
+#'   \item{`survey_name`}{`character(1)`. Full formal survey name.}
+#'   \item{`data_name`}{`character(1)`. Display label for this dataset.}
+#'   \item{`vendor`}{`character(1)`. Fielding vendor.}
+#'   \item{`field_start`}{`Date(1)`. First day in the field.}
+#'   \item{`field_end`}{`Date(1)`. Last day in the field.}
+#'   \item{`field_period`}{`character(1)`. Prose field period, for display.}
+#' }
+#'
+#' Any other key is an error. The four character keys take one non-`NA` string.
+#' The two date keys take a `Date` scalar or an ISO 8601 string
+#' (`"YYYY-MM-DD"`), which is stored as a `Date`; a looser string such as
+#' `"2026/02/10"` or `"2026-2-1"` is rejected. Stored keys are always kept in
+#' the canonical order above.
+#'
+#' `survey_name` and `data_name` are independent. This function never reads one
+#' to fill or check the other.
+#'
+#' A `NULL` value deletes a key. Deleting a key that is not set does nothing and
+#' raises no condition. A zero-length value such as `character(0)` is not a
+#' deletion — it is an invalid value.
+#'
+#' `field_start` must not be after `field_end`. The comparison uses the
+#' *effective* value of each date: the new value when the call supplies one, no
+#' value when the call supplies `NULL`, and the stored value otherwise. So one
+#' call can repair a reversed stored pair by deleting one date and setting the
+#' other. Every check runs before any write, so a rejected call changes nothing.
+#'
+#' On a survey design object the values go into the design's metadata, which is
+#' the single source of truth on every read path; attributes on the underlying
+#' data frame are neither read nor written. On a data frame the values go into
+#' whole-object attributes, one per key, and the columns are left untouched —
+#' even a column whose name matches a key.
+#'
+#' `dates` is the pre-1.2.0 attribute name for the prose field period. Setting
+#' it is an error that points at `field_period`. Deleting it is allowed:
+#' `dates = NULL` is an alias for `field_period = NULL`, and either spelling
+#' removes both the `field_period` and the legacy `dates` attribute from a data
+#' frame.
+#'
+#' A design object restored from a file written by surveycore 1.1.0 or earlier
+#' cannot store dataset metadata. Reading such an object works, but a write
+#' raises an error naming the remedy: rebuild the object with a constructor.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... Named arguments where the name is a dataset metadata key and the
+#'   value is the value to store. A single named list is also accepted.
+#'   Supports `!!!` list splicing. A `NULL` value deletes the key.
+#' @param key `character` vector of key names, or `NULL` (default). Use with
+#'   `value`. Must be supplied by name, because it follows `...`.
+#' @param value A list with one element per element of `key`, or `NULL`
+#'   (default). An atomic vector is coerced with `as.list()`. Names on `value`
+#'   are ignored — `key` supplies the names. A `NULL` element deletes that one
+#'   key; `value = NULL` deletes every key in `key` and skips the length check.
+#'   Must be supplied by name, because it follows `...`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' # On a data frame, dataset metadata lives in whole-object attributes.
+#' df <- data.frame(id = 1:5, y = c(2, 4, 3, 5, 1), w = rep(1, 5))
+#' df <- set_dataset_metadata(
+#'   df,
+#'   survey_name = "Example Attitudes Survey 2026",
+#'   vendor = "Ipsos KnowledgePanel"
+#' )
+#' extract_dataset_metadata(df)
+#'
+#' # An ISO 8601 string is stored as a Date.
+#' df <- set_dataset_metadata(df, field_start = "2026-02-10")
+#' extract_dataset_metadata(df, field_start)
+#'
+#' # Convention 2: one named list.
+#' df <- set_dataset_metadata(df, list(field_end = "2026-03-04"))
+#'
+#' # Convention 3: key plus value.
+#' df <- set_dataset_metadata(
+#'   df,
+#'   key = c("data_name", "field_period"),
+#'   value = list("Example (February-March 2026)", "February-March 2026")
+#' )
+#' extract_dataset_metadata(df, format = "data_frame")
+#'
+#' # A NULL value deletes a key.
+#' df <- set_dataset_metadata(df, vendor = NULL)
+#' extract_dataset_metadata(df, vendor, fill = NA)
+#'
+#' # The same API works on a survey design object.
+#' d <- as_survey(df, weights = w)
+#' d <- set_dataset_metadata(d, vendor = "Cint")
+#' extract_dataset_metadata(d, vendor)
+#' @family metadata
+#' @export
 set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
   call <- rlang::caller_env()
 
