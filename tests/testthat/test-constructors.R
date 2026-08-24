@@ -3209,3 +3209,108 @@ test_that("scale = 0 is accepted for JK1", {
   test_invariants(d)
   expect_equal(d@variables$scale, 0)
 })
+
+
+# ── Dataset-level metadata promotion (spec section V) ─────────────────────────
+#
+# Covers plans/error-messages.md rows DM-7a, DM-7b, DM-7c, and DM-7d.
+#
+# Construction NEVER fails because of a bad dataset attribute: every bad value
+# is skipped and reported as one surveycore_warning_dataset_metadata_dropped.
+# Reads go through extract_dataset_metadata(), the guarded public read path —
+# never through attr(d@data, ...), which section V.4 keeps as the untouched
+# original.
+#
+# No block here snapshots print() or summary() console output: the display
+# contract for a design carrying dataset metadata belongs to a separate PR, so
+# capturing it here would encode output that is about to change.
+
+# Build a taylor design from a frame carrying the requested attributes.
+.promo_design <- function(keys) {
+  as_survey(
+    make_dataset_df(keys = keys),
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+test_that("as_survey() promotes all six canonical attributes in canonical order", {
+  d <- .promo_design(full_keys)
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+test_that("as_survey() promotes only the attributes that are present", {
+  d <- .promo_design(full_keys[c("vendor", "field_period")])
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    full_keys[c("vendor", "field_period")]
+  )
+})
+
+test_that("as_survey() skips an absent attribute silently", {
+  # `survey_name` is absent, `vendor` is set. The absent key must produce no
+  # warning at all — silence is reserved for absence (a zero-length value warns).
+  expect_no_warning(d <- .promo_design(full_keys["vendor"]))
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), full_keys["vendor"])
+})
+
+test_that("as_survey() leaves @dataset_metadata empty when no attribute is set", {
+  d <- .promo_design(list())
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() coerces a strict-ISO character date attribute to Date", {
+  d <- .promo_design(list(field_start = "2026-02-10"))
+  test_invariants(d)
+
+  got <- extract_dataset_metadata(d)
+  expect_identical(got$field_start, as.Date("2026-02-10"))
+  expect_s3_class(got$field_start, "Date")
+})
+
+test_that("as_survey() promotes the legacy dates attribute as field_period", {
+  d <- .promo_design(list(vendor = "Ipsos", dates = "February-March 2026"))
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(vendor = "Ipsos", field_period = "February-March 2026")
+  )
+})
+
+test_that("as_survey() prefers a present field_period over the legacy dates attribute", {
+  d <- .promo_design(list(
+    field_period = "February-March 2026",
+    dates = "some other period"
+  ))
+  test_invariants(d)
+
+  expect_identical(
+    extract_dataset_metadata(d)$field_period,
+    "February-March 2026"
+  )
+})
+
+test_that("as_survey() ignores an attribute outside the seven recognized names", {
+  # surveycore claims no attribute name beyond the seven: an unrecognized name
+  # is never promoted AND never warned about.
+  expect_no_warning(
+    d <- .promo_design(list(vendor = "Ipsos", weight_scheme = "raked"))
+  )
+  test_invariants(d)
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+  expect_false("weight_scheme" %in% names(extract_dataset_metadata(d)))
+})

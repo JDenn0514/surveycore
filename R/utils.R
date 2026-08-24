@@ -336,7 +336,7 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
-# ── Internal: weighting history promotion ────────────────────────────────────
+# ── Internal: constructor attribute promotion ────────────────────────────────
 
 # Promote a weighting_history attribute from a data frame to a metadata object.
 # Called by constructors that accept a raw data frame (as_survey,
@@ -353,6 +353,44 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
   if (is.list(history) && length(history) > 0L) {
     metadata@weighting_history <- history
   }
+  metadata
+}
+
+
+# Promote the seven recognized whole-data-frame dataset attributes into
+# metadata@dataset_metadata. Called by every constructor that accepts a raw
+# data frame (as_survey, as_survey_replicate, as_survey_nonprob), at the same
+# stage as .promote_weighting_history() above.
+#
+# The attribute read, the value rules, and the drop classification all live in
+# .read_dataset_attributes() (further down this file). This function adds
+# exactly two things: it writes the surviving values, and it reports each
+# dropped key as one warning.
+#
+# Two hard contracts:
+#   - It NEVER errors. Construction must never fail because of a bad label, so
+#     every rejected value is skipped and reported as a warning instead. The
+#     property write below cannot raise the survey_metadata validator either:
+#     the reader returns only coerced values under canonical key names, with
+#     unique names and a non-reversed date pair, which is exactly what the
+#     validator accepts.
+#   - It NEVER modifies `data`. Promotion copies; the original attributes stay
+#     on the data frame the constructor stores in @data.
+#
+# @param data     A data.frame (may carry none, some, or all seven attributes).
+# @param metadata A survey_metadata object (already populated by
+#                 .extract_haven_metadata()).
+# @return The survey_metadata object, with @dataset_metadata set when at least
+#   one attribute survived. Returned unchanged when none did, so a data frame
+#   with no recognized attribute leaves the object byte-identical.
+#' @noRd
+.promote_dataset_metadata <- function(data, metadata) {
+  found <- .read_dataset_attributes(data)
+
+  if (length(found$values) > 0L) {
+    metadata@dataset_metadata <- found$values
+  }
+
   metadata
 }
 

@@ -546,6 +546,7 @@ as_survey <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Validate calibration argument ──────────────────────────────────────────
 
