@@ -60,6 +60,29 @@ test_that("extract_dataset_metadata() returns all present keys on a frame", {
   expect_identical(extract_dataset_metadata(df), full_keys)
 })
 
+test_that("extract_dataset_metadata() returns visibly on a design", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+  d@metadata@dataset_metadata <- full_keys
+
+  # The sibling SETTERS return invisibly; this extractor must not. withVisible()
+  # is the only assertion that separates the two.
+  seen <- withVisible(extract_dataset_metadata(d))
+
+  expect_true(seen$visible)
+  expect_identical(seen$value, full_keys)
+})
+
+test_that("extract_dataset_metadata() returns visibly on a frame", {
+  df <- make_dataset_df()
+
+  seen <- withVisible(extract_dataset_metadata(df))
+
+  expect_true(seen$visible)
+  expect_identical(seen$value, full_keys)
+})
+
 test_that("extract_dataset_metadata() returns list() when nothing is set", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
@@ -262,6 +285,12 @@ test_that("extract_dataset_metadata() never warns about an unset valid key", {
   expect_no_warning(extract_dataset_metadata(d, vendor))
 })
 
+test_that("extract_dataset_metadata() never warns about an unset key on a frame", {
+  df <- make_dataset_df(keys = list(vendor = "Ipsos"))
+
+  expect_no_warning(extract_dataset_metadata(df, survey_name))
+})
+
 test_that("extract_dataset_metadata() returns list() for a zero-length key", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
@@ -409,6 +438,26 @@ test_that("data_frame format renders a Date through format()", {
   expect_identical(result$value, "2026-02-10")
 })
 
+test_that("data_frame format renders a design Date through format()", {
+  df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
+  d <- as_survey(df, weights = wt)
+  test_invariants(d)
+  d@metadata@dataset_metadata <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-03-04")
+  )
+
+  result <- extract_dataset_metadata(
+    d,
+    field_start,
+    field_end,
+    format = "data_frame"
+  )
+
+  expect_identical(result$key, c("field_start", "field_end"))
+  expect_identical(result$value, c("2026-02-10", "2026-03-04"))
+})
+
 test_that("data_frame format returns a 0-row tibble for an empty result", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
@@ -482,6 +531,23 @@ test_that("the frame reader ignores attributes outside the seven names", {
   attr(df, "anything_else") <- 1:3
 
   expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
+})
+
+test_that("the frame reader does not partial-match an attribute name", {
+  # Every §V.2 read is attr(..., exact = TRUE). Base R partial matching runs
+  # both ways round, so both directions are pinned here:
+  #   - a TRUNCATED name ("vend") is not a recognized key, so it is ignored;
+  #   - a name that EXTENDS a canonical one ("vendor_extra") is what a read
+  #     without exact = TRUE would wrongly resolve to, so it must be ignored
+  #     as well.
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  attr(df, "vend") <- "Ipsos"
+  attr(df, "field_st") <- "2026-02-10"
+  attr(df, "vendor_extra") <- "Gallup"
+  attr(df, "field_start_raw") <- "2026-02-11"
+
+  expect_identical(extract_dataset_metadata(df), list())
+  expect_identical(extract_dataset_metadata(df, vendor, field_start), list())
 })
 
 test_that("the frame reader never consults a same-named data column", {
