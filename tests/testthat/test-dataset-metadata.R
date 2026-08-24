@@ -1071,7 +1071,11 @@ test_that("set_dataset_metadata() rejects mismatched key and value lengths", {
   )
   expect_snapshot(
     error = TRUE,
-    set_dataset_metadata(d, key = c("vendor", "data_name"), value = list("Ipsos"))
+    set_dataset_metadata(
+      d,
+      key = c("vendor", "data_name"),
+      value = list("Ipsos")
+    )
   )
 })
 
@@ -1976,7 +1980,11 @@ test_that("a reversed date pair in one call is rejected on a design", {
   )
   expect_snapshot(
     error = TRUE,
-    set_dataset_metadata(d, field_start = "2026-03-04", field_end = "2026-02-10")
+    set_dataset_metadata(
+      d,
+      field_start = "2026-03-04",
+      field_end = "2026-02-10"
+    )
   )
 })
 
