@@ -75,7 +75,8 @@
 }
 
 # .parse_setter_input(dots, variable, content, content_arg_name,
-#                     content_type, fn_name, call)
+#                     content_type, fn_name, name_arg_name, pair_noun,
+#                     example_pairs, container_noun, call)
 # Shared convention detection for all unified setters. Receives `dots` as an
 # evaluated list (rlang::list2(...) at the caller). Returns a named list
 # mapping variable names to content values; NULL values signal deletion.
@@ -83,6 +84,23 @@
 # content_type:
 #   "scalar" — Convention 2 expects a named character vector in ...
 #   "vector" — Convention 2 expects a named list in ...
+#
+# Message parameterization. The seven per-variable setters name a variable and
+# set a label, so their five convention messages read in that register. The
+# dataset-metadata setter names a KEY and sets a value, and its Convention 2
+# container is a list rather than a vector. Four parameters carry the
+# difference:
+#
+#   name_arg_name  — the name-bearing argument: "variable" / "key"
+#   pair_noun      — the pair being set: "variable-label" / "key-value"
+#   example_pairs  — two example argument strings, one pair then two pairs,
+#                    used in the setter_empty and setter_mixed_dots remedies
+#   container_noun — the Convention 2 container noun: "vector" / "list"
+#
+# The defaults render all five templates byte-identically to their pre-1.2.0
+# text, so no existing setter's message changes. The container noun cannot be
+# derived from content_type — a "scalar" content type still takes a named
+# vector in Convention 2 — so it is its own parameter.
 .parse_setter_input <- function(
   dots,
   variable,
@@ -90,23 +108,36 @@
   content_arg_name,
   content_type = c("scalar", "vector"),
   fn_name,
+  name_arg_name = "variable",
+  pair_noun = "variable-label",
+  example_pairs = c(
+    "age = 'Age in years'",
+    "age = 'Age', income = 'Annual income'"
+  ),
+  container_noun = "vector",
   call = rlang::caller_env()
 ) {
   content_type <- match.arg(content_type)
   dots_len <- length(dots)
   var_provided <- !is.null(variable)
 
+  # The two example calls are composed here rather than inline, so each cli
+  # template interpolates one finished data variable.
+  example_call_1 <- paste0(fn_name, "(x, ", example_pairs[[1L]], ")")
+  example_call_2 <- paste0(fn_name, "(x, ", example_pairs[[2L]], ")")
+
   # Ambiguity: both ... and variable provided
   if (dots_len > 0L && var_provided) {
     cli::cli_abort(
       c(
         "x" = paste0(
-          "Provide variable names via {.arg ...} or via ",
-          "{.arg variable}, not both."
+          "Provide {name_arg_name} names via {.arg ...} or via ",
+          "{.arg {name_arg_name}}, not both."
         ),
         "i" = paste0(
-          "Use named {.arg ...} args, a named vector in {.arg ...}, or",
-          " {.arg variable} + {.arg {content_arg_name}} \u2014 not a mix."
+          "Use named {.arg ...} args, a named {container_noun} in",
+          " {.arg ...}, or {.arg {name_arg_name}} +",
+          " {.arg {content_arg_name}} \u2014 not a mix."
         )
       ),
       class = "surveycore_error_setter_ambiguous",
@@ -118,10 +149,10 @@
   if (dots_len == 0L && !var_provided) {
     cli::cli_abort(
       c(
-        "x" = "{.fn {fn_name}} requires at least one variable-label pair.",
+        "x" = "{.fn {fn_name}} requires at least one {pair_noun} pair.",
         "v" = paste0(
           "Use named {.arg ...} args: ",
-          "{.code {fn_name}(x, age = 'Age in years')}."
+          "{.code {example_call_1}}."
         )
       ),
       class = "surveycore_error_setter_empty",
@@ -134,10 +165,13 @@
     if (length(variable) == 0L) {
       cli::cli_warn(
         c(
-          "!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.",
+          "!" = paste0(
+            "{.fn {fn_name}} was called with {.arg {name_arg_name}} of",
+            " length 0."
+          ),
           "i" = paste0(
             "No metadata was set. Did you accidentally filter ",
-            "all variable names out?"
+            "all {name_arg_name} names out?"
           )
         ),
         class = "surveycore_warning_setter_empty_variables",
@@ -149,12 +183,12 @@
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.arg variable} has {length(variable)} element{?s} but",
+            "{.arg {name_arg_name}} has {length(variable)} element{?s} but",
             " {.arg {content_arg_name}} has {length(content)} element{?s}."
           ),
           "i" = paste0(
             "They must be the same length ",
-            "(one content value per variable name)."
+            "(one content value per {name_arg_name} name)."
           )
         ),
         class = "surveycore_error_setter_mismatched_lengths",
@@ -199,8 +233,8 @@
         "x" = "All {.arg ...} arguments must be named when using Convention 1.",
         "i" = "Got {n_named} named and {n_unnamed} unnamed element{?s}.",
         "v" = paste0(
-          "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')}",
-          " or a fully named vector."
+          "Use {.code {example_call_2}}",
+          " or a fully named {container_noun}."
         )
       ),
       class = "surveycore_error_setter_mixed_dots",
