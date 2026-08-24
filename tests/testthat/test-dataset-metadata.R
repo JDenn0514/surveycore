@@ -2820,6 +2820,65 @@ test_that("set_survey_name() leaves an unrelated data_name alone", {
   expect_identical(extract_data_name(d), full_keys[["data_name"]])
 })
 
+test_that("set_survey_name() leaves an unrelated data_name alone on a frame", {
+  df <- make_dataset_df(keys = full_keys["data_name"])
+
+  # The frame arrives with a genuine data_name, not an absent one, so a
+  # setter that reconciled the two keys would change it visibly.
+  df <- set_survey_name(df, "A Completely Unrelated Survey Title")
+  expect_identical(
+    extract_survey_name(df),
+    "A Completely Unrelated Survey Title"
+  )
+  expect_identical(extract_data_name(df), full_keys[["data_name"]])
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(
+      survey_name = "A Completely Unrelated Survey Title",
+      data_name = full_keys[["data_name"]]
+    )
+  )
+})
+
+test_that("set_data_name() leaves an unrelated survey_name alone", {
+  d <- make_dataset_design("taylor", "survey_name")
+  test_invariants(d)
+
+  # Mirror of the set_survey_name() case. The design arrives with a genuine
+  # survey_name, so a setter that filled or overwrote it would fail here.
+  d <- set_data_name(d, "A Completely Unrelated Data Source (2026)")
+  expect_identical(
+    extract_data_name(d),
+    "A Completely Unrelated Data Source (2026)"
+  )
+  expect_identical(extract_survey_name(d), full_keys[["survey_name"]])
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(
+      survey_name = full_keys[["survey_name"]],
+      data_name = "A Completely Unrelated Data Source (2026)"
+    )
+  )
+})
+
+test_that("set_data_name() leaves an unrelated survey_name alone on a frame", {
+  df <- make_dataset_df(keys = full_keys["survey_name"])
+
+  df <- set_data_name(df, "A Completely Unrelated Data Source (2026)")
+  expect_identical(
+    extract_data_name(df),
+    "A Completely Unrelated Data Source (2026)"
+  )
+  expect_identical(extract_survey_name(df), full_keys[["survey_name"]])
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(
+      survey_name = full_keys[["survey_name"]],
+      data_name = "A Completely Unrelated Data Source (2026)"
+    )
+  )
+})
+
 test_that("set_survey_name() with NULL deletes only survey_name", {
   d <- make_dataset_design("taylor", "full")
   test_invariants(d)
