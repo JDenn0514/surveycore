@@ -2119,3 +2119,248 @@ test_that("a rejected unknown key in a multi-key call writes nothing", {
   expect_identical(extract_dataset_metadata(df), list())
   expect_null(attr(df, "vendor", exact = TRUE))
 })
+
+# ── 15. set_dataset_metadata() — survey write-path guarantees ─────────────────
+
+test_that("the write leaves the other metadata properties alone", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+  d <- set_var_label(d, y1 = "Outcome one")
+  d <- set_val_labels(d, y3 = c(No = 0L, Yes = 1L))
+  before_labels <- d@metadata@variable_labels
+  before_vals <- d@metadata@value_labels
+  before_hist <- d@metadata@weighting_history
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(d@metadata@variable_labels, before_labels)
+  expect_identical(d@metadata@value_labels, before_vals)
+  expect_identical(d@metadata@weighting_history, before_hist)
+})
+
+test_that("the write leaves @data and @variables alone", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+  before_data <- d@data
+  before_vars <- d@variables
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(d@data, before_data)
+  expect_identical(d@variables, before_vars)
+})
+
+test_that("the write never touches whole-frame attributes on @data", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, vendor = "Ipsos")
+
+  # The stored property is the single source of truth on a survey object.
+  expect_null(attr(d@data, "vendor", exact = TRUE))
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("all six keys round-trip on a taylor design", {
+  d <- make_dataset_design("taylor", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("all six keys round-trip on a replicate design", {
+  d <- make_dataset_design("replicate", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("all six keys round-trip on a twophase design", {
+  d <- make_dataset_design("twophase", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("all six keys round-trip on a nonprob design", {
+  d <- make_dataset_design("nonprob", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("all six keys round-trip on a nonprob design with repweights", {
+  d <- make_dataset_design("nonprob_rep", "none")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, !!!full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("make_dataset_design() applies each state through the setter", {
+  d_none <- make_dataset_design("taylor", "none")
+  test_invariants(d_none)
+  d_full <- make_dataset_design("taylor", "full")
+  d_name <- make_dataset_design("taylor", "name_only")
+  d_part <- make_dataset_design("taylor", "partial")
+
+  expect_identical(extract_dataset_metadata(d_none), list())
+  expect_identical(extract_dataset_metadata(d_full), full_keys)
+  expect_identical(
+    extract_dataset_metadata(d_name),
+    full_keys["survey_name"]
+  )
+  expect_identical(
+    names(extract_dataset_metadata(d_part)),
+    c("data_name", "vendor", "field_start", "field_period")
+  )
+})
+
+# ── 16. set_dataset_metadata() — data-frame write-path guarantees ─────────────
+
+test_that("deleting field_period also removes the legacy dates attribute", {
+  df <- make_dataset_df(keys = list(dates = "February-March 2026"))
+
+  df <- set_dataset_metadata(df, field_period = NULL)
+
+  expect_null(attr(df, "field_period", exact = TRUE))
+  expect_null(attr(df, "dates", exact = TRUE))
+  expect_identical(extract_dataset_metadata(df), list())
+})
+
+test_that("deleting field_period is idempotent", {
+  df <- make_dataset_df(
+    keys = list(field_period = "Feb 2026", dates = "February-March 2026")
+  )
+
+  df <- set_dataset_metadata(df, field_period = NULL)
+  df <- set_dataset_metadata(df, field_period = NULL)
+
+  expect_null(attr(df, "field_period", exact = TRUE))
+  expect_null(attr(df, "dates", exact = TRUE))
+  expect_identical(extract_dataset_metadata(df), list())
+})
+
+test_that("dates = NULL is an alias that removes both spellings", {
+  df <- make_dataset_df(
+    keys = list(field_period = "Feb 2026", dates = "February-March 2026")
+  )
+
+  df <- set_dataset_metadata(df, dates = NULL)
+
+  expect_null(attr(df, "field_period", exact = TRUE))
+  expect_null(attr(df, "dates", exact = TRUE))
+  expect_identical(extract_dataset_metadata(df), list())
+})
+
+test_that("dates = NULL on a design deletes field_period", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  d <- set_dataset_metadata(d, dates = NULL)
+
+  expect_false("field_period" %in% names(extract_dataset_metadata(d)))
+})
+
+test_that("setting field_period leaves an existing dates attribute alone", {
+  df <- make_dataset_df(keys = list(dates = "February-March 2026"))
+
+  df <- set_dataset_metadata(df, field_period = "Feb-Mar 2026")
+
+  # Only a deletion cleans up the legacy name; a write does not.
+  expect_identical(attr(df, "dates", exact = TRUE), "February-March 2026")
+  expect_identical(
+    extract_dataset_metadata(df),
+    list(field_period = "Feb-Mar 2026")
+  )
+})
+
+test_that("the write leaves per-column attributes alone", {
+  df <- make_survey_data(
+    n = 20L,
+    n_psu = 6L,
+    n_strata = 2L,
+    with_labels = TRUE
+  )
+  before <- lapply(df, attributes)
+
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  expect_identical(lapply(df, attributes), before)
+})
+
+test_that("the write leaves names, row.names, and class alone", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  before_names <- names(df)
+  before_rows <- .row_names_info(df, type = 0L)
+  before_class <- class(df)
+
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  expect_identical(names(df), before_names)
+  expect_identical(.row_names_info(df, type = 0L), before_rows)
+  expect_identical(class(df), before_class)
+})
+
+test_that("the write leaves the column values alone", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  # lapply() over the columns, not as.list(), because as.list() on a data frame
+  # carries the whole-frame attributes this setter is expected to change.
+  before <- lapply(names(df), function(nm) df[[nm]])
+
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  expect_identical(lapply(names(df), function(nm) df[[nm]]), before)
+})
+
+test_that("a valid key equal to a column name writes only the attribute", {
+  df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
+  df$vendor <- rep("column value", nrow(df))
+  before <- df$vendor
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos")
+
+  # The attribute namespace and the column namespace are distinct.
+  expect_identical(df$vendor, before)
+  expect_identical(attr(df, "vendor", exact = TRUE), "Ipsos")
+  expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
+})
+
+test_that("a 0-row data frame accepts dataset metadata", {
+  df <- data.frame(
+    y = numeric(0L),
+    w = numeric(0L),
+    stringsAsFactors = FALSE
+  )
+
+  df <- set_dataset_metadata(df, !!!full_keys)
+
+  expect_identical(nrow(df), 0L)
+  expect_identical(extract_dataset_metadata(df), full_keys)
+})
+
+test_that("a single-row data frame accepts dataset metadata", {
+  df <- data.frame(y = 1, w = 1, stringsAsFactors = FALSE)
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos")
+
+  expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
+})
+
+test_that("a tibble keeps its class through the write", {
+  df <- tibble::tibble(y = 1:3, w = c(1, 1, 1))
+
+  df <- set_dataset_metadata(df, vendor = "Ipsos")
+
+  expect_s3_class(df, "tbl_df")
+  expect_identical(extract_dataset_metadata(df), list(vendor = "Ipsos"))
+})

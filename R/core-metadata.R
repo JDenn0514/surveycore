@@ -1462,6 +1462,17 @@ set_dataset_metadata <- function(x, ..., key = NULL, value = NULL) {
   for (k in names(pairs)) {
     attr(x, k) <- pairs[[k]]
   }
+
+  # Legacy cleanup. Deleting field_period removes the pre-1.2.0 `dates`
+  # attribute too, so the deletion is idempotent and construction cannot
+  # resurrect the value through the legacy read. Only a deletion cleans up;
+  # writing a new field_period leaves `dates` in place, and the reader ignores
+  # it because field_period is then present.
+  if (
+    "field_period" %in% names(pairs) && is.null(pairs[["field_period"]])
+  ) {
+    attr(x, .dataset_legacy_period_attr) <- NULL
+  }
   invisible(x)
 }
 
