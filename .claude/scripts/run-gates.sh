@@ -59,7 +59,11 @@ gate_test() {
 # --- Gate 7: coverage ----------------------------------------------------
 gate_covr() {
   local log="$LOGDIR/gate-7-covr.log"
-  Rscript -e 'cat(sprintf("COVERAGE_PCT=%.2f\n", covr::percent_coverage(covr::package_coverage())))' > "$log" 2>&1
+  # NOT_CRAN=true matches gate 2. Ten test files carry a file-level
+  # skip_on_cran(); without the variable they skip, roughly 3300 lines of
+  # source read as untested, and coverage reports ~93.7% instead of ~95.9%
+  # — a false failure against the 95% floor below.
+  NOT_CRAN=true Rscript -e 'cat(sprintf("COVERAGE_PCT=%.2f\n", covr::percent_coverage(covr::package_coverage())))' > "$log" 2>&1
   local pct
   pct=$(grep -oE 'COVERAGE_PCT=[0-9.]+' "$log" | tail -1 | cut -d= -f2)
   if [ -z "$pct" ]; then
