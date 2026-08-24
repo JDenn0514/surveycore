@@ -419,7 +419,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
   - **Pipeline split**: recommended (one new exported function; shared-parser change touching seven sibling setters)
 
-- [ ] PR 4: `feature/dataset-metadata-wrappers` — ten convenience wrappers, Rd links, pkgdown completion, `extract_metadata()` note
+- [x] PR 4: `feature/dataset-metadata-wrappers` — ten convenience wrappers, Rd links, pkgdown completion, `extract_metadata()` note
 
   - **Tasks** (9)
     1. Vendor pair. RED: write rows S12a, S12b, S12d (`set_vendor(d)` → `setter_empty`, dual once for the wrapper message), E9a and E9b (vendor entries), the X13 vendor clause (`set_vendor(d, 1L)` dual; snapshot names `vendor`; plan-review 3R11), and the S25a/S25b/S25c convenience-pair completion (`set_vendor` / `extract_vendor` on each design class; plan-review 2R5); confirm failure. GREEN: implement `set_vendor()` and `extract_vendor()` per spec §VII/§IX (wrapper check order: class → DM-8 → guard → delegation). VERIFY: rerun plus the file.
