@@ -375,6 +375,90 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # The two date-typed keys. The other four keys are character(1).
 .dataset_date_keys <- c("field_start", "field_end")
 
+# The seven whole-data-frame attribute names the reader recognizes, in read
+# order. The first six are the canonical keys; "dates" is the pre-1.2.0
+# spelling of the prose field period. surveycore claims no attribute name
+# beyond these seven — every other attribute is ignored entirely.
+.dataset_legacy_period_attr <- "dates"
+
+
+# Return metadata@dataset_metadata, or list() when the stored S7 class predates
+# the property. An object restored from a .rds/.rda file written by surveycore
+# <= 1.1.0 carries a frozen copy of the old class, so reading the property
+# directly would raise S7's "Can't find property" error. Every read path in the
+# package goes through here, so reads on such an object succeed and report no
+# dataset metadata.
+#
+# @param metadata A survey_metadata object.
+# @return The stored named list, or list() when the property is absent.
+#' @noRd
+.dataset_metadata_or_empty <- function(metadata) {
+  if (!"dataset_metadata" %in% S7::prop_names(metadata)) {
+    return(list())
+  }
+  metadata@dataset_metadata
+}
+
+
+# Coerce one candidate field-date value to a Date scalar.
+#
+# Accepts a non-NA Date of length 1, or a character(1) that is strict ISO 8601:
+# it must parse with format = "%Y-%m-%d" to a non-NA date AND round-trip
+# through format(). The round-trip is what rejects "2026-2-1", which as.Date()
+# would otherwise accept. "2026/02/10", timestamps, and the impossible
+# "2026-02-30" all fail on the parse.
+#
+# as.Date() is wrapped in tryCatch(), so no base condition ever surfaces to the
+# caller — a bad value is reported by this function's own callers, in the
+# surveycore register.
+#
+# @param value The candidate value.
+# @return A Date of length 1 on success, NULL on failure.
+#' @noRd
+.coerce_field_date <- function(value) {
+  if (inherits(value, "Date")) {
+    if (length(value) == 1L && !is.na(value)) {
+      return(value)
+    }
+    return(NULL)
+  }
+
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    return(NULL)
+  }
+
+  parsed <- tryCatch(
+    as.Date(value, format = "%Y-%m-%d"),
+    error = function(cnd) NULL,
+    warning = function(cnd) NULL
+  )
+  if (is.null(parsed) || length(parsed) != 1L || is.na(parsed)) {
+    return(NULL)
+  }
+  if (!identical(format(parsed, "%Y-%m-%d"), value)) {
+    return(NULL)
+  }
+  parsed
+}
+
+
+# Classify why a dataset metadata value failed the canonical value table. The
+# three reasons drive the promotion-warning variant a caller reports:
+# "zero_length" is its own variant, and the other two share one.
+#
+# @param value The rejected value.
+# @return character(1): "zero_length", "wrong_length", or "wrong_type".
+#' @noRd
+.dataset_value_reason <- function(value) {
+  if (length(value) == 0L) {
+    return("zero_length")
+  }
+  if (length(value) > 1L) {
+    return("wrong_length")
+  }
+  "wrong_type"
+}
+
 
 # The single valid-key value checker for dataset metadata. Every path that
 # writes or resolves a dataset metadata value goes through here, so the per-key
@@ -383,22 +467,27 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 # @param key       character(1). One of .dataset_metadata_keys.
 # @param value     The candidate value (never NULL — callers screen NULL first,
 #                  because NULL means "delete", not "bad value").
-# @param mode      "error" raises the typed error for the key. The "skip"
-#                  branch, which returns NULL instead for the warn-and-skip
-#                  callers, arrives with its first caller in the setter and
-#                  promotion work; only "error" behaves here.
+# @param mode      "error" raises the typed error for the key and returns the
+#                  coerced value on success. "skip" never raises: it returns
+#                  list(value = <coerced value>, reason = NULL) on success and
+#                  list(value = NULL, reason = <.dataset_value_reason()>) on
+#                  failure, for the warn-and-skip callers (promotion, which
+#                  warns on the reason, and the data-frame extract path, which
+#                  ignores it).
 # @param key_style How the error message names the offender. "val" renders the
 #                  key as a value ({.val {key}}); "arg" renders it as a
 #                  function argument ({.arg {key}}), which is what a wrapper
-#                  whose argument name IS the key needs.
+#                  whose argument name IS the key needs. Ignored in "skip" mode,
+#                  which renders no message.
 # @param call      Passed to cli_abort() so the error reports the user-facing
 #                  caller rather than this helper.
-# @return The checked value on success; an error otherwise.
+# @return In "error" mode, the coerced value, or an error. In "skip" mode, a
+#         two-element list; see @param mode.
 #
-# Date branch note: this branch currently accepts a non-NA Date of length 1
-# only. Strict-ISO character coercion is a setter service and arrives with the
-# setter work. The survey_metadata validator narrows to Date on its own side
-# and must keep doing so after that widening.
+# Date branch note: BOTH modes route through .coerce_field_date(), so a
+# strict-ISO character(1) is accepted everywhere and stored as a Date. The
+# survey_metadata validator narrows to Date on its own side, which is what
+# keeps the class layer rejecting a STORED ISO string.
 #' @noRd
 .check_dataset_key_value <- function(
   key,
@@ -409,14 +498,28 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 ) {
   mode <- match.arg(mode)
   key_style <- match.arg(key_style)
+  is_date_key <- key %in% .dataset_date_keys
 
-  if (key %in% .dataset_date_keys) {
-    valid <- inherits(value, "Date") &&
-      length(value) == 1L &&
-      !is.na(value)
-    if (valid) {
-      return(value)
+  coerced <- if (is_date_key) {
+    .coerce_field_date(value)
+  } else if (is.character(value) && length(value) == 1L && !is.na(value)) {
+    value
+  } else {
+    NULL
+  }
+
+  if (!is.null(coerced)) {
+    if (mode == "skip") {
+      return(list(value = coerced, reason = NULL))
     }
+    return(coerced)
+  }
+
+  if (mode == "skip") {
+    return(list(value = NULL, reason = .dataset_value_reason(value)))
+  }
+
+  if (is_date_key) {
     lead <- if (key_style == "arg") "{.arg {key}}" else "{.val {key}}"
     bullets <- c(
       "x" = paste0(
@@ -437,10 +540,6 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     )
   }
 
-  valid <- is.character(value) && length(value) == 1L && !is.na(value)
-  if (valid) {
-    return(value)
-  }
   cli::cli_abort(
     c(
       "x" = paste0(
@@ -455,6 +554,94 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     ),
     class = "surveycore_error_dataset_metadata_bad_type",
     call = call
+  )
+}
+
+
+# Read the seven recognized whole-data-frame attributes and apply the canonical
+# value table in warn-and-skip mode. Never errors, never warns, never modifies
+# `data`. Promotion reports the `dropped` entries as warnings; the data-frame
+# extract path ignores them, because extractors never warn.
+#
+# Read order is the canonical key order for the six canonical names, then the
+# legacy "dates" name, which lands in field_period ONLY when the field_period
+# attribute is absent. A present-but-invalid field_period stops the fallback:
+# repairing from a legacy name would hide the invalid value.
+#
+# @param data A data.frame.
+# @return list(values = <coerced named list in canonical key order>,
+#              dropped = <named report, one entry per skipped key>).
+#         Each dropped entry carries `variant`, one of:
+#           "a" — a canonical attribute with a wrong-typed, NA, unparseable, or
+#                 length > 1 value
+#           "b" — a canonical attribute with a zero-length value
+#           "c" — the coerced date pair is reversed; BOTH dates were dropped
+#           "d" — the legacy "dates" attribute with ANY invalid value
+#         plus `key` (the name or names dropped), `reason`, and either the raw
+#         `value` or, for variant "c", the coerced `start` and `end`.
+#' @noRd
+.read_dataset_attributes <- function(data) {
+  values <- list()
+  dropped <- list()
+
+  # Steps 1-6: the six canonical attribute names, in canonical order.
+  for (key in .dataset_metadata_keys) {
+    raw <- attr(data, key, exact = TRUE)
+    if (is.null(raw)) {
+      next
+    }
+    checked <- .check_dataset_key_value(key, raw, mode = "skip")
+    if (is.null(checked$reason)) {
+      values[[key]] <- checked$value
+      next
+    }
+    dropped[[key]] <- list(
+      variant = if (identical(checked$reason, "zero_length")) "b" else "a",
+      key = key,
+      value = raw,
+      reason = checked$reason
+    )
+  }
+
+  # Step 7: the legacy "dates" attribute, only when the field_period attribute
+  # is absent — absent meaning attr(..., exact = TRUE) returns NULL.
+  if (is.null(attr(data, "field_period", exact = TRUE))) {
+    raw <- attr(data, .dataset_legacy_period_attr, exact = TRUE)
+    if (!is.null(raw)) {
+      checked <- .check_dataset_key_value("field_period", raw, mode = "skip")
+      if (is.null(checked$reason)) {
+        values[["field_period"]] <- checked$value
+      } else {
+        dropped[[.dataset_legacy_period_attr]] <- list(
+          variant = "d",
+          key = .dataset_legacy_period_attr,
+          value = raw,
+          reason = checked$reason
+        )
+      }
+    }
+  }
+
+  # The pair rule runs on the COERCED values, so "2026-03-04" and "2026-02-10"
+  # are compared as dates. A reversed pair drops both keys, because the
+  # validator would reject the pair and promotion must never write it.
+  start <- values[["field_start"]]
+  end <- values[["field_end"]]
+  if (!is.null(start) && !is.null(end) && start > end) {
+    dropped[["field_dates"]] <- list(
+      variant = "c",
+      key = .dataset_date_keys,
+      start = start,
+      end = end,
+      reason = "reversed"
+    )
+    values[["field_start"]] <- NULL
+    values[["field_end"]] <- NULL
+  }
+
+  list(
+    values = values[intersect(.dataset_metadata_keys, names(values))],
+    dropped = dropped
   )
 }
 
