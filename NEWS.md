@@ -55,6 +55,14 @@
   even when the data frame carried it. This is a pre-existing inconsistency,
   independent of the dataset-metadata feature. (#168)
 
+* `get_predict.survey_glm_fit()` now preserves a `rowid` column already
+  present in `newdata` instead of always fabricating a fresh sequential one.
+  marginaleffects 1.0.0 relies on `rowid` to reattach grouping columns onto
+  stacked contrast rows, and the fabricated sequence did not match once a
+  contrast block's row identity reset partway through, so grouped
+  `avg_slopes()`/`avg_predictions()` calls on `survey_glm_fit` objects lost
+  or misattributed the grouping column. (#153)
+
 ## Notes
 
 * **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
