@@ -1116,7 +1116,7 @@ test_that("print.survey_replicate shows a Dataset line above Sample size", {
   expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
 })
 
-test_that("print.survey_twophase shows a Dataset line above Phase 1 sample size", {
+test_that("print.survey_twophase shows Dataset above Phase 1 sample size", {
   d <- make_dataset_design("twophase", "data_name")
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -1129,7 +1129,7 @@ test_that("print.survey_twophase shows a Dataset line above Phase 1 sample size"
   expect_true(grepl("^Phase 1 sample size: ", out[[idx + 1L]]))
 })
 
-test_that("print.survey_nonprob puts the Dataset line after the variance bullet", {
+test_that("print.survey_nonprob puts Dataset after the variance bullet", {
   d <- make_dataset_design("nonprob", "data_name")
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -1144,7 +1144,7 @@ test_that("print.survey_nonprob puts the Dataset line after the variance bullet"
   expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
 })
 
-test_that("print.survey_nonprob with repweights puts Dataset after the class line", {
+test_that("print.survey_nonprob repweights puts Dataset after class line", {
   d <- make_dataset_design("nonprob_rep", "data_name")
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -1280,7 +1280,7 @@ test_that("metadata_info block shows Survey when the two names differ", {
   )
 })
 
-test_that("metadata_info block shows a one-sided range for a single start date", {
+test_that("metadata_info block shows a one-sided range for a start date", {
   d <- make_dataset_design("taylor", "partial")
   test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -1290,7 +1290,10 @@ test_that("metadata_info block shows a one-sided range for a single start date",
     out[grepl("^Field dates: ", out)],
     "Field dates: 2026-02-10 to ? (February-March 2026)"
   )
-  expect_identical(out[grepl("^Vendor: ", out)], "Vendor: Ipsos KnowledgePanel Omnibus")
+  expect_identical(
+    out[grepl("^Vendor: ", out)],
+    "Vendor: Ipsos KnowledgePanel Omnibus"
+  )
   # partial has no survey_name, so no Survey line.
   expect_false(any(grepl("^Survey: ", out)))
 })
@@ -1346,7 +1349,7 @@ test_that("metadata_info block omits Field dates when no date key is set", {
   expect_true(any(grepl("^Vendor: ", out)))
 })
 
-test_that("metadata_info section is unchanged when no dataset metadata is set", {
+test_that("metadata_info section is unchanged when no dataset keys are set", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
 
@@ -1448,7 +1451,7 @@ test_that("full = TRUE leaves output unchanged when nothing is set", {
 
 # ── 56. Stale (pre-1.2.0) objects (spec section IV) ─────────────────────────
 
-test_that("a stale design prints and summarises with every argument combination", {
+test_that("a stale design prints and summarises with every argument set", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   dataset_line <- "^(Dataset|Survey|Vendor|Field dates): "
 
@@ -1546,7 +1549,7 @@ test_that("print renders braces in the block values literally", {
   )
 })
 
-test_that("print replaces newline, carriage return and tab in the header name", {
+test_that("print replaces newline, return and tab in the header name", {
   d <- make_dataset_design("taylor", "none")
   d <- set_dataset_metadata(d, data_name = "AAA\nIpsos\rOmnibus\t2026")
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -1557,7 +1560,7 @@ test_that("print replaces newline, carriage return and tab in the header name", 
   expect_false(any(grepl("[\n\r\t]", line)))
 })
 
-test_that("print replaces newline, carriage return and tab in the block values", {
+test_that("print replaces newline, return and tab in the block values", {
   d <- make_dataset_design("taylor", "none")
   d <- set_dataset_metadata(
     d,
@@ -1599,7 +1602,10 @@ test_that("print keeps a header name of exactly 60 characters whole", {
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
-  expect_identical(out[grepl("^Dataset: ", out)], paste0("Dataset: ", exact_name))
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    paste0("Dataset: ", exact_name)
+  )
 })
 
 test_that("print truncates a header name of exactly 61 characters", {
@@ -1649,9 +1655,10 @@ test_that("summary renders a hostile header name without aborting", {
 
   expect_no_error(out <- capture_design_output(summary(d))$cli)
   line <- out[grepl("^Dataset: ", out)]
+  sanitized <- paste0("{.val x} ", strrep("z", 70L))
   expect_identical(
     line,
-    paste0("Dataset: ", substr(paste0("{.val x} ", strrep("z", 70L)), 1L, 57L), "...")
+    paste0("Dataset: ", substr(sanitized, 1L, 57L), "...")
   )
 })
 
