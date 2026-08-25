@@ -543,7 +543,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
   - **Pipeline split**: recommended (user-visible output contract across eight methods)
 
-- [ ] PR 7: `feature/dataset-metadata-docs` — vignette, NEWS, DESCRIPTION (depends on PR 5 and PR 6)
+- [x] PR 7: `feature/dataset-metadata-docs` — vignette, NEWS, DESCRIPTION (depends on PR 5 and PR 6)
 
   - **Tasks** (3)
     1. Add the "Dataset-level metadata" section to `vignettes/creating-survey-objects.Rmd`: the data-raw workflow, `survey_name`/`data_name` shown side by side with the independence statement, the attribute-persistence paragraph (base `[`, `as_tibble()`, `merge()` drop attributes — set metadata last or on the design), and the sentence naming `extract_metadata()`'s exclusion of dataset-level keys (plan-review R13; spec §XII.3/§XII.8).
