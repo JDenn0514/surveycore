@@ -44,7 +44,8 @@ Imports:
     marginaleffects (>= 0.18.0),
     pbivnorm (>= 0.6.0),
     stats,
-    graphics
+    graphics,
+    utils
 Suggests:
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
