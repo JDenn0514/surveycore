@@ -508,7 +508,7 @@ locally: the repo has no pkgcheck CI workflow (removed in commit
 
   - **Pipeline split**: recommended (constructor behavior change; new warning class in play)
 
-- [ ] PR 6: `feature/dataset-metadata-print` — print and summary lines, print helpers (depends on PR 3 only; may ship concurrently with PR 4 and PR 5)
+- [x] PR 6: `feature/dataset-metadata-print` — print and summary lines, print helpers (depends on PR 3 only; may ship concurrently with PR 4 and PR 5)
 
   - **Tasks** (8)
     1. Taylor header. RED: write the §9 grid `print(d)` cells for taylor states (a), (b), (c) in `tests/testthat/test-methods-print.R` (state (a) re-runs the existing snapshot); confirm the (b)/(c) cells fail. GREEN: implement `.dataset_display_name()` at the top of `R/methods-print.R` (fallback rule; §X.5 sanitation and truncation) and wire the taylor header line. VERIFY: rerun; the pre-existing state-(a) blocks are byte-identical.
