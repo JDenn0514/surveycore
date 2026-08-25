@@ -25,8 +25,10 @@ Description: A modern, 'S7'-based foundation for survey analysis
     with weighted 'polychoric' and 'polyserial' correlation following
     'Mannan' (2025) <doi:10.2139/ssrn.6580480>. A metadata system
     preserves 'haven'-style variable labels, value labels, and
-    question-preface attributes through all operations. Uses a
-    'tidyselect' interface throughout.
+    question-preface attributes through all operations, alongside
+    dataset-level metadata that records the survey name, the fielding
+    vendor, and the field period. Uses a 'tidyselect' interface
+    throughout.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
