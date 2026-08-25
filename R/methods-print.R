@@ -726,6 +726,10 @@ S7::method(summary, survey_nonprob) <- function(object, ...) {
   cli::cli_text("Calibration provenance: {cal_label}")
 
   cli::cli_text("")
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   n_labeled <- length(x@metadata@variable_labels)
   n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
@@ -780,6 +784,10 @@ S7::method(summary, survey_taylor) <- function(object, ...) {
   }
 
   cli::cli_text("")
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   n_labeled <- length(x@metadata@variable_labels)
   n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
@@ -823,6 +831,10 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
   }
 
   cli::cli_text("")
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   n_labeled <- length(x@metadata@variable_labels)
   n_total <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total} variable(s) labeled")
@@ -889,6 +901,10 @@ S7::method(summary, survey_twophase) <- function(object, ...) {
   }
 
   cli::cli_text("")
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   n_labeled <- length(x@metadata@variable_labels)
   n_total_vars <- ncol(x@data)
   cli::cli_text("Metadata: {n_labeled} of {n_total_vars} variable(s) labeled")

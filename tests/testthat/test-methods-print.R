@@ -1446,6 +1446,88 @@ test_that("full = TRUE leaves output unchanged when nothing is set", {
   }
 })
 
+# ── 54. Dataset line in the summary methods (spec section X.4) ──────────────
+
+test_that("summary shows the Dataset line directly above the Metadata line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "data_name")
+    test_invariants(d)
+    out <- capture_design_output(summary(d))$cli
+
+    idx <- grep("^Dataset: ", out)
+    expect_length(idx, 1L)
+    expect_identical(
+      out[[idx]],
+      "Dataset: AAA Ipsos (February-March 2026)",
+      info = design
+    )
+    expect_true(grepl("^Metadata: ", out[[idx + 1L]]), info = design)
+    # The blank line that already preceded the Metadata line stays above it.
+    expect_identical(out[[idx - 1L]], "", info = design)
+  }
+})
+
+test_that("summary falls back to survey_name", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "survey_name")
+    test_invariants(d)
+    out <- capture_design_output(summary(d))$cli
+    expect_identical(
+      out[grepl("^Dataset: ", out)],
+      "Dataset: Antisemitic Attitudes in America 2026",
+      info = design
+    )
+  }
+})
+
+test_that("summary output is unchanged when no dataset metadata is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d_none <- make_dataset_design(design, "none")
+    d_named <- make_dataset_design(design, "data_name")
+    test_invariants(d_none)
+
+    none_out <- capture_design_output(summary(d_none))
+    named_out <- capture_design_output(summary(d_named))
+
+    expect_false(any(grepl("^Dataset: ", none_out$cli)), info = design)
+    expect_identical(
+      named_out$cli[!grepl("^Dataset: ", named_out$cli)],
+      none_out$cli,
+      info = design
+    )
+    # Positive control: the named design printed exactly one Dataset line.
+    expect_length(grep("^Dataset: ", named_out$cli), 1L)
+  }
+})
+
+test_that("summary shows no Survey, Vendor or Field dates lines", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+
+  out <- capture_design_output(summary(d))$cli
+  # Only the one name line belongs in a summary (spec section X.4).
+  expect_false(any(grepl("^(Survey|Vendor|Field dates): ", out)))
+  expect_length(grep("^Dataset: ", out), 1L)
+})
+
+test_that("summary(survey_taylor): Dataset line snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("taylor", "data_name")
+  test_invariants(d)
+  expect_snapshot(summary(d))
+})
+
+
 # ── 53. Verbatim console contract (spec section X.3) ────────────────────────
 
 test_that("print(survey_taylor, metadata_info = TRUE): all six keys snapshot", {

@@ -886,6 +886,31 @@
       
       Metadata: 0 of 6 variable(s) labeled
 
+# summary(survey_taylor): Dataset line snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: Taylor series linearization
+      Sample size: 100
+      Weighted N: 1250
+      
+      
+      -- Design --
+      
+      IDs: psu (10 PSUs)
+      Strata: strata (2 strata)
+      Weights: wt
+      * Range: 5.38 – 22.99
+      * Mean: 12.5
+      * CV: 0.283
+      FPC: fpc
+      
+      Dataset: AAA Ipsos (February-March 2026)
+      Metadata: 0 of 8 variable(s) labeled
+
 # print(survey_taylor, metadata_info = TRUE): all six keys snapshot
 
     Code
