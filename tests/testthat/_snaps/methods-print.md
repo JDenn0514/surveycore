@@ -886,3 +886,186 @@
       
       Metadata: 0 of 6 variable(s) labeled
 
+# summary(survey_taylor): Dataset line snapshot
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: Taylor series linearization
+      Sample size: 100
+      Weighted N: 1250
+      
+      
+      -- Design --
+      
+      IDs: psu (10 PSUs)
+      Strata: strata (2 strata)
+      Weights: wt
+      * Range: 5.38 – 22.99
+      * Mean: 12.5
+      * CV: 0.283
+      FPC: fpc
+      
+      Dataset: AAA Ipsos (February-March 2026)
+      Metadata: 0 of 8 variable(s) labeled
+
+# print(survey_taylor, metadata_info = TRUE): all six keys snapshot
+
+    Code
+      print(d, metadata_info = TRUE, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+      
+      -- Metadata --
+      
+      Survey: Antisemitic Attitudes in America 2026
+      Vendor: Ipsos KnowledgePanel Omnibus
+      Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_taylor, metadata_info = TRUE): period-only snapshot
+
+    Code
+      print(d, metadata_info = TRUE, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+      
+      -- Metadata --
+      
+      Field dates: February-March 2026
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_taylor): survey_name fallback header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Dataset: Antisemitic Attitudes in America 2026
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_replicate): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (BRR, 5 replicates)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 13
+        psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C        15.3    13.2    15.3
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A        21.4    22.9    18.6
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C        12.0    15.8    12.1
+      # i 97 more rows
+      # i 2 more variables: repwt_4 <dbl>, repwt_5 <dbl>
+
+# print(survey_twophase): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_twophase> (method: approx)
+      Dataset: AAA Ipsos (February-March 2026)
+      Phase 1 sample size: 100
+      Phase 2 sample size: 42
+      
+    Output
+      # A tibble: 100 x 11
+        psu   strata      fpc    wt    y1     y2    y3 group subset phase1_prob
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr> <lgl>        <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C     FALSE       0.0687
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A     TRUE        0.0687
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C     FALSE       0.0687
+      # i 97 more rows
+      # i 1 more variable: phase2_prob <dbl>
+
+# print(survey_nonprob): Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability) [experimental]
+      * Variance: SRS approximation (no bootstrap replicate weights)
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C    
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A    
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C    
+      # i 97 more rows
+
+# print(survey_nonprob) with repweights: Dataset header snapshot
+
+    Code
+      print(d, n = 3)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_nonprob> (non-probability, BOOTSTRAP, 3 replicates) [experimental]
+      Dataset: AAA Ipsos (February-March 2026)
+      Sample size: 100
+      
+    Output
+      # A tibble: 100 x 11
+        psu   strata      fpc    wt    y1     y2    y3 group   rw1   rw2   rw3
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr> <dbl> <dbl> <dbl>
+      1 psu_1 stratum_1   742  14.3  48.8 -1.05      0 C      14.6  14.0  14.4
+      2 psu_1 stratum_1   742  21.8  51.9 -0.646     0 A      22.2  21.3  22.0
+      3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C      14.7  14.1  14.5
+      # i 97 more rows
+
