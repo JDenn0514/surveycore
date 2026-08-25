@@ -1371,6 +1371,133 @@ test_that("metadata_info section is unchanged when no dataset metadata is set", 
   }
 })
 
+test_that("full = TRUE shows the header and the block in every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "full")
+    test_invariants(d)
+    out <- capture_design_output(print(d, full = TRUE))$cli
+
+    expect_identical(
+      out[grepl("^Dataset: ", out)],
+      "Dataset: AAA Ipsos (February-March 2026)",
+      info = design
+    )
+    expect_identical(
+      out[grepl("^Survey: ", out)],
+      "Survey: Antisemitic Attitudes in America 2026",
+      info = design
+    )
+    expect_identical(
+      out[grepl("^Vendor: ", out)],
+      "Vendor: Ipsos KnowledgePanel Omnibus",
+      info = design
+    )
+    expect_identical(
+      out[grepl("^Field dates: ", out)],
+      "Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)",
+      info = design
+    )
+  }
+})
+
+test_that("full = TRUE matches metadata_info = TRUE for the dataset lines", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+  pattern <- "^(Dataset|Survey|Vendor|Field dates): "
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "full")
+    test_invariants(d)
+    full_out <- capture_design_output(print(d, full = TRUE))$cli
+    meta_out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+    expect_identical(
+      full_out[grepl(pattern, full_out)],
+      meta_out[grepl(pattern, meta_out)],
+      info = design
+    )
+    # Positive control: there are four such lines, not zero.
+    expect_length(grep(pattern, full_out), 4L)
+  }
+})
+
+test_that("full = TRUE leaves output unchanged when nothing is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+  pattern <- "^(Dataset|Survey|Vendor|Field dates): "
+
+  for (design in designs) {
+    d_none <- make_dataset_design(design, "none")
+    d_full <- make_dataset_design(design, "full")
+    test_invariants(d_none)
+
+    none_out <- capture_design_output(print(d_none, full = TRUE))
+    full_out <- capture_design_output(print(d_full, full = TRUE))
+
+    expect_false(any(grepl(pattern, none_out$cli)), info = design)
+    expect_identical(
+      full_out$cli[!grepl(pattern, full_out$cli)],
+      none_out$cli,
+      info = design
+    )
+    expect_identical(full_out$data, none_out$data, info = design)
+  }
+})
+
+# ── 53. Verbatim console contract (spec section X.3) ────────────────────────
+
+test_that("print(survey_taylor, metadata_info = TRUE): all six keys snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  expect_snapshot(print(d, metadata_info = TRUE, n = 3))
+})
+
+test_that("print(survey_taylor, metadata_info = TRUE): period-only snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("taylor", "data_name")
+  d <- set_dataset_metadata(d, field_period = "February-March 2026")
+  expect_snapshot(print(d, metadata_info = TRUE, n = 3))
+})
+
+test_that("print(survey_taylor): survey_name fallback header snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("taylor", "survey_name")
+  test_invariants(d)
+  expect_snapshot(print(d, n = 3))
+})
+
+test_that("print(survey_replicate): Dataset header snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("replicate", "data_name")
+  test_invariants(d)
+  expect_snapshot(print(d, n = 3))
+})
+
+test_that("print(survey_twophase): Dataset header snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("twophase", "data_name")
+  test_invariants(d)
+  expect_snapshot(print(d, n = 3))
+})
+
+test_that("print(survey_nonprob): Dataset header snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("nonprob", "data_name")
+  test_invariants(d)
+  expect_snapshot(print(d, n = 3))
+})
+
+test_that("print(survey_nonprob) with repweights: Dataset header snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_dataset_design("nonprob_rep", "data_name")
+  test_invariants(d)
+  expect_snapshot(print(d, n = 3))
+})
+
+
 test_that("metadata_info block renders in every design class", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   designs <- c("replicate", "twophase", "nonprob", "nonprob_rep")
