@@ -108,6 +108,26 @@ test_that("get_predict() returns data frame with rowid and estimate; nrow matche
 })
 
 # ---------------------------------------------------------------------------
+# Item 6b: get_predict() preserves a supplied newdata$rowid (issue #153)
+# ---------------------------------------------------------------------------
+#
+# marginaleffects merges grouping columns back onto contrast rows by
+# matching `rowid` between get_predict()'s output and its own copy of
+# newdata. When newdata carries a `rowid` column (e.g. a stacked hi/lo
+# contrast block whose row identity resets partway through), get_predict()
+# must return that same rowid rather than a fresh seq_len() — otherwise the
+# merge silently drops or misattributes grouping columns.
+
+test_that("get_predict() returns newdata$rowid unchanged when supplied", {
+  skip_if_not_installed("marginaleffects")
+  fit             <- .me_taylor_gaussian()
+  newdata         <- fit@fit_$model[1:10, , drop = FALSE]
+  newdata$rowid   <- c(6:10, 1:5)
+  result          <- marginaleffects::get_predict(fit, newdata = newdata)
+  expect_identical(result$rowid, newdata$rowid)
+})
+
+# ---------------------------------------------------------------------------
 # Item 7: avg_slopes() — Gaussian — AME matches OLS coefficient within 1e-6
 # ---------------------------------------------------------------------------
 

@@ -31,6 +31,9 @@ SOPs/
 # Claude Code harness runtime lock (session-local)
 .claude/scheduled_tasks.lock
 
+# Local git worktrees
+.worktrees/
+
 # Vignette build artifacts (local devtools::build_vignettes output)
 doc/
 Meta/
