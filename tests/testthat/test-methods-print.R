@@ -1199,3 +1199,199 @@ test_that("print output is unchanged in every class when nothing is set", {
     expect_length(grep("^Dataset: ", named_out$cli), 1L)
   }
 })
+
+
+# ── 52. Dataset metadata block (spec section X.2) ───────────────────────────
+
+test_that("metadata_info block shows Survey, Vendor and Field dates in order", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  block <- out[grepl("^(Survey|Vendor|Field dates|[0-9]+ variable)", out)]
+  expect_identical(
+    block,
+    c(
+      "Survey: Antisemitic Attitudes in America 2026",
+      "Vendor: Ipsos KnowledgePanel Omnibus",
+      "Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)",
+      "0 variable(s) labeled"
+    )
+  )
+})
+
+test_that("metadata_info block sits above the labeled-count line", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_true(grep("^Survey: ", out) < grep("variable\\(s\\) labeled", out))
+  expect_true(grep("^Vendor: ", out) < grep("variable\\(s\\) labeled", out))
+  expect_true(
+    grep("^Field dates: ", out) < grep("variable\\(s\\) labeled", out)
+  )
+  # And below the Metadata heading, so the block is inside that section.
+  expect_true(grep("^-- Metadata", out) < grep("^Survey: ", out))
+})
+
+test_that("metadata_info block omits Survey when only survey_name is set", {
+  d <- make_dataset_design("taylor", "survey_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  # The header already printed the string, so it must not appear again.
+  expect_length(grep("Antisemitic Attitudes in America 2026", out), 1L)
+  expect_false(any(grepl("^Survey: ", out)))
+  expect_true(any(grepl("^Dataset: ", out)))
+})
+
+test_that("metadata_info block omits Survey when the two names are identical", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(
+    d,
+    survey_name = "Shared Name 2026",
+    data_name = "Shared Name 2026"
+  )
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_false(any(grepl("^Survey: ", out)))
+  # One string, one line — never two.
+  expect_length(grep("Shared Name 2026", out), 1L)
+  expect_identical(out[grepl("^Dataset: ", out)], "Dataset: Shared Name 2026")
+})
+
+test_that("metadata_info block shows Survey when the two names differ", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    "Dataset: AAA Ipsos (February-March 2026)"
+  )
+  expect_identical(
+    out[grepl("^Survey: ", out)],
+    "Survey: Antisemitic Attitudes in America 2026"
+  )
+})
+
+test_that("metadata_info block shows a one-sided range for a single start date", {
+  d <- make_dataset_design("taylor", "partial")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    "Field dates: 2026-02-10 to ? (February-March 2026)"
+  )
+  expect_identical(out[grepl("^Vendor: ", out)], "Vendor: Ipsos KnowledgePanel Omnibus")
+  # partial has no survey_name, so no Survey line.
+  expect_false(any(grepl("^Survey: ", out)))
+})
+
+test_that("metadata_info block shows a one-sided range for a single end date", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, field_end = as.Date("2026-03-04"))
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    "Field dates: ? to 2026-03-04"
+  )
+})
+
+test_that("metadata_info block shows a plain range when no period is set", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(
+    d,
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-03-04")
+  )
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    "Field dates: 2026-02-10 to 2026-03-04"
+  )
+})
+
+test_that("metadata_info block shows the period alone when no dates are set", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, field_period = "February-March 2026")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    "Field dates: February-March 2026"
+  )
+})
+
+test_that("metadata_info block omits Field dates when no date key is set", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, vendor = "Ipsos KnowledgePanel Omnibus")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_false(any(grepl("^Field dates: ", out)))
+  # Positive control: the block itself did render.
+  expect_true(any(grepl("^Vendor: ", out)))
+})
+
+test_that("metadata_info section is unchanged when no dataset metadata is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d_none <- make_dataset_design(design, "none")
+    d_full <- make_dataset_design(design, "full")
+    test_invariants(d_none)
+
+    none_out <- capture_design_output(print(d_none, metadata_info = TRUE))
+    full_out <- capture_design_output(print(d_full, metadata_info = TRUE))
+
+    expect_false(
+      any(grepl("^(Dataset|Survey|Vendor|Field dates): ", none_out$cli)),
+      info = design
+    )
+    # Dropping the four added lines reproduces the unset output exactly, so
+    # no blank line or spacing change slipped in with the block.
+    added <- grepl("^(Dataset|Survey|Vendor|Field dates): ", full_out$cli)
+    expect_identical(full_out$cli[!added], none_out$cli, info = design)
+    # Positive control: the full design printed all four lines.
+    expect_identical(sum(added), 4L, info = design)
+  }
+})
+
+test_that("metadata_info block renders in every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "full")
+    test_invariants(d)
+    out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+    expect_true(
+      any(out == "Survey: Antisemitic Attitudes in America 2026"),
+      info = design
+    )
+    expect_true(
+      any(out == "Vendor: Ipsos KnowledgePanel Omnibus"),
+      info = design
+    )
+    expect_true(
+      any(
+        out == "Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)"
+      ),
+      info = design
+    )
+  }
+})

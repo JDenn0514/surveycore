@@ -311,6 +311,7 @@ S7::method(print, survey_taylor) <- function(
     n_labeled <- length(x@metadata@variable_labels)
     cli::cli_text("")
     cli::cli_h2("Metadata")
+    .print_dataset_block(x@metadata, display_name)
     cli::cli_text("{n_labeled} variable(s) labeled")
   }
 
@@ -425,6 +426,7 @@ S7::method(print, survey_replicate) <- function(
     n_labeled <- length(x@metadata@variable_labels)
     cli::cli_text("")
     cli::cli_h2("Metadata")
+    .print_dataset_block(x@metadata, display_name)
     cli::cli_text("{n_labeled} variable(s) labeled")
   }
 
@@ -541,6 +543,7 @@ S7::method(print, survey_twophase) <- function(
     n_labeled <- length(x@metadata@variable_labels)
     cli::cli_text("")
     cli::cli_h2("Metadata")
+    .print_dataset_block(x@metadata, display_name)
     cli::cli_text("{n_labeled} variable(s) labeled")
   }
 
@@ -675,6 +678,7 @@ S7::method(print, survey_nonprob) <- function(
     n_labeled <- length(x@metadata@variable_labels)
     cli::cli_text("")
     cli::cli_h2("Metadata")
+    .print_dataset_block(x@metadata, display_name)
     cli::cli_text("{n_labeled} variable(s) labeled")
   }
 
