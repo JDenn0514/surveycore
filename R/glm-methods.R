@@ -149,7 +149,7 @@ NULL
 # 5.1  print.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 print.survey_glm_fit <- function(x, digits = 4, ...) {
   fam_name <- x@family$family
   lnk_name <- x@family$link
@@ -175,7 +175,7 @@ print.survey_glm_fit <- function(x, digits = 4, ...) {
 # 5.2  summary.survey_glm_fit + survey_glm_summary + print.survey_glm_summary
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 summary.survey_glm_fit <- function(object, ...) {
   .glm_check_fit_(object, "summary")
 
@@ -227,7 +227,7 @@ summary.survey_glm_fit <- function(object, ...) {
 }
 
 
-#' @noRd
+#' @exportS3Method
 print.survey_glm_summary <- function(x, digits = 4, signif.stars = TRUE, ...) {
   cat("Survey-weighted GLM\n\n")
 
@@ -297,7 +297,7 @@ print.survey_glm_summary <- function(x, digits = 4, signif.stars = TRUE, ...) {
 # 5.3  coef.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 coef.survey_glm_fit <- function(object, ...) {
   object@coefficients
 }
@@ -307,7 +307,7 @@ coef.survey_glm_fit <- function(object, ...) {
 # 5.4  vcov.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 vcov.survey_glm_fit <- function(object, ...) {
   object@vcov
 }
@@ -317,7 +317,7 @@ vcov.survey_glm_fit <- function(object, ...) {
 # 5.5  predict.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 predict.survey_glm_fit <- function(
   object,
   new_data = NULL,
@@ -351,7 +351,7 @@ predict.survey_glm_fit <- function(
 # 5.6  fitted.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 fitted.survey_glm_fit <- function(object, ...) {
   object@fitted_values
 }
@@ -361,7 +361,7 @@ fitted.survey_glm_fit <- function(object, ...) {
 # 5.7  residuals.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 residuals.survey_glm_fit <- function(object, type = "response", ...) {
   if (type == "working") {
     return(object@residuals)
@@ -383,7 +383,7 @@ residuals.survey_glm_fit <- function(object, type = "response", ...) {
 # 5.8  confint.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 confint.survey_glm_fit <- function(object, parm, level = 0.95, ...) {
   if (
     !is.numeric(level) ||
@@ -427,7 +427,7 @@ confint.survey_glm_fit <- function(object, parm, level = 0.95, ...) {
 # 5.9  formula.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 formula.survey_glm_fit <- function(x, ...) {
   x@formula
 }
@@ -437,7 +437,7 @@ formula.survey_glm_fit <- function(x, ...) {
 # 5.10  terms.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 terms.survey_glm_fit <- function(x, ...) {
   .glm_check_fit_(x, "terms")
   stats::terms(x@fit_, ...)
@@ -448,7 +448,7 @@ terms.survey_glm_fit <- function(x, ...) {
 # 5.11  model.matrix.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 model.matrix.survey_glm_fit <- function(object, ...) {
   .glm_check_fit_(object, "model.matrix")
   stats::model.matrix(object@fit_, ...)
@@ -459,7 +459,7 @@ model.matrix.survey_glm_fit <- function(object, ...) {
 # 5.12  model.frame.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 model.frame.survey_glm_fit <- function(formula, ...) {
   # First argument is named `formula` per base R model.frame generic convention.
   .glm_check_fit_(formula, "model.frame")
@@ -471,7 +471,7 @@ model.frame.survey_glm_fit <- function(formula, ...) {
 # 5.13  deviance.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 deviance.survey_glm_fit <- function(object, ...) {
   object@deviance
 }
@@ -481,7 +481,7 @@ deviance.survey_glm_fit <- function(object, ...) {
 # 5.14  df.residual.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 df.residual.survey_glm_fit <- function(object, ...) {
   object@df_residual
 }
@@ -491,7 +491,7 @@ df.residual.survey_glm_fit <- function(object, ...) {
 # 5.15  nobs.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method stats::nobs
 nobs.survey_glm_fit <- function(object, ...) {
   length(object@fitted_values)
 }
@@ -501,7 +501,7 @@ nobs.survey_glm_fit <- function(object, ...) {
 # 5.16  hatvalues.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method stats::hatvalues
 hatvalues.survey_glm_fit <- function(model, ...) {
   .glm_check_fit_(model, "hatvalues")
   stats::hatvalues(model@fit_, ...)
@@ -512,7 +512,7 @@ hatvalues.survey_glm_fit <- function(model, ...) {
 # 5.17  logLik.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 logLik.survey_glm_fit <- function(object, ...) {
   .glm_check_fit_(object, "logLik")
   stats::logLik(object@fit_, ...)
@@ -523,13 +523,13 @@ logLik.survey_glm_fit <- function(object, ...) {
 # 5.18  AIC.survey_glm_fit / BIC.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method
 AIC.survey_glm_fit <- function(object, ..., k = 2) {
   .glm_check_fit_(object, "AIC")
   stats::AIC(object@fit_, ..., k = k)
 }
 
-#' @noRd
+#' @exportS3Method stats::BIC
 BIC.survey_glm_fit <- function(object, ...) {
   .glm_check_fit_(object, "BIC")
   stats::BIC(object@fit_, ...)
@@ -540,12 +540,12 @@ BIC.survey_glm_fit <- function(object, ...) {
 # 5.19  update.survey_glm_fit / getCall.survey_glm_fit
 # ===========================================================================
 
-#' @noRd
+#' @exportS3Method stats::getCall
 getCall.survey_glm_fit <- function(x, ...) {
   x@call
 }
 
-#' @noRd
+#' @exportS3Method
 update.survey_glm_fit <- function(object, formula., ...) {
   # Replicate update.default() logic but eval in the frame that called update(),
   # not in update.default()'s parent.frame() (which would be our frame here).
@@ -593,7 +593,7 @@ update.survey_glm_fit <- function(object, formula., ...) {
 #   Default FALSE (intercept scale often differs from predictor scale).
 # @param ... Additional arguments passed to plot().
 # @return Invisibly returns x.
-#' @noRd
+#' @exportS3Method
 plot.survey_glm_fit <- function(
   x,
   conf.level = 0.95,
