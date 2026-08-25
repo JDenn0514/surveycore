@@ -369,6 +369,10 @@ S7::method(print, survey_replicate) <- function(
   cli::cli_text(
     "{.cls survey_replicate} ({toupper(x@variables$type)}, {n_reps} replicates)"
   )
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
 
@@ -480,6 +484,10 @@ S7::method(print, survey_twophase) <- function(
   cli::cli_text(
     "{.cls survey_twophase} (method: {x@variables$method})"
   )
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   cli::cli_text("Phase 1 sample size: {.val {n_total}}")
   if (!is.na(n_phase2)) {
     cli::cli_text("Phase 2 sample size: {.val {n_phase2}}")
@@ -611,6 +619,13 @@ S7::method(print, survey_nonprob) <- function(
     cli::cli_bullets(
       c("*" = "Variance: SRS approximation (no bootstrap replicate weights)")
     )
+  }
+  # Directly above the sample-size line in both branches: after the variance
+  # bullet when there are no replicate weights, after the class line when
+  # there are (that branch prints no variance bullet).
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
   }
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)

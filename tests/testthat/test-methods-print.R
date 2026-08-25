@@ -1099,3 +1099,103 @@ test_that("print.survey_taylor omits the Dataset line when nothing is set", {
   # negative assertion above is informative and not vacuous.
   expect_length(grep("^Dataset: ", named_out$cli), 1L)
 })
+
+
+# ── 51. Dataset header line — remaining classes (spec section X.1) ──────────
+
+test_that("print.survey_replicate shows a Dataset line above Sample size", {
+  d <- make_dataset_design("replicate", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  idx <- grep("^Dataset: ", out)
+  expect_length(idx, 1L)
+  expect_identical(out[[idx]], "Dataset: AAA Ipsos (February-March 2026)")
+  expect_true(grepl("^<survey_replicate>", out[[idx - 1L]]))
+  expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
+})
+
+test_that("print.survey_twophase shows a Dataset line above Phase 1 sample size", {
+  d <- make_dataset_design("twophase", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  idx <- grep("^Dataset: ", out)
+  expect_length(idx, 1L)
+  expect_identical(out[[idx]], "Dataset: AAA Ipsos (February-March 2026)")
+  expect_true(grepl("^<survey_twophase>", out[[idx - 1L]]))
+  expect_true(grepl("^Phase 1 sample size: ", out[[idx + 1L]]))
+})
+
+test_that("print.survey_nonprob puts the Dataset line after the variance bullet", {
+  d <- make_dataset_design("nonprob", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  idx <- grep("^Dataset: ", out)
+  expect_length(idx, 1L)
+  expect_identical(out[[idx]], "Dataset: AAA Ipsos (February-March 2026)")
+  # The no-repweights branch carries a variance bullet; the Dataset line goes
+  # below it and directly above Sample size.
+  expect_true(grepl("Variance: SRS approximation", out[[idx - 1L]]))
+  expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
+})
+
+test_that("print.survey_nonprob with repweights puts Dataset after the class line", {
+  d <- make_dataset_design("nonprob_rep", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  idx <- grep("^Dataset: ", out)
+  expect_length(idx, 1L)
+  expect_identical(out[[idx]], "Dataset: AAA Ipsos (February-March 2026)")
+  # This branch has no variance bullet, so the class line is the line above.
+  expect_false(any(grepl("Variance: SRS approximation", out)))
+  expect_true(grepl("^<survey_nonprob>", out[[idx - 1L]]))
+  expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
+})
+
+test_that("print falls back to survey_name in every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d <- make_dataset_design(design, "survey_name")
+    test_invariants(d)
+    out <- capture_design_output(print(d))$cli
+    expect_identical(
+      out[grepl("^Dataset: ", out)],
+      "Dataset: Antisemitic Attitudes in America 2026",
+      info = design
+    )
+  }
+})
+
+test_that("print output is unchanged in every class when nothing is set", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  designs <- c("replicate", "twophase", "nonprob", "nonprob_rep")
+
+  for (design in designs) {
+    d_none <- make_dataset_design(design, "none")
+    d_named <- make_dataset_design(design, "data_name")
+    test_invariants(d_none)
+
+    none_out <- capture_design_output(print(d_none))
+    named_out <- capture_design_output(print(d_named))
+
+    expect_false(any(grepl("^Dataset: ", none_out$cli)), info = design)
+    # Dropping the single added line reproduces the unset output exactly.
+    expect_identical(
+      named_out$cli[!grepl("^Dataset: ", named_out$cli)],
+      none_out$cli,
+      info = design
+    )
+    expect_identical(named_out$data, none_out$data, info = design)
+    # Positive control: the named design did print one Dataset line.
+    expect_length(grep("^Dataset: ", named_out$cli), 1L)
+  }
+})
