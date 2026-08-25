@@ -1010,3 +1010,92 @@ test_that("summary(survey_nonprob): bootstrap snapshot [regression guard]", {
   )
   expect_snapshot(summary(d))
 })
+
+
+# ── Dataset-level metadata: shared capture helper ───────────────────────────
+#
+# Capture cli output (message stream) and tibble output (stdout) from one
+# print or summary call, keeping the two streams apart so a test can compare
+# cli lines exactly.
+capture_design_output <- function(expr) {
+  cli_lines <- character(0L)
+  data_lines <- utils::capture.output(
+    cli_lines <- utils::capture.output(force(expr), type = "message")
+  )
+  list(cli = cli_lines, data = data_lines)
+}
+
+
+# ── 50. Dataset header line — survey_taylor (spec section X.1) ──────────────
+
+test_that("print.survey_taylor shows a Dataset line holding data_name", {
+  d <- make_dataset_design("taylor", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    "Dataset: AAA Ipsos (February-March 2026)"
+  )
+})
+
+test_that("print.survey_taylor Dataset line sits directly above Sample size", {
+  d <- make_dataset_design("taylor", "data_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  idx <- grep("^Dataset: ", out)
+  expect_length(idx, 1L)
+  expect_true(grepl("^<survey_taylor>", out[[idx - 1L]]))
+  expect_true(grepl("^Sample size: ", out[[idx + 1L]]))
+})
+
+test_that("print.survey_taylor Dataset line falls back to survey_name", {
+  d <- make_dataset_design("taylor", "survey_name")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    "Dataset: Antisemitic Attitudes in America 2026"
+  )
+})
+
+test_that("print.survey_taylor Dataset line prefers data_name to survey_name", {
+  d <- make_dataset_design("taylor", "full")
+  test_invariants(d)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    "Dataset: AAA Ipsos (February-March 2026)"
+  )
+})
+
+test_that("print.survey_taylor omits the Dataset line when nothing is set", {
+  d_none <- make_dataset_design("taylor", "none")
+  d_named <- make_dataset_design("taylor", "data_name")
+  test_invariants(d_none)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  none_out <- capture_design_output(print(d_none))
+  named_out <- capture_design_output(print(d_named))
+
+  # No Dataset line, and no other change: dropping the one line the named
+  # design prints reproduces the unset design's output exactly. This fails if
+  # the header emits a blank line, an empty "Dataset: " line, or any other
+  # line when the metadata list is empty.
+  expect_false(any(grepl("^Dataset: ", none_out$cli)))
+  expect_identical(
+    named_out$cli[!grepl("^Dataset: ", named_out$cli)],
+    none_out$cli
+  )
+  expect_identical(named_out$data, none_out$data)
+  # Positive control: the named design really printed a Dataset line, so the
+  # negative assertion above is informative and not vacuous.
+  expect_length(grep("^Dataset: ", named_out$cli), 1L)
+})

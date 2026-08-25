@@ -65,6 +65,102 @@
   ))
 }
 
+# Prepare one user-supplied dataset-metadata value for display (spec X.5).
+# Replaces each newline, carriage return, and tab with a single space, then
+# truncates values longer than 60 characters to 57 characters plus "...".
+# Shared by .dataset_display_name() and .print_dataset_block(), which apply
+# the same rules to every name-bearing line.
+#' @noRd
+.sanitize_dataset_value <- function(value) {
+  out <- gsub("[\n\r\t]", " ", value)
+  if (nchar(out) > 60L) {
+    out <- paste0(substr(out, 1L, 57L), "...")
+  }
+  out
+}
+
+# Header display name for the "Dataset:" line: data_name when set, else
+# survey_name, else NULL (no line). Reads through the guarded reader, so an
+# object restored from a pre-1.2.0 file returns NULL.
+# @param metadata A survey_metadata object.
+# @return A character(1) ready for display, or NULL.
+#' @noRd
+.dataset_display_name <- function(metadata) {
+  dm <- .dataset_metadata_or_empty(metadata)
+  name <- dm[["data_name"]]
+  if (is.null(name)) {
+    name <- dm[["survey_name"]]
+  }
+  if (is.null(name)) {
+    return(NULL)
+  }
+  .sanitize_dataset_value(name)
+}
+
+# Print the dataset block of the Metadata section (spec X.2): Survey:,
+# Vendor:, and Field dates:, in that order, each value passed to cli as a
+# data variable. Prints nothing when no dataset metadata is stored.
+# @param metadata A survey_metadata object.
+# @param header_name The value .dataset_display_name() printed, or NULL. The
+#   Survey: line is suppressed when the header already showed that string.
+# @return invisible(NULL)
+#' @noRd
+.print_dataset_block <- function(metadata, header_name) {
+  dm <- .dataset_metadata_or_empty(metadata)
+  if (length(dm) == 0L) {
+    return(invisible(NULL))
+  }
+
+  survey_name <- dm[["survey_name"]]
+  data_name <- dm[["data_name"]]
+
+  # The header prints data_name whenever it is set, so Survey: adds a line
+  # only when a distinct survey_name exists. One string never appears twice.
+  show_survey <- !is.null(survey_name) &&
+    !is.null(data_name) &&
+    !is.null(header_name) &&
+    !identical(survey_name, data_name)
+  if (show_survey) {
+    survey_text <- .sanitize_dataset_value(survey_name)
+    cli::cli_text("Survey: {survey_text}")
+  }
+
+  vendor <- dm[["vendor"]]
+  if (!is.null(vendor)) {
+    vendor_text <- .sanitize_dataset_value(vendor)
+    cli::cli_text("Vendor: {vendor_text}")
+  }
+
+  field_start <- dm[["field_start"]]
+  field_end <- dm[["field_end"]]
+  field_period <- dm[["field_period"]]
+  period_text <- if (!is.null(field_period)) {
+    .sanitize_dataset_value(field_period)
+  } else {
+    NULL
+  }
+
+  dates_text <- NULL
+  if (!is.null(field_start) || !is.null(field_end)) {
+    # A missing half of the range shows as "?", so a one-sided range stays
+    # readable and the gap is visible.
+    start_text <- if (!is.null(field_start)) format(field_start) else "?"
+    end_text <- if (!is.null(field_end)) format(field_end) else "?"
+    dates_text <- paste0(start_text, " to ", end_text)
+    if (!is.null(period_text)) {
+      dates_text <- paste0(dates_text, " (", period_text, ")")
+    }
+  } else if (!is.null(period_text)) {
+    dates_text <- period_text
+  }
+
+  if (!is.null(dates_text)) {
+    cli::cli_text("Field dates: {dates_text}")
+  }
+
+  invisible(NULL)
+}
+
 # Print a domain membership line when SURVEYCORE_DOMAIN_COL is present in @data.
 # For survey_twophase, uses Phase 2 row counts to match what analysis computes.
 # Does nothing when the column is absent (no filter applied via surveytidy).
@@ -124,6 +220,10 @@ S7::method(print, survey_taylor) <- function(
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
   cli::cli_text("{.cls survey_taylor} (Taylor series linearization)")
+  display_name <- .dataset_display_name(x@metadata)
+  if (!is.null(display_name)) {
+    cli::cli_text("Dataset: {display_name}")
+  }
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
   .print_domain_info(x)
 
