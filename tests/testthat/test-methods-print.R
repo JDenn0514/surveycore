@@ -1446,6 +1446,159 @@ test_that("full = TRUE leaves output unchanged when nothing is set", {
   }
 })
 
+# ── 55. Print hardening (spec section X.5) ──────────────────────────────────
+
+test_that("print renders braces in the header name literally", {
+  hostile <- "{.val x} {1 + 1} {unknown_var}"
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = hostile)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  expect_no_error(out <- capture_design_output(print(d))$cli)
+  expect_identical(out[grepl("^Dataset: ", out)], paste0("Dataset: ", hostile))
+})
+
+test_that("print renders braces in the block values literally", {
+  hostile_survey <- "{.val survey} {stop('boom')}"
+  hostile_vendor <- "{vendor_var}"
+  hostile_period <- "{format(Sys.Date())}"
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(
+    d,
+    survey_name = hostile_survey,
+    data_name = "A Data Name",
+    vendor = hostile_vendor,
+    field_period = hostile_period
+  )
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  expect_no_error(
+    out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  )
+  expect_identical(
+    out[grepl("^Survey: ", out)],
+    paste0("Survey: ", hostile_survey)
+  )
+  expect_identical(
+    out[grepl("^Vendor: ", out)],
+    paste0("Vendor: ", hostile_vendor)
+  )
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    paste0("Field dates: ", hostile_period)
+  )
+})
+
+test_that("print replaces newline, carriage return and tab in the header name", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = "AAA\nIpsos\rOmnibus\t2026")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  line <- out[grepl("^Dataset: ", out)]
+  expect_identical(line, "Dataset: AAA Ipsos Omnibus 2026")
+  expect_false(any(grepl("[\n\r\t]", line)))
+})
+
+test_that("print replaces newline, carriage return and tab in the block values", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(
+    d,
+    survey_name = "Survey\nName",
+    data_name = "A Data Name",
+    vendor = "Ipsos\tKnowledgePanel",
+    field_period = "February\r2026"
+  )
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(out[grepl("^Survey: ", out)], "Survey: Survey Name")
+  expect_identical(
+    out[grepl("^Vendor: ", out)],
+    "Vendor: Ipsos KnowledgePanel"
+  )
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    "Field dates: February 2026"
+  )
+})
+
+test_that("print truncates a header name longer than 60 characters", {
+  long_name <- strrep("a", 70L)
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = long_name)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  line <- out[grepl("^Dataset: ", out)]
+  expect_identical(line, paste0("Dataset: ", strrep("a", 57L), "..."))
+  expect_identical(nchar(sub("^Dataset: ", "", line)), 60L)
+})
+
+test_that("print keeps a header name of exactly 60 characters whole", {
+  exact_name <- strrep("b", 60L)
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = exact_name)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  expect_identical(out[grepl("^Dataset: ", out)], paste0("Dataset: ", exact_name))
+})
+
+test_that("print truncates a header name of exactly 61 characters", {
+  over_name <- strrep("c", 61L)
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = over_name)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d))$cli
+  expect_identical(
+    out[grepl("^Dataset: ", out)],
+    paste0("Dataset: ", strrep("c", 57L), "...")
+  )
+})
+
+test_that("print truncates each block value independently", {
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(
+    d,
+    survey_name = strrep("s", 70L),
+    data_name = "A Data Name",
+    vendor = strrep("v", 70L),
+    field_period = strrep("p", 70L)
+  )
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  out <- capture_design_output(print(d, metadata_info = TRUE))$cli
+  expect_identical(
+    out[grepl("^Survey: ", out)],
+    paste0("Survey: ", strrep("s", 57L), "...")
+  )
+  expect_identical(
+    out[grepl("^Vendor: ", out)],
+    paste0("Vendor: ", strrep("v", 57L), "...")
+  )
+  expect_identical(
+    out[grepl("^Field dates: ", out)],
+    paste0("Field dates: ", strrep("p", 57L), "...")
+  )
+})
+
+test_that("summary renders a hostile header name without aborting", {
+  hostile <- paste0("{.val x}\t", strrep("z", 70L))
+  d <- make_dataset_design("taylor", "none")
+  d <- set_dataset_metadata(d, data_name = hostile)
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  expect_no_error(out <- capture_design_output(summary(d))$cli)
+  line <- out[grepl("^Dataset: ", out)]
+  expect_identical(
+    line,
+    paste0("Dataset: ", substr(paste0("{.val x} ", strrep("z", 70L)), 1L, 57L), "...")
+  )
+})
+
+
 # ── 54. Dataset line in the summary methods (spec section X.4) ──────────────
 
 test_that("summary shows the Dataset line directly above the Metadata line", {
