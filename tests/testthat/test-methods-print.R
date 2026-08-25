@@ -1446,6 +1446,63 @@ test_that("full = TRUE leaves output unchanged when nothing is set", {
   }
 })
 
+# ── 56. Stale (pre-1.2.0) objects (spec section IV) ─────────────────────────
+
+test_that("a stale design prints and summarises with every argument combination", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  dataset_line <- "^(Dataset|Survey|Vendor|Field dates): "
+
+  for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
+    d <- make_stale_metadata_design(cls)
+    test_invariants(d)
+
+    # Four calls per class: the default, the two metadata-bearing argument
+    # combinations, and summary(). All read through the guarded reader, so
+    # S7's "Can't find property" error never surfaces.
+    expect_no_error(default_out <- capture_design_output(print(d, n = 3)))
+    expect_no_error(
+      meta_out <- capture_design_output(print(d, metadata_info = TRUE, n = 3))
+    )
+    expect_no_error(
+      full_out <- capture_design_output(print(d, full = TRUE, n = 3))
+    )
+    expect_no_error(summary_out <- capture_design_output(summary(d)))
+
+    expect_false(any(grepl(dataset_line, default_out$cli)), info = cls)
+    expect_false(any(grepl(dataset_line, meta_out$cli)), info = cls)
+    expect_false(any(grepl(dataset_line, full_out$cli)), info = cls)
+    expect_false(any(grepl(dataset_line, summary_out$cli)), info = cls)
+
+    # Positive control: the calls really did produce output, so the four
+    # negatives above are not passing on empty vectors.
+    expect_true(any(grepl("Survey Design", default_out$cli)), info = cls)
+    expect_true(any(grepl("variable\\(s\\) labeled", meta_out$cli)), info = cls)
+    expect_true(any(grepl("variable\\(s\\) labeled", full_out$cli)), info = cls)
+    expect_true(
+      any(grepl("^Metadata: ", summary_out$cli)),
+      info = cls
+    )
+  }
+})
+
+test_that("a stale design prints the same lines as an empty current design", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+
+  # The stale taylor fixture and the "none" taylor fixture use the same seed
+  # but different row counts, so compare the shape of the metadata section
+  # rather than the whole output.
+  stale <- make_stale_metadata_design("taylor")
+  test_invariants(stale)
+  out <- capture_design_output(print(stale, metadata_info = TRUE, n = 3))$cli
+  meta_idx <- grep("^-- Metadata", out)
+  expect_length(meta_idx, 1L)
+  # The line directly below the heading is the blank cli_h2 spacer, and the
+  # one below that is the labeled count — no dataset block in between.
+  expect_identical(out[[meta_idx + 1L]], "")
+  expect_true(grepl("variable\\(s\\) labeled", out[[meta_idx + 2L]]))
+})
+
+
 # ── 55. Print hardening (spec section X.5) ──────────────────────────────────
 
 test_that("print renders braces in the header name literally", {
