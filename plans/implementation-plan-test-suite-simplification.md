@@ -662,6 +662,127 @@ Run:
 
 ---
 
+---
+
+## Phase 3 - Close the loop on the issues
+
+### Task 7: Report back on #169 and #161
+
+Do this **after** Tasks 2, 3 and 6 are committed, so the comment describes
+work that exists rather than work that is planned.
+
+#169 does **not** get closed by this plan. It asks for four investigation
+steps; this plan answers step 1 and deliberately leaves step 2 unmeasured.
+Left alone, the issue keeps its stale figures - "6 assertions", "about 18% of
+the expectation count" - and keeps asking for an experiment that has already
+run. The cost of that is someone spending a 20-minute coverage pass to
+re-derive a known answer.
+
+**Files:**
+- No files. This task posts comments and closes one issue.
+
+**Interfaces:**
+- Consumes: the measured after-numbers from Task 2 Step 6 and Task 6 Step 1.
+
+- [ ] **Step 1: Collect the real after-numbers**
+
+Do not copy the predictions from this plan. Read the actual values:
+
+    NOT_CRAN=true Rscript -e "r <- as.data.frame(devtools::test()); cat('passed:', sum(r\$passed), 'failed:', sum(r\$failed), 'skipped:', sum(r\$skipped), 'time:', round(sum(r\$real),1), 's\n')"
+    NOT_CRAN=true Rscript -e "cat(covr::percent_coverage(covr::package_coverage()), '\n')"
+
+- [ ] **Step 2: Comment on #169**
+
+Substitute the bracketed values with what Step 1 actually printed.
+
+```markdown
+## Step 1 is done - here is what it measured
+
+**The figures in the issue body are stale.** `test_invariants()` now holds
+**27** assertions, not 6, spanning `helper-test-data.R:569-735`. It runs
+**645** times, not 588 - some call sites sit inside helpers that run
+repeatedly.
+
+So its real contribution is about **10,300 expectations, 53% of the suite** -
+roughly three times the ~18% the issue estimates.
+
+**It buys no coverage.** Replacing it with a no-op and re-running `covr`:
+
+| Run | Coverage |
+|---|---|
+| Baseline | 96.0938% |
+| `test_invariants()` stubbed | 96.0938% |
+| Difference | **0.0000 points** |
+
+Identical to four decimal places, and not one of the 46 files in `R/` lost a
+line. The S7 validators in `R/core-classes.R` already enforce the same
+invariants on construction and on every property assignment, and nothing in
+`R/` bypasses them via `attr()` or `unclass()`.
+
+Caveat worth keeping: line coverage measures whether code **runs**, not
+whether results are **correct**. This proves the assertions reach no new
+code. It does not prove they could never catch a regression. That is why the
+rule was narrowed rather than deleted.
+
+## What changed
+
+- `test_invariants()` is now called once per constructor per test file, not
+  per block. Expectations fell from 19,314 to [ACTUAL PASSED].
+- `.claude/rules/testing-surveycore.md` records the narrowed rule and the
+  two-speed local test workflow.
+- Coverage held at [ACTUAL COVERAGE]%.
+- Runtime is [ACTUAL TIME]s, essentially unchanged - see below.
+
+## The headline assumption in this issue was wrong
+
+The issue reasons that trimming expectations would buy legibility but not
+speed. That is correct, and understated: **bloat and wall-time live in
+different files entirely.**
+
+| File | Time | Share | Expectations |
+|---|---|---|---|
+| `test-analysis-corr-latent.R` | 293.5 s | 36.4% | 126 |
+| `test-analysis-corr-latent-variance.R` | 47.4 s | 5.9% | 86 |
+| `test-dataset-metadata.R` | 70.6 s | 8.8% | 4,254 |
+
+Two polychoric files take **42% of all test time** for **1.1%** of the
+expectations. Chasing the expectation count for speed would have been the
+wrong lever entirely.
+
+That led to **#177**: `get_corr(method = "polychoric")` is about 164x slower
+than `polycor::polychor()`, because `.corr_bivnorm_cdf()` is scalar-only and
+gets called four times per cell inside a nested loop. That is a defect in
+`R/`, and fixing it is worth roughly ten times every test edit here.
+
+## Still open on this issue
+
+1. **Step 2 - the both-modes rule. Not measured.** It is the other 2x
+   multiplier. It needs its own stub-and-measure experiment, exactly like
+   the one above. Trimming it on suspicion would repeat the mistake this
+   issue was raised to avoid.
+2. **Step 3 - the dual pattern. Deliberately left alone.**
+   `expect_error(class = )` and `expect_snapshot(error = TRUE)` test
+   different things - the condition class and the rendered message - and
+   snapshots have caught message regressions in this repo before. The 522
+   snapshot calls stay.
+3. **Separate concern:** `test-dataset-metadata.R` holds 4,254 expectations,
+   22% of the suite, in one 4,277-line file. Worth its own issue.
+
+Keeping this open for step 2.
+```
+
+- [ ] **Step 3: Close #161 once the fix is on develop**
+
+The `.gitattributes` fix is verified but sits on a feature branch. Close
+#161 only after the PR merges, so the tracker never claims a fix that is not
+on `develop`.
+
+    gh issue close 161 --comment "Fixed on develop. A full test run now leaves 0 snapshot files modified, down from 38."
+
+- [ ] **Step 4: No commit**
+
+This task changes no files. Nothing to commit.
+
 ## Final verification
 
 - [ ] **Full suite passes**
