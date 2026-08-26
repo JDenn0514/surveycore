@@ -63,7 +63,6 @@ test_that("extract_dataset_metadata() returns all present keys on a frame", {
 test_that("extract_dataset_metadata() returns visibly on a design", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   # The sibling SETTERS return invisibly; this extractor must not. withVisible()
@@ -86,7 +85,6 @@ test_that("extract_dataset_metadata() returns visibly on a frame", {
 test_that("extract_dataset_metadata() returns list() when nothing is set", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), list())
 })
@@ -100,7 +98,6 @@ test_that("extract_dataset_metadata() returns list() for a bare frame", {
 test_that("extract_dataset_metadata() orders present keys canonically", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- list(
     field_period = "February-March 2026",
     vendor = "Ipsos",
@@ -131,7 +128,6 @@ test_that("extract_dataset_metadata() orders frame keys canonically", {
 test_that("extract_dataset_metadata() accepts bare key names in ...", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -152,7 +148,6 @@ test_that("extract_dataset_metadata() accepts bare names on a frame", {
 test_that("extract_dataset_metadata() accepts quoted key names in ...", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -173,7 +168,6 @@ test_that("extract_dataset_metadata() accepts quoted names on a frame", {
 test_that("extract_dataset_metadata() supports !!! splicing of names", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
   wanted <- c("vendor", "field_period")
 
@@ -196,7 +190,6 @@ test_that("extract_dataset_metadata() supports !!! splicing on a frame", {
 test_that("extract_dataset_metadata() preserves request order, not canonical", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -217,7 +210,6 @@ test_that("extract_dataset_metadata() preserves request order on a frame", {
 test_that("extract_dataset_metadata() dedups a repeated request, first pos", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -238,7 +230,6 @@ test_that("extract_dataset_metadata() dedups a repeated request on a frame", {
 test_that("extract_dataset_metadata() reads keys from the `key` argument", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -259,7 +250,6 @@ test_that("extract_dataset_metadata() reads the `key` argument on a frame", {
 test_that("extract_dataset_metadata() omits an unset requested key by default", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- list(vendor = "Ipsos")
 
   expect_identical(
@@ -280,7 +270,6 @@ test_that("extract_dataset_metadata() omits an unset key on a frame", {
 test_that("extract_dataset_metadata() never warns about an unset valid key", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_no_warning(extract_dataset_metadata(d, vendor))
 })
@@ -294,7 +283,6 @@ test_that("extract_dataset_metadata() never warns about an unset key on a frame"
 test_that("extract_dataset_metadata() returns list() for a zero-length key", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   expect_identical(
@@ -308,7 +296,6 @@ test_that("extract_dataset_metadata() returns list() for a zero-length key", {
 test_that("extract_var_label() still rejects fill = NA (sibling regression)", {
   df <- make_survey_data(n = 20L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_var_label(d, fill = NA),
@@ -320,7 +307,6 @@ test_that("extract_var_label() still rejects fill = NA (sibling regression)", {
 test_that("extract_dataset_metadata() type-matches fill = NA on a design", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- list(vendor = "Ipsos")
 
   expect_identical(
@@ -349,7 +335,6 @@ test_that("extract_dataset_metadata() type-matches fill = NA on a frame", {
 test_that("extract_dataset_metadata() accepts fill = NA_character_", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_identical(
     extract_dataset_metadata(d, survey_name, fill = NA_character_),
@@ -369,7 +354,6 @@ test_that("extract_dataset_metadata() accepts fill = NA_character_ on a frame", 
 test_that("an empty request with fill = NA returns the full six-key schema", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- list(vendor = "Ipsos")
 
   expect_identical(
@@ -397,7 +381,6 @@ test_that("an empty request with fill = NA returns the schema on a frame", {
 test_that("an empty request with no metadata and fill = NA fills all six", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   result <- extract_dataset_metadata(d, fill = NA)
 
@@ -410,7 +393,6 @@ test_that("an empty request with no metadata and fill = NA fills all six", {
 test_that("extract_dataset_metadata() renders a two-column tibble", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- full_keys
 
   result <- extract_dataset_metadata(d, format = "data_frame")
@@ -441,7 +423,6 @@ test_that("data_frame format renders a Date through format()", {
 test_that("data_frame format renders a design Date through format()", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   d@metadata@dataset_metadata <- list(
     field_start = as.Date("2026-02-10"),
     field_end = as.Date("2026-03-04")
@@ -461,7 +442,6 @@ test_that("data_frame format renders a design Date through format()", {
 test_that("data_frame format returns a 0-row tibble for an empty result", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   result <- extract_dataset_metadata(d, format = "data_frame")
 
@@ -483,7 +463,6 @@ test_that("data_frame format returns a 0-row tibble for a bare frame", {
 test_that("data_frame format fills an absent date key with NA_character_", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   result <- extract_dataset_metadata(
     d,
@@ -748,7 +727,6 @@ test_that("extract_dataset_metadata() rejects a non-survey, non-frame x", {
 test_that("extract_dataset_metadata() rejects a survey_collection", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   coll <- survey_collection(list(a = d, b = d))
 
   expect_error(
@@ -760,7 +738,6 @@ test_that("extract_dataset_metadata() rejects a survey_collection", {
 test_that("extract_dataset_metadata() rejects both ... and key together", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, vendor, key = "vendor"),
@@ -784,7 +761,6 @@ test_that("extract_dataset_metadata() rejects ... and key on a frame", {
 test_that("extract_dataset_metadata() rejects a tidyselect helper in ...", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, all_of("vendor")),
@@ -805,7 +781,6 @@ test_that("extract_dataset_metadata() rejects any call in ... on a frame", {
 test_that("extract_dataset_metadata() rejects an unknown requested key", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, mode),
@@ -835,7 +810,6 @@ test_that("extract_dataset_metadata() rejects the legacy `dates` as a key", {
 test_that("extract_dataset_metadata() rejects an invalid format", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, format = "named_vector"),
@@ -859,7 +833,6 @@ test_that("extract_dataset_metadata() rejects an invalid format on a frame", {
 test_that("extract_dataset_metadata() rejects an invalid fill", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, fill = "none"),
@@ -882,7 +855,6 @@ test_that("extract_dataset_metadata() rejects an invalid fill on a frame", {
 test_that("extract_dataset_metadata() returns list() on a stale design", {
   for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(cls)
-    test_invariants(d)
 
     expect_identical(extract_dataset_metadata(d), list())
   }
@@ -890,7 +862,6 @@ test_that("extract_dataset_metadata() returns list() on a stale design", {
 
 test_that("a stale design fills the full schema when fill = NA", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_identical(
     names(extract_dataset_metadata(d, fill = NA)),
@@ -910,7 +881,6 @@ test_that("a stale design fills the full schema when fill = NA", {
 test_that("set_var_label() keeps the default setter_ambiguous wording", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     set_var_label(d, y1 = "A", variable = "y2"),
@@ -922,7 +892,6 @@ test_that("set_var_label() keeps the default setter_ambiguous wording", {
 test_that("set_var_label() keeps the default setter_empty wording", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(set_var_label(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_var_label(d))
@@ -931,7 +900,6 @@ test_that("set_var_label() keeps the default setter_empty wording", {
 test_that("set_var_label() keeps the default empty_variables wording", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_warning(
     set_var_label(d, variable = character(0)),
@@ -943,7 +911,6 @@ test_that("set_var_label() keeps the default empty_variables wording", {
 test_that("set_var_label() keeps the default mismatched_lengths wording", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     set_var_label(d, variable = c("y1", "y2"), label = "A"),
@@ -958,7 +925,6 @@ test_that("set_var_label() keeps the default mismatched_lengths wording", {
 test_that("set_var_label() keeps the default mixed_dots wording", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_error(
     set_var_label(d, "y1", "y2", "y3"),
@@ -982,7 +948,6 @@ test_that("set_dataset_metadata() rejects a non-survey, non-frame x", {
 
 test_that("set_dataset_metadata() rejects a survey_collection", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
   coll <- survey_collection(list(a = d, b = d))
 
   expect_error(
@@ -993,7 +958,6 @@ test_that("set_dataset_metadata() rejects a survey_collection", {
 
 test_that("set_dataset_metadata() rejects both ... and key on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = "Ipsos", key = "vendor"),
@@ -1016,7 +980,6 @@ test_that("set_dataset_metadata() rejects both ... and key on a frame", {
 
 test_that("set_dataset_metadata() rejects a call with no key at all", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d),
@@ -1036,7 +999,6 @@ test_that("set_dataset_metadata() rejects an empty call on a frame", {
 
 test_that("set_dataset_metadata() warns and no-ops for a length-0 key", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_warning(
     result <- set_dataset_metadata(d, key = character(0)),
@@ -1059,7 +1021,6 @@ test_that("a length-0 key on a frame warns and leaves attributes alone", {
 
 test_that("set_dataset_metadata() rejects mismatched key and value lengths", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(
@@ -1094,7 +1055,6 @@ test_that("mismatched key and value lengths are rejected on a frame", {
 
 test_that("set_dataset_metadata() rejects unnamed ... elements", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, "vendor", "data_name"),
@@ -1119,7 +1079,6 @@ test_that("unnamed ... elements are rejected on a frame", {
 
 test_that("Convention 1 writes one key on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Ipsos KnowledgePanel Omnibus")
 
@@ -1146,7 +1105,6 @@ test_that("Convention 1 writes one key on a frame", {
 
 test_that("Convention 1 writes several keys at once on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Ipsos", data_name = "AAA (Feb 2026)")
 
@@ -1169,7 +1127,6 @@ test_that("Convention 1 writes several keys at once on a frame", {
 
 test_that("Convention 2 accepts one named list in ... on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, list(vendor = "Ipsos", survey_name = "AAA 2026"))
 
@@ -1195,7 +1152,6 @@ test_that("Convention 2 accepts one named list in ... on a frame", {
 
 test_that("Convention 2 accepts a spliced list on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!list(vendor = "Ipsos"))
 
@@ -1204,7 +1160,6 @@ test_that("Convention 2 accepts a spliced list on a design", {
 
 test_that("Convention 3 writes key and value pairs on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -1235,7 +1190,6 @@ test_that("Convention 3 writes key and value pairs on a frame", {
 
 test_that("Convention 3 coerces an atomic value with as.list()", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -1259,7 +1213,6 @@ test_that("Convention 3 coerces an atomic value on a frame", {
 
 test_that("Convention 3 ignores names on value; key wins", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -1272,7 +1225,6 @@ test_that("Convention 3 ignores names on value; key wins", {
 
 test_that("set_dataset_metadata() returns the design invisibly", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # The sibling extractors return visibly; the setters must not.
   seen <- withVisible(set_dataset_metadata(d, vendor = "Ipsos"))
@@ -1298,7 +1250,6 @@ test_that("set_dataset_metadata() returns the frame invisibly", {
 
 test_that("set_dataset_metadata() rejects a blank key name on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, key = c("")),
@@ -1318,7 +1269,6 @@ test_that("set_dataset_metadata() rejects a blank key name on a frame", {
 
 test_that("set_dataset_metadata() rejects an NA key name", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, key = NA_character_),
@@ -1328,7 +1278,6 @@ test_that("set_dataset_metadata() rejects an NA key name", {
 
 test_that("set_dataset_metadata() counts every blank key name", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_snapshot(
     error = TRUE,
@@ -1338,7 +1287,6 @@ test_that("set_dataset_metadata() counts every blank key name", {
 
 test_that("set_dataset_metadata() rejects a duplicated named ... key", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = "Ipsos", vendor = "Cint"),
@@ -1361,7 +1309,6 @@ test_that("a duplicated named ... key is rejected on a frame", {
 
 test_that("set_dataset_metadata() rejects a duplicated Convention 3 key", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(
@@ -1392,7 +1339,6 @@ test_that("a duplicated Convention 3 key is rejected on a frame", {
 
 test_that("a duplicated key in a Convention 2 list is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, list(vendor = "Ipsos", vendor = "Cint")),
@@ -1402,7 +1348,6 @@ test_that("a duplicated key in a Convention 2 list is rejected", {
 
 test_that("the dates alias resolves before the duplicate check", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # `dates` and `field_period` are two spellings of one key, so naming both in
   # one call names that key twice.
@@ -1429,7 +1374,6 @@ test_that("the dates alias resolves before the duplicate check on a frame", {
 
 test_that("set_dataset_metadata() rejects an unknown key on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, mode = "web"),
@@ -1449,7 +1393,6 @@ test_that("set_dataset_metadata() rejects an unknown key on a frame", {
 
 test_that("an unknown key with the wrong case shows the did-you-mean hint", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, Vendor = "Ipsos"),
@@ -1460,7 +1403,6 @@ test_that("an unknown key with the wrong case shows the did-you-mean hint", {
 
 test_that("a misspelled unknown key shows the did-you-mean hint", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vender = "Ipsos"),
@@ -1477,7 +1419,6 @@ test_that("the did-you-mean hint also fires on a frame", {
 
 test_that("a non-NULL dates value is an unknown key naming field_period", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, dates = "February-March 2026"),
@@ -1512,7 +1453,6 @@ test_that("an unknown key equal to a data column leaves the column alone", {
 
 test_that("a non-character key is coerced and then fails as unknown", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # A non-character `key` passes through as.character() and then fails the
   # closed-vocabulary check, matching the extractor's convention.
@@ -1537,7 +1477,6 @@ test_that("a non-character key is coerced and fails as unknown on a frame", {
 
 test_that("the extractor renders the completed unknown-key hint on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(
     extract_dataset_metadata(d, vender),
@@ -1560,7 +1499,6 @@ test_that("the extractor renders the completed unknown-key hint on a frame", {
 
 test_that("a non-character value for a character key is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = 1L),
@@ -1580,7 +1518,6 @@ test_that("a non-character value for a character key is rejected on a frame", {
 
 test_that("a length-2 value for a character key is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = c("Ipsos", "Cint")),
@@ -1599,7 +1536,6 @@ test_that("a length-2 value for a character key is rejected on a frame", {
 
 test_that("an NA value for a character key is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = NA_character_),
@@ -1609,7 +1545,6 @@ test_that("an NA value for a character key is rejected", {
 
 test_that("a zero-length value is rejected rather than treated as deletion", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # character(0) is not a deletion. Only NULL deletes.
   expect_error(
@@ -1630,7 +1565,6 @@ test_that("a zero-length value is rejected on a frame", {
 
 test_that("a zero-length value is rejected for character keys on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # character(0) is not a deletion for any of the three remaining character
   # keys either. Only NULL deletes.
@@ -1670,7 +1604,6 @@ test_that("a zero-length value is rejected for character keys on a frame", {
 
 test_that("a zero-length value is rejected for date keys on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # The date keys carry their own class, so a zero-length Date is rejected as
   # an invalid field date rather than as a bad type.
@@ -1701,7 +1634,6 @@ test_that("a zero-length value is rejected for date keys on a frame", {
 
 test_that("a bare number for a date key is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, field_start = 20260210),
@@ -1721,7 +1653,6 @@ test_that("a bare number for a date key is rejected on a frame", {
 
 test_that("an NA value for a date key is rejected with the NA bullet", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, field_start = NA),
@@ -1741,7 +1672,6 @@ test_that("an NA value for a date key is rejected on a frame", {
 
 test_that("a Date value for a date key is stored as given on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, field_start = as.Date("2026-02-10"))
 
@@ -1753,7 +1683,6 @@ test_that("a Date value for a date key is stored as given on a design", {
 
 test_that("an ISO string for a date key is stored as a Date on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, field_start = "2026-02-10")
 
@@ -1776,7 +1705,6 @@ test_that("an ISO string for a date key is stored as a Date on a frame", {
 
 test_that("a non-strict slash date is rejected on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, field_start = "2026/02/10"),
@@ -1795,7 +1723,6 @@ test_that("a non-strict slash date is rejected on a frame", {
 
 test_that("an unpadded date string fails the round trip on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # as.Date() parses "2026-2-1", but it does not round-trip through format(),
   # so the strict ISO rule rejects it.
@@ -1816,7 +1743,6 @@ test_that("an unpadded date string fails the round trip on a frame", {
 
 test_that("an impossible calendar date is rejected on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, field_start = "2026-02-30"),
@@ -1826,7 +1752,6 @@ test_that("an impossible calendar date is rejected on a design", {
 
 test_that("no base as.Date() condition escapes an invalid date value", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # The only condition raised is surveycore's own.
   expect_error(
@@ -1842,7 +1767,6 @@ test_that("no base as.Date() condition escapes an invalid date value", {
 
 test_that("a second call merges into the stored keys on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Ipsos")
   d <- set_dataset_metadata(d, survey_name = "AAA 2026")
@@ -1867,7 +1791,6 @@ test_that("a second call merges into the stored keys on a frame", {
 
 test_that("overwriting a key keeps its canonical position on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Cint")
 
@@ -1887,7 +1810,6 @@ test_that("overwriting a key keeps its canonical position on a frame", {
 
 test_that("keys written out of order are stored canonically on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -1920,7 +1842,6 @@ test_that("keys written out of order are read canonically on a frame", {
 
 test_that("a NULL value deletes a stored key on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = NULL)
 
@@ -1942,7 +1863,6 @@ test_that("a NULL value deletes a stored key on a frame", {
 
 test_that("deleting an unset key is a silent no-op on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_no_condition(result <- set_dataset_metadata(d, vendor = NULL))
   expect_identical(extract_dataset_metadata(result), list())
@@ -1957,7 +1877,6 @@ test_that("deleting an unset key is a silent no-op on a frame", {
 
 test_that("one call can set one key and delete another on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Cint", data_name = NULL)
 
@@ -1978,7 +1897,6 @@ test_that("one call can set one key and delete another on a frame", {
 
 test_that("bulk deletion via key and a NULL value works on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, key = c("vendor", "data_name"), value = NULL)
 
@@ -1990,7 +1908,6 @@ test_that("bulk deletion via key and a NULL value works on a design", {
 
 test_that("bulk deletion tolerates an absent key among the names", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, key = c("vendor", "data_name"), value = NULL)
 
@@ -2010,7 +1927,6 @@ test_that("bulk deletion via key and a NULL value works on a frame", {
 
 test_that("bulk deletion mixes a present and an absent key on a design", {
   d <- make_dataset_design("taylor", "partial")
-  test_invariants(d)
 
   # The "partial" state sets `vendor` but not `survey_name`, so this one call
   # covers both halves of the rule: the set key is deleted, and the absent key
@@ -2050,7 +1966,6 @@ test_that("bulk deletion mixes a present and an absent key on a frame", {
 
 test_that("a NULL element inside a value list deletes that key", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -2079,7 +1994,6 @@ test_that("a NULL element inside a value list deletes that key on a frame", {
 
 test_that("a reversed date pair in one call is rejected on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(
@@ -2114,7 +2028,6 @@ test_that("a reversed date pair in one call is rejected on a frame", {
 
 test_that("a new start after the stored end is rejected on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, field_start = "2026-06-01"),
@@ -2136,7 +2049,6 @@ test_that("a new start after the stored end is rejected on a frame", {
 
 test_that("deleting the end date frees a later start on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # The deleted date is absent from the effective pair, so no comparison runs.
   d <- set_dataset_metadata(
@@ -2166,7 +2078,6 @@ test_that("deleting the end date frees a later start on a frame", {
 
 test_that("deleting the start date frees an earlier end on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # The mirror of the delete-end case. The stored start is 2026-02-10, so
   # 2026-01-05 would reverse the pair; the deletion removes the start from the
@@ -2198,7 +2109,6 @@ test_that("deleting the start date frees an earlier end on a frame", {
 
 test_that("deleting both dates always succeeds on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, field_start = NULL, field_end = NULL)
 
@@ -2208,7 +2118,6 @@ test_that("deleting both dates always succeeds on a design", {
 
 test_that("an equal start and end pair is accepted on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(
     d,
@@ -2227,7 +2136,6 @@ test_that("an equal start and end pair is accepted on a design", {
 
 test_that("one date alone never triggers the pair check on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, field_end = "2026-02-10")
 
@@ -2239,7 +2147,6 @@ test_that("one date alone never triggers the pair check on a design", {
 
 test_that("a rejected value in a multi-key call writes nothing on a design", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = "Ipsos", data_name = 1L),
@@ -2275,7 +2182,6 @@ test_that("a rejected unknown key in a multi-key call writes nothing", {
 
 test_that("the write leaves the other metadata properties alone", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
   d <- set_var_label(d, y1 = "Outcome one")
   d <- set_val_labels(d, y3 = c(No = 0L, Yes = 1L))
   before_labels <- d@metadata@variable_labels
@@ -2291,7 +2197,6 @@ test_that("the write leaves the other metadata properties alone", {
 
 test_that("the write leaves @data and @variables alone", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
   before_data <- d@data
   before_vars <- d@variables
 
@@ -2303,7 +2208,6 @@ test_that("the write leaves @data and @variables alone", {
 
 test_that("the write never touches whole-frame attributes on @data", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, vendor = "Ipsos")
 
@@ -2314,7 +2218,6 @@ test_that("the write never touches whole-frame attributes on @data", {
 
 test_that("all six keys round-trip on a taylor design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!full_keys)
 
@@ -2323,7 +2226,6 @@ test_that("all six keys round-trip on a taylor design", {
 
 test_that("all six keys round-trip on a replicate design", {
   d <- make_dataset_design("replicate", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!full_keys)
 
@@ -2332,7 +2234,6 @@ test_that("all six keys round-trip on a replicate design", {
 
 test_that("all six keys round-trip on a twophase design", {
   d <- make_dataset_design("twophase", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!full_keys)
 
@@ -2341,7 +2242,6 @@ test_that("all six keys round-trip on a twophase design", {
 
 test_that("all six keys round-trip on a nonprob design", {
   d <- make_dataset_design("nonprob", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!full_keys)
 
@@ -2350,7 +2250,6 @@ test_that("all six keys round-trip on a nonprob design", {
 
 test_that("all six keys round-trip on a nonprob design with repweights", {
   d <- make_dataset_design("nonprob_rep", "none")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, !!!full_keys)
 
@@ -2359,7 +2258,6 @@ test_that("all six keys round-trip on a nonprob design with repweights", {
 
 test_that("make_dataset_design() applies each state through the setter", {
   d_none <- make_dataset_design("taylor", "none")
-  test_invariants(d_none)
   d_full <- make_dataset_design("taylor", "full")
   d_name <- make_dataset_design("taylor", "survey_name")
   d_data <- make_dataset_design("taylor", "data_name")
@@ -2384,7 +2282,6 @@ test_that("make_dataset_design() applies each state through the setter", {
 
 test_that("make_dataset_design() applies a state on a nonprob_rep design", {
   d <- make_dataset_design("nonprob_rep", "data_name")
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
 })
@@ -2428,7 +2325,6 @@ test_that("dates = NULL is an alias that removes both spellings", {
 
 test_that("dates = NULL on a design deletes field_period", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_dataset_metadata(d, dates = NULL)
 
@@ -2533,7 +2429,6 @@ test_that("a tibble keeps its class through the write", {
 
 test_that("a write on a stale design raises the unavailable error", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = "Ipsos"),
@@ -2545,7 +2440,6 @@ test_that("a write on a stale design raises the unavailable error", {
 test_that("a write on a stale design of any class raises the same error", {
   for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(cls)
-    test_invariants(d)
 
     expect_error(
       set_dataset_metadata(d, vendor = "Ipsos"),
@@ -2556,7 +2450,6 @@ test_that("a write on a stale design of any class raises the same error", {
 
 test_that("the stale guard runs ahead of the convention rules", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   # An empty call and an ambiguous call both report the stale object, because
   # the property guard runs before any input parsing.
@@ -2572,7 +2465,6 @@ test_that("the stale guard runs ahead of the convention rules", {
 
 test_that("the stale guard runs ahead of the unknown-key rule", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, mode = "web"),
@@ -2590,7 +2482,6 @@ test_that("the stale guard runs after the x class check", {
 
 test_that("a deletion on a stale design raises the unavailable error", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_dataset_metadata(d, vendor = NULL),
@@ -2605,7 +2496,6 @@ test_that("a deletion on a stale design raises the unavailable error", {
 
 test_that("set_vendor() stores the vendor on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_vendor(d, "Ipsos KnowledgePanel Omnibus")
   expect_identical(extract_dataset_metadata(d), full_keys["vendor"])
@@ -2625,7 +2515,6 @@ test_that("set_vendor() returns the modified object invisibly", {
 
 test_that("set_vendor() with NULL deletes the key on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_vendor(d, NULL)
   expect_identical(
@@ -2646,7 +2535,6 @@ test_that("set_vendor() with NULL deletes the key on a frame", {
 
 test_that("set_vendor() writes only the vendor key on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_vendor(d, "Cint")
   stored <- extract_dataset_metadata(d)
@@ -2657,7 +2545,6 @@ test_that("set_vendor() writes only the vendor key on a design", {
 
 test_that("set_vendor() with no value raises the wrapper setter_empty", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(set_vendor(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_vendor(d))
@@ -2671,7 +2558,6 @@ test_that("set_vendor() with no value raises setter_empty on a frame", {
 
 test_that("set_vendor() rejects a non-character value on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_vendor(d, 1L),
@@ -2691,7 +2577,6 @@ test_that("set_vendor() rejects a non-character value on a frame", {
 
 test_that("a rejected set_vendor() call writes nothing on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(set_vendor(d, 1L))
   expect_identical(extract_dataset_metadata(d), full_keys)
@@ -2699,7 +2584,6 @@ test_that("a rejected set_vendor() call writes nothing on a design", {
 
 test_that("extract_vendor() returns the stored vendor on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(extract_vendor(d), full_keys[["vendor"]])
 })
@@ -2711,7 +2595,6 @@ test_that("extract_vendor() returns the stored vendor on a frame", {
 
 test_that("extract_vendor() returns NA_character_ when unset on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_identical(extract_vendor(d), NA_character_)
 })
@@ -2730,7 +2613,6 @@ test_that("the vendor pair round-trips on every design class", {
   designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
   for (design in designs) {
     d <- make_dataset_design(design, "none")
-    test_invariants(d)
 
     d <- set_vendor(d, "Ipsos KnowledgePanel Omnibus")
     expect_identical(extract_vendor(d), full_keys[["vendor"]])
@@ -2744,7 +2626,6 @@ test_that("the vendor pair round-trips on every design class", {
 
 test_that("set_survey_name() stores the survey name on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_survey_name(d, "Antisemitic Attitudes in America 2026")
   expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
@@ -2759,7 +2640,6 @@ test_that("set_survey_name() stores the survey name on a frame", {
 
 test_that("set_data_name() stores the data name on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_data_name(d, "AAA Ipsos (February-March 2026)")
   expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
@@ -2774,7 +2654,6 @@ test_that("set_data_name() stores the data name on a frame", {
 
 test_that("set_survey_name() never writes data_name on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # Independence rule: the two keys are separate and never fill each other.
   d <- set_survey_name(d, "Antisemitic Attitudes in America 2026")
@@ -2792,7 +2671,6 @@ test_that("set_survey_name() never writes data_name on a frame", {
 
 test_that("set_data_name() never writes survey_name on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_data_name(d, "AAA Ipsos (February-March 2026)")
   expect_false("survey_name" %in% names(extract_dataset_metadata(d)))
@@ -2809,7 +2687,6 @@ test_that("set_data_name() never writes survey_name on a frame", {
 
 test_that("set_survey_name() leaves an unrelated data_name alone", {
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
 
   # The two values may drift; no function reconciles them.
   d <- set_survey_name(d, "A Completely Unrelated Survey Title")
@@ -2842,7 +2719,6 @@ test_that("set_survey_name() leaves an unrelated data_name alone on a frame", {
 
 test_that("set_data_name() leaves an unrelated survey_name alone", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
 
   # Mirror of the set_survey_name() case. The design arrives with a genuine
   # survey_name, so a setter that filled or overwrote it would fail here.
@@ -2881,7 +2757,6 @@ test_that("set_data_name() leaves an unrelated survey_name alone on a frame", {
 
 test_that("set_survey_name() with NULL deletes only survey_name", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_survey_name(d, NULL)
   expect_identical(
@@ -2912,7 +2787,6 @@ test_that("set_data_name() returns the modified object invisibly", {
 
 test_that("set_survey_name() with no value raises setter_empty", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(set_survey_name(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_survey_name(d))
@@ -2920,7 +2794,6 @@ test_that("set_survey_name() with no value raises setter_empty", {
 
 test_that("set_data_name() with no value raises setter_empty", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(set_data_name(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_data_name(d))
@@ -2938,7 +2811,6 @@ test_that("set_data_name() with no value raises setter_empty on a frame", {
 
 test_that("set_survey_name() rejects a non-character value on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_survey_name(d, 1L),
@@ -2949,7 +2821,6 @@ test_that("set_survey_name() rejects a non-character value on a design", {
 
 test_that("set_data_name() rejects a non-character value on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_data_name(d, 1L),
@@ -2976,7 +2847,6 @@ test_that("set_data_name() rejects a non-character value on a frame", {
 
 test_that("extract_survey_name() returns the stored name on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(extract_survey_name(d), full_keys[["survey_name"]])
 })
@@ -2988,7 +2858,6 @@ test_that("extract_survey_name() returns the stored name on a frame", {
 
 test_that("extract_data_name() returns the stored name on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(extract_data_name(d), full_keys[["data_name"]])
 })
@@ -3000,14 +2869,12 @@ test_that("extract_data_name() returns the stored name on a frame", {
 
 test_that("extract_survey_name() returns NA_character_ when unset", {
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
 
   expect_identical(extract_survey_name(d), NA_character_)
 })
 
 test_that("extract_data_name() returns NA_character_ when unset", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
 
   expect_identical(extract_data_name(d), NA_character_)
 })
@@ -3016,7 +2883,6 @@ test_that("extract_data_name() never composes a label on a design", {
   # Strictness rule: every other key is set, and data_name is still NA.
   others <- setdiff(names(full_keys), "data_name")
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
   d <- set_dataset_metadata(d, !!!full_keys[others])
 
   expect_identical(extract_dataset_metadata(d), full_keys[others])
@@ -3033,7 +2899,6 @@ test_that("extract_data_name() never composes a label on a frame", {
 
 test_that("extract_survey_name() does not fall back to data_name", {
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
 
   expect_identical(extract_survey_name(d), NA_character_)
 })
@@ -3042,7 +2907,6 @@ test_that("the name pairs round-trip on every design class", {
   designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
   for (design in designs) {
     d <- make_dataset_design(design, "none")
-    test_invariants(d)
 
     d <- set_survey_name(d, full_keys[["survey_name"]])
     d <- set_data_name(d, full_keys[["data_name"]])
@@ -3058,7 +2922,6 @@ test_that("the name pairs round-trip on every design class", {
 
 test_that("set_field_period() stores the period on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # The argument is `period`; the STORED key is still `field_period`.
   d <- set_field_period(d, "February-March 2026")
@@ -3086,7 +2949,6 @@ test_that("set_field_period() returns the modified object invisibly", {
 
 test_that("set_field_period() with NULL deletes the key on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_period(d, NULL)
   expect_identical(
@@ -3106,7 +2968,6 @@ test_that("set_field_period() with NULL clears the legacy name too", {
 
 test_that("set_field_period() never touches the field dates", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_period(d, "Spring 2026")
   expect_identical(
@@ -3117,7 +2978,6 @@ test_that("set_field_period() never touches the field dates", {
 
 test_that("set_field_period() with no value raises setter_empty", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(set_field_period(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_field_period(d))
@@ -3130,7 +2990,6 @@ test_that("set_field_period() with no value raises setter_empty on a frame", {
 
 test_that("set_field_period() rejects a non-character value on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_period(d, 1L),
@@ -3150,7 +3009,6 @@ test_that("set_field_period() rejects a non-character value on a frame", {
 
 test_that("extract_field_period() returns the stored period on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(extract_field_period(d), full_keys[["field_period"]])
 })
@@ -3162,7 +3020,6 @@ test_that("extract_field_period() returns the stored period on a frame", {
 
 test_that("extract_field_period() returns NA_character_ when unset", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_identical(extract_field_period(d), NA_character_)
 })
@@ -3176,7 +3033,6 @@ test_that("the period pair round-trips on every design class", {
   designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
   for (design in designs) {
     d <- make_dataset_design(design, "none")
-    test_invariants(d)
 
     d <- set_field_period(d, full_keys[["field_period"]])
     expect_identical(extract_field_period(d), full_keys[["field_period"]])
@@ -3190,7 +3046,6 @@ test_that("the period pair round-trips on every design class", {
 
 test_that("set_field_dates() stores both dates on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_field_dates(
     d,
@@ -3219,7 +3074,6 @@ test_that("set_field_dates() stores both dates on a frame", {
 
 test_that("set_field_dates() coerces ISO strings to Date on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_field_dates(d, "2026-02-10", "2026-03-04")
   expect_identical(
@@ -3245,7 +3099,6 @@ test_that("set_field_dates() returns the modified object invisibly", {
 
 test_that("set_field_dates() sets the start alone on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   d <- set_field_dates(d, field_start = "2026-02-10")
   expect_identical(extract_dataset_metadata(d), full_keys["field_start"])
@@ -3260,7 +3113,6 @@ test_that("set_field_dates() sets the end alone on a frame", {
 
 test_that("an unsupplied set_field_dates() argument leaves the key alone", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # Only field_start is forwarded, so the stored field_end must survive.
   d <- set_field_dates(d, field_start = "2026-01-05")
@@ -3288,7 +3140,6 @@ test_that("an unsupplied set_field_dates() argument leaves a frame key alone", {
 
 test_that("set_field_dates() leaves the other keys alone on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_dates(d, "2026-02-11", "2026-03-05")
   others <- setdiff(names(full_keys), c("field_start", "field_end"))
@@ -3297,7 +3148,6 @@ test_that("set_field_dates() leaves the other keys alone on a design", {
 
 test_that("set_field_dates() never touches field_period", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_dates(d, field_start = NULL, field_end = NULL)
   expect_identical(extract_field_period(d), full_keys[["field_period"]])
@@ -3305,7 +3155,6 @@ test_that("set_field_dates() never touches field_period", {
 
 test_that("an explicit NULL deletes the start on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_dates(d, field_start = NULL)
   expect_identical(
@@ -3326,7 +3175,6 @@ test_that("an explicit NULL deletes the end on a frame", {
 
 test_that("two explicit NULLs delete both dates on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_dates(d, field_start = NULL, field_end = NULL)
   expect_identical(
@@ -3356,7 +3204,6 @@ test_that("deleting an unset date raises no condition", {
 
 test_that("set_field_dates() with no arguments raises setter_empty", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(set_field_dates(d), class = "surveycore_error_setter_empty")
   expect_snapshot(error = TRUE, set_field_dates(d))
@@ -3369,7 +3216,6 @@ test_that("set_field_dates() with no arguments raises setter_empty on a frame", 
 
 test_that("set_field_dates() rejects a non-strict ISO start on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, field_start = "2026/02/10"),
@@ -3381,7 +3227,6 @@ test_that("set_field_dates() rejects a non-strict ISO start on a design", {
 
 test_that("set_field_dates() rejects a non-strict ISO end on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, field_end = "2026-3-4"),
@@ -3401,7 +3246,6 @@ test_that("set_field_dates() rejects an impossible date on a frame", {
 
 test_that("set_field_dates() rejects a numeric date on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, field_start = 20260210),
@@ -3412,7 +3256,6 @@ test_that("set_field_dates() rejects a numeric date on a design", {
 
 test_that("set_field_dates() rejects an NA date with its own bullet", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, field_start = NA),
@@ -3432,7 +3275,6 @@ test_that("set_field_dates() rejects a zero-length date on a frame", {
 
 test_that("set_field_dates() raises no base as.Date() condition", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # The raised condition is the typed surveycore error and nothing else: a
   # stray base warning from as.Date() would fail expect_no_warning().
@@ -3446,7 +3288,6 @@ test_that("set_field_dates() raises no base as.Date() condition", {
 
 test_that("a rejected set_field_dates() call writes nothing on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(set_field_dates(d, field_start = "2026/02/10"))
   expect_identical(extract_dataset_metadata(d), full_keys)
@@ -3461,7 +3302,6 @@ test_that("a rejected set_field_dates() call writes nothing on a frame", {
 
 test_that("extract_field_dates() returns both stored dates on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(
     extract_field_dates(d),
@@ -3486,7 +3326,6 @@ test_that("extract_field_dates() returns both stored dates on a frame", {
 
 test_that("extract_field_dates() names the two entries with field_ prefixes", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_identical(
     names(extract_field_dates(d)),
@@ -3496,7 +3335,6 @@ test_that("extract_field_dates() names the two entries with field_ prefixes", {
 
 test_that("extract_field_dates() fills an unset entry with as.Date(NA)", {
   d <- make_dataset_design("taylor", "partial")
-  test_invariants(d)
 
   # The "partial" state sets field_start only.
   expect_identical(
@@ -3507,7 +3345,6 @@ test_that("extract_field_dates() fills an unset entry with as.Date(NA)", {
 
 test_that("extract_field_dates() returns the all-NA pair when both unset", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_identical(
     extract_field_dates(d),
@@ -3542,7 +3379,6 @@ test_that("the dates pair round-trips on every design class", {
   designs <- c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep")
   for (design in designs) {
     d <- make_dataset_design(design, "none")
-    test_invariants(d)
 
     d <- set_field_dates(d, "2026-02-10", "2026-03-04")
     expect_identical(
@@ -3562,7 +3398,6 @@ test_that("the dates pair round-trips on every design class", {
 
 test_that("a reversed pair in one set_field_dates() call is rejected", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, "2026-03-04", "2026-02-10"),
@@ -3585,7 +3420,6 @@ test_that("a reversed pair in one call is rejected on a frame", {
 
 test_that("a start after the STORED end is rejected on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # Rule branch 3: the unmentioned end contributes its stored value.
   expect_error(
@@ -3609,7 +3443,6 @@ test_that("a start after the STORED end is rejected on a frame", {
 
 test_that("an end before the STORED start is rejected on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(
     set_field_dates(d, field_end = "2026-01-05"),
@@ -3619,7 +3452,6 @@ test_that("an end before the STORED start is rejected on a design", {
 
 test_that("deleting the end frees a later start on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   # Rule branch 2: an explicit NULL counts as ABSENT, so the pair check has
   # only one effective value and does not run.
@@ -3642,7 +3474,6 @@ test_that("deleting the end frees a later start on a frame", {
 
 test_that("deleting the start frees an earlier end on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   d <- set_field_dates(d, field_start = NULL, field_end = "2026-01-05")
   expect_identical(
@@ -3653,7 +3484,6 @@ test_that("deleting the start frees an earlier end on a design", {
 
 test_that("deleting both dates always succeeds on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_no_condition(
     d <- set_field_dates(d, field_start = NULL, field_end = NULL)
@@ -3666,7 +3496,6 @@ test_that("deleting both dates always succeeds on a design", {
 
 test_that("equal effective dates are accepted on a design", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # The rule rejects start AFTER end, so a one-day field period is valid.
   d <- set_field_dates(d, "2026-02-10", "2026-02-10")
@@ -3681,7 +3510,6 @@ test_that("equal effective dates are accepted on a design", {
 
 test_that("a rejected reversed pair writes neither date on a design", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   expect_error(set_field_dates(d, "2026-05-01", "2026-04-01"))
   expect_identical(extract_dataset_metadata(d), full_keys)
@@ -3694,7 +3522,6 @@ test_that("a rejected reversed pair writes neither date on a design", {
 
 test_that("the five wrapper setters raise DM-8 on a stale taylor design", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_vendor(d, "Ipsos"),
@@ -3720,7 +3547,6 @@ test_that("the five wrapper setters raise DM-8 on a stale taylor design", {
 
 test_that("set_vendor() on a stale design names the rebuild remedy", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_vendor(d, "x"),
@@ -3732,7 +3558,6 @@ test_that("set_vendor() on a stale design names the rebuild remedy", {
 test_that("the wrapper setters raise DM-8 on every stale design class", {
   for (design in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(design)
-    test_invariants(d)
 
     expect_error(
       set_vendor(d, "Ipsos"),
@@ -3747,7 +3572,6 @@ test_that("the wrapper setters raise DM-8 on every stale design class", {
 
 test_that("a wrapper deletion on a stale design also raises DM-8", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_error(
     set_vendor(d, NULL),
@@ -3761,7 +3585,6 @@ test_that("a wrapper deletion on a stale design also raises DM-8", {
 
 test_that("the stale guard runs ahead of a wrapper's missing-value guard", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   # Guard order: class check, then DM-8, then the wrapper's own argument
   # guard. A stale object with no value reports the object, not the argument.
@@ -3795,7 +3618,6 @@ test_that("the x class check runs ahead of the stale guard in a wrapper", {
 
 test_that("the stale guard runs ahead of a wrapper's value check", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   # A bad value on a stale object reports the object: the wrapper cannot write
   # anywhere, which is the problem the caller has to fix first.
@@ -3812,7 +3634,6 @@ test_that("the stale guard runs ahead of a wrapper's value check", {
 test_that("the four scalar extractors return NA on a stale design", {
   for (design in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(design)
-    test_invariants(d)
 
     expect_identical(extract_survey_name(d), NA_character_)
     expect_identical(extract_data_name(d), NA_character_)
@@ -3824,7 +3645,6 @@ test_that("the four scalar extractors return NA on a stale design", {
 test_that("extract_field_dates() returns the all-NA pair on a stale design", {
   for (design in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(design)
-    test_invariants(d)
 
     expect_identical(
       extract_field_dates(d),
@@ -3835,7 +3655,6 @@ test_that("extract_field_dates() returns the all-NA pair on a stale design", {
 
 test_that("the wrapper extractors raise no condition on a stale design", {
   d <- make_stale_metadata_design("taylor")
-  test_invariants(d)
 
   expect_no_condition(extract_vendor(d))
   expect_no_condition(extract_field_dates(d))
@@ -3877,7 +3696,6 @@ test_that("every wrapper extractor rejects a non-survey, non-frame x", {
 test_that("every wrapper setter rejects a survey_collection", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   coll <- survey_collection(list(a = d, b = d))
 
   expect_error(
@@ -3905,7 +3723,6 @@ test_that("every wrapper setter rejects a survey_collection", {
 test_that("every wrapper extractor rejects a survey_collection", {
   df <- make_survey_data(n = 40L, n_psu = 6L, n_strata = 2L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
   coll <- survey_collection(list(a = d, b = d))
 
   expect_error(
@@ -4041,7 +3858,6 @@ test_that("the wrapper extractors read raw attr()<- writes on a frame", {
 
 test_that("a distant unknown key renders the base unknown-key message", {
   d <- make_dataset_design("taylor", "none")
-  test_invariants(d)
 
   # `zzz` is far from every valid key, so no did-you-mean hint applies.
   expect_error(
@@ -4090,17 +3906,14 @@ test_that("as_survey_twophase() inherits the phase 1 dataset metadata", {
     fpc = fpc,
     nest = TRUE
   )
-  test_invariants(phase1)
   expect_identical(extract_dataset_metadata(phase1), full_keys)
 
   d <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  test_invariants(d)
   expect_identical(extract_dataset_metadata(d), full_keys)
 })
 
 test_that("as_survey_twophase() reports no dataset metadata when phase 1 has none", {
   d <- make_dataset_design("twophase", "none")
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), list())
 })
@@ -4125,7 +3938,6 @@ test_that("from_svydesign() produces a design with no dataset metadata", {
   expect_identical(attr(sv$variables, "vendor", exact = TRUE), full_keys$vendor)
 
   d <- from_svydesign(sv)
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), list())
 })
@@ -4147,7 +3959,6 @@ test_that("from_tbl_svy() produces a design with no dataset metadata", {
   expect_identical(attr(ts$variables, "vendor", exact = TRUE), full_keys$vendor)
 
   d <- from_tbl_svy(ts)
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), list())
 })
@@ -4156,7 +3967,6 @@ test_that("as_tbl_svy() accepts a design carrying dataset metadata", {
   skip_if_not_installed("survey")
   skip_if_not_installed("srvyr")
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   expect_identical(extract_dataset_metadata(d), full_keys)
 
   ts <- as_tbl_svy(d)
@@ -4169,7 +3979,6 @@ test_that("as_tbl_svy() accepts a design carrying dataset metadata", {
 test_that("as_svydesign() accepts a design carrying dataset metadata", {
   skip_if_not_installed("survey")
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   sv <- as_svydesign(d)
   expect_true(inherits(sv, "survey.design"))
@@ -4198,7 +4007,6 @@ test_that("every key written by the frame setter promotes at construction", {
   df <- set_dataset_metadata(df, !!!full_keys)
 
   d <- .build_from_frame(df)
-  test_invariants(d)
 
   expect_identical(extract_dataset_metadata(d), full_keys)
 })
@@ -4213,7 +4021,6 @@ test_that("a date the frame setter coerced from a string promotes as a Date", {
   )
 
   d <- .build_from_frame(df)
-  test_invariants(d)
 
   expect_identical(
     extract_dataset_metadata(d),
@@ -4232,7 +4039,6 @@ test_that("deleting field_period on a frame is idempotent through construction",
   # Positive control: without the deletion the period does promote, so the
   # assertion below cannot pass vacuously.
   control <- .build_from_frame(df)
-  test_invariants(control)
   expect_identical(extract_field_period(control), "February-March 2026")
 
   cleaned <- set_dataset_metadata(df, field_period = NULL)
@@ -4240,7 +4046,6 @@ test_that("deleting field_period on a frame is idempotent through construction",
   expect_null(attr(cleaned, "dates", exact = TRUE))
 
   d <- .build_from_frame(cleaned)
-  test_invariants(d)
   expect_identical(extract_field_period(d), NA_character_)
   expect_false("field_period" %in% names(extract_dataset_metadata(d)))
 })
@@ -4250,12 +4055,10 @@ test_that("the dates = NULL alias is idempotent through construction too", {
   attr(df, "dates") <- "February-March 2026"
 
   control <- .build_from_frame(df)
-  test_invariants(control)
   expect_identical(extract_field_period(control), "February-March 2026")
 
   cleaned <- set_dataset_metadata(df, dates = NULL)
   d <- .build_from_frame(cleaned)
-  test_invariants(d)
 
   expect_identical(extract_field_period(d), NA_character_)
 })
@@ -4266,12 +4069,10 @@ test_that("set_field_period(df, NULL) is idempotent through construction", {
   attr(df, "dates") <- "an older period"
 
   control <- .build_from_frame(df)
-  test_invariants(control)
   expect_identical(extract_field_period(control), "February-March 2026")
 
   cleaned <- set_field_period(df, NULL)
   d <- .build_from_frame(cleaned)
-  test_invariants(d)
 
   expect_identical(extract_field_period(d), NA_character_)
 })

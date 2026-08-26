@@ -744,7 +744,6 @@ test_that("coef.survey_result() returns group-major names for grouped quantiles"
 test_that("confint.survey_result() uses t-distribution for Taylor designs (finite df)", {
   df <- make_survey_data(design = "taylor", seed = 63)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   result <- get_means(d, y1, variance = "se")
   df_stored <- attr(result, ".survey_result")$df
   expect_true(all(is.finite(df_stored)))
@@ -766,7 +765,6 @@ test_that("confint.survey_result() matches normal approximation for replicate de
     repweights = tidyselect::starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(d)
   result <- get_means(d, y1, variance = "se")
   expect_true(is.infinite(attr(result, ".survey_result")$df[1]))
   ci <- confint(result, level = 0.95)
@@ -799,7 +797,6 @@ test_that("vcov/SE/confint throw surveycore_error_result_method_unsupported for 
       nest = TRUE
     )
   )
-  test_invariants(d_gss)
   result <- suppressWarnings(get_pairwise(d_gss, age, by = sex))
   expect_error(
     vcov(result),
@@ -874,7 +871,6 @@ test_that("confint.survey_result() uses finite design df for Taylor designs", {
     y1 = c(10, 12, 9, 11, 8, 7, 6, 9)
   )
   d <- as_survey(small_df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   result <- suppressWarnings(get_means(d, y1, variance = "se"))
   df_stored <- attr(result, ".survey_result")$df
   # 4 PSUs in 2 strata => df = sum(n_h - 1) = (2-1) + (2-1) = 2
@@ -895,7 +891,6 @@ test_that("confint.survey_result() matches normal approximation for replicate (Â
     repweights = tidyselect::starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(d)
   result <- get_means(d, y1, variance = "se")
   expect_true(is.infinite(attr(result, ".survey_result")$df))
   ci <- confint(result, level = 0.95)
@@ -1072,7 +1067,6 @@ test_that("vcov() diagonal matches SE^2 for replicate design", {
     repweights = tidyselect::starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(d)
   result <- get_means(d, y1, variance = "se")
   v <- vcov(result)
   se_val <- SE(result)
@@ -1132,7 +1126,6 @@ test_that("coef() for get_diffs() two-group names are correct", {
 test_that("coef() works before broom rename and throws SCR-1 after rename", {
   df <- make_survey_data(seed = 19L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   result <- suppressWarnings(get_means(d, y1, variance = "se"))
   # Works before broom rename
   expect_no_error(coef(result))

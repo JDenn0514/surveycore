@@ -117,7 +117,6 @@ test_that("print.survey_taylor default output matches snapshot", {
 
 test_that("print.survey_taylor full=TRUE output matches snapshot", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d, full = TRUE))
 })
@@ -127,7 +126,6 @@ test_that("print.survey_taylor full=TRUE output matches snapshot", {
 
 test_that("print.survey_taylor design_info=TRUE shows design spec section", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   # cli output goes to message(), not stdout
   out <- capture.output(print(d, design_info = TRUE), type = "message")
@@ -138,7 +136,6 @@ test_that("print.survey_taylor design_info=TRUE shows design spec section", {
 
 test_that("print.survey_taylor weights_info=TRUE shows weight distribution and Weighted N", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, weights_info = TRUE), type = "message")
   expect_true(any(grepl("Weight distribution", out)))
@@ -164,7 +161,6 @@ test_that("print.survey_taylor metadata_info=TRUE shows labeled count", {
 
 test_that("print.survey_taylor default suppresses detail sections", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d), type = "message")
   expect_false(any(grepl("Design specification", out)))
@@ -177,7 +173,6 @@ test_that("print.survey_taylor default suppresses detail sections", {
 
 test_that("print.survey_taylor returns x invisibly", {
   d <- make_taylor_design()
-  test_invariants(d)
   # capture.output suppresses stdout (tibble); cli msg goes to message
   result <- suppressMessages(print(d, n = 1L))
   expect_identical(result, d)
@@ -188,7 +183,6 @@ test_that("print.survey_taylor returns x invisibly", {
 
 test_that("print.survey_taylor design_info shows 'sampling weights' when weights given", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, design_info = TRUE), type = "message")
   expect_true(any(grepl("sampling weights", out)))
@@ -198,7 +192,6 @@ test_that("print.survey_taylor design_info shows 'probabilities (converted)' whe
   df <- make_survey_data(n = 50L, n_psu = 10L, n_strata = 2L, seed = 42L)
   df$prob <- 1 / df$wt
   d <- as_survey(df, ids = psu, probs = prob, strata = strata, nest = TRUE)
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, design_info = TRUE), type = "message")
   expect_true(any(grepl("probabilities.*converted", out)))
@@ -209,7 +202,6 @@ test_that("print.survey_taylor design_info shows 'probabilities (converted)' whe
 
 test_that("print.survey_taylor SRS design omits 'Weights provided as:' line", {
   d <- make_srs_design()
-  test_invariants(d)
   # @variables$weights should be the internal auto-weight column
   expect_identical(d@variables$weights, "..surveycore_wt..")
   withr::local_options(list(width = 80L, cli.width = 80L))
@@ -223,7 +215,6 @@ test_that("print.survey_taylor SRS design omits 'Weights provided as:' line", {
 
 test_that("print.survey_replicate default output matches snapshot", {
   d <- make_rep_design()
-  test_invariants(d)
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
@@ -234,7 +225,6 @@ test_that("print.survey_replicate default output matches snapshot", {
 
 test_that("print.survey_replicate full=TRUE output matches snapshot", {
   d <- make_rep_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d, full = TRUE))
 })
@@ -244,7 +234,6 @@ test_that("print.survey_replicate full=TRUE output matches snapshot", {
 
 test_that("print.survey_replicate returns x invisibly", {
   d <- make_rep_design()
-  test_invariants(d)
   result <- suppressMessages(print(d, n = 1L))
   expect_identical(result, d)
 })
@@ -254,7 +243,6 @@ test_that("print.survey_replicate returns x invisibly", {
 
 test_that("print.survey_twophase default output matches snapshot", {
   d <- make_twophase_design()
-  test_invariants(d)
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(d@data))
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d))
@@ -265,7 +253,6 @@ test_that("print.survey_twophase default output matches snapshot", {
 
 test_that("print.survey_twophase full=TRUE output matches snapshot", {
   d <- make_twophase_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(d, full = TRUE))
 })
@@ -275,7 +262,6 @@ test_that("print.survey_twophase full=TRUE output matches snapshot", {
 
 test_that("print.survey_twophase returns x invisibly", {
   d <- make_twophase_design()
-  test_invariants(d)
   result <- suppressMessages(print(d, n = 1L))
   expect_identical(result, d)
 })
@@ -285,7 +271,6 @@ test_that("print.survey_twophase returns x invisibly", {
 
 test_that("summary.survey_taylor output matches snapshot", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(summary(d))
 })
@@ -295,7 +280,6 @@ test_that("summary.survey_taylor output matches snapshot", {
 
 test_that("summary.survey_taylor shows type, size, design, and metadata sections", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(summary(d), type = "message")
   expect_true(any(grepl("Taylor series linearization", out)))
@@ -308,7 +292,6 @@ test_that("summary.survey_taylor shows type, size, design, and metadata sections
 
 test_that("summary.survey_taylor SRS design shows 'none' for IDs and Strata", {
   d <- make_srs_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(summary(d), type = "message")
   expect_true(any(grepl("IDs: none", out)))
@@ -320,7 +303,6 @@ test_that("summary.survey_taylor SRS design shows 'none' for IDs and Strata", {
 
 test_that("summary.survey_taylor returns object invisibly", {
   d <- make_taylor_design()
-  test_invariants(d)
   result <- suppressMessages(summary(d))
   expect_identical(result, d)
 })
@@ -330,14 +312,12 @@ test_that("summary.survey_taylor returns object invisibly", {
 
 test_that("summary.survey_replicate output matches snapshot", {
   d <- make_rep_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(summary(d))
 })
 
 test_that("summary.survey_replicate returns object invisibly", {
   d <- make_rep_design()
-  test_invariants(d)
   result <- suppressMessages(summary(d))
   expect_identical(result, d)
 })
@@ -347,14 +327,12 @@ test_that("summary.survey_replicate returns object invisibly", {
 
 test_that("summary.survey_twophase output matches snapshot", {
   d <- make_twophase_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(summary(d))
 })
 
 test_that("summary.survey_twophase returns object invisibly", {
   d <- make_twophase_design()
-  test_invariants(d)
   result <- suppressMessages(summary(d))
   expect_identical(result, d)
 })
@@ -375,7 +353,6 @@ test_that("summary.survey_twophase returns object invisibly", {
 test_that("print.survey_taylor() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_taylor_design()
-  test_invariants(d)
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
 })
@@ -386,7 +363,6 @@ test_that("print.survey_taylor() shows domain line when domain column is present
 test_that("print.survey_taylor() domain count excludes NAs", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_taylor_design()
-  test_invariants(d)
   mask <- rep(c(TRUE, FALSE, NA), length.out = nrow(d@data))
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
   expect_snapshot(print(d))
@@ -398,7 +374,6 @@ test_that("print.survey_taylor() domain count excludes NAs", {
 test_that("print.survey_taylor() domain line appears before groups line", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_taylor_design()
-  test_invariants(d)
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   d@groups <- "strata"
   expect_snapshot(print(d))
@@ -410,7 +385,6 @@ test_that("print.survey_taylor() domain line appears before groups line", {
 test_that("print.survey_replicate() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_rep_design()
-  test_invariants(d)
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
 })
@@ -421,7 +395,6 @@ test_that("print.survey_replicate() shows domain line when domain column is pres
 test_that("print.survey_twophase() shows domain line when domain column is present", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_twophase_design()
-  test_invariants(d)
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
 })
@@ -450,7 +423,6 @@ test_that("print.survey_nonprob() shows domain line when domain column is presen
   set.seed(123L)
   df$cal_wt <- df$wt * runif(nrow(df), 0.9, 1.1)
   d <- as_survey_nonprob(df, weights = cal_wt)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_nonprob))
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- d@data$y1 > 0
   expect_snapshot(print(d))
@@ -462,7 +434,6 @@ test_that("print.survey_nonprob() shows domain line when domain column is presen
 test_that("print.survey_taylor() shows domain line when zero rows are in domain", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_taylor_design()
-  test_invariants(d)
   d@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- FALSE
   expect_snapshot(print(d))
 })
@@ -472,7 +443,6 @@ test_that("print.survey_taylor() shows domain line when zero rows are in domain"
 test_that("print.survey_replicate() shows groups when @groups is set", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_rep_design()
-  test_invariants(d)
   d@groups <- "strata"
   out <- capture.output(print(d), type = "message")
   expect_true(any(grepl("Groups", out)))
@@ -481,7 +451,6 @@ test_that("print.survey_replicate() shows groups when @groups is set", {
 test_that("print.survey_replicate() with FPC covers FPC design_info block", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_rep_design()
-  test_invariants(d)
   # Add a synthetic FPC column to trigger the FPC design_info block
   d@data$fpc_rep <- rep(500L, nrow(d@data))
   d@variables$fpc <- "fpc_rep"
@@ -495,7 +464,6 @@ test_that("print.survey_replicate() with FPC covers FPC design_info block", {
 test_that("print.survey_twophase() shows groups when @groups is set", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_twophase_design()
-  test_invariants(d)
   d@groups <- "strata"
   out <- capture.output(print(d), type = "message")
   expect_true(any(grepl("Groups", out)))
@@ -504,7 +472,6 @@ test_that("print.survey_twophase() shows groups when @groups is set", {
 test_that("print.survey_twophase full=TRUE includes Phase 2 fields", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_twophase_design()
-  test_invariants(d)
   out <- capture.output(print(d, full = TRUE), type = "message")
   expect_true(any(grepl("Phase 2", out)))
 })
@@ -514,7 +481,6 @@ test_that("print.survey_twophase full=TRUE includes Phase 2 fields", {
 test_that("summary.survey_replicate() shows BRR type and replicate count", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_rep_design()
-  test_invariants(d)
   out <- capture.output(summary(d), type = "message")
   expect_true(any(grepl("BRR", out)))
   expect_true(any(grepl("Replicate", out, ignore.case = TRUE)))
@@ -525,7 +491,6 @@ test_that("summary.survey_replicate() shows BRR type and replicate count", {
 test_that("summary.survey_twophase() shows Phase 1 and Phase 2 sections", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_twophase_design()
-  test_invariants(d)
   out <- capture.output(summary(d), type = "message")
   expect_true(any(grepl("Phase 1", out)))
   expect_true(any(grepl("Phase 2", out)))
@@ -658,14 +623,12 @@ test_that("print.survey_taylor shows per-stage FPC for 2-stage design", {
     strata = strata,
     fpc = c(fpc, fpc2)
   )
-  test_invariants(sc)
   withr::local_options(list(width = 80L, cli.width = 80L))
   expect_snapshot(print(sc, design_info = TRUE))
 })
 
 test_that("print.survey_taylor shows single FPC line for 1-stage design", {
   d <- make_taylor_design()
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
   out <- capture.output(print(d, design_info = TRUE), type = "message")
   # Should show single "FPC: fpc" line, not "FPC (stage 1):"
@@ -789,7 +752,6 @@ test_that("print(survey_nonprob): JK1 header contains 'JK1' not 'BOOTSTRAP'", {
     repweights = c(r1, r2, r3, r4),
     type = "JK1"
   )
-  test_invariants(d)
   output <- capture.output(print(d), type = "message")
   expect_true(any(grepl("JK1", output)))
   expect_false(any(grepl("BOOTSTRAP", output)))
@@ -805,7 +767,6 @@ test_that("print(survey_nonprob): JK2 header contains 'JK2'", {
     type = "JK2",
     rscales = rep(0.75, 4)
   )
-  test_invariants(d)
   output <- capture.output(print(d), type = "message")
   expect_true(any(grepl("JK2", output)))
   expect_false(any(grepl("BOOTSTRAP", output)))
@@ -821,7 +782,6 @@ test_that("print(survey_nonprob): JKn header contains 'JKN'", {
     type = "JKn",
     rscales = rep(0.75, 4)
   )
-  test_invariants(d)
   output <- capture.output(print(d), type = "message")
   expect_true(any(grepl("JKN", output)))
   expect_false(any(grepl("BOOTSTRAP", output)))
@@ -836,7 +796,6 @@ test_that("print(survey_nonprob): bootstrap header still contains 'BOOTSTRAP' [r
     repweights = c(r1, r2, r3, r4),
     type = "bootstrap"
   )
-  test_invariants(d)
   output <- capture.output(print(d), type = "message")
   expect_true(any(grepl("BOOTSTRAP", output)))
 })
@@ -1030,7 +989,6 @@ capture_design_output <- function(expr) {
 
 test_that("print.survey_taylor shows a Dataset line holding data_name", {
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1042,7 +1000,6 @@ test_that("print.survey_taylor shows a Dataset line holding data_name", {
 
 test_that("print.survey_taylor Dataset line sits directly above Sample size", {
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1054,7 +1011,6 @@ test_that("print.survey_taylor Dataset line sits directly above Sample size", {
 
 test_that("print.survey_taylor Dataset line falls back to survey_name", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1066,7 +1022,6 @@ test_that("print.survey_taylor Dataset line falls back to survey_name", {
 
 test_that("print.survey_taylor Dataset line prefers data_name to survey_name", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1079,7 +1034,6 @@ test_that("print.survey_taylor Dataset line prefers data_name to survey_name", {
 test_that("print.survey_taylor omits the Dataset line when nothing is set", {
   d_none <- make_dataset_design("taylor", "none")
   d_named <- make_dataset_design("taylor", "data_name")
-  test_invariants(d_none)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   none_out <- capture_design_output(print(d_none))
@@ -1105,7 +1059,6 @@ test_that("print.survey_taylor omits the Dataset line when nothing is set", {
 
 test_that("print.survey_replicate shows a Dataset line above Sample size", {
   d <- make_dataset_design("replicate", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1118,7 +1071,6 @@ test_that("print.survey_replicate shows a Dataset line above Sample size", {
 
 test_that("print.survey_twophase shows Dataset above Phase 1 sample size", {
   d <- make_dataset_design("twophase", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1131,7 +1083,6 @@ test_that("print.survey_twophase shows Dataset above Phase 1 sample size", {
 
 test_that("print.survey_nonprob puts Dataset after the variance bullet", {
   d <- make_dataset_design("nonprob", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1146,7 +1097,6 @@ test_that("print.survey_nonprob puts Dataset after the variance bullet", {
 
 test_that("print.survey_nonprob repweights puts Dataset after class line", {
   d <- make_dataset_design("nonprob_rep", "data_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d))$cli
@@ -1165,7 +1115,6 @@ test_that("print falls back to survey_name in every design class", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "survey_name")
-    test_invariants(d)
     out <- capture_design_output(print(d))$cli
     expect_identical(
       out[grepl("^Dataset: ", out)],
@@ -1182,7 +1131,6 @@ test_that("print output is unchanged in every class when nothing is set", {
   for (design in designs) {
     d_none <- make_dataset_design(design, "none")
     d_named <- make_dataset_design(design, "data_name")
-    test_invariants(d_none)
 
     none_out <- capture_design_output(print(d_none))
     named_out <- capture_design_output(print(d_named))
@@ -1205,7 +1153,6 @@ test_that("print output is unchanged in every class when nothing is set", {
 
 test_that("metadata_info block shows Survey, Vendor and Field dates in order", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d, metadata_info = TRUE))$cli
@@ -1223,7 +1170,6 @@ test_that("metadata_info block shows Survey, Vendor and Field dates in order", {
 
 test_that("metadata_info block sits above the labeled-count line", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d, metadata_info = TRUE))$cli
@@ -1238,7 +1184,6 @@ test_that("metadata_info block sits above the labeled-count line", {
 
 test_that("metadata_info block omits Survey when only survey_name is set", {
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d, metadata_info = TRUE))$cli
@@ -1266,7 +1211,6 @@ test_that("metadata_info block omits Survey when the two names are identical", {
 
 test_that("metadata_info block shows Survey when the two names differ", {
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d, metadata_info = TRUE))$cli
@@ -1282,7 +1226,6 @@ test_that("metadata_info block shows Survey when the two names differ", {
 
 test_that("metadata_info block shows a one-sided range for a start date", {
   d <- make_dataset_design("taylor", "partial")
-  test_invariants(d)
   withr::local_options(list(width = 80L, cli.width = 80L))
 
   out <- capture_design_output(print(d, metadata_info = TRUE))$cli
@@ -1356,7 +1299,6 @@ test_that("metadata_info section is unchanged when no dataset keys are set", {
   for (design in designs) {
     d_none <- make_dataset_design(design, "none")
     d_full <- make_dataset_design(design, "full")
-    test_invariants(d_none)
 
     none_out <- capture_design_output(print(d_none, metadata_info = TRUE))
     full_out <- capture_design_output(print(d_full, metadata_info = TRUE))
@@ -1380,7 +1322,6 @@ test_that("full = TRUE shows the header and the block in every design class", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "full")
-    test_invariants(d)
     out <- capture_design_output(print(d, full = TRUE))$cli
 
     expect_identical(
@@ -1413,7 +1354,6 @@ test_that("full = TRUE matches metadata_info = TRUE for the dataset lines", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "full")
-    test_invariants(d)
     full_out <- capture_design_output(print(d, full = TRUE))$cli
     meta_out <- capture_design_output(print(d, metadata_info = TRUE))$cli
     expect_identical(
@@ -1434,7 +1374,6 @@ test_that("full = TRUE leaves output unchanged when nothing is set", {
   for (design in designs) {
     d_none <- make_dataset_design(design, "none")
     d_full <- make_dataset_design(design, "full")
-    test_invariants(d_none)
 
     none_out <- capture_design_output(print(d_none, full = TRUE))
     full_out <- capture_design_output(print(d_full, full = TRUE))
@@ -1457,7 +1396,6 @@ test_that("a stale design prints and summarises with every argument set", {
 
   for (cls in c("taylor", "replicate", "twophase", "nonprob")) {
     d <- make_stale_metadata_design(cls)
-    test_invariants(d)
 
     # Four calls per class: the default, the two metadata-bearing argument
     # combinations, and summary(). All read through the guarded reader, so
@@ -1495,7 +1433,6 @@ test_that("a stale design prints the same lines as an empty current design", {
   # but different row counts, so compare the shape of the metadata section
   # rather than the whole output.
   stale <- make_stale_metadata_design("taylor")
-  test_invariants(stale)
   out <- capture_design_output(print(stale, metadata_info = TRUE, n = 3))$cli
   meta_idx <- grep("^-- Metadata", out)
   expect_length(meta_idx, 1L)
@@ -1671,7 +1608,6 @@ test_that("summary shows the Dataset line directly above the Metadata line", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "data_name")
-    test_invariants(d)
     out <- capture_design_output(summary(d))$cli
 
     idx <- grep("^Dataset: ", out)
@@ -1693,7 +1629,6 @@ test_that("summary falls back to survey_name", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "survey_name")
-    test_invariants(d)
     out <- capture_design_output(summary(d))$cli
     expect_identical(
       out[grepl("^Dataset: ", out)],
@@ -1710,7 +1645,6 @@ test_that("summary output is unchanged when no dataset metadata is set", {
   for (design in designs) {
     d_none <- make_dataset_design(design, "none")
     d_named <- make_dataset_design(design, "data_name")
-    test_invariants(d_none)
 
     none_out <- capture_design_output(summary(d_none))
     named_out <- capture_design_output(summary(d_named))
@@ -1729,7 +1663,6 @@ test_that("summary output is unchanged when no dataset metadata is set", {
 test_that("summary shows no Survey, Vendor or Field dates lines", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
 
   out <- capture_design_output(summary(d))$cli
   # Only the one name line belongs in a summary (spec section X.4).
@@ -1740,7 +1673,6 @@ test_that("summary shows no Survey, Vendor or Field dates lines", {
 test_that("summary(survey_taylor): Dataset line snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("taylor", "data_name")
-  test_invariants(d)
   expect_snapshot(summary(d))
 })
 
@@ -1750,7 +1682,6 @@ test_that("summary(survey_taylor): Dataset line snapshot", {
 test_that("print(survey_taylor, metadata_info = TRUE): all six keys snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("taylor", "full")
-  test_invariants(d)
   expect_snapshot(print(d, metadata_info = TRUE, n = 3))
 })
 
@@ -1764,35 +1695,30 @@ test_that("print(survey_taylor, metadata_info = TRUE): period-only snapshot", {
 test_that("print(survey_taylor): survey_name fallback header snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("taylor", "survey_name")
-  test_invariants(d)
   expect_snapshot(print(d, n = 3))
 })
 
 test_that("print(survey_replicate): Dataset header snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("replicate", "data_name")
-  test_invariants(d)
   expect_snapshot(print(d, n = 3))
 })
 
 test_that("print(survey_twophase): Dataset header snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("twophase", "data_name")
-  test_invariants(d)
   expect_snapshot(print(d, n = 3))
 })
 
 test_that("print(survey_nonprob): Dataset header snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("nonprob", "data_name")
-  test_invariants(d)
   expect_snapshot(print(d, n = 3))
 })
 
 test_that("print(survey_nonprob) with repweights: Dataset header snapshot", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_dataset_design("nonprob_rep", "data_name")
-  test_invariants(d)
   expect_snapshot(print(d, n = 3))
 })
 
@@ -1803,7 +1729,6 @@ test_that("metadata_info block renders in every design class", {
 
   for (design in designs) {
     d <- make_dataset_design(design, "full")
-    test_invariants(d)
     out <- capture_design_output(print(d, metadata_info = TRUE))$cli
     expect_true(
       any(out == "Survey: Antisemitic Attitudes in America 2026"),

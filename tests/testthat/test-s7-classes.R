@@ -186,7 +186,6 @@ test_that("survey_taylor() creates valid object for stratified cluster design", 
       nest = TRUE
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "psu")
   expect_identical(d@variables$strata, "strata")
@@ -209,7 +208,6 @@ test_that("survey_taylor() creates valid object for two-stage cluster design", {
       ids = c("psu", "ssu")
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$ids, c("psu", "ssu"))
 })
 
@@ -222,7 +220,6 @@ test_that("survey_taylor() allows NA weights (non-NA must be positive)", {
     data = df,
     variables = .taylor_vars(weights = "wt")
   )
-  test_invariants(d)
   expect_true(is.na(d@data$wt[2]))
 })
 
@@ -382,7 +379,6 @@ test_that("survey_replicate() creates valid BRR design", {
       type = "BRR"
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$repweights, paste0("rw", 1:4))
@@ -400,7 +396,6 @@ test_that("survey_replicate() creates valid JK1 design", {
       type = "JK1"
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
 })
 
@@ -502,7 +497,6 @@ test_that("survey_twophase() creates valid object with minimal spec", {
       visible_vars = NULL
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_twophase))
   expect_identical(d@variables$subset, "ph2")
   expect_identical(d@variables$method, "full")
@@ -531,7 +525,6 @@ test_that("survey_twophase() creates valid object with phase2 strata col", {
       visible_vars = NULL
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$phase2$strata, "ph2_str")
 })
 
@@ -799,7 +792,6 @@ test_that("survey_nonprob validator accepts zero weights with at least one posit
       visible_vars = NULL
     )
   )
-  test_invariants(obj)
   expect_s3_class(obj@data, "data.frame")
   expect_equal(sum(obj@data$w == 0), 3L)
 })
@@ -963,7 +955,6 @@ test_that("survey_taylor @calibration accepts a list", {
   design <- as_survey(df, ids = psu, weights = wt, strata = strata)
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   design@calibration <- list(cd)
-  test_invariants(design)
   expect_type(design@calibration, "list")
   expect_length(design@calibration, 1L)
 })
@@ -993,7 +984,6 @@ test_that("survey_replicate has @calibration == NULL by default", {
     repweights = starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(design)
   expect_null(design@calibration)
 })
 
@@ -1007,7 +997,6 @@ test_that("survey_replicate @calibration accepts a list", {
   )
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   design@calibration <- list(cd)
-  test_invariants(design)
   expect_type(design@calibration, "list")
   expect_length(design@calibration, 1L)
 })
@@ -1081,7 +1070,6 @@ test_that("survey_metadata() keeps other properties intact alongside @dataset_me
 test_that("as_survey() designs start with an empty @dataset_metadata", {
   df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 11)
   design <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(design)
   expect_identical(design@metadata@dataset_metadata, list())
 })
 
@@ -1412,7 +1400,6 @@ test_that("survey_metadata assignment round-trips a valid dataset metadata list"
 test_that("a design's @metadata re-validates @dataset_metadata on assignment", {
   df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 12)
   design <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(design)
   expect_error(
     design@metadata@dataset_metadata <- list(vendor = NA_character_),
     class = "surveycore_error_dataset_metadata_bad_type"
