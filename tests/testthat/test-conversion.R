@@ -129,7 +129,6 @@ test_that("as_svydesign() converts survey_taylor without error", {
 test_that("as_svydesign() converts SRS-style survey_taylor without error", {
   skip_if_not_installed("survey")
   d <- make_srs()
-  test_invariants(d)
   sv <- as_svydesign(d)
   expect_true(!is.null(sv))
 })
@@ -140,7 +139,6 @@ test_that("as_svydesign() converts SRS-style survey_taylor without error", {
 test_that("as_svydesign() converts survey_replicate without error", {
   skip_if_not_installed("survey")
   d <- make_rep()
-  test_invariants(d)
   sv <- as_svydesign(d)
   expect_true(!is.null(sv))
 })
@@ -151,7 +149,6 @@ test_that("as_svydesign() converts survey_replicate without error", {
 test_that("as_svydesign() converts survey_twophase without error", {
   skip_if_not_installed("survey")
   d <- make_twophase()
-  test_invariants(d)
   sv <- suppressWarnings(as_svydesign(d))
   expect_true(!is.null(sv))
 })
@@ -296,7 +293,6 @@ test_that("as_tbl_svy() converts survey_taylor to tbl_svy", {
   skip_if_not_installed("survey")
   skip_if_not_installed("srvyr")
   d <- make_taylor()
-  test_invariants(d)
   ts <- as_tbl_svy(d)
   expect_true(inherits(ts, "tbl_svy"))
 })
@@ -462,7 +458,6 @@ test_that("from_svydesign() preserves all data rows", {
     nest = TRUE
   )
   d <- from_svydesign(sv)
-  test_invariants(d)
   expect_identical(nrow(d@data), nrow(df))
 })
 
@@ -605,7 +600,6 @@ test_that("from_tbl_svy() converts tbl_svy to survey_taylor", {
   skip_if_not_installed("survey")
   skip_if_not_installed("srvyr")
   d <- make_taylor()
-  test_invariants(d)
   ts <- as_tbl_svy(d)
   d2 <- from_tbl_svy(ts)
   expect_true(S7::S7_inherits(d2, survey_taylor))

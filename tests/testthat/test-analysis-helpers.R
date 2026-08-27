@@ -697,7 +697,6 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
   twophase <- suppressWarnings(
     as_survey_twophase(phase1, subset = subset, method = "approx")
   )
-  test_invariants(twophase)
 
   expect_equal(.degf(twophase), .degf(phase1))
   expect_true(is.finite(.degf(phase1)))
@@ -708,7 +707,6 @@ test_that(".degf() returns design-based finite df for SRS-style design", {
   # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)
   d <- as_survey(df, weights = wt)
-  test_invariants(d)
 
   expect_equal(.degf(d), nrow(df) - 1L)
 })
@@ -746,7 +744,6 @@ test_that(".degf() returns Inf for survey_nonprob with repweights", {
     weights = wt,
     repweights = starts_with("repwt_")
   )
-  test_invariants(d)
 
   expect_equal(.degf(d), Inf)
 })

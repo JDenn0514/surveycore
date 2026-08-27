@@ -8,12 +8,34 @@ file covers only what is specific to surveycore.
 
 | Decision | Choice |
 |----------|--------|
-| Invariant checks | `test_invariants(design)` required as **first** assertion in every constructor test block |
+| Invariant checks | `test_invariants(design)` once per constructor per test FILE — not per block |
 | Layer 1 errors (S7 validators) | `class=` only — no snapshot |
 | Layer 3 errors (constructors) | Dual: `expect_error(class=)` + `expect_snapshot(error=TRUE)` |
 | Variance numerical tolerance | Point: 1e-10, SE/variance: 1e-8, CI bounds: 1e-6 |
 | Synthetic data | `make_survey_data(seed = N)` in `helper-test-data.R` |
 | Real data | `nhanes_2017`, `acs_pums_wy` for numerical validation only |
+
+## Two speeds of local test run
+
+11 files carry a file-level `skip_on_cran()`, including the two polychoric
+files that hold 42% of all test time. Skipping them halves the run.
+
+`devtools::test()` cannot reach the fast speed. It calls
+`withr::local_envvar(devtools:::r_env_vars())`, and that list sets
+`NOT_CRAN = "true"` unconditionally, so the shell variable never reaches the
+tests and the 11 files always run. Use `testthat::test_local()` for the fast
+run — it reads the real environment.
+
+| Run | Command | Expectations | Time | Use for |
+|---|---|---|---|---|
+| Fast | `NOT_CRAN=false Rscript -e "testthat::test_local()"` | 8,841 | 384 s | The edit-run loop. Skips the 11 slow files. |
+| Full | `Rscript -e "devtools::test()"` | 9,847 | 879 s | Before any push or PR. Runs everything. |
+
+Always measure coverage with `NOT_CRAN=true`. `covr` does not set the
+variable, so without it the 11 files skip and coverage reads about 93.7%
+instead of 96.0938% (issue #159).
+
+Measured 2026-08-26 on the narrowed suite.
 
 ## File mapping
 
@@ -35,11 +57,23 @@ same one-to-one convention — `R/analysis-means.R` →
 | `R/utils.R` | `tests/testthat/test-utils.R` |
 | `R/update-design.R` | `tests/testthat/test-update-design.R` |
 
-## `test_invariants()` — required in every constructor test
+## `test_invariants()` — once per constructor per file
 
-Every `test_that()` block that creates a survey object via `as_survey()`,
-`as_survey_rep()`, or `as_survey_twophase()` calls `test_invariants(design)`
-as its **first** assertion.
+Each test FILE calls `test_invariants(design)` once for each constructor it
+exercises — `as_survey()`, `as_survey_rep()`, `as_survey_twophase()`,
+`as_survey_nonprob()` — in the first block that builds with it. Later blocks
+in the same file do not repeat it.
+
+Measured rationale (issue #169): the per-block rule produced 645 calls and
+about 10,300 expectations — 53% of the suite — and stubbing it out moved
+package coverage by 0.0000 points across all 46 files in `R/`. The S7
+validators in `R/core-classes.R` enforce the same invariants on construction
+and on every property assignment, and no code in `R/` bypasses them.
+
+The helper still earns one call per constructor per file: it is the only
+guard against a constructor returning a malformed object through a route the
+validators do not see. `tests/testthat/test-invariants.R` keeps proving the
+helper still fires.
 
 `test_invariants()` is defined in `tests/testthat/helper-test-data.R` — read
 it there for the current source. It asserts all five formal Phase 0

@@ -1630,7 +1630,6 @@ test_that("get_corr() polyserial works for survey_nonprob with repweights", {
     repweights = tidyselect::all_of(repwt_cols),
     type = "bootstrap"
   )
-  test_invariants(d)
   result <- get_corr(d, x = c(ord1, y2), method = "polyserial")
   test_result_invariants(result, "survey_corr")
   expect_equal(nrow(result), 1L)
@@ -1650,7 +1649,6 @@ test_that("get_corr() polychoric raises PC-7 for survey_nonprob without repweigh
   df$ord2 <- cut(df$y2, breaks = 5, labels = FALSE, include.lowest = TRUE)
   df$ord2 <- factor(df$ord2, ordered = TRUE)
   d <- as_survey_nonprob(df, weights = wt)
-  test_invariants(d)
   expect_error(
     get_corr(d, x = c(ord1, ord2), method = "polychoric"),
     class = "surveycore_error_polychoric_design_unsupported"
@@ -1666,7 +1664,6 @@ test_that("get_corr() polyserial raises PC-7 for survey_nonprob without repweigh
   df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
   df$ord1 <- factor(df$ord1, ordered = TRUE)
   d <- as_survey_nonprob(df, weights = wt)
-  test_invariants(d)
   expect_error(
     get_corr(d, x = c(ord1, y2), method = "polyserial"),
     class = "surveycore_error_polychoric_design_unsupported"
@@ -1752,7 +1749,6 @@ test_that("get_corr() PC-4 fires through nonprob latent path when ordinal has on
     repweights = tidyselect::all_of(repwt_cols),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_error(
     get_corr(d, x = c(ord_single, ord2), method = "polychoric"),
     class = "surveycore_error_polychoric_single_level_ordinal"
@@ -1773,7 +1769,6 @@ test_that("get_corr() nonprob with repweights + method = 'pearson' is unchanged 
     repweights = tidyselect::all_of(repwt_cols),
     type = "bootstrap"
   )
-  test_invariants(d)
   result <- get_corr(d, x = c(y1, y2), method = "pearson")
   test_result_invariants(result, "survey_corr")
   expect_true(is.finite(result$r[[1L]]))
@@ -1810,7 +1805,6 @@ test_that("get_corr() all-NA ordinal returns NA (early-exit) through nonprob lat
     repweights = tidyselect::all_of(repwt_cols),
     type = "bootstrap"
   )
-  test_invariants(d)
   # All-NA ordinal: pairwise-complete domain is empty, early return with NA.
   result <- get_corr(d, x = c(ord_na, ord2), method = "polychoric")
   test_result_invariants(result, "survey_corr")

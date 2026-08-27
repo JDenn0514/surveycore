@@ -21,7 +21,6 @@ test_that("update_design() updates strata on survey_taylor", {
   df$st2 <- df$strata
   d <- as_survey(df, weights = wt, strata = strata)
   d2 <- suppressMessages(update_design(d, strata = st2))
-  test_invariants(d2)
   expect_identical(d2@variables$strata, "st2")
 })
 
@@ -31,7 +30,6 @@ test_that("update_design() updates multiple vars on survey_taylor", {
   df$st2 <- df$strata
   d <- as_survey(df, weights = wt, strata = strata)
   d2 <- suppressMessages(update_design(d, weights = wt2, strata = st2))
-  test_invariants(d2)
   expect_identical(d2@variables$weights, "wt2")
   expect_identical(d2@variables$strata, "st2")
 })
@@ -41,7 +39,6 @@ test_that("update_design() updates ids on survey_taylor", {
   df$psu2 <- paste0("new_", df$psu)
   d <- as_survey(df, ids = psu, weights = wt)
   d2 <- suppressMessages(update_design(d, ids = psu2))
-  test_invariants(d2)
   expect_identical(d2@variables$ids, "psu2")
 })
 
@@ -50,7 +47,6 @@ test_that("update_design() updates fpc on survey_taylor", {
   df$fpc2 <- df$fpc + 10L
   d <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2 <- suppressMessages(update_design(d, fpc = fpc2))
-  test_invariants(d2)
   expect_identical(d2@variables$fpc, "fpc2")
 })
 
@@ -95,7 +91,6 @@ test_that("update_design() updates repweights on survey_replicate", {
   d2 <- suppressMessages(
     update_design(d, repweights = c(repwt_1, repwt_2, repwt_3))
   )
-  test_invariants(d2)
   expect_identical(d2@variables$repweights, c("repwt_1", "repwt_2", "repwt_3"))
 })
 
@@ -196,7 +191,6 @@ test_that("update_design() no-op (all NULL) returns object unchanged", {
   df <- make_survey_data(n = 200L, seed = 50L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   d2 <- update_design(d)
-  test_invariants(d2)
   expect_identical(d2@variables$ids, d@variables$ids)
   expect_identical(d2@variables$weights, d@variables$weights)
   expect_identical(d2@variables$strata, d@variables$strata)
@@ -223,7 +217,6 @@ test_that("update_design() preserves unchanged design vars", {
   df$wt2 <- df$wt * 1.1
   d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   d2 <- suppressMessages(update_design(d, weights = wt2))
-  test_invariants(d2)
   # Only weights changed; ids, strata, fpc preserved
   expect_identical(d2@variables$weights, "wt2")
   expect_identical(d2@variables$ids, d@variables$ids)
