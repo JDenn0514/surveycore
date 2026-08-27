@@ -854,12 +854,14 @@ So the speed ranking is:
 Issue #169 lists four investigation steps. This plan acts on step 1 and
 leaves two others alone, on purpose:
 
-- **The both-modes rule (issue step 2) - not measured yet.** Test-spec
-  conventions run most behavioural rows in both survey-object and data-frame
-  mode, a 2x multiplier. Whether the two modes share a code path after
-  argument resolution has not been tested. It needs its own stub-and-measure
-  experiment, exactly like the one run for `test_invariants()`. Do not trim
-  it on suspicion.
+- **The both-modes rule (issue step 2) - measured, and it stays.** The rule
+  turned out to be unwritten repo-wide: it lived in one test-spec,
+  `archive/dataset-level-metadata/` §3, and its tests sit almost entirely in
+  `test-dataset-metadata.R`. It is not a 2x multiplier - 102 mode-variant
+  blocks carry 132 expectations, 1.3% of the suite. Deleting all 102 left the
+  set of reached `R/` expressions identical and package coverage at 96.0938%.
+  At that price the rows are worth keeping, so the rule is now written down
+  in `.claude/rules/testing-surveycore.md` with the bar it sets for new rows.
 - **The dual pattern (issue step 3) - leave it.** `expect_error(class = )`
   and `expect_snapshot(error = TRUE)` test different things: the condition
   class and the rendered message. Message regressions have been caught by

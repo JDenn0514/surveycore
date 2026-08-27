@@ -1,6 +1,6 @@
 # surveycore Testing: Package-Specific Standards
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Decided — extends `testing-standards.md`; read that first. This
 file covers only what is specific to surveycore.
 
@@ -9,6 +9,7 @@ file covers only what is specific to surveycore.
 | Decision | Choice |
 |----------|--------|
 | Invariant checks | `test_invariants(design)` once per constructor per test FILE — not per block |
+| Both input modes | A behavioural row runs in both modes only when the mode changes what it asserts |
 | Layer 1 errors (S7 validators) | `class=` only — no snapshot |
 | Layer 3 errors (constructors) | Dual: `expect_error(class=)` + `expect_snapshot(error=TRUE)` |
 | Variance numerical tolerance | Point: 1e-10, SE/variance: 1e-8, CI bounds: 1e-6 |
@@ -84,6 +85,78 @@ invariants:
 3. All `@variables` keys are present (never absent, may be `NULL`)
 4. Named design columns exist in `@data`
 5. `@metadata` is a `survey_metadata` object
+
+## The both-modes rule — run the second mode when it changes the answer
+
+Some surveycore functions take either a survey design object or a plain data
+frame. `extract_dataset_metadata()`, `set_dataset_metadata()` and the ten
+dataset-metadata wrappers are the whole current set.
+
+Write the second mode when the mode changes what the row asserts. Skip it
+when the row's answer is fixed before the function looks at `x`.
+
+Run the row in **both** modes when it asserts:
+
+- a value read back out of storage — a survey object keeps dataset metadata
+  in `@metadata@dataset_metadata`, a data frame keeps it in one whole-object
+  attribute per key, so a round trip is a different act in each mode;
+- a state left behind after the call, including "the call wrote nothing";
+- anything that depends on state already stored, such as the field-date pair
+  check against a stored `field_end`;
+- behaviour that exists in one mode only — the legacy `dates` attribute, the
+  frame reader's silent drops, promotion at construction.
+
+Run the row in **one** mode when the function raises before it reads `x`.
+Every argument check in `extract_dataset_metadata()` fires before
+`.get_dataset_metadata_list(x)`, and every rule 1–11 check in
+`set_dataset_metadata()` fires before the same call. A frame variant of such
+a row runs the identical lines with the identical arguments and cannot
+disagree with the survey variant.
+
+Keep the second mode where it already exists. This rule sets the bar for new
+test rows; it is not a reason to delete passing tests. The measurement below
+says the whole rule is too cheap to be worth that churn.
+
+### Measured rationale (issue #169, step 2)
+
+The rule was never written down repo-wide. It appeared in exactly one
+test-spec — `archive/dataset-level-metadata/` §3 "Mode default" — and the
+tests it produced sit almost entirely in one file.
+
+Issue #169 called it "the other 2x multiplier". It is not one:
+
+| Measure | Count |
+|---|---|
+| Mode-variant blocks in `test-dataset-metadata.R` | 102 |
+| Expectations they carry | 132 |
+| Share of the 9,847-expectation suite | 1.3% |
+| Mode-variant blocks in every other test file | 0 |
+
+Deleting all 102 and re-measuring:
+
+| Run | R/ expressions reached | Package coverage |
+|---|---|---|
+| Baseline | 698 | 96.0938% |
+| All 102 mode variants deleted | 698 | 96.0938% |
+
+Identical expression sets, not just identical totals. Two instruments agree:
+`covr::package_coverage(type = "none")` scoped to that one test file, so no
+other file could mask a loss, and a full `covr::package_coverage()` run,
+which held every one of the 46 per-file figures unchanged. The frame branches
+stay covered because the frame-only rows keep reaching them.
+
+`test-metadata-system.R` already works this way. It gives each of the twelve
+variable-level metadata functions one data-frame block — the read path, the
+write path — and runs everything else once. That file is the house norm; the
+one that fans out every row is the exception.
+
+Line coverage proves the second mode reaches no new code. It does not prove
+it could never catch a regression, and the property that makes it redundant —
+every abort preceding the mode branch — is a fact about today's source that
+nothing enforces. At 1.3% of the suite the guard is worth more than the
+saving, so the rows stay.
+
+Measured 2026-08-27 on `develop` at `e7493f0`.
 
 ## S7 error testing layers
 

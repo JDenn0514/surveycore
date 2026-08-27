@@ -71,7 +71,7 @@ For each function in `test-spec.md §Per-function test plan`:
 - Run each happy path test with the specified oracle (usually `survey` package). Compare estimate, SE, CI against the tolerance.
 - Run each error path test. Verify the correct `class = ...` is thrown AND the snapshot matches.
 - Run each edge case test.
-- Verify `test_invariants(design)` is the first assertion where applicable.
+- Verify `test_invariants(design)` runs once per constructor per test file, not in every constructing block.
 
 Record one row per scenario in the Per-Test Result Table in `audit.md`:
 
