@@ -211,16 +211,30 @@ test_that("Taylor variance matches survey::svymean for NHANES [numerical]", {
 })
 ```
 
-Constructor test with invariants first:
+Constructor test — the invariants call goes in the FILE's first block that
+builds with that constructor, and nowhere else in the file:
 
 ```r
+# First block in the file that calls as_survey() — carries the invariants.
 test_that("as_survey() creates a survey_taylor object for stratified design", {
   d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr, strata = sdmvstra)
-  test_invariants(d)   # always first
+  test_invariants(d)   # once per constructor per FILE, not per block
   expect_true(S7::inherits(d, survey_taylor))
   expect_equal(d@variables$strata, "sdmvstra")
 })
+
+# Every later as_survey() block in the same file omits it.
+test_that("as_survey() records the strata column it was given", {
+  d <- as_survey(nhanes_2017, ids = sdmvpsu, weights = wtmec2yr, strata = sdmvstra)
+  expect_identical(d@variables$strata, "sdmvstra")
+})
 ```
+
+A file that also builds with `as_survey_rep()` carries one more call, in its
+first replicate block. The S7 validators in `R/core-classes.R` enforce the
+same invariants on construction and on every property assignment, so the
+repeat calls bought no coverage — measured at 0.0000 points across all 46
+files in `R/` (issue #169).
 
 ---
 

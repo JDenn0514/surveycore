@@ -82,7 +82,7 @@ After spec compliance is PASS, dispatch a code quality reviewer:
 > (1) no `UseMethod()` on S7 objects — uses `S7::S7_inherits()` instead,
 > (2) `class=` on every `cli_abort()` and `cli_warn()` call,
 > (3) no `@importFrom` — all external calls use `::`,
-> (4) `test_invariants(design)` is first assertion in every constructor test block,
+> (4) `test_invariants(design)` called once per constructor per test FILE, not per block,
 > (5) dual pattern (class= + snapshot) on all Layer 3 errors.
 > Report PASS or list violations."
 

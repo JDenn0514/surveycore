@@ -77,7 +77,8 @@ Follow `artifact-schemas.md` §test-spec.md exactly. Key rules:
 - Tolerances default to point 1e-10, SE 1e-8, CI 1e-6 per `rules/testing-surveycore.md`. Deviations require written justification.
 - Every named error class from spec gets an `expect_error(class = ...)` test AND a snapshot test (dual pattern — `rules/testing-standards.md` §3).
 - Every edge case from spec gets a test.
-- `test_invariants(design)` is the first assertion of every test that constructs a survey object.
+- `test_invariants(design)` runs once per constructor per test FILE, in the first block that builds with it — not in every constructing block (`rules/testing-surveycore.md`).
+- A row runs in both input modes only when the mode changes what it asserts (`rules/testing-surveycore.md` §both-modes rule).
 - Profile gates list (document, test, run_examples, R CMD check --as-cran, pkgdown, covr) is always included verbatim.
 
 Test-spec is for tester. Do not write about what the code looks like.

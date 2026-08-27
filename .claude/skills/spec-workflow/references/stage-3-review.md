@@ -89,7 +89,8 @@ why it's N/A, it probably applies.
 
 Also check mechanic rules:
 
-- `test_invariants()` specified as first assertion in every constructor test block?
+- `test_invariants()` specified once per constructor per test file, not per block?
+- Second input mode specified only where the mode changes what the row asserts?
 - Dual pattern (class= + snapshot) specified for all Layer 3 (constructor) errors?
 - `class=` only for Layer 1 (S7 validator) errors — no snapshot?
 - `class=` required on every error and warning in the spec?

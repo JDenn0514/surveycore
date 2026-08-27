@@ -146,7 +146,7 @@ checks before marking it `[x]`:
 - No `UseMethod()` on S7 objects? No S7 class string comparisons?
 - `class=` on every `cli_abort()` and `cli_warn()`?
 - No `@importFrom` anywhere; all external calls use `::`?
-- `test_invariants(design)` first assertion in every constructor test block?
+- `test_invariants(design)` called once per constructor per test file, not per block?
 - Dual pattern (snapshot + `class=`) on all Layer 3 errors?
 
 If either check reveals a gap, fix it before moving to the next sub-task.

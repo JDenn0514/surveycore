@@ -108,7 +108,8 @@ No test cases. No tolerances. No references to test-spec.md.
 - **Happy path**: {scenario, dataset, oracle call, tolerance}
 - **Error paths**: one row per named error class
 - **Edge cases**: one row per edge case from spec
-- **Invariants**: `test_invariants(design)` first assertion
+- **Invariants**: `test_invariants(design)` once per constructor per file
+- **Input modes**: name a mode per row only where the mode changes the answer
 
 ## Tolerances
 - Point estimates: 1e-10
