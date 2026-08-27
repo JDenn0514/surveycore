@@ -825,3 +825,267 @@ test_that(".corr_polyserial_mle() weighted correctness: zero-weight rows do not 
   )
   expect_equal(out_zero$rho, out_base$rho, tolerance = 1e-8)
 })
+
+
+# =============================================================================
+# Polychoric performance rewrite (issue #177): vectorised CDF grid, lean
+# refit mode, and the delta-refit influence path.
+# =============================================================================
+
+# ── .corr_bivnorm_cdf_grid() ──────────────────────────────────────────────────
+
+test_that(".corr_bivnorm_cdf_grid() applies the six precedence rules in order", {
+  # tx_full / ty_full deliberately mix every sentinel so a single grid call
+  # exercises all six rules, including NA beating -Inf and NA beating +Inf.
+  tx_full <- c(-Inf, NaN, 0.5, Inf)
+  ty_full <- c(-Inf, 0, Inf)
+  rho <- 0.3
+  out <- .corr_bivnorm_cdf_grid(tx_full, ty_full, rho)
+
+  # Rule 2: -Inf on either side -> 0 (including a = -Inf, b = +Inf, where
+  # rule 2 must win over rule 3).
+  expect_identical(out[1L, 1L], 0)
+  expect_identical(out[1L, 2L], 0)
+  expect_identical(out[1L, 3L], 0)
+  expect_identical(out[3L, 1L], 0)
+  expect_identical(out[4L, 1L], 0)
+
+  # Rule 1: NA/NaN beats every other rule, including -Inf and +Inf.
+  expect_true(is.na(out[2L, 1L]))
+  expect_true(is.na(out[2L, 2L]))
+  expect_true(is.na(out[2L, 3L]))
+
+  # Rule 3: both sides +Inf -> 1.
+  expect_identical(out[4L, 3L], 1)
+
+  # Rule 4: a = +Inf, b finite -> Φ(b).
+  expect_equal(out[4L, 2L], stats::pnorm(0), tolerance = 1e-12)
+
+  # Rule 5: b = +Inf, a finite -> Φ(a).
+  expect_equal(out[3L, 3L], stats::pnorm(0.5), tolerance = 1e-12)
+
+  # Rule 6: both finite -> one pbivnorm() call.
+  expect_equal(
+    out[3L, 2L],
+    pbivnorm::pbivnorm(0.5, 0, rho = rho),
+    tolerance = 1e-12
+  )
+
+  # NA rho propagates everywhere (rule 1).
+  out_na_rho <- .corr_bivnorm_cdf_grid(c(-0.5, 0.5), c(-0.5, 0.5), NA_real_)
+  expect_true(all(is.na(out_na_rho)))
+})
+
+test_that(".corr_bivnorm_cdf_grid() matches an element-by-element pbivnorm reference", {
+  tx_full <- c(-1.2, -0.3, 0.4, 1.1)
+  ty_full <- c(-0.8, 0.1, 0.9)
+  rho <- -0.4
+  out <- .corr_bivnorm_cdf_grid(tx_full, ty_full, rho)
+
+  expected <- matrix(NA_real_, length(tx_full), length(ty_full))
+  for (i in seq_along(tx_full)) {
+    for (j in seq_along(ty_full)) {
+      expected[i, j] <- pbivnorm::pbivnorm(
+        tx_full[[i]],
+        ty_full[[j]],
+        rho = rho
+      )
+    }
+  }
+  expect_equal(out, expected, tolerance = 1e-12)
+})
+
+
+# ── .corr_cell_prob_matrix() ──────────────────────────────────────────────────
+
+test_that(".corr_cell_prob_matrix() sums to 1 over all cells when every threshold is finite", {
+  tx_full <- c(-Inf, -0.5, 0.5, Inf) # k_x = 3
+  ty_full <- c(-Inf, 0, Inf) # k_y = 2
+  rho <- 0.35
+  grid <- .corr_bivnorm_cdf_grid(tx_full, ty_full, rho)
+  cell_prob <- .corr_cell_prob_matrix(grid)
+  expect_identical(dim(cell_prob), c(3L, 2L))
+  expect_equal(sum(cell_prob), 1, tolerance = 1e-12)
+})
+
+
+# ── .corr_count_sparse_cells() ────────────────────────────────────────────────
+
+test_that(".corr_count_sparse_cells() matches a scalar per-cell reference on a fixture with one tiny cell", {
+  # Pre-vectorisation reference: one scalar pbivnorm() call per corner.
+  old_bivnorm_cdf <- function(a, b, rho) {
+    if (is.na(a) || is.na(b) || is.na(rho)) {
+      return(NA_real_)
+    }
+    if (is.infinite(a) && a < 0) return(0)
+    if (is.infinite(b) && b < 0) return(0)
+    if (is.infinite(a) && a > 0 && is.infinite(b) && b > 0) return(1)
+    if (is.infinite(a) && a > 0) return(stats::pnorm(b))
+    if (is.infinite(b) && b > 0) return(stats::pnorm(a))
+    pbivnorm::pbivnorm(a, b, rho = rho)
+  }
+  old_count_sparse <- function(rho, cell_counts, thresholds_x, thresholds_y,
+                                tol = 1e-12) {
+    k_x <- nrow(cell_counts)
+    k_y <- ncol(cell_counts)
+    tx_full <- c(-Inf, thresholds_x, Inf)
+    ty_full <- c(-Inf, thresholds_y, Inf)
+    n_sparse <- 0L
+    for (m in seq_len(k_x)) {
+      for (p in seq_len(k_y)) {
+        if (cell_counts[m, p] == 0) {
+          next
+        }
+        p_mp <- old_bivnorm_cdf(tx_full[[m + 1L]], ty_full[[p + 1L]], rho) -
+          old_bivnorm_cdf(tx_full[[m]], ty_full[[p + 1L]], rho) -
+          old_bivnorm_cdf(tx_full[[m + 1L]], ty_full[[p]], rho) +
+          old_bivnorm_cdf(tx_full[[m]], ty_full[[p]], rho)
+        if (is.na(p_mp) || p_mp < tol) {
+          n_sparse <- n_sparse + 1L
+        }
+      }
+    }
+    n_sparse
+  }
+
+  # 2x2 with mass only in the off-diagonal cells; extreme thresholds and a
+  # near-boundary rho drive one cell's modeled probability below tol.
+  cc <- matrix(c(0, 1, 1, 0), nrow = 2)
+  tx <- 4
+  ty <- -4
+  rho <- 0.999999
+
+  expected <- old_count_sparse(rho, cc, tx, ty)
+  actual <- .corr_count_sparse_cells(rho, cc, tx, ty)
+  expect_identical(actual, expected)
+  expect_true(actual >= 1L)
+})
+
+
+# ── refit = TRUE (lean refit mode) ────────────────────────────────────────────
+
+test_that(".corr_polychoric_mle(refit = TRUE) matches refit = FALSE and skips the sparse-cell count", {
+  d <- make_ordinal_pair(rho = 0.4, n = 300, k_x = 3, k_y = 3, seed = 11)
+  w <- rep(1, nrow(d))
+  dom <- rep(1, nrow(d))
+  out_full <- .corr_polychoric_mle(
+    factor(d$x, ordered = TRUE),
+    factor(d$y, ordered = TRUE),
+    w,
+    dom
+  )
+  out_refit <- .corr_polychoric_mle(
+    factor(d$x, ordered = TRUE),
+    factor(d$y, ordered = TRUE),
+    w,
+    dom,
+    refit = TRUE
+  )
+  expect_identical(out_refit$rho, out_full$rho)
+  expect_identical(out_refit$n_sparse_cells, NA_integer_)
+})
+
+test_that(".corr_polyserial_mle(refit = TRUE) matches refit = FALSE, skipping the probe", {
+  d <- make_polyserial_pair(rho = 0.5, n = 500, k_ord = 3, seed = 21)
+  w <- rep(1, nrow(d))
+  dom <- rep(1, nrow(d))
+  out_full <- .corr_polyserial_mle(
+    factor(d$ord, ordered = TRUE),
+    d$cont,
+    w,
+    dom
+  )
+  out_refit <- .corr_polyserial_mle(
+    factor(d$ord, ordered = TRUE),
+    d$cont,
+    w,
+    dom,
+    refit = TRUE
+  )
+  expect_identical(out_refit$rho, out_full$rho)
+})
+
+
+# ── .corr_numerical_influence() delta refit ──────────────────────────────────
+
+test_that(".corr_numerical_influence() delta refit matches a brute-force full rebuild bit-for-bit", {
+  # Brute-force reference: the pre-Step-3 refit loop. For every active row,
+  # rebuild thresholds and cell counts from scratch (full .corr_polychoric_
+  # mle() call) rather than delta-updating the unperturbed setup.
+  brute_force_influence <- function(
+    design,
+    vec_a,
+    vec_b,
+    active_domain,
+    rho_hat_full,
+    eps_pert = 1e-4
+  ) {
+    w_full <- design@data[[design@variables$weights]]
+    active_lgl <- as.logical(active_domain)
+    active_idx <- which(active_lgl)
+    n_active <- length(active_idx)
+    rho_z_full <- atanh(rho_hat_full)
+    ifs <- numeric(n_active)
+    for (k in seq_len(n_active)) {
+      i <- active_idx[[k]]
+      w_pert <- w_full
+      w_pert[[i]] <- w_pert[[i]] * (1 + eps_pert)
+      fit_pert <- .corr_polychoric_mle(
+        vec_a,
+        vec_b,
+        w_pert,
+        active_lgl,
+        x_name = "x",
+        y_name = "y"
+      )
+      rho_z_pert <- atanh(fit_pert$rho)
+      ifs[[k]] <- (rho_z_pert - rho_z_full) / eps_pert
+    }
+    ifs
+  }
+
+  set.seed(51L)
+  n <- 40L
+  wt <- stats::rlnorm(n, sdlog = 0.6)
+  o1 <- factor(sample(1:3, n, replace = TRUE), levels = 1:3, ordered = TRUE)
+  o2 <- factor(sample(1:3, n, replace = TRUE), levels = 1:3, ordered = TRUE)
+
+  # Required edge rows: NA on one margin only, NA on both margins, and a
+  # zero-effective-weight row. Survey weights must be non-negative and
+  # non-zero when non-NA, so a genuine zero-effective-weight row comes from
+  # an NA weight (the NA -> 0 conversion inside `.corr_estimate_thresholds()`
+  # / `.corr_polychoric_mle()`), not a literal `0`.
+  o1[1] <- NA
+  o1[2] <- NA
+  o2[2] <- NA
+  wt[3] <- NA_real_
+
+  df <- data.frame(id = seq_len(n), wt = wt, o1 = o1, o2 = o2)
+  d <- as_survey(df, weights = wt)
+
+  fit_full <- .corr_polychoric_mle(
+    df$o1,
+    df$o2,
+    df$wt,
+    rep(TRUE, n),
+    x_name = "x",
+    y_name = "y"
+  )
+
+  expected <- brute_force_influence(
+    d,
+    df$o1,
+    df$o2,
+    rep(TRUE, n),
+    fit_full$rho
+  )
+  actual <- .corr_numerical_influence(
+    design = d,
+    method = "polychoric",
+    vec_a = df$o1,
+    vec_b = df$o2,
+    active_domain = rep(TRUE, n),
+    rho_hat_full = fit_full$rho
+  )
+  expect_identical(actual, expected)
+})
