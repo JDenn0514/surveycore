@@ -212,7 +212,7 @@ Packages requiring `skip_if_not_installed()`:
 - `haven` — metadata roundtrip tests (prefer `with_labels = TRUE` when possible)
 
 ---
-Worked examples (invariants-first test, layer examples, numerical
+Worked examples (where the invariants call goes, layer examples, numerical
 comparison, test-file section templates):
 `.claude/references/testing-detail.md`. Read it when writing a new
 surveycore test file.
