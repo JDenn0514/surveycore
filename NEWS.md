@@ -8,13 +8,13 @@
   `field_start`, `field_end`, and `field_period`. Any other key is rejected.
   `survey_name` and `data_name` are independent: no function reads one to
   compute, fill, or check the other. See
-  `vignette("creating-survey-objects")`, section 8. (#163, #164, #166, #168,
-  #170)
+  `vignette("creating-survey-objects")`, section 8. (#162, #163, #164, #166,
+  #168, #170, #171)
 
 * New `dataset_metadata` property on the `survey_metadata` class stores the six
   keys as a named list, in a fixed canonical key order. It defaults to
   `list()`, so a design with no dataset metadata behaves exactly as it did in
-  1.1.0. (#163)
+  1.1.0. (#162)
 
 * New unified setter and extractor: `set_dataset_metadata()` and
   `extract_dataset_metadata()`. Both accept a survey design object or a plain
