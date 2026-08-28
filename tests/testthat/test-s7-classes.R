@@ -1418,3 +1418,36 @@ test_that("a design's @metadata re-validates @dataset_metadata on assignment", {
   design@metadata@dataset_metadata <- list(vendor = "Ipsos")
   expect_identical(design@metadata@dataset_metadata, list(vendor = "Ipsos"))
 })
+
+
+# ── survey_metadata @var_extra property across constructors ───────────────────
+
+test_that("as_survey() designs start with an empty @var_extra", {
+  df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 11)
+  design <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_identical(design@metadata@var_extra, list())
+})
+
+test_that("as_survey_replicate() designs start with an empty @var_extra", {
+  df <- make_survey_data(design = "replicate", seed = 1)
+  design <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "BRR"
+  )
+  expect_identical(design@metadata@var_extra, list())
+})
+
+test_that("as_survey_twophase() designs start with an empty @var_extra", {
+  df <- make_survey_data(design = "twophase", seed = 1)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  design <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  expect_identical(design@metadata@var_extra, list())
+})
+
+test_that("as_survey_nonprob() designs start with an empty @var_extra", {
+  df <- data.frame(y = 1:20, w = runif(20, 0.5, 2))
+  design <- as_survey_nonprob(df, weights = w)
+  expect_identical(design@metadata@var_extra, list())
+})
