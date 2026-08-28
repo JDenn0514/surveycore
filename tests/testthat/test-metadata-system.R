@@ -2353,6 +2353,61 @@ test_that(".extract_haven_metadata() works with make_survey_data(with_labels=TRU
   expect_identical(out@value_labels[["y3"]], c("No" = 0L, "Yes" = 1L))
 })
 
+test_that(".extract_haven_metadata() promotes a 'var_extra' column attribute", {
+  df <- data.frame(age = 1:3)
+  attr(df$age, "var_extra") <- list(role = "demographic")
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_identical(out@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that(".extract_haven_metadata() promotes an empty list() 'var_extra' payload unchanged", {
+  df <- data.frame(age = 1:3)
+  attr(df$age, "var_extra") <- list()
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_true("age" %in% names(out@var_extra))
+  expect_identical(out@var_extra[["age"]], list())
+})
+
+test_that(".extract_haven_metadata() does not promote a column with no 'var_extra' attribute", {
+  df <- data.frame(age = 1:3)
+  out <- surveycore:::.extract_haven_metadata(df)
+  expect_false("age" %in% names(out@var_extra))
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey() into @metadata@var_extra", {
+  df <- make_survey_data(n = 40, n_psu = 8, n_strata = 2, seed = 3)
+  df <- set_var_extra(df, y1 = list(role = "outcome"))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
+})
+
+test_that("set_var_extra() on a data frame with list() payload promotes through as_survey_replicate()", {
+  df <- make_survey_data(design = "replicate", seed = 1)
+  df <- set_var_extra(df, y1 = list())
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "BRR"
+  )
+  expect_identical(extract_var_extra(d, y1, format = "list")$y1, list())
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey_twophase()", {
+  df <- make_survey_data(design = "twophase", seed = 1)
+  df <- set_var_extra(df, y1 = list(role = "outcome"))
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  d <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  expect_identical(extract_var_extra(d, y1), list(y1 = list(role = "outcome")))
+})
+
+test_that("set_var_extra() on a data frame promotes through as_survey_nonprob()", {
+  df <- data.frame(y = 1:20, w = runif(20, 0.5, 2))
+  df <- set_var_extra(df, y = list(role = "outcome"))
+  d <- as_survey_nonprob(df, weights = w)
+  expect_identical(extract_var_extra(d, y), list(y = list(role = "outcome")))
+})
+
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
 

@@ -3999,11 +3999,18 @@ classify_question_type <- function(x, ..., variable = NULL) {
 #' `infer_question_prefaces()` (or any tool following the same convention).
 #' Does NOT import haven — uses only base R `attr()`.
 #'
+#' Also promotes a `"var_extra"` column attribute (set by [set_var_extra()]
+#' on a data frame) into `@var_extra`, unlike the attributes above — it
+#' promotes whenever the attribute is present and non-`NULL`, regardless of
+#' length, because a `list()` payload is a valid "set but empty" state.
+#'
 #' Edge cases handled:
 #' 1. Zero-length or empty-string variable labels — not stored.
 #' 2. `NA` as a key in value labels — preserved (SPSS user-defined missing).
 #' 3. Empty value-label vectors — not stored.
 #' 4. Columns with no attributes — silently skipped.
+#' 5. A `"var_extra"` attribute of `list()` — promoted unchanged, not
+#'   filtered out as empty.
 #'
 #' @param data A `data.frame`.
 #' @return A [survey_metadata] object. All properties are empty lists if no
@@ -4017,6 +4024,7 @@ classify_question_type <- function(x, ..., variable = NULL) {
   notes <- list()
   universe <- list()
   missing_codes <- list()
+  var_extra <- list()
 
   for (col_name in names(data)) {
     col <- data[[col_name]]
@@ -4084,6 +4092,16 @@ classify_question_type <- function(x, ..., variable = NULL) {
     ) {
       missing_codes[[col_name]] <- var_missing
     }
+
+    # ── Extension-slot payload ────────────────────────────────────────────────
+    # Unlike the blocks above, promotes whenever the attribute is present and
+    # non-NULL, regardless of length — a payload of list() is a valid,
+    # meaningful "set but empty" state (spec §III edge cases) that an
+    # emptiness filter would silently revert to "never set."
+    var_ext <- attr(col, "var_extra", exact = TRUE)
+    if (!is.null(var_ext)) {
+      var_extra[[col_name]] <- var_ext
+    }
   }
 
   survey_metadata(
@@ -4092,6 +4110,7 @@ classify_question_type <- function(x, ..., variable = NULL) {
     question_prefaces = q_prefaces,
     notes = notes,
     universe = universe,
-    missing_codes = missing_codes
+    missing_codes = missing_codes,
+    var_extra = var_extra
   )
 }
