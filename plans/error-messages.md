@@ -120,16 +120,16 @@ against the messages defined here.
 | 80 | `infer_question_prefaces()` | Trimming the preface leaves an empty label | WARN | `surveycore_warning_empty_label_after_trim` | `"Variable {.field {var_name}} would have an empty label after trimming the preface. Skipping."` |
 | 81 | all `get_*()` (via `.validate_shared_args()`) | `na.rm` is not `TRUE` or `FALSE` (e.g., `NA`, `1`, `"yes"`) | ERROR | `surveycore_error_na_rm_not_logical` | `"x" = "{.arg na.rm} must be {.code TRUE} or {.code FALSE}.", "i" = "Got {.obj_type_friendly {na.rm}}."` |
 | M-2/M-7 | all extractors (M-2), all setters (M-7) | A variable specified in `...` / input is not found in `x@data` / `names(x)` | WARN | `surveycore_warning_var_not_found` | Extractor (M-2): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}."` / Setter (M-7): `"!" = "{length(missing)} variable{?s} not found in {.arg x} and {?was/were} skipped: {.field {missing}}.", "i" = "Check spelling. Available columns: {.field {head(all_cols, 10)}}{?.}"` |
-| M-3 | all setters | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` |
-| M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` |
-| M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` |
+| M-3 | all setters; `extract_dataset_metadata()` | Both `...` and explicit `variable`/content args are provided simultaneously | ERROR | `surveycore_error_setter_ambiguous` | `"x" = "Provide variable names via {.arg ...} or via {.arg variable}, not both.", "i" = "Use named {.arg ...} args, a named vector in {.arg ...}, or {.arg variable} + {.arg {content_arg}} — not a mix."` — message text is parameterized per calling function (see the dataset-level-metadata section). `set_dataset_metadata()` variant: `"x" = "Provide key names via {.arg ...} or via {.arg key}, not both.", "i" = "Use named {.arg ...} args, a named list in {.arg ...}, or {.arg key} + {.arg value} — not a mix."` / `extract_dataset_metadata()` variant (both `...` and `key` supplied): `"x" = "Provide key names via {.arg ...} or via {.arg key}, not both.", "i" = "Use named {.arg ...} args, a named list in {.arg ...}, or the {.arg key} argument — not a mix."` |
+| M-4 | all setters | Neither `...` nor `variable`/content args are provided | ERROR | `surveycore_error_setter_empty` | `"x" = "{.fn {fn_name}} requires at least one variable-label pair.", "v" = "Use named {.arg ...} args: {.code {fn_name}(x, age = 'Age in years')}."` — message text is parameterized per calling function (see the dataset-level-metadata section). `set_dataset_metadata()` variant: `"x" = "{.fn set_dataset_metadata} requires at least one key-value pair.", "v" = "Use named {.arg ...} args: {.code set_dataset_metadata(x, vendor = 'Ipsos')}."` / Four scalar-wrapper variant (`set_survey_name()`, `set_data_name()`, `set_vendor()`, `set_field_period()`), emitted by the wrapper itself with its own function and argument names: `"x" = "{.fn {fn_name}} requires a value for {.arg {arg_name}}.", "v" = "Supply a single character value, or {.code NULL} to delete the key."` / `set_field_dates()` variant: `"x" = "{.fn set_field_dates} requires at least one of {.arg field_start} or {.arg field_end}.", "v" = "Supply a single character value, or {.code NULL} to delete the key."` |
+| M-5 | all setters (convention 3) | `length(variable) != length(content)` | ERROR | `surveycore_error_setter_mismatched_lengths` | `"x" = "{.arg variable} has {length(variable)} element{?s} but {.arg {content_arg}} has {length(content)} element{?s}.", "i" = "They must be the same length (one content value per variable name)."` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders `key` and `value` in place of `variable` and `content`. |
 | M-6 | all extractors | `format` argument has an invalid value | ERROR | `surveycore_error_format_invalid` | `"x" = "{.fn {fn_name}} received an invalid {.arg format} value {.val {format}}.", "i" = "{.arg format} must be one of {.val {valid_formats}}."` |
 | M-10 | `set_missing_codes()` | A `codes` entry is not an atomic vector | ERROR | `surveycore_error_missing_codes_not_vector` | `"x" = "Missing codes for {.field {var_name}} must be an atomic vector, not {.cls {class(codes_entry)[[1L]]}}.", "i" = "Use a numeric, integer, or character vector (e.g., {.code c(Refused = 99L, {\"Don't know\"} = 98L)})."` |
 | M-11 | `set_var_label()` | Old positional NSE form detected | ERROR | `surveycore_error_old_positional_setter` | `"x" = "The old positional calling form {.code {fn_name}(x, var, content)} is no longer supported.", "i" = "The new unified setter uses named arguments.", "v" = "Use {.code {fn_name}(x, {var_name} = {.val {content_val}})} instead."` |
-| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` |
+| M-12 | all setters | `...` contains any unnamed element(s) — either all unnamed or a mix of named and unnamed | ERROR | `surveycore_error_setter_mixed_dots` | `"x" = "All {.arg ...} arguments must be named when using Convention 1.", "i" = "Got {sum(nzchar(names(dots)))} named and {sum(!nzchar(names(dots)))} unnamed element{?s}.", "v" = "Use {.code {fn_name}(x, age = 'Age', income = 'Annual income')} or a fully named vector."` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders its own examples and `a fully named list`. |
 | M-13 | scalar-content setters (`set_var_label`, `set_question_preface`, `set_var_note`, `set_universe`) | A content value is not a character scalar (wrong type or length > 1) | ERROR | `surveycore_error_label_not_scalar` | `"x" = "Label content for {.field {var_name}} must be a character scalar, not {.cls {class(val)[[1L]]}} of length {length(val)}.", "v" = "Pass a single character string, e.g. {.code {fn_name}(x, {var_name} = 'My label')}."` |
-| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` |
-| M-15 | all extractors, `extract_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` |
+| M-14 | all setters (convention 3) | `variable` argument is explicitly provided as `character(0)` (length 0) | WARN | `surveycore_warning_setter_empty_variables` | `"!" = "{.fn {fn_name}} was called with {.arg variable} of length 0.", "i" = "No metadata was set. Did you accidentally filter all variable names out?"` — message text is parameterized per calling function (see the dataset-level-metadata section); `set_dataset_metadata()` renders `{.arg key}` in place of `{.arg variable}` and `key names` in place of `variable names`. |
+| M-15 | all extractors, `extract_metadata()`, `extract_dataset_metadata()` | `fill` argument has an invalid value for this function | ERROR | `surveycore_error_fill_invalid` | `"x" = "{.fn {fn_name}} does not accept {.code fill = {.val {fill}}}.", "i" = "Valid values for {.fn {fn_name}}: {.val {valid_fill_values}}."` — the shared fill validator gains a widening parameter whose default keeps this two-value message byte-identical. `extract_dataset_metadata()` variant: `valid_fill_values` lists `NULL`, `NA`, and `NA_character_`. |
 | 88 | `as_survey()` | `fpc` selects more columns than `ids` stages | ERROR | `surveycore_error_fpc_too_many_stages` | `"x" = "{.arg fpc} selected {n_fpc} column(s) but {.arg ids} has only {n_ids} stage(s).", "i" = "FPC columns must correspond 1-to-1 with ID stages. Supply at most {n_ids} FPC column(s)."` |
 | 89 | `as_survey()` | `fpc` selects fewer columns than `ids` stages | WARN | `surveycore_warning_fpc_partial_stages` | `"!" = "{.arg fpc} has {n_fpc} column(s) but {.arg ids} has {n_ids} stage(s).", "i" = "Later stages assume sampling from an infinite population (no FPC)."` |
 | 90 | `as_survey()` | Stage-j FPC population size < stage-j cluster count within parent | ERROR | `surveycore_error_fpc_smaller_than_n` | `"x" = "Stage-{j} FPC column {.field {fpc_var}} has population sizes smaller than the observed cluster count in {n_bad} parent group(s).", "i" = "Population size must be >= the number of sampled units within each parent cluster."` |
@@ -364,11 +364,11 @@ Which test files cover which error table rows:
 
 | Test File | Error Rows Covered |
 |-----------|-------------------|
-| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b |
+| `test-constructors.R` | 1–24, 23b, 56–61, 88–91, 13b; DM-7a, DM-7b, DM-7c, DM-7d (constructor promotion — the four `surveycore_warning_dataset_metadata_dropped` message variants) |
 | `test-variance-twophase.R` | 63 |
 | `test-validators.R` | 27–35 |
 | `test-metadata-system.R` | 27–30, M-2/M-7, M-3–M-15 |
-| `test-s7-classes.R` | 31–35, 37–39 |
+| `test-s7-classes.R` | 31–35, 37–39; DM-1a, DM-2a, DM-3a, DM-4a, DM-5a, DM-6c (`survey_metadata` validator — Layer 1) |
 | `test-update-design.R` | 36 |
 | `test-analysis-helpers.R` | 45, 45a, 45b, 46 (direct unit tests on `.validate_shared_args()` and `.apply_decimals()`); 64 (`.check_unsupported_class()` and `.build_meta()` fallback); also integration-checked in per-function files |
 | `test-analysis-freqs.R` | 45, 45a, 45b, 46, 49, 50, 52, 53, 55 |
@@ -393,6 +393,7 @@ Which test files cover which error table rows:
 | `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded); M-16, M-17 (var-extension-slot) |
 | `test-calibration.R` | CAL-15, CAL-16 |
 | `test-analysis-methods-coef-vcov.R` | SCR-1, SCR-3, SCR-W1, SCR-W2, SCR-W3, SCR-W4 |
+| `test-dataset-metadata.R` | DM-1b, DM-2b, DM-3b, DM-4b, DM-5b, DM-6a, DM-6b, DM-8, DM-9; M-3, M-4, M-5, M-12, M-14, M-15 (dataset-metadata variants) |
 
 ### coef-vcov-methods rows (2026-06-22)
 
@@ -417,6 +418,75 @@ Which test files cover which error table rows:
 | DF-6 | `.svy_onestrat()` | stratum with one PSU + `lonely.psu = "fail"` | ERROR | `surveycore_error_lonely_psu` | `"Stratum {.val {stratum}} has only one PSU at stage {stage}."` |
 | DF-7 | `.svy_rep_var()` | all replicate thetas are `NA` | ERROR | `surveycore_error_all_replicates_na` | `"All replicates produced NA estimates."` |
 
+### dataset-level-metadata rows (2026-08-19)
+
+Layer 1 rows (the `survey_metadata` S7 validator) carry plain one-line text,
+not the CLI x/i/v register — the C1 / C4 / G1 precedent. Test them with
+`expect_error(class = ...)` plus `expect_error(regexp = ...)`; never with a
+snapshot. Layer 3 rows use the full CLI register and the dual test pattern.
+
+**Variable bindings.** `{key}` = the offending key name; `{value}` = the
+offending value; `{n_bad}` = count of unnamed or blank entries; `{dupes}` =
+the duplicated names; `{valid_keys}` = the six canonical key names;
+`{suggestion}` = the nearest valid key (bound only when the hint condition
+holds); `{expected}` = one of two fixed strings — `"a single non-NA character
+string"` (character keys) or `"a Date scalar or an ISO 8601 date string
+(YYYY-MM-DD)"` (date keys); `{start}` / `{end}` = the effective ISO-formatted
+dates.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| DM-1a | S7 validator (`survey_metadata`) — fires on direct construction and on `@<-` | An element of `@dataset_metadata` has no name, an `NA` name, or an empty name | ERROR | `surveycore_error_dataset_metadata_unnamed` | Layer 1, plain: `"All dataset metadata entries must have a non-empty name."` |
+| DM-1b | `set_dataset_metadata()` (Convention 3) | A key name is `NA` or `""` | ERROR | `surveycore_error_dataset_metadata_unnamed` | `"x" = "All dataset metadata keys must have a non-empty name.", "i" = "Found {n_bad} unnamed or blank-named entr{?y/ies}."` |
+| DM-2a | S7 validator (`survey_metadata`) | A key name is duplicated | ERROR | `surveycore_error_dataset_metadata_duplicate_key` | Layer 1, plain: `"Duplicate dataset metadata key(s): {dupes_txt}."` (`dupes_txt` is the duplicated names collapsed with `", "`) |
+| DM-2b | `set_dataset_metadata()` | A key name appears twice in one call (after the `dates` alias resolves) | ERROR | `surveycore_error_dataset_metadata_duplicate_key` | `"x" = "Duplicate dataset metadata key{?s}: {.val {dupes}}.", "i" = "Each key must appear exactly once."` |
+| DM-3a | S7 validator (`survey_metadata`) | A character key (`survey_name`, `data_name`, `vendor`, `field_period`) has the wrong type, length != 1, or is `NA`; or any element of `@dataset_metadata` is `NULL` | ERROR | `surveycore_error_dataset_metadata_bad_type` | Layer 1, plain: `"Dataset metadata key {key} must be a single non-NA character string."` |
+| DM-3b | `set_dataset_metadata()` and the four character-key wrappers (`set_survey_name()`, `set_data_name()`, `set_vendor()`, `set_field_period()`) | Same condition, raised at the setter by `.check_dataset_key_value(mode = "error")` | ERROR | `surveycore_error_dataset_metadata_bad_type` | `"x" = "Dataset metadata key {.val {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "v" = "Supply a single non-NA character value, or {.code NULL} to delete the key."` |
+| DM-4a | S7 validator (`survey_metadata`) | Both dates are present and `field_start` is after `field_end` | ERROR | `surveycore_error_field_dates_reversed` | Layer 1, plain: `"field_start is after field_end."` |
+| DM-4b | `set_dataset_metadata()`; `set_field_dates()` | Effective `field_start` is after effective `field_end` (three-way effective-pair rule) | ERROR | `surveycore_error_field_dates_reversed` | `"x" = "{.val field_start} ({start}) is after {.val field_end} ({end}).", "v" = "Swap the two dates, or correct the wrong one."` |
+| DM-5a | S7 validator (`survey_metadata`) | A stored key is not one of the six canonical keys | ERROR | `surveycore_error_dataset_key_unknown` | Layer 1, plain: `"Unknown dataset metadata key: {key}."` |
+| DM-5b | All six dataset-metadata setters and all six extractors | A supplied or requested key is not one of the six canonical keys | ERROR | `surveycore_error_dataset_key_unknown` | `"x" = "{.val {key}} is not a dataset metadata key.", "i" = "Valid keys: {.val {valid_keys}}."` — plus, when the lowercased key is within Levenshtein distance 1 of a valid key: `"i" = "Did you mean {.val {suggestion}}?"` — plus, when the key is `dates` with a non-`NULL` value: `"i" = "The legacy {.val dates} attribute maps to {.val field_period}.", "v" = "Use {.fn set_field_period}, or {.code dates = NULL} to delete."` |
+| DM-6a | `set_dataset_metadata()` only (shared checker with `key_style = "val"`; the wrappers pre-validate, so a delegated date value is already a `Date`) | A `field_start` / `field_end` value fails `.coerce_field_date()` | ERROR | `surveycore_error_field_date_invalid` | `"x" = "{.val {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "i" = "Got {.val {value}}."` — plus, when the value is `NA`: `"i" = "The value is NA."` |
+| DM-6b | `set_field_dates()` (shared checker with `key_style = "arg"` and the wrapper's own `call`) | Same condition, naming the function's own argument | ERROR | `surveycore_error_field_date_invalid` | `"x" = "{.arg {key}} must be {expected}, not {.cls {class(value)[[1L]]}} of length {length(value)}.", "i" = "Got {.val {value}}."` — same NA bullet. (`{key}` is `field_start` or `field_end`, which is both the key and the argument name.) |
+| DM-6c | S7 validator (`survey_metadata`) | A date key's stored value is not a non-`NA` `Date` of length 1 (the validator accepts stored values only, so an ISO string is rejected here) | ERROR | `surveycore_error_field_date_invalid` | Layer 1, plain: `"Dataset metadata key {key} must be a Date scalar."` |
+| DM-7a | Constructor promotion (`as_survey()`, `as_survey_replicate()`, `as_survey_nonprob()`) via `.promote_dataset_metadata()` | One of the six canonical whole-frame attributes has a wrong-typed, `NA`, unparseable, or length > 1 value; the key is skipped and construction proceeds | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attribute {.field {key}} has an invalid value and was not promoted.", "i" = "Expected {expected}; got {.cls {class(value)[[1L]]}} of length {length(value)}.", "v" = "Fix the attribute on the data frame, or set the key later with {.fn set_dataset_metadata}."` |
+| DM-7b | Constructor promotion | One of the six canonical whole-frame attributes has a zero-length value; the key is skipped. Loss is signalled, never silent — only an ABSENT attribute is skipped silently | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attribute {.field {key}} has a zero-length value and was not promoted.", "v" = "Set a single non-NA value, or remove the attribute."` |
+| DM-7c | Constructor promotion | After per-key coercion both dates are present and `field_start` is after `field_end`; BOTH date keys are dropped with ONE warning (the validator would reject the pair, so promotion must not write it) | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Dataset attributes {.field field_start} and {.field field_end} are reversed ({start} is after {end}); neither was promoted.", "v" = "Correct the dates on the data frame, or set them later with {.fn set_field_dates}."` |
+| DM-7d | Constructor promotion | The legacy `dates` attribute has ANY invalid value (wrong type, zero-length, or length > 1); the key is skipped. Takes precedence over DM-7a and DM-7b for the `dates` name, so the remedy points at `field_period` rather than at the rejected legacy name | WARN | `surveycore_warning_dataset_metadata_dropped` | `"!" = "Legacy dataset attribute {.field dates} has an invalid value and was not promoted to {.val field_period}.", "v" = "Set the period with {.fn set_field_period}."` |
+| DM-8 | All six dataset-metadata setters | The survey object was restored from a file written by surveycore <= 1.1.0, so its stored class lacks the `dataset_metadata` property | ERROR | `surveycore_error_dataset_metadata_unavailable` | `"x" = "This object cannot store dataset metadata.", "i" = "It was created by surveycore <= 1.1.0, before the {.field dataset_metadata} property existed.", "v" = "Rebuild the object with {.fn as_survey} (or the matching constructor), then set the metadata."` |
+| DM-9 | `extract_dataset_metadata()` | A `...` element is a call, including a tidyselect helper such as `all_of()` | ERROR | `surveycore_error_dataset_key_not_name` | `"x" = "{.arg ...} must contain bare key names or strings.", "i" = "Tidy-select helpers do not apply here: a dataset metadata key is not a column.", "v" = "Use bare names ({.code vendor}), strings ({.val vendor}), or the {.arg key} argument."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Rows M-3 (`surveycore_error_setter_ambiguous`), M-4
+  (`surveycore_error_setter_empty`), M-5
+  (`surveycore_error_setter_mismatched_lengths`), M-12
+  (`surveycore_error_setter_mixed_dots`), and M-14
+  (`surveycore_warning_setter_empty_variables`): the message text of these
+  five convention classes is parameterized per calling function.
+  `.parse_setter_input()` gains `name_arg_name`, `pair_noun`,
+  `example_pairs`, and `container_noun`, whose defaults render the canonical
+  templates byte-identically. `set_dataset_metadata()` passes
+  `name_arg_name = "key"`, `pair_noun = "key-value"`,
+  `container_noun = "list"`, and its own `example_pairs`, so its messages read
+  `key` / `key-value` / `a named list in ...` in place of `variable` /
+  `variable-label` / `a named vector in ...`. The seven per-variable setters
+  keep their 1.1.0 text unchanged.
+- Row M-4 also carries two wrapper-level variants, stated on the row itself:
+  the four scalar convenience setters and `set_field_dates()` emit their own
+  `surveycore_error_setter_empty` message naming the calling function and its
+  missing argument, not the general key-value template.
+- Row M-3 also carries an `extract_dataset_metadata()` variant, stated on the
+  row itself: both `...` and `key` supplied.
+- Row M-15 (`surveycore_error_fill_invalid`): the shared fill validator gains
+  a widening parameter. Its default keeps the existing extractors' two-value
+  message byte-identical; `extract_dataset_metadata()` passes the widened
+  mode, whose message lists `NULL`, `NA`, and `NA_character_` as valid.
+
+The construction-promotion warning class
+(`surveycore_warning_dataset_metadata_dropped`) and its message variants land
+with the promotion PR.
+
 ### var-extension-slot rows (2026-08-27)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
@@ -424,4 +494,4 @@ Which test files cover which error table rows:
 | M-16 | `set_var_extra()` | A value passed for one variable is non-`NULL` and is not a list, OR is a non-empty list whose top-level names are missing, empty-string, or duplicated | ERROR | `surveycore_error_var_extra_not_list` | `"x" = "Extension slot content for {.field {var_name}} must be a list or {.code NULL}, not {.cls {class(content)[[1L]]}}.", "i" = "surveycore stores {.arg extra} as-is and does not validate its values, but every top-level entry must be named.", "v" = "Pass a named list, e.g. {.code set_var_extra(x, {var_name} = list(role = \"free_text\"))}."` |
 | M-17 | `set_var_extra()` | Convention 3, exactly one variable, and `extra` itself is a named list of length 1 (payload not wrapped in an outer list) | ERROR | `surveycore_error_var_extra_ambiguous_wrap` | `"x" = "{.arg extra} for a single variable must be wrapped in an outer list.", "i" = "{.code extra = list(role = \"free_text\")} is ambiguous with a length-1 outer list.", "v" = "Use {.code extra = list(list(role = \"free_text\"))} instead."` |
 
-`set_var_extra()` and `extract_var_extra()` otherwise reuse the shared unified-setter/extractor error and warning classes already in this table: `surveycore_error_setter_ambiguous` (M-3), `surveycore_error_setter_empty` (M-4), `surveycore_error_setter_mismatched_lengths` (M-5), `surveycore_error_format_invalid` (M-6), `surveycore_warning_var_not_found` (M-2/M-7), `surveycore_error_setter_mixed_dots` (M-12), `surveycore_warning_setter_empty_variables` (M-14), `surveycore_error_fill_invalid` (M-15), and `surveycore_error_not_survey_or_df` (row 78).
+`set_var_extra()` and `extract_var_extra()` otherwise reuse the shared unified-setter/extractor error and warning classes already in this table: `surveycore_error_setter_ambiguous` (M-3), `surveycore_error_setter_empty` (M-4), `surveycore_error_setter_mismatched_lengths` (M-5), `surveycore_error_format_invalid` (M-6), `surveycore_warning_var_not_found` (M-2/M-7), `surveycore_error_setter_mixed_dots` (M-12), `surveycore_warning_setter_empty_variables` (M-14), `surveycore_error_fill_invalid` (M-15), and `surveycore_error_not_survey_or_df` (row 78). Per the dataset-level-metadata update above, these reused classes are now parameterized in `.parse_setter_input()` (`name_arg_name`, `pair_noun`, `example_pairs`, `container_noun`); the seven per-variable setters — including `set_var_extra()` — keep the pre-parameterization defaults, so their message text is unchanged.

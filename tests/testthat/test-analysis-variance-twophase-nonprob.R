@@ -72,7 +72,6 @@ test_that("get_variance() twophase full matches survey::svyvar on pbc [oracle]",
     subset = in_ph2,
     method = "full"
   )
-  test_invariants(d_sc)
 
   d_sv <- survey::twophase(
     id = list(~1, ~1),
@@ -108,7 +107,6 @@ test_that("get_variance() twophase n reflects Phase 2 sample size", {
 
   ph1_sc <- as_survey(pbc_ph1, ids = row_id, weights = wt)
   d_sc <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
-  test_invariants(d_sc)
 
   sc_est <- get_variance(d_sc, chol, variance = "se")
 
@@ -169,7 +167,6 @@ test_that("get_variance() nonprob excludes zero-weight rows from n and mean", {
   df_inj <- df_pos
   df_inj$w[zero_idx] <- 0
   d <- S7::set_props(d, data = df_inj)
-  test_invariants(d)
 
   # Oracle: pre-filter zero-weight rows, then run svyvar on svydesign(ids=~1)
   df_keep <- df_inj[df_inj$w > 0, , drop = FALSE]
@@ -208,7 +205,6 @@ test_that("get_variance() twophase returns survey_variance tibble", {
 
   ph1_sc <- as_survey(pbc_ph1, ids = row_id, weights = wt)
   d <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
-  test_invariants(d)
 
   sc <- get_variance(d, chol)
   expect_s3_class(sc, "survey_variance")
@@ -222,7 +218,6 @@ test_that("get_variance() nonprob returns survey_variance tibble", {
   set.seed(301L)
   df <- data.frame(y = rnorm(100L), w = runif(100L, 0.5, 2))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
 
   sc <- get_variance(d, y)
   expect_s3_class(sc, "survey_variance")

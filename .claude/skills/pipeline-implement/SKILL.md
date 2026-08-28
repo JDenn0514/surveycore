@@ -20,7 +20,8 @@ After `pipeline-spec` has advanced the request to SPEC_READY. Before any code is
 ## Preconditions
 
 - Current state = SPEC_READY
-- `spec.md`, `test-spec.md` exist and are copied into `plans/`
+- `spec.md` and `test-spec.md` exist in the run directory, with copies in
+  `plans/` (`spec-{slug}.md`, `test-spec-{slug}.md` — made at SPEC_READY)
 - Any HOLDs from spec phase are resolved
 
 ## Stage routing
@@ -32,7 +33,7 @@ After `pipeline-spec` has advanced the request to SPEC_READY. Before any code is
 | 3 | Resolve findings | updated plan | DRAFT (loop) |
 | 4 | Freeze & advance | status → PLAN_READY | PLAN_READY |
 
-## Stage Routing (user prompt)
+## Stage selection (user prompt)
 
 Determine which stage the user wants from context (current `status.md` state,
 what they just said, what artifacts exist). If unclear:
@@ -43,10 +44,12 @@ header: "Stage"
 options:
   - label: "Stage 1 — Draft the plan"
     description: "Write the PR map from the finalized spec."
-  - label: "Stage 2 — Adversarial review"
+  - label: "Stage 2 — Plan review (5 lenses)"
     description: "Full batch pass over the plan; saves issues to plan-review.md."
-  - label: "Stage 3 — Resolve issues"
+  - label: "Stage 3 — Resolve findings"
     description: "Work through issues and log decisions."
+  - label: "Stage 4 — Freeze & advance"
+    description: "Copy the plan to plans/ and mark PLAN_READY (requires plan-review PASS)."
 ```
 
 Then jump directly to that stage.
@@ -60,6 +63,21 @@ Dispatch `planner`:
 > - Acceptance criteria are observable outcomes (test names, metric values), not implementation hints
 > - Write surfaces of concurrent PRs do not overlap
 
+## Review-loop budget (applies to Stages 2 and 3)
+
+Measured cost of unbounded loops: one feature ran 7 review passes (~$300
+API-equivalent). These rules cap the loop:
+
+1. **Maximum 3 passes** per review stage. If findings remain open after
+   pass 3, HOLD — ask the user instead of running pass 4.
+2. **Pass 1 is the only full-panel pass** (all lenses, whole document).
+3. **Passes 2+ are delta passes**: at most 2 Explore agents. They review
+   ONLY the sections changed by the resolver (the resolver lists changed
+   section headings at the top of its response) plus the specific findings
+   they verify. They do not re-read the whole document.
+4. **Early exit**: a pass whose findings require no change to the artifact
+   ends the loop — the verdict is PASS.
+
 ## Stage 2 — Plan review
 
 Dispatch 5 Explore subagents in parallel:
@@ -70,19 +88,23 @@ Dispatch 5 Explore subagents in parallel:
 4. **Spec Coverage lens** — does the union of all PR acceptance criteria cover every item in `spec.md §Function contracts`? Are any contract items unscheduled?
 5. **File Completeness lens** — does the union of all write surfaces include every file implied by the spec (source, tests, NAMESPACE, man/, NEWS.md)? Are any files missing?
 
-Aggregate into `plan-review.md` with verdict PASS / BLOCK / HOLD (same rules as spec review).
+Pass `model: "sonnet"` on every lens dispatch — lens agents scan a document against one named criterion and do not need the session model.
+
+Aggregate into `plan-review.md` with verdict PASS / FAIL / NEEDS-DECISION per
+`.claude/skills/pipeline-shared/references/signals.md §Review verdicts`.
 
 ## Stage 3 — Resolve
 
-BIG mode (>8 findings) or SMALL mode (≤8). Same routing as pipeline-spec Stage 3r.
+BIG mode (>8 findings) or SMALL mode (≤8), per
+`.claude/skills/spec-workflow/references/stage-4-resolve.md`.
 
-Loop until plan-review.md verdict=PASS.
+Loop until plan-review.md verdict=PASS. Respect the Review-loop budget above.
 
 ## Stage 4 — Freeze
 
 On PASS:
 
-1. Copy `implementation-plan.md` from workspace into `plans/implementation-plan-{slug}.md` (slug only — no date prefix)
+1. Copy `implementation-plan.md` from workspace into `plans/implementation-plan-{slug}.md` (slug only — no date prefix), and refresh `plans/decisions-{slug}.md`
 2. Append `PLAN_READY` to `status.md`
 3. Return to user with summary (PR count, estimated shipping sequence) and next step (`pipeline-ship`)
 
@@ -96,11 +118,14 @@ On PASS:
 
 ## Signal handling
 
-- **HOLD** from planner or any lens → AskUserQuestion, resolve, resume
-- Never BLOCK or STOP here (those are pipeline-ship signals)
+- **HOLD** from planner, or a NEEDS-DECISION verdict → AskUserQuestion,
+  resolve, resume
+- Never BLOCK or STOP here (those are pipeline-ship execution signals; plan
+  reviews use FAIL)
 
 ## References
 
-- `skills/pipeline-shared/references/state-model.md`
-- `skills/pipeline-shared/references/artifact-schemas.md`
+- `.claude/skills/pipeline-shared/references/state-model.md`
+- `.claude/skills/pipeline-shared/references/signals.md`
+- `.claude/skills/pipeline-shared/references/artifact-schemas.md`
 - `.claude/agents/planner.md`

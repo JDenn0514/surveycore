@@ -62,10 +62,10 @@ Default to Full when the smallness test is ambiguous.
 ## State chain
 
 ```
-NEW → PLANNED → PIPELINES_COMPLETE → REVIEW_PASSED → DONE
+NEW → PLANNED → DONE
 ```
 
-See `pipeline-shared/references/state-model.md §Simplified workflow`.
+See `.claude/skills/pipeline-shared/references/state-model.md §Simplified workflow`.
 
 ## Step 1 — Planned (planner-lite)
 
@@ -77,6 +77,12 @@ Dispatch `planner` with simplified prompt:
 > - Affected files (the write surface, ≤3)
 > - Expected validation outcome (which tests should still pass, which new assertion)
 > Do NOT write spec.md, test-spec.md, or implementation-plan.md. Do NOT run comprehension protocol.
+
+**In the same turn as the planner dispatch**, start the baseline capture in
+the background (the tree is still clean — builder has not run):
+`bash .claude/scripts/run-gates.sh {workspace-run-dir}/logs-baseline --baseline`
+with `run_in_background: true`. Its summary is the tester's Before column.
+Do not wait for it here; collect the result before dispatching the tester.
 
 On return, verify `request.md` has all four sections. Append `PLANNED` to `status.md`.
 
@@ -90,7 +96,7 @@ Dispatch `builder` agent WITHOUT worktree isolation (small change; overhead not 
 > Request: {path to request.md}
 > Write surface: {files from request.md}
 > Acceptance criteria: {from request.md}
-> Read: .claude/agents/builder.md, .claude/rules/, r-package-profile.md (§Builder compliance rules only)
+> Read: .claude/agents/builder.md, r-package-profile.md (§Builder compliance rules only). Rules auto-load — do not re-read .claude/rules/.
 > Exception: you MAY read test code in tests/testthat/ in case you need to update a test alongside the code. Pipeline isolation is relaxed for simplified workflow.
 
 Builder implements, updates docs if needed, writes `implementation.md`.
@@ -101,22 +107,22 @@ Dispatch `tester` agent:
 
 > Simplified workflow.
 > Request: {path to request.md with acceptance criteria}
+> Baseline results: {summary from the background baseline capture}
 > Read: .claude/agents/tester.md, r-package-profile.md
 > Validate that:
 > 1. Each acceptance criterion from request.md holds
-> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgcheck, pkgdown if in scope, covr)
+> 2. All profile gates pass (devtools::test, run_examples, R CMD check --as-cran, pkgdown if in scope, covr)
 > 3. CRAN cookbook scan is clean on the modified files
 > 4. No regression in tests that were passing before the PR
 > Write audit.md with verdict PASS or BLOCK.
 > Exception: pipeline isolation relaxed — you may infer acceptance criteria from context.
 
-BLOCK routing: re-dispatch builder with the BLOCK body. Max 3 cycles. On 4th BLOCK, escalate (see below).
+BLOCK routing: re-dispatch builder with the BLOCK body. Cycle limit: signals.md §BLOCK (the 3rd BLOCK escalates — see below).
 
 ### 2c. Advance
 
-With audit verdict=PASS:
-- Append `PIPELINES_COMPLETE` to `status.md`
-- Append `REVIEW_PASSED` to `status.md` (tester is the quality gate; no separate reviewer in simplified mode)
+With audit verdict=PASS, proceed to Step 3 (tester is the quality gate; no
+separate reviewer in simplified mode).
 
 ## Step 3 — Ship
 
@@ -131,7 +137,7 @@ Append `DONE` to `status.md`.
 If AT ANY POINT:
 
 - Builder emits HOLD more than once (spec ambiguity on what was supposed to be a small change)
-- Tester emits BLOCK more than twice on the same issue
+- Tester emits a 3rd BLOCK on the same issue
 - The change turns out to affect more than 3 files
 - A CRAN cookbook violation is found that requires design-level change (not just syntax)
 - Acceptance criteria turn out to depend on methodology the user didn't describe
@@ -139,7 +145,7 @@ If AT ANY POINT:
 Leader MUST escalate:
 
 1. Dispatch `planner` with full-workflow prompt: comprehension (if now applicable), `spec.md`, `test-spec.md`
-2. Transition state to COMPREHENDED (or DRAFT for non-methods)
+2. Transition state to COMPREHENDED (auto-entered for non-methods requests)
 3. Continue from `pipeline-spec` Stage 1 onward
 4. Append to `status.md`: `ESCALATED — {reason}`
 
@@ -148,7 +154,7 @@ Preserve all work done so far. The partial implementation in the working tree ma
 ## Signal handling
 
 - **HOLD** — any agent. Pause, AskUserQuestion, resolve, resume OR escalate if resolution suggests full workflow is needed.
-- **BLOCK** — tester only. Max 3 cycles; on 4th, escalate.
+- **BLOCK** — tester only in simplified mode. Cycle limit per signals.md §BLOCK; the 3rd BLOCK escalates to full workflow.
 - **STOP** — not valid in simplified mode (no reviewer). If tester finds something STOP-worthy (e.g., coverage dropped below 95% on new code), that's an ESCALATION trigger, not a STOP.
 
 ## Workspace layout
@@ -180,8 +186,8 @@ No `spec.md`, no `test-spec.md`, no `comprehension.md`, no `implementation-plan.
 
 ## References
 
-- `skills/pipeline-shared/references/state-model.md` §Simplified workflow
-- `skills/pipeline-shared/references/signals.md`
-- `skills/pipeline-shared/references/pipeline-isolation.md` §Simplified workflow exception
-- `skills/pipeline-shared/references/r-package-profile.md`
+- `.claude/skills/pipeline-shared/references/state-model.md` §Simplified workflow
+- `.claude/skills/pipeline-shared/references/signals.md`
+- `.claude/skills/pipeline-shared/references/pipeline-isolation.md` §Simplified workflow exception
+- `.claude/skills/pipeline-shared/references/r-package-profile.md`
 - `.claude/agents/planner.md`, `builder.md`, `tester.md`, `shipper.md`

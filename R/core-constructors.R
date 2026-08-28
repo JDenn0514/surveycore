@@ -546,6 +546,7 @@ as_survey <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Validate calibration argument ──────────────────────────────────────────
 
@@ -803,6 +804,7 @@ as_survey_replicate <- function(
 
   metadata <- .extract_haven_metadata(data)
   metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Validate calibration argument ──────────────────────────────────────────
 
@@ -1382,6 +1384,10 @@ as_survey_nonprob <- function(
   # ── Extract haven metadata ──────────────────────────────────────────────────
 
   metadata <- .extract_haven_metadata(data)
+  # This branch promoted neither attribute before 1.2.0, unlike as_survey() and
+  # as_survey_replicate(). Both promotions run here now.
+  metadata <- .promote_weighting_history(data, metadata)
+  metadata <- .promote_dataset_metadata(data, metadata)
 
   # ── Resolve repweights (optional) ──────────────────────────────────────────
 

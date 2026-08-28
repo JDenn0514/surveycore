@@ -44,9 +44,9 @@ if (requireNamespace("survey", quietly = TRUE)) {
 \seealso{
 \code{\link[=as_svydesign]{as_svydesign()}} to convert in the other direction
 
-Other conversion: 
-\code{\link{as_svydesign}()},
-\code{\link{as_tbl_svy}()},
-\code{\link{from_tbl_svy}()}
+Other conversion:
+\code{\link[=as_svydesign]{as_svydesign()}},
+\code{\link[=as_tbl_svy]{as_tbl_svy()}},
+\code{\link[=from_tbl_svy]{from_tbl_svy()}}
 }
 \concept{conversion}

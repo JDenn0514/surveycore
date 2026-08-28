@@ -108,8 +108,8 @@ re-run `devtools::test()` + `devtools::check()`.
 - [ ] No `UseMethod()` on S7 objects — uses `S7::S7_inherits()` instead
 - [ ] `class=` on every `cli_abort()` and `cli_warn()` call
 - [ ] No `@importFrom` anywhere — all external calls use `::`
-- [ ] `test_invariants(design)` is the first assertion in every constructor
-      test block
+- [ ] `test_invariants(design)` called once per constructor per test FILE,
+      not in every constructing block
 - [ ] Dual pattern (`class=` + snapshot) on all Layer 3 errors
 
 ---
@@ -142,7 +142,7 @@ on develop after the merge.
 git commit -m "$(cat <<'EOF'
 feat(scope): short description
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <trailer from session guidance>
 EOF
 )"
 ```

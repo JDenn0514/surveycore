@@ -43,7 +43,6 @@ test_that(".degf() returns Inf for survey_nonprob WITH repweights", {
     weights = wt,
     repweights = starts_with("repwt_")
   )
-  test_invariants(d)
   expect_equal(.degf(d), Inf)
 })
 

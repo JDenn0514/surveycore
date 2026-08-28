@@ -28,7 +28,7 @@ Every `.md` artifact in the workspace follows a fixed schema. Orchestrating skil
 - New dependencies: {list or "none"}
 - CRAN-relevant: {yes/no — DESCRIPTION change, export change, new vignette}
 
-## Smallness test (see pipeline-simplified/references/smallness-test.md)
+## Smallness test (criteria: pipeline-simplified/SKILL.md §Smallness criteria)
 - Result: eligible-simplified | full-required
 - Rationale: {one sentence}
 ```
@@ -108,7 +108,8 @@ No test cases. No tolerances. No references to test-spec.md.
 - **Happy path**: {scenario, dataset, oracle call, tolerance}
 - **Error paths**: one row per named error class
 - **Edge cases**: one row per edge case from spec
-- **Invariants**: `test_invariants(design)` first assertion
+- **Invariants**: `test_invariants(design)` once per constructor per file
+- **Input modes**: name a mode per row only where the mode changes the answer
 
 ## Tolerances
 - Point estimates: 1e-10
@@ -121,7 +122,6 @@ No test cases. No tolerances. No references to test-spec.md.
 - [ ] devtools::test() all pass
 - [ ] devtools::run_examples() all pass
 - [ ] R CMD check --as-cran (0 err, 0 warn, notes reviewed)
-- [ ] pkgcheck PASS
 - [ ] pkgdown::build_site() clean
 - [ ] covr::package_coverage() ≥ 95% (target 98%)
 - [ ] CRAN cookbook scan clean (see r-package-profile.md)
@@ -196,10 +196,11 @@ Builder does NOT write about test results here. Builder's local unit tests run; 
 |---|---|---|
 | devtools::test() | PASS/FAIL | {summary} |
 | R CMD check --as-cran | PASS/FAIL | {errors, warnings, notes} |
-| pkgcheck | PASS/FAIL | {standards violated} |
 | pkgdown | PASS/FAIL | {errored pages} |
 | covr | {%} | {drop vs baseline} |
 | CRAN cookbook scan | PASS/FAIL | {violations} |
+
+Tree: {git tree hash at gate time — `git rev-parse 'HEAD^{tree}'`}
 
 ## BLOCKs (if any)
 (See signals.md BLOCK schema)
@@ -270,9 +271,7 @@ Example:
 2026-04-21T14:38:00Z  COMPREHENDED  (no methods — auto)
 2026-04-21T15:10:22Z  SPEC_READY    (spec-review PASS)
 2026-04-21T15:45:03Z  PLAN_READY    (plan-review PASS)
-2026-04-21T17:22:18Z  PIPELINES_COMPLETE  (PR 1, PR 2 audits PASS)
-2026-04-21T17:30:44Z  REVIEW_PASSED
-2026-04-21T17:55:00Z  DONE
+2026-04-21T17:55:00Z  DONE          (PR 1, PR 2 merged)
 ```
 
 ## `decisions.md`

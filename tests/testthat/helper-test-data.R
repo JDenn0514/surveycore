@@ -11,6 +11,333 @@
 # devtools::test() / devtools::load_all().
 
 # ------------------------------------------------------------------------------
+# full_keys - dataset-level metadata fixture
+# ------------------------------------------------------------------------------
+
+# The six valid @dataset_metadata keys, in canonical order, each holding a
+# valid value. This is the single definition of the fixture; every test that
+# needs a complete dataset-metadata list uses it, and names(full_keys) is the
+# canonical key order.
+full_keys <- list(
+  survey_name = "Antisemitic Attitudes in America 2026",
+  data_name = "AAA Ipsos (February-March 2026)",
+  vendor = "Ipsos KnowledgePanel Omnibus",
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04"),
+  field_period = "February-March 2026"
+)
+
+# ------------------------------------------------------------------------------
+# make_dataset_df()
+# ------------------------------------------------------------------------------
+
+#' Build a plain data frame carrying whole-frame dataset-metadata attributes
+#'
+#' Returns a synthetic survey data frame with one whole-object attribute per
+#' element of `keys`. This is the read-path fixture for the data-frame mode of
+#' the dataset-metadata extractors: it attaches raw attributes with bare
+#' `attr()<-`, so a test can inject any value — valid, invalid, zero-length,
+#' or the legacy `dates` name — without going through a setter.
+#'
+#' Attributes are attached AFTER the frame is built, because base subsetting
+#' and `as_tibble()` drop whole-object attributes.
+#'
+#' @param keys A named list. One attribute per element, named by the attribute
+#'   name. Defaults to `full_keys` (the six canonical keys, canonical order).
+#'   A `NULL` element attaches nothing, so omitting a key and giving it `NULL`
+#'   are the same thing.
+#' @param n    Rows in the frame. Default 20.
+#' @param seed Random seed passed to `make_survey_data()`. Default 42.
+#' @return A plain `data.frame` with the requested attributes attached.
+#' @keywords internal
+make_dataset_df <- function(keys = full_keys, n = 20L, seed = 42L) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  for (nm in names(keys)) {
+    attr(df, nm) <- keys[[nm]]
+  }
+  df
+}
+
+# ------------------------------------------------------------------------------
+# make_stale_metadata_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design whose metadata object predates @dataset_metadata
+#'
+#' Simulates an object restored from a `.rds`/`.rda` file written by
+#' surveycore <= 1.1.0. Such an object carries a frozen copy of the old S7
+#' class, so `x@metadata@dataset_metadata` raises S7's "Can't find property"
+#' error rather than returning a value.
+#'
+#' The simulation removes `dataset_metadata` from the frozen class copy stored
+#' in the metadata object's `S7_class` attribute, and removes the matching
+#' property attribute. It then re-attaches the stripped metadata object with
+#' `attr()<-` rather than `@<-`, because `@<-` would re-validate and restore
+#' the current class.
+#'
+#' @param design One of "taylor", "replicate", "twophase", or "nonprob". All
+#'   four are supported so every print, summary, and extractor path can be
+#'   exercised against a stale object of its own class.
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class whose `@metadata`
+#'   lacks the `dataset_metadata` property.
+#' @keywords internal
+make_stale_metadata_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+
+  d <- switch(
+    design,
+    "taylor" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+    },
+    "replicate" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "replicate",
+        type = "brr",
+        seed = seed
+      )
+      repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "BRR"
+      )
+    },
+    "twophase" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "twophase",
+        seed = seed
+      )
+      phase1 <- as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      )
+      as_survey_twophase(phase1, subset = subset, method = "approx")
+    },
+    "nonprob" = {
+      df <- make_survey_data(
+        n = 100L,
+        n_psu = 10L,
+        n_strata = 2L,
+        design = "taylor",
+        seed = seed
+      )
+      as_survey_nonprob(df, weights = wt)
+    }
+  )
+
+  md <- d@metadata
+  old_class <- attr(md, "S7_class")
+  old_props <- attr(old_class, "properties")
+  old_props$dataset_metadata <- NULL
+  attr(old_class, "properties") <- old_props
+  attr(md, "dataset_metadata") <- NULL
+  attr(md, "S7_class") <- old_class
+  attr(d, "metadata") <- md
+
+  d
+}
+
+# ------------------------------------------------------------------------------
+# make_dataset_design()
+# ------------------------------------------------------------------------------
+
+#' Build a survey design carrying dataset-level metadata
+#'
+#' Returns a survey design object of the requested class whose
+#' `@dataset_metadata` holds the requested state. State is applied with
+#' `set_dataset_metadata()` on the CONSTRUCTED design, never with whole-frame
+#' attributes on the input data: attribute promotion is a separate contract, and
+#' a fixture that seeded state through attributes would silently test it.
+#'
+#' `state` values. The two single-key states are drawn from `full_keys` the
+#' same way, and they are independent of each other: `data_name` and
+#' `survey_name` are separate keys, so neither state implies the other.
+#' \describe{
+#'   \item{`"none"`}{Nothing set. `@dataset_metadata` is `list()`.}
+#'   \item{`"data_name"`}{`data_name` alone — a one-key case with no
+#'     `survey_name`.}
+#'   \item{`"survey_name"`}{`survey_name` alone — a one-key case with no
+#'     `data_name`.}
+#'   \item{`"full"`}{All six canonical keys, from `full_keys`.}
+#'   \item{`"partial"`}{`data_name`, `vendor`, `field_start`, and
+#'     `field_period` — no `survey_name` and only one of the two dates.}
+#' }
+#'
+#' @param design One of "taylor", "replicate", "twophase", "nonprob", or
+#'   "nonprob_rep". All five are supported so every design class, including a
+#'   nonprob design with replicate weights, can be exercised.
+#' @param state  One of "none", "data_name", "survey_name", "full", or
+#'   "partial".
+#' @param seed   Random seed. Default 42.
+#' @return A survey design object of the requested class.
+#' @keywords internal
+make_dataset_design <- function(
+  design = c("taylor", "replicate", "twophase", "nonprob", "nonprob_rep"),
+  state = c("none", "data_name", "survey_name", "full", "partial"),
+  seed = 42L
+) {
+  design <- match.arg(design)
+  state <- match.arg(state)
+
+  df_design <- switch(
+    design,
+    "replicate" = "replicate",
+    "twophase" = "twophase",
+    "taylor"
+  )
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = df_design,
+    type = "brr",
+    seed = seed
+  )
+
+  d <- switch(
+    design,
+    "taylor" = as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    "replicate" = as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(grep("^repwt_", names(df), value = TRUE)),
+      type = "BRR"
+    ),
+    "twophase" = as_survey_twophase(
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      ),
+      subset = subset,
+      method = "approx"
+    ),
+    "nonprob" = as_survey_nonprob(df, weights = wt),
+    "nonprob_rep" = {
+      df$rw1 <- df$wt * 1.02
+      df$rw2 <- df$wt * 0.98
+      df$rw3 <- df$wt * 1.01
+      as_survey_nonprob(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(c("rw1", "rw2", "rw3")),
+        type = "bootstrap"
+      )
+    }
+  )
+
+  keys <- switch(
+    state,
+    "none" = NULL,
+    "data_name" = full_keys["data_name"],
+    "survey_name" = full_keys["survey_name"],
+    "full" = full_keys,
+    "partial" = full_keys[c(
+      "data_name",
+      "vendor",
+      "field_start",
+      "field_period"
+    )]
+  )
+  if (!is.null(keys)) {
+    d <- set_dataset_metadata(d, !!!keys)
+  }
+
+  d
+}
+
+# ------------------------------------------------------------------------------
+# expect_dataset_roundtrip()
+# ------------------------------------------------------------------------------
+
+#' Assert that dataset metadata survives the setter-to-constructor round trip
+#'
+#' Applies `keys` to a plain data frame with `set_dataset_metadata()`, builds a
+#' taylor design from that frame, and asserts that
+#' `extract_dataset_metadata()` returns `expected` — the same keys and values,
+#' in canonical order.
+#'
+#' This is the one assertion for the whole documented round trip
+#' `set_dataset_metadata(df, ...)` -> `as_survey(df, ...)` ->
+#' `extract_dataset_metadata(d)`. State is applied through the SETTER, never
+#' with a bare `attr()<-` write, so the frame carries exactly the attributes
+#' the public write path produces.
+#'
+#' `expected` defaults to `keys` and differs only when the setter coerces on
+#' the way in — an ISO 8601 date string is stored as a `Date`, so a caller that
+#' passes a string must pass the `Date` it expects back.
+#'
+#' @param keys     A named list of dataset metadata keys and values.
+#' @param expected The list `extract_dataset_metadata()` must return. Defaults
+#'   to `keys`.
+#' @param n        Rows in the frame. Default 20.
+#' @param seed     Random seed passed to `make_survey_data()`. Default 42.
+#' @return The constructed design, invisibly, so a caller can make further
+#'   assertions about it.
+#' @keywords internal
+expect_dataset_roundtrip <- function(
+  keys,
+  expected = keys,
+  n = 20L,
+  seed = 42L
+) {
+  df <- make_survey_data(n = n, n_psu = 6L, n_strata = 2L, seed = seed)
+  df <- set_dataset_metadata(df, !!!keys)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  test_invariants(d)
+  testthat::expect_identical(extract_dataset_metadata(d), expected)
+
+  invisible(d)
+}
+
+# ------------------------------------------------------------------------------
 # make_survey_data()
 # ------------------------------------------------------------------------------
 

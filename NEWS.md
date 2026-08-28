@@ -1,3 +1,85 @@
+# surveycore (development version)
+
+## New features
+
+* Survey designs and data frames now carry **dataset-level metadata** —
+  metadata about the dataset as a whole rather than about one variable. The
+  vocabulary is closed at six keys: `survey_name`, `data_name`, `vendor`,
+  `field_start`, `field_end`, and `field_period`. Any other key is rejected.
+  `survey_name` and `data_name` are independent: no function reads one to
+  compute, fill, or check the other. See
+  `vignette("creating-survey-objects")`, section 8. (#162, #163, #164, #166,
+  #168, #170, #171)
+
+* New `dataset_metadata` property on the `survey_metadata` class stores the six
+  keys as a named list, in a fixed canonical key order. It defaults to
+  `list()`, so a design with no dataset metadata behaves exactly as it did in
+  1.1.0. (#162)
+
+* New unified setter and extractor: `set_dataset_metadata()` and
+  `extract_dataset_metadata()`. Both accept a survey design object or a plain
+  data frame. `set_dataset_metadata()` takes named arguments, a single named
+  list, or the programmatic `key`/`value` pair, and deletes a key when its
+  value is `NULL`. `extract_dataset_metadata()` returns a named list or a
+  two-column tibble, and can fill absent keys with `NA` to give the full
+  six-key schema. (#163, #164)
+
+* New convenience wrappers, one pair per key: `set_survey_name()` /
+  `extract_survey_name()`, `set_data_name()` / `extract_data_name()`,
+  `set_vendor()` / `extract_vendor()`, `set_field_dates()` /
+  `extract_field_dates()`, and `set_field_period()` / `extract_field_period()`.
+  Each setter delegates to `set_dataset_metadata()`; each extractor returns one
+  scalar, or the two field dates. (#166)
+
+* `as_survey()`, `as_survey_replicate()`, and `as_survey_nonprob()` now promote
+  the six whole-data-frame attributes into the design's metadata at
+  construction, so metadata set in a `data-raw/` script survives into the
+  design with no extra step. `as_survey_twophase()` exposes the phase-1 keys.
+  The older attribute name `dates` is read as `field_period` when no
+  `field_period` attribute is present. Promotion **copies** and never strips,
+  so the attributes stay on the underlying data frame; rebuilding a design from
+  that frame re-promotes the original values, and an edited or deleted key
+  comes back. (#168)
+
+* `print()` and `summary()` now show the dataset metadata. All four print
+  methods gain a `Dataset:` header line, and the `metadata_info = TRUE` block
+  reports the survey name, the vendor, and the field dates. Output is
+  byte-identical to 1.1.0 whenever no dataset metadata is set. (#170)
+
+## Bug fixes
+
+* `as_survey_nonprob()` now promotes weighting history from the data frame into
+  the design's metadata, matching `as_survey()` and `as_survey_replicate()`.
+  Previously the promotion call was missing from this one constructor, so
+  `survey_weighting_history()` reported no history for a non-probability design
+  even when the data frame carried it. This is a pre-existing inconsistency,
+  independent of the dataset-metadata feature. (#168)
+
+* `get_predict.survey_glm_fit()` now preserves a `rowid` column already
+  present in `newdata` instead of always fabricating a fresh sequential one.
+  marginaleffects 1.0.0 relies on `rowid` to reattach grouping columns onto
+  stacked contrast rows, and the fabricated sequence did not match once a
+  contrast block's row identity reset partway through, so grouped
+  `avg_slopes()`/`avg_predictions()` calls on `survey_glm_fit` objects lost
+  or misattributed the grouping column. (#153)
+
+## Notes
+
+* **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
+  with `saveRDS()` or in an `.rda` file under an older version stores a frozen
+  copy of the old metadata class, which has no `dataset_metadata` property.
+  Every read path handles this: all four `print()` methods, all four
+  `summary()` methods, and all six extractors succeed on such an object and
+  report no dataset metadata. A **write** — any of the six setters — raises
+  `surveycore_error_dataset_metadata_unavailable` instead of a raw S7 property
+  error. The remedy the error names is to rebuild the object with the matching
+  constructor, `as_survey()`, `as_survey_replicate()`,
+  `as_survey_nonprob()`, or `as_survey_twophase()`.
+
+* `extract_metadata()` is deliberately unchanged. It reports per-variable
+  fields only, and a dataset-level key is not a variable, so the six keys never
+  appear in its output. They have their own accessors.
+
 # surveycore 1.1.0
 
 ## New features

@@ -1,6 +1,6 @@
 Package: surveycore
 Title: Core Survey Analysis Infrastructure
-Version: 1.1.0
+Version: 1.1.0.9000
 Authors@R: c(
     person(
         "Jacob", "Dennen",
@@ -25,12 +25,13 @@ Description: A modern, 'S7'-based foundation for survey analysis
     with weighted 'polychoric' and 'polyserial' correlation following
     'Mannan' (2025) <doi:10.2139/ssrn.6580480>. A metadata system
     preserves 'haven'-style variable labels, value labels, and
-    question-preface attributes through all operations. Uses a
-    'tidyselect' interface throughout.
+    question-preface attributes through all operations, alongside
+    dataset-level metadata that records the survey name, the fielding
+    vendor, and the field period. Uses a 'tidyselect' interface
+    throughout.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Depends:
     R (>= 4.3.0)
 Imports:
@@ -43,7 +44,8 @@ Imports:
     marginaleffects (>= 0.18.0),
     pbivnorm (>= 0.6.0),
     stats,
-    graphics
+    graphics,
+    utils
 Suggests:
     testthat (>= 3.0.0),
     withr (>= 2.5.0),
@@ -65,3 +67,4 @@ URL: https://github.com/JDenn0514/surveycore, https://jdenn0514.github.io/survey
 BugReports: https://github.com/JDenn0514/surveycore/issues
 LazyData: true
 LazyDataCompression: xz
+Config/roxygen2/version: 8.1.0

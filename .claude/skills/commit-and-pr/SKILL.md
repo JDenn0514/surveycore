@@ -2,8 +2,8 @@
 name: commit-and-pr
 description: >
   Commits staged changes, opens a pull request against develop, and monitors CI
-  for surveycore feature branches. Read-only commit workflow — does not write or
-  edit R source files or test files; use r-implement for code changes first.
+  for surveycore feature branches. Does not write or edit R source files or
+  test files; use r-implement for code changes first.
   Trigger when the user says "commit", "make a PR", "open PR", "submit this
   work", "PR time", "commit and PR", "commit and merge", "commit, PR, and merge",
   "ship it", or "land it".
@@ -15,36 +15,32 @@ description: >
 
 ## HARD CONSTRAINT — READ THIS FIRST
 
-**YOU ARE A COMMIT/PR AGENT.**
+**Your write surface is exactly one file:**
+`changelog/phase-{X}/{branch-name}.md` — the changelog entry for this branch.
+Everything else in this skill is git, `gh`, and R check commands.
 
-You CANNOT write, edit, or create:
-- `.R` source files
-- `.R` test files
-- Any other source code
-
-If you notice code that should change, add a `TODO:` note to the PR body
-describing the issue, and report it to the user. Do NOT touch the code.
-
-**The ONLY files you may create or edit:**
-- `changelog/phase-{X}/{branch-name}.md` — the changelog entry for this branch
-
-If you find yourself about to use the Edit or Write tool on a `.R` file,
-**stop immediately and tell the user what you found**. Ask them whether to
-invoke `r-implement` to address it, or note it as a TODO in the PR.
+If you notice code that should change, add a `TODO:` note to the PR body,
+report it to the user, and ask whether to invoke `r-implement` or note it as
+a TODO. Code changes belong to `r-implement`.
 
 ---
 
 ## Session Recovery — Check This Before Starting
 
-Call `TaskList` first. If a "PR:" task already exists in `in_progress`:
+The environment is the source of truth. Derive the resume point:
 
-| Task state | What to do |
+```bash
+gh pr view --json state,mergedAt,url 2>/dev/null
+gh run list --branch <branch-name> --limit 1
+```
+
+| Observation | Resume point |
 |---|---|
-| PR task `in_progress`, no CI task | Check if PR exists (`gh pr view`); resume from Step 5 if yes, Step 2 if no |
-| PR task `in_progress`, CI task `in_progress` | Resume CI monitoring (Step 8) using `runId` from task metadata |
-| PR task `in_progress`, CI task `completed` with status `failed` | Reproduce failure locally, produce handoff block (Step 9), ask user to invoke `r-implement` |
-| PR task `completed` | Report PR URL and done message — nothing to do |
-| No tasks | Fresh start — proceed to Step 1 |
+| No PR for this branch | Step 1 (fresh start) |
+| PR open, CI queued or running | Step 8 (monitor CI) |
+| PR open, latest CI run failed | Step 9 (handoff — see `refs/ci-monitoring.md`) |
+| PR open, CI passed, not merged | Step 10 |
+| PR merged | Step 12 (archive), then done |
 
 ---
 
@@ -63,22 +59,9 @@ must be on a feature branch cut from `develop`. Do not proceed.
 
 **Detect merge intent:** Check whether the user's invocation included any of
 these phrases: "commit and merge", "commit, PR, and merge", "ship it",
-"land it". If yes:
-- Announce: "Merge after CI will be performed."
-- Set the flag in task metadata (see TaskCreate below).
-
-Create the main tracking task:
-
-```
-TaskCreate:
-  subject:    "PR: [branch-name]"
-  description: "Commit and open PR for [branch-name]."
-  activeForm: "Preparing PR for [branch-name]"
-
-TaskUpdate:
-  status: in_progress
-  metadata: { mergeAfterCI: true }   ← only if merge intent detected; omit otherwise
-```
+"land it". If yes, announce: "Merge after CI will be performed." Remember
+this merge intent for Step 10. On a resumed session, the intent is lost —
+the user re-requests the merge or runs `/merge`.
 
 ---
 
@@ -89,8 +72,8 @@ Read `.claude/skills/changelog-workflow.md` for the canonical format.
 The changelog file lives at: `changelog/phase-{X}/{branch-name}.md`
 
 Steps:
-1. Determine the phase from the branch name (e.g., `feature/variance-twophase`
-   suggests Phase 0.75) — ask the user if unclear
+1. Determine the phase per `changelog-workflow.md` §Location and Timing —
+   ask the user if unclear
 2. Check if `changelog/phase-{X}/{branch-name}.md` exists
 3. **If it does not exist:** create it following `changelog-workflow.md`,
    using `git log develop..HEAD --oneline` to populate the `## Changes` section
@@ -137,22 +120,24 @@ Required results:
 git status
 ```
 
-Review the changed files list. If any `.R` source or test files appear that were
-not part of this implementation task, stop and report to the user before staging.
-This skill does not write code — unexpected `.R` changes need investigation.
+Review the changed files list. If any `.R` source or test files appear that
+were not part of this implementation task, stop and report to the user before
+staging — unexpected `.R` changes need investigation.
 
 Stage SPECIFIC files by name — never `git add -A` or `git add .`.
 
 Always include the changelog file in the staged set.
 
-Commit format, valid types, and valid scopes: see github-strategy.md (Commit Format section).
+Commit format, valid types, and valid scopes: see github-strategy.md (Commit
+Format section). End the message with the Co-Authored-By trailer the session
+guidance specifies.
 
 Pass the commit message via HEREDOC:
 ```bash
 git commit -m "$(cat <<'EOF'
 feat(variance): implement two-phase Taylor variance estimation
 
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Co-Authored-By: <trailer from session guidance>
 EOF
 )"
 ```
@@ -173,8 +158,7 @@ Before creating a PR, verify one doesn't already exist:
 gh pr view 2>/dev/null && echo "PR EXISTS" || echo "NO PR"
 ```
 
-If a PR already exists: report its URL, update the task with its URL, and
-skip to Step 8 (Monitor CI).
+If a PR already exists: report its URL and skip to Step 8 (Monitor CI).
 
 ---
 
@@ -202,13 +186,6 @@ EOF
 )"
 ```
 
-Capture the PR URL and store it:
-
-```
-TaskUpdate:
-  metadata: { prUrl: "<url>", prNumber: <N> }
-```
-
 Report the PR URL to the user.
 
 ---
@@ -216,33 +193,19 @@ Report the PR URL to the user.
 ## Step 8: Monitor CI
 
 Read `refs/ci-monitoring.md` for the complete monitoring and failure-handoff
-procedure. Return here for Step 10 when CI passes.
+procedure (it contains Step 9). Return here for Step 10 when CI passes.
 
 ---
 
 ## Step 10: CI Passed — Merge Check
 
-When CI passes:
+When CI passes, check the merge intent from Step 1:
 
-```
-TaskUpdate (CI task):
-  subject: "CI Run #N: passed"
-  status:  completed
-  metadata: { status: "passed" }
-```
-
-Check task metadata for `mergeAfterCI`:
-
-- **`mergeAfterCI == true`:** Proceed to Step 11.
-- **`mergeAfterCI` absent or false:** Mark PR task complete and stop (see
-  "Done without merge" below).
+- **Merge requested:** Proceed to Step 11.
+- **No merge requested:** Stop after CI (see "Done without merge" below).
+  When in doubt, stop after CI.
 
 **Done without merge:**
-
-```
-TaskUpdate (PR task):
-  status: completed
-```
 
 1. Report the PR URL
 2. Read the implementation plan and find the first remaining `- [ ]` section
@@ -253,84 +216,24 @@ TaskUpdate (PR task):
 
 ---
 
-## Step 11: Optional Merge (only when `mergeAfterCI == true`)
+## Step 11: Optional Merge (only when merge was requested at invocation)
 
-**Confirmation gate** — show and wait for explicit user approval:
+Invoke the `merge` skill (`/merge <prNumber>`). It verifies the PR targets
+`develop`, checks CI, asks the user for explicit confirmation, and
+squash-merges. If the user declines, the merge skill stops — do not retry.
 
-> "CI passed. PR #N (`feature/foo` → `develop`): *{prTitle}*
->
-> Squash-merge this PR?"
-
-Do NOT proceed until the user says yes. If no or cancel:
-
-> "Merge cancelled. PR #N is open and CI-green — merge manually when ready."
-
-Stop.
-
-**On approval:**
-
-```bash
-gh pr merge <prNumber> --squash --delete-branch
-```
-
-```
-TaskUpdate (PR task):
-  status: completed
-```
-
-Report: "Merged: {prUrl}"
-
-Then proceed to Step 12.
+After a successful merge, proceed to Step 12.
 
 ---
 
 ## Step 12: Archive Plan Files (post-merge only)
 
-Extract the feature slug from the branch name (e.g., `feature/get-variance` → `get-variance`,
-`fix/pool-pvals-edge-case` → `pool-pvals-edge-case`).
+Extract the feature slug from the branch name (e.g., `feature/get-variance` →
+`get-variance`, `fix/pool-pvals-edge-case` → `pool-pvals-edge-case`).
 
-List all plain files in `plans/` (not subdirectories, not `error-messages.md`):
+Run the archive procedure in
+`.claude/skills/pipeline-shared/references/archive-plans.md`.
 
-```bash
-find plans -maxdepth 1 -type f ! -name 'error-messages.md'
-```
-
-Filter to files whose names contain the feature slug. If any match:
-
-1. Create `archive/{slug}/` if it doesn't exist
-2. Move all matching files there
-3. Report: "Archived to archive/{slug}/: {file1}, {file2}, ..."
-
-If no files match, skip silently — do not prompt the user.
-
-After archiving (or skipping), read the implementation plan and report the first
-remaining `- [ ]` section as the next action (same as the "Done without merge"
-step above).
-
----
-
-**Do NOT merge the PR unless the user explicitly requested merge at invocation
-time (`mergeAfterCI` flag). When in doubt, stop after CI.**
-
----
-
-## Quick Reference: What This Skill CAN and CANNOT Do
-
-| Action | Allowed? |
-|---|---|
-| Read `.R` files to understand what was implemented | Yes |
-| Create `changelog/phase-{X}/{branch-name}.md` | Yes |
-| Run `devtools::check()` and `devtools::test()` | Yes |
-| Stage and commit files | Yes |
-| Push the branch | Yes |
-| Create the PR | Yes |
-| Monitor CI | Yes |
-| Produce CI failure handoff block for r-implement | Yes |
-| Merge the PR (when explicitly requested at invocation) | Yes |
-| Archive matching plan files to `archive/` after merge | Yes |
-| Write or edit `.R` source files | **NO** |
-| Write or edit `.R` test files | **NO** |
-| Fix failing tests | **NO** |
-| Fix R CMD check errors | **NO** |
-| Amend commits | **NO** |
-| Merge the PR (when NOT requested at invocation) | **NO** |
+After archiving (or skipping), read the implementation plan and report the
+first remaining `- [ ]` section as the next action (same as the "Done without
+merge" step above).

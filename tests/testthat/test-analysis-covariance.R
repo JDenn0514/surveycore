@@ -50,7 +50,6 @@ test_that("get_covariance() Taylor SE matches SE(svyvar()) off-diag — NHANES [
     weights = wtmec2yr,
     nest = TRUE
   )
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~sdmvpsu,
     strata = ~sdmvstra,
@@ -73,7 +72,6 @@ test_that("get_covariance() Taylor SE matches SE(svyvar()) off-diag — NHANES [
 test_that("get_covariance() Wald CI = covariance ± qnorm(0.975) * SE", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 1L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(sc, c(y1, y2), variance = c("se", "ci"))
   z <- stats::qnorm(0.975)
@@ -96,7 +94,6 @@ test_that("get_covariance() Wald CI = covariance ± qnorm(0.975) * SE", {
 test_that("get_covariance() diagonal-parity gate — Taylor", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 2L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   # `c(y1, y1)` resolves to a single column under tidy-select, which would
   # trip the n>=2 guard. Use a duplicate column so we can exercise the
@@ -182,7 +179,6 @@ test_that("get_covariance() diagonal-parity gate — twophase", {
 
   ph1_sc <- as_survey(pbc_ph1, ids = row_id, weights = wt)
   d <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
-  test_invariants(d)
 
   cov_diag <- suppressWarnings(get_covariance(
     d,
@@ -244,7 +240,6 @@ test_that("get_covariance() diagonal-parity gate — nonprob", {
 test_that("get_covariance() symmetry under redundant=TRUE — covariance and SE", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 4L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(
     sc,
@@ -320,7 +315,6 @@ test_that("get_covariance() nonprob matches svyvar() off-diag [oracle]", {
     w = runif(500L, 0.5, 2)
   )
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
 
   d_sv <- survey::svydesign(ids = ~1, weights = ~w, data = df)
   sv <- survey::svyvar(~ a + b, d_sv, na.rm = TRUE)
@@ -347,7 +341,6 @@ test_that("get_covariance() twophase matches svyvar() off-diag [oracle]", {
 
   ph1_sc <- as_survey(pbc_ph1, ids = row_id, weights = wt)
   d_sc <- as_survey_twophase(ph1_sc, subset = in_ph2, method = "approx")
-  test_invariants(d_sc)
 
   d_sv <- survey::twophase(
     id = list(~1, ~1),
@@ -374,7 +367,6 @@ test_that("get_covariance() returns exact 0 when one var is constant", {
   df <- make_survey_data(n = 100L, design = "taylor", seed = 30L)
   df$const <- 7
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_covariance(
     sc,
@@ -395,7 +387,6 @@ test_that("get_covariance() returns 0 when both vars are constant", {
   df$c1 <- 1
   df$c2 <- 5
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- suppressWarnings(get_covariance(sc, c(c1, c2), variance = "se"))
   expect_identical(res$covariance[[1L]], 0)
@@ -409,7 +400,6 @@ test_that("get_covariance() returns 0 when both vars are constant", {
 test_that("get_covariance() name_style='broom' renames covariance/se/ci_low/ci_high", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 40L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(
     sc,
@@ -434,7 +424,6 @@ test_that("get_covariance() name_style='broom' renames covariance/se/ci_low/ci_h
 test_that("get_covariance() n_weighted = TRUE appends n_weighted column", {
   df <- make_survey_data(n = 200L, n_psu = 20L, design = "taylor", seed = 50L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(sc, c(y1, y2), variance = NULL, n_weighted = TRUE)
   expect_true("n_weighted" %in% names(res))
@@ -455,7 +444,6 @@ test_that("get_covariance() attaches label attribute to every output column", {
     with_labels = TRUE
   )
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(
     sc,
@@ -493,7 +481,6 @@ test_that("get_covariance() conf_level interpolates into CI labels", {
 test_that("get_covariance() .meta has expected top-level keys", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 70L)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
 
   res <- get_covariance(sc, c(y1, y2))
   m <- meta(res)
@@ -1015,7 +1002,6 @@ test_that("get_covariance() replicate near-constant pair returns se = 0 (no NaN)
     repweights = all_of(rep_cols),
     type = "BRR"
   )
-  test_invariants(sc)
   res <- suppressWarnings(
     get_covariance(sc, c(const1, const2), variance = c("se", "ci"))
   )
@@ -1056,7 +1042,6 @@ test_that("get_covariance() group= matches svyby(svyvar) off-diag [oracle]", {
   df <- make_survey_data(n = 400L, n_psu = 40L, design = "taylor", seed = 300L)
   df$g <- factor(sample(c("A", "B"), nrow(df), replace = TRUE))
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
-  test_invariants(sc)
   sv <- survey::svydesign(
     ids = ~psu,
     strata = ~strata,

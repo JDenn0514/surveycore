@@ -140,13 +140,11 @@ test_that("survey_data() returns @data as a data.frame for survey_taylor", {
 
 test_that("survey_data() returns @data for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   expect_identical(survey_data(d), d@data)
 })
 
 test_that("survey_data() returns @data for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   expect_identical(survey_data(d), d@data)
 })
 
@@ -179,7 +177,6 @@ test_that("survey_data() rejects a list", {
 
 test_that(".get_design_vars_flat() returns all design var names for survey_taylor", {
   d <- make_taylor()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true(is.character(flat))
   expect_true("psu" %in% flat)
@@ -199,7 +196,6 @@ test_that(".get_design_vars_flat() returns unique names only", {
 
 test_that(".get_design_vars_flat() returns weights and repweights for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true("wt" %in% flat)
   repwt_cols <- grep("^repwt_", names(d@data), value = TRUE)
@@ -211,7 +207,6 @@ test_that(".get_design_vars_flat() returns weights and repweights for survey_rep
 
 test_that(".get_design_vars_flat() returns phase1, phase2, and subset vars for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   flat <- surveycore:::.get_design_vars_flat(d)
   expect_true("psu" %in% flat)
   expect_true("wt" %in% flat)
@@ -290,7 +285,6 @@ test_that(".get_design_vars_flat() excludes fpc for SRS-style design without fpc
 
 test_that(".get_design_vars() returns a named list for survey_taylor", {
   d <- make_taylor()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true(is.list(vars))
   expect_true("ids" %in% names(vars))
@@ -302,7 +296,6 @@ test_that(".get_design_vars() returns a named list for survey_taylor", {
 test_that(".get_design_vars() omits NULL slots for SRS design (survey_taylor)", {
   df <- data.frame(y = 1:5, w = runif(5, 0.5, 2))
   d <- suppressWarnings(as_survey(df, weights = w))
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   # ids, strata, fpc are NULL — they should be absent
   expect_false("ids" %in% names(vars))
@@ -323,7 +316,6 @@ test_that(".get_design_vars() can be unlist()ed to a char vector", {
 
 test_that(".get_design_vars() returns weights and repweights for survey_replicate", {
   d <- make_rep()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true("weights" %in% names(vars))
   expect_true("repweights" %in% names(vars))
@@ -336,7 +328,6 @@ test_that(".get_design_vars() returns weights and repweights for survey_replicat
 
 test_that(".get_design_vars() returns phase1 vars and subset for survey_twophase", {
   d <- make_twophase()
-  test_invariants(d)
   vars <- surveycore:::.get_design_vars(d)
   expect_true("ids" %in% names(vars))
   expect_true("weights" %in% names(vars))

@@ -5,8 +5,8 @@
 #'
 #' @srrstatsVerbose TRUE
 #'
-#' @srrstats {G1.4} Software uses roxygen2 throughout; RoxygenNote is set in
-#'   DESCRIPTION and all exported functions carry roxygen2 documentation.
+#' @srrstats {G1.4} Software uses roxygen2 throughout; DESCRIPTION records the
+#'   roxygen2 version and all exported functions carry roxygen2 documentation.
 #'
 #' @srrstats {G1.6} Numerical correctness tests compare surveycore estimates
 #'   against the survey package for means, totals, proportions, and quantiles

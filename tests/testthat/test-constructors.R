@@ -29,7 +29,6 @@ test_that("as_survey() creates survey_taylor with NULL ids/strata (no ids or str
 test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
   df <- make_survey_data(n = 100, seed = 1L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$ids, NULL)
@@ -39,7 +38,6 @@ test_that("as_survey() creates survey_taylor for weighted SRS (weights only)", {
 test_that("as_survey() creates survey_taylor for stratified design", {
   df <- make_survey_data(n = 200, seed = 2L)
   d <- as_survey(df, weights = wt, strata = strata)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$strata, "strata")
@@ -49,7 +47,6 @@ test_that("as_survey() creates survey_taylor for stratified design", {
 test_that("as_survey() creates survey_taylor for single-stage cluster design", {
   df <- make_survey_data(n = 200, seed = 3L)
   d <- suppressWarnings(as_survey(df, ids = psu, weights = wt, strata = strata))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "psu")
   expect_identical(d@variables$weights, "wt")
@@ -68,7 +65,6 @@ test_that("as_survey() creates survey_taylor for NHANES design (nest = TRUE)", {
     strata = sdmvstra,
     nest = TRUE
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "sdmvpsu")
   expect_identical(d@variables$weights, "wtmec2yr")
@@ -86,7 +82,6 @@ test_that("as_survey() stores call in @call", {
 test_that("as_survey() extracts haven metadata when present", {
   df <- make_survey_data(n = 100, with_labels = TRUE, seed = 5L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(
     d@metadata@variable_labels[["y1"]],
     "Outcome variable 1 (continuous)"
@@ -97,7 +92,6 @@ test_that("as_survey() extracts haven metadata when present", {
 test_that("as_survey() returns an empty metadata object when no haven attrs", {
   df <- make_survey_data(n = 50, seed = 6L)
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
 
@@ -107,7 +101,6 @@ test_that("as_survey() returns an empty metadata object when no haven attrs", {
 test_that("as_survey() converts probs to weights (1/probs) stored as ..surveycore_wt..", {
   df <- data.frame(y = 1:5, prob = rep(0.2, 5))
   d <- suppressWarnings(as_survey(df, probs = prob))
-  test_invariants(d)
   expect_identical(d@variables$weights, surveycore:::.SURVEYCORE_WT_COL)
   expect_true(d@variables$probs_provided)
   expect_equal(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(5, 5))
@@ -126,7 +119,6 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
     },
     class = "surveycore_inform_probs_weights_consistent"
   )
-  test_invariants(d)
   expect_identical(d@variables$weights, "wt")
   expect_true(d@variables$probs_provided)
 })
@@ -134,7 +126,6 @@ test_that("as_survey() uses weights when both probs and weights are consistent",
 test_that("as_survey() stores fpc column name in @variables", {
   df <- make_survey_data(n = 100, seed = 7L)
   d <- suppressWarnings(as_survey(df, weights = wt, fpc = fpc))
-  test_invariants(d)
   expect_identical(d@variables$fpc, "fpc")
 })
 
@@ -251,7 +242,6 @@ test_that("as_survey() warns with SRS message when strata given but no ids and n
 test_that("as_survey() creates equal weights (..surveycore_wt..) for SRS [row 7]", {
   df <- data.frame(y = 1:10)
   d <- suppressWarnings(as_survey(df))
-  test_invariants(d)
   expect_identical(d@data[[surveycore:::.SURVEYCORE_WT_COL]], rep(1L, 10L))
 })
 
@@ -376,7 +366,6 @@ test_that("as_survey() errors when nest = TRUE and strata is NULL [row 15]", {
 test_that("as_survey() handles weights with NA values mixed in (valid)", {
   df <- data.frame(x = 1:5, wt = c(1.0, NA_real_, 2.0, 1.5, NA_real_))
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(d@variables$weights, "wt")
 })
 
@@ -384,7 +373,6 @@ test_that("as_survey() with tibble input (inherits data.frame)", {
   skip_if_not_installed("tibble")
   tb <- tibble::tibble(y = 1:10, wt = runif(10, 0.5, 2))
   d <- suppressWarnings(as_survey(tb, weights = wt))
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
 })
 
@@ -442,14 +430,12 @@ test_that("as_survey() does NOT warn for PSU in multiple strata when nest = TRUE
 test_that("as_survey() accepts bare name for weights", {
   df <- data.frame(y = 1:5, weight_col = rep(1, 5))
   d <- suppressWarnings(as_survey(df, weights = weight_col))
-  test_invariants(d)
   expect_identical(d@variables$weights, "weight_col")
 })
 
 test_that("as_survey() accepts bare name for strata", {
   df <- data.frame(y = 1:10, wt = rep(1, 10), region = rep(c("N", "S"), 5))
   d <- as_survey(df, weights = wt, strata = region)
-  test_invariants(d)
   expect_identical(d@variables$strata, "region")
 })
 
@@ -460,14 +446,12 @@ test_that("as_survey() accepts c() for multi-stage cluster ids", {
     wt = rep(1, 20)
   )
   d <- as_survey(df, ids = c(psu, ssu), weights = wt)
-  test_invariants(d)
   expect_identical(d@variables$ids, c("psu", "ssu"))
 })
 
 test_that("as_survey() accepts single bare name for ids", {
   df <- make_survey_data(n = 100, seed = 10L)
   d <- suppressWarnings(as_survey(df, ids = psu, weights = wt, strata = strata))
-  test_invariants(d)
   expect_identical(d@variables$ids, "psu")
 })
 
@@ -514,7 +498,6 @@ test_that("as_survey_replicate() creates survey_replicate for JK1 design (bare n
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$type, "JK1")
 })
@@ -533,7 +516,6 @@ test_that("as_survey_replicate() creates survey_replicate for bootstrap design",
     repweights = starts_with("repwt_"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$type, "bootstrap")
 })
@@ -564,7 +546,6 @@ test_that("as_survey_replicate() extracts haven metadata when present", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(
     d@metadata@variable_labels[["y1"]],
     "Outcome variable 1 (continuous)"
@@ -579,7 +560,6 @@ test_that("as_survey_replicate() returns empty metadata when no haven attrs", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(length(d@metadata@variable_labels), 0L)
 })
 
@@ -599,7 +579,6 @@ test_that("as_survey_replicate() accepts explicit rscales of correct length", {
     type = "JK1",
     rscales = rep(1, n_rep)
   )
-  test_invariants(d)
   expect_identical(length(d@variables$rscales), n_rep)
 })
 
@@ -612,7 +591,6 @@ test_that("as_survey_replicate() accepts explicit scale argument", {
     type = "JK1",
     scale = 0.5
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0.5)
 })
 
@@ -708,7 +686,6 @@ test_that("as_survey_replicate() stores fpc column name when fpc provided", {
     type = "BRR",
     fpc = fpc
   )
-  test_invariants(d)
   expect_identical(d@variables$fpc, "fpc")
 })
 
@@ -898,7 +875,6 @@ test_that("as_survey_replicate() with tibble input (inherits data.frame)", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
 })
 
@@ -946,7 +922,6 @@ test_that("as_survey_replicate() accepts starts_with() for repweights", {
     repweights = starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(d)
   expect_true(all(startsWith(d@variables$repweights, "repwt_")))
 })
 
@@ -964,7 +939,6 @@ test_that("as_survey_replicate() accepts c() for explicit repweight columns", {
     repweights = c(r1, r2, r3),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$repweights, c("r1", "r2", "r3"))
 })
 
@@ -981,7 +955,6 @@ test_that("as_survey_replicate() accepts bare name for weights", {
     repweights = starts_with("r"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$weights, "sampling_weight")
 })
 
@@ -996,7 +969,6 @@ test_that("as_survey_twophase() creates survey_twophase for minimal two-phase de
   df <- make_survey_data(n = 200, design = "twophase", seed = 1L)
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_true(S7::S7_inherits(d2, survey_twophase))
   expect_identical(d2@variables$subset, "subset")
   expect_identical(d2@variables$method, "full")
@@ -1006,7 +978,6 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'approx'",
   df <- make_survey_data(n = 200, design = "twophase", seed = 2L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset, method = "approx")
-  test_invariants(d2)
   expect_identical(d2@variables$method, "approx")
 })
 
@@ -1015,7 +986,6 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'simple' (
   df <- make_survey_data(n = 200, design = "twophase", seed = 3L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset, method = "simple")
-  test_invariants(d2)
   expect_identical(d2@variables$method, "simple")
 })
 
@@ -1023,7 +993,6 @@ test_that("as_survey_twophase() stores Phase 2 stratification in @variables$phas
   df <- make_survey_data(n = 200, design = "twophase", seed = 4L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$strata, "strata")
   expect_null(d2@variables$phase2$ids)
   expect_null(d2@variables$phase2$probs)
@@ -1041,7 +1010,6 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
     subset = subset,
     method = "full"
   )
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$probs, "subsamprate")
 })
 
@@ -1049,7 +1017,6 @@ test_that("as_survey_twophase() stores Phase 2 cluster ids in @variables$phase2"
   df <- make_survey_data(n = 200, design = "twophase", seed = 6L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
 
@@ -1057,7 +1024,6 @@ test_that("as_survey_twophase() stores Phase 2 fpc in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 7L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, fpc2 = fpc, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$fpc, "fpc")
 })
 
@@ -1065,7 +1031,6 @@ test_that("as_survey_twophase() stores Phase 1 @variables in @variables$phase1",
   df <- make_survey_data(n = 200, design = "twophase", seed = 8L)
   phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   # Phase 1 variables preserved in nested structure
   expect_identical(d2@variables$phase1$weights, "wt")
   expect_identical(d2@variables$phase1$strata, "strata")
@@ -1082,7 +1047,6 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
   )
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   # Metadata inherited from phase1
   expect_identical(
     d2@metadata@variable_labels[["y1"]],
@@ -1111,7 +1075,6 @@ test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not prov
   df <- make_survey_data(n = 200, design = "twophase", seed = 12L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_null(d2@variables$phase2$ids)
   expect_null(d2@variables$phase2$strata)
   expect_null(d2@variables$phase2$probs)
@@ -1152,6 +1115,24 @@ test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 
   )
 })
 
+# Warning 26: phase-2 design column all NA within the phase-2 subset
+test_that("as_survey_twophase() warns when a phase-2 design column is all NA in the subset", {
+  df <- data.frame(
+    wt = rep(1, 10),
+    ph2 = c(rep(TRUE, 5), rep(FALSE, 5)),
+    ph2_str = rep(NA_character_, 10), # all NA within phase 2 rows
+    y = 1:10,
+    stringsAsFactors = FALSE
+  )
+  phase1 <- suppressWarnings(as_survey(df, weights = wt))
+  expect_warning(
+    d2 <- as_survey_twophase(phase1, strata2 = ph2_str, subset = ph2),
+    class = "surveycore_warning_phase2_all_na"
+  )
+  expect_true(S7::S7_inherits(d2, survey_twophase))
+  expect_identical(d2@variables$phase2$strata, "ph2_str")
+})
+
 
 # ── Error paths ───────────────────────────────────────────────────────────────
 
@@ -1176,7 +1157,6 @@ test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no 
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt))
   tp <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
 })
 
@@ -1313,7 +1293,6 @@ test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
   df$ssu2 <- rep(1:4, length.out = nrow(df))
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, ids2 = c(psu2, ssu2), subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, c("psu2", "ssu2"))
 })
 
@@ -1336,7 +1315,6 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
   phase1 <- as_survey(df, weights = wt, strata = strata)
   # 1 TRUE and 19 FALSE — not degenerate
   d2 <- as_survey_twophase(phase1, subset = in_phase2)
-  test_invariants(d2)
   expect_true(S7::S7_inherits(d2, survey_twophase))
 })
 
@@ -1369,7 +1347,6 @@ test_that("as_survey_twophase() accepts bare name for subset", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 30L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$subset, "subset")
 })
 
@@ -1377,7 +1354,6 @@ test_that("as_survey_twophase() accepts bare name for strata2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 31L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$strata, "strata")
 })
 
@@ -1385,7 +1361,6 @@ test_that("as_survey_twophase() accepts bare name for ids2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 32L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
-  test_invariants(d2)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
 
@@ -1567,14 +1542,12 @@ test_that("as_survey_nonprob() stores calibration provenance object", {
   df <- data.frame(y = rnorm(50), w = runif(50, 1, 3))
   cal <- list(targets = list(age = c(0.3, 0.4, 0.3)), method = "raking")
   d <- as_survey_nonprob(df, weights = w, calibration = cal)
-  test_invariants(d)
   expect_identical(d@calibration, cal)
 })
 
 test_that("as_survey_nonprob() calibration is NULL when not supplied", {
   df <- data.frame(y = 1:20, w = rep(1, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_null(d@calibration)
 })
 
@@ -1582,14 +1555,12 @@ test_that("as_survey_nonprob() extracts haven variable labels", {
   df <- data.frame(y = 1:50, w = rep(1, 50))
   attr(df$y, "label") <- "Outcome variable"
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_equal(d@metadata@variable_labels[["y"]], "Outcome variable")
 })
 
 test_that("as_survey_nonprob() is a subclass of survey_base", {
   df <- data.frame(y = 1:30, w = rep(1.5, 30))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_base))
 })
 
@@ -1992,7 +1963,6 @@ test_that("as_survey_nonprob() with repweights stores 5 keys in @variables", {
     repweights = starts_with("rw"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_identical(d@variables$repweights, c("rw1", "rw2", "rw3"))
   expect_identical(d@variables$type, "bootstrap")
   expect_equal(d@variables$scale, 1 / 3)
@@ -2007,7 +1977,6 @@ test_that("as_survey_nonprob() stores reference_sample in @reference_sample", {
   d_ref <- as_survey(df_ref, ids = psu, weights = wt, strata = strata)
 
   d <- as_survey_nonprob(df_np, weights = w, reference_sample = d_ref)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d@reference_sample, survey_taylor))
 })
 
@@ -2028,7 +1997,6 @@ test_that("as_survey_nonprob() accepts valid calibration provenance + repweights
     type = "bootstrap",
     calibration = cal
   )
-  test_invariants(d)
   expect_identical(d@calibration, cal)
   expect_identical(d@variables$repweights, c("rw1", "rw2"))
 })
@@ -2050,7 +2018,6 @@ test_that("as_survey_nonprob() computes default scale = 1/R and rscales = rep(1,
     repweights = starts_with("rw"),
     type = "bootstrap"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1 / 4)
   expect_identical(d@variables$rscales, rep(1, 4))
 })
@@ -2058,7 +2025,6 @@ test_that("as_survey_nonprob() computes default scale = 1/R and rscales = rep(1,
 test_that("as_survey_nonprob() with no repweights has all 5 keys as NULL", {
   df <- data.frame(y = 1:20, w = rep(1, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_null(d@variables$repweights)
   expect_null(d@variables$type)
   expect_null(d@variables$scale)
@@ -2069,7 +2035,6 @@ test_that("as_survey_nonprob() with no repweights has all 5 keys as NULL", {
 test_that("as_survey_nonprob(df, weights = w) still works (backward compat)", {
   df <- data.frame(y = 1:20, w = rep(1.5, 20))
   d <- as_survey_nonprob(df, weights = w)
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_nonprob))
   expect_identical(d@variables$weights, "w")
 })
@@ -2388,7 +2353,6 @@ test_that("calibration = list() with type = 'JK1' accepted", {
 test_that("two-row data constructs valid JK1 object (minimum sample size)", {
   df <- data.frame(x = 1:2, wt = c(1, 1), r1 = c(1, 1), r2 = c(1, 1))
   d <- as_survey_nonprob(df, weights = wt, repweights = c(r1, r2), type = "JK1")
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_nonprob))
 })
 
@@ -2419,7 +2383,6 @@ test_that("'jackknife' alias not stored: design@variables$type == 'JK1'", {
     repweights = c(r1, r2, r3),
     type = "jackknife"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
 })
 
@@ -2440,7 +2403,6 @@ test_that("JK1 scale exact value for R = 10: 9/10 exactly", {
     repweights = tidyselect::starts_with("r"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 9 / 10)
 })
 
@@ -2456,21 +2418,18 @@ test_that("JK2 default scale = 1 exactly", {
     type = "JK2",
     rscales = c(0.5, 0.5, 0.5, 0.5)
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1)
 })
 
 test_that("repweights = NULL ignores type = 'jackknife': type NULL in variables", {
   df <- data.frame(x = 1:5, wt = rep(1, 5))
   d <- as_survey_nonprob(df, weights = wt, type = "jackknife")
-  test_invariants(d)
   expect_null(d@variables$type)
 })
 
 test_that("repweights = NULL ignores type = 'BRR': all rep vars NULL in variables", {
   df <- data.frame(x = 1:5, wt = rep(1, 5))
   d <- as_survey_nonprob(df, weights = wt, type = "BRR")
-  test_invariants(d)
   expect_null(d@variables$type)
   expect_null(d@variables$repweights)
   expect_null(d@variables$scale)
@@ -2489,7 +2448,6 @@ test_that("jackknife alias with explicit non-uniform rscales normalizes to JK1",
     type = "jackknife",
     rscales = c(0.9, 0.8, 0.85, 0.95)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$rscales, c(0.9, 0.8, 0.85, 0.95))
 })
@@ -2582,7 +2540,6 @@ test_that("as_survey() promotes weighting_history attribute from data", {
   history <- list(list(step = 1L, operation = "raking"))
   attr(df, "weighting_history") <- history
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
@@ -2601,7 +2558,6 @@ test_that("as_survey_replicate() promotes weighting_history attribute from data"
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
@@ -2610,14 +2566,12 @@ test_that("as_survey() promotes weighting_history for weights-only design", {
   history <- list(list(step = 1L, operation = "nonresponse_weighting_class"))
   attr(df, "weighting_history") <- history
   d <- suppressWarnings(as_survey(df, weights = wt))
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, history)
 })
 
 test_that("as_survey() leaves weighting_history as list() for plain data.frame", {
   df <- make_survey_data(n = 100L, seed = 103L)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
-  test_invariants(d)
   expect_identical(d@metadata@weighting_history, list())
 })
 
@@ -2634,14 +2588,12 @@ test_that("as_survey() accepts multi-column fpc and stores as character vector",
     strata = strata,
     fpc = c(fpc, fpc2)
   )
-  test_invariants(sc)
   expect_identical(sc@variables$fpc, c("fpc", "fpc2"))
 })
 
 test_that("as_survey() stores single-column fpc as character(1) [backward compat]", {
   df <- make_survey_data(n = 200, n_psu = 20, seed = 1)
   sc <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
-  test_invariants(sc)
   expect_identical(sc@variables$fpc, "fpc")
 })
 
@@ -3103,7 +3055,6 @@ test_that("JK1 type stored and scale defaults to (R-1)/R", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3, r4), type = "JK1"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$scale, 3 / 4)
   expect_equal(d@variables$rscales, rep(1, 4))
@@ -3117,7 +3068,6 @@ test_that("jackknife alias normalizes to JK1", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3), type = "jackknife"
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
   expect_equal(d@variables$scale, 2 / 3)
 })
@@ -3131,7 +3081,6 @@ test_that("JK2 with explicit rscales: scale defaults to 1", {
     df, weights = wt, repweights = c(r1, r2),
     type = "JK2", rscales = c(0.5, 0.5)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK2")
   expect_equal(d@variables$scale, 1)
   expect_equal(d@variables$rscales, c(0.5, 0.5))
@@ -3146,7 +3095,6 @@ test_that("JKn with explicit rscales: type stored and scale defaults to 1", {
     df, weights = wt, repweights = c(r1, r2, r3),
     type = "JKn", rscales = c(0.5, 0.5, 0.5)
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JKn")
   expect_equal(d@variables$scale, 1)
 })
@@ -3160,7 +3108,6 @@ test_that("Bootstrap unchanged: scale = 1/R, rscales = rep(1, R)", {
   d <- as_survey_nonprob(
     df, weights = wt, repweights = c(r1, r2, r3, r4, r5), type = "bootstrap"
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 1 / 5)
   expect_equal(d@variables$rscales, rep(1, 5))
 })
@@ -3174,7 +3121,6 @@ test_that("Explicit scale overrides default for JK1", {
     df, weights = wt, repweights = c(r1, r2, r3, r4),
     type = "JK1", scale = 0.5
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0.5)
 })
 
@@ -3187,6 +3133,626 @@ test_that("scale = 0 is accepted for JK1", {
     df, weights = wt, repweights = c(r1, r2, r3, r4),
     type = "JK1", scale = 0
   )
-  test_invariants(d)
   expect_equal(d@variables$scale, 0)
+})
+
+
+# ── Dataset-level metadata promotion (spec section V) ─────────────────────────
+#
+# Covers plans/error-messages.md rows DM-7a, DM-7b, DM-7c, and DM-7d.
+#
+# Construction NEVER fails because of a bad dataset attribute: every bad value
+# is skipped and reported as one surveycore_warning_dataset_metadata_dropped.
+# Reads go through extract_dataset_metadata(), the guarded public read path —
+# never through attr(d@data, ...), which section V.4 keeps as the untouched
+# original.
+#
+# No block here snapshots print() or summary() console output: the display
+# contract for a design carrying dataset metadata belongs to a separate PR, so
+# capturing it here would encode output that is about to change.
+
+# Build a taylor design from a frame carrying the requested attributes.
+.promo_design <- function(keys) {
+  as_survey(
+    make_dataset_df(keys = keys),
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+test_that("as_survey() promotes all six canonical attributes in canonical order", {
+  d <- .promo_design(full_keys)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+test_that("as_survey() promotes only the attributes that are present", {
+  d <- .promo_design(full_keys[c("vendor", "field_period")])
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    full_keys[c("vendor", "field_period")]
+  )
+})
+
+test_that("as_survey() never derives data_name from the survey_name attribute", {
+  # Section II.1 independence rule, expressed on the promotion path. Only the
+  # `survey_name` attribute is attached, so `data_name` must stay unset.
+  # The second assertion is what makes the first one mean anything: the key
+  # that WAS set has to survive promotion, otherwise NA_character_ would only
+  # prove that nothing at all was promoted.
+  d <- .promo_design(full_keys["survey_name"])
+
+  expect_identical(extract_data_name(d), NA_character_)
+  expect_identical(extract_survey_name(d), full_keys$survey_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["survey_name"])
+})
+
+test_that("as_survey() never derives survey_name from the data_name attribute", {
+  # The mirror of the block above. Independence runs in both directions, so
+  # the reverse derivation needs its own assertion.
+  d <- .promo_design(full_keys["data_name"])
+
+  expect_identical(extract_survey_name(d), NA_character_)
+  expect_identical(extract_data_name(d), full_keys$data_name)
+  expect_identical(extract_dataset_metadata(d), full_keys["data_name"])
+})
+
+test_that("as_survey() skips an absent attribute silently", {
+  # `survey_name` is absent, `vendor` is set. The absent key must produce no
+  # warning at all — silence is reserved for absence (a zero-length value warns).
+  expect_no_warning(d <- .promo_design(full_keys["vendor"]))
+
+  expect_identical(extract_dataset_metadata(d), full_keys["vendor"])
+})
+
+test_that("as_survey() leaves @dataset_metadata empty when no attribute is set", {
+  # Section V.3 last bullet: with nothing to promote the helper returns the
+  # metadata object unchanged AND stays silent. Nothing was dropped, so a
+  # warning here would report a loss that never happened.
+  expect_no_warning(d <- .promo_design(list()))
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() coerces a strict-ISO character date attribute to Date", {
+  d <- .promo_design(list(field_start = "2026-02-10"))
+
+  got <- extract_dataset_metadata(d)
+  expect_identical(got$field_start, as.Date("2026-02-10"))
+  expect_s3_class(got$field_start, "Date")
+})
+
+test_that("as_survey() promotes the legacy dates attribute as field_period", {
+  d <- .promo_design(list(vendor = "Ipsos", dates = "February-March 2026"))
+
+  expect_identical(
+    extract_dataset_metadata(d),
+    list(vendor = "Ipsos", field_period = "February-March 2026")
+  )
+})
+
+test_that("as_survey() prefers a present field_period over the legacy dates attribute", {
+  # Section V.2 step 7 reads `dates` only when the `field_period` attribute is
+  # ABSENT. A present and valid `field_period` means `dates` is never read, so
+  # nothing was discarded and the construction must be silent. A warning here
+  # would mean the reader treats the unread `dates` as a dropped value.
+  expect_no_warning(
+    d <- .promo_design(list(
+      field_period = "February-March 2026",
+      dates = "some other period"
+    ))
+  )
+
+  expect_identical(
+    extract_dataset_metadata(d)$field_period,
+    "February-March 2026"
+  )
+})
+
+test_that("as_survey() ignores an attribute outside the seven recognized names", {
+  # surveycore claims no attribute name beyond the seven: an unrecognized name
+  # is never promoted AND never warned about.
+  expect_no_warning(
+    d <- .promo_design(list(vendor = "Ipsos", weight_scheme = "raked"))
+  )
+
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+  expect_false("weight_scheme" %in% names(extract_dataset_metadata(d)))
+})
+
+
+# Row DM-7a — a canonical attribute with a wrong-typed, NA, unparseable, or
+# length > 1 value.
+
+test_that("as_survey() warns and drops a wrong-typed canonical attribute", {
+  keys <- list(vendor = 42)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a canonical attribute of length > 1", {
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an NA canonical attribute", {
+  keys <- list(vendor = NA_character_)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops an unparseable date attribute", {
+  # "2026/02/10" is not strict ISO 8601, so .coerce_field_date() rejects it.
+  # The message must name the date expectation, not the character one.
+  keys <- list(field_start = "2026/02/10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns and drops a date attribute that is not date-shaped", {
+  # "sometime" does not parse at all. Section II.3 requires
+  # .coerce_field_date() to wrap as.Date() in tryCatch(), so no base condition
+  # reaches the caller: exactly one warning, ours, and no message.
+  keys <- list(field_start = "sometime")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() warns and drops an ISO-shaped date that does not exist", {
+  # "2026-02-30" MATCHES format = "%Y-%m-%d" and still yields NA, because
+  # February has no 30th. This is the calendar-validity branch, which neither
+  # a wrong-separator string nor an unparseable string reaches.
+  keys <- list(field_start = "2026-02-30")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(extract_dataset_metadata(d), list())
+
+  warnings <- testthat::capture_warnings(
+    expect_no_message(d2 <- .promo_design(keys))
+  )
+  expect_length(warnings, 1L)
+  expect_true(S7::S7_inherits(d2, survey_taylor))
+})
+
+test_that("as_survey() keeps the valid attributes when another one is dropped", {
+  # The drop is per key: a bad field_start must not cost the good vendor.
+  keys <- list(vendor = "Ipsos", field_start = "not a date")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() warns once per dropped attribute", {
+  keys <- list(survey_name = 1L, vendor = 2L)
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 2L)
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+
+# Row DM-7b — a canonical attribute with a zero-length value. Loss is
+# signalled, never silent: only an ABSENT attribute is skipped quietly.
+
+test_that("as_survey() warns and drops a zero-length canonical attribute", {
+  keys <- list(vendor = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# Row DM-7c — the coerced date pair is reversed; BOTH keys are dropped with
+# ONE warning.
+
+test_that("as_survey() warns once and drops both dates when the pair is reversed", {
+  keys <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() judges the reversed pair on the coerced ISO strings", {
+  # Both values are strings, so the comparison only works after coercion.
+  keys <- list(field_start = "2026-03-04", field_end = "2026-02-10")
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey() promotes an equal date pair without warning", {
+  # The rule is strictly `start > end`, so a single-day field period is valid.
+  keys <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+
+  expect_no_warning(d <- .promo_design(keys))
+  expect_identical(extract_dataset_metadata(d), keys)
+})
+
+
+# Row DM-7d — the legacy `dates` attribute with ANY invalid value. This
+# variant takes precedence over DM-7a and DM-7b, so the remedy points at
+# set_field_period() rather than at the rejected legacy name.
+
+test_that("as_survey() warns with the legacy variant for a wrong-typed dates attribute", {
+  keys <- list(dates = 1L)
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a zero-length dates attribute", {
+  # A zero-length value on a canonical name is DM-7b, but on the legacy name
+  # the DM-7d variant wins.
+  keys <- list(dates = character(0))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("as_survey() warns with the legacy variant for a dates attribute of length > 1", {
+  keys <- list(dates = c("February 2026", "March 2026"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+test_that("haven column labels and dataset attributes both promote", {
+  # Section V.1: the per-column haven reader and the whole-object dataset
+  # reader are separate helpers running at the same constructor stage. Neither
+  # may interfere with the other, so this block asserts both halves at once.
+  df <- make_survey_data(
+    n = 20L,
+    n_psu = 6L,
+    n_strata = 2L,
+    with_labels = TRUE,
+    seed = 42L
+  )
+  for (key in names(full_keys)) {
+    attr(df, key) <- full_keys[[key]]
+  }
+
+  expect_no_warning(
+    d <- as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    )
+  )
+
+  # Per-variable metadata: variable labels and value labels.
+  expect_identical(
+    extract_var_label(d, y1),
+    c(y1 = "Outcome variable 1 (continuous)")
+  )
+  expect_identical(
+    extract_var_label(d, y3, group),
+    c(
+      y3 = "Outcome variable 3 (binary, 0/1)",
+      group = "Demographic group"
+    )
+  )
+  expect_identical(extract_val_labels(d, y3)$y3, c(No = 0L, Yes = 1L))
+
+  # Dataset-level metadata: all six keys, in canonical order.
+  expect_identical(extract_dataset_metadata(d), full_keys)
+  expect_identical(names(extract_dataset_metadata(d)), names(full_keys))
+})
+
+
+# Round trip and non-destructive promotion (spec section V.4).
+
+test_that("all six keys survive the setter-to-constructor round trip", {
+  expect_dataset_roundtrip(full_keys)
+})
+
+test_that("a single key survives the round trip", {
+  expect_dataset_roundtrip(full_keys["vendor"])
+})
+
+test_that("an ISO date string set on a frame round trips as a Date", {
+  # The setter coerces on the way in, so the attribute is already a Date and
+  # promotion stores a Date, not the string.
+  d <- expect_dataset_roundtrip(
+    list(field_start = "2026-02-10"),
+    expected = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_s3_class(extract_dataset_metadata(d)$field_start, "Date")
+})
+
+test_that("promotion leaves the original attributes on @data", {
+  # Promotion COPIES; it never strips. Every one of the six attributes holds a
+  # genuine value going in, so a stripping implementation would fail here.
+  d <- .promo_design(full_keys)
+
+  for (key in names(full_keys)) {
+    expect_identical(
+      attr(d@data, key, exact = TRUE),
+      full_keys[[key]],
+      info = key
+    )
+  }
+})
+
+test_that("promotion leaves the caller's data frame unchanged", {
+  df <- make_dataset_df(full_keys)
+  before <- attributes(df)
+
+  d <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+
+  expect_identical(attributes(df), before)
+})
+
+test_that("promotion keeps a dropped attribute on @data even though the key is unset", {
+  # The warning reports that the key was not promoted; the attribute itself is
+  # still there for the user to inspect and fix.
+  keys <- list(vendor = c("Ipsos", "Cint"))
+
+  expect_warning(
+    d <- .promo_design(keys),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_identical(attr(d@data, "vendor", exact = TRUE), c("Ipsos", "Cint"))
+})
+
+test_that("rebuilding from @data resurrects an edited key", {
+  # Documented consequence of section V.4: the design's metadata changed, the
+  # data frame's attribute did not, so a rebuild re-promotes the ORIGINAL.
+  d <- .promo_design(full_keys)
+
+  d2 <- set_vendor(d, "Cint")
+  expect_identical(extract_vendor(d2), "Cint")
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+  expect_false(identical(extract_vendor(rebuilt), "Cint"))
+})
+
+test_that("rebuilding from @data resurrects a deleted key", {
+  d <- .promo_design(full_keys)
+
+  d2 <- set_vendor(d, NULL)
+  expect_identical(extract_vendor(d2), NA_character_)
+
+  rebuilt <- as_survey(
+    d2@data,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_vendor(rebuilt), full_keys$vendor)
+})
+
+test_that("column subsetting @data drops the attributes, so a rebuild promotes nothing", {
+  # Whole-object attributes are fragile: selecting columns with base `[` builds
+  # a new frame without them, so nothing is left to promote. This is why the
+  # roxygen advises setting dataset metadata last.
+  d <- .promo_design(full_keys)
+  expect_identical(extract_vendor(d), full_keys$vendor)
+
+  stripped <- d@data[, names(d@data), drop = FALSE]
+  expect_null(attr(stripped, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    stripped,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("merge() drops the attributes, so a rebuild promotes nothing", {
+  d <- .promo_design(full_keys)
+
+  lookup <- data.frame(strata = unique(d@data$strata))
+  lookup$region <- seq_len(nrow(lookup))
+  merged <- merge(d@data, lookup, by = "strata")
+  expect_null(attr(merged, "vendor", exact = TRUE))
+
+  rebuilt <- as_survey(
+    merged,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_identical(extract_dataset_metadata(rebuilt), list())
+})
+
+test_that("as_survey() warns once for an invalid field_period and never falls back to dates", {
+  # A present-but-invalid field_period stops the legacy fallback: repairing
+  # from `dates` would hide the invalid value. So exactly one warning fires,
+  # it is the canonical DM-7a variant, and field_period stays unset.
+  keys <- list(field_period = 99, dates = "February-March 2026")
+
+  warnings <- testthat::capture_warnings(d <- .promo_design(keys))
+  expect_length(warnings, 1L)
+  expect_identical(extract_dataset_metadata(d), list())
+  expect_snapshot(d2 <- .promo_design(keys))
+})
+
+
+# The other two constructors that accept a raw data frame (spec section V.1).
+
+test_that("as_survey_replicate() promotes the dataset attributes", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 202L
+  )
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_replicate() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 203L
+  )
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1"
+    ),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the dataset attributes", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 204L)
+  for (nm in names(full_keys)) {
+    attr(df, nm) <- full_keys[[nm]]
+  }
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(extract_dataset_metadata(d), full_keys)
+})
+
+test_that("as_survey_nonprob() warns and drops an invalid dataset attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 205L)
+  attr(df, "vendor") <- 42
+
+  expect_warning(
+    d <- as_survey_nonprob(df, weights = wt),
+    class = "surveycore_warning_dataset_metadata_dropped"
+  )
+
+  expect_identical(extract_dataset_metadata(d), list())
+})
+
+test_that("as_survey_nonprob() promotes the weighting_history attribute", {
+  # This branch never promoted weighting history, unlike as_survey() and
+  # as_survey_replicate(). The missing call is a pre-existing inconsistency,
+  # fixed here. `history` holds a genuine non-empty list, so the assertion
+  # fails against the unfixed constructor.
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 206L)
+  history <- list(list(step = 1L, operation = "raking"))
+  attr(df, "weighting_history") <- history
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(d@metadata@weighting_history, history)
+})
+
+test_that("as_survey_nonprob() leaves weighting_history as list() with no attribute", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, seed = 207L)
+
+  d <- as_survey_nonprob(df, weights = wt)
+
+  expect_identical(d@metadata@weighting_history, list())
 })

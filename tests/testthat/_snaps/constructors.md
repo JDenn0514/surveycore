@@ -768,3 +768,98 @@
       i A negative scale factor produces negative variance, which is nonsensical.
       v Use `scale = 0` to exclude a replicate's contribution, or omit `scale` to use the type-specific default.
 
+# as_survey() warns and drops a wrong-typed canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <numeric> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops a canonical attribute of length > 1
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <character> of length 2.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops an NA canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <character> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops an unparseable date attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute field_start has an invalid value and was not promoted.
+      i Expected a Date scalar or an ISO 8601 date string (YYYY-MM-DD); got <character> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+
+# as_survey() warns and drops a zero-length canonical attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute vendor has a zero-length value and was not promoted.
+      v Set a single non-NA value, or remove the attribute.
+
+# as_survey() warns once and drops both dates when the pair is reversed
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attributes field_start and field_end are reversed (2026-03-04 is after 2026-02-10); neither was promoted.
+      v Correct the dates on the data frame, or set them later with `set_field_dates()`.
+
+# as_survey() warns with the legacy variant for a wrong-typed dates attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns with the legacy variant for a zero-length dates attribute
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns with the legacy variant for a dates attribute of length > 1
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Legacy dataset attribute dates has an invalid value and was not promoted to "field_period".
+      v Set the period with `set_field_period()`.
+
+# as_survey() warns once for an invalid field_period and never falls back to dates
+
+    Code
+      d2 <- .promo_design(keys)
+    Condition
+      Warning:
+      ! Dataset attribute field_period has an invalid value and was not promoted.
+      i Expected a single non-NA character string; got <numeric> of length 1.
+      v Fix the attribute on the data frame, or set the key later with `set_dataset_metadata()`.
+

@@ -106,6 +106,12 @@ reference:
       - set_higher_is
       - set_reverse_coded
       - infer_question_prefaces
+      - set_dataset_metadata
+      - set_survey_name
+      - set_data_name
+      - set_vendor
+      - set_field_dates
+      - set_field_period
 
   - title: "Metadata — extractors"
     desc: >
@@ -121,6 +127,12 @@ reference:
       - extract_higher_is
       - extract_reverse_coded
       - extract_metadata
+      - extract_dataset_metadata
+      - extract_survey_name
+      - extract_data_name
+      - extract_vendor
+      - extract_field_dates
+      - extract_field_period
       - classify_question_type
       - survey_weighting_history
 

@@ -54,11 +54,11 @@ names(coll2)
 \seealso{
 \code{\link[=as_survey_collection]{as_survey_collection()}}, \code{\link[=remove_survey]{remove_survey()}}
 
-Other collections: 
-\code{\link{as_survey_collection}()},
-\code{\link{remove_survey}()},
-\code{\link{set_collection_id}()},
-\code{\link{set_collection_if_missing_var}()},
-\code{\link{survey_collection}()}
+Other collections:
+\code{\link[=as_survey_collection]{as_survey_collection()}},
+\code{\link[=remove_survey]{remove_survey()}},
+\code{\link[=set_collection_id]{set_collection_id()}},
+\code{\link[=set_collection_if_missing_var]{set_collection_if_missing_var()}},
+\code{\link[=survey_collection]{survey_collection()}}
 }
 \concept{collections}

@@ -1,0 +1,5 @@
+*.sh text eol=lf
+
+# testthat snapshots are written LF and must stay LF, or every test run
+# shows all of _snaps/ as modified with no content change. (issue #161)
+tests/testthat/_snaps/*.md text eol=lf

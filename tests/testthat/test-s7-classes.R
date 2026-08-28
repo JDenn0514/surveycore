@@ -186,7 +186,6 @@ test_that("survey_taylor() creates valid object for stratified cluster design", 
       nest = TRUE
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_taylor))
   expect_identical(d@variables$ids, "psu")
   expect_identical(d@variables$strata, "strata")
@@ -209,7 +208,6 @@ test_that("survey_taylor() creates valid object for two-stage cluster design", {
       ids = c("psu", "ssu")
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$ids, c("psu", "ssu"))
 })
 
@@ -222,7 +220,6 @@ test_that("survey_taylor() allows NA weights (non-NA must be positive)", {
     data = df,
     variables = .taylor_vars(weights = "wt")
   )
-  test_invariants(d)
   expect_true(is.na(d@data$wt[2]))
 })
 
@@ -382,7 +379,6 @@ test_that("survey_replicate() creates valid BRR design", {
       type = "BRR"
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_replicate))
   expect_identical(d@variables$weights, "wt")
   expect_identical(d@variables$repweights, paste0("rw", 1:4))
@@ -400,7 +396,6 @@ test_that("survey_replicate() creates valid JK1 design", {
       type = "JK1"
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$type, "JK1")
 })
 
@@ -502,7 +497,6 @@ test_that("survey_twophase() creates valid object with minimal spec", {
       visible_vars = NULL
     )
   )
-  test_invariants(d)
   expect_true(S7::S7_inherits(d, survey_twophase))
   expect_identical(d@variables$subset, "ph2")
   expect_identical(d@variables$method, "full")
@@ -531,7 +525,6 @@ test_that("survey_twophase() creates valid object with phase2 strata col", {
       visible_vars = NULL
     )
   )
-  test_invariants(d)
   expect_identical(d@variables$phase2$strata, "ph2_str")
 })
 
@@ -799,7 +792,6 @@ test_that("survey_nonprob validator accepts zero weights with at least one posit
       visible_vars = NULL
     )
   )
-  test_invariants(obj)
   expect_s3_class(obj@data, "data.frame")
   expect_equal(sum(obj@data$w == 0), 3L)
 })
@@ -963,7 +955,6 @@ test_that("survey_taylor @calibration accepts a list", {
   design <- as_survey(df, ids = psu, weights = wt, strata = strata)
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   design@calibration <- list(cd)
-  test_invariants(design)
   expect_type(design@calibration, "list")
   expect_length(design@calibration, 1L)
 })
@@ -993,7 +984,6 @@ test_that("survey_replicate has @calibration == NULL by default", {
     repweights = starts_with("repwt_"),
     type = "BRR"
   )
-  test_invariants(design)
   expect_null(design@calibration)
 })
 
@@ -1007,7 +997,6 @@ test_that("survey_replicate @calibration accepts a list", {
   )
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   design@calibration <- list(cd)
-  test_invariants(design)
   expect_type(design@calibration, "list")
   expect_length(design@calibration, 1L)
 })
@@ -1034,4 +1023,387 @@ test_that("survey_replicate S7 validator passes when @calibration is a non-empty
   cd <- as_caldata(df$wt, rep(1.05, nrow(df)), matrix(1, nrow(df), 1))
   design@calibration <- list(cd)
   expect_no_error(S7::check_is_S7(design))
+})
+
+
+# ── survey_metadata @dataset_metadata property ────────────────────────────────
+
+test_that("survey_metadata() defaults @dataset_metadata to an empty list", {
+  m <- survey_metadata()
+  expect_identical(m@dataset_metadata, list())
+})
+
+test_that("survey_metadata() stores a single dataset metadata key", {
+  m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+  expect_identical(m@dataset_metadata, list(vendor = "Ipsos"))
+})
+
+test_that("survey_metadata() accepts all six canonical dataset keys", {
+  m <- survey_metadata(dataset_metadata = full_keys)
+  expect_identical(m@dataset_metadata, full_keys)
+  expect_identical(names(m@dataset_metadata), names(full_keys))
+})
+
+test_that("survey_metadata() accepts an unrelated survey_name / data_name pair", {
+  m <- survey_metadata(
+    dataset_metadata = list(
+      survey_name = "Formal Survey Name 2026",
+      data_name = "Something Completely Different"
+    )
+  )
+  expect_identical(m@dataset_metadata$survey_name, "Formal Survey Name 2026")
+  expect_identical(
+    m@dataset_metadata$data_name,
+    "Something Completely Different"
+  )
+})
+
+test_that("survey_metadata() keeps other properties intact alongside @dataset_metadata", {
+  m <- survey_metadata(
+    variable_labels = list(age = "Age in years"),
+    dataset_metadata = list(vendor = "Ipsos")
+  )
+  expect_identical(m@variable_labels, list(age = "Age in years"))
+  expect_identical(m@dataset_metadata, list(vendor = "Ipsos"))
+})
+
+test_that("as_survey() designs start with an empty @dataset_metadata", {
+  df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 11)
+  design <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_identical(design@metadata@dataset_metadata, list())
+})
+
+
+# ── survey_metadata validator: structural checks (spec III.3 checks 2-6) ──────
+
+test_that("survey_metadata validator accepts an explicitly empty dataset list", {
+  m <- survey_metadata()
+  m@dataset_metadata <- list()
+  expect_identical(m@dataset_metadata, list())
+})
+
+test_that("survey_metadata validator rejects an unnamed dataset metadata entry", {
+  expect_error(
+    survey_metadata(dataset_metadata = list("Ipsos")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects a partially named dataset metadata list", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = "Ipsos", "Cint")),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA dataset metadata key name", {
+  bad <- stats::setNames(list("Ipsos"), NA_character_)
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+})
+
+test_that("survey_metadata validator rejects an empty dataset metadata key name", {
+  bad <- stats::setNames(list("Ipsos"), "")
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_unnamed"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    regexp = "All dataset metadata entries must have a non-empty name."
+  )
+})
+
+test_that("survey_metadata validator rejects a duplicated dataset metadata key", {
+  bad <- list(vendor = "Ipsos", vendor = "Cint")
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_duplicate_key"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    regexp = "Duplicate dataset metadata key\\(s\\): vendor."
+  )
+})
+
+test_that("survey_metadata validator rejects a key outside the closed vocabulary", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(mode = "web")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(mode = "web")),
+    regexp = "Unknown dataset metadata key: mode."
+  )
+})
+
+test_that("survey_metadata validator rejects the legacy dates key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(dates = "February-March 2026")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata validator rejects a key that names a base attribute", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(class = "tbl_df")),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata validator rejects a NULL dataset metadata element", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = NULL)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a NULL element on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = NULL)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+
+# ── survey_metadata validator: per-key value rules (spec III.3 check 7) ───────
+
+# Each of the four character keys is violable three ways — non-character,
+# length 2, and NA. All twelve cases carry the same class, and all twelve are
+# asserted, because this suite is what guards the closed value contract on
+# every later change.
+
+test_that("survey_metadata validator rejects a non-character survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = 1L)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = 1L)),
+    regexp = paste(
+      "Dataset metadata key survey_name must be a single non-NA",
+      "character string."
+    )
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = c("a", "b"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA survey_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(survey_name = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a non-character data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = TRUE)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = c("a", "b"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA data_name", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(data_name = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a non-character vendor", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = 1L)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = 1L)),
+    regexp = paste(
+      "Dataset metadata key vendor must be a single non-NA",
+      "character string."
+    )
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 vendor", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = c("Ipsos", "Cint"))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA vendor", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(vendor = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a non-character field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = 2026)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 field_period", {
+  bad <- list(field_period = c("February 2026", "March 2026"))
+  expect_error(
+    survey_metadata(dataset_metadata = bad),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = NA_character_)),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects a zero-length field_period", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_period = character(0))),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata validator rejects an ISO string on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = "2026-02-10")),
+    class = "surveycore_error_field_date_invalid"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = "2026-02-10")),
+    regexp = "Dataset metadata key field_start must be a Date scalar."
+  )
+})
+
+test_that("survey_metadata validator rejects a numeric field_end", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_end = 20000)),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator rejects an NA Date on a date key", {
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = as.Date(NA))),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator rejects a length-2 Date on a date key", {
+  two_dates <- as.Date(c("2026-02-10", "2026-02-11"))
+  expect_error(
+    survey_metadata(dataset_metadata = list(field_start = two_dates)),
+    class = "surveycore_error_field_date_invalid"
+  )
+})
+
+test_that("survey_metadata validator accepts field_start with field_end absent", {
+  m <- survey_metadata(
+    dataset_metadata = list(field_start = as.Date("2026-02-10"))
+  )
+  expect_identical(m@dataset_metadata$field_start, as.Date("2026-02-10"))
+})
+
+test_that("survey_metadata validator accepts field_end with field_start absent", {
+  m <- survey_metadata(
+    dataset_metadata = list(field_end = as.Date("2026-03-04"))
+  )
+  expect_identical(m@dataset_metadata$field_end, as.Date("2026-03-04"))
+})
+
+
+# ── survey_metadata validator: date pair (check 8) and re-validation ──────────
+
+test_that("survey_metadata validator rejects a reversed field date pair", {
+  reversed <- list(
+    field_start = as.Date("2026-03-04"),
+    field_end = as.Date("2026-02-10")
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = reversed),
+    class = "surveycore_error_field_dates_reversed"
+  )
+  expect_error(
+    survey_metadata(dataset_metadata = reversed),
+    regexp = "field_start is after field_end."
+  )
+})
+
+test_that("survey_metadata validator accepts field_start equal to field_end", {
+  same_day <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-02-10")
+  )
+  m <- survey_metadata(dataset_metadata = same_day)
+  expect_identical(m@dataset_metadata, same_day)
+})
+
+test_that("survey_metadata validator accepts field_start before field_end", {
+  ordered_pair <- list(
+    field_start = as.Date("2026-02-10"),
+    field_end = as.Date("2026-03-04")
+  )
+  m <- survey_metadata(dataset_metadata = ordered_pair)
+  expect_identical(m@dataset_metadata, ordered_pair)
+})
+
+test_that("survey_metadata re-validates @dataset_metadata on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(mode = "web"),
+    class = "surveycore_error_dataset_key_unknown"
+  )
+})
+
+test_that("survey_metadata re-validates a bad value type on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(vendor = 1L),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+})
+
+test_that("survey_metadata re-validates a reversed date pair on assignment", {
+  m <- survey_metadata()
+  expect_error(
+    m@dataset_metadata <- list(
+      field_start = as.Date("2026-03-04"),
+      field_end = as.Date("2026-02-10")
+    ),
+    class = "surveycore_error_field_dates_reversed"
+  )
+})
+
+test_that("survey_metadata assignment round-trips a valid dataset metadata list", {
+  m <- survey_metadata()
+  m@dataset_metadata <- full_keys
+  expect_identical(m@dataset_metadata, full_keys)
+})
+
+test_that("a design's @metadata re-validates @dataset_metadata on assignment", {
+  df <- make_survey_data(n = 60, n_psu = 12, n_strata = 3, seed = 12)
+  design <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  expect_error(
+    design@metadata@dataset_metadata <- list(vendor = NA_character_),
+    class = "surveycore_error_dataset_metadata_bad_type"
+  )
+  design@metadata@dataset_metadata <- list(vendor = "Ipsos")
+  expect_identical(design@metadata@dataset_metadata, list(vendor = "Ipsos"))
 })

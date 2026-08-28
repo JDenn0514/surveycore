@@ -57,6 +57,25 @@
 #'   parameters, effective sample size before/after, and design effect.
 #'   Always `list()` until a \pkg{surveywts} weighting function is
 #'   applied. Reserved for Phase 2.5.
+#' @param dataset_metadata A named list of whole-dataset facts. The key
+#'   vocabulary is **closed** — exactly six keys are valid, each with a
+#'   declared type:
+#'   * `survey_name` — `character(1)`, the full formal survey name.
+#'   * `data_name` — `character(1)`, the display label for this dataset.
+#'   * `vendor` — `character(1)`, the fielding vendor.
+#'   * `field_start` — `Date` of length 1, the first day in the field.
+#'   * `field_end` — `Date` of length 1, the last day in the field.
+#'   * `field_period` — `character(1)`, the prose field period.
+#'
+#'   No value may be `NA` and no element may be `NULL`. Any other key is
+#'   rejected. `survey_name` and `data_name` are independent: no function
+#'   derives one from the other. Use [set_dataset_metadata()] to write keys
+#'   and [extract_dataset_metadata()] to read them; the default is `list()`.
+#'   Each key also has a convenience pair: [set_survey_name()],
+#'   [set_data_name()], [set_vendor()], [set_field_dates()],
+#'   [set_field_period()], and the matching [extract_survey_name()],
+#'   [extract_data_name()], [extract_vendor()], [extract_field_dates()],
+#'   [extract_field_period()].
 #'
 #' @return A `survey_metadata` object.
 #'
@@ -72,6 +91,10 @@
 #' )
 #' m@variable_labels$age
 #' m@value_labels$sex
+#'
+#' # Dataset-level metadata (closed six-key vocabulary)
+#' m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+#' m@dataset_metadata$vendor
 #' @family metadata
 #' @export
 survey_metadata <- S7::new_class(
@@ -124,8 +147,126 @@ survey_metadata <- S7::new_class(
     weighting_history = S7::new_property(
       S7::class_list,
       default = quote(list())
+    ),
+    # Dataset-level metadata. Closed vocabulary — exactly six valid keys:
+    # survey_name, data_name, vendor, field_start, field_end, field_period.
+    dataset_metadata = S7::new_property(
+      S7::class_list,
+      default = quote(list())
     )
-  )
+  ),
+  # Layer 1 validator. Checks @dataset_metadata only. Messages are plain
+  # one-line text (the C1 / C4 / G1 precedent), not the CLI x/i/v register.
+  # S7 runs this on construction and again on every @<- assignment.
+  validator = function(self) {
+    dm <- self@dataset_metadata
+
+    # Every check below applies to a non-empty list only.
+    if (length(dm) == 0L) {
+      return(NULL)
+    }
+
+    nms <- names(dm)
+
+    # Checks 2-3 — every element has a name, and no name is NA or empty.
+    if (is.null(nms) || anyNA(nms) || !all(nzchar(nms))) {
+      cli::cli_abort(
+        "All dataset metadata entries must have a non-empty name.",
+        class = "surveycore_error_dataset_metadata_unnamed"
+      )
+    }
+
+    # Check 4 — no name is duplicated.
+    dupes <- unique(nms[duplicated(nms)])
+    if (length(dupes) > 0L) {
+      dupes_txt <- paste(dupes, collapse = ", ")
+      cli::cli_abort(
+        "Duplicate dataset metadata key(s): {dupes_txt}.",
+        class = "surveycore_error_dataset_metadata_duplicate_key"
+      )
+    }
+
+    # Check 5 — every name is one of the six valid keys.
+    unknown <- setdiff(nms, .dataset_metadata_keys)
+    if (length(unknown) > 0L) {
+      key <- unknown[[1L]]
+      cli::cli_abort(
+        "Unknown dataset metadata key: {key}.",
+        class = "surveycore_error_dataset_key_unknown"
+      )
+    }
+
+    # Check 6 — no element is NULL. Deletion removes the element; it never
+    # stores a NULL.
+    null_elements <- vapply(dm, is.null, logical(1L))
+    if (any(null_elements)) {
+      key <- nms[null_elements][[1L]]
+      cli::cli_abort(
+        paste0(
+          "Dataset metadata key {key} must be a single non-NA ",
+          "character string."
+        ),
+        class = "surveycore_error_dataset_metadata_bad_type"
+      )
+    }
+
+    # Check 7 — every present key's value passes the canonical value table.
+    for (key in nms) {
+      value <- dm[[key]]
+
+      # Delegate to the shared checker FIRST, then re-raise each of its
+      # CLI-formatted errors as the matching plain Layer 1 one-liner. Every
+      # line the checker adds is reachable through this call.
+      tryCatch(
+        .check_dataset_key_value(key, value, mode = "error"),
+        surveycore_error_dataset_metadata_bad_type = function(cnd) {
+          cli::cli_abort(
+            paste0(
+              "Dataset metadata key {key} must be a single non-NA ",
+              "character string."
+            ),
+            class = "surveycore_error_dataset_metadata_bad_type"
+          )
+        },
+        surveycore_error_field_date_invalid = function(cnd) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      )
+
+      # Validator narrowing: a STORED date is always a Date scalar, because
+      # only coerced values reach storage. DO NOT deduplicate this against the
+      # checker's date branch, even while the two agree — the checker widens to
+      # accept strict-ISO strings for setter callers, and this branch is what
+      # keeps the class layer rejecting a stored ISO string after that.
+      if (key %in% .dataset_date_keys) {
+        date_ok <- inherits(value, "Date") &&
+          length(value) == 1L &&
+          !is.na(value)
+        if (!date_ok) {
+          cli::cli_abort(
+            "Dataset metadata key {key} must be a Date scalar.",
+            class = "surveycore_error_field_date_invalid"
+          )
+        }
+      }
+    }
+
+    # Check 8 — when both dates are present, field_start must not be after
+    # field_end. A single date needs no comparison.
+    if (all(.dataset_date_keys %in% nms)) {
+      if (dm[["field_start"]] > dm[["field_end"]]) {
+        cli::cli_abort(
+          "field_start is after field_end.",
+          class = "surveycore_error_field_dates_reversed"
+        )
+      }
+    }
+
+    NULL
+  }
 )
 
 

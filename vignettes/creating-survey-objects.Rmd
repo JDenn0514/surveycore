@@ -699,7 +699,166 @@ population unless the sample can be independently defended as representative.
 
 ---
 
-## 8. Reference: Common Codebook Variables {#sec-reference}
+## 8. Dataset-level metadata {#sec-dataset-metadata}
+
+The constructors carry two kinds of metadata. Variable-level metadata
+describes one column — a variable label, value labels, a question preface.
+Dataset-level metadata describes the whole dataset: what the survey is called,
+who fielded it, and when it was in the field.
+
+There are exactly six dataset-level keys. The vocabulary is closed, so any
+other name is rejected:
+
+| Key | Type | Meaning | Example |
+|---|---|---|---|
+| `survey_name` | `character(1)` | Full formal survey name. No dates. | `"Antisemitic Attitudes in America 2026"` |
+| `data_name` | `character(1)` | Display label for this dataset. | `"AAA Ipsos (February-March 2026)"` |
+| `vendor` | `character(1)` | Fielding vendor. | `"Ipsos KnowledgePanel Omnibus"` |
+| `field_start` | `Date(1)` | First day in the field. | `as.Date("2026-02-10")` |
+| `field_end` | `Date(1)` | Last day in the field. | `as.Date("2026-03-04")` |
+| `field_period` | `character(1)` | Prose field period, for display. | `"February-March 2026"` |
+
+### 8.1 The `data-raw/` workflow
+
+On a data frame, dataset metadata lives in whole-object attributes. Set them
+in the `data-raw/` script that prepares the dataset, then save the frame:
+
+```{r dm-dataraw}
+aaa <- data.frame(
+  psu = rep(1:10, each = 20),
+  stratum = rep(1:5, each = 40),
+  wt = rep(c(0.8, 1.2), 100),
+  approve = rep(c(1, 0), 100)
+)
+
+aaa <- set_dataset_metadata(
+  aaa,
+  survey_name = "Antisemitic Attitudes in America 2026",
+  data_name = "AAA Ipsos (February-March 2026)",
+  vendor = "Ipsos KnowledgePanel Omnibus",
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04"),
+  field_period = "February-March 2026"
+)
+
+extract_dataset_metadata(aaa, format = "data_frame")
+```
+
+In a real `data-raw/` script the last line is `usethis::use_data(aaa)`. The
+attributes travel with the saved object.
+
+Every constructor promotes those attributes into the design's metadata, so no
+extra step is needed at construction:
+
+```{r dm-promote}
+svy_aaa <- as_survey(aaa, ids = psu, weights = wt, strata = stratum)
+
+print(svy_aaa, metadata_info = TRUE, n = 3)
+```
+
+You can also set the keys directly on a design. That is the better choice when
+the values were not available when the dataset was built:
+
+```{r dm-on-design}
+svy_aaa <- set_vendor(svy_aaa, "Ipsos KnowledgePanel Omnibus")
+svy_aaa <- set_field_dates(
+  svy_aaa,
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04")
+)
+
+extract_field_dates(svy_aaa)
+```
+
+### 8.2 `survey_name` and `data_name` are independent
+
+The two name keys answer two different questions, and nothing in surveycore
+derives one from the other:
+
+```{r dm-two-names}
+extract_survey_name(svy_aaa)
+extract_data_name(svy_aaa)
+```
+
+- `survey_name` is the full formal name of the **survey** — the study, the
+  instrument, the thing you cite. It carries no dates.
+- `data_name` is a short display label for **this dataset** — usually a short
+  name plus the field period. It is what the print header shows.
+
+No function reads one key to compute, fill, or check the other. Set one and the
+other stays unset. Change one and the other keeps its old value, so the two can
+drift apart. The print output shows both, which is how you see the drift.
+
+### 8.3 Attribute persistence: set the metadata last
+
+Whole-object attributes on a data frame are fragile. Several everyday
+operations return a new frame without them:
+
+| Operation | Attributes |
+|---|---|
+| `df[, cols]` — the **column** form of `[` | dropped |
+| `df[rows, ]` — the **row** form of `[` | kept |
+| `merge()` | dropped |
+| `subset()`, either form | dropped |
+| `tibble::as_tibble()` | version dependent — do not rely on it |
+
+The column form of `[` drops the attributes; the row form keeps them. So a
+row filter is safe and a column selection is not:
+
+```{r dm-persistence}
+extract_vendor(aaa[1:5, ])
+extract_vendor(aaa[, c("psu", "wt")])
+```
+
+`tibble::as_tibble()` has dropped these attributes in some tibble versions and
+kept them in others, so neither behavior is safe to rely on.
+
+The practical advice follows from the table. Either:
+
+- set dataset metadata **last** in the `data-raw/` script, directly before
+  `usethis::use_data()`, after every reshape, join, and column selection is
+  done; or
+- set it on the survey design instead. There it lives in the design's
+  metadata, where no data-frame operation can drop it.
+
+A constructor **copies** these attributes into the design; it never strips
+them. The data frame inside a design therefore still carries the values it was
+built with:
+
+```{r dm-resurrection}
+svy_cint <- set_vendor(svy_aaa, "Cint")
+
+# The design reports the new value.
+extract_vendor(svy_cint)
+
+# The data frame inside it still carries the original.
+extract_vendor(survey_data(svy_cint))
+```
+
+Rebuilding a design from the frame that `survey_data()` returns therefore
+re-promotes the original attributes, and an edited or deleted key comes back.
+Avoid that round trip and keep working with the design object.
+
+### 8.4 `extract_metadata()` reports variables only
+
+`extract_metadata()` is deliberately separate from the dataset-level API. It
+reports per-variable fields only, and a dataset-level key is not a variable, so
+the six keys never appear in its output. They have their own accessors —
+`extract_dataset_metadata()` and the five convenience extractors:
+
+```{r dm-carveout}
+svy_aaa <- set_var_label(svy_aaa, approve = "Approves of current policy")
+
+# Variable names only — no dataset-level keys.
+names(extract_metadata(svy_aaa))
+
+# The dataset-level keys live here.
+names(extract_dataset_metadata(svy_aaa))
+```
+
+---
+
+## 9. Reference: Common Codebook Variables {#sec-reference}
 
 A lookup table for common codebook terms and how they map to constructor
 arguments:

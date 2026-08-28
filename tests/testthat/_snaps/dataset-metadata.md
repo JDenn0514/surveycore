@@ -1,0 +1,483 @@
+# extract_var_label() still rejects fill = NA (sibling regression)
+
+    Code
+      extract_var_label(d, fill = NA)
+    Condition
+      Error:
+      x `extract_var_label()` does not accept `fill = NA`.
+      i Valid values for `extract_var_label()`: "NULL" (omit) or `NA_character_` (include with NA).
+
+# extract_dataset_metadata() rejects a non-survey, non-frame x
+
+    Code
+      extract_dataset_metadata(1L)
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <integer>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# extract_dataset_metadata() rejects both ... and key together
+
+    Code
+      extract_dataset_metadata(d, vendor, key = "vendor")
+    Condition
+      Error:
+      x Provide key names via `...` or via `key`, not both.
+      i Use named `...` args, a named list in `...`, or the `key` argument — not a mix.
+
+# extract_dataset_metadata() rejects a tidyselect helper in ...
+
+    Code
+      extract_dataset_metadata(d, all_of("vendor"))
+    Condition
+      Error:
+      x `...` must contain bare key names or strings.
+      i Tidy-select helpers do not apply here: a dataset metadata key is not a column.
+      v Use bare names (`vendor`), strings ("vendor"), or the `key` argument.
+
+# extract_dataset_metadata() rejects an unknown requested key
+
+    Code
+      extract_dataset_metadata(d, mode)
+    Condition
+      Error:
+      x "mode" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
+# extract_dataset_metadata() rejects an invalid format
+
+    Code
+      extract_dataset_metadata(d, format = "named_vector")
+    Condition
+      Error:
+      x `extract_dataset_metadata()` received an invalid `format` value "named_vector".
+      i `format` must be one of "list" and "data_frame".
+
+# extract_dataset_metadata() rejects an invalid fill
+
+    Code
+      extract_dataset_metadata(d, fill = "none")
+    Condition
+      Error:
+      x `extract_dataset_metadata()` does not accept `fill = "none"`.
+      i Valid values for `extract_dataset_metadata()`: "NULL" (omit), `NA`, or `NA_character_` (include with NA).
+
+# set_var_label() keeps the default setter_ambiguous wording
+
+    Code
+      set_var_label(d, y1 = "A", variable = "y2")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+      i Use named `...` args, a named vector in `...`, or `variable` + `label` — not a mix.
+
+# set_var_label() keeps the default setter_empty wording
+
+    Code
+      set_var_label(d)
+    Condition
+      Error:
+      x `set_var_label()` requires at least one variable-label pair.
+      v Use named `...` args: `set_var_label(x, age = 'Age in years')`.
+
+# set_var_label() keeps the default empty_variables wording
+
+    Code
+      set_var_label(d, variable = character(0))
+    Condition
+      Warning:
+      ! `set_var_label()` was called with `variable` of length 0.
+      i No metadata was set. Did you accidentally filter all variable names out?
+
+# set_var_label() keeps the default mismatched_lengths wording
+
+    Code
+      set_var_label(d, variable = c("y1", "y2"), label = "A")
+    Condition
+      Error:
+      x `variable` has 2 elements but `label` has 1 element.
+      i They must be the same length (one content value per variable name).
+
+# set_var_label() keeps the default mixed_dots wording
+
+    Code
+      set_var_label(d, "y1", "y2", "y3")
+    Condition
+      Error:
+      x All `...` arguments must be named when using Convention 1.
+      i Got 0 named and 3 unnamed elements.
+      v Use `set_var_label(x, age = 'Age', income = 'Annual income')` or a fully named vector.
+
+# set_dataset_metadata() rejects both ... and key on a design
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos", key = "vendor")
+    Condition
+      Error:
+      x Provide key names via `...` or via `key`, not both.
+      i Use named `...` args, a named list in `...`, or `key` + `value` — not a mix.
+
+# set_dataset_metadata() rejects a call with no key at all
+
+    Code
+      set_dataset_metadata(d)
+    Condition
+      Error:
+      x `set_dataset_metadata()` requires at least one key-value pair.
+      v Use named `...` args: `set_dataset_metadata(x, vendor = 'Ipsos')`.
+
+# set_dataset_metadata() warns and no-ops for a length-0 key
+
+    Code
+      set_dataset_metadata(d, key = character(0))
+    Condition
+      Warning:
+      ! `set_dataset_metadata()` was called with `key` of length 0.
+      i No metadata was set. Did you accidentally filter all key names out?
+
+# set_dataset_metadata() rejects mismatched key and value lengths
+
+    Code
+      set_dataset_metadata(d, key = c("vendor", "data_name"), value = list("Ipsos"))
+    Condition
+      Error:
+      x `key` has 2 elements but `value` has 1 element.
+      i They must be the same length (one content value per key name).
+
+# set_dataset_metadata() rejects unnamed ... elements
+
+    Code
+      set_dataset_metadata(d, "vendor", "data_name")
+    Condition
+      Error:
+      x All `...` arguments must be named when using Convention 1.
+      i Got 0 named and 2 unnamed elements.
+      v Use `set_dataset_metadata(x, vendor = 'Ipsos', data_name = 'AAA Ipsos (February-March 2026)')` or a fully named list.
+
+# set_dataset_metadata() rejects a blank key name on a design
+
+    Code
+      set_dataset_metadata(d, key = c(""))
+    Condition
+      Error:
+      x All dataset metadata keys must have a non-empty name.
+      i Found 1 unnamed or blank-named entry.
+
+# set_dataset_metadata() counts every blank key name
+
+    Code
+      set_dataset_metadata(d, key = c("", "vendor", ""))
+    Condition
+      Error:
+      x All dataset metadata keys must have a non-empty name.
+      i Found 2 unnamed or blank-named entries.
+
+# set_dataset_metadata() rejects a duplicated named ... key
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos", vendor = "Cint")
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "vendor".
+      i Each key must appear exactly once.
+
+# set_dataset_metadata() rejects a duplicated Convention 3 key
+
+    Code
+      set_dataset_metadata(d, key = c("vendor", "vendor"), value = list("Ipsos",
+        "Cint"))
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "vendor".
+      i Each key must appear exactly once.
+
+# the dates alias resolves before the duplicate check
+
+    Code
+      set_dataset_metadata(d, dates = NULL, field_period = "Feb 2026")
+    Condition
+      Error:
+      x Duplicate dataset metadata key: "field_period".
+      i Each key must appear exactly once.
+
+# set_dataset_metadata() rejects an unknown key on a design
+
+    Code
+      set_dataset_metadata(d, mode = "web")
+    Condition
+      Error:
+      x "mode" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
+# an unknown key with the wrong case shows the did-you-mean hint
+
+    Code
+      set_dataset_metadata(d, Vendor = "Ipsos")
+    Condition
+      Error:
+      x "Vendor" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# a misspelled unknown key shows the did-you-mean hint
+
+    Code
+      set_dataset_metadata(d, vender = "Ipsos")
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# the did-you-mean hint also fires on a frame
+
+    Code
+      set_dataset_metadata(df, vender = "Ipsos")
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# a non-NULL dates value is an unknown key naming field_period
+
+    Code
+      set_dataset_metadata(d, dates = "February-March 2026")
+    Condition
+      Error:
+      x "dates" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i The legacy "dates" attribute maps to "field_period".
+      v Use `set_field_period()`, or `dates = NULL` to delete.
+
+# a non-character key is coerced and then fails as unknown
+
+    Code
+      set_dataset_metadata(d, key = 1L, value = list("Ipsos"))
+    Condition
+      Error:
+      x "1" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+
+# the extractor renders the completed unknown-key hint on a design
+
+    Code
+      extract_dataset_metadata(d, vender)
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# the extractor renders the completed unknown-key hint on a frame
+
+    Code
+      extract_dataset_metadata(df, vender)
+    Condition
+      Error:
+      x "vender" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+      i Did you mean "vendor"?
+
+# a non-character value for a character key is rejected
+
+    Code
+      set_dataset_metadata(d, vendor = 1L)
+    Condition
+      Error:
+      x Dataset metadata key "vendor" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# a bare number for a date key is rejected
+
+    Code
+      set_dataset_metadata(d, field_start = 20260210)
+    Condition
+      Error:
+      x "field_start" must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <numeric> of length 1.
+      i Got 20260210.
+
+# an NA value for a date key is rejected with the NA bullet
+
+    Code
+      set_dataset_metadata(d, field_start = NA)
+    Condition
+      Error:
+      x "field_start" must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <logical> of length 1.
+      i Got NA.
+      i The value is NA.
+
+# a reversed date pair in one call is rejected on a design
+
+    Code
+      set_dataset_metadata(d, field_start = "2026-03-04", field_end = "2026-02-10")
+    Condition
+      Error:
+      x "field_start" (2026-03-04) is after "field_end" (2026-02-10).
+      v Swap the two dates, or correct the wrong one.
+
+# a write on a stale design raises the unavailable error
+
+    Code
+      set_dataset_metadata(d, vendor = "Ipsos")
+    Condition
+      Error:
+      x This object cannot store dataset metadata.
+      i It was created by surveycore <= 1.1.0, before the dataset_metadata property existed.
+      v Rebuild the object with `as_survey()` (or the matching constructor), then set the metadata.
+
+# set_vendor() with no value raises the wrapper setter_empty
+
+    Code
+      set_vendor(d)
+    Condition
+      Error:
+      x `set_vendor()` requires a value for `vendor`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_vendor() rejects a non-character value on a design
+
+    Code
+      set_vendor(d, 1L)
+    Condition
+      Error in `set_vendor()`:
+      x Dataset metadata key "vendor" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_survey_name() with no value raises setter_empty
+
+    Code
+      set_survey_name(d)
+    Condition
+      Error:
+      x `set_survey_name()` requires a value for `name`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_data_name() with no value raises setter_empty
+
+    Code
+      set_data_name(d)
+    Condition
+      Error:
+      x `set_data_name()` requires a value for `name`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_survey_name() rejects a non-character value on a design
+
+    Code
+      set_survey_name(d, 1L)
+    Condition
+      Error in `set_survey_name()`:
+      x Dataset metadata key "survey_name" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_data_name() rejects a non-character value on a design
+
+    Code
+      set_data_name(d, 1L)
+    Condition
+      Error in `set_data_name()`:
+      x Dataset metadata key "data_name" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_field_period() with no value raises setter_empty
+
+    Code
+      set_field_period(d)
+    Condition
+      Error:
+      x `set_field_period()` requires a value for `period`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_field_period() rejects a non-character value on a design
+
+    Code
+      set_field_period(d, 1L)
+    Condition
+      Error in `set_field_period()`:
+      x Dataset metadata key "field_period" must be a single non-NA character string, not <integer> of length 1.
+      v Supply a single non-NA character value, or `NULL` to delete the key.
+
+# set_field_dates() with no arguments raises setter_empty
+
+    Code
+      set_field_dates(d)
+    Condition
+      Error:
+      x `set_field_dates()` requires at least one of `field_start` or `field_end`.
+      v Supply a single character value, or `NULL` to delete the key.
+
+# set_field_dates() rejects a non-strict ISO start on a design
+
+    Code
+      set_field_dates(d, field_start = "2026/02/10")
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <character> of length 1.
+      i Got "2026/02/10".
+
+# set_field_dates() rejects a non-strict ISO end on a design
+
+    Code
+      set_field_dates(d, field_end = "2026-3-4")
+    Condition
+      Error:
+      x `field_end` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <character> of length 1.
+      i Got "2026-3-4".
+
+# set_field_dates() rejects a numeric date on a design
+
+    Code
+      set_field_dates(d, field_start = 20260210)
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <numeric> of length 1.
+      i Got 20260210.
+
+# set_field_dates() rejects an NA date with its own bullet
+
+    Code
+      set_field_dates(d, field_start = NA)
+    Condition
+      Error:
+      x `field_start` must be a Date scalar or an ISO 8601 date string (YYYY-MM-DD), not <logical> of length 1.
+      i Got NA.
+      i The value is NA.
+
+# a reversed pair in one set_field_dates() call is rejected
+
+    Code
+      set_field_dates(d, "2026-03-04", "2026-02-10")
+    Condition
+      Error in `set_field_dates()`:
+      x "field_start" (2026-03-04) is after "field_end" (2026-02-10).
+      v Swap the two dates, or correct the wrong one.
+
+# a start after the STORED end is rejected on a design
+
+    Code
+      set_field_dates(d, field_start = "2026-06-01")
+    Condition
+      Error in `set_field_dates()`:
+      x "field_start" (2026-06-01) is after "field_end" (2026-03-04).
+      v Swap the two dates, or correct the wrong one.
+
+# set_vendor() on a stale design names the rebuild remedy
+
+    Code
+      set_vendor(d, "x")
+    Condition
+      Error:
+      x This object cannot store dataset metadata.
+      i It was created by surveycore <= 1.1.0, before the dataset_metadata property existed.
+      v Rebuild the object with `as_survey()` (or the matching constructor), then set the metadata.
+
+# a distant unknown key renders the base unknown-key message
+
+    Code
+      set_dataset_metadata(d, zzz = "x")
+    Condition
+      Error:
+      x "zzz" is not a dataset metadata key.
+      i Valid keys: "survey_name", "data_name", "vendor", "field_start", "field_end", and "field_period".
+

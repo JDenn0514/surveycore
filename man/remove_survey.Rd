@@ -44,11 +44,11 @@ names(coll2)
 \seealso{
 \code{\link[=as_survey_collection]{as_survey_collection()}}, \code{\link[=add_survey]{add_survey()}}
 
-Other collections: 
-\code{\link{add_survey}()},
-\code{\link{as_survey_collection}()},
-\code{\link{set_collection_id}()},
-\code{\link{set_collection_if_missing_var}()},
-\code{\link{survey_collection}()}
+Other collections:
+\code{\link[=add_survey]{add_survey()}},
+\code{\link[=as_survey_collection]{as_survey_collection()}},
+\code{\link[=set_collection_id]{set_collection_id()}},
+\code{\link[=set_collection_if_missing_var]{set_collection_if_missing_var()}},
+\code{\link[=survey_collection]{survey_collection()}}
 }
 \concept{collections}

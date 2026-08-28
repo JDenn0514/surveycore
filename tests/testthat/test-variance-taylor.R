@@ -710,7 +710,6 @@ test_that(
       strata = sdmvstra,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~sdmvpsu,
       weights = ~wtmec2yr,
@@ -747,7 +746,6 @@ test_that(
       strata = strata,
       fpc = fpc
     )
-    test_invariants(sc)
     inp <- surveycore:::.taylor_build_inputs(sc, "y1")
     expect_identical(ncol(inp$clusters), 1L)
     expect_identical(ncol(inp$stratas), 1L)
@@ -773,7 +771,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     inp <- surveycore:::.taylor_build_inputs(sc, "y1")
     expect_identical(ncol(inp$clusters), 2L)
     expect_identical(ncol(inp$stratas), 2L)
@@ -842,7 +839,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       strata = ~strata,
@@ -883,7 +879,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       strata = ~strata,
@@ -974,7 +969,6 @@ test_that(
       ),
       class = "surveycore_warning_fpc_partial_stages"
     )
-    test_invariants(sc)
     # survey pkg needs one FPC column per stage; use Inf for
     # stages without FPC (= infinite population, no correction)
     df$fpc2_inf <- Inf
@@ -1021,7 +1015,6 @@ test_that(
       strata = strata,
       fpc = c(fpc, fpc2)
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1066,7 +1059,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1105,7 +1097,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1147,7 +1138,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1185,7 +1175,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1229,7 +1218,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1277,7 +1265,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu + unit,
       weights = ~wt,
@@ -1324,7 +1311,6 @@ test_that(
       ),
       class = "surveycore_warning_fpc_partial_stages"
     )
-    test_invariants(sc)
     # survey pkg needs one FPC column per stage; use Inf for
     # stages without FPC (= infinite population, no correction)
     df$fpc2_inf <- Inf
@@ -1373,7 +1359,6 @@ test_that(
       strata = strata,
       fpc = c(fpc, fpc2, fpc3)
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu + unit,
       weights = ~wt,
@@ -1424,7 +1409,6 @@ test_that(
       strata = strata,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1471,7 +1455,6 @@ test_that(
       strata = strata,
       nest = TRUE
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1516,7 +1499,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1564,7 +1546,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sc_dom <- surveytidy::filter(sc, domain == 1L)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
@@ -1618,7 +1599,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sc_dom <- surveytidy::filter(sc, domain == 1L)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
@@ -1670,7 +1650,6 @@ test_that(
       weights = wt,
       strata = strata
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~ psu + ssu,
       weights = ~wt,
@@ -1719,7 +1698,6 @@ test_that(
       strata = strata,
       fpc = fpc
     )
-    test_invariants(sc)
     sv <- survey::svydesign(
       id = ~psu,
       weights = ~wt,

@@ -118,16 +118,16 @@ two-phase stratified samples: applications in epidemiology.
 \code{\link[=as_survey]{as_survey()}} for Taylor series designs,
 \code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
 
-Other constructors: 
-\code{\link{as_caldata}()},
-\code{\link{as_survey}()},
-\code{\link{as_survey_nonprob}()},
-\code{\link{as_survey_replicate}()},
-\code{\link{survey_glm}()},
-\code{\link{survey_glm_fit}()},
-\code{\link{survey_nonprob}()},
-\code{\link{survey_replicate}()},
-\code{\link{survey_taylor}()},
-\code{\link{survey_twophase}()}
+Other constructors:
+\code{\link[=as_caldata]{as_caldata()}},
+\code{\link[=as_survey]{as_survey()}},
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}},
+\code{\link[=as_survey_replicate]{as_survey_replicate()}},
+\code{\link[=survey_glm]{survey_glm()}},
+\code{\link[=survey_glm_fit]{survey_glm_fit()}},
+\code{\link[=survey_nonprob]{survey_nonprob()}},
+\code{\link[=survey_replicate]{survey_replicate()}},
+\code{\link[=survey_taylor]{survey_taylor()}},
+\code{\link[=survey_twophase]{survey_twophase()}}
 }
 \concept{constructors}

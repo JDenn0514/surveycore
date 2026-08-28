@@ -80,22 +80,8 @@ its own exported API, so this rarely bites — but keep it in mind.
 ## Reference Documents
 
 - `plans/error-messages.md` — canonical error/warning class names and CLI message templates
-- `archive/get-t-test-pairwise/` — spec, plan, and decisions for `get_t_test()` + `get_pairwise()` (shipped; PR #88)
-- `archive/sata-metadata/` — SATA metadata spec, plan, and decisions (shipped; PRs #89–#92)
-- `archive/get-anova/` — design-based ANOVA spec, plan, and decisions (shipped; PRs #93, #94, #95)
-- `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for `get_anova()` (shipped; PR #96)
-- `archive/survey-collection/` — `survey_collection` container + `get_*()` dispatch spec, plan, and decisions (shipped; PRs #97, #98)
-- `archive/get-covariance/` — `get_covariance()` spec, plan, decisions, and test spec (shipped; PR #105)
-- `archive/collection-uniform-groups/` — uniform `@groups` enforcement across `survey_collection` (shipped; PR #106)
-- `archive/polychoric-corr/` — polychoric / polyserial correlation spec, plan, decisions, and test spec (shipped; PRs #107, #108, #109)
-- `archive/variable-direction/` — `set_higher_is()`, `set_reverse_coded()`, and `get_diffs(show_favorability)` spec, plan, and decisions (shipped; PRs #124, #125, #126)
-- `archive/nonprob-bootstrap-variance/` — non-probability bootstrap variance spec, impl plans, and decisions (shipped; PRs #127, #130, #131)
-- `archive/nonprob-jackknife/` — non-probability jackknife variance spec, impl plan, comprehension, MI reviews, and decisions (shipped; PRs #133–#136)
-- `archive/corr-nonprob-latent/` — polychoric/polyserial on `survey_nonprob` with repweights: spec, impl plan, test spec, plan review (shipped; PR #137)
-- `archive/glm-nonprob-replicate/` — `survey_glm()` nonprob replicate routing: spec, test spec, impl plan, plan review (shipped; PR #138)
-- `archive/calibrate-survey-taylor/` — calibration-adjusted variance (`as_caldata()`, GREG SE correction): spec, test spec, impl plan, comprehension, plan review, decisions (shipped; PRs #139, #140)
-- `archive/surveywts-calibration/` — `calibration =` constructor validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec, impl plan, comprehension, decisions, plan review (shipped; PRs #141, #142)
-- `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3, S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #143, #144)
-- `archive/coef-vcov-methods/` — `SE()` generic and `coef`/`vcov`/`SE`/`confint` methods for `survey_result`: spec, test-spec, impl plan, plan review, decisions (shipped; PRs #148, #149, #150)
-- `archive/` — completed phase docs (specs, impl plans, decisions — all historical)
+- `archive/` — completed phase docs, one directory per shipped feature (spec, impl plan, decisions); `ls archive/` lists them and `git log` has the PR numbers
+- `archive/dataset-level-metadata/` — dataset-level metadata: the `@dataset_metadata` property, twelve exported setters and extractors, construction promotion, and print/summary output (shipped; PRs #162, #163, #164, #166, #168, #170, #171)
+- `archive/polychoric-performance/` — polychoric speed fix: vectorised CDF grid, lean refit mode, delta refit setup; 30x on the issue #177 benchmark, bit-identical results (shipped; PR #181)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
+- `.claude/references/` — worked examples and rationale moved out of `.claude/rules/`; read when a rule's application is unclear

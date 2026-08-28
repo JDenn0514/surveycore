@@ -39,9 +39,9 @@ if (
 \seealso{
 \code{\link[=from_tbl_svy]{from_tbl_svy()}} to convert back from a \code{tbl_svy} object
 
-Other conversion: 
-\code{\link{as_svydesign}()},
-\code{\link{from_svydesign}()},
-\code{\link{from_tbl_svy}()}
+Other conversion:
+\code{\link[=as_svydesign]{as_svydesign()}},
+\code{\link[=from_svydesign]{from_svydesign()}},
+\code{\link[=from_tbl_svy]{from_tbl_svy()}}
 }
 \concept{conversion}
