@@ -32,6 +32,11 @@
 #' @param question_prefaces A named list mapping variable names to shared
 #'   question battery preface text.
 #' @param notes A named list mapping variable names to analyst notes.
+#' @param var_extra A named list mapping variable names to a pass-through
+#'   extension payload — itself a named list, or `NULL`. surveycore never
+#'   inspects, type-checks, or acts on the payload's values; it stores and
+#'   returns them as-is. Use [set_var_extra()] and [extract_var_extra()] to
+#'   access this property. Default `list()`.
 #' @param universe A named list mapping variable names to universe
 #'   descriptions (e.g., `list(age = "Adults 18+")`). Describes the
 #'   population to which a variable applies.
@@ -113,6 +118,10 @@ survey_metadata <- S7::new_class(
       default = quote(list())
     ),
     notes = S7::new_property(
+      S7::class_list,
+      default = quote(list())
+    ),
+    var_extra = S7::new_property(
       S7::class_list,
       default = quote(list())
     ),

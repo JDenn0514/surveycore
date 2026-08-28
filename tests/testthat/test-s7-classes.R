@@ -143,6 +143,17 @@ test_that("missing_codes @ assignment round-trips on survey_metadata object", {
   expect_identical(m@missing_codes$age, c(-1L, -2L))
 })
 
+test_that("survey_metadata() defaults @var_extra to an empty list", {
+  m <- survey_metadata()
+  expect_identical(m@var_extra, list())
+})
+
+test_that("survey_metadata(var_extra = list(...)) stores the value unchanged", {
+  payload <- list(age = list(role = "demographic"))
+  m <- survey_metadata(var_extra = payload)
+  expect_identical(m@var_extra, payload)
+})
+
 
 # ── survey_base ────────────────────────────────────────────────────────────────
 

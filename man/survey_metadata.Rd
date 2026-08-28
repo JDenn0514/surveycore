@@ -9,6 +9,7 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
+  var_extra = list(),
   universe = list(),
   missing_codes = list(),
   sata = list(),
@@ -30,6 +31,12 @@ of value labels (e.g., \code{list(sex = c(Male = 1L, Female = 2L))}).}
 question battery preface text.}
 
 \item{notes}{A named list mapping variable names to analyst notes.}
+
+\item{var_extra}{A named list mapping variable names to a pass-through
+extension payload — itself a named list, or \code{NULL}. surveycore never
+inspects, type-checks, or acts on the payload's values; it stores and
+returns them as-is. Use \code{\link[=set_var_extra]{set_var_extra()}} and \code{\link[=extract_var_extra]{extract_var_extra()}} to
+access this property. Default \code{list()}.}
 
 \item{universe}{A named list mapping variable names to universe
 descriptions (e.g., \code{list(age = "Adults 18+")}). Describes the
