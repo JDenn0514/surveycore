@@ -2907,6 +2907,47 @@ test_that("round-trip: set_missing_codes() on df -> as_survey() -> extract_missi
 })
 
 
+# ── Round-trip fidelity: set_var_extra() -> extract_var_extra() ──────────────
+
+test_that("round-trip: every var_extra payload accepted by set_var_extra() is returned identical()", {
+  d <- make_design()
+  payloads <- list(
+    scalar_string = list(role = "demographic"),
+    empty = list(),
+    nested = list(role = "a", tags = list(1:3, "x", list(nested = TRUE))),
+    unnamed_nested_value = list(role = "free_text", tags = list("a", "b")),
+    null_value = list(role = "demographic", note = NULL),
+    unusual_types = list(checker = mean, frame = data.frame(x = 1), flag = NA)
+  )
+  for (nm in names(payloads)) {
+    d <- set_var_extra(d, age = payloads[[nm]])
+    got <- extract_var_extra(d, age, format = "list")$age
+    expect_identical(got, payloads[[nm]], label = paste("payload:", nm))
+  }
+})
+
+test_that("grep audit: @var_extra contents are read/written only by the intended call sites", {
+  # Recorded per spec Quality gates: the only production files under R/ that
+  # reference var_extra are core-classes.R (property definition),
+  # core-metadata.R (set_var_extra()/extract_var_extra()/.extract_haven_metadata()
+  # promotion block), and core-validators.R (.rename_metadata_keys()/
+  # .delete_metadata_col()). No other file in R/ reads or branches on its
+  # contents.
+  r_dir <- testthat::test_path("..", "..", "R")
+  r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
+  hits <- vapply(
+    r_files,
+    function(f) any(grepl("var_extra", readLines(f, warn = FALSE))),
+    logical(1L)
+  )
+  hit_basenames <- basename(names(hits)[hits])
+  expect_setequal(
+    hit_basenames,
+    c("core-classes.R", "core-metadata.R", "core-validators.R")
+  )
+})
+
+
 # ── extract_metadata() ────────────────────────────────────────────────────────
 
 test_that("extract_metadata() single variable with all fields returns 7-key list", {
