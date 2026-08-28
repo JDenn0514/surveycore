@@ -350,6 +350,17 @@ Full precedence:
    Examples: `get_freqs(design, x, ..., group, names_to, values_to, variance)`;
    `get_means(coll, y, ..., .id = ".survey", .on_missing = "error")`.
 
+**Exception — unified per-variable metadata setters.** When `...` captures
+Convention 1 (named arguments, one per variable) rather than acting as a
+tidyselect/passthrough tail, it goes immediately after `x`, before the
+optional scalar `variable`/content arguments: `set_var_label(x, ...,
+variable = NULL, label = NULL)`. This is the established shape for every
+unified setter (`set_var_label()`, `set_val_labels()`,
+`set_question_preface()`, `set_var_note()`, `set_universe()`,
+`set_missing_codes()`, `set_var_extra()`) — `variable`/content args are
+Convention 3's alternative to `...`, not independent optional arguments
+that should follow it.
+
 ```r
 # as_survey_rep: data (1), weights (2, required), repweights (2, required),
 #                type (3, required scalar), then optional scalars

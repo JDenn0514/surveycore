@@ -390,7 +390,7 @@ Which test files cover which error table rows:
 | `test-glm-anova-dispatch.R` | A-21, A-22, A-23, A-24, A-25 (polymorphic dispatch for `get_anova()`) |
 | `test-analysis-pool-pvals.R` | PP-1, PP-2, PP-3, PP-4, PP-5, PP-6, PP-7, PP-8 |
 | `test-effective-n.R` | EN-1, EN-2, EN-3, EN-4 |
-| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded) |
+| `test-metadata-system.R` | HI-1, HI-2, HI-3 (PR 1 — higher_is); RC-1, RC-2, RC-3 (PR 2 — reverse_coded); M-16, M-17 (var-extension-slot) |
 | `test-calibration.R` | CAL-15, CAL-16 |
 | `test-analysis-methods-coef-vcov.R` | SCR-1, SCR-3, SCR-W1, SCR-W2, SCR-W3, SCR-W4 |
 
@@ -416,3 +416,12 @@ Which test files cover which error table rows:
 | DF-5 | `extract_sata()` | `fill` is not `FALSE` or `NULL` | ERROR | `surveycore_error_fill_not_logical` | `"{.arg fill} must be {.code FALSE} or {.code NULL}."` |
 | DF-6 | `.svy_onestrat()` | stratum with one PSU + `lonely.psu = "fail"` | ERROR | `surveycore_error_lonely_psu` | `"Stratum {.val {stratum}} has only one PSU at stage {stage}."` |
 | DF-7 | `.svy_rep_var()` | all replicate thetas are `NA` | ERROR | `surveycore_error_all_replicates_na` | `"All replicates produced NA estimates."` |
+
+### var-extension-slot rows (2026-08-27)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| M-16 | `set_var_extra()` | A value passed for one variable is non-`NULL` and is not a list, OR is a non-empty list whose top-level names are missing, empty-string, or duplicated | ERROR | `surveycore_error_var_extra_not_list` | `"x" = "Extension slot content for {.field {var_name}} must be a list or {.code NULL}, not {.cls {class(content)[[1L]]}}.", "i" = "surveycore stores {.arg extra} as-is and does not validate its values, but every top-level entry must be named.", "v" = "Pass a named list, e.g. {.code set_var_extra(x, {var_name} = list(role = \"free_text\"))}."` |
+| M-17 | `set_var_extra()` | Convention 3, exactly one variable, and `extra` itself is a named list of length 1 (payload not wrapped in an outer list) | ERROR | `surveycore_error_var_extra_ambiguous_wrap` | `"x" = "{.arg extra} for a single variable must be wrapped in an outer list.", "i" = "{.code extra = list(role = \"free_text\")} is ambiguous with a length-1 outer list.", "v" = "Use {.code extra = list(list(role = \"free_text\"))} instead."` |
+
+`set_var_extra()` and `extract_var_extra()` otherwise reuse the shared unified-setter/extractor error and warning classes already in this table: `surveycore_error_setter_ambiguous` (M-3), `surveycore_error_setter_empty` (M-4), `surveycore_error_setter_mismatched_lengths` (M-5), `surveycore_error_format_invalid` (M-6), `surveycore_warning_var_not_found` (M-2/M-7), `surveycore_error_setter_mixed_dots` (M-12), `surveycore_warning_setter_empty_variables` (M-14), `surveycore_error_fill_invalid` (M-15), and `surveycore_error_not_survey_or_df` (row 78).
