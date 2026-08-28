@@ -46,6 +46,20 @@
   reports the survey name, the vendor, and the field dates. Output is
   byte-identical to 1.1.0 whenever no dataset metadata is set. (#170)
 
+* New per-variable **extension slot**: a `var_extra` property on
+  `survey_metadata`, plus `set_var_extra()` and `extract_var_extra()`.
+  `var_extra` is a flat, pass-through named list per variable —
+  surveycore stores and returns each payload unchanged and never reads,
+  validates, or acts on its values. It gives downstream packages
+  (`adldata`, `surveyreports`, and others) a place to attach their own
+  per-variable tags (e.g. `role = "free_text"`) without a surveycore
+  release. `set_var_extra()` follows the same setter conventions as
+  `set_var_note()`; `extract_var_extra()` returns a named list or a
+  long-format tibble of `(variable, key, value)` rows. `var_extra`
+  participates in the same rename/delete lifecycle and data-frame
+  attribute promotion as `notes` and the other per-variable metadata
+  fields. (#176)
+
 ## Bug fixes
 
 * `as_survey_nonprob()` now promotes weighting history from the data frame into
