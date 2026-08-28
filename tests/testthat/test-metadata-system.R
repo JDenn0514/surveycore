@@ -2934,6 +2934,9 @@ test_that("grep audit: @var_extra contents are read/written only by the intended
   # .delete_metadata_col()). No other file in R/ reads or branches on its
   # contents.
   r_dir <- testthat::test_path("..", "..", "R")
+  if (!dir.exists(r_dir)) {
+    skip("R/ source tree not available (installed-package test layout)")
+  }
   r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
   hits <- vapply(
     r_files,
