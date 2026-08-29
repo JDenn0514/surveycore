@@ -107,6 +107,7 @@ every row below:
 | Single-level grouping / zero-weight rows / degenerate strata | Not applicable to this function (it does not read weights, strata, or grouping). No test row — explicitly out of scope because the function operates on variable names only and never reads column values, weights, strata, or grouping structure. |
 | Setting a payload for every column in `x` in one call (Convention 2, one entry per existing column) | All payloads stored correctly; no interaction between variables' payloads. |
 | `variable`/`...` name is the internal sentinel column `..surveycore_wt..` (probability-derived SRS designs) | `set_var_extra()` succeeds with no special-casing; the payload is stored under that literal name like any other variable. |
+| Same variable named twice across the setter call (e.g. Convention 1 `set_var_extra(x, age = list(...), age = list(...))`) | R's own `...`/named-list semantics apply (last value for a duplicate name wins); `set_var_extra()` adds no duplicate-detection beyond what `...` already provides. |
 
 **Invariants**
 
