@@ -664,6 +664,29 @@ test_that(".delete_metadata_col() removes column from all metadata slots", {
   expect_null(sc2@metadata@transformations[["y1"]])
 })
 
+test_that(".delete_metadata_col() removes var_extra entry and leaves other variables' payloads", {
+  df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_var_extra(
+    sc,
+    y1 = list(role = "outcome"),
+    y2 = list(role = "other")
+  )
+
+  sc2 <- surveycore:::.delete_metadata_col(sc, "y1")
+  expect_null(sc2@metadata@var_extra[["y1"]])
+  expect_identical(sc2@metadata@var_extra[["y2"]], list(role = "other"))
+})
+
+test_that(".delete_metadata_col() on a variable with no var_extra payload is a no-op", {
+  df <- make_survey_data(n = 30, n_psu = 6, n_strata = 2, seed = 1001)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_var_extra(sc, y2 = list(role = "other"))
+
+  sc2 <- surveycore:::.delete_metadata_col(sc, "y1")
+  expect_identical(sc2@metadata@var_extra, list(y2 = list(role = "other")))
+})
+
 # ---------------------------------------------------------------------------
 # .compute_nonprob_scale() — replicate scale helper
 # ---------------------------------------------------------------------------

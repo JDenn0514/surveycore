@@ -17,6 +17,7 @@
 #     extract_var_note()         — analyst notes
 #     extract_universe()         — universe (eligibility) descriptions
 #     extract_missing_codes()    — missing value sentinel codes
+#     extract_var_extra()        — extension-slot payloads
 #     extract_metadata()         — all metadata fields for one or more variables
 #     extract_sata()             — SATA (select-all-that-apply) flags
 #     extract_higher_is()        — direction-of-improvement attributes
@@ -29,6 +30,8 @@
 #     set_var_note()             — set note for one or more variables
 #     set_universe()             — set universe description for one or more vars
 #     set_missing_codes()        — set missing codes for one or more variables
+#     set_var_extra()            — set extension-slot payload for one or more
+#                                  variables
 #     set_sata()                 — set SATA flag for one or more variables
 #     set_higher_is()            — set direction-of-improvement attribute
 #     set_reverse_coded()        — set reverse-coded flag
@@ -895,6 +898,118 @@ extract_missing_codes <- function(x, ..., format = "list", fill = NULL) {
       variable = var_name,
       description = desc,
       code = as.character(vec)
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1L))]
+  if (length(rows) == 0L) {
+    return(empty_out)
+  }
+  dplyr::bind_rows(rows)
+}
+
+
+#' Extract Extension Slot Payload(s)
+#'
+#' Returns the extension-slot payload for one or more variables in a survey
+#' design object or data frame. Read-only; performs no validation of payload
+#' contents — values are returned exactly as stored, never coerced.
+#'
+#' @param x A survey design object or `data.frame`.
+#' @param ... <[`tidy-select`][tidyselect::language]> Variables to query.
+#'   Supports selection helpers: [tidyselect::starts_with()],
+#'   [tidyselect::all_of()], [tidyselect::any_of()], [tidyselect::matches()],
+#'   etc. If empty, returns the payload for every column in `x`. Use
+#'   [tidyselect::any_of()] to silently skip missing variable names.
+#' @param format `character(1)`. Output format: `"list"` (default) or
+#'   `"data_frame"`. `"named_vector"` is not valid for this function (payloads
+#'   are not scalar).
+#' @param fill Scalar or `NULL`. How to handle variables with no payload:
+#'   `NULL` (default) omits them; `NA_character_` includes them as `NULL`
+#'   entries in `"list"` format. In `"data_frame"` format, variables with no
+#'   payload are always excluded regardless of `fill`.
+#'
+#' @return
+#' - `"list"` (default): named list. Keys are variable names; values are each
+#'   variable's stored payload, or `NULL` for variables included via
+#'   `fill = NA_character_` with no payload set. Empty: `list()`.
+#' - `"data_frame"`: a tibble with columns `variable` (`character`), `key`
+#'   (`character`), and `value` (a list-column, one raw payload value per
+#'   row, unvalidated and untouched). One row per `(variable, key)` pair; a
+#'   variable whose payload is `list()` or unset contributes zero rows.
+#'   Empty: a zero-row tibble typed as above.
+#'
+#' @examples
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
+#' d <- set_var_extra(d, age = list(role = "demographic"))
+#' extract_var_extra(d, age)
+#' extract_var_extra(d, age, format = "data_frame")
+#' @seealso [set_var_extra()] to set an extension-slot payload
+#' @family metadata
+#' @export
+extract_var_extra <- function(x, ..., format = "list", fill = NULL) {
+  call <- rlang::caller_env()
+  fn_name <- "extract_var_extra"
+  .check_extractor_fill(fill, fn_name, call)
+  .check_extractor_format(format, fn_name, c("list", "data_frame"), call)
+  .check_is_survey_or_df(x, call = call)
+  var_names <- if (...length() == 0L) {
+    .get_data_cols(x)
+  } else {
+    names(tidyselect::eval_select(
+      rlang::expr(c(...)),
+      data = .get_data_for_select(x)
+    ))
+  }
+  result_list <- stats::setNames(
+    lapply(var_names, function(v) {
+      if (S7::S7_inherits(x, survey_base)) {
+        x@metadata@var_extra[[v]]
+      } else {
+        attr(x[[v]], "var_extra", exact = TRUE)
+      }
+    }),
+    var_names
+  )
+
+  if (format == "list") {
+    if (is.null(fill)) {
+      result_list <- result_list[!vapply(result_list, is.null, logical(1L))]
+    }
+    return(result_list)
+  }
+
+  # data_frame: one row per (variable, key) pair. A variable with no payload
+  # or an empty list() payload contributes zero rows, regardless of `fill` —
+  # there are no keys to enumerate a row for. Written as a dedicated block
+  # (rather than reusing .format_list_result()) because `value` must stay a
+  # raw, unvalidated list-column — .format_list_result() coerces its `value`
+  # column to character, which would fail the round-trip fidelity guarantee.
+  result_list_nonnull <- result_list[
+    !vapply(result_list, is.null, logical(1L))
+  ]
+  empty_out <- tibble::tibble(
+    variable = character(0L),
+    key = character(0L),
+    value = list()
+  )
+  if (length(result_list_nonnull) == 0L) {
+    return(empty_out)
+  }
+  rows <- lapply(names(result_list_nonnull), function(var_name) {
+    payload <- result_list_nonnull[[var_name]]
+    if (length(payload) == 0L) {
+      return(NULL)
+    }
+    tibble::tibble(
+      variable = var_name,
+      key = names(payload),
+      value = unname(payload)
     )
   })
   rows <- rows[!vapply(rows, is.null, logical(1L))]
@@ -2757,6 +2872,185 @@ set_missing_codes <- function(x, ..., variable = NULL, codes = NULL) {
 }
 
 
+# .validate_var_extra_content(content, var_name, call)
+# Shape-only check for one resolved var_extra payload: NULL or a list; a
+# non-empty list must have names() present, non-empty, and unique. Never
+# inspects values (however deeply nested) — see spec §III Errors.
+.validate_var_extra_content <- function(content, var_name, call) {
+  if (is.null(content)) {
+    return(invisible(NULL))
+  }
+  if (!is.list(content)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "Extension slot content for {.field {var_name}} must be a list",
+          " or {.code NULL}, not {.cls {class(content)[[1L]]}}."
+        ),
+        "i" = paste0(
+          "surveycore stores {.arg extra} as-is and does not validate its",
+          " values, but every top-level entry must be named."
+        ),
+        "v" = paste0(
+          "Pass a named list, e.g. {.code set_var_extra(x, {var_name} =",
+          " list(role = \"free_text\"))}."
+        )
+      ),
+      class = "surveycore_error_var_extra_not_list",
+      call = call
+    )
+  }
+  if (length(content) > 0L) {
+    nms <- names(content)
+    malformed <- is.null(nms) ||
+      anyNA(nms) ||
+      any(!nzchar(nms)) ||
+      anyDuplicated(nms) > 0L
+    if (malformed) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Extension slot content for {.field {var_name}} must be a",
+            " list or {.code NULL}, not {.cls {class(content)[[1L]]}}."
+          ),
+          "i" = paste0(
+            "surveycore stores {.arg extra} as-is and does not validate",
+            " its values, but every top-level entry must be named."
+          ),
+          "v" = paste0(
+            "Pass a named list, e.g. {.code set_var_extra(x, {var_name} =",
+            " list(role = \"free_text\"))}."
+          )
+        ),
+        class = "surveycore_error_var_extra_not_list",
+        call = call
+      )
+    }
+  }
+  invisible(NULL)
+}
+
+
+#' Set Variable Extension Slot Payload(s)
+#'
+#' Sets a per-variable extension-slot payload — a flat, pass-through named
+#' list that surveycore stores and returns unchanged. surveycore never reads,
+#' validates, or acts on the payload's *values*; it confirms only that the
+#' top-level value is a list or `NULL`, and that a non-empty list's top-level
+#' names are present, non-empty, and unique.
+#'
+#' Supports Conventions 1, 2, and 3 — see [set_var_label()] for details on the
+#' calling conventions. Unlike [set_missing_codes()], there is no bare-payload
+#' shorthand for Convention 3 with a single variable: a bare named list cannot
+#' be distinguished from a one-element outer list, so the payload must be
+#' wrapped in an outer list (`extra = list(list(role = "demographic"))`).
+#' Passing an un-wrapped named list of length 1 raises
+#' `surveycore_error_var_extra_ambiguous_wrap`.
+#'
+#' @param x A survey design object or a data frame.
+#' @param ... Named arguments where the name is the variable and the value is
+#'   the extension payload (a list, or `NULL` to clear it). Supports `!!!`
+#'   list splicing.
+#' @param variable A character vector of variable names. Use with `extra`.
+#' @param extra A list of payloads, one element per entry of `variable`, in
+#'   the same order. Each element must itself be a list or `NULL`.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' d <- as_survey(
+#'   gss_2024,
+#'   ids = vpsu,
+#'   weights = wtssps,
+#'   strata = vstrat,
+#'   nest = TRUE
+#' )
+#' d <- set_var_extra(d, age = list(role = "demographic"))
+#' extract_var_extra(d, age)
+#' @seealso [extract_var_extra()] to retrieve extension-slot payloads
+#' @family metadata
+#' @export
+set_var_extra <- function(x, ..., variable = NULL, extra = NULL) {
+  call <- rlang::caller_env()
+  .check_is_survey_or_df(x, call = call)
+
+  # Ambiguous-wrap guard (Convention 3 only): a single variable whose extra
+  # is itself a named list of length 1 almost certainly omitted the outer
+  # wrap. Checked before .parse_setter_input() so it fires ahead of the
+  # generic mismatched-lengths check. A correctly wrapped payload is an
+  # UNNAMED length-1 outer list, so it never matches this guard.
+  dots_len <- ...length()
+  if (
+    dots_len == 0L &&
+      !is.null(variable) &&
+      length(variable) == 1L &&
+      is.list(extra) &&
+      length(extra) == 1L &&
+      !is.null(names(extra)) &&
+      nzchar(names(extra)[[1L]])
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.arg extra} for a single variable must be wrapped in an",
+          " outer list."
+        ),
+        "i" = paste0(
+          "{.code extra = list(role = \"free_text\")} is ambiguous with a",
+          " length-1 outer list."
+        ),
+        "v" = "Use {.code extra = list(list(role = \"free_text\"))} instead."
+      ),
+      class = "surveycore_error_var_extra_ambiguous_wrap",
+      call = call
+    )
+  }
+
+  dots <- rlang::list2(...)
+  pairs <- .parse_setter_input(
+    dots = dots,
+    variable = variable,
+    content = extra,
+    content_arg_name = "extra",
+    content_type = "vector",
+    fn_name = "set_var_extra",
+    call = call
+  )
+
+  all_cols <- .get_data_cols(x)
+  pair_names <- names(pairs)
+  # Iterate by index, not by name: when the same variable name is repeated
+  # within a single call (Convention 1), `pairs[[name]]` would always
+  # resolve to the FIRST match. Indexing preserves argument order, so the
+  # last repeated entry is the one actually stored (R's own `...` /
+  # named-list semantics — see spec §III edge case).
+  for (i in seq_along(pairs)) {
+    var_name <- pair_names[[i]]
+    content <- pairs[[i]]
+    if (!var_name %in% all_cols) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "Variable {.field {var_name}} not found in ",
+            "{.arg x} and was skipped."
+          )
+        ),
+        class = "surveycore_warning_var_not_found",
+        call = call
+      )
+      next
+    }
+    .validate_var_extra_content(content, var_name, call)
+    if (S7::S7_inherits(x, survey_base)) {
+      x@metadata@var_extra[[var_name]] <- content
+    } else {
+      attr(x[[var_name]], "var_extra") <- content
+    }
+  }
+  invisible(x)
+}
+
+
 # ── SATA (Select-All-That-Apply) setter/getter ────────────────────────────────
 
 #' Set SATA (Select-All-That-Apply) Flag
@@ -3705,11 +3999,18 @@ classify_question_type <- function(x, ..., variable = NULL) {
 #' `infer_question_prefaces()` (or any tool following the same convention).
 #' Does NOT import haven — uses only base R `attr()`.
 #'
+#' Also promotes a `"var_extra"` column attribute (set by [set_var_extra()]
+#' on a data frame) into `@var_extra`, unlike the attributes above — it
+#' promotes whenever the attribute is present and non-`NULL`, regardless of
+#' length, because a `list()` payload is a valid "set but empty" state.
+#'
 #' Edge cases handled:
 #' 1. Zero-length or empty-string variable labels — not stored.
 #' 2. `NA` as a key in value labels — preserved (SPSS user-defined missing).
 #' 3. Empty value-label vectors — not stored.
 #' 4. Columns with no attributes — silently skipped.
+#' 5. A `"var_extra"` attribute of `list()` — promoted unchanged, not
+#'   filtered out as empty.
 #'
 #' @param data A `data.frame`.
 #' @return A [survey_metadata] object. All properties are empty lists if no
@@ -3723,6 +4024,7 @@ classify_question_type <- function(x, ..., variable = NULL) {
   notes <- list()
   universe <- list()
   missing_codes <- list()
+  var_extra <- list()
 
   for (col_name in names(data)) {
     col <- data[[col_name]]
@@ -3790,6 +4092,16 @@ classify_question_type <- function(x, ..., variable = NULL) {
     ) {
       missing_codes[[col_name]] <- var_missing
     }
+
+    # ── Extension-slot payload ────────────────────────────────────────────────
+    # Unlike the blocks above, promotes whenever the attribute is present and
+    # non-NULL, regardless of length — a payload of list() is a valid,
+    # meaningful "set but empty" state (spec §III edge cases) that an
+    # emptiness filter would silently revert to "never set."
+    var_ext <- attr(col, "var_extra", exact = TRUE)
+    if (!is.null(var_ext)) {
+      var_extra[[col_name]] <- var_ext
+    }
   }
 
   survey_metadata(
@@ -3798,6 +4110,7 @@ classify_question_type <- function(x, ..., variable = NULL) {
     question_prefaces = q_prefaces,
     notes = notes,
     universe = universe,
-    missing_codes = missing_codes
+    missing_codes = missing_codes,
+    var_extra = var_extra
   )
 }

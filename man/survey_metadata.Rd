@@ -9,6 +9,7 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
+  var_extra = list(),
   universe = list(),
   missing_codes = list(),
   sata = list(),
@@ -30,6 +31,12 @@ of value labels (e.g., \code{list(sex = c(Male = 1L, Female = 2L))}).}
 question battery preface text.}
 
 \item{notes}{A named list mapping variable names to analyst notes.}
+
+\item{var_extra}{A named list mapping variable names to a pass-through
+extension payload — itself a named list, or \code{NULL}. surveycore never
+inspects, type-checks, or acts on the payload's values; it stores and
+returns them as-is. Use \code{\link[=set_var_extra]{set_var_extra()}} and \code{\link[=extract_var_extra]{extract_var_extra()}} to
+access this property. Default \code{list()}.}
 
 \item{universe}{A named list mapping variable names to universe
 descriptions (e.g., \code{list(age = "Adults 18+")}). Describes the
@@ -127,6 +134,7 @@ Other metadata:
 \code{\link[=extract_survey_name]{extract_survey_name()}},
 \code{\link[=extract_universe]{extract_universe()}},
 \code{\link[=extract_val_labels]{extract_val_labels()}},
+\code{\link[=extract_var_extra]{extract_var_extra()}},
 \code{\link[=extract_var_label]{extract_var_label()}},
 \code{\link[=extract_var_note]{extract_var_note()}},
 \code{\link[=extract_vendor]{extract_vendor()}},
@@ -143,6 +151,7 @@ Other metadata:
 \code{\link[=set_survey_name]{set_survey_name()}},
 \code{\link[=set_universe]{set_universe()}},
 \code{\link[=set_val_labels]{set_val_labels()}},
+\code{\link[=set_var_extra]{set_var_extra()}},
 \code{\link[=set_var_label]{set_var_label()}},
 \code{\link[=set_var_note]{set_var_note()}},
 \code{\link[=set_vendor]{set_vendor()}},
