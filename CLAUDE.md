@@ -83,5 +83,6 @@ its own exported API, so this rarely bites — but keep it in mind.
 - `archive/` — completed phase docs, one directory per shipped feature (spec, impl plan, decisions); `ls archive/` lists them and `git log` has the PR numbers
 - `archive/dataset-level-metadata/` — dataset-level metadata: the `@dataset_metadata` property, twelve exported setters and extractors, construction promotion, and print/summary output (shipped; PRs #162, #163, #164, #166, #168, #170, #171)
 - `archive/polychoric-performance/` — polychoric speed fix: vectorised CDF grid, lean refit mode, delta refit setup; 30x on the issue #177 benchmark, bit-identical results (shipped; PR #181)
+- `archive/var-extension-slot/` — per-variable extension slot: the `var_extra` property on `survey_metadata`, `set_var_extra()`/`extract_var_extra()`, and rename/delete lifecycle wiring (shipped; PR #185)
 - `.claude/rules/` — code style, testing standards, R package conventions, GitHub strategy
 - `.claude/references/` — worked examples and rationale moved out of `.claude/rules/`; read when a rule's application is unclear
