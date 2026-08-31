@@ -1715,3 +1715,88 @@ test_that(".make_result_tibble() computes p = nrow * length(estimate_cols) for d
   expect_equal(df_val, rep(Inf, 2L))
   expect_length(df_val, 2L)
 })
+
+
+# ── Category 15: .haven_available() stubbing ─────────────────────────────────
+
+# `haven` is in Suggests, so `.apply_group_labels()` asks whether the namespace
+# is there before it resolves a tagged `NA` to its label. The question goes
+# through `.haven_available()`, a named binding, so these rows can stub both
+# answers with `local_mocked_bindings()`. An inline `requireNamespace()` call
+# cannot be stubbed, which left the unavailable branch unreachable.
+# The fixtures reuse `.make_label_test_design()` from Category 13.
+
+test_that(".apply_group_labels() resolves a tagged-NA label when haven is available", {
+  skip_if_not_installed("haven")
+  local_mocked_bindings(.haven_available = function() TRUE)
+  tagged_r <- make_tagged_na("r")
+  labels_vec <- c("GroupA" = 1, "GroupB" = 2, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col = c(1, 2, tagged_r),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_true"
+  )
+  gc <- data.frame(grp_stub_true = c(1, 2, tagged_r))
+  result <- .apply_group_labels(
+    gc,
+    "grp_stub_true",
+    design,
+    label_values = TRUE
+  )
+  expect_true(is.factor(result$grp_stub_true))
+  expect_true("Refused" %in% levels(result$grp_stub_true))
+  expect_identical(
+    as.character(result$grp_stub_true),
+    c("GroupA", "GroupB", "Refused")
+  )
+})
+
+test_that(".apply_group_labels() leaves a tagged NA unresolved when haven is unavailable", {
+  local_mocked_bindings(.haven_available = function() FALSE)
+  tagged_r <- make_tagged_na("r")
+  labels_vec <- c("GroupA" = 1, "GroupB" = 2, "Refused" = tagged_r)
+  design <- .make_label_test_design(
+    extra_col = c(1, 2, tagged_r),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_false"
+  )
+  gc <- data.frame(grp_stub_false = c(1, 2, tagged_r))
+  expect_no_error(
+    result <- .apply_group_labels(
+      gc,
+      "grp_stub_false",
+      design,
+      label_values = TRUE
+    )
+  )
+  expect_true(is.factor(result$grp_stub_false))
+  # The tagged-NA row carries no group, and "Refused" is not a level.
+  expect_true(is.na(result$grp_stub_false[[3L]]))
+  expect_identical(levels(result$grp_stub_false), c("GroupA", "GroupB"))
+  # Every label that is not a tagged NA still resolves.
+  expect_identical(
+    as.character(result$grp_stub_false[1:2]),
+    c("GroupA", "GroupB")
+  )
+})
+
+test_that(".apply_group_labels() gives one result for both haven answers when no tagged NA is present", {
+  labels_vec <- c("GroupA" = 1L, "GroupB" = 2L)
+  design <- .make_label_test_design(
+    extra_col = c(1L, 2L),
+    extra_labels = labels_vec,
+    col_name = "grp_stub_both"
+  )
+  gc <- data.frame(grp_stub_both = c(1L, 2L))
+  label_with_stub <- function(available) {
+    local_mocked_bindings(.haven_available = function() available)
+    .apply_group_labels(gc, "grp_stub_both", design, label_values = TRUE)
+  }
+  result_available <- label_with_stub(TRUE)
+  result_unavailable <- label_with_stub(FALSE)
+  expect_identical(result_available, result_unavailable)
+  expect_identical(
+    as.character(result_available$grp_stub_both),
+    c("GroupA", "GroupB")
+  )
+})
