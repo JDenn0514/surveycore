@@ -5,6 +5,7 @@
 # functions live at the top of their respective source files.
 #
 # Contents:
+#   .haven_available()      — is the haven namespace installed?
 #   Meta-key constants (six character vectors)
 #   .extract_var_meta()     — variable/value label lookup for one variable
 #   .build_group_meta()     — metadata lookup for all group variables
@@ -86,6 +87,16 @@
 #'
 #' @noRd
 NULL
+
+
+# ── haven availability ────────────────────────────────────────────────────────
+
+# Is the haven namespace available? Wrapped in a helper so tests can stub it.
+# Behaviour is identical to calling requireNamespace() inline.
+#' @noRd
+.haven_available <- function() {
+  requireNamespace("haven", quietly = TRUE)
+}
 
 
 # ── Meta-key constants ────────────────────────────────────────────────────────
@@ -240,7 +251,7 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
       # Build a map from haven tagged-NA tag character to label string.
       # Requires haven at runtime; falls back gracefully when not installed:
       # tagged NAs without a resolvable tag remain NA in the factor output.
-      haven_ok <- requireNamespace("haven", quietly = TRUE)
+      haven_ok <- .haven_available()
       # Tagged NAs are always doubles (special NaN bit patterns). Build a map
       # from tag character to label string by checking double NA entries in
       # labels. Non-double NA entries (integer NA, etc.) are plain NAs.
