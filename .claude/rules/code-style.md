@@ -106,6 +106,17 @@ Argument order precedence:
 6. `...`
 7. Named-only control args after `...` (`.id`, `.on_missing`, `group`, ...)
 
+**Exception — unified per-variable metadata setters.** When `...` captures
+Convention 1 (named arguments, one per variable) rather than acting as a
+tidyselect/passthrough tail, it goes immediately after `x`, before the
+optional scalar `variable`/content arguments: `set_var_label(x, ...,
+variable = NULL, label = NULL)`. This is the established shape for every
+unified setter (`set_var_label()`, `set_val_labels()`,
+`set_question_preface()`, `set_var_note()`, `set_universe()`,
+`set_missing_codes()`, `set_var_extra()`) — `variable`/content args are
+Convention 3's alternative to `...`, not independent optional arguments
+that should follow it.
+
 Dispatch — one rule: who owns the generic?
 
 | Situation | Use |

@@ -400,6 +400,89 @@
       ! `set_missing_codes()` was called with `variable` of length 0.
       i No metadata was set. Did you accidentally filter all variable names out?
 
+# snapshot: set_var_extra() surveycore_error_not_survey_or_df
+
+    Code
+      set_var_extra(list(x = 1), age = list(role = "x"))
+    Condition
+      Error:
+      x `x` must be a survey design object or a data frame, not <list>.
+      v Create a survey object with `as_survey()`, `as_survey_replicate()`, or `as_survey_twophase()`.
+
+# snapshot: set_var_extra() surveycore_error_setter_ambiguous
+
+    Code
+      set_var_extra(d, age = list(role = "x"), variable = "income")
+    Condition
+      Error:
+      x Provide variable names via `...` or via `variable`, not both.
+      i Use named `...` args, a named vector in `...`, or `variable` + `extra` — not a mix.
+
+# snapshot: set_var_extra() surveycore_error_setter_empty
+
+    Code
+      set_var_extra(d)
+    Condition
+      Error:
+      x `set_var_extra()` requires at least one variable-label pair.
+      v Use named `...` args: `set_var_extra(x, age = 'Age in years')`.
+
+# snapshot: set_var_extra() surveycore_error_setter_mismatched_lengths
+
+    Code
+      set_var_extra(d, variable = c("age", "income"), extra = list(list(role = "x")))
+    Condition
+      Error:
+      x `variable` has 2 elements but `extra` has 1 element.
+      i They must be the same length (one content value per variable name).
+
+# snapshot: set_var_extra() surveycore_error_setter_mixed_dots
+
+    Code
+      set_var_extra(d, list(role = "x"), age = list(role = "y"))
+    Condition
+      Error:
+      x All `...` arguments must be named when using Convention 1.
+      i Got 1 named and 1 unnamed element.
+      v Use `set_var_extra(x, age = 'Age', income = 'Annual income')` or a fully named vector.
+
+# snapshot: set_var_extra() surveycore_error_var_extra_not_list
+
+    Code
+      set_var_extra(d, age = "free_text")
+    Condition
+      Error:
+      x Extension slot content for age must be a list or `NULL`, not <character>.
+      i surveycore stores `extra` as-is and does not validate its values, but every top-level entry must be named.
+      v Pass a named list, e.g. `set_var_extra(x, age = list(role = "free_text"))`.
+
+# snapshot: set_var_extra() surveycore_error_var_extra_ambiguous_wrap
+
+    Code
+      set_var_extra(d, variable = "age", extra = list(role = "demographic"))
+    Condition
+      Error:
+      x `extra` for a single variable must be wrapped in an outer list.
+      i `extra = list(role = "free_text")` is ambiguous with a length-1 outer list.
+      v Use `extra = list(list(role = "free_text"))` instead.
+
+# snapshot: set_var_extra() surveycore_warning_var_not_found
+
+    Code
+      set_var_extra(d, zzz_missing = list(role = "x"))
+    Condition
+      Warning:
+      ! Variable zzz_missing not found in `x` and was skipped.
+
+# snapshot: set_var_extra() surveycore_warning_setter_empty_variables
+
+    Code
+      set_var_extra(d, variable = character(0))
+    Condition
+      Warning:
+      ! `set_var_extra()` was called with `variable` of length 0.
+      i No metadata was set. Did you accidentally filter all variable names out?
+
 # snapshot: .check_is_survey_or_df() surveycore_error_not_survey_or_df for list input
 
     Code

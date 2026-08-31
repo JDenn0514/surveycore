@@ -541,6 +541,36 @@ test_that(".rename_metadata_keys() renames keys in all metadata slots", {
   expect_true("y" %in% names(m2@notes))
 })
 
+test_that(".rename_metadata_keys() renames var_extra keys and preserves the payload", {
+  m <- survey_metadata(
+    var_extra = list(old_age = list(role = "demographic"))
+  )
+  m2 <- .rename_metadata_keys(m, c(old_age = "age"))
+  expect_true("age" %in% names(m2@var_extra))
+  expect_false("old_age" %in% names(m2@var_extra))
+  expect_identical(m2@var_extra[["age"]], list(role = "demographic"))
+})
+
+test_that(".rename_metadata_keys() renaming one variable leaves another's var_extra untouched", {
+  m <- survey_metadata(
+    var_extra = list(
+      old_age = list(role = "demographic"),
+      income = list(role = "economic")
+    )
+  )
+  m2 <- .rename_metadata_keys(m, c(old_age = "age"))
+  expect_identical(m2@var_extra[["income"]], list(role = "economic"))
+})
+
+test_that(".rename_metadata_keys() renaming a variable with no var_extra payload is a no-op", {
+  m <- survey_metadata(
+    variable_labels = list(old_age = "Age"),
+    var_extra = list(income = list(role = "economic"))
+  )
+  m2 <- .rename_metadata_keys(m, c(old_age = "age"))
+  expect_identical(m2@var_extra, list(income = list(role = "economic")))
+})
+
 test_that(".rename_metadata_keys() leaves unmatched keys unchanged", {
   m <- survey_metadata(
     variable_labels = list(age = "Age in years", income = "Annual income")

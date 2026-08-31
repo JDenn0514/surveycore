@@ -480,6 +480,7 @@ NULL
     rename_map
   )
   metadata@notes <- .rename_list_keys(metadata@notes, rename_map)
+  metadata@var_extra <- .rename_list_keys(metadata@var_extra, rename_map)
   metadata@sata <- .rename_list_keys(metadata@sata, rename_map)
   metadata@transformations <- .rename_list_keys(
     metadata@transformations,
@@ -506,6 +507,7 @@ NULL
   md@value_labels[[col]] <- NULL
   md@question_prefaces[[col]] <- NULL
   md@notes[[col]] <- NULL
+  md@var_extra[[col]] <- NULL
   md@transformations[[col]] <- NULL
   design@metadata <- md
   design
