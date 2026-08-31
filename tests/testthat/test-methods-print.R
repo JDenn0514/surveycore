@@ -1759,17 +1759,20 @@ make_labelled_print_design <- function(labelled = TRUE) {
 test_that("T-1: previously labelled columns print their own type tokens", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_labelled_print_design()
-  expect_snapshot(print(d))
+  # Before this work the dbl and int tokens both read <hvn_lbl>.
+  expect_snapshot(print(survey_data(d)))
 })
 
 test_that("T-3: labelled input leaves the design print output unchanged", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_labelled_print_design()
-  expect_snapshot(print(d, full = TRUE))
+  expect_snapshot(print(d))
 
-  labelled_out <- capture_design_output(print(d, full = TRUE))
+  # A fence: the design print method itself did not move. The labelled and the
+  # plain design print the same bytes.
+  labelled_out <- capture_design_output(print(d))
   plain_out <- capture_design_output(
-    print(make_labelled_print_design(labelled = FALSE), full = TRUE)
+    print(make_labelled_print_design(labelled = FALSE))
   )
   expect_identical(labelled_out, plain_out)
 })

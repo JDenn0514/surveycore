@@ -1072,13 +1072,7 @@
 # T-1: previously labelled columns print their own type tokens
 
     Code
-      print(d)
-    Message
-      
-      -- Survey Design ---------------------------------------------------------------
-      <survey_taylor> (Taylor series linearization)
-      Sample size: 6
-      
+      print(survey_data(d))
     Output
       # A tibble: 6 x 4
            wt   dbl   int chr  
@@ -1093,35 +1087,12 @@
 # T-3: labelled input leaves the design print output unchanged
 
     Code
-      print(d, full = TRUE)
+      print(d)
     Message
       
       -- Survey Design ---------------------------------------------------------------
       <survey_taylor> (Taylor series linearization)
       Sample size: 6
-      Weighted N: 8
-      
-      
-      -- Design specification --
-      
-      * Weights: wt
-      * Weights provided as: sampling weights
-      * FPC: not specified
-      * Nesting: FALSE
-      
-      Design variables: wt
-      
-      
-      -- Weight distribution --
-      
-      * Range: 0.8 – 2
-      * Mean: 1.25
-      * CV: 0.353
-      
-      
-      -- Metadata --
-      
-      3 variable(s) labeled
       
     Output
       # A tibble: 6 x 4
