@@ -46,6 +46,48 @@
 }
 
 
+# ── haven labelled class strip ────────────────────────────────────────────────
+#
+# A survey design object stores base types. The haven labelled class puts
+# `vctrs_vctr` in the class vector, and vctrs then refuses arithmetic and
+# coercion on the column unless the haven namespace is loaded, which breaks
+# estimation on a freshly imported .sav file. These two helpers remove the
+# class and keep every other attribute, so the `label` string, the `labels`
+# value-label vector and the SPSS `na_values` and `na_range` vectors all stay
+# on the column. They serve the survey_data() contract, which is why they live
+# beside it.
+
+# Remove the haven labelled class from one vector, keeping every other
+# attribute. Returns x unchanged when x does not carry the class.
+#' @noRd
+.strip_labelled_class <- function(x) {
+  if (inherits(x, "haven_labelled")) {
+    attr(x, "class") <- NULL
+  }
+  x
+}
+
+# Remove the haven labelled class from every column of a data frame.
+# Returns data unchanged, with no copy, when no column carries the class.
+#
+# The early return and the single inherits() call per column are both load
+# bearing: this runs on every write to the `data` property, so the cost of the
+# common case — nothing matches — is one attribute read per column and nothing
+# else. Do not replace inherits() with class() or with a %in% test; those
+# allocate.
+#' @noRd
+.strip_labelled_columns <- function(data) {
+  hit <- which(vapply(data, inherits, logical(1L), "haven_labelled"))
+  if (length(hit) == 0L) {
+    return(data)
+  }
+  for (j in hit) {
+    data[[j]] <- .strip_labelled_class(data[[j]])
+  }
+  data
+}
+
+
 # ── Exported accessor ─────────────────────────────────────────────────────────
 
 #' Access the Data Component of a Survey Design Object

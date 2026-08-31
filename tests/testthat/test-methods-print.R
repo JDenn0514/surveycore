@@ -1723,6 +1723,61 @@ test_that("print(survey_nonprob) with repweights: Dataset header snapshot", {
 })
 
 
+# ── Printed type tokens for a previously labelled column (spec VIII.1) ───────
+#
+# A haven_labelled column prints as <hvn_lbl>. The strip means a design stores
+# the underlying type, so the token is the token for that type. This is the
+# visible face of the storage contract, and it differs by backing type, so all
+# three appear in one fixture.
+
+# A six-row tibble carrying one labelled column of each backing type. Passing
+# `labelled = FALSE` keeps the label attributes and drops only the class, so the
+# metadata harvest is identical either way and the only difference under test is
+# the class.
+make_labelled_print_design <- function(labelled = TRUE) {
+  df <- tibble::tibble(
+    wt = c(1.5, 0.8, 1.2, 2, 0.9, 1.1),
+    dbl = c(1, 2, 3, 4, 1, 2),
+    int = c(0L, 1L, 0L, 1L, 0L, 1L),
+    chr = c("a", "b", "a", "b", "a", "b")
+  )
+  df$dbl <- make_labelled(
+    df$dbl,
+    c(One = 1, Two = 2, Three = 3, Four = 4),
+    "Agreement"
+  )
+  df$int <- make_labelled(df$int, c(No = 0L, Yes = 1L), "Binary")
+  df$chr <- make_labelled(df$chr, c(Alpha = "a", Beta = "b"), "Cohort")
+  if (!labelled) {
+    for (nm in c("dbl", "int", "chr")) {
+      attr(df[[nm]], "class") <- NULL
+    }
+  }
+  as_survey(df, weights = wt)
+}
+
+test_that("T-1: previously labelled columns print their own type tokens", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_labelled_print_design()
+  # Before this work the dbl and int tokens both read <hvn_lbl>.
+  expect_snapshot(print(survey_data(d)))
+})
+
+test_that("T-3: labelled input leaves the design print output unchanged", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_labelled_print_design()
+  expect_snapshot(print(d))
+
+  # A fence: the design print method itself did not move. The labelled and the
+  # plain design print the same bytes.
+  labelled_out <- capture_design_output(print(d))
+  plain_out <- capture_design_output(
+    print(make_labelled_print_design(labelled = FALSE))
+  )
+  expect_identical(labelled_out, plain_out)
+})
+
+
 test_that("metadata_info block renders in every design class", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   designs <- c("replicate", "twophase", "nonprob", "nonprob_rep")

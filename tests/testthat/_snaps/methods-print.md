@@ -1069,3 +1069,39 @@
       3 psu_1 stratum_1   742  14.4  51.2 -0.185     1 C      14.7  14.1  14.5
       # i 97 more rows
 
+# T-1: previously labelled columns print their own type tokens
+
+    Code
+      print(survey_data(d))
+    Output
+      # A tibble: 6 x 4
+           wt   dbl   int chr  
+        <dbl> <dbl> <int> <chr>
+      1   1.5     1     0 a    
+      2   0.8     2     1 b    
+      3   1.2     3     0 a    
+      4   2       4     1 b    
+      5   0.9     1     0 a    
+      6   1.1     2     1 b    
+
+# T-3: labelled input leaves the design print output unchanged
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 6
+      
+    Output
+      # A tibble: 6 x 4
+           wt   dbl   int chr  
+        <dbl> <dbl> <int> <chr>
+      1   1.5     1     0 a    
+      2   0.8     2     1 b    
+      3   1.2     3     0 a    
+      4   2       4     1 b    
+      5   0.9     1     0 a    
+      6   1.1     2     1 b    
+

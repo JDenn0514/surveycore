@@ -397,23 +397,41 @@ File: `tests/testthat/test-labelled-analysis.R`, the same file as §4.4.
 |---|---|---|
 | G-1 | Grouping column labelled with the class; `label_values = TRUE` | the group column of the result is a factor whose levels are the label strings, ordered by ascending code |
 | G-2 | Same, `label_values = FALSE` | the group column holds the raw codes |
-| G-3 | Grouping column labelled with the class and containing a tagged `NA`, with a `labels` entry keyed to that tagged `NA`; `na.rm = FALSE`, `label_values = TRUE` | **No row appears for the tagged-`NA` level.** The tagged-`NA` label is present among the factor levels of the group column, but the level carries no row. See the note below — this is measured, pre-existing, and deliberately not fixed here. |
-| G-3a | Same call, `na.rm = TRUE` | still no row for the tagged-`NA` level; the result is identical to G-3 apart from any plain-`NA` group row |
+| G-3 | Grouping column labelled with the class and containing a tagged `NA`, with a `labels` entry keyed to that tagged `NA`; `na.rm = FALSE`, `label_values = TRUE` | **A row appears for the tagged-`NA` level, under its label.** The label is among the factor levels of the group column and it carries a row. Corrected 2026-08-31 — see the note below. |
+| G-3a | Same call, `na.rm = TRUE` | **No row appears for the tagged-`NA` level**, though its label stays among the factor levels. This is where the absence lives. |
 | G-4 | Same as G-3 with the `haven` availability stubbed to `FALSE` | no error; the tagged-`NA` label is **not** among the factor levels, because resolving the tag is the one thing that needs `haven`. Every non-tagged label still resolves. See §4.9. |
-| G-5 | Grouping column labelled but with a code present in the data that has no label | that code appears in the output as its raw value, not dropped |
+| G-5 | Grouping column labelled but with a code present in the data that has no label | the code is **not dropped** — its rows are present and the counts still total the full sample — but how it renders depends on `label_values`. With `label_values = FALSE` the raw code appears. With `label_values = TRUE` the cell renders `NA`, because the code has no label to resolve to. Assert both. Corrected 2026-08-31. |
 | G-6 | Grouping column is a plain factor | levels keep their declared order, unchanged behaviour |
 | G-7 | Grouping column labelled, containing a tagged `NA`, and **also** a whole-valued double with few distinct values, under `get_corr(method = "polychoric")` | succeeds. This is the one combination where both new behaviours in this work meet: a tagged `NA` in a column that the new ordinality rule now accepts. The tagged `NA` is `NA` to the estimator, so it is excluded pairwise like any other missing value. |
 
-**Note on G-3, and why it asserts an absence.** An earlier draft of this
-document asserted the opposite — that the tagged-`NA` level produces a row.
-That was wrong. Measured behaviour, both before and after this work: the
-level appears in the factor but no row is generated for it. The gap is
-pre-existing, it is not caused by anything in this work, and this work does
-not fix it.
+**Note on G-3 and G-3a — corrected 2026-08-31.** This document has now said
+three different things about the tagged-`NA` level. The measurement below is
+the one to trust, because it was taken on a grouped call, which is what these
+rows describe.
 
-Write G-3 to assert what the code does, and put the reason in the block
-description, so the next reader does not "fix" the test to match the earlier
-expectation. If the absent row is judged a defect, it needs its own issue.
+Measured on `develop` at `68f8992`, grouping column labelled with a `labels`
+entry keyed to the tagged `NA`, `label_values = TRUE`:
+
+| Call | Tagged-`NA` label among the factor levels | Row present for it |
+|---|---|---|
+| `na.rm = FALSE` | yes | **yes** |
+| `na.rm = TRUE` | yes | no |
+
+So the absence belongs to G-3a, not to G-3. The previous draft asserted the
+absence for both, and the draft before that asserted presence for both.
+Neither was right.
+
+**How the earlier error happened**, so it is not repeated: the ungrouped form
+behaves differently. Called as `get_freqs(d, g)` with `g` as the analysis
+variable, `na.rm = FALSE` yields a third row keyed plain `NA` rather than a
+row under the tagged-`NA` label. Measuring the ungrouped form and writing the
+result into a grouped row is what produced the wrong assertion. These rows
+describe a **grouping** column; measure them that way.
+
+The rule stands: write these rows to assert what the code does, and put the
+reason in the block description, so the next reader does not "fix" the test
+to match an expectation. The behaviour is pre-existing and this work does not
+change it. If it is judged a defect, it needs its own issue.
 
 **Note on G-4.** The two rows G-3 and G-4 differ only in whether `haven` is
 reachable, and they assert different level sets. That is the whole point of

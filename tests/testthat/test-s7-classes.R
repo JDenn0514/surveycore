@@ -1451,3 +1451,349 @@ test_that("as_survey_nonprob() designs start with an empty @var_extra", {
   design <- as_survey_nonprob(df, weights = w)
   expect_identical(design@metadata@var_extra, list())
 })
+
+
+# ── The haven labelled class never reaches @data (spec III.1, III.4) ──────────
+#
+# The `data` property of survey_base carries a setter that drops the
+# haven_labelled class from every column on every write. These blocks exercise
+# the routes that only the setter can reach: a direct call to each of the four
+# exported class constructors, and a bare `d@data <-` assignment. No constructor
+# entry point is involved, so nothing but the setter can normalise them.
+
+# Labelled frames for the four class constructors. make_labelled() lives in
+# helper-test-data.R.
+.lab_taylor_df <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(40, 0.5, 2),
+    y = rnorm(40)
+  )
+  df$y <- make_labelled(df$y, NULL, "Outcome")
+  df
+}
+
+.lab_rep_df <- function(R = 4L, seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    wt = runif(20, 0.5, 2),
+    y = rnorm(20)
+  )
+  df$y <- make_labelled(df$y, NULL, "Outcome")
+  for (i in seq_len(R)) {
+    df[[paste0("rw", i)]] <- runif(20, 0.3, 3)
+  }
+  df
+}
+
+.lab_nonprob_df <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    w = runif(30, 0.5, 2),
+    y = rnorm(30)
+  )
+  df$y <- make_labelled(df$y, NULL, "Outcome")
+  df
+}
+
+.lab_twophase_df <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    wt = runif(40, 0.5, 2),
+    psu = rep(1:10, each = 4L),
+    ph2 = rep(c(TRUE, FALSE), 20L),
+    y = rnorm(40)
+  )
+  df$y <- make_labelled(df$y, NULL, "Outcome")
+  df
+}
+
+.twophase_vars <- function() {
+  list(
+    phase1 = .taylor_vars(weights = "wt", ids = "psu"),
+    phase2 = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
+    subset = "ph2",
+    method = "full",
+    visible_vars = NULL
+  )
+}
+
+.nonprob_vars <- function(weights = "w") {
+  list(
+    weights = weights,
+    repweights = NULL,
+    type = NULL,
+    scale = NULL,
+    rscales = NULL,
+    mse = NULL,
+    probs_provided = FALSE,
+    visible_vars = NULL
+  )
+}
+
+# Column names in @data that still inherit the haven labelled class.
+.labelled_cols <- function(d) {
+  names(d@data)[vapply(d@data, inherits, logical(1L), "haven_labelled")]
+}
+
+test_that("S-24: survey_taylor() built directly stores no labelled column", {
+  # Take the variables and metadata from a design built the normal way, so the
+  # only thing this row changes is the construction route.
+  built <- as_survey(
+    .lab_taylor_df(),
+    ids = psu,
+    weights = wt,
+    strata = strata
+  )
+  direct <- survey_taylor(
+    data = .lab_taylor_df(),
+    variables = built@variables,
+    metadata = built@metadata
+  )
+
+  expect_identical(.labelled_cols(direct), character(0))
+  expect_identical(class(direct@data$y), "numeric")
+  expect_identical(attr(direct@data$y, "label", exact = TRUE), "Outcome")
+})
+
+test_that("S-25: the other three class constructors store no labelled column", {
+  # The setter lives on the abstract parent survey_base. Inheritance has to be
+  # proven for each child, not assumed from one of them — spec III.4 GAP.
+  replicate <- survey_replicate(
+    data = .lab_rep_df(),
+    variables = .rep_vars(weights = "wt", repweights = paste0("rw", 1:4))
+  )
+  twophase <- survey_twophase(
+    data = .lab_twophase_df(),
+    variables = .twophase_vars()
+  )
+  nonprob <- survey_nonprob(
+    data = .lab_nonprob_df(),
+    variables = .nonprob_vars()
+  )
+
+  expect_identical(.labelled_cols(replicate), character(0))
+  expect_identical(.labelled_cols(twophase), character(0))
+  expect_identical(.labelled_cols(nonprob), character(0))
+
+  # The whole class vector goes, not just the haven entries (spec III.3a).
+  expect_identical(class(replicate@data$y), "numeric")
+  expect_identical(class(twophase@data$y), "numeric")
+  expect_identical(class(nonprob@data$y), "numeric")
+
+  # Every other attribute the import set survives the strip.
+  expect_identical(attr(twophase@data$y, "label", exact = TRUE), "Outcome")
+})
+
+test_that("S-26: a bare @data assignment strips the labelled class", {
+  taylor <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  taylor@data <- .lab_taylor_df()
+  expect_identical(.labelled_cols(taylor), character(0))
+  expect_identical(class(taylor@data$y), "numeric")
+
+  # survey_twophase inherits the setter from survey_base — spec III.4 GAP.
+  twophase <- survey_twophase(
+    data = .lab_twophase_df(),
+    variables = .twophase_vars()
+  )
+  twophase@data <- .lab_twophase_df()
+  expect_identical(.labelled_cols(twophase), character(0))
+  expect_identical(class(twophase@data$y), "numeric")
+})
+
+test_that("S-27: an estimate after a bare @data assignment matches plain", {
+  plain_df <- .lab_taylor_df()
+  attr(plain_df$y, "class") <- NULL
+
+  d <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  d@data <- .lab_taylor_df()
+  labelled_result <- get_means(d, y)
+
+  d <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  d@data <- plain_df
+  plain_result <- get_means(d, y)
+
+  expect_identical(labelled_result, plain_result)
+})
+
+test_that("S-28: assigning a frame with no labelled column stores it as is", {
+  # The early return in .strip_labelled_columns() means nothing is copied and
+  # nothing is rewritten when no column matches. The stored frame must be the
+  # assigned frame, attributes and all.
+  plain_df <- .lab_taylor_df()
+  attr(plain_df$y, "class") <- NULL
+
+  d <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  d@data <- plain_df
+
+  expect_identical(d@data, plain_df)
+})
+
+test_that("S-29: a grouped get_quantiles() with three probs matches plain", {
+  # Three probabilities across two groups drives the per-cell loop at
+  # R/analysis-quantiles-helpers.R:187, so the setter fires repeatedly.
+  build <- function(labelled) {
+    df <- .lab_taylor_df()
+    df$g <- make_labelled(rep(c(1, 2), 20L), c(Alpha = 1, Beta = 2), "Cohort")
+    if (!labelled) {
+      attr(df$y, "class") <- NULL
+      attr(df$g, "class") <- NULL
+    }
+    as_survey(df, ids = psu, weights = wt, strata = strata)
+  }
+
+  d <- build(TRUE)
+  expect_no_error(
+    labelled <- get_quantiles(
+      d,
+      y,
+      probs = c(0.25, 0.5, 0.75),
+      group = g,
+      min_cell_n = 0L
+    )
+  )
+  d <- build(FALSE)
+  expect_no_error(
+    plain <- get_quantiles(
+      d,
+      y,
+      probs = c(0.25, 0.5, 0.75),
+      group = g,
+      min_cell_n = 0L
+    )
+  )
+
+  expect_identical(labelled, plain)
+})
+
+
+# ── Layer 1 validator errors stay reachable on labelled input ────────────────
+#
+# The setter runs before the class validator, so the validator sees plain values
+# and raises its own typed error where an untyped vctrs error used to escape.
+# Layer 1 errors: expect_error(class=) only, no snapshot.
+
+test_that("S-35: labelled weights with a zero raise weights_nonpositive", {
+  df <- .lab_taylor_df()
+  wt <- df$wt
+  wt[[1L]] <- 0
+  df$wt <- make_labelled(wt, NULL, "Weight")
+
+  expect_error(
+    survey_taylor(data = df, variables = .taylor_vars(weights = "wt")),
+    class = "surveycore_error_weights_nonpositive"
+  )
+})
+
+test_that("S-36: assigning a labelled frame with no weight column raises", {
+  df <- .lab_taylor_df()
+  df$wt <- NULL
+
+  d <- survey_taylor(
+    data = .lab_taylor_df(),
+    variables = .taylor_vars(weights = "wt")
+  )
+
+  expect_error(
+    d@data <- df,
+    class = "surveycore_error_design_var_missing"
+  )
+})
+
+test_that("S-37: assigning labelled character weights raises not_numeric", {
+  # The strip runs first and leaves a plain character column. Still not
+  # numeric, so the validator catches it and names <character>, not
+  # <haven_labelled>.
+  df <- .lab_taylor_df()
+  df$wt <- make_labelled(as.character(df$wt), NULL, "Weight")
+
+  d <- survey_taylor(
+    data = .lab_taylor_df(),
+    variables = .taylor_vars(weights = "wt")
+  )
+
+  err <- expect_error(
+    d@data <- df,
+    class = "surveycore_error_weights_not_numeric"
+  )
+  expect_false(grepl("haven_labelled", conditionMessage(err), fixed = TRUE))
+})
+
+
+# ── X. Behaviour worth covering that matches no numbered row ─────────────────
+#
+# An `X-` label claims no row identifier.
+
+# P1-1 anticipates Part 1 of spec III, which a later PR delivers. It passes
+# here because as_survey() reaches the S7 constructor before anything compares
+# the ids and strata columns, so the property setter alone is enough for this
+# one route. The two routes Part 1 owns — a labelled `weights` column and a
+# labelled `fpc` column — still abort on this branch with vctrs_error_ptype2,
+# and the gate proving they stop aborting belongs to that PR, not this one.
+test_that("P1-1: labelled ids and strata construct with nest = FALSE", {
+  df <- .lab_taylor_df()
+  df$psu <- make_labelled(df$psu, NULL, "PSU")
+  df$strata <- make_labelled(df$strata, NULL, "Stratum")
+
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(.labelled_cols(d), character(0))
+  expect_identical(attr(d@data$psu, "label", exact = TRUE), "PSU")
+  expect_identical(attr(d@data$strata, "label", exact = TRUE), "Stratum")
+})
+
+test_that("X-14: labelled negative weights raise weights_negative", {
+  df <- .lab_nonprob_df()
+  w <- df$w
+  w[[1L]] <- -1
+  df$w <- make_labelled(w, NULL, "Weight")
+
+  expect_error(
+    survey_nonprob(data = df, variables = .nonprob_vars()),
+    class = "surveycore_error_weights_negative"
+  )
+})
+
+test_that("X-15: the setter drops a stacked caller class on both routes", {
+  # D-6 in test-utils.R covers the as_survey() route. This one covers the two
+  # routes only the property setter reaches (spec III.3a).
+  df <- .lab_taylor_df()
+  attr(df$y, "class") <- c(
+    "my_class",
+    "haven_labelled",
+    "vctrs_vctr",
+    "double"
+  )
+
+  built <- survey_taylor(
+    data = df,
+    variables = .taylor_vars(weights = "wt")
+  )
+  expect_identical(class(built@data$y), "numeric")
+  expect_false(inherits(built@data$y, "my_class"))
+  expect_identical(attr(built@data$y, "label", exact = TRUE), "Outcome")
+
+  assigned <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  assigned@data <- df
+  expect_identical(class(assigned@data$y), "numeric")
+  expect_false(inherits(assigned@data$y, "my_class"))
+  expect_identical(attr(assigned@data$y, "label", exact = TRUE), "Outcome")
+})

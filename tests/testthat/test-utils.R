@@ -697,3 +697,192 @@ test_that("`.compute_nonprob_scale()` returns correct default for each type", {
   expect_equal(surveycore:::.compute_nonprob_scale("JK2", 10L), 1)
   expect_equal(surveycore:::.compute_nonprob_scale("JKn", 10L), 1)
 })
+
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# survey_data() on a design built from a labelled frame (spec III.1, VIII.1)
+# ---------------------------------------------------------------------------
+#
+# survey_data() returns @data unchanged, so it is how anything outside the
+# package sees the stored state. These blocks read the as_survey() route and
+# assert both halves of the storage contract: the haven labelled class is gone,
+# and every other attribute the import set is still readable.
+
+# A labelled frame carrying one column of each backing type, plus the SPSS
+# variant. make_labelled(), make_labelled_spss() and make_tagged_na() live in
+# helper-test-data.R.
+.labelled_import_frame <- function(seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(40, 0.5, 2),
+    dbl = rep(c(1, 2, 3, 4), 10L),
+    int = rep(c(0L, 1L), 20L),
+    chr = rep(c("a", "b"), 20L),
+    spss = rep(c(1, 2, 98, 99), 10L),
+    stringsAsFactors = FALSE
+  )
+  df$dbl <- make_labelled(
+    df$dbl,
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4),
+    "Agreement"
+  )
+  df$int <- make_labelled(df$int, c(No = 0L, Yes = 1L), "Binary")
+  df$chr <- make_labelled(df$chr, c(Alpha = "a", Beta = "b"), "Cohort")
+  df$spss <- make_labelled_spss(
+    df$spss,
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_values = c(98, 99),
+    na_range = c(98, 99),
+    label = "SPSS coded"
+  )
+  df
+}
+
+.labelled_import_design <- function(seed = 42L) {
+  as_survey(
+    .labelled_import_frame(seed),
+    ids = psu,
+    weights = wt,
+    strata = strata
+  )
+}
+
+test_that("D-1: survey_data() returns no column carrying the labelled class", {
+  out <- survey_data(.labelled_import_design())
+
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(names(out)[hits], character(0))
+
+  spss_hits <- vapply(out, inherits, logical(1L), "haven_labelled_spss")
+  expect_identical(names(out)[spss_hits], character(0))
+})
+
+test_that("D-2: every previously labelled column is a plain base type", {
+  out <- survey_data(.labelled_import_design())
+
+  # The backing type is preserved, so the token differs by input type.
+  expect_identical(class(out$dbl), "numeric")
+  expect_identical(class(out$int), "integer")
+  expect_identical(class(out$chr), "character")
+  expect_identical(class(out$spss), "numeric")
+
+  expect_identical(typeof(out$dbl), "double")
+  expect_identical(typeof(out$int), "integer")
+  expect_identical(typeof(out$chr), "character")
+})
+
+test_that("D-3: the label and labels attributes stay readable", {
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(attr(out$dbl, "label", exact = TRUE), "Agreement")
+  expect_identical(attr(out$int, "label", exact = TRUE), "Binary")
+  expect_identical(attr(out$chr, "label", exact = TRUE), "Cohort")
+
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4)
+  )
+  expect_identical(
+    attr(out$int, "labels", exact = TRUE),
+    c(No = 0L, Yes = 1L)
+  )
+  expect_identical(
+    attr(out$chr, "labels", exact = TRUE),
+    c(Alpha = "a", Beta = "b")
+  )
+})
+
+test_that("D-4: the SPSS missing-value attributes stay readable", {
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(attr(out$spss, "na_values", exact = TRUE), c(98, 99))
+  expect_identical(attr(out$spss, "na_range", exact = TRUE), c(98, 99))
+  expect_identical(attr(out$spss, "label", exact = TRUE), "SPSS coded")
+})
+
+test_that("D-5: survey_data() returns a plain frame unchanged", {
+  # The early return in .strip_labelled_columns() means a frame with nothing to
+  # strip comes back as the identical object, not a rebuilt copy.
+  plain <- .labelled_import_frame()
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    attr(plain[[nm]], "class") <- NULL
+  }
+  d <- as_survey(plain, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(survey_data(d), plain)
+})
+
+test_that("D-6: a caller class stacked above haven_labelled goes too", {
+  # attr(x, "class") <- NULL removes the whole class vector, so a class the
+  # caller stacked on top goes with it. Accepted, not fixed: spec III.3a gives
+  # the reasoning, and NEWS.md records it as this PR's breaking change.
+  set.seed(7L)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    wt = runif(40, 0.5, 2),
+    y = rep(c(1, 2, 3, 4), 10L)
+  )
+  df$y <- make_labelled(df$y, c(A = 1, B = 2, C = 3, D = 4), "Stacked")
+  attr(df$y, "class") <- c(
+    "my_class",
+    "haven_labelled",
+    "vctrs_vctr",
+    "double"
+  )
+
+  out <- survey_data(as_survey(df, ids = psu, weights = wt))
+
+  # A bare base type: the caller's own class is gone with the rest.
+  expect_identical(class(out$y), "numeric")
+  expect_false(inherits(out$y, "my_class"))
+  expect_false(inherits(out$y, "haven_labelled"))
+  expect_false(inherits(out$y, "vctrs_vctr"))
+
+  # Every attribute other than class still survives.
+  expect_identical(attr(out$y, "label", exact = TRUE), "Stacked")
+  expect_identical(
+    attr(out$y, "labels", exact = TRUE),
+    c(A = 1, B = 2, C = 3, D = 4)
+  )
+  expect_identical(c(unname(out$y)), rep(c(1, 2, 3, 4), 10L))
+})
+
+
+# ── X. Behaviour worth covering that matches no numbered row ─────────────────
+#
+# An `X-` label claims no row identifier.
+
+test_that("X-16: the stored values equal the plain-input values", {
+  plain <- .labelled_import_frame()
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    attr(plain[[nm]], "class") <- NULL
+  }
+  d <- as_survey(plain, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(survey_data(.labelled_import_design()), survey_data(d))
+})
+
+test_that("X-17: a tagged NA survives the strip unchanged", {
+  df <- .labelled_import_frame()
+  tagged <- rep(c(1, 2, make_tagged_na("a")), length.out = 40L)
+  df$tag <- make_labelled(
+    tagged,
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d)
+
+  # Byte-for-byte identical to the payload the import produced. writeBin()
+  # rejects an object carrying attributes, so drop them for the comparison —
+  # the attributes themselves are D-3's and D-4's subject.
+  bytes <- function(x) writeBin(c(unname(x)), raw(), endian = "little")
+  expect_identical(bytes(out$tag), bytes(tagged))
+  expect_true(all(is.na(out$tag[seq(3L, 39L, by = 3L)])))
+
+  skip_if_not_installed("haven")
+  expect_identical(haven::na_tag(out$tag[[3L]]), "a")
+})
