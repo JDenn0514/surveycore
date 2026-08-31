@@ -404,3 +404,167 @@ sentence in the spec; not worth validating for.
   every value label — is silent, and the user has to remember it forever.
 - **`labelled`, `haven_labelled`, `restore_class`, `set_haven`** as names.
   Reasons above.
+
+---
+
+## D6 — a new per-argument error class validates the `haven_class` flag
+
+**Status**: SETTLED by the user, 2026-08-31, at Stage 1 of pipeline-implement.
+**Raised as**: HOLD-3 by the planner.
+
+### The conflict
+
+Two sentences in the frozen spec could not both hold.
+
+`spec.md` §VIII.1 rule 7 said: "validate it the way the package validates
+other scalar flags and reuse the existing class."
+
+`spec.md` §IX.1a said: "`plans/error-messages.md` gains no row and loses
+none."
+
+There is no generic scalar-flag class to reuse. Every scalar-flag class in
+the package names its own argument:
+
+| Class | Site |
+|---|---|
+| `surveycore_error_subset_not_logical` | `plans/error-messages.md:54`, row 22 |
+| `surveycore_error_na_rm_not_logical` | `R/analysis-helpers.R:692` |
+| `surveycore_error_sata_not_logical` | `R/core-metadata.R:2816` |
+| `surveycore_error_fill_not_logical` | `R/core-metadata.R:2933` |
+| `surveycore_error_reverse_coded_not_logical` | `R/core-metadata.R:3260` |
+
+So "the way the package validates other scalar flags" **is** a new
+per-argument class. Rule 7's own instruction defeats its second clause.
+
+### Decision
+
+Add one row: `surveycore_error_haven_class_not_logical`.
+
+```r
+cli::cli_abort(
+  c(
+    "x" = "{.arg haven_class} must be {.code TRUE} or {.code FALSE}.",
+    "i" = "Got {.obj_type_friendly {haven_class}}."
+  ),
+  class = "surveycore_error_haven_class_not_logical"
+)
+```
+
+### Why §IX.1a said otherwise
+
+§IX.1a's "no new row" was written about two **withdrawn** classes — a
+warning fired when the strip runs, and an error for "`haven` is not
+installed" under `haven_class = TRUE`. Both were correctly withdrawn. Neither
+is the flag validation. The section states a count it never checked against
+rule 7, so the count was wrong, not the reasoning.
+
+### Rejected alternatives
+
+- **Reuse `surveycore_error_na_rm_not_logical`.** Keeps §IX.1a's count
+  literally true. Rejected: the message names `na.rm`, an argument
+  `survey_data()` does not have, so the error misdirects the caller who is
+  debugging.
+- **No typed class.** Rejected: `.claude/rules/code-style.md` requires
+  `class=` on every `cli_abort()` call, no exceptions. It also cannot be
+  tested with `expect_error(class = ...)`, which
+  `.claude/rules/testing-standards.md` requires for a user-facing
+  constructor error.
+
+### Consequent edits
+
+| File | Change |
+|---|---|
+| `spec.md` §VIII.1 rule 7 | Name the new class in place of "reuse the existing class" |
+| `spec.md` §IX.1a | Heading and count become "one new row, none removed"; third table row records the class |
+| `test-spec.md` D-22 | Expected class becomes the named class |
+| `test-spec.md` §5 | Class row names the class |
+| `plans/error-messages.md` | Gains one row — carried by PR 4 |
+
+---
+
+## D7 — the nine-PR shape: split the strip PR at the gate seam, split the close-out out of the ordinality PR
+
+**Status**: SETTLED by the user, 2026-08-31, at Stage 3 of pipeline-implement.
+**Raised as**: findings R1, R2 and R3 of `plan-review.md` pass 1.
+
+### The problem
+
+Version 1.0 of `implementation-plan.md` had seven PRs. Two broke the size
+limits in `.claude/rules/github-strategy.md` (one logical unit per PR) by a
+wide margin:
+
+| PR | Tasks | Files | Limit |
+|---|---|---|---|
+| old PR 3 — the whole §III strip | 25 | 10 | 10 tasks, 5 files |
+| old PR 7 — ordinality plus close-out | 29 | 8 | 10 tasks, 5 files |
+
+Old PR 3 also carried a justification with two bad arguments. Both are
+recorded here so they do not come back:
+
+1. **"Two PRs would share `R/utils.R`, so they could never run concurrently.
+   Splitting buys no parallelism."** A non-sequitur. Blocking concurrency is
+   a reason not to parallelise a split, not a reason not to split. The same
+   plan sequences PR 3a → PR 4 across that same file.
+2. **"Neither half alone satisfies gates 8 and 9, so they must land in one
+   merge."** The plan itself completes gate 15 across four PRs and gate 16
+   across every PR, then confirms each at the end. Gate atomicity was a
+   policy choice presented as a technical necessity.
+
+### Decision
+
+Nine PRs:
+
+```
+PR 1 → PR 2 → PR 3a → PR 3b → (PR 4 ‖ PR 6) → PR 5 → PR 7 → PR 8
+```
+
+**The strip PR splits at the gate seam.** The two halves of §III each have
+their own gate, so the gates name the seam:
+
+| PR | Content | Gate |
+|---|---|---|
+| PR 3a | the two `R/utils.R` helpers plus the S7 setter on the `survey_base` `data` property (§III Part 2) | 8 |
+| PR 3b | the four constructor-entry strip calls (§III Part 1) | 9 |
+
+Gates 17 and 18 — both recorded measurements, not pass-or-fail — go to
+PR 3a, which adds the setter whose cost and non-recursion were measured.
+
+**The ordinality PR sheds its close-out.** PR 7 keeps §I items 4 and 7. A new
+PR 8 carries the whole-feature verification: gates 4, 5, 6, 15 and 16, plus
+the `plans/error-messages.md` row-count check from D6.
+
+### The intermediate state is safe
+
+After PR 3a merges and before PR 3b merges, a frame whose `weight` or `fpc`
+column carries the labelled class still aborts with `vctrs_error_ptype2`.
+That is today's behaviour on `develop`, so it is not a regression.
+
+It is also invisible to CI. The rows that exercise that failure — S-14 to
+S-20 and the rest of `test-spec.md` §4.2 — live in
+`tests/testthat/test-labelled-storage.R`, a file PR 3b creates. At PR 3a's
+merge point that file does not exist, so no new test fails and both
+`devtools::test()` and `devtools::check()` pass.
+
+### Two consequences worth recording
+
+**PR 8 needs a write surface.** A verification-only PR has an empty diff and
+cannot be opened. PR 3a and PR 7 each append an entry under a
+`## Breaking changes` heading, so `NEWS.md` ends with two such headings.
+PR 8 merges them and orders the five entries. The work can only be done
+last, and it gives gate 15 a PR that makes it true rather than one that only
+observes it.
+
+**PR 8 diffs against `cf6f153`, not `develop`.** By the time PR 8 opens,
+`develop` carries the whole feature, so `git diff develop` is empty and every
+whole-feature check would pass without testing anything. The base commit is
+the only comparison that means something.
+
+### Rejected alternatives
+
+- **Split the strip PR only, eight PRs.** Keeps the close-out inside PR 7 as
+  a labelled final phase. Rejected: PR 7 stays at 29 tasks, so the finding
+  is reworded rather than fixed.
+- **Keep seven PRs and fix the reasoning.** Rewrite old PR 3's justification
+  to drop the two bad arguments and collapse the described steps to bring
+  task counts down on paper. Rejected: it accepts a 10-file review in one
+  merge and answers a size problem with wording.

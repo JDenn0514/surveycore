@@ -498,7 +498,7 @@ function need the guard.
 | D-19 | `haven_class = TRUE`, then `labelled::to_factor()` | returns the label strings. Guard with `skip_if_not_installed("labelled")`. |
 | D-20 | `haven_class = TRUE`, write with `haven::write_sav()` to a temp file, read back with `haven::read_sav()` | value labels are present. Use a column with **no** tagged `NA` — see D-21. Guard with `skip_if_not_installed("haven")`, and use `withr::local_tempfile()`. |
 | D-21 | The same write on a column holding a tagged `NA` | raises. This is a `.sav` format limit inside `haven`, not a defect here: a column built straight from `haven`'s own constructor fails identically. Assert that it raises, and say why in the block description so nobody attributes it to this work. Guard with `skip_if_not_installed("haven")`. |
-| D-22 | `haven_class` given a non-logical value, or a logical of length two | raises. Reuse whichever class the package already uses for a malformed scalar flag; do not introduce a new one. Dual pattern. |
+| D-22 | `haven_class` given a non-logical value, or a logical of length two | raises `surveycore_error_haven_class_not_logical` (D6). Dual pattern. Cover at least: a character scalar, `NA`, a length-two logical, and `NULL`. |
 | D-23 | `survey_data(x)` where `x` is not a survey design object | still raises `surveycore_error_not_survey_object`. Dual pattern. Regression fence on the existing check. |
 
 **Note on D-9 to D-13 — assert the whole class vector, not just membership.**
@@ -725,8 +725,11 @@ first time. Review each new snapshot by hand with
 
 ## 5. Error and warning classes
 
-No new error class and no new warning class. Every class below already
-exists. What changes is the condition that reaches some of them.
+Exactly one new error class —
+`surveycore_error_haven_class_not_logical`, which validates the
+`haven_class` flag (D6, `spec.md` §IX.1a). No new warning class. Every other
+class below already exists; what changes is the condition that reaches some
+of them.
 
 Each named class gets the dual pattern — `expect_error(class = ...)` **and**
 `expect_snapshot(error = TRUE, ...)` — because all of these are user-facing
@@ -742,7 +745,7 @@ messages.
 | `surveycore_warning_polychoric_unordered_factor` | P-13 | `expect_warning(result <- ..., class = ...)` plus snapshot |
 | `surveycore_warning_missing_labels` | M-2 | `expect_warning(result <- ..., class = ...)` **plus snapshot** — same treatment as the row above it. Both are user-facing warnings raised from public functions with fully formatted messages, so there is no reason to treat them differently. An earlier draft snapshotted one and not the other. |
 | `surveycore_error_not_survey_object` | D-23 | dual |
-| whichever class the package uses for a malformed scalar flag | D-22 | dual |
+| `surveycore_error_haven_class_not_logical` | D-22 | dual |
 | `surveycore_error_subset_not_logical` | S-30 | dual |
 | `surveycore_error_weights_nonpositive` | S-21 | dual |
 | `surveycore_error_weights_all_zero` | S-22 | dual |
