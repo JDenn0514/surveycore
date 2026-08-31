@@ -1659,7 +1659,13 @@ test_that("S-28: grouped get_quantiles() after direct construction matches", {
   expect_identical(labelled_result, plain_result)
 })
 
-test_that("S-29: labelled ids and strata construct with nest = FALSE", {
+# P1-1 anticipates Part 1 of spec III, which a later PR delivers. It passes
+# here because as_survey() reaches the S7 constructor before anything compares
+# the ids and strata columns, so the property setter alone is enough for this
+# one route. The two routes Part 1 owns — a labelled `weights` column and a
+# labelled `fpc` column — still abort on this branch with vctrs_error_ptype2,
+# and the gate proving they stop aborting belongs to that PR, not this one.
+test_that("P1-1: labelled ids and strata construct with nest = FALSE", {
   df <- .lab_taylor_df()
   df$psu <- make_labelled(df$psu, NULL, "PSU")
   df$strata <- make_labelled(df$strata, NULL, "Stratum")
@@ -1691,7 +1697,7 @@ test_that("S-35: labelled weights with a zero raise weights_nonpositive", {
   )
 })
 
-test_that("S-36: character labelled weights raise weights_not_numeric", {
+test_that("X-17: character labelled weights raise weights_not_numeric", {
   df <- .lab_taylor_df()
   df$wt <- make_labelled(as.character(df$wt), NULL, "Weight")
 
@@ -1713,4 +1719,38 @@ test_that("S-37: labelled negative weights raise weights_negative", {
     survey_nonprob(data = df, variables = .nonprob_vars()),
     class = "surveycore_error_weights_negative"
   )
+})
+
+
+# ── X-16 — the stacked caller class on the setter routes (spec III.3a) ───────
+#
+# X-15 in test-utils.R covers the as_survey() route. This one covers the two
+# routes only the property setter reaches: a direct S7 construction call and a
+# bare `@data <-` assignment.
+
+test_that("X-16: the setter drops a stacked caller class on both routes", {
+  df <- .lab_taylor_df()
+  attr(df$y, "class") <- c(
+    "my_class",
+    "haven_labelled",
+    "vctrs_vctr",
+    "double"
+  )
+
+  built <- survey_taylor(
+    data = df,
+    variables = .taylor_vars(weights = "wt")
+  )
+  expect_identical(class(built@data$y), "numeric")
+  expect_false(inherits(built@data$y, "my_class"))
+  expect_identical(attr(built@data$y, "label", exact = TRUE), "Outcome")
+
+  assigned <- survey_taylor(
+    data = .df10(),
+    variables = .taylor_vars(weights = "wt")
+  )
+  assigned@data <- df
+  expect_identical(class(assigned@data$y), "numeric")
+  expect_false(inherits(assigned@data$y, "my_class"))
+  expect_identical(attr(assigned@data$y, "label", exact = TRUE), "Outcome")
 })

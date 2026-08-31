@@ -789,7 +789,7 @@ test_that("D-3: the SPSS missing-value attributes stay readable", {
   expect_identical(class(out$spss), "numeric")
 })
 
-test_that("D-4: the stored values equal the plain-input values", {
+test_that("X-18: the stored values equal the plain-input values", {
   plain <- .labelled_import_frame()
   for (nm in c("dbl", "int", "chr", "spss")) {
     attr(plain[[nm]], "class") <- NULL
@@ -821,7 +821,7 @@ test_that("D-5: a tagged NA survives the strip unchanged", {
   expect_identical(haven::na_tag(out$tag[[3L]]), "a")
 })
 
-test_that("D-6: the underlying type of every stripped column is unchanged", {
+test_that("X-19: the underlying type of every stripped column is unchanged", {
   out <- survey_data(.labelled_import_design())
 
   expect_identical(typeof(out$dbl), "double")
@@ -831,4 +831,47 @@ test_that("D-6: the underlying type of every stripped column is unchanged", {
   expect_identical(class(out$dbl), "numeric")
   expect_identical(class(out$int), "integer")
   expect_identical(class(out$chr), "character")
+})
+
+
+# ---------------------------------------------------------------------------
+# X-15 — a caller class stacked above haven_labelled (spec III.3a)
+# ---------------------------------------------------------------------------
+#
+# `attr(x, "class") <- NULL` removes the whole class vector, so a class the
+# caller stacked on top goes with it. Accepted, not fixed: spec III.3a gives
+# the reasoning, and NEWS.md records it as this PR's breaking change. The row
+# pins the loss so it stays a recorded decision rather than a later surprise.
+
+test_that("X-15: a caller class stacked above haven_labelled goes too", {
+  set.seed(7L)
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    wt = runif(40, 0.5, 2),
+    y = rep(c(1, 2, 3, 4), 10L)
+  )
+  df$y <- make_labelled(df$y, c(A = 1, B = 2, C = 3, D = 4), "Stacked")
+  attr(df$y, "class") <- c(
+    "my_class",
+    "haven_labelled",
+    "vctrs_vctr",
+    "double"
+  )
+
+  out <- survey_data(as_survey(df, ids = psu, weights = wt))
+
+  # The whole class vector goes, so the foreign entry goes with it.
+  expect_identical(class(out$y), "numeric")
+  expect_false(inherits(out$y, "my_class"))
+  expect_false(inherits(out$y, "haven_labelled"))
+  expect_false(inherits(out$y, "vctrs_vctr"))
+
+  # Every attribute other than class still survives, exactly as for the
+  # unstacked shape.
+  expect_identical(attr(out$y, "label", exact = TRUE), "Stacked")
+  expect_identical(
+    attr(out$y, "labels", exact = TRUE),
+    c(A = 1, B = 2, C = 3, D = 4)
+  )
+  expect_identical(c(unname(out$y)), rep(c(1, 2, 3, 4), 10L))
 })

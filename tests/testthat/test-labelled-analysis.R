@@ -12,10 +12,33 @@
 # identical() distinguishes and all.equal() does not.
 #
 # Test structure:
-#   A-1  to A-22  — the fourteen analysis entry points on a Taylor design
+#   A-1  to A-22  — fourteen of the seventeen entry points, Taylor design
 #   A-23 to A-29  — replicate, non-probability, and two-phase designs
 #   A-30, A-31    — direct S7 construction; the SPSS labelled variant
-#   G-1  to G-6   — value labels on a group column after the strip
+#   G-1  to G-4   — value labels on a group column after the strip
+#   X-1  to X-14  — the last three entry points, plus five more call forms
+#   X-20 to X-22  — three more group-label rows
+#
+# The seventeen public entry points of spec VIII.4, and the row that covers
+# each. Read this table against the file to check the sweep is complete.
+#
+#   get_freqs        A-6, A-7, A-8, A-9, X-6, X-8, X-9, A-24, A-27
+#   get_means        A-1, A-2, A-3, A-23, A-26, A-28, A-30, A-31
+#   get_totals       A-4, A-5, A-29
+#   get_quantiles    A-10, A-11, A-25
+#   get_ratios       A-15, X-13
+#   get_variance     A-12, X-11
+#   get_covariance   A-13, X-12
+#   get_corr         A-14, X-7 (polychoric), X-14 (grouped)
+#   get_diffs        A-20, X-10
+#   get_t_test       A-18
+#   get_pairwise     A-19
+#   get_anova        A-22
+#   get_effective_n  A-16, A-17
+#   survey_glm       A-21
+#   clean            X-1, X-2
+#   meta             X-3, X-4
+#   set_val_labels   X-5, X-6
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -390,7 +413,7 @@ test_that("G-1: grouped get_freqs() labels a previously labelled group", {
   )
 })
 
-test_that("G-2: grouped get_means() labels a previously labelled group", {
+test_that("X-20: grouped get_means() labels a previously labelled group", {
   d <- .la_design(TRUE)
   out <- get_means(d, y1, group = q1)
   expect_identical(
@@ -424,7 +447,7 @@ test_that("G-4: group labels still resolve when haven is unavailable", {
   expect_true(any(is.na(out$q2)))
 })
 
-test_that("G-5: the harvested metadata survives the strip", {
+test_that("X-21: the harvested metadata survives the strip", {
   d <- .la_design(TRUE)
   expect_identical(
     extract_val_labels(d, q1),
@@ -441,10 +464,151 @@ test_that("G-5: the harvested metadata survives the strip", {
   expect_identical(extract_var_label(d, g), c(g = "Cohort"))
 })
 
-test_that("G-6: a tagged NA group resolves to its label when haven is there", {
+test_that("X-22: a tagged NA group resolves to its label when haven is there", {
   skip_if_not_installed("haven")
   df <- .la_tagged_frame()
   d <- as_survey(df, ids = psu, weights = wt)
   out <- get_means(d, y1, group = q2, na.rm = FALSE)
   expect_identical(levels(out$q2), c("Yes", "No", "Refused"))
+})
+
+
+# ── X. The entry points and call forms the sweep above does not reach ────────
+#
+# `X-n` numbers builder-added coverage for this PR in one sequence that runs
+# across three files: this one, test-utils.R and test-s7-classes.R. The prefix
+# is deliberate — an `X-` label claims no numbered row in any planning
+# document, only the behaviour its own description states.
+#
+# X-1 to X-14 close the last three of the seventeen public entry points named
+# in spec VIII.4 — clean(), meta() and set_val_labels() — together with the
+# polychoric call form of get_corr(), the `label_values` argument, and the
+# grouped call form of the four multi-column entry points. X-15 and X-16 pin
+# spec III.3a, the stacked caller class, and live in the other two files.
+
+# Two integer-backed ordinal columns, for the polychoric call form. Integer
+# backing is what the ordinality gate accepts on this branch; a whole-valued
+# double is spec item 4 and a separate change.
+.la_ordinal_design <- function(labelled = TRUE) {
+  df <- .la_frame(labelled)
+  df$o1 <- make_labelled(
+    rep(c(1L, 2L, 3L, 4L), 100L),
+    c(A = 1L, B = 2L, C = 3L, D = 4L),
+    "Ordinal one"
+  )
+  df$o2 <- make_labelled(
+    rep(c(1L, 1L, 2L, 3L, 4L, 4L, 2L, 3L), 50L),
+    c(A = 1L, B = 2L, C = 3L, D = 4L),
+    "Ordinal two"
+  )
+  if (!labelled) {
+    attr(df$o1, "class") <- NULL
+    attr(df$o2, "class") <- NULL
+  }
+  as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+}
+
+.q1_labels <- c(
+  `Strongly agree` = 1,
+  Agree = 2,
+  Disagree = 3,
+  `Strongly disagree` = 4
+)
+
+test_that("X-1: clean() on a labelled-column fit matches plain input", {
+  r <- .la_both(function(d) clean(survey_glm(d, y1 ~ y2)))
+  expect_identical(r$labelled, r$plain)
+})
+
+test_that("X-2: clean() on a fit with a labelled predictor matches plain", {
+  r <- .la_both(function(d) clean(survey_glm(d, y1 ~ g)))
+  expect_identical(r$labelled, r$plain)
+})
+
+test_that("X-3: meta() on a labelled-column result matches plain input", {
+  r <- .la_both(function(d) meta(get_means(d, y1, group = q1)))
+  expect_identical(r$labelled, r$plain)
+
+  # The harvested labels reach the result metadata unchanged by the strip.
+  expect_identical(r$labelled$group$q1$value_labels, .q1_labels)
+  expect_identical(r$labelled$group$q1$variable_label, "Agreement")
+  expect_identical(r$labelled$x$y1$variable_label, "Outcome one")
+})
+
+test_that("X-4: meta() on a get_freqs() result carries the x value labels", {
+  r <- .la_both(function(d) meta(get_freqs(d, q1)))
+  expect_identical(r$labelled, r$plain)
+  expect_identical(r$labelled$x$q1$value_labels, .q1_labels)
+})
+
+test_that("X-5: set_val_labels() on a labelled column stores the new labels", {
+  r <- .la_both(function(d) {
+    extract_val_labels(
+      set_val_labels(d, q1 = c(A = 1, B = 2, C = 3, D = 4)),
+      q1
+    )
+  })
+  expect_identical(r$labelled, r$plain)
+  expect_identical(r$labelled, list(q1 = c(A = 1, B = 2, C = 3, D = 4)))
+})
+
+test_that("X-6: get_freqs() uses the labels set_val_labels() wrote", {
+  r <- .la_both(function(d) {
+    get_freqs(set_val_labels(d, q1 = c(A = 1, B = 2, C = 3, D = 4)), q1)
+  })
+  expect_identical(r$labelled, r$plain)
+  expect_identical(levels(r$labelled$q1), c("A", "B", "C", "D"))
+})
+
+test_that("X-7: polychoric get_corr() on labelled ordinals matches plain", {
+  d <- .la_ordinal_design(TRUE)
+  labelled <- get_corr(d, c(o1, o2), method = "polychoric")
+  d <- .la_ordinal_design(FALSE)
+  expect_identical(labelled, get_corr(d, c(o1, o2), method = "polychoric"))
+})
+
+test_that("X-8: get_freqs(label_values = FALSE) returns the raw codes", {
+  r <- .la_both(function(d) get_freqs(d, q1, label_values = FALSE))
+  expect_identical(r$labelled, r$plain)
+  expect_identical(r$labelled$q1, c("1", "2", "3", "4"))
+})
+
+test_that("X-9: get_freqs(label_values = TRUE) returns the labels", {
+  r <- .la_both(function(d) get_freqs(d, q1, label_values = TRUE))
+  expect_identical(r$labelled, r$plain)
+  expect_identical(levels(r$labelled$q1), names(.q1_labels))
+})
+
+test_that("X-10: get_diffs(label_values = FALSE) matches plain input", {
+  d <- .la_design(TRUE)
+  expect_warning(
+    labelled <- get_diffs(d, y1, treats = g, label_values = FALSE),
+    class = "surveycore_warning_treats_coerced"
+  )
+  d <- .la_design(FALSE)
+  expect_warning(
+    plain <- get_diffs(d, y1, treats = g, label_values = FALSE),
+    class = "surveycore_warning_treats_coerced"
+  )
+  expect_identical(labelled, plain)
+})
+
+test_that("X-11: grouped get_variance() matches plain input", {
+  r <- .la_both(function(d) get_variance(d, y1, group = g))
+  expect_identical(r$labelled, r$plain)
+})
+
+test_that("X-12: grouped get_covariance() matches plain input", {
+  r <- .la_both(function(d) get_covariance(d, c(y1, y2), group = g))
+  expect_identical(r$labelled, r$plain)
+})
+
+test_that("X-13: grouped get_ratios() matches plain input", {
+  r <- .la_both(function(d) get_ratios(d, y1, y2, group = g))
+  expect_identical(r$labelled, r$plain)
+})
+
+test_that("X-14: grouped get_corr() matches plain input", {
+  r <- .la_both(function(d) get_corr(d, c(y1, y2), group = g))
+  expect_identical(r$labelled, r$plain)
 })
