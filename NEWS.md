@@ -60,6 +60,25 @@
   attribute promotion as `notes` and the other per-variable metadata
   fields. (#176)
 
+## Breaking changes
+
+* A survey design object no longer stores the `haven_labelled` class on any
+  column of its data. Every write to the design's data drops that class and
+  keeps every other attribute, so the `label` string, the `labels` value-label
+  vector and the SPSS `na_values` and `na_range` vectors all stay on the
+  column, and the value labels stay in the metadata system. A previously
+  labelled column now prints with the type token for its underlying type —
+  `<dbl>`, `<int>` or `<chr>` in place of `<hvn_lbl>`.
+
+  The whole class vector goes, not the `haven_labelled` entry alone. A caller
+  who stacked their own class **above** `haven_labelled` loses that class too:
+  a column classed `c("my_class", "haven_labelled", "vctrs_vctr", "double")` is
+  stored as a bare numeric. Removing only the haven entries would leave a class
+  whose `vctrs_vctr` parent is gone, which no package can dispatch on
+  correctly, so the whole vector goes. No known package stacks a class there.
+  Re-apply the class after reading the data back with `survey_data()` if you
+  depend on it. (#175)
+
 ## Bug fixes
 
 * `as_survey_nonprob()` now promotes weighting history from the data frame into

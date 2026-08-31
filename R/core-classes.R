@@ -313,7 +313,15 @@ survey_base <- S7::new_class(
   properties = list(
     data = S7::new_property(
       S7::class_data.frame,
-      default = quote(data.frame())
+      default = quote(data.frame()),
+      # Drops the haven labelled class from every column, on every write.
+      # Value labels stay on the column and in @metadata@value_labels.
+      # S7 does not re-enter a setter already running for the same
+      # property, so the assignment below does not loop. Measured.
+      setter = function(self, value) {
+        self@data <- .strip_labelled_columns(value)
+        self
+      }
     ),
     metadata = S7::new_property(
       class = survey_metadata,
