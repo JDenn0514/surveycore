@@ -183,6 +183,12 @@ as_survey <- function(
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
 
+  # Drops the haven labelled class from every column, keeping every other
+  # attribute. This runs before any validation because the weight and fpc
+  # checks below read this frame, not @data, so the `data` property setter has
+  # not fired when they run. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
+
   # ── Capture all quosures at top (before any resolution) ────────────────────
   ids_quo <- rlang::enquo(ids)
   probs_quo <- rlang::enquo(probs)
@@ -720,6 +726,10 @@ as_survey_replicate <- function(
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
 
+  # Same strip as as_survey(), for the same reason: .validate_weights() below
+  # reads this frame, not @data. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
+
   # ── Resolve tidy-select expressions ────────────────────────────────────────
 
   # weights (must select exactly one column; R function signature already
@@ -953,6 +963,12 @@ as_survey_twophase <- function(
   }
 
   data <- phase1@data
+
+  # Defence in depth. `phase1` is a survey_base, so the `data` property setter
+  # has already stripped its columns and this call finds nothing. It stays so
+  # that a reader of the subset check below need not first work out how
+  # `phase1` was built. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
 
   # ── Error 20: subset is required ────────────────────────────────────────────
 
@@ -1351,6 +1367,10 @@ as_survey_nonprob <- function(
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
+
+  # Same strip as as_survey(), for the same reason: .validate_weights() below
+  # reads this frame, not @data. See R/utils.R for the helper.
+  data <- .strip_labelled_columns(data)
 
   # ── Resolve weights (required) ──────────────────────────────────────────────
 
