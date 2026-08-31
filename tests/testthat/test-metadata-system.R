@@ -2933,11 +2933,18 @@ test_that("grep audit: @var_extra contents are read/written only by the intended
   # promotion block), and core-validators.R (.rename_metadata_keys()/
   # .delete_metadata_col()). No other file in R/ reads or branches on its
   # contents.
+  # Guard on source files, not on the directory. Under covr the package
+  # installs into a temporary library and the tests run from
+  # <lib>/surveycore/surveycore-tests/testthat, so "../../R" resolves to
+  # <lib>/surveycore/R. That directory exists, but it holds the lazy-load
+  # database rather than .R files, so dir.exists() is TRUE and the grep
+  # finds nothing. list.files() on a missing directory returns character(0)
+  # without erroring, so no dir.exists() call is needed.
   r_dir <- testthat::test_path("..", "..", "R")
-  if (!dir.exists(r_dir)) {
+  r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
+  if (length(r_files) == 0L) {
     skip("R/ source tree not available (installed-package test layout)")
   }
-  r_files <- list.files(r_dir, pattern = "\\.R$", full.names = TRUE)
   hits <- vapply(
     r_files,
     function(f) any(grepl("var_extra", readLines(f, warn = FALSE))),
