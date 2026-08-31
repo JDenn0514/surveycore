@@ -4,6 +4,8 @@
 # file runs. Provides:
 #   - make_survey_data()  — synthetic survey data generator
 #   - test_invariants()   — formal invariant checker for survey objects
+#   - make_labelled(), make_labelled_spss(), make_tagged_na() — haven-shaped
+#     column fixtures, built with base R so they need no haven at runtime
 #
 # Dependency note: test_invariants() references S7 class objects
 # (survey_replicate, survey_metadata) and .get_design_vars_flat() from
@@ -550,6 +552,114 @@ make_survey_data <- function(
   }
 
   df
+}
+
+# ------------------------------------------------------------------------------
+# make_labelled(), make_labelled_spss(), make_tagged_na()
+# ------------------------------------------------------------------------------
+
+# The three column-level fixture builders for haven-shaped data. A
+# `haven_labelled` vector is attributes plus a class vector, so base R builds
+# one; `haven` is in Suggests and is not needed to construct a fixture.
+#
+# `make_survey_data(with_labels = TRUE)` cannot serve here. It attaches the
+# `label` and `labels` attributes but never sets a class, so nothing dispatches
+# on the column and the defect under test never fires.
+#
+# `tests/testthat/test-labelled-fixtures.R` pins all three against real `haven`
+# output. Change a builder only together with that file.
+
+#' Build a `haven_labelled` vector with base R
+#'
+#' Returns `x` carrying the value labels, the variable label, and the
+#' three-entry `haven_labelled` class vector. `typeof(x)` supplies the
+#' base-type marker, so double-, integer-, and character-backed columns need no
+#' special case.
+#'
+#' Attributes are attached in `haven`'s own order — `labels`, `label`, `class` —
+#' so the result is `identical()` to `haven::labelled()` output. A `NULL`
+#' argument attaches nothing, matching `haven`, which omits `label` entirely
+#' when no variable label is given.
+#'
+#' @param x      A double, integer, or character vector.
+#' @param labels A named vector of value labels, of the same type as `x`. The
+#'   names are the labels; the values are the codes. `NULL` attaches none.
+#' @param label  A length-1 character variable label, or `NULL` for none.
+#' @return `x` with class `c("haven_labelled", "vctrs_vctr", typeof(x))`.
+#' @keywords internal
+make_labelled <- function(x, labels = NULL, label = NULL) {
+  attr(x, "labels") <- labels
+  attr(x, "label") <- label
+  attr(x, "class") <- c("haven_labelled", "vctrs_vctr", typeof(x))
+  x
+}
+
+#' Build a `haven_labelled_spss` vector with base R
+#'
+#' The SPSS variant of [make_labelled()]. Adds the two SPSS missing-value
+#' attributes and puts `haven_labelled_spss` on the front of the class vector,
+#' which is why one `inherits(x, "haven_labelled")` call catches both shapes.
+#'
+#' Attributes are attached in `haven`'s own order — `labels`, `label`,
+#' `na_values`, `na_range`, `class` — so the result is `identical()` to
+#' `haven::labelled_spss()` output. Either missing-value argument may be `NULL`,
+#' and `NULL` attaches nothing.
+#'
+#' @param x         A double, integer, or character vector.
+#' @param labels    A named vector of value labels, of the same type as `x`.
+#'   `NULL` attaches none.
+#' @param na_values A vector of discrete user-missing codes, of the same type as
+#'   `x`, or `NULL` for none.
+#' @param na_range  A length-2 vector giving an inclusive user-missing range, of
+#'   the same type as `x`, or `NULL` for none.
+#' @param label     A length-1 character variable label, or `NULL` for none.
+#' @return `x` with class `c("haven_labelled_spss", "haven_labelled",
+#'   "vctrs_vctr", typeof(x))`.
+#' @keywords internal
+make_labelled_spss <- function(
+  x,
+  labels = NULL,
+  na_values = NULL,
+  na_range = NULL,
+  label = NULL
+) {
+  attr(x, "labels") <- labels
+  attr(x, "label") <- label
+  attr(x, "na_values") <- na_values
+  attr(x, "na_range") <- na_range
+  attr(x, "class") <- c(
+    "haven_labelled_spss",
+    "haven_labelled",
+    "vctrs_vctr",
+    typeof(x)
+  )
+  x
+}
+
+#' Build a `haven` tagged `NA` with base R
+#'
+#' A tagged `NA` is `NA_real_` with one character written into the unused part
+#' of the `NaN` payload. `haven` stores the tag in byte 5 of the eight-byte
+#' little-endian representation; `NA_real_` itself leaves bytes 5 and 6 zero, so
+#' the write disturbs nothing. The result stays `NA` to base R and reads its tag
+#' back through `haven::na_tag()`.
+#'
+#' `writeBin()` and `readBin()` take an explicit `endian` argument, so the
+#' builder produces the same double on a big-endian platform.
+#'
+#' @param tag A length-1 character string of exactly one character.
+#' @return A length-1 double that is `NA` and carries `tag`.
+#' @keywords internal
+make_tagged_na <- function(tag) {
+  stopifnot(
+    is.character(tag),
+    length(tag) == 1L,
+    !is.na(tag),
+    nchar(tag) == 1L
+  )
+  bytes <- writeBin(NA_real_, raw(), endian = "little")
+  bytes[5L] <- charToRaw(tag)
+  readBin(bytes, "double", n = 1L, endian = "little")
 }
 
 # ------------------------------------------------------------------------------
