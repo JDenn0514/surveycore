@@ -212,8 +212,8 @@
 #
 # Returns: list(
 #   thresholds      = numeric(K-1),
-#   levels_used     = character|integer — retained levels in order,
-#   dropped_levels  = character|integer — zero-weight levels,
+#   levels_used     = character|integer|double — retained levels in order,
+#   dropped_levels  = character|integer|double — zero-weight levels,
 #   codes           = integer vector of length-n with re-numbered levels
 #                     (NA for rows with zero effective weight)
 # )
