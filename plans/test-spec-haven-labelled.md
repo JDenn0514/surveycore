@@ -775,11 +775,18 @@ against:
 | conversion | C-0, C-3 to C-8 |
 | `survey_data()` | D-1 to D-4, D-6 |
 
-### Corrections to this list, measured 2026-08-31
+### Corrections to this list, measured 2026-08-31 and 2026-09-01
 
 PR 3b measured every row above on a scratch tree differing from its own base
 only by the change under test. The list mispredicted in both directions, for
 **three** separate reasons. Read all three before trusting a prediction here.
+
+**C-0 is a fourth, added 2026-09-01.** The table above files it under
+"expected to fail on the base commit". It does not fail: `.extract_var_meta()`
+at `R/analysis-helpers.R:160-162` falls back to `attr(col, "label")`, which
+the strip keeps, so the variable label resolves on both trees. C-0 is a
+fence — see its corrected row in §4.7. The rows in this group that do catch
+the empty-metadata defect are C-3, C-5 and C-6.
 
 **1. The base moved.** S-1 to S-13 are listed as expected to fail. They pass
 from PR 3a onward, because PR 3a's property setter already covers those

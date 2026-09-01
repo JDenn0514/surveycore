@@ -293,7 +293,10 @@ closes it, and gate 9 is what proves it closed.
     `test-spec.md` §4.11a: the failure count and every failing row
     identifier.
   - `git diff --stat DESCRIPTION NAMESPACE` is empty (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
   - `devtools::check()` reports 0 errors, 0 warnings, at most the two
     pre-approved notes.
 
@@ -395,7 +398,10 @@ two routes PR 3a could not reach.
     `test-spec.md` §4.11a, including the note about S-1 to S-13.
   - `git diff --stat DESCRIPTION NAMESPACE man/` is empty — this PR changes
     code only, with no roxygen change (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
   - `devtools::check()` reports 0 errors, 0 warnings, at most the two
     pre-approved notes.
 
@@ -617,7 +623,10 @@ disjoint from PR 4's, so the two run at the same time.
     (`test-spec.md` §4.6).
   - `git diff --stat DESCRIPTION NAMESPACE man/` is empty — no roxygen
     changes in this PR (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
 
 - **Files touched**
   - `R/core-metadata.R` — modified
@@ -732,9 +741,10 @@ source. The whole-feature close-out is PR 8, not this PR.
   - `NEWS.md` carries the fourth and fifth of the five entries required by
     `spec.md` §XI.15. PR 8 counts them.
   - `devtools::document()` clean, `man/get_corr.Rd` in sync
-    (`spec.md` §XI.1); `air::format_package()` produces no diff
-    (`spec.md` §XI.7); `Rscript -e "devtools::test()"` reports 0 failures, 0
-    errors, 0 warnings (`spec.md` §XI.2).
+    (`spec.md` §XI.1); `air format --check` produces no diff attributable to
+    this feature (`spec.md` §XI.7); `Rscript -e "devtools::test()"` reports 0
+    failures and 0 errors, with no warning attributable to this feature —
+    256 warnings, unchanged from baseline (`spec.md` §XI.2).
   - `git diff --stat DESCRIPTION NAMESPACE` is empty (`spec.md` §XI.16).
 
 - **Files touched**
@@ -813,7 +823,9 @@ Branch from `develop` after PR 7 merges.
   - Gate 6 (`spec.md` §XI.6): the recorded coverage figure is at or above
     96.09%, measured with `NOT_CRAN=true`. Without that variable eleven
     files skip and the figure reads about 93.7%.
-  - Gate 7 (`spec.md` §XI.7): `air::format_package()` produces no diff.
+  - Gate 7 (`spec.md` §XI.7): `air format --check .` produces no diff
+    **attributable to this feature**. Measured 2026-09-01: 35 files flagged,
+    0 attributable. The package-wide no-diff form has never held.
   - Gate 15 (`spec.md` §XI.15): `NEWS.md` carries five entries for this
     feature — the storage contract change, the new `haven_class` argument,
     the polychoric acceptance of whole-valued doubles, the polyserial
@@ -966,7 +978,7 @@ that can make it true.
 | 4 — `R CMD check --as-cran` | PR 8 (each PR also runs `devtools::check()` before it opens) |
 | 5 — `pkgdown::build_site()` | PR 8 |
 | 6 — `covr` at or above 96.09%, floor 95%, with `NOT_CRAN=true` | PR 8 |
-| 7 — `air::format_package()` no diff | every PR; verified in PR 8 |
+| 7 — `air format --check .` no **attributable** diff | every PR; verified in PR 8. Package-wide: 35 files flagged, 0 attributable, and the no-diff form has never held |
 | 8 — no `@data` column inherits `haven_labelled`, four classes plus bare assignment | **PR 3a** — the setter is what makes it true. Rows S-24 to S-26 and D-1 to D-4 |
 | 9 — a design constructs and estimates from a labelled weight column and a labelled FPC column | **PR 3b** — the four constructor-entry calls are what make it true. Rows S-14, S-15, S-23b, S-23c |
 | 10 — `@metadata@value_labels` populated on every route, `from_svydesign()` included | PR 5 |
