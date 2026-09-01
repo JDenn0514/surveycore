@@ -1253,9 +1253,9 @@
 #   design          — survey_taylor (used for @data and @variables$weights)
 #   method          — "polychoric" or "polyserial"
 #   vec_a, vec_b    — full-length vectors. For polychoric, both are ordinal
-#                     (factor / ordered / integer). For polyserial, `vec_a`
-#                     is the ordinal side and `vec_b` is the raw continuous
-#                     variable (not pre-standardized).
+#                     (factor / ordered / integer / whole double). For
+#                     polyserial, `vec_a` is the ordinal side and `vec_b` is
+#                     the raw continuous variable (not pre-standardized).
 #   active_domain   — logical or 0/1 mask aligned to @data rows.
 #   rho_hat_full    — full-sample ρ̂ (on the ρ scale).
 #   eps_pert        — perturbation magnitude; default 1e-4.
