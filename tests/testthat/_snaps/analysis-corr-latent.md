@@ -158,3 +158,141 @@
       i This is a known limitation of the delta-method / numerical influence-function approach (Mannan 2025).
       v Use a <survey_replicate> design for tighter inference near the boundary.
 
+# P-4: a double with exactly 11 distinct whole values raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-5: a double with 12 distinct whole values raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-6: a double with a fractional value raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-7: an all-NA double raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-8: a character column still raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<character>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-9: a logical column still raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<logical>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-11: an integer with 11 distinct values still raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<integer>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-18: a single-valued double raises PC-4, not PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_estimate_thresholds()`:
+      x Ordinal variable v has only 1 observed level in the active domain.
+      i Threshold estimation requires at least 2 distinct levels.
+      v Filter to a domain with more than one level of v.
+
+# P-18a: a double carrying Inf raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-18b: a double carrying -Inf raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-18f: a labelled double carrying Inf raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# P-23: a whole-valued double plus a continuous column raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, cont), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: cont (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
+# Y-3: BREAKING — double plus ordered factor now raises PC-2
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polyserial")
+    Condition
+      Error in `.corr_canonicalize_polyserial()`:
+      x `method = "polyserial"` requires exactly one ordinal and one continuous variable per pair.
+      i For pair (v, ref): classified as ("integer_ordinal", "ordered").
+      v Supply one <factor>/<ordered> variable and one <numeric> variable, or use `method = "polychoric"` / `method = "pearson"`.
+
+# Y-4: BREAKING — double plus small integer now raises PC-2
+
+    Code
+      get_corr(fx$design, x = c(v, iv), method = "polyserial")
+    Condition
+      Error in `.corr_canonicalize_polyserial()`:
+      x `method = "polyserial"` requires exactly one ordinal and one continuous variable per pair.
+      i For pair (v, iv): classified as ("integer_ordinal", "integer_ordinal").
+      v Supply one <factor>/<ordered> variable and one <numeric> variable, or use `method = "polychoric"` / `method = "pearson"`.
+
+# E-1: PC-1 on a labelled column names a plain numeric class
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+

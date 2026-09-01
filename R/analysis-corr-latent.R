@@ -33,9 +33,11 @@
 # Return values:
 #   "ordered"         — inherits("ordered")
 #   "factor"          — is.factor() && !is.ordered()
-#   "integer_ordinal" — is.integer() with <= cutoff distinct non-NA values
-#   "continuous"      — is.double() and not integer-valued or > cutoff
-#                       distinct values
+#   "integer_ordinal" — is.integer(), or is.double() with every non-NA value
+#                       finite and whole, and <= cutoff distinct non-NA values
+#   "continuous"      — is.double() with a fractional value, an infinite
+#                       value, more than cutoff distinct non-NA values, or no
+#                       non-NA value at all
 #   "ambiguous"       — everything else (character, logical, high-cardinality
 #                       integer, etc.)
 .corr_detect_ordinal <- function(col, integer_cardinality_cutoff = 10L) {
@@ -57,8 +59,19 @@
     if (length(non_na) == 0L) {
       return("continuous")
     }
-    # Integer-valued doubles with small cardinality are still continuous
-    # under the spec's strict reading ("is.double" → "continuous").
+    # A whole-valued double within the cardinality limit is an ordinal
+    # scale. SPSS, Stata and SAS files store every coded scale as a double,
+    # so the earlier "is.double means continuous" rule refused the exact
+    # input polychoric correlation exists to serve. This branch mirrors the
+    # is.integer branch above and shares its cutoff.
+    # is.finite() is load-bearing: trunc(Inf) == Inf is TRUE, so without it
+    # an infinite value passes as a whole number and becomes a category.
+    if (all(is.finite(non_na)) && all(non_na == trunc(non_na))) {
+      n_distinct <- length(unique(non_na))
+      if (n_distinct <= integer_cardinality_cutoff) {
+        return("integer_ordinal")
+      }
+    }
     return("continuous")
   }
   # character, logical, complex, raw, list → ambiguous
@@ -192,7 +205,8 @@
 #     are renumbered 1..K for bookkeeping.
 #
 # Arguments:
-#   ordinal_vec    — factor / ordered / integer vector (row-aligned to data)
+#   ordinal_vec    — factor / ordered / integer / whole-valued double vector
+#                    (row-aligned to data)
 #   weights        — numeric vector of nonnegative weights (row-aligned)
 #   active_domain  — 0/1 numeric mask (row-aligned); 0 means out-of-domain
 #
@@ -565,7 +579,7 @@
 # the weighted log-likelihood over ρ via stats::optimize().
 #
 # Arguments:
-#   ord_x_vec      — ordinal x (factor/ordered/integer), row-aligned
+#   ord_x_vec      — ordinal x (factor/ordered/integer/whole double)
 #   ord_y_vec      — ordinal y, row-aligned
 #   weights        — numeric weights, row-aligned
 #   active_domain  — 0/1 numeric mask, row-aligned
@@ -838,7 +852,7 @@
 # log-likelihood over ρ via stats::optimize().
 #
 # Arguments:
-#   ordinal_vec    — ordinal (factor/ordered/integer), row-aligned
+#   ordinal_vec    — ordinal (factor/ordered/integer/whole double)
 #   continuous_vec — numeric, row-aligned
 #   weights        — numeric weights, row-aligned
 #   active_domain  — 0/1 numeric mask, row-aligned

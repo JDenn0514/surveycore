@@ -1249,3 +1249,764 @@ test_that("PC-9 boundary warning message contains '1e-4' not '1e-6'", {
   expect_true(grepl("1e-4", captured_msg, fixed = TRUE))
   expect_false(grepl("1e-6", captured_msg, fixed = TRUE))
 })
+
+
+# =============================================================================
+# Category 14 — whole-valued doubles classify as ordinal (issue #175)
+# =============================================================================
+#
+# A double whose non-missing values are all finite and whole, with at most 10
+# distinct values, is an ordinal scale. SPSS, Stata and SAS files store every
+# coded scale as a double, so the earlier "is.double means continuous" rule
+# refused the exact input polychoric correlation exists to serve.
+#
+# Row identifiers:
+#   P-1  .. P-18f — classification, asserted through get_corr()
+#   P-19 .. P-23  — numerical agreement with the ordered-factor form
+#   Y-1  .. Y-14  — polyserial, including two breaking changes
+#   E-1           — the class named in the PC-1 message after the strip
+#
+# `is.finite()` is the load-bearing half of the rule. Without it a column
+# containing `Inf` classifies as a scale, `Inf` becomes an ordinary top
+# category, and the call returns a fabricated correlation instead of raising.
+# P-18a, P-18b and P-18f are the gate on that guard.
+
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+# Cut `z` into `k` ascending integer codes at its marginal normal quantiles.
+.wd_cut <- function(z, k) {
+  tk <- stats::qnorm(seq_len(k - 1L) / k)
+  as.integer(cut(z, c(-Inf, tk, Inf), include.lowest = TRUE))
+}
+
+# Draw a bivariate-normal pair and cut each margin into ascending integer
+# codes, so every pair below carries real correlation and both optimizers
+# converge. `y_latent` is the genuine continuous column the polyserial rows
+# use; `y` is the ordinal partner.
+.wd_codes <- function(n = 400L, seed = 11L, rho = 0.5, k_x = 4L, k_y = 4L) {
+  set.seed(seed)
+  x_latent <- stats::rnorm(n)
+  y_latent <- rho * x_latent + sqrt(1 - rho^2) * stats::rnorm(n)
+  list(
+    x = .wd_cut(x_latent, k_x),
+    y = .wd_cut(y_latent, k_y),
+    y_latent = y_latent,
+    n = n
+  )
+}
+
+# Unit-weight Taylor design carrying the column under test as `v`, plus the
+# four partners the rows pair it with: `ref` (4-level ordered factor), `cont`
+# (genuine continuous), `iv` (small integer), `hi_iv` (integer with more than
+# 10 distinct values) and `cv` (character).
+#
+# `map` receives the ascending integer codes and returns the column exactly as
+# the row wants it stored, so one helper serves every shape.
+.wd_design <- function(map, seed = 11L, n = 400L, k_x = 4L, k_y = 4L) {
+  cd <- .wd_codes(n = n, seed = seed, k_x = k_x, k_y = k_y)
+  df <- data.frame(id = seq_len(n), wt = 1)
+  df$v <- map(cd$x)
+  df$ref <- factor(cd$y, levels = seq_len(k_y), ordered = TRUE)
+  df$ref2 <- factor(.wd_cut(cd$y_latent, 3L), levels = 1:3, ordered = TRUE)
+  df$cont <- cd$y_latent
+  df$iv <- cd$y
+  df$hi_iv <- as.integer(rank(cd$y_latent, ties.method = "first")) %% 20L + 1L
+  df$cv <- letters[cd$y]
+  list(df = df, design = as_survey(df, weights = wt), codes = cd)
+}
+
+# The identity map: ascending codes stored as a plain double. This is the
+# shape the whole category is about.
+.wd_dbl <- function(codes) as.numeric(codes)
+
+# Replicate design carrying the same pair, for the two variance rows.
+.wd_replicate <- function(seed = 21L, k_x = 4L, k_y = 4L, labelled = FALSE) {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jk1",
+    seed = seed
+  )
+  cd <- .wd_codes(n = nrow(df), seed = seed, k_x = k_x, k_y = k_y)
+  df$v1 <- as.numeric(cd$x)
+  df$v2 <- as.numeric(cd$y)
+  df$cont <- cd$y_latent
+  if (isTRUE(labelled)) {
+    df$v1 <- make_labelled(
+      df$v1,
+      stats::setNames(as.numeric(seq_len(k_x)), LETTERS[seq_len(k_x)]),
+      "Scale one"
+    )
+  }
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+}
+
+
+# ── P-1 .. P-18f: classification through get_corr(polychoric) ────────────────
+
+test_that("P-1: a double with 3 distinct whole values is ordinal", {
+  d <- .wd_design(.wd_dbl, k_x = 3L)$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-2: a double with 7 distinct whole values is ordinal", {
+  d <- .wd_design(.wd_dbl, k_x = 7L, n = 600L)$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-3: a double with exactly 10 distinct whole values is ordinal", {
+  fx <- .wd_design(.wd_dbl, k_x = 10L, n = 800L)
+  # The inclusive boundary: the cutoff is 10, so 10 distinct values pass.
+  expect_length(unique(fx$df$v), 10L)
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-4: a double with exactly 11 distinct whole values raises PC-1", {
+  fx <- .wd_design(.wd_dbl, k_x = 11L, n = 800L)
+  # One value past the boundary.
+  expect_length(unique(fx$df$v), 11L)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-5: a double with 12 distinct whole values raises PC-1", {
+  fx <- .wd_design(.wd_dbl, k_x = 12L, n = 800L)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-6: a double with a fractional value raises PC-1", {
+  fx <- .wd_design(function(codes) as.numeric(codes) + 0.5)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-7: an all-NA double raises PC-1", {
+  fx <- .wd_design(function(codes) rep(NA_real_, length(codes)))
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-8: a character column still raises PC-1", {
+  fx <- .wd_design(function(codes) letters[codes])
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-9: a logical column still raises PC-1", {
+  fx <- .wd_design(function(codes) codes > 2L)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-10: an integer with 3 distinct values is still ordinal", {
+  d <- .wd_design(function(codes) as.integer(codes), k_x = 3L)$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-11: an integer with 11 distinct values still raises PC-1", {
+  fx <- .wd_design(function(codes) as.integer(codes), k_x = 11L, n = 800L)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-12: an ordered factor is still ordinal", {
+  d <- .wd_design(function(codes) {
+    factor(codes, levels = sort(unique(codes)), ordered = TRUE)
+  })$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-13: an unordered factor is ordinal and warns PC-13", {
+  d <- .wd_design(function(codes) {
+    factor(codes, levels = sort(unique(codes)))
+  })$design
+  expect_warning(
+    r <- get_corr(d, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_warning_polychoric_unordered_factor"
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-14: a labelled double with 4 labelled whole codes is ordinal", {
+  # The reported defect. Every code carries a label, and the column is a
+  # double because that is what haven::read_sav() produces.
+  d <- .wd_design(function(codes) {
+    make_labelled(
+      as.numeric(codes),
+      c(A = 1, B = 2, C = 3, D = 4),
+      "Agreement"
+    )
+  })$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-15: a labelled integer with 4 distinct codes is ordinal", {
+  # The control that located the gap: this shape passed before the change
+  # too, so the gap was about storage type and not about the label class.
+  d <- .wd_design(function(codes) {
+    make_labelled(
+      as.integer(codes),
+      c(A = 1L, B = 2L, C = 3L, D = 4L),
+      "Agreement"
+    )
+  })$design
+  expect_no_error(r <- get_corr(d, x = c(v, ref), method = "polychoric"))
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-16: a double of 1000/2000/3000 is treated as a 3-point scale", {
+  # A documented false positive, pinned so a later reader sees it was chosen
+  # and not overlooked. Three distinct whole values inside the cutoff, so the
+  # column classifies as ordinal even though it could be income in whole
+  # dollars. Accepted because method = "polychoric" is opt-in.
+  fx <- .wd_design(function(codes) as.numeric(codes) * 1000, k_x = 3L)
+  expect_identical(sort(unique(fx$df$v)), c(1000, 2000, 3000))
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-17: a double of 0/1 is ordinal — the tetrachoric case", {
+  fx <- .wd_design(function(codes) as.numeric(codes) - 1, k_x = 2L)
+  expect_identical(sort(unique(fx$df$v)), c(0, 1))
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-18: a single-valued double raises PC-4, not PC-1", {
+  # The gate accepts the column as ordinal; the level-count guard downstream
+  # rejects it and names the column and the remedy. A typed error naming the
+  # column beats the untyped refusal this change removed.
+  fx <- .wd_design(function(codes) rep(2, length(codes)))
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_single_level_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-18a: a double carrying Inf raises PC-1", {
+  # Gate 12. Without the is.finite() guard the column classifies as a scale,
+  # Inf becomes an ordinary top category, and the call returns a fabricated
+  # correlation of about -0.056 instead of raising.
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- Inf
+    v
+  })
+  expect_true(any(is.infinite(fx$df$v)))
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-18b: a double carrying -Inf raises PC-1", {
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- -Inf
+    v
+  })
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-18c: a double carrying NA is still ordinal", {
+  # NA is missing, not infinite. A guard that rejected it would break every
+  # real scale column, because real survey data carries missing values.
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- NA_real_
+    v
+  })
+  expect_true(anyNA(fx$df$v))
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-18d: a double carrying NaN is still ordinal", {
+  # NaN is missing too: is.na(NaN) is TRUE, so the missing filter removes it
+  # before the finiteness test ever sees it.
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- NaN
+    v
+  })
+  expect_true(any(is.nan(fx$df$v)))
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-18e: 10 whole values plus NA and NaN is still ordinal", {
+  # The distinct count is taken over the non-missing values only, so the
+  # column sits on the inclusive boundary and not one past it.
+  fx <- .wd_design(
+    function(codes) {
+      v <- as.numeric(codes)
+      v[[1L]] <- NA_real_
+      v[[2L]] <- NaN
+      v
+    },
+    k_x = 10L,
+    n = 800L
+  )
+  expect_length(unique(fx$df$v[!is.na(fx$df$v)]), 10L)
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("P-18f: a labelled double carrying Inf raises PC-1", {
+  # The label class makes no difference: the finiteness guard reads values.
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- Inf
+    make_labelled(v, c(A = 1, B = 2, C = 3, D = 4), "Agreement")
+  })
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+
+# ── P-19 .. P-23: numerical agreement ────────────────────────────────────────
+
+test_that("P-19: two whole-valued doubles match the ordered-factor pair", {
+  cd <- .wd_codes(n = 400L, seed = 31L)
+  base_df <- data.frame(id = seq_len(400L), wt = 1)
+  base_df$v1 <- as.numeric(cd$x)
+  base_df$v2 <- as.numeric(cd$y)
+
+  dbl <- as_survey(base_df, weights = wt)
+  fac_df <- base_df
+  fac_df$v1 <- factor(
+    base_df$v1,
+    levels = sort(unique(base_df$v1)),
+    ordered = TRUE
+  )
+  fac_df$v2 <- factor(
+    base_df$v2,
+    levels = sort(unique(base_df$v2)),
+    ordered = TRUE
+  )
+  fac <- as_survey(fac_df, weights = wt)
+
+  r_dbl <- get_corr(dbl, x = c(v1, v2), method = "polychoric")
+  r_fac <- get_corr(fac, x = c(v1, v2), method = "polychoric")
+  expect_equal(r_dbl$r, r_fac$r, tolerance = 1e-10)
+})
+
+test_that("P-20: a labelled side matches the same pair with no class", {
+  make_pair <- function(labelled) {
+    cd <- .wd_codes(n = 400L, seed = 33L)
+    df <- data.frame(id = seq_len(400L), wt = 1)
+    df$v1 <- as.numeric(cd$x)
+    df$v2 <- as.numeric(cd$y)
+    if (isTRUE(labelled)) {
+      df$v1 <- make_labelled(
+        df$v1,
+        c(A = 1, B = 2, C = 3, D = 4),
+        "Scale one"
+      )
+    }
+    as_survey(df, weights = wt)
+  }
+  lbl <- get_corr(
+    make_pair(TRUE),
+    x = c(v1, v2),
+    method = "polychoric",
+    variance = c("se", "ci")
+  )
+  pln <- get_corr(
+    make_pair(FALSE),
+    x = c(v1, v2),
+    method = "polychoric",
+    variance = c("se", "ci")
+  )
+  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
+  expect_equal(lbl$se, pln$se, tolerance = 1e-8)
+  expect_equal(lbl$ci_low, pln$ci_low, tolerance = 1e-6)
+  expect_equal(lbl$ci_high, pln$ci_high, tolerance = 1e-6)
+})
+
+test_that("P-21: the labelled/plain match also holds on a replicate design", {
+  lbl <- get_corr(
+    .wd_replicate(labelled = TRUE),
+    x = c(v1, v2),
+    method = "polychoric",
+    variance = c("se", "ci")
+  )
+  pln <- get_corr(
+    .wd_replicate(labelled = FALSE),
+    x = c(v1, v2),
+    method = "polychoric",
+    variance = c("se", "ci")
+  )
+  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
+  expect_equal(lbl$se, pln$se, tolerance = 1e-8)
+  expect_equal(lbl$ci_low, pln$ci_low, tolerance = 1e-6)
+  expect_equal(lbl$ci_high, pln$ci_high, tolerance = 1e-6)
+})
+
+test_that("P-22: reversing one side's codes negates the correlation", {
+  cd <- .wd_codes(n = 400L, seed = 35L)
+  df <- data.frame(id = seq_len(400L), wt = 1)
+  df$v1 <- as.numeric(cd$x)
+  df$v2 <- as.numeric(cd$y)
+  df$v2r <- max(df$v2) + min(df$v2) - df$v2
+
+  d <- as_survey(df, weights = wt)
+  r_plain <- get_corr(d, x = c(v1, v2), method = "polychoric")
+  r_rev <- get_corr(d, x = c(v1, v2r), method = "polychoric")
+  expect_equal(r_rev$r, -r_plain$r, tolerance = 1e-10)
+})
+
+test_that("P-23: a whole-valued double plus a continuous column raises PC-1", {
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(v, cont), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  # The message names the continuous column and not the accepted scale.
+  err <- expect_error(
+    get_corr(fx$design, x = c(v, cont), method = "polychoric")
+  )
+  msg <- conditionMessage(err)
+  # Singular "column", naming cont alone. Before the change both sides read
+  # as continuous and the message named v as well, in the plural.
+  expect_true(grepl("cont", msg, fixed = TRUE))
+  expect_false(grepl("columns", msg, fixed = TRUE))
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, cont), method = "polychoric")
+  )
+})
+
+
+# ── Y-1 .. Y-14: polyserial ──────────────────────────────────────────────────
+
+test_that("Y-1: a whole-valued double plus a continuous column now works", {
+  # Newly working: both sides classified continuous before the change, so
+  # this pair raised the mixed-types error.
+  fx <- .wd_design(.wd_dbl)
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(v, cont), method = "polyserial")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("Y-2: two whole-valued doubles raise the mixed-types error", {
+  # The outcome is unchanged; the classification the message reports differs,
+  # because both sides now read as integer_ordinal rather than continuous.
+  cd <- .wd_codes(n = 400L, seed = 37L)
+  df <- data.frame(id = seq_len(400L), wt = 1)
+  df$v1 <- as.numeric(cd$x)
+  df$v2 <- as.numeric(cd$y)
+  d <- as_survey(df, weights = wt)
+  expect_error(
+    get_corr(d, x = c(v1, v2), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+})
+
+test_that("Y-3: BREAKING — double plus ordered factor now raises PC-2", {
+  # A caller who paired a whole-valued double with an ordered factor got a
+  # polyserial number before this change. Both sides are ordinal now, so the
+  # pair raises surveycore_error_polyserial_requires_mixed_types instead.
+  # method = "polychoric" is the correct method for a pair of ordinal
+  # columns, and the message says so.
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polyserial")
+  )
+})
+
+test_that("Y-4: BREAKING — double plus small integer now raises PC-2", {
+  # The same breaking change in its second shape: a small-cardinality integer
+  # was already ordinal, so pairing it with a whole-valued double moves from
+  # ordinal + continuous to two ordinal sides.
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(v, iv), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, iv), method = "polyserial")
+  )
+})
+
+test_that("Y-5: an ordered factor plus a continuous column still works", {
+  fx <- .wd_design(.wd_dbl)
+  expect_no_error(
+    r <- get_corr(fx$design, x = c(ref, cont), method = "polyserial")
+  )
+  expect_true(is.finite(r$r[[1L]]))
+})
+
+test_that("Y-6: two ordered factors still raise the mixed-types error", {
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(ref, ref2), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+})
+
+test_that("Y-7: a high-cardinality integer plus ordered factor stays PC-3", {
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(hi_iv, ref), method = "polyserial"),
+    class = "surveycore_error_polyserial_canonicalization_ambiguous"
+  )
+})
+
+test_that("Y-8: a character column plus ordered factor stays PC-3", {
+  fx <- .wd_design(.wd_dbl)
+  expect_error(
+    get_corr(fx$design, x = c(cv, ref), method = "polyserial"),
+    class = "surveycore_error_polyserial_canonicalization_ambiguous"
+  )
+})
+
+test_that("Y-9: a labelled ordinal side matches the same pair with no class", {
+  make_d <- function(labelled) {
+    .wd_design(function(codes) {
+      v <- as.numeric(codes)
+      if (isTRUE(labelled)) {
+        v <- make_labelled(v, c(A = 1, B = 2, C = 3, D = 4), "Agreement")
+      }
+      v
+    })$design
+  }
+  lbl <- get_corr(make_d(TRUE), x = c(v, cont), method = "polyserial")
+  pln <- get_corr(make_d(FALSE), x = c(v, cont), method = "polyserial")
+  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
+})
+
+test_that("Y-10: a double carrying Inf plus ordered factor is unchanged", {
+  # The finiteness guard keeps the Inf column continuous, so the pair stays
+  # ordinal + continuous and reaches the same code as before the change.
+  # Without the guard the Inf column would become ordinal and this pair would
+  # start raising the mixed-types error, which is what this row rules out.
+  #
+  # Measured on develop at 0ef5442: this pair does not return a number. The
+  # continuous side is standardized by its weighted mean and SD, and Inf
+  # makes the SD NaN, so an untyped base error escapes. That is a
+  # pre-existing defect in a shape nobody should send, and this change
+  # neither causes nor fixes it. The row asserts only that the pair does not
+  # move across the ordinal/continuous boundary.
+  fx <- .wd_design(function(codes) {
+    v <- as.numeric(codes)
+    v[[1L]] <- Inf
+    v
+  })
+  err <- expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polyserial")
+  )
+  expect_false(
+    inherits(err, "surveycore_error_polyserial_requires_mixed_types")
+  )
+  expect_false(
+    inherits(err, "surveycore_error_polyserial_canonicalization_ambiguous")
+  )
+})
+
+test_that("Y-11: the double ordinal side matches an ordered-factor side", {
+  fx <- .wd_design(.wd_dbl, seed = 41L)
+  fac_df <- fx$df
+  fac_df$v <- factor(fx$df$v, levels = sort(unique(fx$df$v)), ordered = TRUE)
+  fac <- as_survey(fac_df, weights = wt)
+
+  r_dbl <- get_corr(fx$design, x = c(v, cont), method = "polyserial")
+  r_fac <- get_corr(fac, x = c(v, cont), method = "polyserial")
+  expect_equal(r_dbl$r, r_fac$r, tolerance = 1e-10)
+})
+
+test_that("Y-12: the double ordinal side matches an outside implementation", {
+  # Equal weights on both sides, so the weighted estimator and an unweighted
+  # reference are comparable.
+  #
+  # Two oracles, at the two tolerances this package already uses for
+  # polyserial. `.hand_polyserial_twostep()` is the strict one at 1e-6: it is
+  # the Cox (1974) / Mannan 2025 §5.1 two-step MLE that
+  # `.corr_polyserial_mle()` implements. `polycor::polyserial(ML = TRUE)` is a
+  # joint MLE over thresholds and rho together, so it targets a different
+  # estimator; decisions.md B1 settled that it is not a strict oracle, and
+  # test-analysis-corr-latent-primitives.R compares against it at 1e-3.
+  # Measured on this fixture: 0.5104687363 against 0.5124571733, a relative
+  # difference of 3.9e-3. The bound below is 5e-3, which is a sanity check on
+  # the sign and the magnitude and nothing more.
+  fx <- .wd_design(.wd_dbl, seed = 41L)
+  r_dbl <- get_corr(fx$design, x = c(v, cont), method = "polyserial")
+  hand <- .hand_polyserial_twostep(as.integer(fx$df$v), fx$df$cont)
+  expect_equal(r_dbl$r[[1L]], hand, tolerance = 1e-6)
+
+  skip_if_not_installed("polycor")
+  ref_r <- polycor::polyserial(fx$df$cont, fx$df$v, ML = TRUE)
+  expect_equal(r_dbl$r[[1L]], ref_r, tolerance = 5e-3)
+})
+
+test_that("Y-13: the double ordinal side matches on a replicate design", {
+  d_rep <- .wd_replicate(seed = 43L)
+  fac_df <- survey_data(d_rep)
+  fac_df$v1 <- factor(
+    fac_df$v1,
+    levels = sort(unique(fac_df$v1)),
+    ordered = TRUE
+  )
+  rep_cols <- grep("^repwt_", names(fac_df), value = TRUE)
+  d_fac <- as_survey_replicate(
+    fac_df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+
+  r_dbl <- get_corr(
+    d_rep,
+    x = c(v1, cont),
+    method = "polyserial",
+    variance = "se"
+  )
+  r_fac <- get_corr(
+    d_fac,
+    x = c(v1, cont),
+    method = "polyserial",
+    variance = "se"
+  )
+  expect_equal(r_dbl$r, r_fac$r, tolerance = 1e-10)
+  expect_equal(r_dbl$se, r_fac$se, tolerance = 1e-8)
+})
+
+test_that("Y-14: reverse-coding the double ordinal side negates the result", {
+  fx <- .wd_design(.wd_dbl, seed = 41L)
+  rev_df <- fx$df
+  rev_df$v <- max(fx$df$v) + min(fx$df$v) - fx$df$v
+  d_rev <- as_survey(rev_df, weights = wt)
+
+  r_plain <- get_corr(fx$design, x = c(v, cont), method = "polyserial")
+  r_rev <- get_corr(d_rev, x = c(v, cont), method = "polyserial")
+  expect_equal(r_rev$r, -r_plain$r, tolerance = 1e-10)
+})
+
+
+# ── E-1: the class named in the PC-1 message ─────────────────────────────────
+
+test_that("E-1: PC-1 on a labelled column names a plain numeric class", {
+  # The design stores the column with the labelled class removed, so the
+  # class interpolated into the message is the underlying numeric type. This
+  # row pins the message text, because the class is what changed.
+  fx <- .wd_design(
+    function(codes) {
+      make_labelled(
+        as.numeric(codes),
+        stats::setNames(as.numeric(1:11), LETTERS[1:11]),
+        "Too many points"
+      )
+    },
+    k_x = 11L,
+    n = 800L
+  )
+  expect_false(inherits(survey_data(fx$design)$v, "haven_labelled"))
+  err <- expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  msg <- conditionMessage(err)
+  expect_true(grepl("numeric", msg, fixed = TRUE))
+  expect_false(grepl("haven_labelled", msg, fixed = TRUE))
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})

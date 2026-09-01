@@ -593,3 +593,42 @@ test_that("X-13: labels resolve from the column with no harvested metadata", {
   out <- get_means(d, q1, group = q)
   expect_identical(levels(out$q), c("A", "B", "C", "D"))
 })
+
+# G-7 is where the two halves of this work meet: a tagged NA sits in a
+# grouping column, and the columns under analysis are whole-valued doubles
+# with few distinct values, which this release accepts as ordinal scales. A
+# tagged NA is NA to the estimator, so it is excluded pairwise like any other
+# missing value.
+test_that("G-7: polychoric on whole-valued doubles grouped by a tagged NA", {
+  set.seed(57L)
+  n <- 400L
+  df <- data.frame(
+    psu = paste0("psu_", rep(1:20, each = 20L)),
+    wt = runif(n, 0.5, 2),
+    stringsAsFactors = FALSE
+  )
+  # Two four-point coded scales, stored as doubles, as an SPSS export stores
+  # them. `s2` follows `s1` with a one-step jitter, so the pair is correlated.
+  # `s1` is drawn at random rather than cycled, so it is independent of the
+  # cyclic group column and every group holds all four levels.
+  s1 <- as.numeric(sample(1:4, n, replace = TRUE))
+  s2 <- s1 + sample(-1:1, n, replace = TRUE)
+  s2[s2 < 1] <- 1
+  s2[s2 > 4] <- 4
+  df$s1 <- make_labelled(s1, c(A = 1, B = 2, C = 3, D = 4), "Scale one")
+  df$s2 <- make_labelled(s2, c(A = 1, B = 2, C = 3, D = 4), "Scale two")
+  df$gt <- make_labelled(
+    rep(c(1, 2, make_tagged_na("a"), 2), 100L),
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged group"
+  )
+  d <- as_survey(df, ids = psu, weights = wt)
+
+  expect_no_error(
+    out <- get_corr(d, c(s1, s2), group = gt, method = "polychoric")
+  )
+  expect_true(all(is.finite(out$r)))
+  # The tagged-NA rows form no group of their own: na.rm defaults to TRUE, so
+  # the tag is dropped exactly as a plain NA would be.
+  expect_identical(nrow(out), 2L)
+})

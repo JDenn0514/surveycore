@@ -89,7 +89,34 @@
   Re-apply the class after reading the data back with `survey_data()` if you
   depend on it. (#175)
 
+* `get_corr(method = "polyserial")` now raises
+  `surveycore_error_polyserial_requires_mixed_types` for a pair of a
+  whole-valued numeric column and an ordinal column — an ordered factor, an
+  unordered factor, or a small-cardinality integer. Such a pair returned a
+  number in 1.1.0, because the numeric column read as continuous. Both sides
+  are ordinal now, and `polyserial` needs exactly one ordinal side and one
+  continuous side. Use `method = "polychoric"` for a pair of ordinal columns;
+  the error message says so. A numeric column with a fractional value, an
+  infinite value, or more than 10 distinct values is still continuous, so
+  `polyserial` on that pair is unaffected. (#175)
+
 ## Bug fixes
+
+* `get_corr(method = "polychoric")` now accepts a value-labelled numeric
+  column. A numeric column counts as an ordinal scale when its non-missing
+  values are all whole numbers, none of them infinite, and it has no more than
+  10 distinct values; `NA` and `NaN` are removed before the distinct values are
+  counted. Until now every `double` column read as continuous and the call
+  aborted, which refused every coded scale from an SPSS, Stata or SAS file,
+  because those formats store a coded scale as a `double`. The rule is about
+  storage type, not about labels, so a plain numeric scale is accepted too.
+  Two things to check before you call it: recode in-band missing codes to `NA`
+  first, or a four-point scale carrying `8` for "Don't know" and `9` for
+  "Refused" is read as a six-category scale; and use `method = "pearson"` for a
+  genuine count with few values, because a numeric column with few distinct
+  whole values is read as a scale. An infinite value keeps the column
+  continuous, so a column carrying `Inf` still raises rather than counting
+  `Inf` as a category. (#175)
 
 * A design now constructs from a data frame whose **design variables** carry
   the `haven_labelled` class. `as_survey()`, `as_survey_replicate()`,
