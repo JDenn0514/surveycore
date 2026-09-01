@@ -1084,6 +1084,21 @@
       5   0.9     1     0 a    
       6   1.1     2     1 b    
 
+# T-2: haven_class = TRUE prints the labelled token again
+
+    Code
+      print(survey_data(d, haven_class = TRUE))
+    Output
+      # A tibble: 6 x 4
+           wt dbl       int       chr      
+        <dbl> <dbl+lbl> <int+lbl> <chr+lbl>
+      1   1.5 1 [One]   0 [No]    a [Alpha]
+      2   0.8 2 [Two]   1 [Yes]   b [Beta] 
+      3   1.2 3 [Three] 0 [No]    a [Alpha]
+      4   2   4 [Four]  1 [Yes]   b [Beta] 
+      5   0.9 1 [One]   0 [No]    a [Alpha]
+      6   1.1 2 [Two]   1 [Yes]   b [Beta] 
+
 # T-3: labelled input leaves the design print output unchanged
 
     Code

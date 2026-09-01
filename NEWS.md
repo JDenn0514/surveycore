@@ -60,6 +60,16 @@
   attribute promotion as `notes` and the other per-variable metadata
   fields. (#176)
 
+* `survey_data()` gains a `haven_class` argument. With `haven_class = TRUE` it
+  returns every column that carried value labels at import with its
+  `haven_labelled` class rebuilt, and a column that arrived as
+  `haven_labelled_spss` comes back as `haven_labelled_spss`. Use it to hand the
+  data to `haven::as_factor()`, `labelled::to_factor()` or
+  `haven::write_sav()`, all of which read the class and not the `labels`
+  attribute. The class is rebuilt with base R, so `haven` does not need to be
+  installed. The default is `FALSE`, which returns base types, because that is
+  what arithmetic and modelling need. (#175)
+
 ## Breaking changes
 
 * A survey design object no longer stores the `haven_labelled` class on any
