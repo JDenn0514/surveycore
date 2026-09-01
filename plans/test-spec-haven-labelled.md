@@ -484,7 +484,7 @@ In `tests/testthat/test-conversion.R`. Guard every block with
 
 | Row | Scenario | Assertion |
 |---|---|---|
-| C-0 | `label_vars = TRUE` on a `get_means()` call over a design produced by `from_svydesign()` from a labelled source frame | the output shows the variable **label**, not the raw column name. This is the observable payoff of the metadata-capture fix: before it, the metadata was empty, so there was no label to show. |
+| C-0 | `label_vars = TRUE` on a `get_means()` call over a design produced by `from_svydesign()` from a labelled source frame | the output shows the variable **label**, not the raw column name. **A fence, not evidence — corrected 2026-09-01.** It passes before the fix too: `.extract_var_meta()` at `R/analysis-helpers.R:160-162` falls back to `attr(col, "label")`, which the strip keeps, so the label resolved on both trees. The rows that catch the empty-metadata defect are C-3, C-5 and C-6. |
 | C-1 | `as_svydesign()` on a design built from a labelled frame | succeeds; the variables frame it produces has no column inheriting `haven_labelled`; the `labels` attributes are still there |
 | C-2 | `survey::svymean()` on that converted object | matches `get_means()` on the surveycore design, at the default point and standard-error tolerances |
 | C-3 | `from_svydesign()` on a `survey::svydesign()` built from a labelled frame | succeeds; no stored column inherits `haven_labelled`; **`extract_val_labels()` returns the labels** |
@@ -659,8 +659,8 @@ Numerical rows, in the same file:
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | P-19 | Two whole-valued double columns, 4 distinct values each | the correlation equals the correlation from the same two columns converted to ordered factors with levels in ascending value order | point 1e-10 |
-| P-20 | Same pair, one column labelled | the correlation equals the same pair with the class removed | point 1e-10, standard error 1e-8, confidence bounds 1e-6 |
-| P-21 | Same pair on a replicate design | as P-20 | same |
+| P-20 | Same pair, one column labelled | the correlation equals the same pair with the class removed | **exact — corrected 2026-09-01.** §6 departure 1 governs: one input re-classed, same computation, so `expect_identical()`. Measured bit-identical on r, se and both CI bounds. The earlier 1e-10 / 1e-8 / 1e-6 figures would have let a tenth-decimal drift ship green. |
+| P-21 | Same pair on a replicate design | as P-20 | **exact**, as P-20. The replicate variance path adds R refits and does not change that: both designs feed it the same numbers. |
 | P-22 | Two whole-valued double columns with reversed codes on one side | the correlation is the negative of the unreversed pair | point 1e-10 |
 | P-23 | A whole-valued double paired with a genuine continuous column, `method = "polychoric"` | raises `surveycore_error_polychoric_requires_ordinal`, naming the continuous column | — |
 
@@ -682,7 +682,7 @@ In `tests/testthat/test-analysis-corr-latent.R`.
 | Y-7 | high-cardinality integer + ordered factor | raises `surveycore_error_polyserial_canonicalization_ambiguous` | no |
 | Y-8 | character column + ordered factor | raises the same | no |
 | Y-9 | labelled double, 4 distinct codes, + genuine continuous column | succeeds; equals Y-1 with the class removed | **yes** |
-| Y-10 | double containing `Inf` + ordered factor | succeeds, unchanged. The finiteness check keeps the `Inf` column continuous, so the pair stays ordinal + continuous. Without that check this pair would start raising the mixed-types error, so this row guards a pair that works today. | no |
+| Y-10 | double containing `Inf` + ordered factor | **Corrected 2026-09-01.** The finiteness check keeps the `Inf` column continuous, so the pair does not cross the ordinal/continuous boundary and raises neither PC-2 nor PC-3. It does **not** "succeed" and does not "work today": on every tree in this series the weighted SD goes `NaN` and an untyped base error escapes. Assert the boundary, not a returned number. | no |
 
 Y-3 and Y-4 are the rows that record the breaking change. Their block
 descriptions must say so, so that a reader hitting the error later finds the
@@ -698,7 +698,7 @@ strip and not the estimate.
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | Y-11 | Whole-valued small double + genuine continuous column | the correlation equals the correlation from the same pair with the ordinal side converted to an ordered factor, levels in ascending value order | point 1e-10 |
-| Y-12 | The same pair | the correlation is within tolerance of `polycor::polyserial()` on the same two columns, unweighted, with equal weights supplied to `get_corr()` so the two are comparable. Guard with `skip_if_not_installed("polycor")`. | point 1e-6, with the justification below |
+| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured on the fixture: relative gap **3.88e-3** against the 5e-3 bound, or 1.29x headroom — `expect_equal()` compares relatively, so the absolute 1.988e-03 is not the figure to weigh against it. The two-oracle arrangement **is** the established one: `archive/polychoric-corr/decisions-polychoric-corr.md` B1 kept 1e-6 against the hand two-step "plus a loose **1e-3** agreement check against `polycor::polyserial(ML = TRUE)` as a sanity gate". **What this feature departs from is the figure, not the arrangement** — 5e-3 rather than B1's 1e-3, because this fixture's 3.88e-3 gap would fail at 1e-3. Guard it with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
 | Y-13 | The same pair on a replicate design | equals Y-11 | point 1e-10, standard error 1e-8 |
 | Y-14 | Whole-valued small double + continuous column, ordinal side reverse-coded | the correlation is the negative of Y-11 | point 1e-10 |
 
@@ -706,15 +706,38 @@ Y-11 is the primary oracle. It is exact in principle, because the two forms
 describe the same ordinal variable and the estimator derives its category
 codes the same way from each.
 
-Y-12 is the external cross-check. The 1e-6 tolerance is looser than the house
-default of 1e-10 for point estimates, and the justification is that
-`polycor::polyserial()` and surveycore target different estimators:
-surveycore implements the two-step MLE under the survey-weighted
-construction, and `polycor` offers either a joint MLE or Drasgow's two-step.
-The existing correlation test files already treat `polycor` as a loose
-reference for this reason. Y-12 catches a sign error or a gross
-misclassification, which is what an external oracle is for here; Y-11 catches
-everything finer.
+Y-12 carries two oracles, and this paragraph was **rewritten on 2026-09-01**
+because the earlier version justified a 1e-6 bound against `polycor` that the
+row no longer sets.
+
+The strict oracle is `.hand_polyserial_twostep()` at **1e-6**. It targets the
+same estimator `.corr_polyserial_mle()` implements — the Cox (1974) two-step
+MLE — so the measured delta is exactly 0 and the bound is real, not slack.
+
+`polycor::polyserial(ML = TRUE)` is the second, at **5e-3**, and it is a
+sanity check on sign and magnitude rather than an oracle. It maximises over
+thresholds and rho jointly, so it targets a different estimator; no tolerance
+makes the two agree. The relative gap measures 3.88e-3, which leaves 1.29x
+headroom — thin, and the row most exposed in this suite to a different BLAS.
+
+Two cautions for whoever touches this next, both corrected on 2026-09-01
+after two wrong readings of the same source.
+
+**What B1 actually says.** `archive/polychoric-corr/decisions-polychoric-corr.md`
+B1 is ADVISORY, and its disposition kept 1e-6 against the hand two-step
+"plus a loose **1e-3** agreement check against `polycor::polyserial(ML = TRUE)`
+as a sanity gate". So the two-oracle shape is B1's, and only the **figure**
+here departs from it: 5e-3 rather than 1e-3.
+`tests/testthat/test-analysis-corr-latent-primitives.R` uses B1's 1e-3. This
+fixture's relative gap is 3.88e-3, which fails 1e-3, and that is why the bound
+was widened. The widening is this feature's choice and is not covered by B1.
+
+**Where "regardless of tolerance" comes from.** Not B1. It is the PR 3
+reviewer's STOP §B, quoted at `:138` of the same file, and it rejects
+`polycor` as the **strict oracle** — not as a sanity gate. Conflating the two
+is what produced two successive wrong corrections to this row. Read `:41-51`
+for B1 and `:130-142` for the STOP; they are different documents saying
+different things.
 
 ### 4.11a Confirming the new tests fail before the fix
 
@@ -752,11 +775,19 @@ against:
 | conversion | C-0, C-3 to C-8 |
 | `survey_data()` | D-1 to D-4, D-6 |
 
-### Corrections to this list, measured 2026-08-31
+### Corrections to this list, measured 2026-08-31 and 2026-09-01
 
 PR 3b measured every row above on a scratch tree differing from its own base
 only by the change under test. The list mispredicted in both directions, for
-**three** separate reasons. Read all three before trusting a prediction here.
+**three** separate reasons, and a **fourth** correction was added on
+2026-09-01. Read all four before trusting a prediction here.
+
+**C-0 is a fourth, added 2026-09-01.** The table above files it under
+"expected to fail on the base commit". It does not fail: `.extract_var_meta()`
+at `R/analysis-helpers.R:160-162` falls back to `attr(col, "label")`, which
+the strip keeps, so the variable label resolves on both trees. C-0 is a
+fence — see its corrected row in §4.7. The rows in this group that do catch
+the empty-metadata defect are C-3, C-5 and C-6.
 
 **1. The base moved.** S-1 to S-13 are listed as expected to fail. They pass
 from PR 3a onward, because PR 3a's property setter already covers those
@@ -803,16 +834,25 @@ Y-8, T-3, and every row marked "unchanged behaviour" in this document. A row
 in this group that **fails** on the base commit means the row is wrong, not
 that the defect is wider.
 
-Rows P-18a and P-18b are a special case: they fail on the base commit for the
-**right reason by accident**. The base commit refuses `Inf` because it
-refuses every whole-valued double, not because it checks finiteness. Note
-that in the record, so the pass is not read as evidence the finiteness guard
-was already present.
+Rows P-18a and P-18b are a special case, and this note contradicted itself
+until it was **corrected on 2026-09-01**: it said they "fail on the base
+commit" and then called the same outcome a pass.
+
+They **pass** on the base commit. Both assert that
+`get_corr(method = "polychoric")` raises
+`surveycore_error_polychoric_requires_ordinal`, and the base raises exactly
+that class — for the wrong reason. The base refuses every whole-valued
+double, so it never reaches a finiteness test at all.
+
+The pass is therefore **not** evidence that the finiteness guard exists.
+Record that in the red run, so a green P-18a on the base is not read as one.
 
 ### 4.12 Existing correlation tests
 
 The four existing correlation test files were run against the ordinality
-change and reported 246 tests, 718 expectations, 0 failures, 0 errors, 0
+change and reported 246 tests, 718 expectations — **that is the PRE-change
+baseline, corrected 2026-09-01; the shipped figure is 290 tests, 825
+expectations.** Either way 0 failures, 0 errors, 0
 skips. Confirm that result rather than assume it. If any block does fail,
 that is new information and must be reported, not patched over by relaxing
 the block.
@@ -837,6 +877,13 @@ Each named class gets the dual pattern — `expect_error(class = ...)` **and**
 messages raised from public functions, not structural class-validator
 messages.
 
+**The requirement is per class, not per row — clarified 2026-09-01.** The
+Rows column below lists rows that may cover a class; the dual pattern is
+satisfied when **any one** covering row carries both halves. A row listed
+there may assert `class=` alone, provided another row in the same file
+snapshots that class. Read per row, this table asks for snapshots that would
+differ from one another only in an interpolated variable name.
+
 | Class | Rows that must cover it | Pattern |
 |---|---|---|
 | `surveycore_error_polychoric_requires_ordinal` | P-4, P-6, P-7, P-8, P-23 | dual |
@@ -844,7 +891,7 @@ messages.
 | `surveycore_error_polyserial_canonicalization_ambiguous` | Y-7, Y-8 | dual |
 | `surveycore_error_polychoric_single_level_ordinal` | P-18 | dual |
 | `surveycore_warning_polychoric_unordered_factor` | P-13 | `expect_warning(result <- ..., class = ...)` plus snapshot |
-| `surveycore_warning_missing_labels` | M-2 | `expect_warning(result <- ..., class = ...)` **plus snapshot** — same treatment as the row above it. Both are user-facing warnings raised from public functions with fully formatted messages, so there is no reason to treat them differently. An earlier draft snapshotted one and not the other. |
+| `surveycore_warning_missing_labels` | M-2 | `expect_warning(result <- ..., class = ...)` **plus snapshot**, satisfied per class by any covering row — see the per-class note above. Both are user-facing warnings raised from public functions with fully formatted messages, so there is no reason to treat them differently. An earlier draft snapshotted one and not the other. |
 | `surveycore_error_not_survey_object` | D-23 | dual |
 | `surveycore_error_haven_class_not_logical` | D-22 | dual |
 | `surveycore_error_subset_not_logical` | S-30 | dual |

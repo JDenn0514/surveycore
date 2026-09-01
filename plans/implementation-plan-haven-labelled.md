@@ -293,7 +293,10 @@ closes it, and gate 9 is what proves it closed.
     `test-spec.md` §4.11a: the failure count and every failing row
     identifier.
   - `git diff --stat DESCRIPTION NAMESPACE` is empty (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
   - `devtools::check()` reports 0 errors, 0 warnings, at most the two
     pre-approved notes.
 
@@ -395,7 +398,10 @@ two routes PR 3a could not reach.
     `test-spec.md` §4.11a, including the note about S-1 to S-13.
   - `git diff --stat DESCRIPTION NAMESPACE man/` is empty — this PR changes
     code only, with no roxygen change (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
   - `devtools::check()` reports 0 errors, 0 warnings, at most the two
     pre-approved notes.
 
@@ -617,7 +623,10 @@ disjoint from PR 4's, so the two run at the same time.
     (`test-spec.md` §4.6).
   - `git diff --stat DESCRIPTION NAMESPACE man/` is empty — no roxygen
     changes in this PR (`spec.md` §XI.16).
-  - `Rscript -e "devtools::test()"` reports 0 failures, 0 errors, 0 warnings.
+  - `Rscript -e "devtools::test()"` reports 0 failures and 0 errors, with no
+    warning attributable to this PR. **Corrected 2026-09-01: not 0
+    warnings.** The suite carries 256 by design — the AAPOR small-cell and
+    `survey_nonprob` SRS-approximation notices, tracked by issue #167.
 
 - **Files touched**
   - `R/core-metadata.R` — modified
@@ -650,7 +659,10 @@ source. The whole-feature close-out is PR 8, not this PR.
   3. Write the failing row G-7 in
      `tests/testthat/test-labelled-analysis.R`.
   4. Run the affected files; record in `implementation.md` the failure count
-     and every failing row identifier. Note that P-18a and P-18b fail on the
+     and every failing row identifier. **Corrected 2026-09-01: P-18a and
+     P-18b PASS on the base**, for the wrong reason — the base refuses every
+     whole-valued double and never reaches a finiteness test, so the pass is
+     not evidence the guard exists. The superseded wording said they fail on the
      base tree for the right reason by accident, per
      `test-spec.md` §4.11a.
   5. Replace `R/analysis-corr-latent.R:55-63` with the `is.double` branch
@@ -661,8 +673,10 @@ source. The whole-feature close-out is PR 8, not this PR.
      `R/analysis-corr-latent.R:33-40`, where `"integer_ordinal"` and
      `"continuous"` no longer mean what it says.
   6. Verify rows P-1 to P-23, Y-1 to Y-14, E-1 and G-7 pass. Run the four
-     existing correlation test files; confirm 246 tests, 718 expectations, 0
-     failures, 0 errors, 0 skips (`test-spec.md` §4.12).
+     existing correlation test files; confirm **290 tests, 825 expectations**,
+     0 failures, 0 errors, 0 skips. Corrected 2026-09-01: 246 / 718 is the
+     PRE-change baseline, and confirming it on the merged tree would read as
+     a regression (`test-spec.md` §4.12).
   7. Review every new snapshot by hand with `testthat::snapshot_review()`.
      The two files carrying a file-level `skip_on_cran()` write snapshots for
      the first time (`test-spec.md` §4.12).
@@ -695,12 +709,16 @@ source. The whole-feature close-out is PR 8, not this PR.
   - P-19 matches the ordered-factor form at 1e-10; P-22 gives the negative
     of the unreversed pair at 1e-10 (`test-spec.md` §4.10).
   - Y-11 matches the ordered-factor form at 1e-10; Y-12 is within 1e-6 of
+    `.hand_polyserial_twostep()` and within 5e-3 of
     `polycor::polyserial()`; Y-14 gives the negative of Y-11
     (`test-spec.md` §4.11).
   - Y-3 and Y-4 raise `surveycore_error_polyserial_requires_mixed_types`
     with the dual pattern, and their block descriptions record the breaking
     change (`test-spec.md` §4.11).
-  - Y-10 succeeds unchanged: the finiteness guard keeps an `Inf`-carrying
+  - Y-10 is unchanged — **corrected 2026-09-01: it does not "succeed"**. The
+    pair raises an untyped base error on every tree in this series; what the
+    row pins is that it does not cross the ordinal/continuous boundary. The
+    finiteness guard keeps an `Inf`-carrying
     column continuous, so the pair stays ordinal plus continuous
     (`test-spec.md` §4.11).
   - G-7 passes in `tests/testthat/test-labelled-analysis.R`
@@ -715,16 +733,18 @@ source. The whole-feature close-out is PR 8, not this PR.
     contradicts the code it documents. The `is.double` to `continuous`
     comment is gone and the header return-value list is updated.
   - `test-spec.md` §4.12 confirmed: the four existing correlation test files
-    report 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. Any
+    report **290 tests, 825 expectations**, 0 failures, 0 errors, 0 skips —
+    corrected 2026-09-01 from the pre-change baseline of 246 / 718. Any
     failure is reported, not patched over by relaxing the block.
   - Every new snapshot reviewed with `testthat::snapshot_review()`; none
     accepted blind (`test-spec.md` §4.12).
   - `NEWS.md` carries the fourth and fifth of the five entries required by
     `spec.md` §XI.15. PR 8 counts them.
   - `devtools::document()` clean, `man/get_corr.Rd` in sync
-    (`spec.md` §XI.1); `air::format_package()` produces no diff
-    (`spec.md` §XI.7); `Rscript -e "devtools::test()"` reports 0 failures, 0
-    errors, 0 warnings (`spec.md` §XI.2).
+    (`spec.md` §XI.1); `air format --check` produces no diff attributable to
+    this feature (`spec.md` §XI.7); `Rscript -e "devtools::test()"` reports 0
+    failures and 0 errors, with no warning attributable to this feature —
+    256 warnings, unchanged from baseline (`spec.md` §XI.2).
   - `git diff --stat DESCRIPTION NAMESPACE` is empty (`spec.md` §XI.16).
 
 - **Files touched**
@@ -777,9 +797,12 @@ Branch from `develop` after PR 7 merges.
   7. Run `R CMD check --as-cran --no-manual`; record the note list.
   8. Run `pkgdown::build_site()`.
   9. Run `covr::package_coverage()` with `NOT_CRAN=true`; record the figure.
-  10. Run `air::format_package()`; confirm no diff. Record every figure from
-      tasks 3 to 9 in `implementation.md`. If any gate fails, stop and report
-      it; do not widen this PR to fix it.
+  10. Run `air format --check .`; confirm no diff **attributable to this
+      feature**. **Corrected 2026-09-01: do not confirm a package-wide no-diff
+      — that has never held.** 35 files are flagged and 0 are attributable;
+      see gate 7 below. Record every figure from tasks 3 to 9 in
+      `implementation.md`. If any gate fails, stop and report it; do not widen
+      this PR to fix it.
 
   `cf6f153` is the base commit of the source tree, named in this plan's
   header and in `test-spec.md` §4.11a. Use it rather than `develop`, because
@@ -803,7 +826,9 @@ Branch from `develop` after PR 7 merges.
   - Gate 6 (`spec.md` §XI.6): the recorded coverage figure is at or above
     96.09%, measured with `NOT_CRAN=true`. Without that variable eleven
     files skip and the figure reads about 93.7%.
-  - Gate 7 (`spec.md` §XI.7): `air::format_package()` produces no diff.
+  - Gate 7 (`spec.md` §XI.7): `air format --check .` produces no diff
+    **attributable to this feature**. Measured 2026-09-01: 35 files flagged,
+    0 attributable. The package-wide no-diff form has never held.
   - Gate 15 (`spec.md` §XI.15): `NEWS.md` carries five entries for this
     feature — the storage contract change, the new `haven_class` argument,
     the polychoric acceptance of whole-valued doubles, the polyserial
@@ -956,7 +981,7 @@ that can make it true.
 | 4 — `R CMD check --as-cran` | PR 8 (each PR also runs `devtools::check()` before it opens) |
 | 5 — `pkgdown::build_site()` | PR 8 |
 | 6 — `covr` at or above 96.09%, floor 95%, with `NOT_CRAN=true` | PR 8 |
-| 7 — `air::format_package()` no diff | every PR; verified in PR 8 |
+| 7 — `air format --check .` no **attributable** diff | every PR; verified in PR 8. Package-wide: 35 files flagged, 0 attributable, and the no-diff form has never held |
 | 8 — no `@data` column inherits `haven_labelled`, four classes plus bare assignment | **PR 3a** — the setter is what makes it true. Rows S-24 to S-26 and D-1 to D-4 |
 | 9 — a design constructs and estimates from a labelled weight column and a labelled FPC column | **PR 3b** — the four constructor-entry calls are what make it true. Rows S-14, S-15, S-23b, S-23c |
 | 10 — `@metadata@value_labels` populated on every route, `from_svydesign()` included | PR 5 |

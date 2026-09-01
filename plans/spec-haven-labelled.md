@@ -949,7 +949,9 @@ values. Every other row is unchanged.
 
 This change is pre-verified. The patch in §VI.3 was applied to a throwaway
 copy of the package and the four existing correlation test files ran against
-it: 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. Nothing that
+it: 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. **That is the
+measurement taken before the change; the shipped suite reports 290 tests and
+825 expectations, still 0 failures. Noted 2026-09-01.** Nothing that
 passes today breaks. `get_corr(method = "polychoric")` on a pair of coded
 scale columns, which aborted before, succeeds.
 
@@ -1032,12 +1034,17 @@ boundary in each direction:
 | whole-valued small double + ordered factor, or + small integer | ordinal + continuous → works | **both ordinal → aborts** |
 | ordered factor + genuine continuous double | works | works |
 | two ordered factors | aborts | aborts |
-| double containing `Inf` + ordered factor | ordinal + continuous → works | ordinal + continuous → works, unchanged, because `is.finite()` keeps the `Inf` column continuous |
+| double containing `Inf` + ordered factor | ordinal + continuous → unchanged | ordinal + continuous → unchanged, because `is.finite()` keeps the `Inf` column continuous |
 
 The last row is the reason the `is.finite()` guard matters here too, not only
-for polychoric. Without it, an `Inf`-carrying column would become ordinal,
-and a pair that works today would start raising the mixed-types error. The
-guard keeps that pair working.
+for polychoric. Without it, an `Inf`-carrying column would become ordinal and
+the pair would start raising the mixed-types error.
+
+**Corrected 2026-09-01.** An earlier wording said the guard "keeps that pair
+working". It does not work, on any tree in this series: the weighted SD goes
+`NaN` and an untyped base error escapes. What the guard preserves is the
+pair's **classification** — ordinal plus continuous — so it raises neither
+PC-2 nor PC-3. That is what the corresponding test row pins.
 
 **Row 3 is a breaking change.** A caller who previously got a polyserial
 number from a whole-valued double paired with an ordinal column now gets
@@ -1522,14 +1529,28 @@ Objectively verifiable. All must hold.
 
 1. `devtools::document()` runs clean and `man/` is committed in sync with
    the roxygen source.
-2. `devtools::test()` — 0 failures, 0 errors, 0 warnings.
+2. `devtools::test()` — 0 failures, 0 errors, and **no warning attributable
+   to this feature**. Measured 2026-09-01: 256 warnings, unchanged from the
+   baseline's 256. They are the AAPOR small-cell and `survey_nonprob`
+   SRS-approximation notices, both raised by design; issue #167 tracks them.
+   **The 0-warning form has never held**, on this tree or on the feature
+   base — reworded 2026-09-01 rather than left recorded as met.
 3. `devtools::run_examples()` — clean.
 4. `R CMD check --as-cran` — 0 errors, 0 warnings, at most the two
    pre-approved notes from `.claude/rules/r-package-conventions.md`.
 5. `pkgdown::build_site()` — clean.
 6. `covr::package_coverage()` with `NOT_CRAN=true` — at or above 96.09%,
    the figure on `develop` at `cf6f153`. The floor is 95%.
-7. `air::format_package()` produces no diff.
+7. `air format --check .` produces no diff **attributable to this feature** —
+   no file this feature creates or rewrites appears in the flagged list.
+   Measured 2026-09-01: 35 files flagged package-wide, **0 attributable**,
+   confirmed by two independent methods (hunk-range intersection, and
+   `git blame` on the flagged ranges, which traced the three intersecting
+   files to #164, #110 and #185). The package-wide form has never held, on
+   this tree or on the feature base `0be2f3a`; closing it means reformatting
+   all 35, none of whose flagged lines come from this feature, which
+   `.claude/rules/code-style.md` requires be its own commit. Reworded
+   2026-09-01.
 8. No column of `@data` inherits `haven_labelled` after any route in
    §III.1, demonstrated for all four concrete design classes, and after a
    bare `des@data <- labelled_df` assignment.
