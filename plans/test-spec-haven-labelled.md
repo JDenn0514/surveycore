@@ -484,7 +484,7 @@ In `tests/testthat/test-conversion.R`. Guard every block with
 
 | Row | Scenario | Assertion |
 |---|---|---|
-| C-0 | `label_vars = TRUE` on a `get_means()` call over a design produced by `from_svydesign()` from a labelled source frame | the output shows the variable **label**, not the raw column name. This is the observable payoff of the metadata-capture fix: before it, the metadata was empty, so there was no label to show. |
+| C-0 | `label_vars = TRUE` on a `get_means()` call over a design produced by `from_svydesign()` from a labelled source frame | the output shows the variable **label**, not the raw column name. **A fence, not evidence — corrected 2026-09-01.** It passes before the fix too: `.extract_var_meta()` at `R/analysis-helpers.R:160-162` falls back to `attr(col, "label")`, which the strip keeps, so the label resolved on both trees. The rows that catch the empty-metadata defect are C-3, C-5 and C-6. |
 | C-1 | `as_svydesign()` on a design built from a labelled frame | succeeds; the variables frame it produces has no column inheriting `haven_labelled`; the `labels` attributes are still there |
 | C-2 | `survey::svymean()` on that converted object | matches `get_means()` on the surveycore design, at the default point and standard-error tolerances |
 | C-3 | `from_svydesign()` on a `survey::svydesign()` built from a labelled frame | succeeds; no stored column inherits `haven_labelled`; **`extract_val_labels()` returns the labels** |
@@ -659,8 +659,8 @@ Numerical rows, in the same file:
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | P-19 | Two whole-valued double columns, 4 distinct values each | the correlation equals the correlation from the same two columns converted to ordered factors with levels in ascending value order | point 1e-10 |
-| P-20 | Same pair, one column labelled | the correlation equals the same pair with the class removed | point 1e-10, standard error 1e-8, confidence bounds 1e-6 |
-| P-21 | Same pair on a replicate design | as P-20 | same |
+| P-20 | Same pair, one column labelled | the correlation equals the same pair with the class removed | **exact — corrected 2026-09-01.** §6 departure 1 governs: one input re-classed, same computation, so `expect_identical()`. Measured bit-identical on r, se and both CI bounds. The earlier 1e-10 / 1e-8 / 1e-6 figures would have let a tenth-decimal drift ship green. |
+| P-21 | Same pair on a replicate design | as P-20 | **exact**, as P-20. The replicate variance path adds R refits and does not change that: both designs feed it the same numbers. |
 | P-22 | Two whole-valued double columns with reversed codes on one side | the correlation is the negative of the unreversed pair | point 1e-10 |
 | P-23 | A whole-valued double paired with a genuine continuous column, `method = "polychoric"` | raises `surveycore_error_polychoric_requires_ordinal`, naming the continuous column | — |
 
@@ -682,7 +682,7 @@ In `tests/testthat/test-analysis-corr-latent.R`.
 | Y-7 | high-cardinality integer + ordered factor | raises `surveycore_error_polyserial_canonicalization_ambiguous` | no |
 | Y-8 | character column + ordered factor | raises the same | no |
 | Y-9 | labelled double, 4 distinct codes, + genuine continuous column | succeeds; equals Y-1 with the class removed | **yes** |
-| Y-10 | double containing `Inf` + ordered factor | succeeds, unchanged. The finiteness check keeps the `Inf` column continuous, so the pair stays ordinal + continuous. Without that check this pair would start raising the mixed-types error, so this row guards a pair that works today. | no |
+| Y-10 | double containing `Inf` + ordered factor | **Corrected 2026-09-01.** The finiteness check keeps the `Inf` column continuous, so the pair does not cross the ordinal/continuous boundary and raises neither PC-2 nor PC-3. It does **not** "succeed" and does not "work today": on every tree in this series the weighted SD goes `NaN` and an untyped base error escapes. Assert the boundary, not a returned number. | no |
 
 Y-3 and Y-4 are the rows that record the breaking change. Their block
 descriptions must say so, so that a reader hitting the error later finds the
@@ -698,7 +698,7 @@ strip and not the estimate.
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | Y-11 | Whole-valued small double + genuine continuous column | the correlation equals the correlation from the same pair with the ordinal side converted to an ordered factor, levels in ascending value order | point 1e-10 |
-| Y-12 | The same pair | the correlation is within tolerance of `polycor::polyserial()` on the same two columns, unweighted, with equal weights supplied to `get_corr()` so the two are comparable. Guard with `skip_if_not_installed("polycor")`. | point 1e-6, with the justification below |
+| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured gap 1.988e-03 on the fixture. `decisions.md` B1 settled this; the row never caught up. Guard the `polycor` half with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
 | Y-13 | The same pair on a replicate design | equals Y-11 | point 1e-10, standard error 1e-8 |
 | Y-14 | Whole-valued small double + continuous column, ordinal side reverse-coded | the correlation is the negative of Y-11 | point 1e-10 |
 
@@ -803,16 +803,25 @@ Y-8, T-3, and every row marked "unchanged behaviour" in this document. A row
 in this group that **fails** on the base commit means the row is wrong, not
 that the defect is wider.
 
-Rows P-18a and P-18b are a special case: they fail on the base commit for the
-**right reason by accident**. The base commit refuses `Inf` because it
-refuses every whole-valued double, not because it checks finiteness. Note
-that in the record, so the pass is not read as evidence the finiteness guard
-was already present.
+Rows P-18a and P-18b are a special case, and this note contradicted itself
+until it was **corrected on 2026-09-01**: it said they "fail on the base
+commit" and then called the same outcome a pass.
+
+They **pass** on the base commit. Both assert that
+`get_corr(method = "polychoric")` raises
+`surveycore_error_polychoric_requires_ordinal`, and the base raises exactly
+that class — for the wrong reason. The base refuses every whole-valued
+double, so it never reaches a finiteness test at all.
+
+The pass is therefore **not** evidence that the finiteness guard exists.
+Record that in the red run, so a green P-18a on the base is not read as one.
 
 ### 4.12 Existing correlation tests
 
 The four existing correlation test files were run against the ordinality
-change and reported 246 tests, 718 expectations, 0 failures, 0 errors, 0
+change and reported 246 tests, 718 expectations — **that is the PRE-change
+baseline, corrected 2026-09-01; the shipped figure is 290 tests, 825
+expectations.** Either way 0 failures, 0 errors, 0
 skips. Confirm that result rather than assume it. If any block does fail,
 that is new information and must be reported, not patched over by relaxing
 the block.
@@ -836,6 +845,13 @@ Each named class gets the dual pattern — `expect_error(class = ...)` **and**
 `expect_snapshot(error = TRUE, ...)` — because all of these are user-facing
 messages raised from public functions, not structural class-validator
 messages.
+
+**The requirement is per class, not per row — clarified 2026-09-01.** The
+Rows column below lists rows that may cover a class; the dual pattern is
+satisfied when **any one** covering row carries both halves. A row listed
+there may assert `class=` alone, provided another row in the same file
+snapshots that class. Read per row, this table asks for snapshots that would
+differ from one another only in an interpolated variable name.
 
 | Class | Rows that must cover it | Pattern |
 |---|---|---|
