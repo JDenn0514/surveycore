@@ -547,10 +547,17 @@ claim.
 
 **Note on the printed token, corrected 2026-08-31.** Earlier drafts of T-1 and
 T-2 named the token `<hvn_lbl>`. No state of the package produces that string.
-`pillar` builds the abbreviation from the underlying type, so a labelled
-column prints as `<dbl+lbl>`, `<int+lbl>` or `<chr+lbl>` according to what
-backs it. Measured on `develop` at `b7f8b45` with `haven` 2.5.5 and
-`pillar` present.
+The token depends on whether the `haven` namespace is **loaded**, because
+`haven` registers the `pillar` methods that produce it.
+
+| `haven` loaded | Token |
+|---|---|
+| yes | `<dbl+lbl>`, `<int+lbl>` or `<chr+lbl>`, by backing type |
+| no | `<hvn_lbll>` — `pillar` falls back to abbreviating the class name |
+
+Neither is `<hvn_lbl>`. Measured on `develop` at `b7f8b45` with `haven`
+2.5.5. A row that snapshots this token must pin the load state, or the
+snapshot flips with test file order.
 
 Assert the token the code produces. A row written against `<hvn_lbl>` cannot
 pass, and rewriting the snapshot to match it would be wrong rather than
