@@ -102,14 +102,24 @@ as_svydesign <- function(x) {
     ~1
   }
 
-  survey::svydesign(
-    ids = ids_formula,
-    strata = .to_formula(strata_var),
-    weights = .to_formula(weights_var),
-    fpc = .to_formula(fpc_var),
+  # Inline the formulas into the call rather than passing the variables that
+  # hold them. survey::svydesign() stores its own call, and R records the
+  # unevaluated argument expressions there. Passing `ids = ids_formula` records
+  # the symbol `ids_formula`, and passing `strata = .to_formula(strata_var)`
+  # records that call. from_svydesign() reads those back with all.vars(), which
+  # then yields "ids_formula" and "strata_var" instead of the column names, and
+  # the design fails to rebuild. bquote() substitutes the formula objects
+  # themselves, so the stored call names real columns and the round trip works.
+  # `data` is left as an expression on purpose: it is not read back, and
+  # inlining a whole data frame into a stored call is wasteful.
+  eval(bquote(survey::svydesign(
+    ids = .(ids_formula),
+    strata = .(.to_formula(strata_var)),
+    weights = .(.to_formula(weights_var)),
+    fpc = .(.to_formula(fpc_var)),
     data = x@data,
-    nest = isTRUE(x@variables$nest)
-  )
+    nest = .(isTRUE(x@variables$nest))
+  )))
 }
 
 

@@ -785,3 +785,79 @@ test_that("from_svydesign() warns surveycore_warning_twophase_method_unknown for
   expect_true(S7::S7_inherits(d, survey_twophase))
   expect_identical(d@variables$method, "approx")
 })
+
+
+# ── Round trip through the survey package ────────────────────────────────────
+#
+# as_svydesign() builds a survey::svydesign() object, and survey stores its own
+# call. R records the unevaluated argument expressions there, so passing a
+# variable that holds a formula recorded the variable's name rather than the
+# formula. from_svydesign() reads those back with all.vars() to recover the
+# design column names, so every Taylor design failed to rebuild. These rows
+# pin the repair.
+
+test_that("from_svydesign() rebuilds a Taylor design that as_svydesign() made", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 3L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+
+  back <- from_svydesign(as_svydesign(d))
+
+  expect_identical(back@variables$ids, d@variables$ids)
+  expect_identical(back@variables$strata, d@variables$strata)
+  expect_identical(back@variables$weights, d@variables$weights)
+  expect_identical(back@variables$fpc, d@variables$fpc)
+})
+
+test_that("the survey round trip preserves the estimate and its standard error", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 3L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+
+  back <- from_svydesign(as_svydesign(d))
+  before <- suppressWarnings(get_means(d, y1, variance = "se"))
+  after <- suppressWarnings(get_means(back, y1, variance = "se"))
+
+  expect_equal(after$mean, before$mean, tolerance = 0)
+  expect_equal(after$se, before$se, tolerance = 0)
+})
+
+test_that("the survey round trip works for every Taylor design shape", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 4L)
+  # A constant FPC. make_survey_data() varies fpc by PSU, which makes survey
+  # warn that it varies within a stratum. That warning is about the fixture,
+  # not about the round trip under test.
+  df$fpc_const <- 1000
+
+  shapes <- list(
+    ids_only = as_survey(df, ids = psu, weights = wt),
+    with_strata = as_survey(df, ids = psu, weights = wt, strata = strata),
+    with_fpc = as_survey(df, ids = psu, weights = wt, fpc = fpc_const),
+    srs = as_survey(df, weights = wt)
+  )
+
+  for (nm in names(shapes)) {
+    back <- from_svydesign(as_svydesign(shapes[[nm]]))
+    expect_identical(
+      back@variables$weights,
+      shapes[[nm]]@variables$weights,
+      label = paste("shape:", nm)
+    )
+  }
+})
+
+test_that("as_svydesign() stores a call naming real columns, not local variables", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 5L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  sv <- as_svydesign(d)
+
+  # The regression this guards: these read "ids_formula" and "strata_var"
+  # before the fix, because R recorded the argument expressions rather than
+  # the formulas they evaluated to.
+  expect_identical(all.vars(sv$call$ids), "psu")
+  expect_identical(all.vars(sv$call$strata), "strata")
+  expect_identical(all.vars(sv$call$weights), "wt")
+})
