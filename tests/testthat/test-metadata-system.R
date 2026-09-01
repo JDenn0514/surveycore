@@ -4251,3 +4251,232 @@ test_that("set_sata() sata = 'yes' still errors with surveycore_error_sata_not_l
     class = "surveycore_error_sata_not_logical"
   )
 })
+
+
+# ── haven labelled columns ───────────────────────────────────────────────────
+#
+# One defect and its blast radius. `.validate_val_labels()` called
+# `as.character()` on a `haven_labelled` vector, which `vctrs` refuses, so
+# `set_val_labels()` aborted. The two input modes reach that line by different
+# routes: a survey design normalises its `data` property on every write, so its
+# stored column is already plain; a plain data frame is never normalised, so
+# the class arrives intact. Rows that assert a value read back out of storage,
+# or that exercise the validation, run in both modes. Rows whose answer cannot
+# depend on the column's class run once — see
+# `.claude/rules/testing-surveycore.md` §The both-modes rule.
+
+# One frame in two shapes. Both carry the same codes and the same `label` and
+# `labels` attributes; only the labelled shape carries the class vector. Every
+# comparison between the two shapes is an exact-equality comparison.
+make_hl_frame <- function(labelled = TRUE) {
+  df <- data.frame(
+    wt = c(1.2, 0.9, 1.1, 1.0, 1.3),
+    psu = c(1L, 1L, 2L, 2L, 3L)
+  )
+  sex <- c(1L, 2L, 1L, 2L, 1L)
+  if (labelled) {
+    df$sex <- make_labelled(
+      sex,
+      labels = c(Male = 1L, Female = 2L),
+      label = "Sex"
+    )
+  } else {
+    attr(sex, "labels") <- c(Male = 1L, Female = 2L)
+    attr(sex, "label") <- "Sex"
+    df$sex <- sex
+  }
+  df
+}
+
+make_hl_design <- function(labelled = TRUE) {
+  as_survey(make_hl_frame(labelled = labelled), weights = wt)
+}
+
+# M-1 — survey mode.
+test_that("set_val_labels() stores labels for a labelled column on a design", {
+  labelled <- set_val_labels(
+    make_hl_design(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  plain <- set_val_labels(
+    make_hl_design(labelled = FALSE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    labelled@metadata@value_labels[["sex"]],
+    c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    labelled@metadata@value_labels[["sex"]],
+    plain@metadata@value_labels[["sex"]]
+  )
+})
+
+# M-1 — data frame mode.
+test_that("set_val_labels() stores labels for a labelled column on a frame", {
+  labelled <- set_val_labels(
+    make_hl_frame(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  plain <- set_val_labels(
+    make_hl_frame(labelled = FALSE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(attr(labelled$sex, "labels"), c(Man = 1L, Woman = 2L))
+  expect_identical(attr(labelled$sex, "labels"), attr(plain$sex, "labels"))
+})
+
+test_that("set_val_labels() leaves the labelled class on a frame column", {
+  labelled <- set_val_labels(
+    make_hl_frame(labelled = TRUE),
+    sex = c(Man = 1L, Woman = 2L)
+  )
+  expect_identical(
+    class(labelled$sex),
+    c("haven_labelled", "vctrs_vctr", "integer")
+  )
+})
+
+# M-2 — survey mode.
+test_that("set_val_labels() warns on an unlabeled code on a labelled design", {
+  d <- make_hl_design(labelled = TRUE)
+  expect_warning(
+    result <- set_val_labels(d, sex = c(Man = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(result@metadata@value_labels[["sex"]], c(Man = 1L))
+})
+
+# M-2 — data frame mode. Newly reachable: the validation no longer aborts
+# before the warning.
+test_that("set_val_labels() warns on an unlabeled code on a labelled frame", {
+  df <- make_hl_frame(labelled = TRUE)
+  expect_warning(
+    result <- set_val_labels(df, sex = c(Man = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(attr(result$sex, "labels"), c(Man = 1L))
+})
+
+test_that("snapshot: set_val_labels() missing labels on a labelled frame", {
+  df <- make_hl_frame(labelled = TRUE)
+  expect_snapshot(set_val_labels(df, sex = c(Man = 1L)))
+})
+
+# M-3 — survey mode.
+test_that("extract_val_labels() reads a labelled column back from a design", {
+  labelled <- extract_val_labels(make_hl_design(labelled = TRUE), sex)
+  plain <- extract_val_labels(make_hl_design(labelled = FALSE), sex)
+  expect_identical(labelled$sex, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-3 — data frame mode.
+test_that("extract_val_labels() reads a labelled column back from a frame", {
+  labelled <- extract_val_labels(make_hl_frame(labelled = TRUE), sex)
+  plain <- extract_val_labels(make_hl_frame(labelled = FALSE), sex)
+  expect_identical(labelled$sex, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-4 — survey mode only. Neither path is touched by this change.
+test_that("set_var_label() then extract_var_label() works on a labelled col", {
+  labelled <- set_var_label(
+    make_hl_design(labelled = TRUE),
+    sex = "Sex of respondent"
+  )
+  plain <- set_var_label(
+    make_hl_design(labelled = FALSE),
+    sex = "Sex of respondent"
+  )
+  expect_identical(
+    extract_var_label(labelled, sex),
+    c(sex = "Sex of respondent")
+  )
+  expect_identical(
+    extract_var_label(labelled, sex),
+    extract_var_label(plain, sex)
+  )
+})
+
+# M-5 — survey mode only.
+test_that("extract_metadata() returns the same result for a labelled column", {
+  labelled <- extract_metadata(make_hl_design(labelled = TRUE), sex)
+  plain <- extract_metadata(make_hl_design(labelled = FALSE), sex)
+  expect_identical(labelled$sex$variable_label, "Sex")
+  expect_identical(labelled$sex$value_labels, c(Male = 1L, Female = 2L))
+  expect_identical(labelled, plain)
+})
+
+# M-6 — survey mode only. Four extractors, one block.
+test_that("four extractors return the same result for a labelled column", {
+  build <- function(labelled) {
+    d <- make_hl_design(labelled = labelled)
+    d <- set_missing_codes(d, sex = c(Refused = -1L))
+    d <- set_higher_is(d, sex = "worse")
+    d <- set_question_preface(d, sex = "About you...")
+    d <- set_var_note(d, sex = "Self-reported.")
+    d
+  }
+  labelled <- build(TRUE)
+  plain <- build(FALSE)
+  expect_identical(
+    extract_missing_codes(labelled, sex),
+    extract_missing_codes(plain, sex)
+  )
+  expect_identical(
+    extract_higher_is(labelled, sex),
+    extract_higher_is(plain, sex)
+  )
+  expect_identical(
+    extract_question_preface(labelled, sex),
+    extract_question_preface(plain, sex)
+  )
+  expect_identical(
+    extract_var_note(labelled, sex),
+    extract_var_note(plain, sex)
+  )
+  expect_identical(extract_missing_codes(labelled, sex)$sex, c(Refused = -1L))
+})
+
+# M-7 — survey mode only. Reads no column value and no column class.
+test_that("classify_question_type() gives the same answer for labelled cols", {
+  labelled <- classify_question_type(make_hl_design(labelled = TRUE), sex, wt)
+  plain <- classify_question_type(make_hl_design(labelled = FALSE), sex, wt)
+  expect_identical(labelled$variable, c("sex", "wt"))
+  expect_identical(labelled$type, c("single", "single"))
+  expect_identical(labelled, plain)
+})
+
+# M-8 — survey mode only. A frame stores nothing, so it has no read-back.
+test_that("the SPSS missing attributes survive construction on a design", {
+  df <- data.frame(wt = c(1.2, 0.9, 1.1, 1.0, 1.3))
+  df$sex <- make_labelled_spss(
+    c(1L, 2L, 1L, 2L, 99L),
+    labels = c(Male = 1L, Female = 2L, Refused = 99L),
+    na_values = 99L,
+    na_range = c(90L, 99L),
+    label = "Sex"
+  )
+  stored <- survey_data(as_survey(df, weights = wt))$sex
+  expect_identical(attr(stored, "na_values"), 99L)
+  expect_identical(attr(stored, "na_range"), c(90L, 99L))
+  expect_null(attr(stored, "class"))
+})
+
+# M-9 — regression fence. The plain path must not change.
+test_that("set_val_labels() on a plain column is unchanged", {
+  d <- make_design()
+  expect_no_warning(
+    full <- set_val_labels(d, sex = c(Male = 1L, Female = 2L))
+  )
+  expect_identical(
+    full@metadata@value_labels[["sex"]],
+    c(Male = 1L, Female = 2L)
+  )
+  expect_warning(
+    partial <- set_val_labels(d, sex = c(Male = 1L)),
+    class = "surveycore_warning_missing_labels"
+  )
+  expect_identical(partial@metadata@value_labels[["sex"]], c(Male = 1L))
+})
