@@ -1708,10 +1708,15 @@ test_that("P-20: a labelled side matches the same pair with no class", {
     method = "polychoric",
     variance = c("se", "ci")
   )
-  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
-  expect_equal(lbl$se, pln$se, tolerance = 1e-8)
-  expect_equal(lbl$ci_low, pln$ci_low, tolerance = 1e-6)
-  expect_equal(lbl$ci_high, pln$ci_high, tolerance = 1e-6)
+  # One input re-classed, same computation, so the comparison is exact by
+  # construction: stripping a class cannot perturb a floating-point result.
+  # Measured on this fixture, bit-identical on all four fields, maximum
+  # absolute difference exactly 0. A numerical bound here would let a
+  # tenth-decimal drift in the labelled path ship green, so there is none.
+  expect_identical(lbl$r, pln$r)
+  expect_identical(lbl$se, pln$se)
+  expect_identical(lbl$ci_low, pln$ci_low)
+  expect_identical(lbl$ci_high, pln$ci_high)
 })
 
 test_that("P-21: the labelled/plain match also holds on a replicate design", {
@@ -1727,10 +1732,14 @@ test_that("P-21: the labelled/plain match also holds on a replicate design", {
     method = "polychoric",
     variance = c("se", "ci")
   )
-  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
-  expect_equal(lbl$se, pln$se, tolerance = 1e-8)
-  expect_equal(lbl$ci_low, pln$ci_low, tolerance = 1e-6)
-  expect_equal(lbl$ci_high, pln$ci_high, tolerance = 1e-6)
+  # Exact by construction, for the reason written out in P-20. Measured,
+  # bit-identical on all four fields, maximum absolute difference exactly 0.
+  # The replicate variance path adds R refits and does not change that: both
+  # designs feed it the same numbers.
+  expect_identical(lbl$r, pln$r)
+  expect_identical(lbl$se, pln$se)
+  expect_identical(lbl$ci_low, pln$ci_low)
+  expect_identical(lbl$ci_high, pln$ci_high)
 })
 
 test_that("P-22: reversing one side's codes negates the correlation", {
@@ -1870,7 +1879,9 @@ test_that("Y-9: a labelled ordinal side matches the same pair with no class", {
   }
   lbl <- get_corr(make_d(TRUE), x = c(v, cont), method = "polyserial")
   pln <- get_corr(make_d(FALSE), x = c(v, cont), method = "polyserial")
-  expect_equal(lbl$r, pln$r, tolerance = 1e-10)
+  # Exact by construction, for the reason written out in P-20. Measured,
+  # bit-identical, maximum absolute difference exactly 0.
+  expect_identical(lbl$r, pln$r)
 })
 
 test_that("Y-10: a double carrying Inf plus ordered factor is unchanged", {
