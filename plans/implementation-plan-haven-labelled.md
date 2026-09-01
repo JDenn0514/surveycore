@@ -650,7 +650,10 @@ source. The whole-feature close-out is PR 8, not this PR.
   3. Write the failing row G-7 in
      `tests/testthat/test-labelled-analysis.R`.
   4. Run the affected files; record in `implementation.md` the failure count
-     and every failing row identifier. Note that P-18a and P-18b fail on the
+     and every failing row identifier. **Corrected 2026-09-01: P-18a and
+     P-18b PASS on the base**, for the wrong reason — the base refuses every
+     whole-valued double and never reaches a finiteness test, so the pass is
+     not evidence the guard exists. The superseded wording said they fail on the
      base tree for the right reason by accident, per
      `test-spec.md` §4.11a.
   5. Replace `R/analysis-corr-latent.R:55-63` with the `is.double` branch
@@ -697,12 +700,16 @@ source. The whole-feature close-out is PR 8, not this PR.
   - P-19 matches the ordered-factor form at 1e-10; P-22 gives the negative
     of the unreversed pair at 1e-10 (`test-spec.md` §4.10).
   - Y-11 matches the ordered-factor form at 1e-10; Y-12 is within 1e-6 of
+    `.hand_polyserial_twostep()` and within 5e-3 of
     `polycor::polyserial()`; Y-14 gives the negative of Y-11
     (`test-spec.md` §4.11).
   - Y-3 and Y-4 raise `surveycore_error_polyserial_requires_mixed_types`
     with the dual pattern, and their block descriptions record the breaking
     change (`test-spec.md` §4.11).
-  - Y-10 succeeds unchanged: the finiteness guard keeps an `Inf`-carrying
+  - Y-10 is unchanged — **corrected 2026-09-01: it does not "succeed"**. The
+    pair raises an untyped base error on every tree in this series; what the
+    row pins is that it does not cross the ordinal/continuous boundary. The
+    finiteness guard keeps an `Inf`-carrying
     column continuous, so the pair stays ordinal plus continuous
     (`test-spec.md` §4.11).
   - G-7 passes in `tests/testthat/test-labelled-analysis.R`

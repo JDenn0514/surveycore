@@ -698,7 +698,7 @@ strip and not the estimate.
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | Y-11 | Whole-valued small double + genuine continuous column | the correlation equals the correlation from the same pair with the ordinal side converted to an ordered factor, levels in ascending value order | point 1e-10 |
-| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured on the fixture: relative gap **3.88e-3** against the 5e-3 bound, or 1.29x headroom — `expect_equal()` compares relatively, so the absolute 1.988e-03 is not the figure to weigh against it. **B1** — in `archive/polychoric-corr/decisions-polychoric-corr.md`, not in this feature's `decisions.md` — ruled the `polycor` comparison out as an oracle at any tolerance and required the hand two-step pinned at 1e-6. Keeping `polycor` at 5e-3 beside that binding oracle is a deliberate addition by this feature, **not** something B1 authorises. Guard it with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
+| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured on the fixture: relative gap **3.88e-3** against the 5e-3 bound, or 1.29x headroom — `expect_equal()` compares relatively, so the absolute 1.988e-03 is not the figure to weigh against it. The two-oracle arrangement **is** the established one: `archive/polychoric-corr/decisions-polychoric-corr.md` B1 kept 1e-6 against the hand two-step "plus a loose **1e-3** agreement check against `polycor::polyserial(ML = TRUE)` as a sanity gate". **What this feature departs from is the figure, not the arrangement** — 5e-3 rather than B1's 1e-3, because this fixture's 3.88e-3 gap would fail at 1e-3. Guard it with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
 | Y-13 | The same pair on a replicate design | equals Y-11 | point 1e-10, standard error 1e-8 |
 | Y-14 | Whole-valued small double + continuous column, ordinal side reverse-coded | the correlation is the negative of Y-11 | point 1e-10 |
 
@@ -720,13 +720,24 @@ thresholds and rho jointly, so it targets a different estimator; no tolerance
 makes the two agree. The relative gap measures 3.88e-3, which leaves 1.29x
 headroom — thin, and the row most exposed in this suite to a different BLAS.
 
-Two cautions for whoever touches this next. `archive/polychoric-corr/`
-**B1 ruled the `polycor` comparison out at any tolerance** and required the
-hand two-step at 1e-6; keeping `polycor` at 5e-3 alongside it is this
-feature's own choice, not B1's. And
-`tests/testthat/test-analysis-corr-latent-primitives.R` compares against
-`polycor` at **1e-3**, not 5e-3, so 5e-3 is not a house precedent either — the
-3.88e-3 gap would fail at 1e-3, which is why the looser bound was picked.
+Two cautions for whoever touches this next, both corrected on 2026-09-01
+after two wrong readings of the same source.
+
+**What B1 actually says.** `archive/polychoric-corr/decisions-polychoric-corr.md`
+B1 is ADVISORY, and its disposition kept 1e-6 against the hand two-step
+"plus a loose **1e-3** agreement check against `polycor::polyserial(ML = TRUE)`
+as a sanity gate". So the two-oracle shape is B1's, and only the **figure**
+here departs from it: 5e-3 rather than 1e-3.
+`tests/testthat/test-analysis-corr-latent-primitives.R` uses B1's 1e-3. This
+fixture's relative gap is 3.88e-3, which fails 1e-3, and that is why the bound
+was widened. The widening is this feature's choice and is not covered by B1.
+
+**Where "regardless of tolerance" comes from.** Not B1. It is the PR 3
+reviewer's STOP §B, quoted at `:138` of the same file, and it rejects
+`polycor` as the **strict oracle** — not as a sanity gate. Conflating the two
+is what produced two successive wrong corrections to this row. Read `:41-51`
+for B1 and `:130-142` for the STOP; they are different documents saying
+different things.
 
 ### 4.11a Confirming the new tests fail before the fix
 
@@ -872,7 +883,7 @@ differ from one another only in an interpolated variable name.
 | `surveycore_error_polyserial_canonicalization_ambiguous` | Y-7, Y-8 | dual |
 | `surveycore_error_polychoric_single_level_ordinal` | P-18 | dual |
 | `surveycore_warning_polychoric_unordered_factor` | P-13 | `expect_warning(result <- ..., class = ...)` plus snapshot |
-| `surveycore_warning_missing_labels` | M-2 | `expect_warning(result <- ..., class = ...)` **plus snapshot** — same treatment as the row above it. Both are user-facing warnings raised from public functions with fully formatted messages, so there is no reason to treat them differently. An earlier draft snapshotted one and not the other. |
+| `surveycore_warning_missing_labels` | M-2 | `expect_warning(result <- ..., class = ...)` **plus snapshot**, satisfied per class by any covering row — see the per-class note above. Both are user-facing warnings raised from public functions with fully formatted messages, so there is no reason to treat them differently. An earlier draft snapshotted one and not the other. |
 | `surveycore_error_not_survey_object` | D-23 | dual |
 | `surveycore_error_haven_class_not_logical` | D-22 | dual |
 | `surveycore_error_subset_not_logical` | S-30 | dual |

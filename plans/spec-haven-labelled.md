@@ -1034,12 +1034,17 @@ boundary in each direction:
 | whole-valued small double + ordered factor, or + small integer | ordinal + continuous → works | **both ordinal → aborts** |
 | ordered factor + genuine continuous double | works | works |
 | two ordered factors | aborts | aborts |
-| double containing `Inf` + ordered factor | ordinal + continuous → works | ordinal + continuous → works, unchanged, because `is.finite()` keeps the `Inf` column continuous |
+| double containing `Inf` + ordered factor | ordinal + continuous → unchanged | ordinal + continuous → unchanged, because `is.finite()` keeps the `Inf` column continuous |
 
 The last row is the reason the `is.finite()` guard matters here too, not only
-for polychoric. Without it, an `Inf`-carrying column would become ordinal,
-and a pair that works today would start raising the mixed-types error. The
-guard keeps that pair working.
+for polychoric. Without it, an `Inf`-carrying column would become ordinal and
+the pair would start raising the mixed-types error.
+
+**Corrected 2026-09-01.** An earlier wording said the guard "keeps that pair
+working". It does not work, on any tree in this series: the weighted SD goes
+`NaN` and an untyped base error escapes. What the guard preserves is the
+pair's **classification** — ordinal plus continuous — so it raises neither
+PC-2 nor PC-3. That is what the corresponding test row pins.
 
 **Row 3 is a breaking change.** A caller who previously got a polyserial
 number from a whole-valued double paired with an ordinal column now gets
