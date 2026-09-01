@@ -697,6 +697,11 @@ files against the unmodified base commit and record the result:
 4. Record, in the implementation notes: the count of failing tests, and the
    identifier of every row that failed.
 
+**The list below is stated against `cf6f153`, the base for the whole
+feature.** Under the nine-PR shape each PR has its own base, so a row that
+fails at `cf6f153` can pass at a later PR's base because an earlier PR already
+fixed it. Check a PR's red run against its own base, not against this list.
+
 **Expected to fail on the base commit** — this is the list to check the run
 against:
 
@@ -709,6 +714,47 @@ against:
 | metadata | M-1, M-2, M-3 |
 | conversion | C-0, C-3 to C-8 |
 | `survey_data()` | D-1 to D-4, D-6 |
+
+### Corrections to this list, measured 2026-08-31
+
+PR 3b measured every row above on a scratch tree differing from its own base
+only by the change under test. The list mispredicted in both directions, for
+**three** separate reasons. Read all three before trusting a prediction here.
+
+**1. The base moved.** S-1 to S-13 are listed as expected to fail. They pass
+from PR 3a onward, because PR 3a's property setter already covers those
+routes. In PR 3b they are regression fences, not evidence. This is the
+expected consequence of the nine-PR split, not a defect in the row.
+
+**2. Two rows were misfiled, and two over-predicted.**
+
+| Row | This list said | Measured at PR 3b's base |
+|---|---|---|
+| S-21, S-22 | not listed, so expected to pass | **fail** — without the strip the constructor aborts with `vctrs_error_ptype2` instead of the weight class the row names, so they are evidence |
+| S-23c, S-23e | expected to fail | **pass** — fences |
+
+**3. A row this list got right, which the counterfactual missed. S-16.**
+Worth reading in full, because it is a trap in the test harness rather than in
+the document.
+
+`tests/testthat/test-labelled-storage.R` simulates `haven`'s absence with
+`.ls_without_haven()`, which removes `haven`'s entries from the `vctrs` S3
+method table. That covers a failure reached through a **vctrs** generic. It
+does **not** cover one reached through a **base** generic: `haven`'s methods
+for base generics live in a different table and stay registered.
+
+`.validate_psu_strata()` calls `as.character()`, a base generic. Under the
+wrapper, `as.character.haven_labelled` survives and the call succeeds, so
+S-16 looks like a fence. With `haven` genuinely absent, dispatch falls through
+to `as.character.vctrs_vctr` and raises `vctrs_error_cast` — the site
+`spec.md` §III.5 records. So S-16 **is** evidence; the harness under-detected
+it.
+
+**The general rule.** `.ls_without_haven()` reproduces `haven` absence for
+`vctrs` generics only. A row whose failure path runs through a base generic —
+`as.character()`, `as.numeric()`, `[`, `c()` — will look like a fence under
+the wrapper and is not one. Say which generic a row's failure path uses before
+classifying it.
 | the new argument | D-7 to D-23 — these fail with "unused argument" |
 | ordinality | P-1 to P-3, P-14 to P-18f, P-19 to P-22 |
 | polyserial | Y-1, Y-9, Y-11 to Y-14 |
