@@ -1068,15 +1068,12 @@ test_that("as_survey() to as_svydesign() to from_svydesign() keeps the labels", 
   sv <- as_svydesign(d1)
   expect_identical(labelled_cols(sv$variables), character(0))
 
-  # The return leg aborts for a reason that has nothing to do with labels.
-  # `.as_svydesign_taylor()` calls `survey::svydesign(ids = ids_formula, ...)`,
-  # so `survey` records the local variable names in `$call`. `from_svydesign()`
-  # then reads those names back as design variables and the validator raises
-  # `surveycore_error_design_var_missing`. The defect predates this change and
-  # fires on an unlabelled frame too. Repairing it is a behavioural change to
-  # `as_svydesign()` that the spec does not authorise, so it is on HOLD.
-  skip("HOLD: as_svydesign() to from_svydesign() aborts, unrelated to labels.")
-
+  # The return leg used to abort for a reason unrelated to labels: `survey`
+  # recorded the local variable names in `$call`, so `from_svydesign()` read
+  # them back as design variables and raised
+  # `surveycore_error_design_var_missing`. Fixed separately in #195, which
+  # inlines the formulas into the stored call. This row asserts the whole
+  # round trip now.
   d2 <- from_svydesign(sv)
 
   expect_identical(labelled_cols(d2@data), character(0))
