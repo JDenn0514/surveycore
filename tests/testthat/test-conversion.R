@@ -861,3 +861,264 @@ test_that("as_svydesign() stores a call naming real columns, not local variables
   expect_identical(all.vars(sv$call$strata), "strata")
   expect_identical(all.vars(sv$call$weights), "wt")
 })
+
+
+# ── C-0–C-9. haven-labelled data on the conversion routes ────────────────────
+#
+# Gate 10 (spec section XI.10): `@metadata@value_labels` is populated on every
+# route that builds a design from a frame carrying a `labels` attribute,
+# `from_svydesign()` included. C-3, C-5 and C-6 are the proof.
+#
+# `make_labelled()` is in `tests/testthat/helper-test-data.R`. It builds the
+# `haven_labelled` class vector with base R, so `haven` stays in Suggests.
+
+# A source frame with two labelled analysis columns and a plain weight.
+make_labelled_frame <- function(n = 40L, seed = 42L) {
+  set.seed(seed)
+  df <- data.frame(
+    psu = rep(seq_len(10L), each = n %/% 10L),
+    strata = rep(1:2, each = n %/% 2L),
+    wt = runif(n, 1, 3)
+  )
+  df$y1 <- make_labelled(rnorm(n), label = "Outcome variable 1")
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = c("No" = 0, "Yes" = 1),
+    label = "Outcome variable 3"
+  )
+  df
+}
+
+# Names of the columns of `data` that still carry the labelled class.
+labelled_cols <- function(data) {
+  names(data)[vapply(data, inherits, logical(1L), "haven_labelled")]
+}
+
+# The value labels y3 carries in every fixture below.
+y3_labels <- c("No" = 0, "Yes" = 1)
+
+
+# C-0. get_means(label_vars = TRUE) over a from_svydesign() design shows the
+#      variable label rather than the raw column name.
+test_that("get_means() on a from_svydesign() design reports the variable label", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+  d <- from_svydesign(sv)
+
+  res <- get_means(d, y1, variance = "se", label_vars = TRUE)
+  shown <- attr(res, ".meta")$x$y1$variable_label
+
+  expect_identical(shown, "Outcome variable 1")
+  expect_false(identical(shown, "y1"))
+})
+
+
+# C-1. as_svydesign() hands over plain columns that keep their attributes.
+test_that("as_svydesign() returns plain columns that keep their labels", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  sv <- as_svydesign(d)
+
+  expect_true(inherits(sv, "survey.design"))
+  expect_identical(labelled_cols(sv$variables), character(0))
+  expect_identical(attr(sv$variables$y3, "labels", exact = TRUE), y3_labels)
+  expect_identical(
+    attr(sv$variables$y1, "label", exact = TRUE),
+    "Outcome variable 1"
+  )
+})
+
+
+# C-2. The converted object estimates identically to the surveycore design.
+test_that("svymean() on the as_svydesign() output matches get_means() [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  sv <- as_svydesign(d)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+
+# C-3. from_svydesign() harvests the labels into @metadata. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled svydesign", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(d@metadata@value_labels, list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-4. A labelled weight column no longer aborts the Taylor route.
+test_that("from_svydesign() converts a design whose weight column is labelled", {
+  skip_if_not_installed("survey")
+  set.seed(11L)
+  n <- 40L
+  w <- runif(n, 1, 3)
+  # `probs` rather than `weights` keeps the weight formula out of the stored
+  # call, so the weight column is recovered by value. That reaches
+  # `.find_col_by_value()`, which casts each candidate with as.numeric().
+  df <- data.frame(y = rnorm(n), p = 1 / w)
+  df$wt <- make_labelled(w, label = "Sampling weight")
+
+  sv <- survey::svydesign(ids = ~1, probs = ~p, data = df)
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_taylor))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(d@variables$weights, "wt")
+  expect_equal(d@data$wt, w, tolerance = 0, ignore_attr = TRUE)
+})
+
+
+# C-5. The replicate route captures labels. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled svrepdesign", {
+  skip_if_not_installed("survey")
+  set.seed(12L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3))
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = y3_labels,
+    label = "Outcome variable 3"
+  )
+  rep_mat <- matrix(runif(n * 4L), ncol = 4L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_true(S7::S7_inherits(d, survey_replicate))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(extract_var_label(d), c(y3 = "Outcome variable 3"))
+})
+
+
+# C-6. The two-phase route carries the phase 1 metadata forward. Gate 10.
+test_that("from_svydesign() captures value labels from a labelled twophase", {
+  skip_if_not_installed("survey")
+  set.seed(13L)
+  n <- 30L
+  df <- data.frame(x = rnorm(n), wt = rep(1, n))
+  df$y3 <- make_labelled(
+    rep(c(0, 1), n %/% 2L),
+    labels = y3_labels,
+    label = "Outcome variable 3"
+  )
+  sub <- rep(c(TRUE, FALSE), n %/% 2L)
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(NULL, NULL),
+    probs = list(NULL, NULL),
+    data = df,
+    subset = sub
+  )
+
+  d <- suppressWarnings(from_svydesign(sv))
+
+  expect_true(S7::S7_inherits(d, survey_twophase))
+  expect_identical(labelled_cols(d@data), character(0))
+  expect_identical(extract_val_labels(d), list(y3 = y3_labels))
+  expect_identical(extract_var_label(d), c(y3 = "Outcome variable 3"))
+})
+
+
+# C-7. Round trip out through survey and back keeps the labels at both ends.
+test_that("as_survey() to as_svydesign() to from_svydesign() keeps the labels", {
+  skip_if_not_installed("survey")
+  df <- make_labelled_frame()
+  d1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(labelled_cols(d1@data), character(0))
+  expect_identical(extract_val_labels(d1), list(y3 = y3_labels))
+
+  sv <- as_svydesign(d1)
+  expect_identical(labelled_cols(sv$variables), character(0))
+
+  # The return leg used to abort for a reason unrelated to labels: `survey`
+  # recorded the local variable names in `$call`, so `from_svydesign()` read
+  # them back as design variables and raised
+  # `surveycore_error_design_var_missing`. Fixed separately in #195, which
+  # inlines the formulas into the stored call. This row asserts the whole
+  # round trip now.
+  d2 <- from_svydesign(sv)
+
+  expect_identical(labelled_cols(d2@data), character(0))
+  expect_identical(extract_val_labels(d2), list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d2),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-8. The srvyr round trip behaves the same way.
+test_that("as_tbl_svy() to from_tbl_svy() keeps the labels", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  df <- make_labelled_frame()
+  d1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  tbl <- as_tbl_svy(d1)
+  expect_identical(labelled_cols(tbl$variables), character(0))
+
+  d2 <- from_tbl_svy(tbl)
+
+  expect_identical(labelled_cols(d2@data), character(0))
+  expect_identical(extract_val_labels(d2), list(y3 = y3_labels))
+  expect_identical(
+    extract_var_label(d2),
+    c(y1 = "Outcome variable 1", y3 = "Outcome variable 3")
+  )
+})
+
+
+# C-9. A source frame with no labels harvests nothing and does not error.
+test_that("from_svydesign() on an unlabelled frame returns no value labels", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 10L, n_strata = 2L, seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    weights = ~wt,
+    strata = ~strata,
+    data = df
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(extract_val_labels(d), stats::setNames(list(), character(0)))
+  expect_identical(d@metadata@value_labels, list())
+})

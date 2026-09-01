@@ -40,7 +40,10 @@
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @return A `survey::svydesign`, `survey::svrepdesign`, or `survey::twophase`
-#'   object.
+#'   object. Value labels are not carried into the returned object — the
+#'   `survey` package has no metadata system. To read the data back with
+#'   `haven`-style classes rebuilt, use `survey_data(x, haven_class = TRUE)` on
+#'   the surveycore design instead.
 #'
 #' @examples
 #' d <- as_survey(
@@ -213,7 +216,10 @@ as_svydesign <- function(x) {
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #'   `survey_nonprob` is not supported and will error.
-#' @return A `srvyr::tbl_svy` object.
+#' @return A `srvyr::tbl_svy` object. Value labels are not carried into the
+#'   returned object — the `survey` package has no metadata system. To read the
+#'   data back with `haven`-style classes rebuilt, use
+#'   `survey_data(x, haven_class = TRUE)` on the surveycore design instead.
 #'
 #' @examples
 #' d <- as_survey(
@@ -389,7 +395,7 @@ from_svydesign <- function(x) {
 # svydesign / tbl_svy → survey_taylor
 #' @noRd
 .from_svydesign_taylor <- function(x) {
-  data <- as.data.frame(x$variables)
+  data <- .strip_labelled_columns(as.data.frame(x$variables))
 
   # tbl_svy stores its call as srvyr's quoteless_text (not a language object).
   # Use tryCatch so atomic / non-language calls degrade to NULL gracefully.
@@ -426,7 +432,7 @@ from_svydesign <- function(x) {
   survey_taylor(
     data = data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = .extract_haven_metadata(data)
   )
 }
 
@@ -434,7 +440,7 @@ from_svydesign <- function(x) {
 # svyrep.design → survey_replicate
 #' @noRd
 .from_svydesign_replicate <- function(x) {
-  data <- as.data.frame(x$variables)
+  data <- .strip_labelled_columns(as.data.frame(x$variables))
   rep_cols <- colnames(x$repweights)
 
   # Weight column: find by matching pweights to data columns.
@@ -460,7 +466,7 @@ from_svydesign <- function(x) {
   survey_replicate(
     data = data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = .extract_haven_metadata(data)
   )
 }
 
@@ -512,7 +518,7 @@ from_svydesign <- function(x) {
   survey_twophase(
     data = phase1_data,
     variables = variables,
-    metadata = survey_metadata()
+    metadata = phase1_sc@metadata
   )
 }
 

@@ -447,15 +447,34 @@ and the data-frame mode only when the mode changes what the row asserts.
 
 | Row | Scenario | Modes | Why |
 |---|---|---|---|
-| M-1 | `set_val_labels()` on a labelled column | **both** | The two modes are fixed by different mechanisms and take different code paths: the survey mode is fixed because the class is gone from storage, the data-frame mode is fixed inside the validation itself. A data frame is never normalised, so the frame row cannot be inferred from the survey row. This currently fails in both modes. |
+| M-1 | `set_val_labels()` on a labelled column | **both** | The two modes are fixed by different mechanisms and take different code paths: the survey mode is fixed because the class is gone from storage, the data-frame mode is fixed inside the validation itself. A data frame is never normalised, so the frame row cannot be inferred from the survey row. **Corrected 2026-09-01: this fails in the data-frame mode only.** The survey mode was fixed by the property setter that landed earlier in this feature, so by the time the frame fix is written the survey row is already green. Run both modes regardless — the Modes column governs which modes a row runs in, not which were red. |
 | M-2 | `set_val_labels()` on a labelled column where a code in the data has no label | **both** | Must still raise `surveycore_warning_missing_labels`. This warning is newly reachable, because the validation no longer aborts before it. Use `expect_warning(result <- ..., class = ...)`. |
-| M-3 | `extract_val_labels()` on a labelled column | **both** | The row asserts a value read back out of storage, and the two modes store it in different places |
+| M-3 | `extract_val_labels()` on a labelled column | **both** | The row asserts a value read back out of storage, and the two modes store it in different places. The same caution as M-1 applies: the survey mode may already be green when the frame fix is written. |
 | M-4 | `set_var_label()` then `extract_var_label()` on a labelled column | survey only | Passes today in both modes and neither path is touched. One mode is enough. |
 | M-5 | `extract_metadata()` on a labelled column | survey only | Same reasoning |
 | M-6 | `extract_missing_codes()`, `extract_higher_is()`, `extract_question_preface()`, `extract_var_note()` on a labelled column | survey only | Same reasoning. One block may cover all four. |
 | M-7 | `classify_question_type()` on labelled columns | survey only | Never reads a column value or class; its answer cannot change |
 | M-8 | A labelled SPSS column: after construction, read `na_values` and `na_range` back from the stored column | survey only | The frame mode does not store anything |
 | M-9 | `set_val_labels()` on a plain column | survey only | Regression fence: the fix must not change the plain path |
+
+**Note on the M-row red runs, corrected 2026-09-01.** The M-1 note originally
+said the row "currently fails in both modes". Measured on `develop` at
+`b7f8b45`, it failed in the **data-frame mode only** — four errors, all
+`vctrs_error_cast`. Three parties measured this independently and agreed: the
+builder, the tester, and the reviewer, the last from source.
+
+The reason is the same one that makes §4.11a's list unreliable. This document
+was written against `cf6f153`, before the feature split into nine PRs. The
+property setter on the design's `data` fixed the survey mode several merges
+before the one-line validation fix closed the frame mode, so by the time the
+M rows were written the survey mode was already green.
+
+**This does not change which modes a row runs in.** The Modes column still
+governs that, and the both-modes rule in
+`.claude/rules/testing-surveycore.md` is why: the two modes are fixed by
+different mechanisms on different code paths, and neither can be inferred
+from the other. A row being already green is not a reason to drop its
+variant.
 
 ### 4.7 Conversion round trips
 
