@@ -541,9 +541,20 @@ claim.
 
 | Row | Scenario | Assertion |
 |---|---|---|
-| T-1 | Build a design from a **tibble** whose columns are labelled — double-, integer- and character-backed — and snapshot `print(survey_data(d))` | the type tokens read `<dbl>`, `<int>` and `<chr>`. Before this work the first two read `<hvn_lbl>`. |
-| T-2 | Snapshot `print(survey_data(d, haven_class = TRUE))` on the same design | the type tokens read `<hvn_lbl>` again |
+| T-1 | Build a design from a **tibble** whose columns are labelled — double-, integer- and character-backed — and snapshot `print(survey_data(d))` | the type tokens read `<dbl>`, `<int>` and `<chr>`. Before this work they read `<dbl+lbl>`, `<int+lbl>` and `<chr+lbl>`. Corrected 2026-08-31 — see the note below. |
+| T-2 | Snapshot `print(survey_data(d, haven_class = TRUE))` on the same design | the type tokens read `<dbl+lbl>`, `<int+lbl>` and `<chr+lbl>` again. Corrected 2026-08-31. |
 | T-3 | Snapshot `print(d)` — the design object itself | unchanged from the current snapshot. The design print method reports counts and design variables, not column types, so this row is a fence proving it did not move. |
+
+**Note on the printed token, corrected 2026-08-31.** Earlier drafts of T-1 and
+T-2 named the token `<hvn_lbl>`. No state of the package produces that string.
+`pillar` builds the abbreviation from the underlying type, so a labelled
+column prints as `<dbl+lbl>`, `<int+lbl>` or `<chr+lbl>` according to what
+backs it. Measured on `develop` at `b7f8b45` with `haven` 2.5.5 and
+`pillar` present.
+
+Assert the token the code produces. A row written against `<hvn_lbl>` cannot
+pass, and rewriting the snapshot to match it would be wrong rather than
+merely inconvenient.
 
 T-1 and T-2 are the only place either token is locked. Use a tibble input
 deliberately: a plain `data.frame` prints values rather than type tokens, so
