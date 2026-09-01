@@ -778,3 +778,12 @@
       Error:
       x `fill` must be `FALSE` or `NULL`.
 
+# snapshot: set_val_labels() missing labels on a labelled frame
+
+    Code
+      set_val_labels(df, sex = c(Man = 1L))
+    Condition
+      Warning:
+      ! Not all values of sex are labeled.
+      i Unlabeled values: "2"
+
