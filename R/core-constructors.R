@@ -66,7 +66,12 @@
 #'     on a calibrated design with [update_design()] makes `@calibration`
 #'     stale. Clear `@calibration` manually after any weight column change.
 #'
-#' @return A `survey_taylor` object.
+#' @return A `survey_taylor` object. Columns imported with `haven`-style value
+#'   labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @section Tidy-select:
 #' All design variable arguments (`ids`, `probs`, `weights`, `strata`,
@@ -623,7 +628,12 @@ as_survey <- function(
 #'   - *Stale calibration after `update_design()`*: changing the weight column
 #'     makes `@calibration` stale; clear it manually.
 #'
-#' @return A `survey_replicate` object.
+#' @return A `survey_replicate` object. Columns imported with `haven`-style
+#'   value labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @section Tidy-select:
 #' Both `weights` and `repweights` support tidy-select syntax:
@@ -882,7 +892,12 @@ as_survey_replicate <- function(
 #'   Phase 1 has PSU cluster variables, because this understates variance for
 #'   clustered designs.
 #'
-#' @return A `survey_twophase` object.
+#' @return A `survey_twophase` object. Columns imported with `haven`-style
+#'   value labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @examples
 #' # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
@@ -1255,7 +1270,12 @@ as_survey_twophase <- function(
 #'   when `calibration$R` is non-`NULL`. Supply `NULL` (the default) when no
 #'   provenance metadata is available.
 #'
-#' @return A `survey_nonprob` object.
+#' @return A `survey_nonprob` object. Columns imported with `haven`-style value
+#'   labels are stored as their underlying type: the `label` and `labels`
+#'   attributes are kept, and the value labels are also recorded in the
+#'   metadata system, but the `haven_labelled` class is not stored. Use
+#'   `survey_data(x, haven_class = TRUE)` to read the data back with that class
+#'   rebuilt.
 #'
 #' @details
 #' Unlike probability samples, non-probability samples have no design weights

@@ -4,13 +4,40 @@
 \alias{survey_data}
 \title{Access the Data Component of a Survey Design Object}
 \usage{
-survey_data(x)
+survey_data(x, haven_class = FALSE)
 }
 \arguments{
 \item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
+
+\item{haven_class}{Rebuild the \code{haven_labelled} class on every column that
+carried it at import. \code{FALSE}, the default, returns base types, which is
+what every arithmetic and modelling operation needs. \code{TRUE} returns
+columns that \code{haven} and \code{labelled} recognise, so that
+\code{haven::as_factor()} and \code{labelled::to_factor()} give the label strings
+instead of the codes. \code{haven} does not need to be installed for either
+value. One known limit: \code{haven::write_sav()} raises on a column holding a
+tagged \code{NA}. That is a \code{.sav} format limit inside \code{haven}, and a column
+built by \code{haven} itself fails the same way.}
 }
 \value{
-A \code{data.frame} with all variables, including design variables.
+A \code{data.frame} with all variables, including design variables. It is
+a tibble when the design stores a tibble.
+
+With \code{haven_class = FALSE}, the default, no column carries the
+\code{haven_labelled} or \code{haven_labelled_spss} class. A survey design object
+stores base types. Every attribute the import set — the \code{label} string,
+the \code{labels} value-label vector, and the SPSS \code{na_values} and \code{na_range}
+vectors — stays on the column, and the value labels are also available
+through \code{\link[=extract_val_labels]{extract_val_labels()}}. In a printed tibble a previously labelled
+column shows the type token for its own type — \verb{<dbl>}, \verb{<int>} or
+\verb{<chr>} — in place of the labelled token.
+
+With \code{haven_class = TRUE}, every column carrying a \code{labels} attribute is
+returned with its \code{haven_labelled} class rebuilt, and a column that
+arrived as \code{haven_labelled_spss} is returned as \code{haven_labelled_spss}.
+Values are unchanged, and the printed type token reads as the labelled
+token again — \verb{<dbl+lbl>} for a double-backed column when the \code{haven}
+namespace is loaded, since \code{haven} supplies the method that renders it.
 }
 \description{
 Returns the underlying data frame stored in a survey design object.
@@ -26,5 +53,11 @@ d <- as_survey(
   nest = TRUE
 )
 head(survey_data(d))
+
+# Read the data back with the labelled class rebuilt. gss_2024 carries
+# value labels, so the class comes back on the columns that had one.
+g <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat)
+class(survey_data(g)$happy)
+class(survey_data(g, haven_class = TRUE)$happy)
 }
 \concept{accessors}

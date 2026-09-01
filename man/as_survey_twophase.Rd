@@ -46,7 +46,12 @@ and Phase 2 variability. One of \code{"full"} (default), \code{"approx"}, or
 \code{"simple"}. Case-sensitive. See Details.}
 }
 \value{
-A \code{survey_twophase} object.
+A \code{survey_twophase} object. Columns imported with \code{haven}-style
+value labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a two-phase (double) sampling design from an existing

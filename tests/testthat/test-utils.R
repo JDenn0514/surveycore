@@ -851,6 +851,234 @@ test_that("D-6: a caller class stacked above haven_labelled goes too", {
 })
 
 
+# ---------------------------------------------------------------------------
+# survey_data(haven_class = TRUE) — the rebuild (spec II, VIII.1)
+# ---------------------------------------------------------------------------
+#
+# The rebuild writes the class chain with base R, so none of D-8 to D-15 may
+# carry skip_if_not_installed("haven"). That is the observable proof of quality
+# gate 11: a user without haven can still produce a properly classed column.
+# The rows that hand the result to another package are guarded by that package.
+
+test_that("D-7: survey_data() still strips by default", {
+  out <- survey_data(.labelled_import_design())
+
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(names(out)[hits], character(0))
+})
+
+test_that("D-8: haven_class = TRUE rebuilds the class on every labelled column", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  labelled_cols <- c("dbl", "int", "chr", "spss")
+  for (nm in labelled_cols) {
+    expect_true(inherits(out[[nm]], "haven_labelled"), info = nm)
+  }
+
+  # And on no other column. psu, strata and wt never carried a `labels`
+  # attribute, so the helper returns them untouched.
+  hits <- vapply(out, inherits, logical(1L), "haven_labelled")
+  expect_identical(sort(names(out)[hits]), sort(labelled_cols))
+})
+
+test_that("D-9: a double-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$dbl),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+})
+
+test_that("D-10: an integer-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$int),
+    c("haven_labelled", "vctrs_vctr", "integer")
+  )
+})
+
+test_that("D-11: a character-backed column gets the exact three-entry chain", {
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    class(out$chr),
+    c("haven_labelled", "vctrs_vctr", "character")
+  )
+})
+
+test_that("D-12: na_values alone rebuilds the SPSS four-entry chain", {
+  df <- .labelled_import_frame()
+  df$spss <- make_labelled_spss(
+    rep(c(1, 2, 98, 99), 10L),
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_values = c(98, 99),
+    label = "SPSS coded"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$spss),
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(attr(out$spss, "na_values", exact = TRUE), c(98, 99))
+  expect_null(attr(out$spss, "na_range", exact = TRUE))
+})
+
+test_that("D-13: na_range alone rebuilds the SPSS four-entry chain", {
+  df <- .labelled_import_frame()
+  df$spss <- make_labelled_spss(
+    rep(c(1, 2, 98, 99), 10L),
+    labels = c(Yes = 1, No = 2, Refused = 98, `Don't know` = 99),
+    na_range = c(98, 99),
+    label = "SPSS coded"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$spss),
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(attr(out$spss, "na_range", exact = TRUE), c(98, 99))
+  expect_null(attr(out$spss, "na_values", exact = TRUE))
+})
+
+test_that("D-14: strip then rebuild returns the input column identically", {
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  for (nm in c("dbl", "int", "chr", "spss")) {
+    expect_identical(out[[nm]], df[[nm]], info = nm)
+  }
+})
+
+test_that("D-15: haven_class = TRUE on an unlabelled design changes nothing", {
+  d <- make_taylor()
+
+  expect_identical(survey_data(d, haven_class = TRUE), survey_data(d))
+})
+
+test_that("D-16: a tagged NA survives the rebuild and keeps its tag", {
+  df <- .labelled_import_frame()
+  tagged <- rep(c(1, 2, make_tagged_na("a")), length.out = 40L)
+  df$tag <- make_labelled(
+    tagged,
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$tag), c("haven_labelled", "vctrs_vctr", "double"))
+  expect_true(all(is.na(c(unname(out$tag))[seq(3L, 39L, by = 3L)])))
+
+  # Reading the tag back needs haven; the value being NA does not.
+  skip_if_not_installed("haven")
+  expect_identical(haven::na_tag(c(unname(out$tag))[[3L]]), "a")
+})
+
+test_that("D-17: haven::as_factor() on the rebuilt column returns the labels", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    as.character(haven::as_factor(out$dbl)),
+    rep(c("Strongly agree", "Agree", "Disagree", "Strongly disagree"), 10L)
+  )
+})
+
+test_that("D-18: haven::as_factor() on the stripped column returns the codes", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design())
+
+  expect_identical(
+    as.character(haven::as_factor(out$dbl)),
+    rep(c("1", "2", "3", "4"), 10L)
+  )
+})
+
+test_that("D-19: labelled::to_factor() on the rebuilt column returns the labels", {
+  skip_if_not_installed("labelled")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+
+  expect_identical(
+    as.character(labelled::to_factor(out$dbl)),
+    rep(c("Strongly agree", "Agree", "Disagree", "Strongly disagree"), 10L)
+  )
+})
+
+test_that("D-20: a rebuilt column round trips through haven::write_sav()", {
+  skip_if_not_installed("haven")
+  out <- survey_data(.labelled_import_design(), haven_class = TRUE)
+  path <- withr::local_tempfile(fileext = ".sav")
+
+  haven::write_sav(out[c("dbl", "int")], path)
+  back <- haven::read_sav(path)
+
+  expect_identical(
+    attr(back$dbl, "labels", exact = TRUE),
+    c(`Strongly agree` = 1, Agree = 2, Disagree = 3, `Strongly disagree` = 4)
+  )
+  expect_identical(attr(back$int, "labels", exact = TRUE), c(No = 0, Yes = 1))
+})
+
+test_that("D-21: haven::write_sav() raises on a column holding a tagged NA", {
+  # The .sav format has no room for a tagged NA, so haven raises when it writes
+  # one. Nothing here causes it: a column built straight from haven's own
+  # constructor, with no strip and no rebuild involved, fails identically. The
+  # row is a fence, so nobody attributes the failure to haven_class = TRUE.
+  skip_if_not_installed("haven")
+  df <- .labelled_import_frame()
+  df$tag <- make_labelled(
+    rep(c(1, 2, make_tagged_na("a")), length.out = 40L),
+    c(Yes = 1, No = 2, Refused = make_tagged_na("a")),
+    "Tagged"
+  )
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  out <- survey_data(d, haven_class = TRUE)
+  path <- withr::local_tempfile(fileext = ".sav")
+
+  expect_error(haven::write_sav(out["tag"], path))
+})
+
+test_that("D-22: haven_class rejects anything but a length-one logical", {
+  d <- make_taylor()
+
+  expect_error(
+    survey_data(d, haven_class = "yes"),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = NA),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = c(TRUE, TRUE)),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+  expect_error(
+    survey_data(d, haven_class = NULL),
+    class = "surveycore_error_haven_class_not_logical"
+  )
+
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = "yes"))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = NA))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = c(TRUE, TRUE)))
+  expect_snapshot(error = TRUE, survey_data(d, haven_class = NULL))
+})
+
+test_that("D-23: survey_data() still rejects a non-survey object", {
+  expect_error(
+    survey_data(data.frame(x = 1), haven_class = TRUE),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_snapshot(error = TRUE, survey_data(42))
+})
+
 # ── X. Behaviour worth covering that matches no numbered row ─────────────────
 #
 # An `X-` label claims no row identifier.

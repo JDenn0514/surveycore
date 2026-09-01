@@ -67,7 +67,12 @@ stale. Clear \verb{@calibration} manually after any weight column change.
 }}
 }
 \value{
-A \code{survey_taylor} object.
+A \code{survey_taylor} object. Columns imported with \code{haven}-style value
+labels are stored as their underlying type: the \code{label} and \code{labels}
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the \code{haven_labelled} class is not stored. Use
+\code{survey_data(x, haven_class = TRUE)} to read the data back with that class
+rebuilt.
 }
 \description{
 Creates a survey design object using Taylor series (linearization) for

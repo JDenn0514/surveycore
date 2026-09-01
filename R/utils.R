@@ -87,6 +87,33 @@
   data
 }
 
+# Rebuild the haven labelled class on one vector, from the attributes the
+# strip preserved. Returns x unchanged when x carries no `labels` attribute.
+# Restores the SPSS variant when either SPSS missing-value attribute is
+# present.
+#
+# The class chain is written with base R, so this needs no haven at runtime.
+# A haven_labelled vector is attributes plus a class vector, and typeof(x)
+# supplies the base-type marker, so double-, integer- and character-backed
+# columns need no special case. Do not replace this with a call to
+# haven::labelled(): haven is in Suggests, and survey_data(haven_class = TRUE)
+# must work on a machine that does not have it.
+#' @noRd
+.restore_haven_class <- function(x) {
+  labels <- attr(x, "labels", exact = TRUE)
+  if (is.null(labels)) {
+    return(x)
+  }
+  spss <- !is.null(attr(x, "na_values", exact = TRUE)) ||
+    !is.null(attr(x, "na_range", exact = TRUE))
+  attr(x, "class") <- if (spss) {
+    c("haven_labelled_spss", "haven_labelled", "vctrs_vctr", typeof(x))
+  } else {
+    c("haven_labelled", "vctrs_vctr", typeof(x))
+  }
+  x
+}
+
 
 # ── Exported accessor ─────────────────────────────────────────────────────────
 
@@ -97,7 +124,33 @@
 #' independent of the S7 property structure.
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
-#' @return A `data.frame` with all variables, including design variables.
+#' @param haven_class Rebuild the `haven_labelled` class on every column that
+#'   carried it at import. `FALSE`, the default, returns base types, which is
+#'   what every arithmetic and modelling operation needs. `TRUE` returns
+#'   columns that `haven` and `labelled` recognise, so that
+#'   `haven::as_factor()` and `labelled::to_factor()` give the label strings
+#'   instead of the codes. `haven` does not need to be installed for either
+#'   value. One known limit: `haven::write_sav()` raises on a column holding a
+#'   tagged `NA`. That is a `.sav` format limit inside `haven`, and a column
+#'   built by `haven` itself fails the same way.
+#' @return A `data.frame` with all variables, including design variables. It is
+#'   a tibble when the design stores a tibble.
+#'
+#'   With `haven_class = FALSE`, the default, no column carries the
+#'   `haven_labelled` or `haven_labelled_spss` class. A survey design object
+#'   stores base types. Every attribute the import set — the `label` string,
+#'   the `labels` value-label vector, and the SPSS `na_values` and `na_range`
+#'   vectors — stays on the column, and the value labels are also available
+#'   through [extract_val_labels()]. In a printed tibble a previously labelled
+#'   column shows the type token for its own type — `<dbl>`, `<int>` or
+#'   `<chr>` — in place of the labelled token.
+#'
+#'   With `haven_class = TRUE`, every column carrying a `labels` attribute is
+#'   returned with its `haven_labelled` class rebuilt, and a column that
+#'   arrived as `haven_labelled_spss` is returned as `haven_labelled_spss`.
+#'   Values are unchanged, and the printed type token reads as the labelled
+#'   token again — `<dbl+lbl>` for a double-backed column when the `haven`
+#'   namespace is loaded, since `haven` supplies the method that renders it.
 #' @examples
 #' d <- as_survey(
 #'   nhanes_2017,
@@ -107,9 +160,15 @@
 #'   nest = TRUE
 #' )
 #' head(survey_data(d))
+#'
+#' # Read the data back with the labelled class rebuilt. gss_2024 carries
+#' # value labels, so the class comes back on the columns that had one.
+#' g <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat)
+#' class(survey_data(g)$happy)
+#' class(survey_data(g, haven_class = TRUE)$happy)
 #' @family accessors
 #' @export
-survey_data <- function(x) {
+survey_data <- function(x, haven_class = FALSE) {
   if (!S7::S7_inherits(x, survey_base)) {
     cli::cli_abort(
       c(
@@ -119,7 +178,29 @@ survey_data <- function(x) {
       class = "surveycore_error_not_survey_object"
     )
   }
-  x@data
+
+  if (
+    !is.logical(haven_class) ||
+      length(haven_class) != 1L ||
+      is.na(haven_class)
+  ) {
+    cli::cli_abort(
+      c(
+        "x" = "{.arg haven_class} must be {.code TRUE} or {.code FALSE}.",
+        "i" = "Got {.obj_type_friendly {haven_class}}."
+      ),
+      class = "surveycore_error_haven_class_not_logical"
+    )
+  }
+
+  data <- x@data
+  if (!haven_class) {
+    return(data)
+  }
+  for (j in seq_along(data)) {
+    data[[j]] <- .restore_haven_class(data[[j]])
+  }
+  data
 }
 
 

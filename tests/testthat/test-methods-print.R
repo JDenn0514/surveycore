@@ -1725,7 +1725,8 @@ test_that("print(survey_nonprob) with repweights: Dataset header snapshot", {
 
 # ── Printed type tokens for a previously labelled column (spec VIII.1) ───────
 #
-# A haven_labelled column prints as <hvn_lbl>. The strip means a design stores
+# A haven_labelled column prints as <dbl+lbl>, <int+lbl> or <chr+lbl> when the
+# haven namespace is loaded. The strip means a design stores
 # the underlying type, so the token is the token for that type. This is the
 # visible face of the storage contract, and it differs by backing type, so all
 # three appear in one fixture.
@@ -1759,8 +1760,22 @@ make_labelled_print_design <- function(labelled = TRUE) {
 test_that("T-1: previously labelled columns print their own type tokens", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_labelled_print_design()
-  # Before this work the dbl and int tokens both read <hvn_lbl>.
+  # Before this work the dbl and int tokens read <dbl+lbl> and <int+lbl>.
   expect_snapshot(print(survey_data(d)))
+})
+
+test_that("T-2: haven_class = TRUE prints the labelled token again", {
+  # The printed token depends on whether the haven namespace is loaded, because
+  # haven registers the pillar and vctrs methods that produce it on load. With
+  # haven loaded the token is <dbl+lbl>, <int+lbl> or <chr+lbl>, which is what a
+  # user who asked for the labelled class sees. Without it, pillar falls back to
+  # an abbreviation of the class name, <hvn_lbll>. The skip pins the load state,
+  # so the snapshot cannot flip with test file order. The class itself is
+  # rebuilt with no haven at all — D-8 to D-15 in test-utils.R prove that.
+  skip_if_not_installed("haven")
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_labelled_print_design()
+  expect_snapshot(print(survey_data(d, haven_class = TRUE)))
 })
 
 test_that("T-3: labelled input leaves the design print output unchanged", {
