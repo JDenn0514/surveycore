@@ -797,9 +797,12 @@ Branch from `develop` after PR 7 merges.
   7. Run `R CMD check --as-cran --no-manual`; record the note list.
   8. Run `pkgdown::build_site()`.
   9. Run `covr::package_coverage()` with `NOT_CRAN=true`; record the figure.
-  10. Run `air::format_package()`; confirm no diff. Record every figure from
-      tasks 3 to 9 in `implementation.md`. If any gate fails, stop and report
-      it; do not widen this PR to fix it.
+  10. Run `air format --check .`; confirm no diff **attributable to this
+      feature**. **Corrected 2026-09-01: do not confirm a package-wide no-diff
+      — that has never held.** 35 files are flagged and 0 are attributable;
+      see gate 7 below. Record every figure from tasks 3 to 9 in
+      `implementation.md`. If any gate fails, stop and report it; do not widen
+      this PR to fix it.
 
   `cf6f153` is the base commit of the source tree, named in this plan's
   header and in `test-spec.md` §4.11a. Use it rather than `develop`, because

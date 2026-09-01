@@ -1548,8 +1548,9 @@ Objectively verifiable. All must hold.
    `git blame` on the flagged ranges, which traced the three intersecting
    files to #164, #110 and #185). The package-wide form has never held, on
    this tree or on the feature base `0be2f3a`; closing it means reformatting
-   34 unrelated files, which `.claude/rules/code-style.md` requires be its
-   own commit. Reworded 2026-09-01.
+   all 35, none of whose flagged lines come from this feature, which
+   `.claude/rules/code-style.md` requires be its own commit. Reworded
+   2026-09-01.
 8. No column of `@data` inherits `haven_labelled` after any route in
    §III.1, demonstrated for all four concrete design classes, and after a
    bare `des@data <- labelled_df` assignment.

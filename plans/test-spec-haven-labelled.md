@@ -779,7 +779,8 @@ against:
 
 PR 3b measured every row above on a scratch tree differing from its own base
 only by the change under test. The list mispredicted in both directions, for
-**three** separate reasons. Read all three before trusting a prediction here.
+**three** separate reasons, and a **fourth** correction was added on
+2026-09-01. Read all four before trusting a prediction here.
 
 **C-0 is a fourth, added 2026-09-01.** The table above files it under
 "expected to fail on the base commit". It does not fail: `.extract_var_meta()`
