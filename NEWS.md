@@ -81,6 +81,18 @@
 
 ## Bug fixes
 
+* A design now constructs from a data frame whose **design variables** carry
+  the `haven_labelled` class. `as_survey()`, `as_survey_replicate()`,
+  `as_survey_nonprob()` and `as_survey_twophase()` drop the class from every
+  column of the incoming frame before any validation reads it. Until now a
+  labelled `weights` or `fpc` column aborted with a `vctrs` coercion error on a
+  machine with no `haven` installed, which is the usual state after someone
+  else reads the `.sav` file and passes on the data. Value labels are
+  untouched: the `labels`, `label`, `na_values` and `na_range` attributes stay
+  on the column, and the value labels stay in the metadata system. Validation
+  is unchanged, so a zero weight, a non-positive FPC, a missing FPC and a
+  non-logical two-phase `subset` all still raise the errors they did. (#175)
+
 * `as_survey_nonprob()` now promotes weighting history from the data frame into
   the design's metadata, matching `as_survey()` and `as_survey_replicate()`.
   Previously the promotion call was missing from this one constructor, so
