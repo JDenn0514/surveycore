@@ -698,7 +698,7 @@ strip and not the estimate.
 | Row | Scenario | Assertion | Tolerance |
 |---|---|---|---|
 | Y-11 | Whole-valued small double + genuine continuous column | the correlation equals the correlation from the same pair with the ordinal side converted to an ordered factor, levels in ascending value order | point 1e-10 |
-| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured gap 1.988e-03 on the fixture. `decisions.md` B1 settled this; the row never caught up. Guard the `polycor` half with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
+| Y-12 | The same pair | **Corrected 2026-09-01. Two oracles.** The strict one is `.hand_polyserial_twostep()` at **1e-6** — the Cox (1974) two-step MLE that `.corr_polyserial_mle()` implements; measured delta exactly 0. `polycor::polyserial(ML = TRUE)` is a **joint** MLE over thresholds and rho together, so it targets a different estimator: a sanity check on sign and magnitude at **5e-3**, not a strict oracle. Measured on the fixture: relative gap **3.88e-3** against the 5e-3 bound, or 1.29x headroom — `expect_equal()` compares relatively, so the absolute 1.988e-03 is not the figure to weigh against it. **B1** — in `archive/polychoric-corr/decisions-polychoric-corr.md`, not in this feature's `decisions.md` — ruled the `polycor` comparison out as an oracle at any tolerance and required the hand two-step pinned at 1e-6. Keeping `polycor` at 5e-3 beside that binding oracle is a deliberate addition by this feature, **not** something B1 authorises. Guard it with `skip_if_not_installed("polycor")`. | 1e-6 strict, 5e-3 sanity |
 | Y-13 | The same pair on a replicate design | equals Y-11 | point 1e-10, standard error 1e-8 |
 | Y-14 | Whole-valued small double + continuous column, ordinal side reverse-coded | the correlation is the negative of Y-11 | point 1e-10 |
 
@@ -706,15 +706,27 @@ Y-11 is the primary oracle. It is exact in principle, because the two forms
 describe the same ordinal variable and the estimator derives its category
 codes the same way from each.
 
-Y-12 is the external cross-check. The 1e-6 tolerance is looser than the house
-default of 1e-10 for point estimates, and the justification is that
-`polycor::polyserial()` and surveycore target different estimators:
-surveycore implements the two-step MLE under the survey-weighted
-construction, and `polycor` offers either a joint MLE or Drasgow's two-step.
-The existing correlation test files already treat `polycor` as a loose
-reference for this reason. Y-12 catches a sign error or a gross
-misclassification, which is what an external oracle is for here; Y-11 catches
-everything finer.
+Y-12 carries two oracles, and this paragraph was **rewritten on 2026-09-01**
+because the earlier version justified a 1e-6 bound against `polycor` that the
+row no longer sets.
+
+The strict oracle is `.hand_polyserial_twostep()` at **1e-6**. It targets the
+same estimator `.corr_polyserial_mle()` implements — the Cox (1974) two-step
+MLE — so the measured delta is exactly 0 and the bound is real, not slack.
+
+`polycor::polyserial(ML = TRUE)` is the second, at **5e-3**, and it is a
+sanity check on sign and magnitude rather than an oracle. It maximises over
+thresholds and rho jointly, so it targets a different estimator; no tolerance
+makes the two agree. The relative gap measures 3.88e-3, which leaves 1.29x
+headroom — thin, and the row most exposed in this suite to a different BLAS.
+
+Two cautions for whoever touches this next. `archive/polychoric-corr/`
+**B1 ruled the `polycor` comparison out at any tolerance** and required the
+hand two-step at 1e-6; keeping `polycor` at 5e-3 alongside it is this
+feature's own choice, not B1's. And
+`tests/testthat/test-analysis-corr-latent-primitives.R` compares against
+`polycor` at **1e-3**, not 5e-3, so 5e-3 is not a house precedent either — the
+3.88e-3 gap would fail at 1e-3, which is why the looser bound was picked.
 
 ### 4.11a Confirming the new tests fail before the fix
 

@@ -661,8 +661,10 @@ source. The whole-feature close-out is PR 8, not this PR.
      `R/analysis-corr-latent.R:33-40`, where `"integer_ordinal"` and
      `"continuous"` no longer mean what it says.
   6. Verify rows P-1 to P-23, Y-1 to Y-14, E-1 and G-7 pass. Run the four
-     existing correlation test files; confirm 246 tests, 718 expectations, 0
-     failures, 0 errors, 0 skips (`test-spec.md` §4.12).
+     existing correlation test files; confirm **290 tests, 825 expectations**,
+     0 failures, 0 errors, 0 skips. Corrected 2026-09-01: 246 / 718 is the
+     PRE-change baseline, and confirming it on the merged tree would read as
+     a regression (`test-spec.md` §4.12).
   7. Review every new snapshot by hand with `testthat::snapshot_review()`.
      The two files carrying a file-level `skip_on_cran()` write snapshots for
      the first time (`test-spec.md` §4.12).
@@ -715,7 +717,8 @@ source. The whole-feature close-out is PR 8, not this PR.
     contradicts the code it documents. The `is.double` to `continuous`
     comment is gone and the header return-value list is updated.
   - `test-spec.md` §4.12 confirmed: the four existing correlation test files
-    report 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. Any
+    report **290 tests, 825 expectations**, 0 failures, 0 errors, 0 skips —
+    corrected 2026-09-01 from the pre-change baseline of 246 / 718. Any
     failure is reported, not patched over by relaxing the block.
   - Every new snapshot reviewed with `testthat::snapshot_review()`; none
     accepted blind (`test-spec.md` §4.12).

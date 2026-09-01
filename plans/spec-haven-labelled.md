@@ -949,7 +949,9 @@ values. Every other row is unchanged.
 
 This change is pre-verified. The patch in §VI.3 was applied to a throwaway
 copy of the package and the four existing correlation test files ran against
-it: 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. Nothing that
+it: 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. **That is the
+measurement taken before the change; the shipped suite reports 290 tests and
+825 expectations, still 0 failures. Noted 2026-09-01.** Nothing that
 passes today breaks. `get_corr(method = "polychoric")` on a pair of coded
 scale columns, which aborted before, succeeds.
 
