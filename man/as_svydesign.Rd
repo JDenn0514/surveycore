@@ -11,7 +11,10 @@ as_svydesign(x)
 }
 \value{
 A \code{survey::svydesign}, \code{survey::svrepdesign}, or \code{survey::twophase}
-object.
+object. Value labels are not carried into the returned object — the
+\code{survey} package has no metadata system. To read the data back with
+\code{haven}-style classes rebuilt, use \code{survey_data(x, haven_class = TRUE)} on
+the surveycore design instead.
 }
 \description{
 Converts a \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object

@@ -11,7 +11,10 @@ as_tbl_svy(x)
 \code{survey_nonprob} is not supported and will error.}
 }
 \value{
-A \code{srvyr::tbl_svy} object.
+A \code{srvyr::tbl_svy} object. Value labels are not carried into the
+returned object — the \code{survey} package has no metadata system. To read the
+data back with \code{haven}-style classes rebuilt, use
+\code{survey_data(x, haven_class = TRUE)} on the surveycore design instead.
 }
 \description{
 Converts a surveycore design object to an \code{srvyr} \code{tbl_svy} by first
