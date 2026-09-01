@@ -3963,7 +3963,7 @@ classify_question_type <- function(x, ..., variable = NULL) {
 #' @keywords internal
 #' @noRd
 .validate_val_labels <- function(var, labels, var_name, strict = FALSE) {
-  unique_vals <- unique(var[!is.na(var)])
+  unique_vals <- .strip_labelled_class(unique(var[!is.na(var)]))
   # label_vals: the DATA CODES covered by labels (the vector VALUES, not names)
   label_vals <- as.character(labels)
   missing <- setdiff(as.character(unique_vals), label_vals)
