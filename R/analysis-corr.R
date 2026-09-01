@@ -48,13 +48,36 @@
 #'   `surveycore_error_polychoric_design_unsupported` for latent methods.
 #' @param x <[`tidy-select`][tidyselect::language]> Two or more unquoted
 #'   variable names. For `method = "pearson"`, non-numeric columns are dropped
-#'   with a warning. For `method = "polychoric"`, every selected column must
-#'   classify as ordinal (ordered factor, unordered factor, or integer with
-#'   `<= 10` distinct values) — non-ordinal columns raise
-#'   `surveycore_error_polychoric_requires_ordinal`. For
-#'   `method = "polyserial"`, each pair is canonicalized by type (one ordinal
-#'   + one continuous); logical / character / high-cardinality integer
-#'   columns raise `surveycore_error_polyserial_canonicalization_ambiguous`.
+#'   with a warning.
+#'
+#'   For `method = "polychoric"`, every selected column must classify as
+#'   ordinal — an ordered factor, an unordered factor, or a numeric column
+#'   whose values are all whole numbers, none of them infinite, with `<= 10`
+#'   distinct values. Non-ordinal columns raise
+#'   `surveycore_error_polychoric_requires_ordinal`. Missing values do not
+#'   count: `NA` and `NaN` are removed before the distinct values are counted.
+#'
+#'   A numeric column with few distinct whole values is treated as a scale.
+#'   This is what makes the method work on a value-labelled column read from
+#'   an SPSS, Stata or SAS file, where every coded scale arrives as a numeric
+#'   column. It also means a coarse measurement in whole units is accepted as
+#'   ordinal: three distinct values of `1000`, `2000` and `3000` are read as a
+#'   three-point scale, not as income in whole dollars. Two consequences to
+#'   check before you call it:
+#'
+#'   - Recode in-band missing codes to `NA` first. A four-point scale that
+#'     still carries `8` for "Don't know" and `9` for "Refused" is read as a
+#'     six-category scale, and the two codes become the top two categories.
+#'   - Use `method = "pearson"` for a genuine count with few values, such as
+#'     the number of people in a household.
+#'
+#'   For `method = "polyserial"`, each pair is canonicalized by type: one
+#'   ordinal column and one continuous column. A pair of ordinal columns —
+#'   including two numeric columns that both meet the rule above — raises
+#'   `surveycore_error_polyserial_requires_mixed_types`; use
+#'   `method = "polychoric"` for that pair. Logical, character and
+#'   high-cardinality integer columns raise
+#'   `surveycore_error_polyserial_canonicalization_ambiguous`.
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Combined with any grouping set by `group_by()`. Default
 #'   `NULL`.
