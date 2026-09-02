@@ -296,3 +296,23 @@
       x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
       v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
 
+# PC-15 fires for Inf on a whole-valued continuous side (dual)
+
+    Code
+      get_corr(d, x = c(scale, ord), method = "polyserial")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polyserial"` requires a finite continuous variable.
+      i Column scale has 1 non-finite value (Inf) in the active domain.
+      v Filter the non-finite rows, or recode them to `NA`.
+
+# PC-15 fires for -Inf on a genuine continuous side (dual)
+
+    Code
+      get_corr(d, x = c(cont, ord), method = "polyserial")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polyserial"` requires a finite continuous variable.
+      i Column cont has 1 non-finite value (-Inf) in the active domain.
+      v Filter the non-finite rows, or recode them to `NA`.
+

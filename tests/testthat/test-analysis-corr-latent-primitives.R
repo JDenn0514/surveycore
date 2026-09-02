@@ -199,6 +199,36 @@ test_that(".corr_weighted_standardize() returns NA for zero-weight rows", {
   expect_false(any(is.na(out$z[c(1, 3, 4, 5)])))
 })
 
+test_that(".corr_weighted_standardize() returns NaN z for an Inf column", {
+  # An infinite value makes mean_w, var_w and sd_w all NaN. Before issue
+  # #208 the `if (sd_w > 0)` test saw NA and raised an untyped base error;
+  # the is.finite() guard routes it to the degenerate-SD branch instead.
+  x <- c(1, 2, Inf, 4)
+  w <- rep(1, 4)
+  dom <- rep(1, 4)
+  out <- .corr_weighted_standardize(x, w, dom)
+  expect_true(is.nan(out$sd_w))
+  expect_true(all(is.nan(out$z)))
+})
+
+test_that(".corr_weighted_standardize() returns NaN z for a -Inf column", {
+  x <- c(1, 2, -Inf, 4)
+  out <- .corr_weighted_standardize(x, rep(1, 4), rep(1, 4))
+  expect_true(is.nan(out$sd_w))
+  expect_true(all(is.nan(out$z)))
+})
+
+test_that(".corr_weighted_standardize() ignores an Inf on a zero-weight row", {
+  # The row leaves the moment sums through the w_eff > 0 filter, so the
+  # remaining rows standardize normally and only that row is NA.
+  x <- c(1, 2, Inf, 4)
+  w <- c(1, 1, 0, 1)
+  out <- .corr_weighted_standardize(x, w, rep(1, 4))
+  expect_true(is.finite(out$sd_w))
+  expect_true(is.na(out$z[[3]]))
+  expect_false(any(is.na(out$z[c(1, 2, 4)])))
+})
+
 test_that(".corr_weighted_standardize() uses unequal weights correctly", {
   x <- c(1, 2, 3, 4)
   w <- c(1, 2, 3, 4)
