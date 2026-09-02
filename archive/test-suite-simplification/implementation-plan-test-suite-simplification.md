@@ -1,6 +1,25 @@
 # Test Suite Simplification Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **ARCHIVED - do not execute.** Six of the seven tasks shipped. Nobody ever
+> marked the checkboxes, so read this status block and ignore the boxes below.
+
+| Task | State |
+|---|---|
+| 1 - stop `_snaps/` churning | Shipped. `.gitattributes` carries `tests/testthat/_snaps/*.md text eol=lf`. Closed #161. |
+| 2 - narrow `test_invariants()` to one call per constructor per file | Shipped. 645 runtime calls became 70 call sites across 24 test files. |
+| 3 - rewrite the rule that mandated the old behaviour | Shipped. `.claude/rules/testing-surveycore.md` carries the narrowed rule and its measured rationale. |
+| 4 - find whether the polychoric implementation is the bottleneck | Shipped, and it redirected the phase. surveycore was 164x slower than `polycor` at identical accuracy. Filed as #177, fixed by PR #181, archived in `archive/polychoric-performance/`. |
+| 5 - shrink the two slowest polychoric cases | **Dropped.** Task 4 says to re-measure once #177 lands, because the shrink may become unnecessary. #181 merged 2026-08-27 and cut the polychoric fit by 30x. |
+| 6 - write down the two-speed local workflow | Shipped. See "Two speeds of local test run" in `.claude/rules/testing-surveycore.md`. |
+| 7 - report back on #169 and #161 | Shipped. Both issues are closed. |
+
+> **Every measurement here predates PR #181.** The figures were taken
+> 2026-08-26; #181 merged 2026-08-27 and cut the polychoric fit by 30x. The
+> baseline table, Finding 2's 42% time share, and Task 4's 164x ratio all
+> describe the suite before that fix.
+> `.claude/rules/testing-surveycore.md` carries the same measurement date, so
+> its run times and expectation counts are stale in the same way. Re-measure
+> before quoting any number from either document.
 
 **Goal:** Cut the test suite's expectation count by about half with no loss of line coverage, close issue #161, and find out where the wall-time actually goes before trying to cut it.
 
