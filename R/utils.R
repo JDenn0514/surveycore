@@ -87,18 +87,32 @@
   data
 }
 
-# Rebuild the haven labelled class on one vector, from the attributes the
-# strip preserved. Returns x unchanged when x carries no `labels` attribute.
-# Restores the SPSS variant when either SPSS missing-value attribute is
-# present.
+# Rebuild the haven labelled class on one vector. `labels` and `label` are
+# the design's metadata entries for the column, either one NULL when the
+# metadata holds none. Each one is written onto the vector, and the column's
+# own attribute is the fallback. Returns x unchanged when neither store holds
+# value labels. Restores the SPSS variant when either SPSS missing-value
+# attribute is present.
 #
-# The `labels` attribute is the whole test. There is no record of which
-# columns the strip took the class from, so a column that never carried the
-# class gets it here — an sjlabelled column, or one labelled by
-# set_val_labels(). Issue #207 decided this on purpose: the attribute is what
-# the helper can see, and provenance would cost new state on every write to
-# the `data` property. The documented contract matches, so do not add a
-# provenance test without reopening that decision.
+# The metadata comes first because it is the store a design writes. On a
+# design, set_val_labels() writes @metadata@value_labels and set_var_label()
+# writes @metadata@variable_labels; neither touches the column. Reading the
+# attribute alone returned the labels the import set, so a corrected label
+# came back stale and a label created on the design never appeared at all
+# (issue #205). .extract_var_meta() resolves the same two stores the same way.
+#
+# Value labels, from either store, are the whole class test. There is no
+# record of which columns the strip took the class from, so a column that
+# never carried the class gets it here — an sjlabelled column, or one
+# labelled by set_val_labels(). Issue #207 decided this on purpose: the
+# attribute is what the helper can see, and provenance would cost new state on
+# every write to the `data` property. The documented contract matches, so do
+# not add a provenance test without reopening that decision.
+#
+# One limit follows from the same decision: set_val_labels(d, v = NULL) clears
+# the metadata entry and leaves the column's attribute in place, so the
+# fallback rebuilds the class from that attribute. Telling a cleared entry
+# from one that was never set needs the provenance state #207 refused.
 #
 # The class chain is written with base R, so this needs no haven at runtime.
 # A haven_labelled vector is attributes plus a class vector, and typeof(x)
@@ -107,10 +121,17 @@
 # haven::labelled(): haven is in Suggests, and survey_data(haven_class = TRUE)
 # must work on a machine that does not have it.
 #' @noRd
-.restore_haven_class <- function(x) {
-  labels <- attr(x, "labels", exact = TRUE)
+.restore_haven_class <- function(x, labels = NULL, label = NULL) {
+  if (!is.null(label)) {
+    attr(x, "label") <- label
+  }
   if (is.null(labels)) {
-    return(x)
+    labels <- attr(x, "labels", exact = TRUE)
+    if (is.null(labels)) {
+      return(x)
+    }
+  } else {
+    attr(x, "labels") <- labels
   }
   spss <- !is.null(attr(x, "na_values", exact = TRUE)) ||
     !is.null(attr(x, "na_range", exact = TRUE))
@@ -133,18 +154,26 @@
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @param haven_class Rebuild the `haven_labelled` class on every column that
-#'   carries a `labels` attribute. The test is the attribute, not a record of
-#'   which columns arrived as `haven_labelled`. A column that never carried
-#'   the class is promoted too, so a column labelled by `sjlabelled` or by
-#'   [set_val_labels()] comes back with the class on it. `FALSE`, the default,
+#'   has value labels. The design's metadata is read first, and the column's
+#'   `labels` attribute is the fallback, so labels set by [set_val_labels()]
+#'   on the design reach the returned column. The variable label follows the
+#'   same order, so [set_var_label()] on the design reaches the returned
+#'   column's `label` attribute. Value labels are the whole class test, not a
+#'   record of which columns arrived as `haven_labelled`: a column that never
+#'   carried the class is promoted too, so a column labelled by `sjlabelled`
+#'   comes back with the class on it. `FALSE`, the default,
 #'   returns base types, which is
 #'   what every arithmetic and modelling operation needs. `TRUE` returns
 #'   columns that `haven` and `labelled` recognise, so that
 #'   `haven::as_factor()` and `labelled::to_factor()` give the label strings
-#'   instead of the codes. `haven` does not need to be installed for either
-#'   value. One known limit: `haven::write_sav()` raises on a column holding a
-#'   tagged `NA`. That is a `.sav` format limit inside `haven`, and a column
-#'   built by `haven` itself fails the same way.
+#'   instead of the codes, and so that `haven::write_sav()` writes the
+#'   labels the design holds. `haven` does not need to be installed for either
+#'   value. Two known limits: `haven::write_sav()` raises on a column holding
+#'   a tagged `NA` — that is a `.sav` format limit inside `haven`, and a
+#'   column built by `haven` itself fails the same way. And
+#'   `set_val_labels(x, v = NULL)` clears the metadata entry without touching
+#'   the column, so the fallback rebuilds the class from the column's own
+#'   attribute.
 #' @return A `data.frame` with all variables, including design variables. It is
 #'   a tibble when the design stores a tibble.
 #'
@@ -157,12 +186,15 @@
 #'   column shows the type token for its own type — `<dbl>`, `<int>` or
 #'   `<chr>` — in place of the labelled token.
 #'
-#'   With `haven_class = TRUE`, every column carrying a `labels` attribute is
-#'   returned with its `haven_labelled` class rebuilt, and a column that also
-#'   carries `na_values` or `na_range` is returned as `haven_labelled_spss`.
-#'   Values are unchanged, and the printed type token reads as the labelled
-#'   token again — `<dbl+lbl>` for a double-backed column when the `haven`
-#'   namespace is loaded, since `haven` supplies the method that renders it.
+#'   With `haven_class = TRUE`, every column that has value labels is returned
+#'   with its `haven_labelled` class rebuilt, and a column that also carries
+#'   `na_values` or `na_range` is returned as `haven_labelled_spss`. The
+#'   `labels` and `label` attributes on the returned column hold what the
+#'   design's metadata holds, which is what [extract_val_labels()] and
+#'   [extract_var_label()] report. Values are unchanged, and the printed type
+#'   token reads as the labelled token again — `<dbl+lbl>` for a
+#'   double-backed column when the `haven` namespace is loaded, since `haven`
+#'   supplies the method that renders it.
 #' @examples
 #' d <- as_survey(
 #'   nhanes_2017,
@@ -178,6 +210,11 @@
 #' g <- as_survey(gss_2024, ids = vpsu, weights = wtssps, strata = vstrat)
 #' class(survey_data(g)$happy)
 #' class(survey_data(g, haven_class = TRUE)$happy)
+#'
+#' # Value labels set on the design reach the rebuilt column, so an export
+#' # carries the labels the analyst set rather than the labels the file had.
+#' g <- set_val_labels(g, happy = c(Happy = 1, `So-so` = 2, Unhappy = 3))
+#' attr(survey_data(g, haven_class = TRUE)$happy, "labels")
 #' @family accessors
 #' @export
 survey_data <- function(x, haven_class = FALSE) {
@@ -209,8 +246,16 @@ survey_data <- function(x, haven_class = FALSE) {
   if (!haven_class) {
     return(data)
   }
+  val_labels <- x@metadata@value_labels
+  var_labels <- x@metadata@variable_labels
+  col_names <- names(data)
   for (j in seq_along(data)) {
-    data[[j]] <- .restore_haven_class(data[[j]])
+    nm <- col_names[[j]]
+    data[[j]] <- .restore_haven_class(
+      data[[j]],
+      labels = val_labels[[nm]],
+      label = var_labels[[nm]]
+    )
   }
   data
 }

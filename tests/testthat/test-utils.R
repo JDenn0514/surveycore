@@ -1175,3 +1175,89 @@ test_that("X-20: haven_class = TRUE leaves a labels-free column alone", {
   expect_identical(class(out$plain), "numeric")
   expect_identical(attr(out$plain, "label", exact = TRUE), "No value labels")
 })
+
+test_that("X-21: haven_class = TRUE reads corrected labels from the metadata", {
+  # set_val_labels() on a design writes @metadata@value_labels and leaves the
+  # column's stale `labels` attribute in place. The rebuild reads the metadata
+  # first, so the corrected labels reach the returned column and a .sav export
+  # cannot carry the labels the import set. Issue #205.
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_val_labels(
+    d,
+    dbl = c(
+      Agree = 1,
+      `Somewhat agree` = 2,
+      `Somewhat disagree` = 3,
+      Disagree = 4
+    )
+  )
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    c(Agree = 1, `Somewhat agree` = 2, `Somewhat disagree` = 3, Disagree = 4)
+  )
+  expect_identical(
+    class(out$dbl),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  # And the metadata store the analyst read from agrees with it.
+  expect_identical(
+    attr(out$dbl, "labels", exact = TRUE),
+    extract_val_labels(d, dbl)$dbl
+  )
+})
+
+test_that("X-22: haven_class = TRUE promotes a column labelled on the design", {
+  # The created-label case. The column carried no `labels` attribute at
+  # import, so the attribute alone gives the rebuild nothing to work from.
+  # The metadata entry set_val_labels() wrote is the only record. Issue #205.
+  df <- .labelled_import_frame()
+  df$coded <- rep(c(1, 2), 20L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_val_labels(d, coded = c(No = 1, Yes = 2))
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(
+    class(out$coded),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(
+    attr(out$coded, "labels", exact = TRUE),
+    c(No = 1, Yes = 2)
+  )
+  # haven_class = FALSE still returns the stored base type.
+  expect_identical(class(survey_data(d)$coded), "numeric")
+})
+
+test_that("X-23: haven_class = TRUE reads the variable label from the metadata", {
+  # set_var_label() on a design writes @metadata@variable_labels only, so the
+  # rebuild has to read that store for write_sav() to name the variable the
+  # way the analyst named it. Issue #205.
+  df <- .labelled_import_frame()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, dbl = "Corrected label")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(attr(out$dbl, "label", exact = TRUE), "Corrected label")
+})
+
+test_that("X-24: a metadata variable label reaches a column with no value labels", {
+  # X-20's column, relabelled on the design. `labels` is still the whole class
+  # trigger, so the column stays a bare numeric — but the `label` attribute
+  # follows the metadata. Issue #205.
+  df <- .labelled_import_frame()
+  df$plain <- rep(c(1, 2), 20L)
+  attr(df$plain, "label") <- "No value labels"
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, plain = "Renamed")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$plain), "numeric")
+  expect_identical(attr(out$plain, "label", exact = TRUE), "Renamed")
+})

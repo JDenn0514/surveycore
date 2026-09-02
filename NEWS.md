@@ -102,6 +102,19 @@
 
 ## Bug fixes
 
+* `survey_data(x, haven_class = TRUE)` now reads the design's metadata before
+  the column's own attributes. It read the `labels` attribute and nothing else,
+  and a design's `set_val_labels()` writes only `@metadata@value_labels`, so
+  labels corrected on the design came back stale and labels created on the
+  design never appeared at all. `haven::write_sav()` on the rebuilt frame then
+  wrote the labels the import set, or none. The variable label follows the same
+  order, so `set_var_label()` on the design now reaches the returned column's
+  `label` attribute. Value labels from either store are still the whole class
+  test, so an `sjlabelled` column is promoted as before. One limit stays:
+  `set_val_labels(x, v = NULL)` clears the metadata entry without touching the
+  column, so the fallback rebuilds the class from the column's own attribute.
+  (#205)
+
 * `get_corr(method = "polychoric")` now treats a numeric column with no
   non-missing value the same way whichever type it is stored as. An all-`NA`
   `integer` column counted as an ordinal scale with zero categories, so the

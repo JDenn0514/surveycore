@@ -688,6 +688,18 @@ The guarantee that no label is lost rests on two independent stores:
 (`R/analysis-helpers.R:147`, `:230`), never a subset, which matters because
 base `[` drops the `labels` attribute where `[.vctrs_vctr` kept it.
 
+**Correction, 2026-09-02 (issue #205).** This section names the two stores
+and says no label is lost. It never says which store wins when the two
+disagree, and they do disagree: on a design, `set_val_labels()` writes the
+metadata only and `set_var_label()` writes the metadata only, so a label
+corrected or created on a design lives in one store and the import's label
+lives in the other. The rule is now written down, and it is the one
+`.extract_var_meta()` already followed: **the metadata store wins, and the
+column attribute is the fallback.** `survey_data(haven_class = TRUE)` read
+the attribute alone until #205, so it returned stale labels for a corrected
+column and no labels at all for a column labelled on the design; §VIII.1
+rule 2 carries the corrected wording.
+
 ---
 
 ## IV. Metadata capture on the conversion routes
@@ -1211,7 +1223,7 @@ survey_data(x, haven_class = FALSE)
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `x` | `survey_base` subclass | — | The survey design object to read. |
-| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that carries a `labels` attribute. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. Corrected 2026-09-02 by issue #207: the wording said "every column that carried it at import", which claims a provenance test the code never had. |
+| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that has value labels, in `@metadata@value_labels` or in the column's `labels` attribute. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. Corrected 2026-09-02 by issue #207: the wording said "every column that carried it at import", which claims a provenance test the code never had. Corrected again 2026-09-02 by issue #205: the wording named the attribute as the only store the rebuild reads, and the rebuild now reads the metadata first. |
 
 #### Returns
 
@@ -1229,12 +1241,18 @@ With `haven_class = FALSE`, the default:
 
 With `haven_class = TRUE`:
 
-> Every column carrying a `labels` attribute is returned with its
-> `haven_labelled` class rebuilt, so that `haven` and `labelled` functions
-> recognise it. A column that arrived as `haven_labelled_spss` is returned as
-> `haven_labelled_spss`. Values are unchanged. `haven` does not need to be
+> Every column that has value labels is returned with its `haven_labelled`
+> class rebuilt, so that `haven` and `labelled` functions recognise it. A
+> column that also carries `na_values` or `na_range` is returned as
+> `haven_labelled_spss`. The `labels` and `label` attributes on the returned
+> column hold what `@metadata` holds, and the column's own attribute is the
+> fallback for each. Values are unchanged. `haven` does not need to be
 > installed. Arithmetic on the returned columns requires the `haven`
 > namespace to be loaded, which is why `FALSE` is the default.
+
+Corrected 2026-09-02 by issue #205: the paragraph named the `labels`
+attribute as the trigger and the SPSS clause as a provenance test. It now
+names the resolved value labels and the two SPSS attributes.
 
 #### Errors
 
@@ -1255,9 +1273,17 @@ condition cannot arise and the class is not needed.
 
 1. `haven_class = FALSE` returns `@data` unchanged, exactly as today. No
    copy, no coercion, no filtering.
-2. `haven_class = TRUE` applies `.restore_haven_class()` to every column.
-   That helper returns a column unchanged when it carries no `labels`
-   attribute, so plain columns are untouched.
+2. `haven_class = TRUE` applies `.restore_haven_class()` to every column,
+   passing that column's `@metadata@value_labels` and
+   `@metadata@variable_labels` entries. The helper writes each one it is
+   given onto the column and falls back to the column's own `labels` and
+   `label` attributes, so a label corrected or created by `set_val_labels()`
+   or `set_var_label()` on the design reaches the returned column. The
+   helper returns a column unchanged when neither store holds value labels,
+   so plain columns are untouched. Corrected 2026-09-02 by issue #205; the
+   rule read the attribute only. One limit follows from D5: `set_val_labels(x,
+   v = NULL)` clears the metadata entry without touching the column, so the
+   fallback rebuilds the class from the column's own attribute.
 3. The rebuild chooses the SPSS variant when the column carries either
    `na_values` or `na_range`, and the base class otherwise.
 4. The rebuild does not branch on the underlying type. `typeof()` supplies
