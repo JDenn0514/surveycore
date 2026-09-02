@@ -313,7 +313,10 @@
 #
 # Returns: list(z = numeric, mean_w = numeric(1), sd_w = numeric(1)).
 #   z is the same length as the input. Rows with zero effective weight get
-#   z[i] = NA_real_. Degenerate sd_w = 0 yields NaN z values and propagates.
+#   z[i] = NA_real_. A degenerate sd_w — 0, or non-finite because the column
+#   holds an infinite value — yields NaN z values and propagates. Callers
+#   inside get_corr() never see the non-finite case: the PC-15 gate in
+#   .corr_latent_pair() refuses that column first.
 .corr_weighted_standardize <- function(
   continuous_vec,
   weights,
@@ -337,7 +340,10 @@
 
   # Zero-weight row → NA. NA values in continuous_vec also become NA.
   z <- rep(NA_real_, length(continuous_vec))
-  if (sd_w > 0) {
+  # is.finite() is load-bearing: an infinite value in continuous_vec makes
+  # mean_w, var_w and sd_w all NaN, and `NaN > 0` is NA, which aborts the
+  # `if` with an untyped base error (issue #208).
+  if (is.finite(sd_w) && sd_w > 0) {
     z[use] <- (continuous_vec[use] - mean_w) / sd_w
   } else {
     # Degenerate SD: produce NaN so downstream MLE fails visibly.
@@ -1615,10 +1621,11 @@
 #   3. PC-1 gate for polychoric (reject non-ordinal).
 #   4. PC-13 warning when any side is unordered factor.
 #   5. Pairwise-complete active domain.
-#   6. MLE on the pair (propagates PC-4 / PC-5 / PC-6 / PC-10 / PC-11).
-#   7. Variance path by design class (PC-12, PC-8 propagated from replicate).
-#   8. PC-9 warning when ρ̂ is boundary; PC-14 additionally on survey_taylor.
-#   9. CI via .corr_fisher_ci(); truncated to [-1, 1].
+#   6. PC-15 gate for polyserial (reject a non-finite continuous side).
+#   7. MLE on the pair (propagates PC-4 / PC-5 / PC-6 / PC-10 / PC-11).
+#   8. Variance path by design class (PC-12, PC-8 propagated from replicate).
+#   9. PC-9 warning when ρ̂ is boundary; PC-14 additionally on survey_taylor.
+#  10. CI via .corr_fisher_ci(); truncated to [-1, 1].
 #
 # Returns: list with 10 fields
 #   r, se_r, se_srs, n, n_weighted, ci_low, ci_high, rho_z, se_z, method.
@@ -1781,7 +1788,38 @@
     ))
   }
 
-  # 6. MLE on the pair.
+  # 6. PC-15 gate — the continuous side must be finite on the analysed rows.
+  # NA and NaN need no gate: .corr_weighted_standardize() drops them through
+  # its !is.na() filter in both na.rm modes. Only an infinite value reaches
+  # the moment sums, where it makes mean_w, var_w and sd_w all NaN.
+  # The ordinal side needs no gate either: .corr_detect_ordinal() classifies
+  # any Inf-carrying double as "continuous", and factor / ordered / integer
+  # cannot hold an infinite value, so a canonicalized ordinal side is always
+  # finite.
+  if (identical(method, "polyserial")) {
+    cont_vec <- data[[cont_name]][pair_active]
+    nonfinite <- !is.finite(cont_vec) & !is.na(cont_vec)
+    n_bad <- sum(nonfinite)
+    if (n_bad > 0L) {
+      bad_vals <- unique(cont_vec[nonfinite])
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.code method = \"polyserial\"} requires a finite continuous ",
+            "variable."
+          ),
+          "i" = paste0(
+            "Column {.field {cont_name}} has {n_bad} non-finite ",
+            "value{?s} ({.val {bad_vals}}) in the active domain."
+          ),
+          "v" = "Filter the non-finite rows, or recode them to {.code NA}."
+        ),
+        class = "surveycore_error_polyserial_nonfinite_continuous"
+      )
+    }
+  }
+
+  # 7. MLE on the pair.
   if (identical(method, "polychoric")) {
     fit <- .corr_polychoric_mle(
       x_col_vec,
@@ -1807,7 +1845,7 @@
     vec_b <- data[[cont_name]]
   }
 
-  # 7. PC-10 — zero-count interior levels dropped.
+  # 8. PC-10 — zero-count interior levels dropped.
   if (identical(method, "polychoric")) {
     dropped_x <- fit$dropped_levels_x
     dropped_y <- fit$dropped_levels_y
@@ -1860,7 +1898,7 @@
     }
   }
 
-  # 8. PC-11 — sparse cells (polychoric only).
+  # 9. PC-11 — sparse cells (polychoric only).
   # nocov start
   # Defensive: n_sparse_cells is set by .corr_polychoric_mle() only when an
   # observed cell has modeled probability below 1e-12 at the optimum.
@@ -1887,7 +1925,7 @@
 
   rho_hat <- fit$rho
 
-  # 9. Variance path by design class.
+  # 10. Variance path by design class.
   if (S7::S7_inherits(design, survey_taylor)) {
     if_z <- .corr_numerical_influence(
       design = design,
@@ -1947,7 +1985,7 @@
   se_r <- if (!is.na(se_z)) (1 - rho_hat^2) * se_z else NA_real_
   se_srs <- if (!is.na(se_z_srs)) (1 - rho_hat^2) * se_z_srs else NA_real_
 
-  # 10. PC-9 / PC-14 boundary warnings.
+  # 11. PC-9 / PC-14 boundary warnings.
   if (.corr_detect_boundary_rho(rho_hat)) {
     cli::cli_warn(
       c(
@@ -1985,7 +2023,7 @@
     }
   }
 
-  # 11. CI via shared Fisher-z helper.
+  # 12. CI via shared Fisher-z helper.
   ci <- .corr_fisher_ci(rho_hat, se_z, conf_level = conf_level)
 
   list(

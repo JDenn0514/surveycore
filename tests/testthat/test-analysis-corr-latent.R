@@ -15,7 +15,7 @@
 #   - meta(result)$method, bivariate_normal_cdf, n_failed_replicates_total
 #
 # Error / warning classes exercised at the public-API layer:
-#   PC-1 .. PC-14 plus pre-existing Pearson classes (regression guard).
+#   PC-1 .. PC-15 plus pre-existing Pearson classes (regression guard).
 
 skip_on_cran()
 
@@ -2019,5 +2019,150 @@ test_that("E-1: PC-1 on a labelled column names a plain numeric class", {
   expect_snapshot(
     error = TRUE,
     get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+# =============================================================================
+# Category 16 — PC-15: a non-finite continuous side (issue #208)
+# =============================================================================
+# Before the PC-15 gate an Inf on the continuous side made the weighted mean,
+# variance and SD all NaN, `NaN > 0` evaluated NA, and the `if` in
+# .corr_weighted_standardize() raised an untyped base error. The gate reads
+# the continuous column on the active-domain rows and refuses first.
+
+# Build a Taylor design with one ordered factor and two double columns: a
+# whole-valued `scale` that .corr_detect_ordinal() classifies "continuous"
+# only because of the Inf, and a genuine `cont`. `bad` places the infinite
+# value at `row`.
+.pc15_design <- function(bad = "scale", value = Inf, row = 5L, n = 300L) {
+  set.seed(208L)
+  df <- data.frame(
+    id = seq_len(n),
+    wt = stats::runif(n, 0.5, 2),
+    ord = ordered(sample(1:3, n, replace = TRUE)),
+    scale = as.double(sample(1:4, n, replace = TRUE)),
+    cont = stats::rnorm(n)
+  )
+  df[[bad]][row] <- value
+  as_survey(df, ids = id, weights = wt)
+}
+
+test_that("PC-15 fires for Inf on a whole-valued continuous side (dual)", {
+  d <- .pc15_design(bad = "scale", value = Inf)
+  # The Inf is what makes this column continuous rather than ordinal, so the
+  # pair really is ordinal + continuous and really does reach the MLE.
+  expect_identical(
+    .corr_detect_ordinal(survey_data(d)$scale),
+    "continuous"
+  )
+  err <- expect_error(
+    get_corr(d, x = c(scale, ord), method = "polyserial"),
+    class = "surveycore_error_polyserial_nonfinite_continuous"
+  )
+  expect_true(grepl("scale", conditionMessage(err), fixed = TRUE))
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(scale, ord), method = "polyserial")
+  )
+})
+
+test_that("PC-15 fires for -Inf on a genuine continuous side (dual)", {
+  d <- .pc15_design(bad = "cont", value = -Inf)
+  expect_error(
+    get_corr(d, x = c(cont, ord), method = "polyserial"),
+    class = "surveycore_error_polyserial_nonfinite_continuous"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(d, x = c(cont, ord), method = "polyserial")
+  )
+})
+
+test_that("PC-15 names both infinite values when a column holds each", {
+  d <- .pc15_design(bad = "cont", value = -Inf)
+  df <- survey_data(d)
+  df$cont[9L] <- Inf
+  d2 <- as_survey(df, ids = id, weights = wt)
+  err <- expect_error(
+    get_corr(d2, x = c(cont, ord), method = "polyserial"),
+    class = "surveycore_error_polyserial_nonfinite_continuous"
+  )
+  msg <- conditionMessage(err)
+  expect_true(grepl("2 non-finite values", msg, fixed = TRUE))
+  expect_true(grepl("-Inf", msg, fixed = TRUE))
+})
+
+test_that("PC-15 does not fire when the Inf row is outside the domain", {
+  # The estimate uses only the active-domain rows, so an Inf the domain
+  # excludes is not the gate's business. n drops by the filtered row.
+  d <- .pc15_design(bad = "scale", value = Inf, row = 5L)
+  d_filt <- suppressWarnings(surveytidy::filter(d, id != 5L))
+  res <- get_corr(d_filt, x = c(scale, ord), method = "polyserial")
+  expect_identical(res$n, 299L)
+  expect_true(is.finite(res$r))
+})
+
+test_that("PC-15 still fires for an Inf row the domain keeps", {
+  d <- .pc15_design(bad = "scale", value = Inf, row = 5L)
+  d_filt <- suppressWarnings(surveytidy::filter(d, id != 6L))
+  expect_error(
+    get_corr(d_filt, x = c(scale, ord), method = "polyserial"),
+    class = "surveycore_error_polyserial_nonfinite_continuous"
+  )
+})
+
+test_that("PC-15 leaves NaN on the continuous side alone in both na.rm modes", {
+  # NaN is not the gate's business: .corr_weighted_standardize() drops it
+  # through the !is.na() filter whether or not na.rm removes the row first.
+  d <- .pc15_design(bad = "cont", value = NaN)
+  res_t <- get_corr(d, x = c(cont, ord), method = "polyserial", na.rm = TRUE)
+  res_f <- get_corr(d, x = c(cont, ord), method = "polyserial", na.rm = FALSE)
+  expect_true(is.finite(res_t$r))
+  expect_true(is.finite(res_f$r))
+  expect_identical(res_t$n, 299L)
+  expect_identical(res_f$n, 300L)
+})
+
+test_that("PC-15 does not touch the polychoric path", {
+  # An Inf-carrying double classifies "continuous", so polychoric refuses it
+  # at PC-1 — earlier than the PC-15 gate, and with its own class.
+  d <- .pc15_design(bad = "scale", value = Inf)
+  expect_error(
+    get_corr(d, x = c(scale, ord), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+})
+
+test_that("PC-15 does not touch the pearson path", {
+  # Pearson keeps its pre-existing behaviour: an NA row for the pair.
+  d <- .pc15_design(bad = "scale", value = Inf)
+  res <- get_corr(d, x = c(scale, cont), method = "pearson")
+  expect_true(is.na(res$r))
+})
+
+test_that("PC-15 fires on the replicate path too", {
+  # The gate lives in .corr_latent_pair(), before the variance branch, so
+  # every design class reaches it.
+  set.seed(208L)
+  df <- make_survey_data(
+    n = 160L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jk1",
+    seed = 208L
+  )
+  df$ord <- ordered(sample(1:3, nrow(df), replace = TRUE))
+  df$cont <- stats::rnorm(nrow(df))
+  df$cont[4L] <- Inf
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(rep_cols),
+    type = "JK1"
+  )
+  expect_error(
+    get_corr(d, x = c(cont, ord), method = "polyserial"),
+    class = "surveycore_error_polyserial_nonfinite_continuous"
   )
 })

@@ -102,6 +102,17 @@
 
 ## Bug fixes
 
+* `get_corr(method = "polyserial")` now raises a typed error when the
+  continuous side of a pair holds `Inf` or `-Inf` on the rows it analyses. An
+  infinite value made the weighted mean, variance and standard deviation all
+  `NaN`, and the call then failed with the base R message
+  `missing value where TRUE/FALSE needed` — no class, no column name. The new
+  error names the column and the count of infinite values, and it fires before
+  any estimation work. `NA` and `NaN` are unaffected: the weighted-moment
+  helper removes them, in both `na.rm` modes. An infinite value on a row the
+  active domain excludes is also unaffected, so `filter()` remains a way to
+  drop it. (#208)
+
 * `get_corr(method = "polychoric")` now accepts a value-labelled numeric
   column. A numeric column counts as an ordinal scale when its non-missing
   values are all whole numbers, none of them infinite, and it has no more than
