@@ -252,6 +252,26 @@ is opt-in and drops no data. Read "every column that carried it at import"
 above as "every column carrying a `labels` attribute". §XII.5 of the spec
 carries the matching correction.
 
+**Second correction, 2026-09-02 (issue #205).** "The attribute is the only
+thing `.restore_haven_class()` can see" was true of the helper and wrong of
+the feature. `survey_data()` holds `x@metadata`, and that is the store a
+design's own setters write: `set_val_labels()` on a design writes
+`@metadata@value_labels` and touches no column, and `set_var_label()` writes
+`@metadata@variable_labels` the same way. So the rebuild returned the labels
+the import set even after the analyst corrected them, and returned none at
+all for a column labelled on the design — the failure the argument was
+added to remove.
+
+`survey_data()` now passes each column's two metadata entries into the
+helper. The metadata wins; the column attribute is the fallback for each. The
+sjlabelled promotion above is unchanged, because it comes from the fallback.
+
+The attribute test survives in one place, and it is a consequence of this
+decision, not a second one: `set_val_labels(x, v = NULL)` clears the metadata
+entry and leaves the column's attribute in place, so the fallback rebuilds
+the class from that attribute. Telling a cleared entry from one that was
+never set needs the provenance state #207 refused.
+
 ```r
 survey_data(d)
 #>  q: 1 2 3                                  plain double
