@@ -685,6 +685,38 @@ test_that(".corr_detect_ordinal() classifies empty double as 'continuous'", {
   expect_identical(.corr_detect_ordinal(x), "continuous")
 })
 
+test_that(".corr_detect_ordinal() classifies empty integer as 'continuous'", {
+  x <- integer(0)
+  expect_identical(.corr_detect_ordinal(x), "continuous")
+})
+
+test_that(".corr_detect_ordinal() classifies an all-NA integer as 'continuous'", {
+  x <- rep(NA_integer_, 20L)
+  expect_identical(.corr_detect_ordinal(x), "continuous")
+})
+
+test_that(".corr_detect_ordinal() gives all-NA integer and double one class", {
+  # Issue #209: the is.integer branch counted 0 distinct values as within
+  # the cardinality cutoff, so an all-NA integer classified
+  # "integer_ordinal" while the identical all-NA double classified
+  # "continuous".
+  expect_identical(
+    .corr_detect_ordinal(rep(NA_integer_, 20L)),
+    .corr_detect_ordinal(rep(NA_real_, 20L))
+  )
+  expect_identical(
+    .corr_detect_ordinal(integer(0)),
+    .corr_detect_ordinal(numeric(0))
+  )
+})
+
+test_that(".corr_detect_ordinal() keeps an all-NA ordered vector 'ordered'", {
+  # A factor declares its levels, so it stays ordinal with no observed
+  # value. Only a bare numeric loses ordinal status when empty.
+  x <- factor(rep(NA_integer_, 20L), levels = 1:3, ordered = TRUE)
+  expect_identical(.corr_detect_ordinal(x), "ordered")
+})
+
 test_that(".corr_estimate_thresholds() accepts integer vector (non-factor)", {
   x <- c(1L, 2L, 2L, 3L, 3L, 3L)
   w <- rep(1, 6)
