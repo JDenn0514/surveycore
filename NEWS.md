@@ -178,6 +178,15 @@
   construction. The behaviour is unchanged and the documentation now matches
   it. (#207)
 
+* The `nhanes_2017` documentation said every column carries value labels, and
+  gave two `attr(nhanes_2017$<col>, "labels")` calls to read them with. No
+  column carries value labels. NHANES publishes the data as SAS XPORT files,
+  and that format stores a label for each variable but no labels for the codes
+  inside a variable. Both calls returned `NULL`, and `NULL` is a legal result,
+  so the examples ran clean and `R CMD check` passed. `?nhanes_2017` now
+  records that the dataset carries variable labels only and points to its
+  Format section for the code meanings. The dataset is unchanged. (#214)
+
 ## Notes
 
 * **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
