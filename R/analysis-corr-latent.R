@@ -34,10 +34,11 @@
 #   "ordered"         — inherits("ordered")
 #   "factor"          — is.factor() && !is.ordered()
 #   "integer_ordinal" — is.integer(), or is.double() with every non-NA value
-#                       finite and whole, and <= cutoff distinct non-NA values
+#                       finite and whole, and 1..cutoff distinct non-NA values
 #   "continuous"      — is.double() with a fractional value, an infinite
-#                       value, more than cutoff distinct non-NA values, or no
-#                       non-NA value at all
+#                       value, or more than cutoff distinct non-NA values;
+#                       also is.integer() or is.double() with no non-NA value
+#                       at all
 #   "ambiguous"       — everything else (character, logical, high-cardinality
 #                       integer, etc.)
 .corr_detect_ordinal <- function(col, integer_cardinality_cutoff = 10L) {
@@ -48,7 +49,17 @@
     return("factor")
   }
   if (is.integer(col)) {
-    n_distinct <- length(unique(col[!is.na(col)]))
+    non_na <- col[!is.na(col)]
+    # A column with no observed value carries no evidence of a category
+    # scale, so it is not ordinal. A factor or ordered vector declares its
+    # levels and stays ordinal with no data; a bare integer or double has
+    # only its values to go on. Without this guard n_distinct is 0, 0 <= 10
+    # is TRUE, and an all-NA integer classified "integer_ordinal" while the
+    # identical all-NA double classified "continuous" (issue #209).
+    if (length(non_na) == 0L) {
+      return("continuous")
+    }
+    n_distinct <- length(unique(non_na))
     if (n_distinct <= integer_cardinality_cutoff) {
       return("integer_ordinal")
     }
@@ -56,6 +67,7 @@
   }
   if (is.double(col)) {
     non_na <- col[!is.na(col)]
+    # Same no-evidence rule as the is.integer branch above.
     if (length(non_na) == 0L) {
       return("continuous")
     }

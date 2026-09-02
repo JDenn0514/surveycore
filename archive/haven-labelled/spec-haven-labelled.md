@@ -947,6 +947,32 @@ Two rows change, and they are the same rule seen twice: a whole-valued
 finite double becomes ordinal, whether or not the column also carries missing
 values. Every other row is unchanged.
 
+**Correction, issue #209 (2026-09-02).** The table above has no row for an
+all-`NA` integer, and the `is.integer` branch had no guard for it. Its
+`n_distinct` was `0`, `0 <= 10` was `TRUE`, and the column classified
+integer ordinal, while the identical all-`NA` double classified continuous.
+The two paths then disagreed: `get_corr(method = "polychoric")` returned
+`r = NA, n = 0` for the integer and raised
+`surveycore_error_polychoric_requires_ordinal` for the double. The fix adds
+the same zero-length guard to the `is.integer` branch, so the table now
+carries these two rows in place of the single `double, all NA` row:
+
+| Column shape | Classified as | Changed by #209 |
+|---|---|---|
+| integer, no non-`NA` value (all `NA`, or `integer(0)`) | continuous | **yes** |
+| double, no non-`NA` value (all `NA`, or `numeric(0)`) | continuous | no |
+
+The rule is that ordinality of a bare numeric column is read off its
+observed values, and an empty column shows none. A factor or ordered column
+declares its levels, so it stays ordinal with no data and keeps the
+`r = NA, n = 0` route; only bare numerics lose ordinal status when empty.
+
+Two `method = "polyserial"` outcomes move with it. An all-`NA` integer
+paired with an ordered factor raised
+`surveycore_error_polyserial_requires_mixed_types` and now returns
+`r = NA, n = 0`; paired with a continuous column it returned `r = NA, n = 0`
+and now raises that error. Both now match the all-`NA` double.
+
 This change is pre-verified. The patch in §VI.3 was applied to a throwaway
 copy of the package and the four existing correlation test files ran against
 it: 246 tests, 718 expectations, 0 failures, 0 errors, 0 skips. **That is the

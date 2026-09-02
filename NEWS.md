@@ -102,6 +102,20 @@
 
 ## Bug fixes
 
+* `get_corr(method = "polychoric")` now treats a numeric column with no
+  non-missing value the same way whichever type it is stored as. An all-`NA`
+  `integer` column counted as an ordinal scale with zero categories, so the
+  call returned a row of `NA` for the pair, while the identical all-`NA`
+  `double` column counted as continuous and the call raised. Both now raise
+  `surveycore_error_polychoric_requires_ordinal`. Ordinality of a bare numeric
+  column is read off its observed values, and a column with none shows no
+  scale. A `factor` or `ordered` column declares its levels, so an all-`NA`
+  factor is still ordinal and its pair still returns `r = NA` and `n = 0`. Two
+  `method = "polyserial"` outcomes move with this: an all-`NA` integer paired
+  with an ordered factor now returns `r = NA` and `n = 0` instead of raising,
+  and paired with a continuous column it now raises instead of returning
+  `NA` — both matching the all-`NA` double. (#209)
+
 * `get_corr(method = "polyserial")` now raises a typed error when the
   continuous side of a pair holds `Inf` or `-Inf` on the rows it analyses. An
   infinite value made the weighted mean, variance and standard deviation all

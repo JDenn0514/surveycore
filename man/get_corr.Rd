@@ -41,10 +41,16 @@ with a warning.
 
 For \code{method = "polychoric"}, every selected column must classify as
 ordinal — an ordered factor, an unordered factor, or a numeric column
-whose values are all whole numbers, none of them infinite, with \verb{<= 10}
+whose values are all whole numbers, none of them infinite, with 1 to 10
 distinct values. Non-ordinal columns raise
 \code{surveycore_error_polychoric_requires_ordinal}. Missing values do not
 count: \code{NA} and \code{NaN} are removed before the distinct values are counted.
+
+A numeric column with no non-missing value at all is not ordinal, and it
+raises the same error. A factor or ordered column declares its levels, so
+it stays ordinal even when every value is missing; a bare numeric column
+has only its values to go on, and an empty one shows no scale. An all-\code{NA}
+factor pair returns \code{r = NA} and \code{n = 0}.
 
 A numeric column with few distinct whole values is treated as a scale.
 This is what makes the method work on a value-labelled column read from

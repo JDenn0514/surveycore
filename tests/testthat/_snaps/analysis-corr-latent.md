@@ -194,6 +194,15 @@
       x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<numeric>).
       v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
 
+# P-7b: an all-NA integer raises PC-1
+
+    Code
+      get_corr(fx$design, x = c(v, ref), method = "polychoric")
+    Condition
+      Error in `.corr_latent_pair()`:
+      x `method = "polychoric"` requires ordinal variables. Non-ordinal column: v (<integer>).
+      v Coerce to <factor> or <ordered>, or use `method = "pearson"`.
+
 # P-8: a character column still raises PC-1
 
     Code

@@ -1424,6 +1424,46 @@ test_that("P-7: an all-NA double raises PC-1", {
   )
 })
 
+test_that("P-7b: an all-NA integer raises PC-1", {
+  fx <- .wd_design(function(codes) rep(NA_integer_, length(codes)))
+  expect_error(
+    get_corr(fx$design, x = c(v, ref), method = "polychoric"),
+    class = "surveycore_error_polychoric_requires_ordinal"
+  )
+  expect_snapshot(
+    error = TRUE,
+    get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  )
+})
+
+test_that("P-7c: an all-NA integer and an all-NA double raise the same error", {
+  # Issue #209: the integer side returned r = NA, n = 0 while the double
+  # side raised PC-1. Both now raise, and the two conditions carry the
+  # same class vector.
+  int_fx <- .wd_design(function(codes) rep(NA_integer_, length(codes)))
+  dbl_fx <- .wd_design(function(codes) rep(NA_real_, length(codes)))
+  int_cnd <- tryCatch(
+    get_corr(int_fx$design, x = c(v, ref), method = "polychoric"),
+    error = identity
+  )
+  dbl_cnd <- tryCatch(
+    get_corr(dbl_fx$design, x = c(v, ref), method = "polychoric"),
+    error = identity
+  )
+  expect_identical(class(int_cnd), class(dbl_cnd))
+})
+
+test_that("P-7d: an all-NA ordered column still returns r = NA and n = 0", {
+  # The empty-column rule covers bare numerics only. A factor declares its
+  # levels, so it stays ordinal and routes to empty-pair handling.
+  fx <- .wd_design(function(codes) {
+    factor(rep(NA_integer_, length(codes)), levels = 1:4, ordered = TRUE)
+  })
+  r <- get_corr(fx$design, x = c(v, ref), method = "polychoric")
+  expect_identical(r$n[[1L]], 0L)
+  expect_identical(unname(r$r[[1L]]), NA_real_)
+})
+
 test_that("P-8: a character column still raises PC-1", {
   fx <- .wd_design(function(codes) letters[codes])
   expect_error(
@@ -1990,6 +2030,35 @@ test_that("Y-14: reverse-coding the double ordinal side negates the result", {
   expect_equal(r_rev$r, -r_plain$r, tolerance = 1e-10)
 })
 
+
+test_that("Y-15: an all-NA integer plus ordered factor gives r = NA and n = 0", {
+  # Issue #209 side effect. The all-NA integer read as ordinal before this
+  # change, so this pair raised PC-2. It now reads as continuous, the pair
+  # canonicalizes, and empty-pair handling returns the NA row. The all-NA
+  # double behaves identically, which is the point of the change.
+  int_fx <- .wd_design(function(codes) rep(NA_integer_, length(codes)))
+  dbl_fx <- .wd_design(function(codes) rep(NA_real_, length(codes)))
+  r_int <- get_corr(int_fx$design, x = c(v, ref), method = "polyserial")
+  r_dbl <- get_corr(dbl_fx$design, x = c(v, ref), method = "polyserial")
+  expect_identical(r_int$n[[1L]], 0L)
+  expect_identical(unname(r_int$r[[1L]]), NA_real_)
+  expect_identical(r_int$n[[1L]], r_dbl$n[[1L]])
+  expect_identical(unname(r_int$r[[1L]]), unname(r_dbl$r[[1L]]))
+})
+
+test_that("Y-16: an all-NA integer plus a continuous column raises PC-2", {
+  # The other half of the Y-15 shift: two continuous sides.
+  int_fx <- .wd_design(function(codes) rep(NA_integer_, length(codes)))
+  dbl_fx <- .wd_design(function(codes) rep(NA_real_, length(codes)))
+  expect_error(
+    get_corr(int_fx$design, x = c(v, cont), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+  expect_error(
+    get_corr(dbl_fx$design, x = c(v, cont), method = "polyserial"),
+    class = "surveycore_error_polyserial_requires_mixed_types"
+  )
+})
 
 # ── E-1: the class named in the PC-1 message ─────────────────────────────────
 
