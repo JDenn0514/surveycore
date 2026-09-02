@@ -40,15 +40,19 @@ data is faster, fully controlled, and has no file I/O overhead.
 
 ## Metadata system integration
 
-All six datasets carry column-level metadata attributes that plug directly into
-surveycore's metadata system:
+All eight datasets carry column-level metadata attributes that plug directly
+into surveycore's metadata system. Not every dataset carries all three:
 
 - **`label`** — A human-readable variable description (e.g.,
   `attr(nhanes_2017$riagendr, "label")` → `"Gender"`). Set by haven on import
   for NHANES, ANES, GSS, and Pew datasets; manually assigned for ACS PUMS
   (no labels in CSV source).
 - **`labels`** — A named numeric vector mapping codes to their meaning (e.g.,
-  `attr(gss_2024$sex, "labels")` → `c(male = 1, female = 2, ...)`).
+  `attr(gss_2024$sex, "labels")` → `c(male = 1, female = 2, ...)`). Absent from
+  `nhanes_2017` and `acs_pums_wy`. NHANES publishes SAS XPORT files, which
+  store a label for each variable but no labels for the codes inside a
+  variable, and the ACS PUMS source is a plain CSV with no labels at all. Both
+  datasets document their code meanings in `?nhanes_2017` and `?acs_pums_wy`.
 - **`question_preface`** — Set only on battery and select-all-that-apply
   variables (see `pew_jewish_2020` and `pew_npors_2025` below). Contains the
   shared question stem; `label` holds only the unique item text.

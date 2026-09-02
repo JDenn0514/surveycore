@@ -96,9 +96,12 @@ nhanes_merged <- restore_col_attrs(nhanes_merged, c(attrs_demo, attrs_bpx))
 ## ---- 5. Strip haven class if present, keeping label/labels attributes ----
 ##
 ## haven::read_xpt() on NHANES returns plain numeric columns (not haven_labelled)
-## but with "label" and "labels" attributes. The as_plain() call below is a no-op
-## for NHANES since columns aren't haven_labelled, but is included for
-## consistency with the BRFSS script and as a safeguard for future file changes.
+## with a "label" attribute. No column carries a "labels" attribute: the SAS
+## XPORT format stores a label for each variable but no labels for the codes
+## inside a variable, so the NHANES code meanings live only in the published
+## codebooks. The as_plain() call below is a no-op for NHANES since columns
+## aren't haven_labelled, but is included for consistency with the BRFSS script
+## and as a safeguard for future file changes.
 
 as_plain <- function(df) {
   df[] <- lapply(df, function(x) {

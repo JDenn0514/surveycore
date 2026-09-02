@@ -67,16 +67,18 @@ Use \code{wtint2yr} instead of \code{wtmec2yr} for interview-only variables
 (e.g., income, education).
 
 \strong{Metadata:}
-All columns carry variable labels and value labels as R attributes,
-automatically extracted into surveycore's metadata system when you call
-\code{as_survey()}.
+All columns carry a variable label as an R attribute, automatically
+extracted into surveycore's metadata system when you call \code{as_survey()}.
+No column carries value labels.
 \itemize{
 \item \strong{Variable labels} (\code{"label"} attribute): A human-readable description of
 each column. Example: \code{attr(nhanes_2017$riagendr, "label")} returns
 \code{"Gender"}.
-\item \strong{Value labels} (\code{"labels"} attribute): A named numeric vector mapping
-each code to its meaning. Example: \code{attr(nhanes_2017$riagendr, "labels")}
-returns \code{c(Male = 1, Female = 2)}.
+\item \strong{Value labels} (\code{"labels"} attribute): None. NHANES publishes the data
+as SAS XPORT files. That format stores a label for each variable, but it
+does not store labels for the codes inside a variable. The code meanings
+are in the Format section above and in the NHANES codebooks. Use
+\code{set_val_labels()} to attach them if you need them.
 }
 
 \strong{Source files:} DEMO_J.xpt (demographics) merged with BPX_J.xpt (blood
@@ -92,10 +94,7 @@ exam_only <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 # Inspect variable label
 attr(nhanes_2017$riagendr, "label")
 
-# Inspect value labels
-attr(nhanes_2017$riagendr, "labels")
-
-# Inspect value labels for race/ethnicity
-attr(nhanes_2017$ridreth3, "labels")
+# Inspect variable label for race/ethnicity
+attr(nhanes_2017$ridreth3, "label")
 }
 \keyword{datasets}
