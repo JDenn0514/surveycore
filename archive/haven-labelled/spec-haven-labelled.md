@@ -1185,7 +1185,7 @@ survey_data(x, haven_class = FALSE)
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `x` | `survey_base` subclass | — | The survey design object to read. |
-| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that carried it at import. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. |
+| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that carries a `labels` attribute. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. Corrected 2026-09-02 by issue #207: the wording said "every column that carried it at import", which claims a provenance test the code never had. |
 
 #### Returns
 
@@ -1665,6 +1665,17 @@ attribute (`sjlabelled`). The strip moves a column from the first convention
 to the second. It does not move it outside both, and it does not invent a
 third. So the set of affected packages is the set that dispatches on the
 class, and §XII.3 and §XII.4 enumerate it.
+
+**Correction, 2026-09-02 (issue #207).** The paragraph above is about the
+strip, and it stays true of the strip. It does not describe
+`survey_data(haven_class = TRUE)`. That argument tests the `labels`
+attribute, not provenance, so it moves an sjlabelled-native column from the
+second convention to the first. Issue #207 kept that behaviour and rewrote
+the `@param` text to match. Two reasons: the attribute is the only thing
+`.restore_haven_class()` can see, and a provenance record would need new
+state on every write to the `data` property. The move is opt-in — a caller
+gets it only by passing `haven_class = TRUE` — and it drops no data, so it
+is outside the blast radius this section bounds.
 
 ### XII.6 `surveyreports`
 

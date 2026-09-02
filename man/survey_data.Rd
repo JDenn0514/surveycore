@@ -10,7 +10,11 @@ survey_data(x, haven_class = FALSE)
 \item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
 
 \item{haven_class}{Rebuild the \code{haven_labelled} class on every column that
-carried it at import. \code{FALSE}, the default, returns base types, which is
+carries a \code{labels} attribute. The test is the attribute, not a record of
+which columns arrived as \code{haven_labelled}. A column that never carried
+the class is promoted too, so a column labelled by \code{sjlabelled} or by
+\code{\link[=set_val_labels]{set_val_labels()}} comes back with the class on it. \code{FALSE}, the default,
+returns base types, which is
 what every arithmetic and modelling operation needs. \code{TRUE} returns
 columns that \code{haven} and \code{labelled} recognise, so that
 \code{haven::as_factor()} and \code{labelled::to_factor()} give the label strings
@@ -33,8 +37,8 @@ column shows the type token for its own type — \verb{<dbl>}, \verb{<int>} or
 \verb{<chr>} — in place of the labelled token.
 
 With \code{haven_class = TRUE}, every column carrying a \code{labels} attribute is
-returned with its \code{haven_labelled} class rebuilt, and a column that
-arrived as \code{haven_labelled_spss} is returned as \code{haven_labelled_spss}.
+returned with its \code{haven_labelled} class rebuilt, and a column that also
+carries \code{na_values} or \code{na_range} is returned as \code{haven_labelled_spss}.
 Values are unchanged, and the printed type token reads as the labelled
 token again — \verb{<dbl+lbl>} for a double-backed column when the \code{haven}
 namespace is loaded, since \code{haven} supplies the method that renders it.

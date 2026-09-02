@@ -145,6 +145,14 @@
   `avg_slopes()`/`avg_predictions()` calls on `survey_glm_fit` objects lost
   or misattributed the grouping column. (#153)
 
+* The `haven_class` documentation in `survey_data()` said the argument
+  rebuilds the class "on every column that carried it at import". It has no
+  such record. The rebuild fires on every column carrying a `labels`
+  attribute, so a column that never carried the class is promoted too — an
+  `sjlabelled`-labelled column, or one labelled by `set_val_labels()` before
+  construction. The behaviour is unchanged and the documentation now matches
+  it. (#207)
+
 ## Notes
 
 * **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
