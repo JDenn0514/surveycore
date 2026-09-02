@@ -92,6 +92,14 @@
 # Restores the SPSS variant when either SPSS missing-value attribute is
 # present.
 #
+# The `labels` attribute is the whole test. There is no record of which
+# columns the strip took the class from, so a column that never carried the
+# class gets it here — an sjlabelled column, or one labelled by
+# set_val_labels(). Issue #207 decided this on purpose: the attribute is what
+# the helper can see, and provenance would cost new state on every write to
+# the `data` property. The documented contract matches, so do not add a
+# provenance test without reopening that decision.
+#
 # The class chain is written with base R, so this needs no haven at runtime.
 # A haven_labelled vector is attributes plus a class vector, and typeof(x)
 # supplies the base-type marker, so double-, integer- and character-backed
@@ -125,7 +133,11 @@
 #'
 #' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
 #' @param haven_class Rebuild the `haven_labelled` class on every column that
-#'   carried it at import. `FALSE`, the default, returns base types, which is
+#'   carries a `labels` attribute. The test is the attribute, not a record of
+#'   which columns arrived as `haven_labelled`. A column that never carried
+#'   the class is promoted too, so a column labelled by `sjlabelled` or by
+#'   [set_val_labels()] comes back with the class on it. `FALSE`, the default,
+#'   returns base types, which is
 #'   what every arithmetic and modelling operation needs. `TRUE` returns
 #'   columns that `haven` and `labelled` recognise, so that
 #'   `haven::as_factor()` and `labelled::to_factor()` give the label strings
@@ -146,8 +158,8 @@
 #'   `<chr>` — in place of the labelled token.
 #'
 #'   With `haven_class = TRUE`, every column carrying a `labels` attribute is
-#'   returned with its `haven_labelled` class rebuilt, and a column that
-#'   arrived as `haven_labelled_spss` is returned as `haven_labelled_spss`.
+#'   returned with its `haven_labelled` class rebuilt, and a column that also
+#'   carries `na_values` or `na_range` is returned as `haven_labelled_spss`.
 #'   Values are unchanged, and the printed type token reads as the labelled
 #'   token again — `<dbl+lbl>` for a double-backed column when the `haven`
 #'   namespace is loaded, since `haven` supplies the method that renders it.

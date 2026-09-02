@@ -237,6 +237,21 @@ Add one argument to `survey_data()`. The default keeps today's behaviour, so
 arithmetic on the returned frame stays safe. `haven_class = TRUE` rebuilds
 the labelled class on every column that carried it at import.
 
+**Correction, 2026-09-02 (issue #207).** "Every column that carried it at
+import" describes a provenance test. The shipped code has no such test, and
+the `@return` text and §VIII.1 rule 2 both describe the code correctly: the
+rebuild fires on every column carrying a `labels` attribute. So a column that
+never carried the class is promoted too — an sjlabelled-native column, or one
+labelled by `set_val_labels()` in data-frame mode before construction.
+
+Issue #207 kept the attribute test and corrected the wording. The attribute
+is the only thing `.restore_haven_class()` can see. A provenance record would
+need new state that survives every write to the `data` property, plus
+rename and select lifecycle wiring, and it would buy nothing: the promotion
+is opt-in and drops no data. Read "every column that carried it at import"
+above as "every column carrying a `labels` attribute". §XII.5 of the spec
+carries the matching correction.
+
 ```r
 survey_data(d)
 #>  q: 1 2 3                                  plain double

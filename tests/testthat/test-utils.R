@@ -1114,3 +1114,64 @@ test_that("X-17: a tagged NA survives the strip unchanged", {
   skip_if_not_installed("haven")
   expect_identical(haven::na_tag(out$tag[[3L]]), "a")
 })
+
+test_that("X-18: haven_class = TRUE promotes a column that never carried the class", {
+  # The rebuild tests the `labels` attribute, not provenance. An
+  # sjlabelled-native column is a bare numeric vector plus `labels`, which is
+  # exactly what the strip leaves behind, so the rebuild cannot tell the two
+  # apart and promotes both. Issue #207 decided this on purpose; the row pins
+  # it so a provenance test cannot land silently.
+  df <- .labelled_import_frame()
+  sj <- rep(c(1, 2, 3), length.out = 40L)
+  attr(sj, "labels") <- c(Low = 1, Mid = 2, High = 3)
+  df$sj <- sj
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  # Stored as the bare numeric it arrived as.
+  expect_identical(class(survey_data(d)$sj), "numeric")
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(class(out$sj), c("haven_labelled", "vctrs_vctr", "double"))
+  expect_identical(
+    attr(out$sj, "labels", exact = TRUE),
+    c(Low = 1, Mid = 2, High = 3)
+  )
+  vals <- out$sj
+  attributes(vals) <- NULL
+  expect_identical(vals, rep(c(1, 2, 3), length.out = 40L))
+})
+
+test_that("X-19: haven_class = TRUE promotes a column labelled by set_val_labels()", {
+  # Same rule, reached the other way: set_val_labels() in data-frame mode
+  # writes the `labels` attribute, so a column labelled before construction
+  # comes back classed.
+  df <- .labelled_import_frame()
+  df$coded <- rep(c(1, 2), 20L)
+  df <- set_val_labels(df, coded = c(No = 1, Yes = 2))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  expect_identical(class(survey_data(d)$coded), "numeric")
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(
+    class(out$coded),
+    c("haven_labelled", "vctrs_vctr", "double")
+  )
+  expect_identical(
+    attr(out$coded, "labels", exact = TRUE),
+    c(No = 1, Yes = 2)
+  )
+})
+
+test_that("X-20: haven_class = TRUE leaves a labels-free column alone", {
+  # The other side of the attribute test. `labels` is the whole trigger, so a
+  # column carrying only a variable `label` gets no class.
+  df <- .labelled_import_frame()
+  df$plain <- rep(c(1, 2), 20L)
+  attr(df$plain, "label") <- "No value labels"
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+  expect_identical(class(out$plain), "numeric")
+  expect_identical(attr(out$plain, "label", exact = TRUE), "No value labels")
+})
