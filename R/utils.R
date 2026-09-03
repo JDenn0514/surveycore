@@ -91,8 +91,9 @@
 # the design's metadata entries for the column, either one NULL when the
 # metadata holds none. Each one is written onto the vector, and the column's
 # own attribute is the fallback. Returns x unchanged when neither store holds
-# value labels. Restores the SPSS variant when either SPSS missing-value
-# attribute is present.
+# value labels, and returns it with the two attributes but no new class when it
+# carries a class of its own. Restores the SPSS variant when either SPSS
+# missing-value attribute is present.
 #
 # The metadata comes first because it is the store a design writes. On a
 # design, set_val_labels() writes @metadata@value_labels and set_var_label()
@@ -133,6 +134,17 @@
   } else {
     attr(x, "labels") <- labels
   }
+  # A column that carries a class of its own has nothing to rebuild, and the
+  # write below would destroy what it has: `attr(x, "class") <- ...` replaces
+  # the whole class vector, so a factor came back as its level codes and a
+  # Date as its day count (issue #206). The strip only ever removes
+  # `haven_labelled`, so a classed column reaching here never carried it. The
+  # label and the value labels above still follow the metadata, the way X-24
+  # already has them follow it for a column that gets no class.
+  if (is.object(x)) {
+    return(x)
+  }
+
   spss <- !is.null(attr(x, "na_values", exact = TRUE)) ||
     !is.null(attr(x, "na_range", exact = TRUE))
   attr(x, "class") <- if (spss) {
@@ -161,7 +173,9 @@
 #'   column's `label` attribute. Value labels are the whole class test, not a
 #'   record of which columns arrived as `haven_labelled`: a column that never
 #'   carried the class is promoted too, so a column labelled by `sjlabelled`
-#'   comes back with the class on it. `FALSE`, the default,
+#'   comes back with the class on it. A column that carries a class of its own
+#'   is left alone: a `factor` keeps its levels and a `Date` keeps its
+#'   calendar, whatever attributes they hold. `FALSE`, the default,
 #'   returns base types, which is
 #'   what every arithmetic and modelling operation needs. `TRUE` returns
 #'   columns that `haven` and `labelled` recognise, so that
@@ -186,9 +200,11 @@
 #'   column shows the type token for its own type — `<dbl>`, `<int>` or
 #'   `<chr>` — in place of the labelled token.
 #'
-#'   With `haven_class = TRUE`, every column that has value labels is returned
-#'   with its `haven_labelled` class rebuilt, and a column that also carries
-#'   `na_values` or `na_range` is returned as `haven_labelled_spss`. The
+#'   With `haven_class = TRUE`, every column that has value labels and no class
+#'   of its own is returned with its `haven_labelled` class rebuilt, and a
+#'   column that also carries `na_values` or `na_range` is returned as
+#'   `haven_labelled_spss`. A `factor`, a `Date`, and any other classed column
+#'   keep the class they have. The
 #'   `labels` and `label` attributes on the returned column hold what the
 #'   design's metadata holds, which is what [extract_val_labels()] and
 #'   [extract_var_label()] report. Values are unchanged, and the printed type

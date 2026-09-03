@@ -17,7 +17,9 @@ same order, so \code{\link[=set_var_label]{set_var_label()}} on the design reach
 column's \code{label} attribute. Value labels are the whole class test, not a
 record of which columns arrived as \code{haven_labelled}: a column that never
 carried the class is promoted too, so a column labelled by \code{sjlabelled}
-comes back with the class on it. \code{FALSE}, the default,
+comes back with the class on it. A column that carries a class of its own
+is left alone: a \code{factor} keeps its levels and a \code{Date} keeps its
+calendar, whatever attributes they hold. \code{FALSE}, the default,
 returns base types, which is
 what every arithmetic and modelling operation needs. \code{TRUE} returns
 columns that \code{haven} and \code{labelled} recognise, so that
@@ -44,9 +46,11 @@ through \code{\link[=extract_val_labels]{extract_val_labels()}}. In a printed ti
 column shows the type token for its own type — \verb{<dbl>}, \verb{<int>} or
 \verb{<chr>} — in place of the labelled token.
 
-With \code{haven_class = TRUE}, every column that has value labels is returned
-with its \code{haven_labelled} class rebuilt, and a column that also carries
-\code{na_values} or \code{na_range} is returned as \code{haven_labelled_spss}. The
+With \code{haven_class = TRUE}, every column that has value labels and no class
+of its own is returned with its \code{haven_labelled} class rebuilt, and a
+column that also carries \code{na_values} or \code{na_range} is returned as
+\code{haven_labelled_spss}. A \code{factor}, a \code{Date}, and any other classed column
+keep the class they have. The
 \code{labels} and \code{label} attributes on the returned column hold what the
 design's metadata holds, which is what \code{\link[=extract_val_labels]{extract_val_labels()}} and
 \code{\link[=extract_var_label]{extract_var_label()}} report. Values are unchanged, and the printed type

@@ -272,6 +272,32 @@ entry and leaves the column's attribute in place, so the fallback rebuilds
 the class from that attribute. Telling a cleared entry from one that was
 never set needs the provenance state #207 refused.
 
+**Third correction, 2026-09-03 (issue #206).** The value-label test decides
+*whether* to rebuild. It never decided *what* the column already was, and
+the rebuild wrote the class with `attr(x, "class") <- ...`, which replaces
+the whole class vector. So a `factor` carrying a `labels` attribute came
+back as `haven_labelled` over its level codes, with the levels gone, and a
+`Date` came back as its day count. `set_val_labels()` on a data frame writes
+the attribute onto any column, so a user frame reached this with no `haven`
+involved, and no step warned: the labels covered every observed level, so
+`surveycore_warning_missing_labels` stayed quiet too.
+
+The rebuild now returns early on `is.object(x)`. A column that carries a
+class of its own has no haven class to rebuild, and the strip only ever
+removes `haven_labelled`, so a classed column reaching the helper never
+carried one.
+
+This narrows the promotion #207 settled; it does not reopen it. #207 refused
+a *provenance* record — state saying which columns arrived labelled. The
+class attribute is not that record. It is on the column, it costs one
+`is.object()` call, and it says what the column is now rather than where it
+came from.
+
+The `label` and `labels` attributes still follow the metadata on a classed
+column, the way they already did for an unclassed column that gets no class.
+A variable label on a factor is what `haven::write_sav()` writes as the
+variable's name, so dropping it would trade one silent loss for another.
+
 ```r
 survey_data(d)
 #>  q: 1 2 3                                  plain double
