@@ -12,8 +12,9 @@ as two merges and the whole-feature close-out as a third. Recorded in
 **Base**: worktree `haven-labelled`, branch `fix/haven-labelled-analysis` at
 `b55a679`; the source tree it changes is `develop` at `cf6f153`
 **Target**: every PR targets `develop`
-**Target version**: unchanged. `spec.md` §XI gate 16 requires `DESCRIPTION`
-to stay unchanged, so no PR bumps the version.
+**Target version**: unchanged. `spec.md` §XI gate 16 allows one `Suggests`
+addition and no other `DESCRIPTION` change, so no PR bumps the version. PR 4
+makes that one addition; every other PR leaves `DESCRIPTION` alone.
 
 Nine PRs. Shape:
 **PR 1 → PR 2 → PR 3a → PR 3b → (PR 4 ‖ PR 6) → PR 5 → PR 7 → PR 8.**
@@ -245,14 +246,16 @@ closes it, and gate 9 is what proves it closed.
      A-31 and G-1 to G-6 pass. Demonstrate that the inherited setter fires
      for `survey_twophase` at construction and on assignment, which closes
      the GAP in `spec.md` §III.4. Record the installed S7 version in
-     `implementation.md`.
+     `implementation.md`. **Not done** — see the acceptance criteria below;
+     the version is now at `spec.md` §XI.18.
   8. Review the T-1 and T-3 snapshots by hand with
      `testthat::snapshot_review()`. Do not accept blind.
   9. Measure the timing of one grouped `get_quantiles()` call with three
      probabilities on the widest bundled dataset, before and after, with
      `bench::mark()` or `system.time()`. Record the ratio in
      `implementation.md`. Stop and report if the ratio exceeds about 1.05
-     (`spec.md` §III.6).
+     (`spec.md` §III.6). **Not done** — see the acceptance criteria below;
+     the ratio is now at `spec.md` §XI.17.
   10. Add the `NEWS.md` entry for the loss of a caller's own class stacked
       above `haven_labelled`, under a `## Breaking changes` heading. Then run
       `air::format_package()`, `Rscript -e "devtools::test()"` and
@@ -284,7 +287,12 @@ closes it, and gate 9 is what proves it closed.
     and PR 3b owns it.
   - `implementation.md` records the timing ratio required by
     `spec.md` §III.6 (gate 17) and the S7 version the setter behaviour was
-    confirmed against (gate 18).
+    confirmed against (gate 18). **This criterion was not met.** PR 3a wrote
+    no `implementation.md`; its workspace directory is empty, and
+    `.surveycore-workspace/` is untracked in any case. Both figures were
+    measured on 2026-09-03 and are now recorded at `spec.md` §XI.17 and
+    §XI.18. Issue #217 owns the wider archiving question. Corrected
+    2026-09-03 (issue #216).
   - `NEWS.md` carries 1 of the 5 entries required by `spec.md` §XI.15: the
     stacked-class loss from `spec.md` §III.3a.
   - The seven existing tagged-`NA` blocks in `test-spec.md` §3 pass
@@ -495,12 +503,19 @@ exists would document an argument the package does not have.
   - Gate 3 (`spec.md` §XI.3): `devtools::run_examples()` clean.
   - `NEWS.md` carries the third of the five entries required by
     `spec.md` §XI.15: the new `haven_class` argument.
-  - `git diff --stat DESCRIPTION NAMESPACE` is empty — `survey_data()` gains
-    an argument, not an export (`spec.md` §XI.16).
+  - `git diff --stat NAMESPACE` is empty — `survey_data()` gains an
+    argument, not an export (`spec.md` §XI.16).
+  - `git diff --stat DESCRIPTION` shows one added line and nothing else:
+    `labelled (>= 2.12.0)` under `Suggests`, for test row D-19
+    (`tests/testthat/test-utils.R:1004-1009`), which calls
+    `labelled::to_factor()` under `skip_if_not_installed("labelled")`. This
+    is the only `DESCRIPTION` change in the feature. Corrected 2026-09-03
+    (issue #216): the criterion first said the diff is empty.
 
 - **Files touched**
   - `R/utils.R` — modified (`.restore_haven_class()`, `survey_data()`)
   - `R/core-constructors.R` — modified (roxygen `@return` only)
+  - `DESCRIPTION` — modified (one added `Suggests` entry, `labelled`)
   - `plans/error-messages.md` — modified (one row; see D6)
   - `NEWS.md` — modified (1 entry)
   - `man/survey_data.Rd` — regenerated
@@ -786,10 +801,18 @@ Branch from `develop` after PR 7 merges.
      single `## Breaking changes` heading, the other three under the feature
      heading. Remove the duplicate heading the separate PRs left behind.
      Count the entries.
-  3. Run `git diff cf6f153 -- plans/error-messages.md`. Confirm a net **+1**
-     row across the whole feature — the D6 row and nothing else — and that
-     no PC row was added or removed.
-  4. Run `git diff cf6f153 -- DESCRIPTION NAMESPACE`. Confirm it is empty.
+  3. Run `git diff 0be2f3a HEAD -- plans/error-messages.md`. Confirm a net
+     **+1** row across the whole feature — the D6 row and nothing else — and
+     that no PC row was added or removed. The base is `0be2f3a`, the base of
+     the first feature PR. Corrected 2026-09-03 (issue #216): the task first
+     named `cf6f153`, the commit the spec was drafted on, and #185 merged
+     between the two and added rows M-16 and M-17, so the count could not
+     pass there.
+  4. Run `git diff 0be2f3a HEAD -- NAMESPACE`. Confirm it is empty. Run
+     `git diff 0be2f3a HEAD -- DESCRIPTION`. Confirm one added line,
+     `labelled (>= 2.12.0)` under `Suggests`, from PR 4. Corrected
+     2026-09-03 (issue #216): the task first named `cf6f153` and required an
+     empty `DESCRIPTION` diff.
   5. Run `devtools::document()`; confirm `man/` is in sync and the run
      produces no diff.
   6. Run `Rscript -e "devtools::test()"` as the whole-suite pass, then
@@ -804,9 +827,23 @@ Branch from `develop` after PR 7 merges.
       `implementation.md`. If any gate fails, stop and report it; do not widen
       this PR to fix it.
 
-  `cf6f153` is the base commit of the source tree, named in this plan's
-  header and in `test-spec.md` §4.11a. Use it rather than `develop`, because
-  by the time this PR opens `develop` already carries the feature.
+  Use a fixed base rather than `develop`, because by the time this PR opens
+  `develop` already carries the feature.
+
+  Two different bases apply, and the plan first used only the second:
+
+  - **`0be2f3a` — the base of the first feature PR.** Use it for the
+    whole-feature file diffs in tasks 3 and 4. It is the last commit before
+    any feature PR merged.
+  - **`cf6f153` — the commit the spec was drafted on**, named in this plan's
+    header and in `test-spec.md` §4.11a. Use it for the red-run list, which
+    is stated against that tree.
+
+  The two are not interchangeable. #185 merged between them and it changed
+  both files task 3 and task 4 look at: two `NAMESPACE` exports, and rows
+  M-16 and M-17 in `plans/error-messages.md`. A file diff against `cf6f153`
+  therefore carries another feature's work. Corrected 2026-09-03
+  (issue #216).
 
 - **Acceptance criteria**
   - **The six profile gates, verbatim from `test-spec.md` §8:**
@@ -839,13 +876,21 @@ Branch from `develop` after PR 7 merges.
     breaking change, and the loss of a caller's own stacked class. The count
     is 5, and the two breaking changes sit under one `## Breaking changes`
     heading.
-  - Gate 16 (`spec.md` §XI.16): `git diff cf6f153 -- DESCRIPTION NAMESPACE`
-    is empty for the whole feature.
-  - Gate 13, the count half: `git diff cf6f153 -- plans/error-messages.md`
-    shows a net +1 row, which confirms the D6 row is the only row added and
-    that the PC edits changed Condition text only.
+  - Gate 16 (`spec.md` §XI.16): `git diff 0be2f3a HEAD -- NAMESPACE` is
+    empty for the whole feature, and the `DESCRIPTION` diff is PR 4's one
+    added `Suggests` entry.
+  - Gate 13, the count half:
+    `git diff 0be2f3a HEAD -- plans/error-messages.md` shows a net +1 row,
+    which confirms the D6 row is the only row added and that the PC edits
+    changed Condition text only.
   - `implementation.md` records every figure above, so the close-out is a
-    record and not a claim.
+    record and not a claim. **This did not happen.** No PR of this feature
+    has a tracked `implementation.md`, and PRs 1, 2, 3a, 3b, 4, 6 and 8 have
+    none at all; only PRs 5 and 7 wrote notes, in an untracked workspace
+    directory. Gates 17 and 18 were the two figures that went unrecorded as
+    a result. They are now recorded inline at `spec.md` §XI.17 and §XI.18.
+    Issue #217 owns the wider archiving question. Corrected 2026-09-03
+    (issue #216).
 
 - **Files touched**
   - `NEWS.md` — modified (heading consolidation and entry order; no new
@@ -935,7 +980,8 @@ Every file in `spec.md` §II is scheduled. Nothing is left over.
 | `man/survey_data.Rd`, `man/as_survey*.Rd` (four) | PR 4 |
 | `man/as_svydesign.Rd`, `man/as_tbl_svy.Rd` | PR 5 |
 | `man/get_corr.Rd` | PR 7 |
-| `DESCRIPTION`, `NAMESPACE` | none — unchanged, checked in every PR |
+| `DESCRIPTION` — one added `Suggests` entry, `labelled` | PR 4 |
+| `NAMESPACE` | none — unchanged, checked in every PR |
 
 Test files are not in `spec.md` §II. They come from `test-spec.md` §4 and
 follow the mapping in `.claude/rules/testing-surveycore.md` §File mapping.
@@ -991,12 +1037,12 @@ that can make it true.
 | 10 — `@metadata@value_labels` populated on every route, `from_svydesign()` included | PR 5 |
 | 11 — `haven_class = TRUE` returns the exact import class chain, with `haven` absent | PR 4 |
 | 12 — polychoric raises on `Inf` and `-Inf` | PR 7 |
-| 13 — PC-1, PC-2, PC-3 Condition text correct; exactly one row added, none removed | PR 7 writes the Condition text; PR 8 confirms the whole-feature net +1 row with `git diff cf6f153 -- plans/error-messages.md` |
+| 13 — PC-1, PC-2, PC-3 Condition text correct; exactly one row added, none removed | PR 7 writes the Condition text; PR 8 confirms the whole-feature net +1 row with `git diff 0be2f3a HEAD -- plans/error-messages.md`. Base corrected from `cf6f153` 2026-09-03 (issue #216) |
 | 14 — no comment in `R/analysis-corr-latent.R` contradicts its code | PR 7 |
 | 15 — `NEWS.md` carries the five entries | written by PR 3a (1), PR 3b (1), PR 4 (1), PR 7 (2); grouped and counted in PR 8 |
-| 16 — `DESCRIPTION` and `NAMESPACE` unchanged | checked in every PR; the whole-feature `git diff` is run in PR 8 |
-| **17 — the §III.6 timing ratio** | **Recorded, not pass-or-fail. PR 3a's `implementation.md`**, because PR 3a adds the setter that costs the time. Report and stop if the ratio exceeds about 1.05. |
-| **18 — the S7 version the setter behaviour was confirmed against** | **Recorded, not pass-or-fail. PR 3a's `implementation.md`**, beside the demonstration that the inherited setter fires for `survey_twophase`. |
+| 16 — `NAMESPACE` unchanged; `DESCRIPTION` gains one `Suggests` entry and nothing else | checked in every PR; the whole-feature `git diff` is run in PR 8. PR 4 makes the one addition, `labelled (>= 2.12.0)`, for test row D-19. Reworded 2026-09-03 (issue #216) — the "`DESCRIPTION` unchanged" form never held |
+| **17 — the §III.6 timing ratio** | **Recorded, not pass-or-fail. PR 3a's `implementation.md`**, because PR 3a adds the setter that costs the time. Report and stop if the ratio exceeds about 1.05. **PR 3a wrote no notes**, so the ratio went unrecorded. Measured 2026-09-03 and recorded at `spec.md` §XI.17: 0.98 on a grouped `get_quantiles()` call on `ns_wave1` (issue #216) |
+| **18 — the S7 version the setter behaviour was confirmed against** | **Recorded, not pass-or-fail. PR 3a's `implementation.md`**, beside the demonstration that the inherited setter fires for `survey_twophase`. **Same gap.** Confirmed 2026-09-03 against S7 0.2.2 and recorded at `spec.md` §XI.18 (issue #216) |
 
 ---
 

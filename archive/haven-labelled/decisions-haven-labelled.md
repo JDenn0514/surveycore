@@ -615,10 +615,18 @@ PR 8 merges them and orders the five entries. The work can only be done
 last, and it gives gate 15 a PR that makes it true rather than one that only
 observes it.
 
-**PR 8 diffs against `cf6f153`, not `develop`.** By the time PR 8 opens,
+**PR 8 diffs against a fixed base, not `develop`.** By the time PR 8 opens,
 `develop` carries the whole feature, so `git diff develop` is empty and every
-whole-feature check would pass without testing anything. The base commit is
-the only comparison that means something.
+whole-feature check would pass without testing anything. A fixed base is the
+only comparison that means something.
+
+The base for the file diffs is `0be2f3a`, the base of the first feature PR.
+This entry first named `cf6f153`, the commit the spec was drafted on. #185
+merged between the two and changed both files PR 8 diffs — `NAMESPACE` and
+`plans/error-messages.md` — so `cf6f153` puts another feature's work inside
+this feature's count. `cf6f153` stays correct for the red-run list in
+`test-spec.md` §4.11a, which is stated against that tree. Corrected
+2026-09-03 (issue #216).
 
 ### Rejected alternatives
 
