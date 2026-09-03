@@ -78,7 +78,9 @@
   vector and the SPSS `na_values` and `na_range` vectors all stay on the
   column, and the value labels stay in the metadata system. A previously
   labelled column now prints with the type token for its underlying type —
-  `<dbl>`, `<int>` or `<chr>` in place of `<hvn_lbl>`.
+  `<dbl>`, `<int>` or `<chr>`. Such a column used to print `<dbl+lbl>`,
+  `<int+lbl>` or `<chr+lbl>` when the `haven` namespace was loaded, and
+  `<hvn_lbll>` when it was not.
 
   The whole class vector goes, not the `haven_labelled` entry alone. A caller
   who stacked their own class **above** `haven_labelled` loses that class too:
@@ -178,6 +180,38 @@
   on the column, and the value labels stay in the metadata system. Validation
   is unchanged, so a zero weight, a non-positive FPC, a missing FPC and a
   non-logical two-phase `subset` all still raise the errors they did. (#175)
+
+* `from_svydesign()` and `from_tbl_svy()` now fill the design's metadata
+  instead of storing an empty `survey_metadata` object. The three conversion
+  helpers each built a fresh empty object, so every variable label and value
+  label the source data carried was lost on the way in. A design converted
+  from a `survey` or `srvyr` object now carries those labels, and
+  `extract_var_label()` and `extract_val_labels()` report them. The two
+  helpers that assemble their own data frame also drop the `haven_labelled`
+  class before any column is read, so a labelled weight column no longer stops
+  the conversion with a `vctrs` coercion error. (#196)
+
+* `set_val_labels()` now accepts a column that carries the `haven_labelled`
+  class. The validation cast the observed codes with `as.character()`, `vctrs`
+  refused that cast on a labelled column, and the call aborted with
+  `vctrs_error_cast`. The class is now dropped locally, on the unique values,
+  before the cast. A design's stored column is already plain, so the fix
+  reaches the plain data frame route. The
+  `surveycore_warning_missing_labels` warning is now reachable on a labelled
+  data frame column too, because the validation no longer aborts on the line
+  above it. (#193)
+
+* `from_svydesign(as_svydesign(d))` no longer aborts for every Taylor design.
+  `survey::svydesign()` stores its own call, and R records the unevaluated
+  argument expressions in it, so the stored call held the names of local
+  variables inside `as_svydesign()` — `ids_formula`, `weights_var`,
+  `strata_var` and `fpc_var`. `from_svydesign()` reads those names back to
+  recover the design columns. No such column exists, so the rebuild raised
+  `surveycore_error_design_var_missing`. The formulas are inlined before the
+  call runs, so the stored call names real columns. All four Taylor shapes
+  round trip now: ids only, with strata, with fpc, and SRS with no ids.
+  Replicate designs were never affected, because that reader recovers its
+  columns from the replicate weight matrix and not from the call. (#195)
 
 * `as_survey_nonprob()` now promotes weighting history from the data frame into
   the design's metadata, matching `as_survey()` and `as_survey_replicate()`.
