@@ -811,8 +811,12 @@ Branch from `develop` after PR 7 merges.
 - **Acceptance criteria**
   - **The six profile gates, verbatim from `test-spec.md` §8:**
     - `document` — `devtools::document()` clean, `man/` committed in sync.
-    - `test` — `Rscript -e "devtools::test()"`: 0 failures, 0 errors, 0
-      warnings.
+    - `test` — `Rscript -e "devtools::test()"`: 0 failures, 0 errors, and
+      **no warning attributable to this feature** (`spec.md` §XI.2).
+      Measured 2026-09-01: 256 warnings, unchanged from the baseline's
+      256 — the AAPOR small-cell and `survey_nonprob` SRS-approximation
+      notices, both raised by design; issue #167 tracks them. The
+      0-warning form has never held, on this tree or on the feature base.
     - `run_examples` — `devtools::run_examples()` clean.
     - `R CMD check --as-cran` — 0 errors, 0 warnings, at most the two
       pre-approved notes from
