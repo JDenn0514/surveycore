@@ -2,9 +2,9 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 name: test-coverage
 
@@ -29,6 +29,15 @@ jobs:
           needs: coverage
 
       - name: Test coverage
+        id: coverage
+        env:
+          # Pins a value the job already had: r-lib/actions/setup-r exports
+          # NOT_CRAN=true, so this changes nothing today. It is here so the
+          # floor check below cannot start reading a false number if that
+          # default ever changes. Eleven test files carry a file-level
+          # skip_on_cran(); covr does not set the variable itself, and without
+          # it their source reads as untested (issue #159).
+          NOT_CRAN: true
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,
@@ -37,6 +46,12 @@ jobs:
           )
           print(cov)
           covr::to_cobertura(cov)
+          pct <- covr::percent_coverage(cov)
+          cat(
+            sprintf("percent=%.4f\n", pct),
+            file = Sys.getenv("GITHUB_OUTPUT"),
+            append = TRUE
+          )
         shell: Rscript {0}
 
       - uses: codecov/codecov-action@v5
@@ -48,6 +63,24 @@ jobs:
           disable_search: true
           skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Check the coverage floor
+        env:
+          # The 95% floor comes from .claude/rules/testing-standards.md.
+          COVERAGE_FLOOR: "95"
+          COVERAGE_PERCENT: ${{ steps.coverage.outputs.percent }}
+        run: |
+          if [ -z "$COVERAGE_PERCENT" ]; then
+            echo "::error::coverage did not run"
+            exit 1
+          fi
+          if awk "BEGIN { exit !($COVERAGE_PERCENT >= $COVERAGE_FLOOR) }"; then
+            echo "coverage ${COVERAGE_PERCENT}% meets the ${COVERAGE_FLOOR}% floor"
+          else
+            echo "::error::coverage ${COVERAGE_PERCENT}% is below the ${COVERAGE_FLOOR}% floor"
+            exit 1
+          fi
+        shell: bash
 
       - name: Show testthat output
         if: always()
