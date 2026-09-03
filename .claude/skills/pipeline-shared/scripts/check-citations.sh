@@ -31,10 +31,11 @@ mapfile -t names < <(
 
 unresolved=0
 for name in "${names[@]}"; do
-  # A backtick span is not always a filename. Skip a shell command, a glob,
-  # and a path that points outside the repository.
+  # A backtick span is not always a filename. Skip, in order: a shell
+  # command; a glob; a path outside the repository; a bare extension, as in
+  # prose about spans ending in `.md`; a template placeholder; an elided path.
   case $name in
-    *' '* | *'*'* | ../*) continue ;;
+    *' '* | *'*'* | ../* | .md | *'{'* | *'…'*) continue ;;
   esac
 
   stem=${name%.md}

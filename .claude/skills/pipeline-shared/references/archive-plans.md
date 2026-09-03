@@ -103,6 +103,19 @@ lost when the directory goes.
 
 7. **Report** which files were archived, and any citation marked in step 4.
 
+## What the check cannot tell
+
+A citation and a mention of an artifact type look the same: an inline-code
+span ending `.md`. The check reports both.
+
+This matters for one kind of document only — a document about the pipeline,
+which names `implementation.md` and `status.md` as types rather than citing
+them as sources. Those stay in `plans/`, unscanned. A feature's own spec,
+test-spec, comprehension notes and decisions log cite their sources, so they
+belong in `archive/{slug}/` where the check holds them honest.
+
+Measured in `plans/spec-pipeline-archive-artifacts.md` §Known limit.
+
 ## Completion criterion
 
 `check-citations.sh` exits 0 on `archive/{slug}/`, and every document the

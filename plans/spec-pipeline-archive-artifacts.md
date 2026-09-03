@@ -208,6 +208,34 @@ Out of scope here. Each needs the same per-citation judgement pass, and the
 `plans/…` rows are a different defect: a citation whose path went stale when
 the archive step moved the file.
 
+## Known limit — naming is not citing
+
+The check cannot tell a citation from a mention of an artifact type. Both are
+an inline-code span ending `.md`.
+
+Measured on this document. Archiving it produced 13 unresolved names, of
+which 11 were not citations at all: `implementation.md` at nine sites,
+`status.md` at two, `baseline.md` at one. Each names a document type, and
+those documents exist — one `implementation.md` per PR, one `status.md` per
+run. Marking them would put a false claim in the record, and rewording them
+to drop the backticks would damage a document whose whole subject is specific
+filenames.
+
+So this document stays in `plans/`, which the check never scans. That is
+also where `plans/spec-reduce-token-usage.md` sits after #157 shipped.
+
+The rule: a document that names pipeline artifacts as types belongs in
+`plans/`. A document that cites them as sources belongs in `archive/{slug}/`,
+where the check holds it honest. A feature's spec, test-spec, comprehension
+notes and decisions log are all the second kind. A spec about the pipeline
+itself is the first.
+
+Dogfooding the check on this document also found three defects in it, since
+fixed: it flagged `` `.md` `` from prose about spans ending in `.md`, the
+template `` `{archive-dir}/{stem}-{slug}.md` ``, and the elided path
+`` `prs/pr-5-…/implementation.md` ``. A span holding `{`, a span holding `…`,
+and a bare extension are now skipped alongside shell commands and globs.
+
 ## Out of scope
 
 - Archiving gate logs. They stay untracked. An `audit.md` that cites a gate
