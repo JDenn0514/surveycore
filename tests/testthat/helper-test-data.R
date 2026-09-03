@@ -596,7 +596,7 @@ make_labelled <- function(x, labels = NULL, label = NULL) {
 
 #' Build a `haven_labelled_spss` vector with base R
 #'
-#' The SPSS variant of [make_labelled()]. Adds the two SPSS missing-value
+#' The SPSS variant of `make_labelled()`. Adds the two SPSS missing-value
 #' attributes and puts `haven_labelled_spss` on the front of the class vector,
 #' which is why one `inherits(x, "haven_labelled")` call catches both shapes.
 #'
