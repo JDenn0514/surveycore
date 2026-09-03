@@ -31,7 +31,8 @@ Description: A modern, 'S7'-based foundation for survey analysis
     throughout.
 License: GPL (>= 3)
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
+Roxygen: list(markdown = TRUE, roclets = c("collate", "namespace", "rd",
+    "srr::srr_stats_roclet"))
 Depends:
     R (>= 4.3.0)
 Imports:
