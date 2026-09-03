@@ -102,6 +102,17 @@
 
 ## Bug fixes
 
+* `survey_data(x, haven_class = TRUE)` now leaves a column that carries a class
+  of its own alone. The rebuild wrote the `haven_labelled` class chain over the
+  whole class vector, so a `factor` that carried a `labels` attribute came back
+  as a labelled vector of its level codes, with the levels gone, and a `Date`
+  came back as its day count. `set_val_labels()` on a data frame writes the
+  attribute onto any column, so the route in needed no `haven` and warned at no
+  step. A factor, a `Date`, and any other classed column now come back
+  unchanged. The variable label and the value labels still follow the design's
+  metadata, so `set_var_label()` on a factor reaches the returned column.
+  (#206)
+
 * `survey_data(x, haven_class = TRUE)` now reads the design's metadata before
   the column's own attributes. It read the `labels` attribute and nothing else,
   and a design's `set_val_labels()` writes only `@metadata@value_labels`, so

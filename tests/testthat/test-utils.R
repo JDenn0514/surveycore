@@ -1261,3 +1261,52 @@ test_that("X-24: a metadata variable label reaches a column with no value labels
   expect_identical(class(out$plain), "numeric")
   expect_identical(attr(out$plain, "label", exact = TRUE), "Renamed")
 })
+
+test_that("X-25: haven_class = TRUE leaves a factor with a labels attribute a factor", {
+  # `attr(x, "class") <- ...` replaces the whole class vector, so writing the
+  # haven chain over a factor returned the level codes and dropped the levels.
+  # A factor carries its own class, so there is nothing to rebuild on it.
+  # Issue #206.
+  df <- .labelled_import_frame()
+  df$f <- factor(rep(c("a", "b"), 20L))
+  df <- set_val_labels(df, f = c(a = "a", b = "b"))
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$f), "factor")
+  expect_identical(levels(out$f), c("a", "b"))
+  expect_identical(as.character(out$f), rep(c("a", "b"), 20L))
+  # The labelled columns beside it still rebuild.
+  expect_identical(class(out$dbl), c("haven_labelled", "vctrs_vctr", "double"))
+})
+
+test_that("X-26: haven_class = TRUE leaves a Date with a labels attribute a Date", {
+  # Same guard, the other classed column: a Date's class holds its calendar,
+  # so the haven chain turned the first value into a day count. Issue #206.
+  df <- .labelled_import_frame()
+  df$day <- as.Date("2020-01-01") + seq_len(40L) - 1L
+  attr(df$day, "labels") <- c(start = 18262)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$day), "Date")
+  expect_identical(out$day[[1L]], as.Date("2020-01-01"))
+})
+
+test_that("X-27: a metadata variable label reaches a factor column", {
+  # The label attribute is a separate concern from the class, the way X-24
+  # already has it for an unclassed column: the class guard skips the rebuild,
+  # not the metadata the analyst set. Issue #206.
+  df <- .labelled_import_frame()
+  df$f <- factor(rep(c("a", "b"), 20L))
+  attr(df$f, "labels") <- c(a = "a", b = "b")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  d <- set_var_label(d, f = "A factor")
+
+  out <- survey_data(d, haven_class = TRUE)
+
+  expect_identical(class(out$f), "factor")
+  expect_identical(attr(out$f, "label", exact = TRUE), "A factor")
+})

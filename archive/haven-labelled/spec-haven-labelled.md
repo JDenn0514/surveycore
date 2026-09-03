@@ -268,6 +268,19 @@ attribute is absent. It is idempotent on a column that already carries the
 class. It does not validate the `labels` attribute — a malformed one came
 from the import or from `set_val_labels()`, both of which own that check.
 
+**Correction, 2026-09-03 (issue #206).** One row was missing from this
+contract, and its absence was a bug, not a gap in prose. `attr(x, "class") <-
+...` replaces the whole class vector, so the rebuild wrote the haven chain
+over any class the column already had: a `factor` carrying a `labels`
+attribute came back as `haven_labelled` over its level codes, with the levels
+gone, and a `Date` came back as its day count. `set_val_labels()` on a data
+frame writes the attribute onto any column, so a user frame reached this with
+no `haven` involved and nothing warned. The added row:
+
+| Input | Behaviour | Why |
+|---|---|---|
+| a column carrying a class of its own — `factor`, `Date`, `POSIXct` | the two attributes are written; the class is left alone | there is no haven class to rebuild on it, and the write would destroy the class it has. The strip only ever removes `haven_labelled`, so a classed column reaching the helper never carried it. |
+
 ### Collation note
 
 `DESCRIPTION` has no `Collate` field, so R collates `R/` alphabetically:
@@ -1223,7 +1236,7 @@ survey_data(x, haven_class = FALSE)
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `x` | `survey_base` subclass | — | The survey design object to read. |
-| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that has value labels, in `@metadata@value_labels` or in the column's `labels` attribute. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. Corrected 2026-09-02 by issue #207: the wording said "every column that carried it at import", which claims a provenance test the code never had. Corrected again 2026-09-02 by issue #205: the wording named the attribute as the only store the rebuild reads, and the rebuild now reads the metadata first. |
+| `haven_class` | `logical(1)` | `FALSE` | Rebuild the `haven_labelled` class on every column that has value labels, in `@metadata@value_labels` or in the column's `labels` attribute. `FALSE` returns base types, which is what every arithmetic and modelling operation needs. `TRUE` returns columns that `haven` and `labelled` recognise. Corrected 2026-09-02 by issue #207: the wording said "every column that carried it at import", which claims a provenance test the code never had. Corrected again 2026-09-02 by issue #205: the wording named the attribute as the only store the rebuild reads, and the rebuild now reads the metadata first. Corrected again 2026-09-03 by issue #206: the rebuild skips a column that carries a class of its own, so a labelled `factor` or `Date` comes back unchanged. |
 
 #### Returns
 
@@ -1253,6 +1266,11 @@ With `haven_class = TRUE`:
 Corrected 2026-09-02 by issue #205: the paragraph named the `labels`
 attribute as the trigger and the SPSS clause as a provenance test. It now
 names the resolved value labels and the two SPSS attributes.
+
+Corrected again 2026-09-03 by issue #206: "every column that has value
+labels" included a `factor` and a `Date`, and the rebuild wrote the haven
+class over theirs. Read it as "every column that has value labels and no
+class of its own". §VIII.1 rule 8 carries the matching rule.
 
 #### Errors
 
@@ -1297,6 +1315,14 @@ condition cannot arise and the class is not needed.
    length-other-than-one value is a programming error. Validate it the way
    the package validates every other scalar flag: with a class that names
    this argument, `surveycore_error_haven_class_not_logical`. See D6.
+8. The rebuild leaves a column that carries a class of its own alone. A
+   `factor` keeps its levels, a `Date` keeps its calendar, and the helper
+   assigns no class to it. The `label` and `labels` attributes still follow
+   rule 2, the way they do for an unclassed column that gets no class. Added
+   2026-09-03 by issue #206, and added at the end so that rules 1-7 keep the
+   numbers the other artifacts cite; the rebuild wrote the haven chain over
+   the whole class vector, so a labelled factor came back as its level codes
+   and a `Date` as its day count.
 
 #### Why this argument exists
 
