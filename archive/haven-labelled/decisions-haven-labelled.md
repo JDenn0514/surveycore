@@ -227,7 +227,7 @@ One cost the spec must state: the setter runs on **every** `@data` write,
 including inside every dplyr verb method. The helper must return early when
 no column carries the class.
 
-## D5 — `survey_data(x, haven_class = FALSE)` restores the class on request
+## D5 — `survey_data(x, haven_class = TRUE)` restores the class on request
 
 **Decided**: 2026-08-28, by the user. Resolves HOLD-2 and BLOCK B3 from
 `spec-review.md`.
