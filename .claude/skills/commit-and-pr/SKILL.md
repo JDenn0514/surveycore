@@ -234,6 +234,10 @@ Extract the feature slug from the branch name (e.g., `feature/get-variance` →
 Run the archive procedure in
 `.claude/skills/pipeline-shared/references/archive-plans.md`.
 
+Its step 4 stops closeout when a cited document resolves to no file. Report
+the script's output and let the user pick each name's exit; the two exits are
+in `archive-plans.md` step 4.
+
 After archiving (or skipping), read the implementation plan and report the
 first remaining `- [ ]` section as the next action (same as the "Done without
 merge" step above).
