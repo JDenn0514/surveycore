@@ -27,8 +27,9 @@ therefore enforced by the local pipeline gate alone — `run-gates.sh` gate 7
 and the reviewer's Step 5. A contributor who skips the local pipeline could
 merge a regression into `develop` with CI fully green.
 
-Three changes: `develop` on both triggers, `NOT_CRAN=true` on the coverage
-step, and a step that fails below the floor.
+Two fixes: `develop` on both triggers, and a step that fails below the floor.
+A third change, `NOT_CRAN=true` on the coverage step, pins a value the job
+already had — see below.
 
 ### The floor check reads covr, not Codecov
 
@@ -46,15 +47,31 @@ reads `covr::percent_coverage()`. This PR uses the covr step:
 The check runs after the Codecov upload, so the report still lands when
 coverage drops.
 
-### `NOT_CRAN` is what makes the number honest
+### `NOT_CRAN` was already set — this pins it
+
+#159 says the CI workflow does not set `NOT_CRAN`, and infers that CI coverage
+read several points low. The first half is true of the workflow file. The
+inference is wrong: `r-lib/actions/setup-r` exports `NOT_CRAN=true` job-wide,
+so the value was already in place for `covr::package_coverage()`.
+
+Measured against the run before this change — `main`, 2026-06-28, run
+28338451338:
+
+| Observation | Value |
+|---|---|
+| Coverage the job printed | 95.90% |
+| `NOT_CRAN` occurrences in its log | 22 |
+
+95.90% is the honest figure, not the ~93.7% a skipped run gives. So the
+explicit `NOT_CRAN: true` in this PR fixes no live defect. It is kept for one
+reason: the floor check now reads that number and fails on it, so the job
+should state the variable it depends on rather than inherit it from a third
+party's default.
 
 Eleven test files carry a file-level `skip_on_cran()`. `covr` does not set
-`NOT_CRAN`, so without it those files skip, their source reads as untested,
-and the package total lands several points low — a false failure against the
-floor. Commit `7cf0704` fixed the same defect in `run-gates.sh` gate 7.
-`.claude/rules/testing-surveycore.md` states the rule and cites this issue.
-
-#159 says ten files. The repository has eleven, which matches the rule file:
+`NOT_CRAN` itself — that part of #159 holds, and it is why
+`run-gates.sh` gate 7 sets it explicitly (commit `7cf0704`) and why
+`.claude/rules/testing-surveycore.md` states the rule for local runs:
 
 ```
 tests/testthat/test-analysis-corr-latent-variance.R
@@ -70,11 +87,14 @@ tests/testthat/test-variance-twophase.R
 tests/testthat/test-variance-vendored-saddlepoint.R
 ```
 
+#159 says ten files. The repository has eleven, which matches the rule file.
+
 ## Files Modified
 
 - `.github/workflows/test-coverage.yaml` — `develop` added to the `push` and
   `pull_request` branch lists, matching `R-CMD-check.yaml`; `NOT_CRAN: true`
-  on the coverage step, with a comment naming the eleven files and the issue;
+  pinned on the coverage step, with a comment saying it restates a value
+  `setup-r` already exports;
   the step gains `id: coverage` and writes `percent` to `$GITHUB_OUTPUT`; a
   new "Check the coverage floor" step reads that output and exits 1 when the
   figure is below 95 or when coverage did not run
@@ -84,8 +104,9 @@ tests/testthat/test-variance-vendored-saddlepoint.R
 
 - Run the coverage workflow on `develop` pushes and on PRs that target
   `develop`, so feature PRs are coverage-checked before they merge
-- Set `NOT_CRAN=true` for `covr::package_coverage()`, so the eleven
-  `skip_on_cran()` files run and the reported total is the true one
+- Pin `NOT_CRAN=true` for `covr::package_coverage()`. `setup-r` already
+  exported it, so no reported total moves; the job now states the variable its
+  floor check depends on
 - Fail the job when coverage is below the 95% floor, and fail it when the
   coverage step produced no figure at all
 
@@ -106,6 +127,16 @@ What was checked locally:
 | 4 | It fails 94.9 and an empty figure | pass |
 
 Assertions 3 and 4 ran the step's `awk` expression and its empty-value guard
-directly, not the workflow. The workflow runs on GitHub only, so the first CI
-run on this PR is the real check — and it is also the first run of the job on
-a `develop`-targeted PR.
+directly, not the workflow.
+
+The workflow itself runs on GitHub only, so this PR's own CI run is the real
+check. Run 33792891286 confirmed all three parts:
+
+| Assertion | Result |
+|---|---|
+| The job triggers on a `develop`-targeted PR | pass — first such run in the repository |
+| The coverage step hands the floor step a figure | pass — `COVERAGE_PERCENT: 96.1878` |
+| The floor step reads it and does not pass vacuously | pass — "coverage 96.1878% meets the 95% floor" |
+
+96.1878% against 95.90% on the June `main` run is drift from tests added
+since, not an effect of this change.

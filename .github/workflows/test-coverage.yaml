@@ -31,9 +31,12 @@ jobs:
       - name: Test coverage
         id: coverage
         env:
-          # Eleven test files carry a file-level skip_on_cran(). covr does not
-          # set NOT_CRAN, so without this the files skip, their source reads as
-          # untested, and coverage reports several points low (issue #159).
+          # Pins a value the job already had: r-lib/actions/setup-r exports
+          # NOT_CRAN=true, so this changes nothing today. It is here so the
+          # floor check below cannot start reading a false number if that
+          # default ever changes. Eleven test files carry a file-level
+          # skip_on_cran(); covr does not set the variable itself, and without
+          # it their source reads as untested (issue #159).
           NOT_CRAN: true
         run: |
           cov <- covr::package_coverage(
