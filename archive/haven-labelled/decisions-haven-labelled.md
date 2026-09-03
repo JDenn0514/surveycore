@@ -1,5 +1,23 @@
 # Decisions — haven-labelled (issue #175)
 
+> **Unarchived sources.** This file cites 8 documents that are not in the
+> repository:
+>
+> - `measurements.md` [not archived]
+> - `verification-d4.md` [not archived]
+> - `verification-d5.md` [not archived]
+> - `audit-empirical.md` [not archived]
+> - `audit-addendum.md` [not archived]
+> - `spec-review.md` [not archived]
+> - `plan-review.md` [not archived]
+> - `request.md` [not archived]
+>
+> The pipeline archived no measurement artifacts until issue #217.
+> They were lost with the run directory.
+>
+> The argument in each decision still stands on its own terms. The
+> measurement behind it cannot be opened, and is not restated here.
+
 ## D1 — Fix policy: strip the labelled class at construction
 
 **Decided**: 2026-08-27, by the user, before Stage 0 comprehension.
@@ -35,7 +53,7 @@ tagged NA — `haven::na_tag()` returned `NA` for it. Re-measured with a
 genuine `haven::tagged_na("r")`: the byte pattern is identical before and
 after the strip, `na_tag()` still returns `"r"`, and the tagged-NA entry
 inside the `labels` attribute stays readable. The claim holds; only the
-first test construction was wrong. See `measurements.md` M11, which also
+first test construction was wrong. See `measurements.md` [not archived] M11, which also
 gives the correct haven-free construction (the tag byte is index 5).
 
 And `@metadata@value_labels` already harvests `attr(col, "labels")` at
@@ -43,7 +61,7 @@ construction with base R (`R/core-metadata.R:3744`), so no label information
 is lost by the strip. `haven` stays in `Suggests`, which honours the written
 rule in `.claude/rules/surveycore-conventions.md`.
 
-One site fixes all 26 failing call forms in `audit-empirical.md` §4, and it
+One site fixes all 26 failing call forms in `audit-empirical.md` [not archived] §4, and it
 turns `get_totals()`'s accidental correctness (§3) into designed
 correctness.
 
@@ -78,7 +96,7 @@ correctness.
 
 `get_corr(..., method = "polychoric")` rejects labelled columns with
 `surveycore_error_polychoric_requires_ordinal`, because `is.ordered()` is
-FALSE on a `haven_labelled` vector (measured, `audit-empirical.md` §5). D1
+FALSE on a `haven_labelled` vector (measured, `audit-empirical.md` [not archived] §5). D1
 does not repair this: stripping the class yields a plain double, which is
 still not `ordered`.
 
@@ -126,7 +144,7 @@ if (is.double(col)) {
 
 ### Why, and what this overturns
 
-`measurements.md` M13 established that the gate never inspects the labelled
+`measurements.md` [not archived] M13 established that the gate never inspects the labelled
 class. It branches on storage type, so a plain `c(1, 2, 3)` double is
 refused exactly like a labelled one. The defect is therefore
 **"integer-valued doubles are not seen as ordinal"**, and it has affected
@@ -159,7 +177,7 @@ ordinal + ordinal and trip PC-2.
   whole-valued double, so it would warn on the normal case and become noise.
 - **New `ordinal =` argument on `get_corr()`.** Near-zero false positives,
   but the bare call keeps failing, which does not meet the acceptance
-  criterion in `request.md`.
+  criterion in `request.md` [not archived].
 - **Defer D2 to its own issue.** Reverses the earlier in-scope call and
   leaves `get_corr(polychoric)` broken on every SPSS-sourced dataset.
 
@@ -172,7 +190,7 @@ original wording said one setter covers all eleven routes. Measurement
 showed that is wrong for two of them.
 
 `comprehension.md` §3 found eleven routes that write `@data` and no single
-choke point among the constructors. `measurements.md` M4 then measured that
+choke point among the constructors. `measurements.md` [not archived] M4 then measured that
 an S7 property `setter` fires **both** at construction and on `@data <-`
 assignment.
 
@@ -183,17 +201,17 @@ external package that assigns `@data`, including `surveytidy`.
 
 Supporting evidence that N constructor edits would not be enough:
 
-- `measurements.md` M7 and M8 — labelled `weights`, labelled `fpc`, and
+- `measurements.md` [not archived] M7 and M8 — labelled `weights`, labelled `fpc`, and
   labelled `ids + strata` with `nest = FALSE` all abort during
   **construction**, so the strip must run before validation.
-- `audit-addendum.md` §5 — a second design built by
+- `audit-addendum.md` [not archived] §5 — a second design built by
   `as_survey_replicate()` from the same labelled frame still failed when
   only the first design had been stripped.
 
 ### Amendment — the setter alone is not sufficient
 
 
-Full evidence in `verification-d4.md`. I spiked the setter on a throwaway
+Full evidence in `verification-d4.md` [not archived]. I spiked the setter on a throwaway
 copy of the package and measured every route.
 
 The setter **does** cover the routes that matter most and that nothing else
@@ -230,7 +248,7 @@ no column carries the class.
 ## D5 — `survey_data(x, haven_class = TRUE)` restores the class on request
 
 **Decided**: 2026-08-28, by the user. Resolves HOLD-2 and BLOCK B3 from
-`spec-review.md`.
+`spec-review.md` [not archived].
 **Status**: SETTLED.
 
 Add one argument to `survey_data()`. The default keeps today's behaviour, so
@@ -308,7 +326,7 @@ survey_data(d, haven_class = TRUE)
 
 ### Why an opt-in, and why this name
 
-The problem it solves is measured in `spec-review.md` B3: `haven` and
+The problem it solves is measured in `spec-review.md` [not archived] B3: `haven` and
 `labelled` dispatch on the **class**, so after the strip
 `haven::as_factor()` returns `1/2/3` instead of `Low/Mid/High`, and
 `haven::write_sav()` writes a file whose value labels are `NULL`. Neither
@@ -334,11 +352,11 @@ reserves for setters and constructors, and matches the existing
 
 A column that arrived as `haven_labelled_spss` must be rebuilt as
 `haven_labelled_spss`, not as plain `haven_labelled`. The strip keeps
-`na_values` and `na_range` (`measurements.md` M9), so the information needed
+`na_values` and `na_range` (`measurements.md` [not archived] M9), so the information needed
 to pick the right class is still on the column. The rule: rebuild the SPSS
 variant when either attribute is present, otherwise the base class.
 
-Rebuild is lossless, verified in `spec-review.md` B3 — the reconstructed
+Rebuild is lossless, verified in `spec-review.md` [not archived] B3 — the reconstructed
 column restores both `as_factor()` and the `write_sav()` round trip.
 
 ### `sjlabelled` needs nothing
@@ -418,7 +436,7 @@ integer, character, `haven_labelled_spss` with `na_values`, the same with
 | `labelled::to_factor()` labels | correct, all six |
 | `haven::write_sav()` round trip | labels preserved on all but the tagged NA, which fails identically from haven's own constructor |
 
-Full evidence in `verification-d5.md`.
+Full evidence in `verification-d5.md` [not archived].
 
 **What this buys.** Three things, and the third is the best of them:
 
@@ -546,7 +564,7 @@ rule 7, so the count was wrong, not the reasoning.
 ## D7 — the nine-PR shape: split the strip PR at the gate seam, split the close-out out of the ordinality PR
 
 **Status**: SETTLED by the user, 2026-08-31, at Stage 3 of pipeline-implement.
-**Raised as**: findings R1, R2 and R3 of `plan-review.md` pass 1.
+**Raised as**: findings R1, R2 and R3 of `plan-review.md` [not archived] pass 1.
 
 ### The problem
 

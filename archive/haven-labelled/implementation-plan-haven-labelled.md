@@ -1,10 +1,18 @@
 # Implementation plan — haven-labelled
 
+> **Unarchived source.** This file cites one document that is not in the
+> repository:
+>
+> - `plan-review.md` [not archived]
+>
+> The pipeline archived no measurement artifacts until issue #217.
+> It was lost with the run directory.
+
 **Version**: 2.0
 **Date**: 2026-08-31
 **Sources**: `spec.md` v1.0, `test-spec.md` v1.0, `decisions.md` D1–D7 (all
 SETTLED), both upstream artifacts as amended on 2026-08-31 by D6
-**Supersedes**: v1.0 (seven PRs), after `plan-review.md` pass 1 —
+**Supersedes**: v1.0 (seven PRs), after `plan-review.md` [not archived] pass 1 —
 2 BLOCK, 4 REQUIRED, 4 SUGGESTED, all resolved here
 **Shape decision**: D7, settled by the user on 2026-08-31 — the strip ships
 as two merges and the whole-feature close-out as a third. Recorded in
@@ -318,9 +326,9 @@ closes it, and gate 9 is what proves it closed.
   - `tests/testthat/_snaps/methods-print.md` — modified (T-1, T-3)
   - `tests/testthat/test-labelled-analysis.R` — created
 
-  No `tests/testthat/_snaps/s7-classes.md`: S-35 to S-37 take
+  No `tests/testthat/_snaps/s7-classes.md` [no such file]: S-35 to S-37 take
   `expect_error(class = ...)` only, because they reach the class validators
-  (`test-spec.md` §4.3). No `tests/testthat/_snaps/labelled-analysis.md`:
+  (`test-spec.md` §4.3). No `tests/testthat/_snaps/labelled-analysis.md` [no such file]:
   §4.4 and §4.5 carry no error row and no snapshot row. No
   `tests/testthat/_snaps/utils.md`: D-1 to D-6 assert stored state, not
   errors — PR 4 is the PR that writes that file.
@@ -589,7 +597,7 @@ in `spec.md` §III.0.
   - `tests/testthat/test-conversion.R` — modified
 
   No snapshot file: §4.7 carries no error row and no snapshot row, so
-  `tests/testthat/_snaps/conversion.md` is untouched.
+  `tests/testthat/_snaps/conversion.md` [no such file] is never created.
 
 - **Pipeline split**: recommended — a contract change on three conversion
   routes: `@metadata` moves from empty to populated, and the stored columns

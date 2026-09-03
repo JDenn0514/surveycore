@@ -1,8 +1,22 @@
 # Comprehension — haven-labelled (issue #175)
 
+> **Unarchived sources.** This file cites 3 documents that are not in the
+> repository:
+>
+> - `audit-empirical.md` [not archived]
+> - `request.md` [not archived]
+> - `out-of-scope-findings.md` [not archived]
+>
+> The pipeline archived no measurement artifacts until issue #217.
+> They were lost with the run directory.
+>
+> The claims sourced to them still carry a file and a line of their own,
+> where the source reading gave one. The measurements are not restated
+> here.
+
 **Stage**: 0 (Deep Comprehension). No spec, no test-spec.
 **Written**: 2026-08-27, against the worktree `haven-labelled` at `cf6f153`.
-**Inputs treated as fact**: `audit-empirical.md`, `decisions.md` D1 and D2.
+**Inputs treated as fact**: `audit-empirical.md` [not archived], `decisions.md` D1 and D2.
 **Method**: source reading only. I had no Bash tool and ran no R. Every claim
 about existing behaviour carries a file and line. Claims that need a running
 R process sit under `## Open — needs measurement`.
@@ -23,7 +37,7 @@ arithmetic, comparison and coercion on it. `vctrs` is always loaded, because
 operations. The methods that make them work live in `haven`, and `haven` is
 in `Suggests`, so it is usually absent. Twelve of seventeen entry points
 therefore abort with a raw `vctrs` error
-(`audit-empirical.md` §4). D1 removes the cause: the constructors drop the
+(`audit-empirical.md` [not archived] §4). D1 removes the cause: the constructors drop the
 `haven_labelled` class from `@data` columns and keep the `labels`
 attribute, so `@data` holds only base types and no `vctrs` method can fire.
 D2 fixes a second, independent defect that D1 does not reach: the
@@ -63,7 +77,7 @@ Confirmed from the upstream sources, not guessed:
 "haven_labelled"), inherit_base_type = TRUE)`. The
 `inherit_base_type = TRUE` argument appends the base type, which is why the
 audit's hand-built fixture is byte-identical to a `read_sav()` column
-(`audit-empirical.md` §Method). `haven/R/labelled_spss.R` calls
+(`audit-empirical.md` [not archived] §Method). `haven/R/labelled_spss.R` calls
 `new_labelled(..., class = "haven_labelled_spss")`, so the SPSS variant is a
 subclass.
 
@@ -73,7 +87,7 @@ uses.
 
 ### 2.2 The precondition, restated
 
-Per `audit-empirical.md` §1 the failure needs `vctrs` loaded and `haven`
+Per `audit-empirical.md` [not archived] §1 the failure needs `vctrs` loaded and `haven`
 absent. Note that `vctrs` is **not** in `Imports`
 (`DESCRIPTION:37-48`); it arrives through `tibble` and `dplyr`. That is a
 transitive dependency the package does not control, so the precondition
@@ -195,7 +209,7 @@ labelled design column, found by reading:
 
 The audit did not probe a labelled **weight**, **PSU**, **stratum** or
 **FPC** column — its fixture labelled only outcome columns
-(`audit-empirical.md` §Method). These eight sites are therefore untested
+(`audit-empirical.md` [not archived] §Method). These eight sites are therefore untested
 failure paths. Items M5, M7 and M8 in §8 confirm them.
 
 The earliest safe insertion point in `as_survey()` is immediately after
@@ -234,7 +248,7 @@ its answer.
 
 **The `is.numeric()` answer, established by inference.** The audit measured
 `get_diffs(inc7, gender)` failing with `vctrs_error_cast`, not with
-`surveycore_error_non_numeric_variable` (`audit-empirical.md` §4).
+`surveycore_error_non_numeric_variable` (`audit-empirical.md` [not archived] §4).
 `R/analysis-diffs.R:263` is `if (!is.numeric(x_col))` and raises
 `surveycore_error_non_numeric_variable`. `inc7` passed that gate and failed
 later, at `R/analysis-diffs.R:281` (`as.factor(treats_col)`) or `:286`
@@ -283,7 +297,7 @@ themselves come from `design@metadata@value_labels[[gv]] %||% attr(src_col,
 full column `design@data[[gv]]` (`:230`), never a subset, so the
 attribute-drop rule in §5.4 does not bite.
 
-The load-bearing side effect the audit found (`audit-empirical.md` §2)
+The load-bearing side effect the audit found (`audit-empirical.md` [not archived] §2)
 disappears on its own: after D1 there is no labelled class left for
 `haven`'s registered `vctrs` methods to act on.
 
@@ -441,7 +455,7 @@ these three files and inspect each diff. There is no hygiene finding here.
 
 The real finding is the footgun: the documented fast run silently deletes
 committed snapshot files for every file it skips. That is worth its own
-issue — see `out-of-scope-findings.md`.
+issue — see `out-of-scope-findings.md` [not archived].
 
 ### 5.6 Vignettes and examples
 
@@ -482,7 +496,7 @@ function whose job is upgrading pre-2.0 objects. Two properties follow:
 
 - A legacy `"labelled"` vector has no `vctrs_vctr` in its class vector, so
   no `vctrs` S3 method intercepts arithmetic. Base R operates on the
-  underlying double, which is the left column of `audit-empirical.md` §1 —
+  underlying double, which is the left column of `audit-empirical.md` [not archived] §1 —
   everything works. So the legacy class probably does **not** trigger the
   26 failing forms.
 - It may still change the answer of a type predicate through some other
@@ -645,7 +659,7 @@ so. Two shapes:
 - False negative: **very high**. A real SPSS import marks nothing, so
   `get_corr(d, c(inc7, educ4), method = "polychoric")` still fails on the
   first try. That does not clear the acceptance criterion in
-  `request.md` ("Every analysis function in the public API works on a
+  `request.md` [not archived] ("Every analysis function in the public API works on a
   `haven_labelled` column").
 - (a) overloads `higher_is`, whose documented meaning is direction of
   improvement for `get_diffs()` (`R/core-metadata.R:2980-2984`).
@@ -798,7 +812,7 @@ then `attr(spss, "class") <- NULL` and print `attributes(spss)`. Confirm
 **M10 — the legacy `"labelled"` class.**
 Build `structure(c(1, 2, 3), label = "Q1", labels = c(A = 1, B = 2, C = 3),
 class = "labelled")`. Put it in a design and run the twelve failing entry
-points from `audit-empirical.md` §4. Report which pass. Also run the M2
+points from `audit-empirical.md` [not archived] §4. Report which pass. Also run the M2
 predicate set on it. This decides whether D1's test must widen beyond
 `inherits(x, "haven_labelled")`.
 
@@ -829,7 +843,7 @@ inferred in §7.1. This confirms the gap is specific to double storage.
 
 ### 9.1 What becomes unreachable after D1 + D2
 
-All 26 failing call forms in `audit-empirical.md` §4 become unreachable
+All 26 failing call forms in `audit-empirical.md` [not archived] §4 become unreachable
 **through the four constructors and through `from_svydesign()`**, because
 `@data` then holds no labelled column and no `vctrs` method can fire. The
 four `vctrs` classes — `vctrs_error_ptype2`,
@@ -954,7 +968,7 @@ Not test cases — that is test-spec's job. What follows is the surface.
 | `tests/testthat/test-utils.R` | `survey_data()` returns plain types |
 | `tests/testthat/test-conversion.R` | `as_svydesign()`, `from_svydesign()`, `as_tbl_svy()`, `from_tbl_svy()` round trips; the `from_svydesign()` metadata gap if the spec closes it |
 | `tests/testthat/test-metadata-system.R` | `set_val_labels()` on a labelled column; every extractor unchanged |
-| `tests/testthat/test-analysis-freqs.R`, `-means.R`, `-totals.R`, `-quantiles.R`, `-ratios.R`, `-variance.R`, `-covariance.R`, `-diffs.R`, `-t-test.R`, `-corr.R`, `-effective-n.R` | the 26 call forms from `audit-empirical.md` §4 |
+| `tests/testthat/test-analysis-freqs.R`, `-means.R`, `-totals.R`, `-quantiles.R`, `-ratios.R`, `-variance.R`, `-covariance.R`, `-diffs.R`, `-t-test.R`, `-corr.R`, `-effective-n.R` | the 26 call forms from `audit-empirical.md` [not archived] §4 |
 | `tests/testthat/test-glm.R`, `test-glm-anova.R`, `test-glm-clean.R` | `survey_glm()`, `get_anova()`, `clean()` on labelled input |
 | `tests/testthat/test-analysis-corr-latent.R`, `test-analysis-corr-latent-variance.R` | D2 — the new gate, and the PC-1 / PC-2 boundaries |
 | `tests/testthat/test-analysis-helpers.R` | `.apply_group_labels()` and `.extract_var_meta()` on stripped columns |
@@ -1013,7 +1027,7 @@ structure(
 
 ### 10.4 The `haven`-not-loaded constraint — and why it cannot be asserted
 
-`request.md` asks for a regression test that runs with `haven` not loaded.
+`request.md` [not archived] asks for a regression test that runs with `haven` not loaded.
 Seven test files load the `haven` namespace inside
 `skip_if_not_installed("haven")` blocks, and `haven::` loads the namespace
 for the rest of the process:
@@ -1042,7 +1056,7 @@ Three ways out, for the spec to choose:
   `expect_false(inherits(survey_data(d)$q, "haven_labelled"))` and
   `expect_type(survey_data(d)$q, "double")` are order-independent, and both
   fail on `develop` at `cf6f153`. That satisfies the acceptance criterion in
-  `request.md` without needing `haven` absent, because the strip makes the
+  `request.md` [not archived] without needing `haven` absent, because the strip makes the
   bug unreachable whether `haven` is loaded or not. This is the cleanest
   option and needs no new dependency.
 - **(b) Run the probe in a subprocess.** `callr` is **not** in `Suggests`
@@ -1091,10 +1105,10 @@ reads about 93.7% instead of 96.09%.
   spec must say so (§7.1).
 - `plans/error-messages.md:193` (PC-1) and `:194-195` (PC-2) → the two
   conditions D2 changes (§7.5, §9.4).
-- `audit-empirical.md` §1 → the `vctrs`-loaded, `haven`-absent
+- `audit-empirical.md` [not archived] §1 → the `vctrs`-loaded, `haven`-absent
   precondition; `vctrs` is transitive through `tibble` and `dplyr`
   (`DESCRIPTION:37-48`), so it cannot be removed (§2.2).
-- `audit-empirical.md` §3 → verified line by line against
+- `audit-empirical.md` [not archived] §3 → verified line by line against
   `R/analysis-means-helpers.R:70`, `:115`, `:117` and
   `R/analysis-totals-helpers.R:36`, `:96` (§2.4).
 - `decisions.md` D1 measurement table → the strip keeps `labels` and keeps
@@ -1109,7 +1123,7 @@ reads about 93.7% instead of 96.09%.
 
 ## 12. Assumptions
 
-Things the method assumes that `request.md` did not state.
+Things the method assumes that `request.md` [not archived] did not state.
 
 1. **The `labels` attribute is a sufficient carrier for value labels.**
    D1 keeps the attribute and relies on `@metadata@value_labels` as the
@@ -1150,7 +1164,7 @@ Things the method assumes that `request.md` did not state.
    or state plainly that it does not.
 8. **The `surveytidy` hole is acceptable, or it is not.** §3.2 and §9.2.
    The spec must say which. Saying nothing leaves the acceptance criterion
-   in `request.md` — "Every analysis function in the public API works on a
+   in `request.md` [not archived] — "Every analysis function in the public API works on a
    `haven_labelled` column" — true for the constructor path and false for
    the `surveytidy::mutate()` path.
 
@@ -1200,7 +1214,7 @@ trades one kind of silent wrong answer for another:
 - R3 (explicit metadata marker) and R4 (explicit `get_corr()` argument)
   both give near-zero false positives, and both leave
   `get_corr(d, c(inc7, educ4), method = "polychoric")` failing on the first
-  try. That reading of the acceptance criterion in `request.md` is not met.
+  try. That reading of the acceptance criterion in `request.md` [not archived] is not met.
 
 There is no source, paper or upstream package that settles which risk the
 package should carry. `decisions.md` D2 lists the candidate signals and

@@ -1,5 +1,13 @@
 # Test spec — haven-labelled (issue #175)
 
+> **Unarchived source.** This file cites one document that is not in the
+> repository:
+>
+> - `request.md` [not archived]
+>
+> The pipeline archived no measurement artifacts until issue #217.
+> It was lost with the run directory.
+
 **Version**: 1.0
 **Date**: 2026-08-28
 **Status**: Draft — Stage 1 output
@@ -741,7 +749,7 @@ different things.
 
 ### 4.11a Confirming the new tests fail before the fix
 
-`request.md` requires a regression test that fails on `develop` at `cf6f153`
+`request.md` [not archived] requires a regression test that fails on `develop` at `cf6f153`
 and passes after. That has to be demonstrated, not asserted, and the method
 must be recorded because it cannot be reproduced from the merged branch
 afterwards.

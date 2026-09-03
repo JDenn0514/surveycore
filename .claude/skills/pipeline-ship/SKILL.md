@@ -218,10 +218,15 @@ After DONE is written:
 1. Run the archive procedure in
    `.claude/skills/pipeline-shared/references/archive-plans.md`. The slug comes
    from the implementation plan filename
-   (`plans/implementation-plan-{slug}.md`). If no plan file exists at that
-   path, skip archiving and note it in the summary.
+   (`plans/implementation-plan-{slug}.md`), or from the run directory name
+   when no plan file exists.
 
-2. **Return to user** with summary: PRs merged, coverage delta, any STOPs, and which files were archived.
+2. The procedure's step 4 stops closeout when a cited document resolves to no
+   file. HOLD with classification `unarchived-citation` and the script's
+   output. The user decides which exit each name takes; the two are in
+   `archive-plans.md` step 4.
+
+3. **Return to user** with summary: PRs merged, coverage delta, any STOPs, which files were archived, and any citation marked in step 4.
 
 ## Signal handling
 

@@ -1,7 +1,7 @@
 # Spec — the pipeline archives its measurement artifacts
 
 **Issue**: #217
-**Status**: DRAFT — awaiting user review
+**Status**: BUILT — describes what shipped
 **Date**: 2026-09-03
 **Slug**: `pipeline-archive-artifacts`
 
@@ -28,26 +28,32 @@ the eight exists on any branch.
 
 Two more archived files cite the same missing documents:
 
-| File | Cites |
+| File | Lost documents cited |
 |---|---|
-| `decisions-haven-labelled.md` | `measurements.md`, `verification-d4.md`, `verification-d5.md`, `audit-empirical.md`, `audit-addendum.md`, `spec-review.md`, `plan-review.md`, `request.md` |
-| `comprehension-haven-labelled.md` | `audit-empirical.md` (13 sites), `request.md` (6 sites) |
-| `test-spec-haven-labelled.md` | `request.md` (1 site) |
+| `decisions-haven-labelled.md` | eight — `measurements.md`, `verification-d4.md`, `verification-d5.md`, `audit-empirical.md`, `audit-addendum.md`, `spec-review.md`, `plan-review.md`, `request.md` |
+| `comprehension-haven-labelled.md` | three — `audit-empirical.md` (13 sites), `request.md` (6 sites), `out-of-scope-findings.md` (1 site) |
+| `implementation-plan-haven-labelled.md` | one — `plan-review.md` (2 sites) |
+| `test-spec-haven-labelled.md` | one — `request.md` (1 site) |
 
 The surviving run directory holds two `implementation.md` files and fifteen
-gate logs. It holds none of the eight.
+gate logs. It holds none of the nine.
 
-This is a gap in the pipeline, not a mistake in the `haven_labelled` work. The
-next feature loses its evidence the same way.
+This is a gap in the pipeline, not a mistake in the `haven_labelled` work.
 
 ## Decisions
 
 | # | Question | Decision |
 |---|---|---|
 | A | Which run artifacts get archived? | Every `.md` in the run directory. Logs and `status.md` stay untracked. |
-| B | How is a missing citation caught? | A citation check at archive time. An unresolved citation halts closeout. |
+| B | How is a missing citation caught? | A script, run at archive time. A name that resolves nowhere halts closeout. |
 | C | Where does the widened rule live? | In `archive-plans.md`, rewritten. No second procedure. |
-| D | What happens to `haven-labelled`? | Each citation site gets a marker. No measurement is restated or re-derived. |
+| D | What happens to `haven-labelled`? | Every citation site gets a marker. No measurement is restated or re-derived. |
+
+Decision B changed during the build. The design put the resolution rules in
+prose for the agent to apply. `writing-skills` says to automate a mechanical
+constraint and save documentation for judgement calls, and resolution is
+mechanical: `check-citations.sh` now holds it, and the prose holds only the
+two exits an operator chooses between.
 
 ## Design
 
@@ -60,126 +66,154 @@ grow from one to two:
 - `{run-dir}` — the first match for `.surveycore-workspace/runs/*-{slug}/`.
   Absent for a branch driven by hand through `commit-and-pr`.
 
-Steps:
+Steps: create the directory; copy every `.md` under `{run-dir}`, keeping the
+`prs/pr-{n}-{slug}/` shape and skipping `*.log` and `status.md`; `git mv` the
+`plans/*{slug}*` files as before; run the check; update `CLAUDE.md`; commit.
 
-1. **Copy the run documents.** Copy every `*.md` under `{run-dir}` into
-   `archive/{slug}/`, keeping the `prs/pr-{n}-{slug}/` subdirectory shape.
-   Skip `*.log` and `status.md`. Copy, do not move: the run directory is
-   gitignored and stays in place for forensics.
-2. **Move the `plans/` documents.** `git mv` each `plans/*{slug}*` file into
-   `archive/{slug}/`, as the procedure does today. This keeps the five
-   slug-suffixed paths that `CLAUDE.md` points at.
-3. **Run the citation check** (§2). An unresolved citation stops the procedure
-   here, before any commit.
-4. **Update `CLAUDE.md`** and commit, as the procedure does today.
-
-When `{run-dir}` is absent, step 1 and step 3 are skipped and the procedure
-behaves as it does today.
+Copies, not moves: the run directory is gitignored and stays for forensics.
 
 Archived run documents keep their run filenames — `request.md`,
-`spec-review.md`, `prs/pr-3a-labelled-class-strip-setter/implementation.md`.
-Citations are written as bare filenames, so the run names are what makes them
+`spec-review.md`, `prs/pr-5-from-svydesign-metadata/implementation.md`.
+Citations are written as bare names, so the run names are what makes them
 resolve. The five documents that arrive from `plans/` keep their existing
 slug-suffixed names.
 
-### 2. The citation check
+### 2. The check
 
-Scan every `.md` file now in `archive/{slug}/`. Collect each inline-code span
-whose content ends in `.md`:
+`.claude/skills/pipeline-shared/scripts/check-citations.sh <archive-dir> <slug>`
 
-```bash
-find archive/{slug} -name '*.md' -print0 |
-  xargs -0 grep -ohE '`[^`]*[.]md`' |
-  tr -d '`' | sort -u
-```
+It collects every inline-code span ending in `.md` across the archived
+documents, and reports each name that resolves to no file, with the file and
+line of every citation. Exit 1 on any such name.
 
-Resolve each name against these paths, in order. The first hit resolves it:
+Three shapes are not filenames and are skipped: a span containing a space (a
+shell command), a span containing `*` (a glob), and a path starting `../`.
 
-1. `archive/{slug}/{name}`
-2. `archive/{slug}/{stem}-{slug}.md` — so a citation of `spec.md` finds
-   `spec-haven-labelled.md`
-3. `{name}` from the repository root — so `CLAUDE.md`,
-   `.claude/rules/code-style.md` and `plans/error-messages.md` resolve
+A name resolves when any of these finds a file:
 
-Two names are out of scope and never counted as unresolved:
+| # | Rule | Resolves |
+|---|---|---|
+| 1 | `{archive-dir}/{name}` | `request.md` beside the other archived docs |
+| 2 | `{archive-dir}/{stem}-{slug}.md` | a citation of `spec.md` finds `spec-haven-labelled.md` |
+| 3 | any path under `{archive-dir}` ending in `/{name}` | `implementation.md` finds `prs/pr-5-…/implementation.md` |
+| 4 | an exact repository path | `plans/error-messages.md`, `CLAUDE.md` |
+| 5 | exactly one repository path ending in `/{name}` | `_snaps/utils.md` finds `tests/testthat/_snaps/utils.md`; bare `code-style.md` finds `.claude/rules/code-style.md` |
 
-- a name that starts with `../`, which points outside the repository;
-- a name whose every citation site carries the not-archived marker of §4. The
-  check finds the marker by the literal text `(not archived` immediately after
-  the closing backtick.
+Rule 5 requires a unique match on purpose. A pipeline artifact name is the
+case that matters: `implementation.md` names one file per feature, and many
+features have one, so a repo-wide match would let this feature's citation
+resolve against another feature's copy. Ambiguous names have to resolve
+inside the archive directory, which rule 3 already tried.
 
-A name that resolves nowhere is **unresolved**. The procedure then:
+The check reads tracked files plus untracked files that are not gitignored,
+so it sees the freshly copied archive documents before the commit.
 
-- writes the unresolved names, with the file and line of each citation, into
-  `{run-dir}/decisions.md`;
-- makes no commit;
-- returns a HOLD to the caller with classification `unarchived-citation`.
+### 3. The two exits
 
-`pipeline-ship` Step 5 and `commit-and-pr` Step 12 surface the HOLD to the
-user. Two exits, both explicit:
+Exit 1 stops closeout before any commit. Each reported name takes one of two
+exits, and the caller surfaces the choice to the user:
 
-- put the missing document in the run directory and run the procedure again;
-- add the not-archived marker to the citation.
+| The document | Do this |
+|---|---|
+| exists, and belongs with the feature | put it in `{run-dir}` and run the copy step again |
+| is gone, or was never written | mark every citation of it |
 
-There is no third exit. The check is what makes the gap unreachable by
-forgetting.
+### 4. The markers
 
-### 3. Measurement documents get a stated home
-
-`workspace-layout.md` gains one rule: an ad-hoc measurement or verification
-document goes in the run directory, next to `spec.md`. Nowhere else.
-
-This is what turns "every `.md` in the run directory" into full coverage.
-`measurements.md` and `verification-d4.md` were lost because no rule said
-where they live.
-
-### 4. The not-archived marker
-
-One form, used everywhere:
+Two, because a citation fails to resolve for two different reasons:
 
 ```
-`measurements.md` (not archived, #217)
+See `measurements.md` [not archived] M11, which also records the
+No `_snaps/s7-classes.md` [no such file]: S-35 to S-37 take
 ```
 
-Each affected archived file also gains a block below its title:
+`[not archived]` — the document existed and the pipeline lost it.
+`[no such file]` — the citation names a document to say it is absent.
 
-```
-> **Unarchived sources.** This file cites `measurements.md`,
-> `verification-d4.md` and `audit-empirical.md`. None of the three is in the
-> repository. The pipeline gap that lost them is issue #217. The measurements
-> are not restated here.
-```
+Brackets, not parentheses, because most citations already sit inside a
+parenthesis: `` (`audit-empirical.md` [not archived] §4) `` reads; the same
+line with nested parentheses does not.
 
-### 5. `haven-labelled` remediation
+The check reads markers per line, not per span, so the marker can sit where
+the prose wants it rather than always immediately after the backtick.
 
-Add the marker at every citation site listed in the §Evidence table, and the
-block below each of the three titles.
+Each affected file also carries a block below its title, listing the
+documents it cites that are gone and naming issue #217 once. The list entries
+carry the marker too, so the notice satisfies its own check.
+
+### 5. Measurement documents get a stated home
+
+`workspace-layout.md` gains one rule: a document holding measured evidence
+goes in the run directory, beside `spec.md`. That is what turns "every `.md`
+in the run directory" into full coverage — `measurements.md` and
+`verification-d4.md` were lost because no rule said where they live.
+
+### 6. `haven-labelled` remediation
+
+Every citation of the nine lost documents carries `[not archived]`. Four
+files carry a block. The three snapshot files cited as absent carry
+`[no such file]`.
 
 Restate no measurement. Re-derive no measurement. The argument in each
 decision stays checkable on its own terms; the evidence is marked absent.
+
+The two surviving `implementation.md` files are archived retroactively, which
+is what makes the 22 `implementation.md` citations resolve.
+
+## What the check found
+
+The design predicted eight missing documents. The check reported thirteen on
+the first run against the real archive:
+
+| Finding | Count |
+|---|---|
+| The eight the issue named | 8 |
+| `out-of-scope-findings.md` — a ninth lost document the issue missed | 1 |
+| `implementation.md` — resolved once the two survivors were archived | 1 |
+| Snapshot files cited as deliberately absent | 2 |
+| `tests/testthat/_snaps/conversion.md` — a stale claim: the plan and PR 5's notes both say it "is untouched", and the file does not exist | 1 |
+
+An earlier draft of the check reported 23, of which ten were noise — six real
+repo files cited by partial path, two shell commands inside backticks, one
+glob, and one bare name that matched an unrelated file. Rules 3 and 5 and the
+three skipped shapes came out of reading those ten.
 
 ## Verification
 
 No R code changes, so no package gate applies.
 
-The procedure is verified by a dry run against the surviving
-`2026-08-27-haven-labelled` run directory, in a scratch copy of the
-repository. Three assertions:
+| # | Assertion | Result |
+|---|---|---|
+| 1 | The copy step brings the two `implementation.md` files into `archive/haven-labelled/prs/` | pass |
+| 2 | The fifteen `*.log` files stay behind | pass |
+| 3 | The check reports the lost documents and halts before committing | pass — 13 names, all genuine |
+| 4 | After the markers land, the check exits 0 | pass |
 
-| # | Assertion |
+Assertion 4 is the one that proves the marker detection works, not just the
+scan.
+
+## Other archives
+
+The issue said the features before `haven-labelled` lost their evidence too,
+and that nobody had checked. Measured:
+
+| Archive | Unresolved |
 |---|---|
-| 1 | The two `implementation.md` files arrive in `archive/haven-labelled/prs/`. |
-| 2 | The fifteen `*.log` files and `status.md` do not. |
-| 3 | The check reports exactly the eight unresolved names in §Evidence, and halts before committing. The six names the two `implementation.md` files cite all resolve: `decisions.md` and `spec.md` by rule 2, `NEWS.md`, `plans/error-messages.md` and the two `_snaps/*.md` files by rule 3. |
+| `haven-labelled` | 0 after this work |
+| `dataset-level-metadata` | 4 — `baseline.md`, `spec-review.md`, and two stale `plans/…` paths for files now in `archive/` |
+| `var-extension-slot` | 2 — `implementation.md`, `plan-review.md` |
+| `polychoric-performance` | 0 |
 
-Assertion 3 runs before the marker edits of §5. After those edits, a second
-run of the check reports zero unresolved names.
+Out of scope here. Each needs the same per-citation judgement pass, and the
+`plans/…` rows are a different defect: a citation whose path went stale when
+the archive step moved the file.
 
 ## Out of scope
 
 - Archiving gate logs. They stay untracked. An `audit.md` that cites a gate
   result carries the numbers, and `audit.md` is now archived.
-- Recovering the eight `haven-labelled` documents. They are gone.
+- Recovering the nine `haven-labelled` documents. They are gone.
+- Remediating `dataset-level-metadata` and `var-extension-slot`.
 - Renaming the five slug-suffixed archived filenames.
 - The empty `pr-3a-labelled-class-strip-setter/` directory behind #216. The
   gate 17 and gate 18 measurements were logs, and logs stay untracked.
