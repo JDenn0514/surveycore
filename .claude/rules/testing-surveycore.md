@@ -29,14 +29,17 @@ run — it reads the real environment.
 
 | Run | Command | Expectations | Time | Use for |
 |---|---|---|---|---|
-| Fast | `NOT_CRAN=false Rscript -e "testthat::test_local()"` | 8,841 | 384 s | The edit-run loop. Skips the 11 slow files. |
-| Full | `Rscript -e "devtools::test()"` | 9,847 | 879 s | Before any push or PR. Runs everything. |
+| Fast | `NOT_CRAN=false Rscript -e "testthat::test_local()"` | fewer (skips 11 files) | shorter | The edit-run loop. Skips the 11 slow files. |
+| Full | `Rscript -e "devtools::test()"` | all | longer | Before any push or PR. Runs everything. |
+
+Both counts grow with every PR that adds tests — do not record exact
+expectation totals or run times here; they go stale within a few merges
+(issue #215). If you need current numbers, run the commands above.
 
 Always measure coverage with `NOT_CRAN=true`. `covr` does not set the
-variable, so without it the 11 files skip and coverage reads about 93.7%
-instead of 96.0938% (issue #159).
-
-Measured 2026-08-26 on the narrowed suite.
+variable, so without it the 11 files skip and coverage reads several
+points lower than the true figure (issue #159). The 95% CI floor
+(`testing-standards.md`) is the number that matters and does not drift.
 
 ## File mapping
 
