@@ -74,7 +74,7 @@ Add to `.gitignore` at repo root (one line):
 
 ## Per-PR subdirectories
 
-`prs/pr-{n}-{slug}/` groups builder + tester + reviewer outputs for a single PR. This is required when the implementation-plan.md has multiple PRs — each PR needs its own set of artifacts so parallel dispatch doesn't collide.
+`prs/pr-{n}-{slug}/` groups builder + tester + reviewer outputs for a single PR. This is required when the implementation-plan.md has multiple PRs — each PR needs its own set of artifacts so one PR's builder, tester and reviewer never overwrite another's.
 
 ## What NOT to put in workspace
 

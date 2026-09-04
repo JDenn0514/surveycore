@@ -1,13 +1,10 @@
 ---
 name: pipeline-ship
 description: >
-  Executes a PLAN_READY implementation plan end-to-end through pipelined
-  agents. For each PR — baseline check, builder (spec only, in a worktree),
-  tester (test-spec only, after merge-back), reviewer (all artifacts,
-  convergence verdict), shipper (branch, commit, PR, CI, merge). Dispatches
-  PRs in parallel when write surfaces are disjoint. Marks plan checkboxes on
-  merge. Use when the user says "ship the plan", "execute the plan", "run the
-  PRs", or after pipeline-implement has reached PLAN_READY.
+  Executes a PLAN_READY implementation plan PR by PR, one PR at a time,
+  through builder, tester, reviewer and shipper. Use when the user says "ship
+  the plan", "execute the plan", "run the PRs", or after pipeline-implement
+  has reached PLAN_READY.
 ---
 
 # Skill: pipeline-ship
@@ -34,7 +31,7 @@ PLAN_READY
 baseline check (tests + R CMD check on current develop)
    │
    ▼
-for each PR (sequential or parallel per topology):
+for each PR, one at a time, in dependency order:
    │
    ├─ builder (worktree) → implementation.md
    │     │
@@ -58,7 +55,9 @@ for each PR (sequential or parallel per topology):
    │     ├─ fails → HOLD pre-pr-check-failure; fix → re-run gate
    │     └─ passes → continue
    │
-   └─ shipper → PR, CI, merge → plan[x]
+   ├─ shipper → PR, CI, merge → plan[x]
+   │
+   └─ post-PR verification → next PR
 
 all PRs DONE → pipeline-ship returns
 ```
@@ -77,26 +76,57 @@ If tests or check fail, HOLD with classification `dirty-baseline`. Do not begin.
 
 Cache the baseline results (tests passing count, coverage %) for Before/After comparison in each audit.
 
-## Step 1 — Topology analysis
+## Step 1 — Dependency ordering
 
 Parse `implementation-plan.md` PR map. For each PR, extract the Files touched write surface.
 
-Build a dependency graph:
+Put the PRs in one order:
 
-- PR A blocks PR B if A's write surface overlaps B's (would produce merge conflicts)
-- Otherwise, A and B can dispatch in parallel
+- PR A comes before PR B when B builds on A's output.
+- PR A comes before PR B when their write surfaces overlap. Overlap fixes the
+  order — it never lets both run at once.
+- Otherwise keep the plan's own PR numbers.
 
-Output: a sequence of "batches". Each batch contains PRs that can dispatch in parallel.
+Output: one ordered list of PRs.
 
-## Step 2 — Dispatch loop
+Each PR runs its whole cycle — builder, tester, reviewer, pre-PR gate,
+shipper, merge, post-PR verification — before the next PR's builder starts.
 
-For each batch in order:
+### Why one PR at a time
 
-### 2a. Dispatch builders (parallel)
+Two builders at once cost the same tokens as two in sequence, because the work
+is identical. The cost appears when a PR needs a fix. Every one of the first three PRs in
+the `dataset-level-metadata` run took at least one fix cycle, four BLOCKs in
+all. With two PRs live, that is two BLOCK cycles, two re-audits, and two
+reviewer passes to hold in this session's context at the same time — and that
+is where a finding gets attached to the wrong PR (issue #165).
 
-Tell the user: "Dispatching builder(s) for batch {N}: {PR slugs}. Builders run in isolated worktrees — expect 10–25 min per PR."
+Disjoint write surfaces are a weaker guarantee than they look. In the same run,
+PR 3 shipped a `make_dataset_design()` state vocabulary that PR 6 needed and
+could not repair, because `helper-test-data.R` sat outside PR 6's write
+surface. A file-level overlap test cannot see that coupling. The reviewer,
+reading spec and test-spec together, caught it.
 
-For each PR in the batch, dispatch `builder` agent with `isolation: "worktree"`:
+One PR at a time also cannot break an ordering constraint, so the default
+carries no correctness risk.
+
+### Parallel dispatch on request
+
+Dispatch two builders at once when the user asks for it in this run, and say
+the cost first: each extra PR in flight adds a BLOCK cycle, a re-audit and a
+reviewer pass to carry at the same time, and a dependency found mid-flight can
+still force the PR to wait after its builder tokens are spent.
+
+## Step 2 — Per-PR cycle
+
+Take the first PR in the order. Run 2a to 2f for that PR and merge it. Then
+take the next PR.
+
+### 2a. Dispatch the builder
+
+Tell the user: "Dispatching the builder for PR {N} ({slug}). It runs in an isolated worktree — expect 10–25 min."
+
+Dispatch one `builder` agent with `isolation: "worktree"`:
 
 > PR: {number} — {slug}
 > Spec: {path to workspace spec.md}
@@ -106,19 +136,19 @@ For each PR in the batch, dispatch `builder` agent with `isolation: "worktree"`:
 > Read: .claude/agents/builder.md, r-package-profile.md (rules auto-load — do not re-read .claude/rules/)
 > DO NOT read test-spec.md. DO NOT read any other PR's implementation.md.
 
-Each builder returns `implementation.md` with the PR's write surface changes merged back via the worktree protocol.
+The builder returns `implementation.md` with the PR's write surface changes merged back via the worktree protocol.
 
-### 2b. Merge-back and dispatch testers (parallel)
+### 2b. Merge back and dispatch the tester
 
-Tell the user: "Builder(s) returned for batch {N}. Merging back and dispatching tester(s)."
+Tell the user: "The builder returned for PR {N}. Merging back and dispatching the tester."
 
-After all builders in the batch return:
+After the builder returns:
 
-1. Verify each worktree merged back cleanly (no conflicts)
-2. Verify each `implementation.md` write surface matches the plan
-3. Remove each builder's worktree: `git worktree remove --force <worktree-path>` then `git worktree prune`
+1. Verify the worktree merged back cleanly (no conflicts)
+2. Verify the `implementation.md` write surface matches the plan
+3. Remove the builder's worktree: `git worktree remove --force <worktree-path>` then `git worktree prune`
 
-Then dispatch `tester` agent for each PR (not in a worktree; tester reads the merged checkout):
+Then dispatch one `tester` agent (not in a worktree; the tester reads the merged checkout):
 
 > PR: {number} — {slug}
 > Test-spec: {path to workspace test-spec.md}
@@ -126,11 +156,11 @@ Then dispatch `tester` agent for each PR (not in a worktree; tester reads the me
 > Read: .claude/agents/tester.md, r-package-profile.md
 > DO NOT read spec.md. DO NOT read implementation.md.
 
-Each tester returns `audit.md` with verdict PASS or BLOCK.
+The tester returns `audit.md` with verdict PASS or BLOCK.
 
 ### 2c. BLOCK handling
 
-If an audit returns BLOCK:
+If the audit returns BLOCK:
 
 1. Increment BLOCK counter for that PR
 2. If counter < 3: send the BLOCK body (NOT the full audit.md, NOT
@@ -142,17 +172,17 @@ If an audit returns BLOCK:
    restart), passing the BLOCK body in the dispatch prompt.
 3. If counter = 3: emit HOLD classification `repeated-block`; pause the pipeline for user decision (limit defined in signals.md §BLOCK)
 
-### 2d. Dispatch reviewer (sequential per PR, after its audit passes)
+### 2d. Dispatch the reviewer (after the audit passes)
 
-Tell the user: "Tester(s) returned for batch {N}. Dispatching reviewer(s) — expect 5–10 min."
+Tell the user: "The tester returned for PR {N} ({slug}). Dispatching the reviewer — expect 5–10 min."
 
-For each PR with audit verdict=PASS, dispatch `reviewer`:
+With audit verdict=PASS, dispatch one `reviewer`:
 
 > PR: {number} — {slug}
 > All artifacts: spec.md, test-spec.md, implementation.md, audit.md, comprehension.md (if present)
 > Read: .claude/agents/reviewer.md, plus signals.md, artifact-schemas.md, and r-package-profile.md from pipeline-shared/references
 
-Reviewer returns `review.md` with verdict PASS / BLOCK / STOP.
+The reviewer returns `review.md` with verdict PASS / BLOCK / STOP.
 
 ### 2e. Review verdict handling
 
@@ -183,30 +213,30 @@ and fix (re-dispatch builder if a code change is needed; fix `_pkgdown.yml`
 directly if it is a reference-index issue). Re-run the gate after the fix.
 Do not dispatch the shipper until both commands exit clean.
 
-### 2f. Dispatch shipper
+### 2f. Dispatch the shipper
 
-For each PR with review verdict=PASS:
+With review verdict=PASS, dispatch one `shipper`:
 
 > PR: {number} — {slug}
 > Review: {path to workspace review.md}
 > Plan: {path to workspace implementation-plan.md}
 > Read: .claude/agents/shipper.md
 
-Shipper opens the PR, monitors CI, merges, and marks `[x]` in the plan.
+The shipper opens the PR, monitors CI, merges, and marks `[x]` in the plan.
 
-## Step 3 — Post-batch verification
+## Step 3 — Post-PR verification
 
-After every shipper in a batch returns:
+After the shipper returns:
 
 1. `git checkout develop && git pull`
 2. Re-run `devtools::test()` on the updated develop
 3. If any test fails that was passing in the baseline → HOLD with classification `post-merge-regression`
 
-Only then proceed to the next batch.
+Only then start the next PR's builder.
 
 ## Step 4 — Advance to DONE
 
-After all batches complete and all plan checkboxes are `[x]`:
+After every PR is merged and all plan checkboxes are `[x]`:
 
 1. Append `DONE` to `status.md`
 2. Proceed to Step 5 before returning to the user

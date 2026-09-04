@@ -107,7 +107,7 @@ Before writing any artifact to disk, verify:
 - [ ] `test-spec.md` has zero mentions of file paths in `R/` or internal helper functions
 - [ ] Neither file says "see the other document"
 - [ ] Every error class referenced exists in `plans/error-messages.md`
-- [ ] `implementation-plan.md`'s file surfaces are disjoint across concurrent PRs
+- [ ] every pair of `implementation-plan.md` PRs either has disjoint file surfaces or states which PR comes first
 
 ## Output artifact
 
