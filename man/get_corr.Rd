@@ -50,7 +50,7 @@ A numeric column with no non-missing value at all is not ordinal, and it
 raises the same error. A factor or ordered column declares its levels, so
 it stays ordinal even when every value is missing; a bare numeric column
 has only its values to go on, and an empty one shows no scale. An all-\code{NA}
-factor pair returns \code{r = NA} and \code{n = 0}.
+factor pair returns an \code{r} of \code{NA} and an \code{n} of \code{0}.
 
 A numeric column with few distinct whole values is treated as a scale.
 This is what makes the method work on a value-labelled column read from
