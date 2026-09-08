@@ -2092,3 +2092,211 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
   expect_match(msg, "has columns named", fixed = TRUE)
   expect_match(msg, "conflicting\\s+columns")
 })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Export route — as_svydesign() on a survey_replicate (§IV)
+#
+#   X-1.  The FPC drop warns, and the conversion still returns a design
+#   X-2.  Export parity with a recorded FPC [numerical]
+#   X-3.  Export parity without a recorded FPC [numerical]
+#   X-4.  Every replicate type converts with an FPC recorded
+#   X-5.  No FPC recorded, no warning
+#   X-6.  The drop leaves the surveycore design untouched
+#   X-7.  A design that names no replicate column is refused
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Build a replicate design that records an FPC column. make_survey_data()
+# supplies fpc as a per-stratum population size, which is what
+# as_survey_replicate(fpc = fpc) stores.
+make_rep_fpc <- function(type = "BRR", seed = 401L, rscales = NULL) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    rscales = rscales,
+    fpc = fpc
+  )
+}
+
+# X-1. §IV.2 step 5 and §VI property 6. The warning is not the whole
+#      behaviour: the call has to succeed as well, so the result comes off the
+#      return value of the warned call.
+test_that("as_svydesign() warns and drops a recorded FPC, and still converts", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc()
+  test_invariants(d)
+  expect_identical(d@variables$fpc, "fpc")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The condition names the dropped column, and the FPC reached none of the
+  # replicate scales survey::svrepdesign() built.
+  cnd <- expect_warning(as_svydesign(d))
+  expect_match(conditionMessage(cnd), "fpc", fixed = TRUE)
+  expect_equal(sv$rscales, rep(1, length(d@variables$repweights)))
+
+  expect_snapshot(sv2 <- as_svydesign(d))
+})
+
+# X-2. §VI property 2 with an FPC recorded. The exported design must report
+#      surveycore's own numbers, which is the reason the FPC is dropped rather
+#      than reshaped (§IV.5).
+test_that("as_svydesign() with a dropped FPC reproduces surveycore's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 402L)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sv_mean <- survey::svymean(~y1, sv)
+
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-3. §VI property 2 without an FPC. The same parity has to hold on the
+#      branch that raises nothing, so the drop is the only difference between
+#      the two calls.
+test_that("as_svydesign() without an FPC reproduces surveycore's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep(seed = 403L)
+  expect_null(d@variables$fpc)
+  sc <- get_means(d, y1, variance = "se")
+
+  sv_mean <- survey::svymean(~y1, as_svydesign(d))
+
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-4. §IV.6 and §IV.7. survey rejects an FPC outright for "BRR", "JK2",
+#      "ACS" and "successive-difference" with 'fpc not available for this
+#      type', and for "bootstrap" with 'Separate fpc not needed for
+#      bootstrap'. It accepts one for "JK1" and "JKn". The rule does not
+#      depend on the type: warn, drop, convert, and let no bare survey error
+#      reach the caller. "Fay" is out of scope here — it needs the recovered
+#      shrinkage factor.
+test_that("as_svydesign() warns and converts for every replicate type carrying an FPC", {
+  skip_if_not_installed("survey")
+  types <- c("JK1", "JK2", "BRR", "bootstrap", "ACS", "successive-difference")
+  for (ty in types) {
+    d <- make_rep_fpc(type = ty, seed = 404L)
+    # survey::svrepdesign() reports its own simpleWarning for the types that
+    # ignore a scale — 'with type JK2 scale= and rscales= are not needed'.
+    # That is untouched behaviour of the scale argument (step 3), not of the
+    # FPC, so muffle it by class and leave the typed condition to reach
+    # expect_warning().
+    expect_warning(
+      sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning"),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+    expect_true(inherits(sv, "svyrep.design"))
+    expect_identical(nrow(sv$variables), nrow(d@data))
+  }
+
+  # "JKn" needs rscales of its own — survey::svrepdesign() refuses combined
+  # JKn weights without them, for reasons unrelated to the FPC.
+  d_jkn <- make_rep_fpc(type = "JKn", seed = 404L, rscales = rep(1, 5L))
+  expect_warning(
+    sv_jkn <- suppressWarnings(
+      as_svydesign(d_jkn),
+      classes = "simpleWarning"
+    ),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  expect_true(inherits(sv_jkn, "svyrep.design"))
+})
+
+# X-5. §IV.6 first row. The silent branch.
+test_that("as_svydesign() raises no warning when the design records no FPC", {
+  skip_if_not_installed("survey")
+  d <- make_rep(seed = 405L)
+  expect_null(d@variables$fpc)
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+# X-6. §IV.4 and §VI property 7. The drop is a fact about the exported design
+#      only. Nothing on x moves, so a second call warns again.
+test_that("as_svydesign() leaves the surveycore design untouched when it drops the FPC", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 406L)
+  data_before <- d@data
+  vars_before <- d@variables
+
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+
+  expect_identical(d@data, data_before)
+  expect_identical(d@variables, vars_before)
+  expect_identical(d@variables$fpc, "fpc")
+  expect_identical(d@variables$fpctype, "fraction")
+  expect_true("fpc" %in% names(d@data))
+
+  # A second conversion is not quieter than the first.
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+})
+
+# X-7. §IV.2 step 2 and §VI property 11. The state is reachable through the
+#      exported survey_replicate() constructor, which takes an untyped
+#      variables list and never calls .validate_data_frame(). No
+#      test_invariants() call here: invariant 4 covers named design columns,
+#      and this design names no replicate column by construction.
+test_that("as_svydesign() rejects a replicate design that names no replicate column", {
+  skip_if_not_installed("survey")
+  set.seed(407L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = character(0),
+      type = "BRR",
+      scale = 1,
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      visible_vars = NULL
+    )
+  )
+
+  # Precondition: the design built, so the guard is the only thing standing
+  # between this object and survey's untyped
+  # 'missing value where TRUE/FALSE needed'.
+  expect_length(d@variables$repweights, 0L)
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_repweights_empty"
+  )
+  expect_match(
+    conditionMessage(cnd),
+    "no replicate weight column",
+    fixed = TRUE
+  )
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})

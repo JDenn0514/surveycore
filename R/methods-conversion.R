@@ -132,10 +132,30 @@ as_svydesign <- function(x) {
   wts_var <- x@variables$weights
   rep_vars <- x@variables$repweights
   fpc_var <- x@variables$fpc
-  fpctype <- if (!is.null(x@variables$fpctype)) {
-    x@variables$fpctype
-  } else {
-    "fraction"
+
+  # Refuse a design that names no replicate column, before any other work.
+  # survey::svrepdesign() with a zero-column replicate matrix fails with
+  # 'missing value where TRUE/FALSE needed' from inside its own
+  # combined.weights heuristic — a bare error with no class. The state is
+  # reachable: .validate_data_frame() runs only in as_survey_replicate(), and
+  # the exported survey_replicate() constructor takes an untyped variables
+  # list. An empty replicate design supports no estimate and no variance, so
+  # the route refuses it here.
+  if (length(rep_vars) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "The design names no replicate weight column.",
+        "i" = paste0(
+          "{.fn survey::svrepdesign} needs at least one replicate weight ",
+          "column, and fails with an untyped error without one."
+        ),
+        "v" = paste0(
+          "Rebuild the design with {.fn as_survey_replicate} and name its ",
+          "replicate weight columns."
+        )
+      ),
+      class = "surveycore_error_repweights_empty"
+    )
   }
 
   # BRR and Fay do not use a separate scale factor — survey::svrepdesign()
@@ -146,6 +166,47 @@ as_svydesign <- function(x) {
     x@variables$scale
   }
 
+  # Drop the finite population correction, and say so. surveycore records the
+  # FPC as a column of @data, one value per row; survey::svrepdesign() reads
+  # it as one multiplier per replicate and checks length(fpc) against
+  # length(rscales), which is R. The two lengths agree only when n equals R,
+  # so passing the column fails with survey's own 'fpc is wrong length' for
+  # every other design, and as_svydesign(x) takes only x, so the caller has
+  # no way around it. Reshaping the column to length R would give the right
+  # shape and the wrong quantity.
+  #
+  # surveycore's replicate variance never reads the FPC — R/variance-
+  # replicate.R holds no reference to it — so the drop changes no surveycore
+  # number, while a translated FPC would scale every replicate scale and
+  # return standard errors surveycore itself does not produce. survey's own
+  # as.svrepdesign() warns and drops for the same reason.
+  #
+  # The FPC stays on x: @variables$fpc, @variables$fpctype and the column in
+  # @data are all untouched, and a second call warns again.
+  if (!is.null(fpc_var)) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.fn as_svydesign} dropped the finite population correction ",
+          "column {.field {fpc_var}}."
+        ),
+        "i" = paste0(
+          "{.fn survey::svrepdesign} takes one FPC value per replicate, and ",
+          "a {.cls survey_replicate} design records one value per row."
+        ),
+        "i" = paste0(
+          "surveycore's replicate variance does not read the FPC, so the ",
+          "returned design reproduces surveycore's own standard errors."
+        ),
+        "v" = paste0(
+          "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply ",
+          "a per-replicate correction."
+        )
+      ),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+  }
+
   survey::svrepdesign(
     weights = x@data[[wts_var]],
     repweights = x@data[, rep_vars, drop = FALSE],
@@ -153,8 +214,6 @@ as_svydesign <- function(x) {
     scale = scale_arg,
     rscales = x@variables$rscales,
     mse = isTRUE(x@variables$mse),
-    fpc = if (!is.null(fpc_var)) x@data[[fpc_var]] else NULL,
-    fpctype = fpctype,
     data = x@data
   )
 }

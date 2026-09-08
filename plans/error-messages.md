@@ -526,12 +526,12 @@ type the `survey` design records; `{accepted}` = the nine replicate types
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
 | CB-1 | `from_svydesign()` (replicate) | The route cannot resolve one usable, distinct name per replicate column — an empty-string name, or a repeated name | ERROR | `surveycore_error_repweights_names_lost` | `"x" = "The {.pkg survey} design has {n_rep} replicate weight column{?s} but {n_names} usable column name{?s}.", "i" = "{.fn from_svydesign} needs one name per replicate column to store the weights in the design data.", "v" = "Rebuild the design with {.fn survey::svrepdesign} and pass {.arg repweights} as a data frame with one named column per replicate."` |
-| CB-2 | `from_svydesign()` (replicate) | The route generated the replicate column names, and one or more of them already names a column of the design data | ERROR | `surveycore_error_repwt_name_collision` | `"x" = "{.fn from_svydesign} cannot store the replicate weights under generated names.", "i" = "The design data already {qty(n_collisions)}{?has a column/has columns} named {.field {collisions}}.", "i" = "A generated name reaches the data when an earlier conversion left its replicate columns there.", "v" = "Rename the conflicting {qty(n_collisions)} column{?s} in the design data, then convert again."` |
+| CB-2 | `from_svydesign()` (replicate) | The route generated the replicate column names, and one or more of them already names a column of the design data | ERROR | `surveycore_error_repwt_name_collision` | `"x" = "{.fn from_svydesign} cannot store the replicate weights under generated names.", "i" = "The design data already {cli::qty(n_collisions)}{?has a column/has columns} named {.field {collisions}}.", "i" = "A generated name reaches the data when an earlier conversion left its replicate columns there.", "v" = "Rename the conflicting {cli::qty(n_collisions)} column{?s} in the design data, then convert again."` |
+| CB-3 | `as_svydesign()` (replicate) | `@variables$fpc` names a column; the FPC is omitted from the `survey::svrepdesign()` call | WARN | `surveycore_warning_replicate_fpc_dropped` | `"!" = "{.fn as_svydesign} dropped the finite population correction column {.field {fpc_var}}.", "i" = "{.fn survey::svrepdesign} takes one FPC value per replicate, and a {.cls survey_replicate} design records one value per row.", "i" = "surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.", "v" = "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply a per-replicate correction."`
 | CB-5 | `from_svydesign()` (replicate) | `x$type` is not one of the nine replicate types `as_survey_replicate()` accepts — `survey::as.svrepdesign()` also produces `"subbootstrap"` and `"mrbbootstrap"` | ERROR | `surveycore_error_replicate_type_unsupported` | `"x" = "The {.pkg survey} design records replicate type {.val {rep_type}}, which surveycore does not accept.", "i" = "surveycore accepts {.val {accepted}}.", "v" = "Rebuild the design with {.fn survey::as.svrepdesign} and an accepted type, then convert it again."` |
 
-Rows CB-3 and CB-4 are the export-route conditions. They land with the export
-route, in the two pull requests that follow this one, so the numbering here
-skips from CB-2 to CB-5.
+Row CB-4 is the remaining export-route condition. It lands with the pull
+request that follows this one, so the numbering here skips from CB-3 to CB-5.
 
 **Updated trigger descriptions for existing rows:**
 
@@ -539,3 +539,6 @@ skips from CB-2 to CB-5.
   also fired by `from_svydesign()` on a `survey::svrepdesign` object whose data
   has 0 rows. That route raises the class with a conversion-register message of
   its own; it does not reuse the `{.arg data}` template.
+- Row 16 (`surveycore_error_repweights_empty`): trigger description extended —
+  now also fired by `as_svydesign()` on a `survey_replicate` whose
+  `@variables$repweights` has length 0.
