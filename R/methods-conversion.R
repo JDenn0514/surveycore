@@ -437,17 +437,70 @@ from_svydesign <- function(x) {
 }
 
 
+# Build the generated names for a block of replicate weight columns.
+# Zero-pads the index to the width of n_rep so the names sort in replicate
+# order. Follows the ..surveycore_wt.. convention: a manufactured column must
+# not collide with a user column.
+#   .repwt_col_names(3L)  → "..surveycore_repwt_1..", ..., "..surveycore_repwt_3.."
+#   .repwt_col_names(20L) → "..surveycore_repwt_01..", ..., "..surveycore_repwt_20.."
+#' @noRd
+.repwt_col_names <- function(n_rep) {
+  idx <- formatC(
+    seq_len(n_rep),
+    width = nchar(as.character(n_rep)),
+    flag = "0"
+  )
+  paste0("..surveycore_repwt_", idx, "..")
+}
+
+
 # svyrep.design → survey_replicate
 #' @noRd
 .from_svydesign_replicate <- function(x) {
   data <- .strip_labelled_columns(as.data.frame(x$variables))
-  rep_cols <- colnames(x$repweights)
 
-  # Weight column: find by matching pweights to data columns.
+  # Expand the replicate weights to a full n x R matrix. as.matrix() handles
+  # both storage forms: a plain matrix, and the repweights_compressed list
+  # that survey's default compress = TRUE produces. No survey:: prefix — the
+  # method is unexported, and the requireNamespace() guard in
+  # from_svydesign() loads survey's namespace, which registers it for
+  # dispatch.
+  #
+  # The unclass() is load-bearing, not decoration. survey::svrepdesign() puts
+  # the class "repweights" on the object it stores and as.matrix() keeps it.
+  # With that class in place, as.data.frame() collapses the whole matrix into
+  # one column, and arithmetic propagates the class.
+  rep_mat <- unclass(as.matrix(x$repweights))
+  n_rep <- ncol(rep_mat)
+
+  # Resolve the replicate column names. survey::as.svrepdesign() names no
+  # column of the matrix it builds, for any replicate type and either
+  # compress value, so generate a block on that branch. Otherwise survey's
+  # own names pass through unchanged.
+  rep_cols <- colnames(x$repweights)
+  names_generated <- length(rep_cols) == 0L
+  if (names_generated) {
+    rep_cols <- .repwt_col_names(n_rep)
+  }
+
+  # Weight column: find by matching pweights to data columns. This search
+  # runs before the replicate block is written. It takes the first numeric
+  # column whose values equal x$pweights, and a replicate that deletes
+  # nothing and scales nothing holds exactly those values.
   weights_var <- .find_col_by_value(data, x$pweights)
   if (is.null(weights_var)) {
     weights_var <- "..surveycore_wt.."
     data[[weights_var]] <- x$pweights
+  }
+
+  # Write one column per replicate, on every conversion, with no branch.
+  # survey::svrepdesign() cross-checks `variables` against `repweights` for
+  # neither name nor value, so a name in colnames(x$repweights) can also name
+  # a column of x$variables that holds unrelated numbers. The replicate
+  # matrix is the source of truth, and the write is what makes
+  # @variables$repweights true.
+  for (j in seq_len(n_rep)) {
+    data[[rep_cols[j]]] <- as.numeric(rep_mat[, j])
   }
 
   variables <- list(
