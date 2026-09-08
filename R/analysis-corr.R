@@ -61,7 +61,7 @@
 #'   raises the same error. A factor or ordered column declares its levels, so
 #'   it stays ordinal even when every value is missing; a bare numeric column
 #'   has only its values to go on, and an empty one shows no scale. An all-`NA`
-#'   factor pair returns `r = NA` and `n = 0`.
+#'   factor pair returns an `r` of `NA` and an `n` of `0`.
 #'
 #'   A numeric column with few distinct whole values is treated as a scale.
 #'   This is what makes the method work on a value-labelled column read from
