@@ -1122,3 +1122,298 @@ test_that("from_svydesign() on an unlabelled frame returns no value labels", {
   expect_identical(extract_val_labels(d), stats::setNames(list(), character(0)))
   expect_identical(d@metadata@value_labels, list())
 })
+
+
+# ── R-1 … R-10. from_svydesign() — the replicate bridge (#197) ───────────────
+#
+# The import route expands x$repweights, generates a name for every replicate
+# column survey leaves unnamed, and writes one column per replicate into the
+# data. Spec §III.2 steps 2, 4, 5, 6, 10, 11, 12 and 13.
+
+# R-1. Numerical parity, finished weights, uncompressed source.
+test_that("from_svydesign() matches survey on an uncompressed finished-weight source [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(101L)
+  n <- 40L
+  df <- data.frame(
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n)
+  )
+  rep_mat <- matrix(runif(n * 16L, 0.5, 2), ncol = 16L) * df$wt
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  # Preconditions: the source must really be uncompressed and must really
+  # declare finished weights, or the block passes without testing anything.
+  expect_false(inherits(sv$repweights, "repweights_compressed"))
+  expect_true(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+  test_invariants(d)
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+# R-2. Numerical parity, finished weights, compressed source. This is the
+# storage form that a dim() check cannot tell apart from a plain matrix.
+test_that("from_svydesign() matches survey on a compressed finished-weight source [numerical]", {
+  skip_if_not_installed("survey")
+  set.seed(102L)
+  n <- 40L
+  df <- data.frame(
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n)
+  )
+  rep_mat <- matrix(runif(n * 16L, 0.5, 2), ncol = 16L) * df$wt
+  sv_raw <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+  sv <- survey::compressWeights(sv_raw)
+
+  # Preconditions: the installed survey must actually compress, and the
+  # finished-weight declaration must survive compression.
+  expect_true(inherits(sv$repweights, "repweights_compressed"))
+  expect_true(isTRUE(sv$combined.weights))
+
+  d <- from_svydesign(sv)
+
+  sm <- survey::svymean(~y1, sv)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_length(d@variables$repweights, 16L)
+})
+
+# R-3. A factor-form source: structure only, no standard-error parity.
+#      survey::as.svrepdesign() reports combined.weights FALSE, so the stored
+#      columns are replication factors. Spec §III.1 measures the resulting
+#      standard-error error at 35%, 8%, 4%, 10% and 0.1% across five designs,
+#      in both directions. The fold-in that removes it is not in this change.
+test_that("from_svydesign() stores every replicate of a compressed factor-form source", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 103L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  # Preconditions for the factor form, and for survey naming no column.
+  expect_false(isTRUE(sv$combined.weights))
+  expect_length(colnames(sv$repweights), 0L)
+
+  n_rep <- ncol(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, n_rep)
+  expect_true(all(grepl(
+    "^\\.\\.surveycore_repwt_[0-9]+\\.\\.$",
+    d@variables$repweights
+  )))
+  expect_true(all(d@variables$repweights %in% names(d@data)))
+  expect_true(all(vapply(
+    d@data[d@variables$repweights],
+    is.numeric,
+    logical(1L)
+  )))
+  expect_no_error(get_means(d, y1, variance = "se"))
+})
+
+# R-4. The uncompressed factor form. as.matrix() leaves survey's "repweights"
+#      class on the object here, so this is the source that proves the
+#      unclass() in step 4 does its job: the route must still produce n_rep
+#      separate double columns.
+test_that("from_svydesign() writes one double column per replicate for an uncompressed source", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 104L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn", compress = FALSE)
+
+  # Precondition: the class survey puts on the stored object survives
+  # as.matrix(), which is exactly what step 4 has to strip.
+  expect_true(inherits(as.matrix(sv$repweights), "repweights"))
+
+  rep_mat <- unclass(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, ncol(rep_mat))
+  expect_identical(ncol(d@data), ncol(df) + ncol(rep_mat))
+  for (j in seq_len(ncol(rep_mat))) {
+    expect_identical(typeof(d@data[[d@variables$repweights[[j]]]]), "double")
+    expect_equal(
+      d@data[[d@variables$repweights[[j]]]],
+      as.numeric(rep_mat[, j]),
+      tolerance = 0
+    )
+  }
+})
+
+# R-5. No silent loss (spec §VI property 4).
+test_that("from_svydesign() stores one existing data column per source replicate", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 105L)
+  # JK1 needs an unstratified design.
+  sv_t <- survey::svydesign(ids = ~psu, weights = ~wt, data = df)
+  sv <- survey::as.svrepdesign(sv_t, type = "JK1")
+
+  n_rep <- ncol(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, n_rep)
+  expect_identical(setdiff(d@variables$repweights, names(d@data)), character(0))
+})
+
+# R-6. The regression guard for #197 itself. Before this change the route
+#      stored zero names, wrote no columns, and the loss surfaced later at
+#      analysis time as surveycore_error_all_replicates_na.
+test_that("get_means() runs on a design converted from survey::as.svrepdesign()", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 40L, n_psu = 20L, n_strata = 4L, seed = 106L)
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df
+  )
+  sv <- survey::as.svrepdesign(sv_t, type = "JKn")
+
+  expect_no_error(get_means(from_svydesign(sv), y1))
+})
+
+# R-7. Generated names pad to the width of the replicate count (§II.2, §III.6).
+test_that("from_svydesign() zero-pads generated replicate names for 20 replicates", {
+  skip_if_not_installed("survey")
+  set.seed(107L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 20L, 0.5, 2), ncol = 20L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_length(d@variables$repweights, 20L)
+  expect_identical(d@variables$repweights[[1L]], "..surveycore_repwt_01..")
+  expect_identical(d@variables$repweights[[9L]], "..surveycore_repwt_09..")
+  expect_identical(d@variables$repweights[[20L]], "..surveycore_repwt_20..")
+})
+
+# R-8. A one-digit replicate count generates unpadded names.
+test_that("from_svydesign() leaves generated replicate names unpadded for 4 replicates", {
+  skip_if_not_installed("survey")
+  set.seed(108L)
+  n <- 24L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(
+    d@variables$repweights,
+    c(
+      "..surveycore_repwt_1..",
+      "..surveycore_repwt_2..",
+      "..surveycore_repwt_3..",
+      "..surveycore_repwt_4.."
+    )
+  )
+})
+
+# R-9. Survey's own names pass through unchanged and in order, and the route
+#      still writes every column from the expanded matrix
+#      (§III.6, §VI property 5).
+test_that("from_svydesign() passes survey's replicate column names through unchanged", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 40L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "brr",
+    seed = 109L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = df[, repwt_cols],
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  # Precondition: survey kept the names, so step 6 must not generate.
+  expect_identical(colnames(sv$repweights), repwt_cols)
+
+  rep_mat <- unclass(as.matrix(sv$repweights))
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$repweights, repwt_cols)
+  expect_false(any(grepl("surveycore_repwt", names(d@data), fixed = TRUE)))
+  for (j in seq_along(repwt_cols)) {
+    expect_equal(
+      d@data[[repwt_cols[[j]]]],
+      as.numeric(rep_mat[, j]),
+      tolerance = 0
+    )
+  }
+})
+
+# R-10. A replicate column holds exactly x$pweights and no data column does.
+#       Step 10 runs before step 11, so the base weight search never sees the
+#       replicate block and the route manufactures ..surveycore_wt.. (§III.6).
+test_that("from_svydesign() manufactures the weight column when a replicate holds the base weights", {
+  skip_if_not_installed("survey")
+  set.seed(110L)
+  n <- 24L
+  df <- data.frame(y1 = rnorm(n)) # no weight column in the data
+  ext_wts <- runif(n, 1, 3)
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L) * ext_wts
+  rep_mat[, 1L] <- ext_wts # replicate 1 deletes nothing and scales nothing
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ext_wts,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = TRUE
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$weights, "..surveycore_wt..")
+  expect_false(d@variables$weights %in% d@variables$repweights)
+  expect_equal(d@data[["..surveycore_wt.."]], ext_wts, tolerance = 0)
+  expect_equal(d@data[[d@variables$repweights[[1L]]]], ext_wts, tolerance = 0)
+})
