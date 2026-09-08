@@ -1876,3 +1876,219 @@ test_that("from_svydesign() adds no metadata entry for the written replicate col
     expect_null(attributes(d@data[[nm]]))
   }
 })
+
+
+# ── R-24 … R-30. from_svydesign() — the four import refusals (D5, D6, #197) ───
+#
+# The replicate import route refuses four source designs, each with a typed
+# condition, in the step order spec §III.2 gives: the replicate type at step
+# 1, the row count at step 3, the resolved names at step 7, and a generated
+# name that already names a column at step 8.
+#
+# Each class carries one snapshot of its message. The second trigger of a
+# class carries the class assertion alone.
+
+# R-24. Step 1, the route's first step. survey::as.svrepdesign() accepts
+#       "subbootstrap" and stores the literal string, and the
+#       survey_replicate validator does not check `type`, so without this
+#       step the route stores a value the export route cannot use (§V.5).
+test_that("from_svydesign() rejects a subbootstrap replicate design", {
+  skip_if_not_installed("survey")
+  set.seed(240L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(n, 1, 3),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  # survey's bootstrap heuristics warn on their own; keep them out of the
+  # assertions so the suite gains no warning.
+  sv <- suppressWarnings(
+    survey::as.svrepdesign(sv_t, type = "subbootstrap", replicates = 5L)
+  )
+
+  expect_identical(sv$type, "subbootstrap")
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_replicate_type_unsupported"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-25. The second reachable offending value (§III.6). Class only — R-24
+#       snapshots the message.
+test_that("from_svydesign() rejects an mrbbootstrap replicate design", {
+  skip_if_not_installed("survey")
+  set.seed(241L)
+  n <- 40L
+  df <- data.frame(
+    psu = rep(1:10, each = 4L),
+    strata = rep(1:2, each = 20L),
+    wt = runif(n, 1, 3),
+    y1 = rnorm(n)
+  )
+  sv_t <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  sv <- suppressWarnings(
+    survey::as.svrepdesign(sv_t, type = "mrbbootstrap", replicates = 5L)
+  )
+
+  expect_identical(sv$type, "mrbbootstrap")
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_replicate_type_unsupported"
+  )
+})
+
+# R-26. Step 3. A zero-row svyrep.design is reachable: a zero-row
+#       survey.design through survey::as.svrepdesign(type = "JK1") builds and
+#       reports nrow(variables) 0 with a 0 x 0 replicate matrix. An empty
+#       replicate design supports no estimate and no variance (§V.6).
+test_that("from_svydesign() rejects a zero-row replicate design", {
+  skip_if_not_installed("survey")
+  df0 <- data.frame(
+    psu = integer(0),
+    wt = numeric(0),
+    y1 = numeric(0)
+  )
+  sv_t <- suppressWarnings(
+    survey::svydesign(ids = ~psu, weights = ~wt, data = df0)
+  )
+  sv <- suppressWarnings(survey::as.svrepdesign(sv_t, type = "JK1"))
+
+  # Precondition: the source really is empty, in both the data and the matrix.
+  expect_identical(nrow(sv$variables), 0L)
+  expect_identical(dim(unclass(as.matrix(sv$repweights))), c(0L, 0L))
+  expect_identical(sv$type, "JK1")
+
+  expect_error(from_svydesign(sv), class = "surveycore_error_empty_data")
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-27. Step 7, first of its two triggers. survey accepts a matrix whose
+#       colnames() holds one or more empty strings, and an empty string
+#       cannot name a column (§V.1).
+test_that("from_svydesign() rejects a partly named replicate matrix", {
+  skip_if_not_installed("survey")
+  set.seed(242L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  colnames(rep_mat) <- c("r1", "", "r3", "")
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  # Precondition: survey kept the empty strings, so step 6 does not generate.
+  expect_identical(colnames(sv$repweights), c("r1", "", "r3", ""))
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repweights_names_lost"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-28. Step 7, second trigger. Writing a repeated name would collapse two
+#       replicates into one column (§V.1). Class only — R-27 snapshots the
+#       message.
+test_that("from_svydesign() rejects a replicate matrix with a repeated name", {
+  skip_if_not_installed("survey")
+  set.seed(243L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  rep_mat <- matrix(runif(n * 4L, 0.5, 2), ncol = 4L)
+  colnames(rep_mat) <- c("r1", "r2", "r2", "r4")
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  expect_identical(colnames(sv$repweights), c("r1", "r2", "r2", "r4"))
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repweights_names_lost"
+  )
+})
+
+# R-29. Step 8, at one collision. The route generated the names and one of
+#       them already names a column of the data, which is what an earlier
+#       conversion leaves behind (§V.2). The message pluralizes per bullet,
+#       so this asserts the singular rendering.
+test_that("from_svydesign() rejects one generated name that already names a column", {
+  skip_if_not_installed("survey")
+  set.seed(244L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  df[["..surveycore_repwt_2.."]] <- 1
+  rep_mat <- matrix(runif(n * 3L, 0.5, 2), ncol = 3L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  # Precondition: survey named no column, so step 6 generates three names.
+  expect_length(colnames(sv$repweights), 0L)
+
+  cnd <- expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repwt_name_collision"
+  )
+  expect_match(conditionMessage(cnd), "has a column named", fixed = TRUE)
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# R-30. Step 8, at three collisions. Each bullet carries its own quantity, so
+#       each pluralizes on its own (§V.2). Class and plural rendering only —
+#       R-29 snapshots the message.
+test_that("from_svydesign() pluralizes the collision message at three collisions", {
+  skip_if_not_installed("survey")
+  set.seed(245L)
+  n <- 20L
+  df <- data.frame(wt = runif(n, 1, 3), y1 = rnorm(n))
+  df[["..surveycore_repwt_1.."]] <- 1
+  df[["..surveycore_repwt_2.."]] <- 2
+  df[["..surveycore_repwt_3.."]] <- 3
+  rep_mat <- matrix(runif(n * 3L, 0.5, 2), ncol = 3L)
+  sv <- survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = rep_mat,
+    type = "BRR",
+    combined.weights = FALSE
+  )
+
+  expect_length(colnames(sv$repweights), 0L)
+
+  cnd <- expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_repwt_name_collision"
+  )
+  msg <- conditionMessage(cnd)
+  expect_match(msg, "has columns named", fixed = TRUE)
+  expect_match(msg, "conflicting\\s+columns")
+})
