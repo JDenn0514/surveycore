@@ -247,6 +247,12 @@ against the messages defined here.
 
 *Note: the spec also defined `[[<-`-specific classes G5 / G5b (group mismatch on replace / append), G6 (`not_survey_base`), G7 (`index_out_of_range`), and G7b (`index_bad_type`). The `[[<-` method was not implemented because `S7::method("[[<-", ...)` registers the method in S3methods metadata in a form that trips R CMD check's `checkReplaceFuns` and produces a spurious warning. Users should mutate a collection via `add_survey()` / `remove_survey()` instead. If a future workaround is found, those classes can be added here without breaking callers.*
 
+### survey_collection dim (design-dim)
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|----------|-----------|-------|-------------|----------------------|
+| C16 | `dim()` on a `survey_collection` (and therefore `nrow()`, `ncol()`, `NROW()`, `NCOL()`) | Always — a collection has no single set of dimensions | ERROR | `surveycore_error_collection_no_dim` | `"x" = "A {.cls survey_collection} has no single set of dimensions.", "i" = "It holds {n} survey{?s}, each with its own row and column counts.", "v" = "Extract one member with {.code [[} and ask that survey instead, e.g. the member named {.val {first_name}}."` |
+
 ### get_effective_n() rows (2026-05-05)
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
