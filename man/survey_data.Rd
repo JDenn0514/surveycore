@@ -7,7 +7,8 @@
 survey_data(x, haven_class = FALSE)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object.}
 
 \item{haven_class}{Rebuild the \code{haven_labelled} class on every column that
 has value labels. The design's metadata is read first, and the column's
@@ -62,6 +63,25 @@ supplies the method that renders it.
 Returns the underlying data frame stored in a survey design object.
 This is a thin accessor for \code{x@data} that provides a stable public name
 independent of the S7 property structure.
+}
+\details{
+\code{nrow()} and \code{dim()} report the stored row count, not the in-domain
+count. A domain filter keeps every row of the design and marks
+membership in a flag column, so the two counts differ after a filter.
+Printing a filtered design shows both, on the \verb{Domain: n of N rows}
+line.
+
+To get the in-domain count, call \code{\link[=get_effective_n]{get_effective_n()}} and read its \code{n}
+column. That function honours the domain flag, takes a \code{group}
+argument, and accepts a \code{survey_collection}.
+
+\code{ncol()} counts the full stored width. The count includes the weight
+column, the cluster and stratum ids, \code{fpc}, the domain flag when
+present, and every replicate-weight column. It is not a count of
+analysis variables, and it is not comparable across design classes.
+
+\code{nrow()} is the unweighted count of sample rows. It is not a
+population estimate.
 }
 \examples{
 d <- as_survey(
