@@ -67,7 +67,7 @@ Follow `artifact-schemas.md` §spec.md exactly. Key rules:
 - Error classes come from `plans/error-messages.md`. If a new class is needed, add it to that file and use the new name.
 - Edge cases must include behavior for: empty input, single-row input, all-NA outcome column, single-level grouping, zero-weight rows, degenerate strata (where applicable).
 - Write surface (files touched) must be explicit. No "and other files as needed."
-- Set the `Pipeline split` field (recommended | optional). Default to `recommended`. Mark `optional` only when: no new exported function, no numerical method change, no contract change, ≤3 files touched.
+- Set the `Pipeline tier` field (recommended | optional). Default to `recommended`. Mark `optional` only when: no new exported function, no numerical method change, no contract change, ≤3 files touched.
 
 ## Step 2 — Draft `test-spec.md`
 
@@ -87,8 +87,8 @@ Test-spec is for tester. Do not write about what the code looks like.
 
 Follow `artifact-schemas.md` §implementation-plan.md. Key rules:
 
-- One PR per logical unit. New exported function = one PR. Each PR is reviewable in isolation.
-- Tasks within a PR are 2–5 minutes each with explicit TDD sub-steps: "write failing test for X", "implement X", "verify".
+- Every PR sits inside the PR budget (`artifact-schemas.md` §PR budget) and is reviewable in isolation. An exported function whose contract runs past the budget ships as several PRs.
+- Tasks within a PR carry explicit TDD sub-steps: "write failing test for X", "implement X", "verify".
 - Acceptance criteria per PR list observable outcomes only (the test names that must pass, the metric values that must hold).
 - Files touched = the PR's write surface. No two concurrent PRs may share a file.
 - If `impact.md` marked the change `eligible-simplified`, still draft an implementation-plan.md; it's just shorter (often 1 PR).
@@ -107,7 +107,8 @@ Before writing any artifact to disk, verify:
 - [ ] `test-spec.md` has zero mentions of file paths in `R/` or internal helper functions
 - [ ] Neither file says "see the other document"
 - [ ] Every error class referenced exists in `plans/error-messages.md`
-- [ ] every pair of `implementation-plan.md` PRs either has disjoint file surfaces or states which PR comes first
+- [ ] Every pair of `implementation-plan.md` PRs either has disjoint file surfaces or states which PR comes first
+- [ ] Every PR entry in `implementation-plan.md` states both budget figures, and both sit inside the bound
 
 ## Output artifact
 

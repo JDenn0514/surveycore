@@ -86,7 +86,7 @@ For each function:
 ## Quality gates
 - {invariants that must hold}
 
-## Pipeline split
+## Pipeline tier
 recommended | optional — {justification}
 ```
 
@@ -136,16 +136,79 @@ No implementation hints. No file paths from `R/`.
 
 ## PR map
 - [ ] PR 1: feature/{branch-slug} — {one-line goal}
-  - **Tasks** (2–5 min each, TDD sub-steps explicit)
+  - **Budget** — {n} test-spec rows | {n} criteria (see §PR budget)
+  - **Tasks** — TDD sub-steps explicit
     1. Write failing test for {behavior}
     2. Implement {function}
     3. Verify test passes
     ...
   - **Acceptance criteria** — observable outcomes before merge
   - **Files touched** — exact write surface
-  - **Pipeline split**: recommended | optional
+  - **Pipeline tier**: recommended | optional
 - [ ] PR 2: ...
 ```
+
+### PR budget
+
+Every PR entry states both figures, and both hold:
+
+| Figure | Bound | How to count |
+|---|---|---|
+| Test-spec rows covered | 12 | The rows in `test-spec.md` this PR's acceptance criteria satisfy. Cite each by section and row. |
+| Acceptance criteria | 8 | One per criterion the entry lists. |
+
+A PR past either bound is **over-budget**, and splits before the plan reaches
+PLAN_READY.
+
+Both figures are recomputable from the artifacts — row count by cross-reference
+to `test-spec.md`, criteria by counting the entry. Neither is an estimate.
+
+Where the bound comes from: on the haven-labelled arc the row count ranks PR
+size with Spearman rho 0.964 against hand-written additions.
+
+| PR | Rows | Hand-written additions |
+|---|---|---|
+| #189 | 3 | 97 |
+| #193 | 9 | 230 |
+| #196 | 10 | 274 |
+| #194 | 29 | 353 |
+| #191 | 13 | 743 |
+| #201 | 29 | 868 |
+| #190 | 32 | 1236 |
+
+The bound sits at 12 because the gap between the small PRs and the large ones
+falls between 10 and 13 rows. Additions per row range from 12 to 57, so the row
+count orders PR size reliably and predicts it only loosely.
+
+Three measures are not budget figures. File count does not discriminate size:
+PR #201 (868 additions) and PR #221 (124 additions) each touch the identical
+four hand-written files. An estimated line count ran 2.5x to 6x under the real diff
+across five trial plans. A task count tracks how coarsely the tasks are
+written, not how large the PR is.
+
+### PR budget calibration ledger
+
+`plans/pr-budget-calibration.md` holds one row per merged PR. pipeline-ship
+appends to it at Step 3, after the merge, when the real diff is knowable.
+
+```
+| Merged | PR | Stated rows | Additions | Additions per row |
+|---|---|---|---|---|
+| 2026-09-08 | #241 | 9 | 232 | 25.8 |
+```
+
+Additions count the hand-written surface only, with the same exclusions as the
+budget table above. Read them from the merge commit:
+
+```bash
+git diff --numstat "{merge_sha}^1" "{merge_sha}" -- R tests \
+  ':(exclude)tests/testthat/_snaps' | awk '{a += $1} END {print a+0}'
+```
+
+The bound of 12 rests on seven PRs from one feature. Once the ledger holds 20
+rows, re-derive it: sort the rows by additions, find the row count where the
+small and large PRs separate, and set the bound there. Write the new figure and the
+date into the budget table above, replacing the haven-labelled calibration.
 
 ## `implementation.md` (per PR)
 

@@ -1,12 +1,10 @@
 ---
 name: pipeline-implement
 description: >
-  Orchestrates implementation plan drafting for surveycore after SPEC_READY.
-  Dispatches planner to draft a PR map with per-PR acceptance criteria, runs a
-  5-lens plan review, resolves findings, and advances to PLAN_READY. Produces
-  implementation-plan.md that pipeline-ship executes PR-by-PR. Use when the
-  user says "draft the plan", "implementation plan", "build the plan", or after
-  pipeline-spec has reached SPEC_READY.
+  Use when a surveycore request stands at SPEC_READY and needs an
+  implementation plan — the user says "draft the plan", "implementation plan",
+  or "build the plan" — or when an existing plan needs its PR map reviewed,
+  its findings resolved, or its state advanced to PLAN_READY.
 ---
 
 # Skill: pipeline-implement
@@ -58,10 +56,14 @@ Then jump directly to that stage.
 
 Dispatch `planner`:
 
-> Draft `implementation-plan.md` per artifact-schemas.md §implementation-plan.md. Read `spec.md` and `test-spec.md`. For each logical unit of change:
-> - One PR entry with a branch name, tasks (2–5 min each with TDD sub-steps), acceptance criteria, write surface, and pipeline-split flag (recommended | optional)
+> Draft `implementation-plan.md` per artifact-schemas.md §implementation-plan.md, including §PR budget. Read `spec.md` and `test-spec.md`.
+>
+> Each PR entry carries a branch name, its two budget figures, tasks with explicit TDD sub-steps, acceptance criteria, a write surface, and a pipeline tier. Cite the test-spec rows each PR covers by section and row, and give every row in `test-spec.md` to exactly one PR.
+> - Split the work so every entry sits inside the PR budget. A unit of change that does not fit becomes two or more PRs.
 > - Acceptance criteria are observable outcomes (test names, metric values), not implementation hints
 > - Write surfaces of concurrent PRs do not overlap
+>
+> Done when every PR entry states both budget figures and both sit inside the bound.
 
 ## Review-loop budget (applies to Stages 2 and 3)
 
@@ -82,7 +84,7 @@ API-equivalent). These rules cap the loop:
 
 Dispatch 5 Explore subagents in parallel:
 
-1. **PR Granularity lens** — is each PR a single logical unit? Are any PRs too large (>10 tasks, >5 files) or too small (1 task, 1 line)?
+1. **PR Budget lens** — recompute both budget figures for each PR (artifact-schemas.md §PR budget): count its acceptance criteria, and resolve its cited test-spec rows against `test-spec.md`. Report every entry whose stated figure reads lower than your recomputed one, every entry that is over-budget, every cited row that does not exist, and every row claimed by two PRs. Report any PR of one task and one row, which merges into its neighbour.
 2. **Dependency Ordering lens** — does the PR order respect dependencies? Later PRs must not require changes to earlier PRs' tested behavior.
 3. **Acceptance Criteria lens** — is every acceptance criterion observable? Does each criterion map to a row in `test-spec.md`?
 4. **Spec Coverage lens** — does the union of all PR acceptance criteria cover every item in `spec.md §Function contracts`? Are any contract items unscheduled?
@@ -100,13 +102,27 @@ BIG mode (>8 findings) or SMALL mode (≤8), per
 
 Loop until plan-review.md verdict=PASS. Respect the Review-loop budget above.
 
+### Over-budget findings
+
+Stage 3 splits every over-budget PR before the stage reaches PASS. A split costs
+no pass from the Review-loop budget: resolve it inside the pass that raised it
+and leave the pass counter where it was.
+
+To split PR {n}:
+
+1. Group its acceptance criteria into sets that each sit inside the budget. Each set becomes one PR.
+2. Give each new PR the tasks that produce its own criteria, and a write surface holding only the files those tasks touch.
+3. Order the new PRs so each one's tests pass on merge without a later PR's code.
+4. Renumber the map, then re-derive every concurrent PR's write surface so they stay disjoint.
+5. Log the split in `decisions-{slug}.md` with the figure that triggered it.
+
 ## Stage 4 — Freeze
 
 On PASS:
 
 1. Copy `implementation-plan.md` from workspace into `plans/implementation-plan-{slug}.md` (slug only — no date prefix), and refresh `plans/decisions-{slug}.md`
 2. Append `PLAN_READY` to `status.md`
-3. Return to user with summary (PR count, estimated shipping sequence) and next step (`pipeline-ship`)
+3. Return to user with the budget table — one row per PR: number, branch, test-spec rows, acceptance criteria — then the shipping sequence and the next step (`pipeline-ship`)
 
 ## Common Shortcuts to Resist
 
@@ -115,6 +131,8 @@ On PASS:
 | "The plan is clear, Stage 2 would just nitpick" | Stage 2 catches missing error paths, wrong task order, and DRY violations. |
 | "We can figure out edge cases during implementation" | Edge cases discovered in implementation are plan bugs. Resolve here. |
 | "Some issues are minor, I'll resolve them later" | `decisions.md` must be populated before handing off. |
+| "PR 3 is over budget, but splitting renumbers the whole map" | Renumbering costs minutes inside the plan. An over-budget PR costs revision rounds after merge. |
+| "This unit is atomic — it cannot be split" | Group the acceptance criteria and the split follows. Twelve criteria are two PRs. |
 
 ## Signal handling
 

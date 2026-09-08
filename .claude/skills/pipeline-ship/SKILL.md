@@ -231,6 +231,14 @@ After the shipper returns:
 1. `git checkout develop && git pull`
 2. Re-run `devtools::test()` on the updated develop
 3. If any test fails that was passing in the baseline → HOLD with classification `post-merge-regression`
+4. Append a row for this PR to `plans/pr-budget-calibration.md`, per
+   artifact-schemas.md §PR budget calibration ledger — merge date, PR number,
+   the rows the plan stated, and the additions the merge carried. The merge sha
+   is in this PR's `shipper.md`.
+5. Tell the user when this PR merged over 600 additions while it sat inside the
+   row bound. Every right-sized PR in the calibration sample came in under 300,
+   so 600 means the row count badly under-predicted this PR, and the bound
+   needs re-deriving from the ledger before the next plan.
 
 Only then start the next PR's builder.
 
