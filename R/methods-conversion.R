@@ -166,6 +166,77 @@ as_svydesign <- function(x) {
     x@variables$scale
   }
 
+  # Recover Fay's shrinkage factor from the recorded scale. This is required,
+  # not an improvement: svrepdesign.default() holds
+  #   if (type == "Fay" && is.null(rho))
+  #     stop("With type='Fay' you must supply the correct rho")
+  # so without rho the export route fails outright for a Fay design.
+  #
+  # The recovery inverts survey's own formula. survey computes a Fay design's
+  # scale as 1 / (n_rep * (1 - rho)^2), and the import route stores that
+  # value in @variables$scale, so solving for rho returns the shrinkage
+  # factor the replicates were built with. Measured: a design built with
+  # fay.rho = 0.3 recovers 0.3 exactly and rebuilds with the source's own
+  # scale.
+  #
+  # The scale argument above stays NULL for "Fay". survey recomputes the
+  # scale from this rho, and this rho came from the stored scale, so the
+  # rebuilt scale equals the stored one. Passing rho alone reproduces it.
+  rho_arg <- NULL
+  if (isTRUE(x@variables$type == "Fay")) {
+    fay_scale <- x@variables$scale
+
+    # The binding is a character string on every branch, including the NULL
+    # branch, so the message renders without a special case.
+    scale_txt <- if (is.null(fay_scale)) {
+      "none"
+    } else {
+      paste(format(fay_scale), collapse = ", ")
+    }
+
+    scale_usable <- length(fay_scale) == 1L &&
+      is.numeric(fay_scale) &&
+      is.finite(fay_scale) &&
+      fay_scale > 0
+    rho_arg <- if (scale_usable) {
+      1 - sqrt(1 / (fay_scale * length(rep_vars)))
+    } else {
+      NA_real_
+    }
+
+    # Both arms are reachable. A scale whose product with the replicate count
+    # is below 1 puts the recovered rho below 0, and as_survey_replicate()
+    # accepts any numeric scale. A missing scale comes from the exported
+    # survey_replicate() constructor, whose variables list is untyped and
+    # whose validator checks neither scale nor type;
+    # as_survey_replicate(type = "Fay") fills 1 / n_rep, which recovers
+    # rho = 0 — legal, and the BRR case.
+    if (!scale_usable || is.na(rho_arg) || rho_arg < 0 || rho_arg >= 1) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn as_svydesign} cannot recover the {.val Fay} shrinkage ",
+            "factor for this design."
+          ),
+          "i" = paste0(
+            "{.fn survey::svrepdesign} requires {.arg rho} for ",
+            "{.code type = \"Fay\"}, and surveycore derives it from the ",
+            "recorded scale."
+          ),
+          "i" = paste0(
+            "The recorded scale is {.val {scale_txt}} and yields no value ",
+            "in {.code [0, 1)}."
+          ),
+          "v" = paste0(
+            "Rebuild the design with {.fn as_survey_replicate} and pass the ",
+            "{.arg scale} the {.val Fay} replicates were built with."
+          )
+        ),
+        class = "surveycore_error_fay_rho_unrecoverable"
+      )
+    }
+  }
+
   # Drop the finite population correction, and say so. surveycore records the
   # FPC as a column of @data, one value per row; survey::svrepdesign() reads
   # it as one multiplier per replicate and checks length(fpc) against
@@ -212,6 +283,7 @@ as_svydesign <- function(x) {
     repweights = x@data[, rep_vars, drop = FALSE],
     type = x@variables$type,
     scale = scale_arg,
+    rho = rho_arg,
     rscales = x@variables$rscales,
     mse = isTRUE(x@variables$mse),
     data = x@data

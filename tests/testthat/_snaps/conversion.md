@@ -60,3 +60,25 @@
       i `survey::svrepdesign()` needs at least one replicate weight column, and fails with an untyped error without one.
       v Rebuild the design with `as_survey_replicate()` and name its replicate weight columns.
 
+# as_svydesign() refuses a Fay design whose scale yields no rho
+
+    Code
+      as_svydesign(d)
+    Condition
+      Error in `.as_svydesign_replicate()`:
+      x `as_svydesign()` cannot recover the "Fay" shrinkage factor for this design.
+      i `survey::svrepdesign()` requires `rho` for `type = "Fay"`, and surveycore derives it from the recorded scale.
+      i The recorded scale is "0.05" and yields no value in `[0, 1)`.
+      v Rebuild the design with `as_survey_replicate()` and pass the `scale` the "Fay" replicates were built with.
+
+# as_svydesign() refuses a Fay design that records no scale
+
+    Code
+      as_svydesign(d)
+    Condition
+      Error in `.as_svydesign_replicate()`:
+      x `as_svydesign()` cannot recover the "Fay" shrinkage factor for this design.
+      i `survey::svrepdesign()` requires `rho` for `type = "Fay"`, and surveycore derives it from the recorded scale.
+      i The recorded scale is "none" and yields no value in `[0, 1)`.
+      v Rebuild the design with `as_survey_replicate()` and pass the `scale` the "Fay" replicates were built with.
+
