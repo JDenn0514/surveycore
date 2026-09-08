@@ -477,7 +477,63 @@ from_svydesign <- function(x) {
 # svyrep.design → survey_replicate
 #' @noRd
 .from_svydesign_replicate <- function(x) {
+  # Check the replicate type first, before any column work. There is no
+  # point expanding a matrix for a design the route refuses.
+  # survey::as.svrepdesign() accepts "subbootstrap" and "mrbbootstrap" and
+  # stores the literal string, and the survey_replicate validator does not
+  # check type, so without this step the route stores such a value and the
+  # export route then fails with survey's own bare
+  # 'arg' should be one of "BRR", "Fay", ... .
+  accepted <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  rep_type <- x$type
+  if (!isTRUE(rep_type %in% accepted)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "The {.pkg survey} design records replicate type {.val {rep_type}}, ",
+          "which surveycore does not accept."
+        ),
+        "i" = "surveycore accepts {.val {accepted}}.",
+        "v" = paste0(
+          "Rebuild the design with {.fn survey::as.svrepdesign} and an ",
+          "accepted type, then convert it again."
+        )
+      ),
+      class = "surveycore_error_replicate_type_unsupported"
+    )
+  }
+
   data <- .strip_labelled_columns(as.data.frame(x$variables))
+
+  # A zero-row svyrep.design is reachable: a zero-row survey.design through
+  # survey::as.svrepdesign(type = "JK1") builds and reports nrow(variables)
+  # 0, a 0 x 0 replicate matrix and length(pweights) 0. The row-count check
+  # in .validate_data_frame() runs only in as_survey_replicate(), and this
+  # route does not call it. An empty replicate design supports no estimate
+  # and no variance, so the route refuses it here.
+  if (nrow(data) == 0L) {
+    cli::cli_abort(
+      c(
+        "x" = "The {.pkg survey} design has no rows.",
+        "i" = paste0(
+          "{.fn from_svydesign} needs at least one row to build a ",
+          "{.cls survey_replicate} design."
+        ),
+        "v" = "Convert a design built on data with at least one row."
+      ),
+      class = "surveycore_error_empty_data"
+    )
+  }
 
   # Expand the replicate weights to a full n x R matrix. as.matrix() handles
   # both storage forms: a plain matrix, and the repweights_compressed list
@@ -501,6 +557,67 @@ from_svydesign <- function(x) {
   names_generated <- length(rep_cols) == 0L
   if (names_generated) {
     rep_cols <- .repwt_col_names(n_rep)
+  }
+
+  # Check the names. A usable name set has exactly n_rep entries, and every
+  # entry is non-NA, non-empty and distinct. Exactly two states reach this
+  # check: a partly named matrix, where colnames() holds one or more empty
+  # strings, and a matrix with a repeated name, which would collapse two
+  # replicates into one column. A zero-length colnames() does not reach it —
+  # the branch above generates n_rep distinct non-empty names.
+  usable <- rep_cols[!is.na(rep_cols) & nzchar(rep_cols)]
+  n_names <- length(unique(usable))
+  if (n_names != n_rep) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "The {.pkg survey} design has {n_rep} replicate weight column{?s} ",
+          "but {n_names} usable column name{?s}."
+        ),
+        "i" = paste0(
+          "{.fn from_svydesign} needs one name per replicate column to store ",
+          "the weights in the design data."
+        ),
+        "v" = paste0(
+          "Rebuild the design with {.fn survey::svrepdesign} and pass ",
+          "{.arg repweights} as a data frame with one named column per ",
+          "replicate."
+        )
+      ),
+      class = "surveycore_error_repweights_names_lost"
+    )
+  }
+
+  # Check for a collision, on the generated branch only. Survey's own names
+  # are meant to name existing columns, and step 11 overwrites them. A
+  # generated name that already names a column is different: the route would
+  # overwrite a user column whose values it never reads.
+  if (names_generated) {
+    collisions <- rep_cols[rep_cols %in% names(data)]
+    n_collisions <- length(collisions)
+    if (n_collisions > 0L) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn from_svydesign} cannot store the replicate weights under ",
+            "generated names."
+          ),
+          "i" = paste0(
+            "The design data already {cli::qty(n_collisions)}",
+            "{?has a column/has columns} named {.field {collisions}}."
+          ),
+          "i" = paste0(
+            "A generated name reaches the data when an earlier conversion ",
+            "left its replicate columns there."
+          ),
+          "v" = paste0(
+            "Rename the conflicting {cli::qty(n_collisions)} column{?s} in the ",
+            "design data, then convert again."
+          )
+        ),
+        class = "surveycore_error_repwt_name_collision"
+      )
+    }
   }
 
   # Fold the base weight in. When the source declares combined.weights FALSE

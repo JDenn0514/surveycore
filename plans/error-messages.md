@@ -503,3 +503,39 @@ with the promotion PR.
 | M-17 | `set_var_extra()` | Convention 3, exactly one variable, and `extra` itself is a named list of length 1 (payload not wrapped in an outer list) | ERROR | `surveycore_error_var_extra_ambiguous_wrap` | `"x" = "{.arg extra} for a single variable must be wrapped in an outer list.", "i" = "{.code extra = list(role = \"free_text\")} is ambiguous with a length-1 outer list.", "v" = "Use {.code extra = list(list(role = \"free_text\"))} instead."` |
 
 `set_var_extra()` and `extract_var_extra()` otherwise reuse the shared unified-setter/extractor error and warning classes already in this table: `surveycore_error_setter_ambiguous` (M-3), `surveycore_error_setter_empty` (M-4), `surveycore_error_setter_mismatched_lengths` (M-5), `surveycore_error_format_invalid` (M-6), `surveycore_warning_var_not_found` (M-2/M-7), `surveycore_error_setter_mixed_dots` (M-12), `surveycore_warning_setter_empty_variables` (M-14), `surveycore_error_fill_invalid` (M-15), and `surveycore_error_not_survey_or_df` (row 78). Per the dataset-level-metadata update above, these reused classes are now parameterized in `.parse_setter_input()` (`name_arg_name`, `pair_noun`, `example_pairs`, `container_noun`); the seven per-variable setters — including `set_var_extra()` — keep the pre-parameterization defaults, so their message text is unchanged.
+
+### svydesign-replicate-bridge rows (2026-09-04)
+
+All four errors and the warning are user-facing conversion conditions raised by
+an exported function, so they carry the full CLI x/i/v register.
+Row 62 (`surveycore_warning_twophase_method_unknown`) and row 89
+(`surveycore_warning_fpc_partial_stages`) are the precedent for a
+`surveycore_warning_*` class raised when a design detail cannot cross a
+conversion route intact.
+
+**Variable bindings.** `{n_rep}` = the number of columns in the expanded
+replicate matrix; `{n_names}` = the number of usable, distinct replicate column
+names the route resolved — a usable name is non-`NA` and non-empty;
+`{collisions}` = the generated names that already name a column of the design
+data; `{n_collisions}` = how many of them there are; `{fpc_var}` = the name of
+the dropped FPC column; `{scale_txt}` = the recorded replicate scale as a
+string, or `"none"` when no scale is recorded; `{rep_type}` = the replicate
+type the `survey` design records; `{accepted}` = the nine replicate types
+`as_survey_replicate()` accepts.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| CB-1 | `from_svydesign()` (replicate) | The route cannot resolve one usable, distinct name per replicate column — an empty-string name, or a repeated name | ERROR | `surveycore_error_repweights_names_lost` | `"x" = "The {.pkg survey} design has {n_rep} replicate weight column{?s} but {n_names} usable column name{?s}.", "i" = "{.fn from_svydesign} needs one name per replicate column to store the weights in the design data.", "v" = "Rebuild the design with {.fn survey::svrepdesign} and pass {.arg repweights} as a data frame with one named column per replicate."` |
+| CB-2 | `from_svydesign()` (replicate) | The route generated the replicate column names, and one or more of them already names a column of the design data | ERROR | `surveycore_error_repwt_name_collision` | `"x" = "{.fn from_svydesign} cannot store the replicate weights under generated names.", "i" = "The design data already {qty(n_collisions)}{?has a column/has columns} named {.field {collisions}}.", "i" = "A generated name reaches the data when an earlier conversion left its replicate columns there.", "v" = "Rename the conflicting {qty(n_collisions)} column{?s} in the design data, then convert again."` |
+| CB-5 | `from_svydesign()` (replicate) | `x$type` is not one of the nine replicate types `as_survey_replicate()` accepts — `survey::as.svrepdesign()` also produces `"subbootstrap"` and `"mrbbootstrap"` | ERROR | `surveycore_error_replicate_type_unsupported` | `"x" = "The {.pkg survey} design records replicate type {.val {rep_type}}, which surveycore does not accept.", "i" = "surveycore accepts {.val {accepted}}.", "v" = "Rebuild the design with {.fn survey::as.svrepdesign} and an accepted type, then convert it again."` |
+
+Rows CB-3 and CB-4 are the export-route conditions. They land with the export
+route, in the two pull requests that follow this one, so the numbering here
+skips from CB-2 to CB-5.
+
+**Updated trigger descriptions for existing rows:**
+
+- Row 2 (`surveycore_error_empty_data`): trigger description extended — now
+  also fired by `from_svydesign()` on a `survey::svrepdesign` object whose data
+  has 0 rows. That route raises the class with a conversion-register message of
+  its own; it does not reuse the `{.arg data}` template.
