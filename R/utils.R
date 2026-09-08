@@ -164,7 +164,27 @@
 #' This is a thin accessor for `x@data` that provides a stable public name
 #' independent of the S7 property structure.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#' @details
+#' `nrow()` and `dim()` report the stored row count, not the in-domain
+#' count. A domain filter keeps every row of the design and marks
+#' membership in a flag column, so the two counts differ after a filter.
+#' Printing a filtered design shows both, on the `Domain: n of N rows`
+#' line.
+#'
+#' To get the in-domain count, call [get_effective_n()] and read its `n`
+#' column. That function honours the domain flag, takes a `group`
+#' argument, and accepts a `survey_collection`.
+#'
+#' `ncol()` counts the full stored width. The count includes the weight
+#' column, the cluster and stratum ids, `fpc`, the domain flag when
+#' present, and every replicate-weight column. It is not a count of
+#' analysis variables, and it is not comparable across design classes.
+#'
+#' `nrow()` is the unweighted count of sample rows. It is not a
+#' population estimate.
+#'
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
 #' @param haven_class Rebuild the `haven_labelled` class on every column that
 #'   has value labels. The design's metadata is read first, and the column's
 #'   `labels` attribute is the fallback, so labels set by [set_val_labels()]
