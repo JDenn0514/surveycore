@@ -39,3 +39,24 @@
       i A generated name reaches the data when an earlier conversion left its replicate columns there.
       v Rename the conflicting column in the design data, then convert again.
 
+# as_svydesign() warns and drops a recorded FPC, and still converts
+
+    Code
+      sv2 <- as_svydesign(d)
+    Condition
+      Warning:
+      ! `as_svydesign()` dropped the finite population correction column fpc.
+      i `survey::svrepdesign()` takes one FPC value per replicate, and a <survey_replicate> design records one value per row.
+      i surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.
+      v Call `survey::svrepdesign()` directly with `fpc` to apply a per-replicate correction.
+
+# as_svydesign() rejects a replicate design that names no replicate column
+
+    Code
+      as_svydesign(d)
+    Condition
+      Error in `.as_svydesign_replicate()`:
+      x The design names no replicate weight column.
+      i `survey::svrepdesign()` needs at least one replicate weight column, and fails with an untyped error without one.
+      v Rebuild the design with `as_survey_replicate()` and name its replicate weight columns.
+
