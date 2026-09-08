@@ -17,9 +17,9 @@ A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} objec
 }
 \description{
 Converts a \code{survey} package design object (\code{svydesign}, \code{svrepdesign}, or
-\code{twophase}) to the corresponding surveycore S7 object. The data, design
-variables, and replicate weights are preserved; metadata (variable labels,
-value labels) is not — the \code{survey} package has no metadata system.
+\code{twophase}) to the corresponding surveycore S7 object. The data and the
+design variables are preserved; metadata (variable labels, value labels) is
+not — the \code{survey} package has no metadata system.
 }
 \details{
 Weight column names are recovered from the design call when available. When
@@ -28,6 +28,28 @@ the weight column is identified by matching the stored weight values against
 columns in the data. If no match is found, a \code{..surveycore_wt..} column is
 added.
 }
+\section{Replicate weights}{
+
+
+A \code{svrepdesign} object stores either finished replicate weights or
+replication factors, and reports which through its \code{combined.weights}
+field. On a design that reports replication factors the conversion
+transforms the replicate weights rather than preserving them: it multiplies
+each replicate column by the base weight, so the returned design always
+carries finished weights.
+
+When the source design does not name its replicate columns — the case for
+every design that \code{\link[survey:as.svrepdesign]{survey::as.svrepdesign()}} builds — the conversion writes
+a generated block into the data, one column per replicate, named on the
+same \code{..surveycore_wt..} pattern as the manufactured weight column above:
+\code{..surveycore_repwt_1..}, \code{..surveycore_repwt_2..}, and so on, with the
+index zero-padded to the width of the replicate count. When the source does
+name its replicate columns, those names pass through unchanged.
+
+Either way, the \code{repweights} design variable of the returned object names
+those columns, in replicate order.
+}
+
 \examples{
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(

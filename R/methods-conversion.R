@@ -327,15 +327,35 @@ as_tbl_svy <- function(x) {
 #' Convert a survey Package Design to a surveycore Design Object
 #'
 #' Converts a `survey` package design object (`svydesign`, `svrepdesign`, or
-#' `twophase`) to the corresponding surveycore S7 object. The data, design
-#' variables, and replicate weights are preserved; metadata (variable labels,
-#' value labels) is not — the `survey` package has no metadata system.
+#' `twophase`) to the corresponding surveycore S7 object. The data and the
+#' design variables are preserved; metadata (variable labels, value labels) is
+#' not — the `survey` package has no metadata system.
 #'
 #' Weight column names are recovered from the design call when available. When
 #' the call does not contain a formula (e.g., weights were passed as a vector),
 #' the weight column is identified by matching the stored weight values against
 #' columns in the data. If no match is found, a `..surveycore_wt..` column is
 #' added.
+#'
+#' @section Replicate weights:
+#'
+#' A `svrepdesign` object stores either finished replicate weights or
+#' replication factors, and reports which through its `combined.weights`
+#' field. On a design that reports replication factors the conversion
+#' transforms the replicate weights rather than preserving them: it multiplies
+#' each replicate column by the base weight, so the returned design always
+#' carries finished weights.
+#'
+#' When the source design does not name its replicate columns — the case for
+#' every design that [survey::as.svrepdesign()] builds — the conversion writes
+#' a generated block into the data, one column per replicate, named on the
+#' same `..surveycore_wt..` pattern as the manufactured weight column above:
+#' `..surveycore_repwt_1..`, `..surveycore_repwt_2..`, and so on, with the
+#' index zero-padded to the width of the replicate count. When the source does
+#' name its replicate columns, those names pass through unchanged.
+#'
+#' Either way, the `repweights` design variable of the returned object names
+#' those columns, in replicate order.
 #'
 #' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
 #'   `survey::twophase2`, or `srvyr::tbl_svy` object. Both `"twophase"` and
@@ -481,6 +501,31 @@ from_svydesign <- function(x) {
   names_generated <- length(rep_cols) == 0L
   if (names_generated) {
     rep_cols <- .repwt_col_names(n_rep)
+  }
+
+  # Fold the base weight in. When the source declares combined.weights FALSE
+  # the matrix holds replication factors, not finished weights: every type
+  # defines a replicate weight as p[i] * R[i, r] on that branch, and survey
+  # performs the same multiplication itself, on demand, in the analysis
+  # branch of weights.svyrep.design. Doing it once here is correct for all
+  # nine replicate types, because combined.weights is a design-level flag
+  # and not a per-type one.
+  #
+  # The product is row-wise: x$pweights has length n and recycles down each
+  # column, so element [i, r] becomes R[i, r] * p[i]. Zeros, negatives and
+  # NA all pass through it untouched.
+  #
+  # scale, rscales, mse and type need no compensating change. They are
+  # structural constants of the variance formula and depend on the replicate
+  # count and the design type, not on the units of the weight column.
+  #
+  # Neither branch raises a condition. Both weight forms describe the same
+  # design and the product is exact, so nothing is lost and the caller has
+  # nothing to act on. survey::as.svrepdesign() reports the factor form for
+  # every replicate type, so a condition here would fire on nearly every
+  # real conversion.
+  if (!isTRUE(x$combined.weights)) {
+    rep_mat <- rep_mat * x$pweights
   }
 
   # Weight column: find by matching pweights to data columns. This search
