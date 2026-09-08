@@ -192,10 +192,14 @@ written, not how large the PR is.
 appends to it at Step 3, after the merge, when the real diff is knowable.
 
 ```
-| Merged | PR | Stated rows | Additions | Additions per row |
-|---|---|---|---|---|
-| 2026-09-08 | #241 | 9 | 232 | 25.8 |
+| Merged | PR | Rows | Additions | Adds/row | Tester BLOCKs | Reviewer BLOCKs | Follow-up fixes |
+|---|---|---|---|---|---|---|---|
+| 2026-09-08 | #241 | 9 | 232 | 25.8 | 0 | 1 | — |
 ```
+
+The two BLOCK counts come from this run's own counters — Step 2c for the tester,
+Step 2e for the reviewer. `Follow-up fixes` cannot be known at merge time, so it
+starts as `—`.
 
 Additions count the hand-written surface only, with the same exclusions as the
 budget table above. Read them from the merge commit:
@@ -209,6 +213,34 @@ The bound of 12 rests on seven PRs from one feature. Once the ledger holds 20
 rows, re-derive it: sort the rows by additions, find the row count where the
 small and large PRs separate, and set the bound there. Write the new figure and the
 date into the budget table above, replacing the haven-labelled calibration.
+
+Backfill `Follow-up fixes` first. For each ledger PR, count the later merged PRs
+that name it:
+
+```bash
+gh pr list --state merged --limit 100 --json number,title,body --jq '.[] | select((.title + .body) | test("#241")) | .number'
+```
+
+The search also catches bookkeeping mentions: #204 and #227 both name #194
+while only archiving plans. Count a follow-up fix only when the later PR
+changed behaviour the ledger PR shipped.
+
+### What the BLOCK columns are for
+
+They test the premise the budget rests on: that a PR inside the bound draws
+fewer BLOCKs and fewer follow-up fixes than one past it.
+
+Size and rework do correlate on surveycore PRs drafted before any bound existed
+— across 38 merged PRs, Spearman rho 0.575 between additions and commit count,
+and 93% of the PRs over 400 additions needed a second commit against 35% of
+those under it. That is correlation on PRs nobody sized deliberately, and commit
+count is a proxy for rework rather than a defect count.
+
+Two effects pull in opposite directions as the PR count rises. Each PR gets
+smaller, so a reviewer holds less at once. But splitting finer makes cross-PR
+coupling more likely — the failure in issue #165, where PR 3 shipped a helper
+vocabulary that PR 6 needed and could not repair, because the file sat outside
+PR 6's write surface. The ledger decides which effect wins here.
 
 ## `implementation.md` (per PR)
 

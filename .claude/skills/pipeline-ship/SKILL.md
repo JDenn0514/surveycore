@@ -233,8 +233,9 @@ After the shipper returns:
 3. If any test fails that was passing in the baseline → HOLD with classification `post-merge-regression`
 4. Append a row for this PR to `plans/pr-budget-calibration.md`, per
    artifact-schemas.md §PR budget calibration ledger — merge date, PR number,
-   the rows the plan stated, and the additions the merge carried. The merge sha
-   is in this PR's `shipper.md`.
+   the rows the plan stated, the additions the merge carried, and this PR's
+   tester and reviewer BLOCK counts from the counters in Steps 2c and 2e. The
+   merge sha is in this PR's `shipper.md`. Leave `Follow-up fixes` as `—`.
 5. Tell the user when this PR merged over 600 additions while it sat inside the
    row bound. Every right-sized PR in the calibration sample came in under 300,
    so 600 means the row count badly under-predicted this PR, and the bound
