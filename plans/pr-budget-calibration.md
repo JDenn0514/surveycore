@@ -20,6 +20,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-08 | #247 | 10 | 333 | 33.3 | 0 | 0 | — |
 | 2026-09-08 | #249 | 11 | 273 | 24.8 | 0 | 0 | — |
 | 2026-09-08 | #250 | 12 | 479 | 39.9 | 1 | 1 | — |
+| 2026-09-09 | #259 | 18 | 441 | 24.5 | 0 | 0 | — |
 
 ## Notes on individual rows
 
@@ -80,3 +81,42 @@ of the five were inside it and the one that was not (#241, at 15 rows) drew no
 BLOCK. The two BLOCKs both landed on the LAST pull request, which is where the
 "a row is uncovered and there is no later pull request to carry it" failure
 mode lives — a position effect, not a size effect.
+
+## The sixth row — the first over-bound PR to draw no BLOCK
+
+**#259** — as-svydesign-bridge, the whole feature in one PR. 18 stated rows
+against the bound of 12, 441 additions, 24.5 additions per row, no tester
+BLOCK and no reviewer BLOCK.
+
+Three things this row settles or fails to settle.
+
+**The row overage was real and it cost nothing.** The user instructed one PR
+twice, and decision D-8's original reason — two issues rewriting one dispatch
+chain — was gone by the time the plan was written, because D-9 moved the second
+issue to another arc. So the PR carried 18 rows for reasons of instruction
+rather than coupling, and it still passed the tester and the reviewer on the
+first pass. #241 was the only earlier over-bound row, at 15, and it also drew
+no BLOCK. Two over-bound PRs, zero BLOCKs between them. The bound of 12 has now
+been exceeded twice with no measured penalty.
+
+**Additions per row fell below the band.** The five earlier rows sit between
+24.8 and 39.9. This one reads 24.5, just under the floor. The full merge diff
+was 733 insertions across eight files; the 441 figure is the hand-written
+surface the ledger metric defines — `R` and `tests` with `_snaps` excluded —
+so `changelog/fix-as-svydesign-bridge.md` at 145 lines, the two `man/` pages at
+71, `plans/error-messages.md` at 26, the vignette at 31 and the snapshot file
+at 19 are all outside it. A documentation-heavy PR therefore reads leaner per
+row than it is. Six rows is still too few to redefine the band.
+
+**Six rows of twenty.** The schema's re-derivation threshold is 20. This is
+row 6, and all six come from two features by one author on one machine, so the
+bound still rests on the haven-labelled calibration rather than on this ledger.
+
+`Follow-up fixes` starts as `—` and is not knowable at merge time. Four issues
+this feature deliberately deferred are the places a follow-up would land:
+**#245** the dropped domain restriction, **#246** the consolidation of the
+eighth copy of the nonprob routing predicate, **#248** the class-validator
+row-count loophole, and **#251** two documentation corrections that had to wait
+for the warning they describe. None is a fix to #259; each was recorded as
+out of scope before the build. Read them as scope decisions, not as debt this
+row created.
