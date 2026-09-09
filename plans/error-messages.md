@@ -402,6 +402,7 @@ Which test files cover which error table rows:
 | `test-calibration.R` | CAL-15, CAL-16 |
 | `test-analysis-methods-coef-vcov.R` | SCR-1, SCR-3, SCR-W1, SCR-W2, SCR-W3, SCR-W4 |
 | `test-dataset-metadata.R` | DM-1b, DM-2b, DM-3b, DM-4b, DM-5b, DM-6a, DM-6b, DM-8, DM-9; M-3, M-4, M-5, M-12, M-14, M-15 (dataset-metadata variants) |
+| `test-conversion.R` | CN-1, CN-3 |
 
 ### coef-vcov-methods rows (2026-06-22)
 
@@ -540,3 +541,28 @@ type the `survey` design records; `{accepted}` = the nine replicate types
 - Row 16 (`surveycore_error_repweights_empty`): trigger description extended —
   now also fired by `as_svydesign()` on a `survey_replicate` whose
   `@variables$repweights` has length 0.
+
+### as-svydesign-bridge rows (2026-09-09)
+
+Both rows belong to the `as_svydesign()` dispatch chain. CN-1 records a class
+that already existed and was never entered in this table. CN-3 is new.
+
+**The ID `CN-2` is not used, and the gap is deliberate.** It held the dropped
+replicate FPC warning, which shipped in the `svydesign-replicate-bridge` arc as
+row CB-3 above, with the same class name,
+`surveycore_warning_replicate_fpc_dropped`. That row's `"v"` bullet is the
+better remedy, so CN-2 was dropped rather than filled. Do not reuse the ID. The
+CB block above skips CB-2 to CB-5 on the same reading.
+
+`CN` is the prefix for conversion. `CV` is covariance.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| CN-1 | `as_svydesign()`, `as_tbl_svy()`, `survey_data()`, `survey_weighting_history()` | `x` does not inherit `survey_base` | ERROR | `surveycore_error_not_survey_object` | `"x" = "{.arg x} must be a survey design object.", "i" = "Got {.cls {class(x)[[1L]]}}."` — the four call sites raise identical text |
+| CN-3 | `as_svydesign()`, `as_tbl_svy()` | `x` is a `survey_nonprob` design with no replicate weights, and the conversion takes the plain route | WARNING | `surveycore_warning_nonprob_srs_conversion` | `"!" = "{.cls survey_nonprob} object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.", "i" = "The returned {.pkg survey} object records nothing about the approximation, so no later call warns again.", "v" = "Run {.fn surveywts::create_bootstrap_weights} on this design, then convert the design it returns."` |
+
+CN-3 is a distinct class from row NB-2
+(`surveycore_warning_nonprob_srs_fallback`) and not a re-emission of it. NB-2
+describes `get_*()` behaviour on a surveycore design; CN-3 describes an object
+leaving surveycore's hands. Its first bullet repeats NB-2's word for word, so
+one concept keeps one phrasing.
