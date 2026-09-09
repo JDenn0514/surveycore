@@ -6,7 +6,7 @@ R-specific commands, gates, and CRAN-compliance rules. The tester agent runs the
 
 | # | Command | Gate | On fail |
 |---|---|---|---|
-| 1 | `Rscript -e "devtools::document()"` | NAMESPACE/man/ unchanged after run | BLOCK (builder forgot `document()`) |
+| 1 | `Rscript -e "devtools::document()"` | NAMESPACE and `man/` are byte-identical before and after the run — not compared against `HEAD`, because the gate runs before the shipper commits | BLOCK (builder forgot `document()`) |
 | 2 | `Rscript -e "devtools::test()"` | all tests pass | BLOCK (numerical-miss or contract-miss) |
 | 3 | `Rscript -e "devtools::run_examples()"` | all `@examples` run clean | BLOCK (examples use unloaded Imports or broken syntax) |
 | 4 | `R CMD build . 2>&1` | tarball produced | BLOCK (build failure) |
