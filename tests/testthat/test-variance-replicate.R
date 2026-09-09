@@ -122,6 +122,81 @@ test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
   expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
+test_that("get_means() replicate SE matches survey::svymean() — JK2 design", {
+  skip_if_not_installed("survey")
+
+  # survey::svrepdesign() fixes scale = 1 and rscales = rep(1, R) for JK2 and
+  # warns that it ignores both arguments. The constructor left scale at the
+  # delete-one factor (R-1)/R, so every JK2 design built without an explicit
+  # scale reported a standard error low by sqrt((R-1)/R) (issue #242).
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2"
+  )
+  expect_equal(sc@variables$scale, 1)
+
+  sv <- suppressWarnings(survey::svrepdesign(
+    weights = d$wt,
+    repweights = d[, repwt_cols],
+    type = "JK2",
+    mse = TRUE,
+    data = d
+  ))
+  expect_equal(sv$scale, 1)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() agrees between the two JK2 constructors", {
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc_rep <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2"
+  )
+  sc_np <- as_survey_nonprob(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2",
+    rscales = rep(1, length(repwt_cols))
+  )
+
+  m_rep <- get_means(sc_rep, y1, variance = "se")
+  m_np <- get_means(sc_np, y1, variance = "se")
+
+  expect_equal(m_rep$mean, m_np$mean, tolerance = 1e-10)
+  expect_equal(m_rep$se, m_np$se, tolerance = 1e-8)
+})
+
 test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
   skip_if_not_installed("survey")
 
