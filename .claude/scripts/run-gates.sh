@@ -93,13 +93,30 @@ if [ "$BASELINE" = "1" ]; then
   gate_covr
 else
   # --- Gate 1: document() + drift check --------------------------------
+  # Hash NAMESPACE and man/ before and after document(), then compare the two
+  # snapshots. The gate asks "did document() write anything", not "does man/
+  # differ from HEAD". Those two agree only on a committed tree, and every
+  # pipeline run measures the gates before the shipper commits, so a builder
+  # who regenerates an .Rd correctly leaves it uncommitted and the old
+  # `git diff -- NAMESPACE man/` test failed every correct roxygen change
+  # (issue #233). Hashing the file list, not only the contents, also catches
+  # an added or a deleted .Rd.
   log="$LOGDIR/gate-1-document.log"
+  # sort by path (field 2), so a rewritten file shows as one adjacent pair
+  # in the diff below rather than two entries a hash-order apart.
+  snapshot_docs() { find NAMESPACE man -type f -exec md5sum {} + 2>/dev/null | sort -k 2; }
+  before=$(snapshot_docs)
   Rscript -e 'devtools::document()' > "$log" 2>&1
-  if git diff --quiet -- NAMESPACE man/ 2>>"$log"; then
-    pass_gate "devtools::document()" "no NAMESPACE/man drift"
+  after=$(snapshot_docs)
+  if [ "$before" = "$after" ]; then
+    pass_gate "devtools::document()" "document() wrote nothing"
   else
-    git diff --stat -- NAMESPACE man/ >> "$log" 2>&1
-    fail_gate "devtools::document()" "$log" "NAMESPACE/man drift (builder forgot document())"
+    {
+      echo
+      echo "--- files document() added, removed or rewrote ---"
+      diff <(echo "$before") <(echo "$after")
+    } >> "$log" 2>&1
+    fail_gate "devtools::document()" "$log" "document() rewrote NAMESPACE/man (builder forgot document())"
   fi
 
   gate_test
