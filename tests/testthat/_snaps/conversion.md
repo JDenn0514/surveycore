@@ -1,3 +1,12 @@
+# as_svydesign() rejects a plain data.frame
+
+    Code
+      as_svydesign(data.frame(x = 1))
+    Condition
+      Error in `as_svydesign()`:
+      x `x` must be a survey design object.
+      i Got <data.frame>.
+
 # from_svydesign() rejects a subbootstrap replicate design
 
     Code

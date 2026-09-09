@@ -278,10 +278,26 @@ test_that("as_svydesign(survey_replicate) gives svymean matching survey::svrepde
 
 # ── 12. as_svydesign() — error on non-survey input ───────────────────────────
 
+# E-1 and E-3. The dual pattern. The nonprob branch takes one input class
+#              out of the else branch, and the message is only correct
+#              afterwards, so the snapshot records the current text as the
+#              text the four call sites keep.
 test_that("as_svydesign() rejects a plain data.frame", {
   skip_if_not_installed("survey")
   expect_error(
     as_svydesign(data.frame(x = 1)),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_snapshot(error = TRUE, as_svydesign(data.frame(x = 1)))
+})
+
+# E-2. The same guard on an atomic input, which inherits no S7 class at
+#      all. The message reports the class it got, so the two rows exercise
+#      two different renderings of the "i" bullet.
+test_that("as_svydesign() rejects a character string", {
+  skip_if_not_installed("survey")
+  expect_error(
+    as_svydesign("apistrat"),
     class = "surveycore_error_not_survey_object"
   )
 })
@@ -2957,4 +2973,78 @@ test_that("as_svydesign() converts a nonprob design carrying a zero weight [nume
   sm <- survey::svymean(~y1, sv)
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# C-1. as_tbl_svy() needs no edit of its own. Its guard tests survey_base,
+#      which a survey_nonprob design already inherits, so the wrapper starts
+#      accepting both shapes the moment as_svydesign() does.
+test_that("as_tbl_svy() converts a replicate-shaped survey_nonprob", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_nonprob("replicate")
+  ts <- as_tbl_svy(d)
+  expect_true(inherits(ts, "tbl_svy"))
+})
+
+
+# C-2. The conversion warning propagates through the wrapper, because
+#      as_tbl_svy() calls as_svydesign() and raises no condition of its own.
+#      B-4 holds the golden copy of the message, so this block writes no
+#      second snapshot of it.
+test_that("as_tbl_svy() propagates the plain-shape nonprob warning", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_nonprob("plain")
+
+  expect_warning(
+    ts <- as_tbl_svy(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(ts, "tbl_svy"))
+})
+
+
+# D-1. The round trip loses the non-probability identity. A survey object
+#      records nothing that marks a sample as non-probability, so
+#      from_svydesign() rebuilds a probability design on data that has not
+#      changed.
+test_that("the nonprob round trip returns a probability design", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  rebuilt <- from_svydesign(as_svydesign(d))
+
+  expect_true(S7::S7_inherits(rebuilt, survey_replicate))
+  expect_false(S7::S7_inherits(rebuilt, survey_nonprob))
+})
+
+
+# D-2. The consequence a caller feels: the rebuilt design reports design-based
+#      standard errors and stops warning about the SRS approximation. The
+#      block rebuilds its own design rather than reading D-1's.
+test_that("the rebuilt design no longer warns about the SRS approximation", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  rebuilt <- from_svydesign(as_svydesign(d))
+
+  expect_no_warning(
+    result <- get_means(rebuilt, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_true(is.finite(result$se[[1L]]))
+})
+
+
+# E-4. The nonprob branch takes both shapes out of the else branch, so the
+#      refusal no longer reaches a design that inherits survey_base. The
+#      replicate shape is the shape that raises no other condition, so it is
+#      the one this absence can be asserted on cleanly.
+test_that("as_svydesign() raises no refusal for a replicate-shaped nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  expect_no_error(
+    sv <- as_svydesign(d),
+    class = "surveycore_error_not_survey_object"
+  )
+  expect_true(inherits(sv, "svyrep.design"))
 })
