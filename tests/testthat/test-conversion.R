@@ -2844,3 +2844,117 @@ test_that("neither nonprob shape raises the replicate FPC drop warning", {
   )
   expect_true(inherits(sv_plain, "survey.design2"))
 })
+
+
+# B-5. The point of routing on the shape: the converted design has to report
+#      the standard error surveycore reports. The expectation is computed in
+#      the block from the source design, never pasted as a literal — a printed
+#      figure carries fewer digits than the 1e-8 tolerance resolves.
+test_that("as_svydesign() reproduces a replicate nonprob's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sc <- get_means(d, y1, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# B-6. The same equality on the plain shape. Two warnings fire here for two
+#      different reasons: get_means() raises surveycore's own SRS fallback,
+#      which is existing behaviour and not this block's subject, and
+#      as_svydesign() raises the conversion warning.
+test_that("as_svydesign() reproduces a plain nonprob's mean and SE [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# B-9. The default confint() call on a svrepstat uses df = Inf, which is the
+#      degrees of freedom surveycore reports for a nonprob design, so the
+#      default intervals agree. The block builds its own fixture and converts
+#      it again rather than reading an object B-5 left behind.
+test_that("default confint() on a converted replicate nonprob matches [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sc_ci <- get_means(d, y1, variance = "ci")
+
+  sv <- as_svydesign(d)
+  bounds <- as.numeric(confint(survey::svymean(~y1, sv)))
+  expect_equal(bounds[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(bounds[[2L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+
+# B-10. The same on the plain shape, and the same two warnings as B-6.
+test_that("default confint() on a converted plain nonprob matches [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_warning(
+    sc_ci <- get_means(d, y1, variance = "ci"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  bounds <- as.numeric(confint(survey::svymean(~y1, sv)))
+  expect_equal(bounds[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(bounds[[2L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+
+# Fixture 2. The plain shape with one weight set to 0. The design cannot be
+# constructed this way: .validate_weights() rejects any non-positive weight
+# with surveycore_error_weights_nonpositive. So the fixture is built in two
+# steps — construct normally, then write the edited frame back into @data. The
+# survey_nonprob validator checks only that no weight is negative and that the
+# column holds at least one positive value, so a single zero passes it. The
+# survey_taylor and survey_replicate validators repeat the strict check, which
+# is why this fixture exists on this class alone.
+make_nonprob_zero_wt <- function(seed = 601L) {
+  d <- make_nonprob("plain", seed = seed)
+  df <- survey_data(d)
+  df$cal_wt[[1L]] <- 0
+  d@data <- df
+  d
+}
+
+
+# B-11. A zero-weight row costs the bridge nothing: both sides still agree
+#       exactly. survey::degf() answers 38 rather than 39 on this design,
+#       because it counts only the rows whose weight is not zero; the roxygen
+#       carries that qualifier and no code guards the case.
+test_that("as_svydesign() converts a nonprob design carrying a zero weight [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob_zero_wt()
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se"),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv, "survey.design2"))
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
