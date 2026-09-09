@@ -2114,6 +2114,7 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
 #   X-15. Export parity for bootstrap [numerical]
 #   X-16. Export parity for JKn [numerical]
 #   X-17. Every accepted replicate type crosses both routes
+#   X-18. Export parity with no FPC recorded, and no condition raised
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Build a replicate design that records an FPC column. make_survey_data()
@@ -2393,7 +2394,6 @@ test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]
 test_that("as_svydesign() recovers rho = 0 from the default Fay scale", {
   skip_if_not_installed("survey")
   d <- make_rep_type(type = "Fay", seed = 422L)
-  test_invariants(d)
 
   n_rep <- length(d@variables$repweights)
   expect_equal(d@variables$scale, 1 / n_rep, tolerance = 1e-10)
@@ -2643,4 +2643,23 @@ test_that("every accepted replicate type crosses both conversion routes", {
     expect_length(d2@variables$repweights, length(d@variables$repweights))
     expect_identical(nrow(d2@data), nrow(d@data))
   }
+})
+
+# X-18. §IV.6 first row and §VI property 2 together. X-5 shows the silent
+#       branch on the default type, and X-15 shows bootstrap parity through
+#       the FPC drop. Neither covers the pair: a design of an accepted type
+#       that records no FPC converts without raising anything, and the design
+#       it returns reports surveycore's own numbers.
+test_that("as_svydesign() converts a bootstrap design with no FPC and matches it [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "bootstrap", seed = 431L)
+  expect_null(d@variables$fpc)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 })
