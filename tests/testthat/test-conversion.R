@@ -2796,3 +2796,51 @@ test_that("as_svydesign() converts a plain-shaped survey_nonprob and warns", {
   )
   expect_true(inherits(sv, "survey.design2"))
 })
+
+
+# B-2. The replicate columns have to survive the conversion, or the converted
+#      design would compute a different variance. survey stores the analysis
+#      weights as an n-by-R matrix, and the column names reach the returned
+#      design's own data frame.
+test_that("as_svydesign() keeps every replicate column of a nonprob design", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  sv <- as_svydesign(d)
+
+  expect_identical(ncol(stats::weights(sv, "analysis")), 8L)
+  expect_true(all(paste0("bw_", seq_len(8L)) %in% names(sv$variables)))
+})
+
+
+# B-4. The golden copy of the plain-shape message. C-1 and C-2 raise the same
+#      warning through as_tbl_svy() and write no second snapshot of it.
+test_that("as_svydesign() reports the plain-shape nonprob conversion", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  expect_snapshot(sv <- as_svydesign(d))
+})
+
+
+# B-7. A nonprob design records fpc as NULL in both shapes, so branch 4a
+#      reaches .as_svydesign_replicate() without triggering that helper's FPC
+#      drop warning. The plain shape raises the SRS conversion warning, which
+#      the outer expectation captures; the inner one asserts the absence.
+test_that("neither nonprob shape raises the replicate FPC drop warning", {
+  skip_if_not_installed("survey")
+  d_rep <- make_nonprob("replicate")
+  expect_no_warning(
+    sv_rep <- as_svydesign(d_rep),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  expect_true(inherits(sv_rep, "svyrep.design"))
+
+  d_plain <- make_nonprob("plain")
+  expect_warning(
+    expect_no_warning(
+      sv_plain <- as_svydesign(d_plain),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    ),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv_plain, "survey.design2"))
+})
