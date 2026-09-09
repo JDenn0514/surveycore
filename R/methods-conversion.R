@@ -30,20 +30,74 @@
 
 #' Convert a surveycore Design Object to a survey Package Design
 #'
-#' Converts a `survey_taylor`, `survey_replicate`, or `survey_twophase` object
-#' to the corresponding `survey` package object: `svydesign`, `svrepdesign`,
-#' or `twophase`. Useful for accessing `survey` package estimation functions
-#' or for round-trip testing.
+#' Converts a `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#' `survey_nonprob` object to the corresponding `survey` package object:
+#' `svydesign`, `svrepdesign`, or `twophase`. Useful for accessing `survey`
+#' package estimation functions or for round-trip testing.
 #'
 #' Metadata (variable labels, value labels) is NOT carried over — the `survey`
 #' package has no metadata system.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
 #' @return A `survey::svydesign`, `survey::svrepdesign`, or `survey::twophase`
-#'   object. Value labels are not carried into the returned object — the
-#'   `survey` package has no metadata system. To read the data back with
-#'   `haven`-style classes rebuilt, use `survey_data(x, haven_class = TRUE)` on
-#'   the surveycore design instead.
+#'   object. The returned class follows the input class, and for a
+#'   `survey_nonprob` design it follows the design's shape: a design that names
+#'   replicate weights returns a `svrepdesign`, and a design that names none
+#'   returns a `svydesign`. Value labels are not carried into the returned
+#'   object — the `survey` package has no metadata system. To read the data
+#'   back with `haven`-style classes rebuilt, use
+#'   `survey_data(x, haven_class = TRUE)` on the surveycore design instead.
+#'
+#' @section A non-probability design:
+#' A `survey_nonprob` design converts on the shape of its weights. A design
+#' that names replicate weights becomes a `svrepdesign` and keeps every
+#' replicate column, so the converted object computes the replicate variance
+#' surveycore computes. A design that names none becomes a `svydesign` with
+#' `ids = ~1`, and the call warns: the standard errors then use a simple random
+#' sample approximation that charges nothing for calibration uncertainty, and
+#' the returned object records nothing about it. See [as_survey_nonprob()] for
+#' the two variance modes.
+#'
+#' The conversion drops the design's calibration provenance and its reference
+#' sample, and the round trip does not return a non-probability design.
+#' `from_svydesign()` on a converted design returns a `survey_taylor` or a
+#' `survey_replicate` object, because a `survey` object records nothing that
+#' marks a sample as non-probability. The rebuilt design reports design-based
+#' standard errors and no longer warns, on data that has not changed. Keep the
+#' original object when you need any of that.
+#'
+#' @section Degrees of freedom on a converted design:
+#' surveycore reports `Inf` degrees of freedom for a `survey_nonprob` design,
+#' and the `survey` package computes a finite number from the converted object.
+#' A 40-row design with no replicate weights converts to 39, and the same
+#' design with 8 replicate weight columns converts to 7. Both counts carry a
+#' qualifier. Without replicate weights the `survey` package counts the rows
+#' whose weight is not zero and subtracts 1, so the same design with one
+#' zero-weight row converts to 38. With replicate weights it takes the
+#' numerical rank of the matrix of replicate weights and subtracts 1, so the
+#' figure is `R - 1` at full column rank and lower otherwise.
+#'
+#' The difference reaches a result only when the caller asks for it. A default
+#' `confint()` call on a `svystat` or a `svrepstat` uses `df = Inf`, so the
+#' default interval from `survey::svymean()` matches surveycore's. The gap
+#' appears when the caller passes `degf(design)`, or calls a `survey` function
+#' that reads `degf()` itself, such as `svyglm()` or `svyttest()`. See
+#' `vignette("surveycore-vs-survey")` for the two counting rules in the source.
+#'
+#' @section A filtered design's domain:
+#' The converted object represents the full stored sample and not the active
+#' domain. `filter()` from surveytidy keeps every row and marks domain
+#' membership in a logical column named by `SURVEYCORE_DOMAIN_COL`, which holds
+#' `"..surveycore_domain.."`. `as_svydesign()` passes that column through as
+#' ordinary data and never installs it as the converted object's restriction,
+#' so `survey::svymean()` on the result answers for every row. The point
+#' estimate differs from the domain estimate, not the standard error alone.
+#'
+#' A caller who wants the domain has to subset the returned object on that
+#' column: `subset(converted, ..surveycore_domain..)` does it, and reproduces
+#' `get_means()` on the filtered design exactly. Calling `get_means()` on the
+#' filtered design needs no subset at all.
 #'
 #' @examples
 #' d <- as_survey(
@@ -79,6 +133,41 @@ as_svydesign <- function(x) {
     .as_svydesign_replicate(x)
   } else if (S7::S7_inherits(x, survey_twophase)) {
     .as_svydesign_twophase(x)
+  } else if (S7::S7_inherits(x, survey_nonprob)) {
+    # Route on the shape of the weights, not on the class. This is the key
+    # .mean_cell() uses in R/analysis-means-helpers.R to pick the estimator
+    # for a survey_nonprob design, so the converted object carries the
+    # estimator surveycore itself uses. Sending the replicate shape down the
+    # Taylor route answers a standard error 28 times too large on a measured
+    # design.
+    #
+    # The predicate and the first bullet below are each written out in full
+    # here, and each is the eighth in-place copy in R/. Issue #246 carries the
+    # consolidation of all eight; extracting a helper for one site while seven
+    # keep the inline form would read as consolidation without being it.
+    if (!is.null(x@variables$repweights)) {
+      .as_svydesign_replicate(x)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "The returned {.pkg survey} object records nothing about the ",
+            "approximation, so no later call warns again."
+          ),
+          "v" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this design, ",
+            "then convert the design it returns."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_conversion"
+      )
+      .as_svydesign_taylor(x)
+    }
   } else {
     cli::cli_abort(
       c(
@@ -345,8 +434,8 @@ as_svydesign <- function(x) {
 #'
 #' Metadata (variable labels, value labels) is NOT carried over.
 #'
-#' @param x A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
-#'   `survey_nonprob` is not supported and will error.
+#' @param x A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+#'   `survey_nonprob` object.
 #' @return A `srvyr::tbl_svy` object. Value labels are not carried into the
 #'   returned object — the `survey` package has no metadata system. To read the
 #'   data back with `haven`-style classes rebuilt, use

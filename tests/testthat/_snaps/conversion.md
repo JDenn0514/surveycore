@@ -1,3 +1,12 @@
+# as_svydesign() rejects a plain data.frame
+
+    Code
+      as_svydesign(data.frame(x = 1))
+    Condition
+      Error in `as_svydesign()`:
+      x `x` must be a survey design object.
+      i Got <data.frame>.
+
 # from_svydesign() rejects a subbootstrap replicate design
 
     Code
@@ -81,4 +90,14 @@
       i `survey::svrepdesign()` requires `rho` for `type = "Fay"`, and surveycore derives it from the recorded scale.
       i The recorded scale is "none" and yields no value in `[0, 1)`.
       v Rebuild the design with `as_survey_replicate()` and pass the `scale` the "Fay" replicates were built with.
+
+# as_svydesign() reports the plain-shape nonprob conversion
+
+    Code
+      sv <- as_svydesign(d)
+    Condition
+      Warning:
+      ! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+      i The returned survey object records nothing about the approximation, so no later call warns again.
+      v Run `surveywts::create_bootstrap_weights()` on this design, then convert the design it returns.
 

@@ -1,0 +1,145 @@
+# Changelog: fix/as-svydesign-bridge
+
+**Branch:** `fix/as-svydesign-bridge`
+**Status:** Complete
+**Date:** 2026-09-09
+**PRs:** PR 1 of this arc
+**Issues:** #237
+
+## Summary
+
+`as_svydesign()` refused a `survey_nonprob` design, and the refusal
+contradicted itself. The dispatch chain tested three classes and sent
+everything else to an `else` branch raising
+`surveycore_error_not_survey_object` with the message "`x` must be a survey
+design object." A `survey_nonprob` design inherits `survey_base`, so the
+message was false for it. `as_tbl_svy()` inherited the refusal, because its
+own guard tests `survey_base` and passes a nonprob design straight through to
+`as_svydesign()`.
+
+Both functions now convert a `survey_nonprob` design. The route is chosen on
+the shape of the weights, not on the class: `!is.null(x@variables$repweights)`
+is the same key `.mean_cell()` uses in `R/analysis-means-helpers.R` to pick
+the estimator for a nonprob design. So the converted object carries the
+estimator surveycore itself uses. Sending the replicate shape down the Taylor
+route instead answers a standard error 28 times too large on the measured
+design.
+
+The plain shape warns. Its standard errors rest on a simple random sample
+approximation that charges nothing for calibration uncertainty, and the
+returned `survey` object records nothing about the approximation, so nothing
+warns again downstream. The replicate shape needs no warning: it keeps every
+replicate column and computes the replicate variance.
+
+The finite population correction on a `survey_replicate` design, issue #198,
+is not part of this change. It shipped in the `svydesign-replicate-bridge`
+arc as PR #249.
+
+## Changes
+
+### Dispatch — `as_svydesign()` on a `survey_nonprob`
+
+- Add a fourth branch, after the `survey_twophase` branch and before the
+  `else`. A design that names replicate weights routes to
+  `.as_svydesign_replicate()` and returns a `svyrep.design`; a design that
+  names none routes to `.as_svydesign_taylor()` and returns a
+  `survey.design2`
+- Raise `surveycore_warning_nonprob_srs_conversion` on the plain route, before
+  the conversion call. Its first bullet repeats
+  `surveycore_warning_nonprob_srs_fallback` word for word, so one concept
+  keeps one phrasing; its second bullet carries the fact only conversion
+  introduces, that the returned object records nothing about the
+  approximation. A distinct class lets a caller handle the two cases apart:
+  the fallback describes `get_*()` behaviour on a surveycore design, and this
+  one describes an object leaving surveycore's hands
+- Neither helper changed. A nonprob design records `fpc` as `NULL` in both
+  shapes and carries no `fpctype` key at all, so the replicate route's FPC
+  drop warning does not fire; `as_survey_nonprob()` enforces a minimum of two
+  replicate columns, so the empty-replicate guard does not fire; and it
+  accepts only `bootstrap`, `JK1`, `JK2` and `JKn`, so the Fay shrinkage
+  recovery does not fire
+- The predicate and the warning's first bullet are each the eighth in-place
+  copy in `R/`. Both stay inline. Extracting a helper for one site while seven
+  keep the inline form would read as consolidation without being it. Issue
+  #246 carries the consolidation of all eight
+
+### The wrapper — `as_tbl_svy()`
+
+- No logic change. Its guard already passed a nonprob design, so it starts
+  accepting both shapes the moment `as_svydesign()` does, and the conversion
+  warning propagates through it
+
+### Documentation
+
+- The `as_svydesign()` description, `@param x` and `@return` name the fourth
+  input class, and the `@return` states that the returned class follows the
+  design's shape for a nonprob design
+- Three new `@section` blocks on `as_svydesign()`. **A non-probability
+  design** states the two routes, that the conversion drops the calibration
+  provenance and the reference sample on the way out, and that the round trip
+  returns a probability design rather than a nonprob one. **Degrees of freedom
+  on a converted design** states that surveycore reports `Inf` and `survey`
+  computes a finite number, with both counting rules and both qualifiers.
+  **A filtered design's domain** states that the converted object answers for
+  the full stored sample and names the column to subset on
+- The `as_tbl_svy()` `@param x` said `survey_nonprob` "is not supported and
+  will error". That line is deleted, not edited: it is false after this change
+- `vignettes/surveycore-vs-survey.Rmd` §5 gains one comparison table row and a
+  new subsection, §5.1, which shows the conversion and carries the worked
+  derivation of the two degrees-of-freedom counting rules
+
+## Files Modified
+
+- `R/methods-conversion.R` — the fourth dispatch branch with its warning; the
+  roxygen on `as_svydesign()` and on `as_tbl_svy()`. No helper changed, and
+  `as_tbl_svy()`'s body is untouched
+- `man/as_svydesign.Rd`, `man/as_tbl_svy.Rd` — regenerated by
+  `devtools::document()`
+- `plans/error-messages.md` — new dated subsection with rows CN-1 and CN-3,
+  and one Coverage Map line. CN-1 records
+  `surveycore_error_not_survey_object`, raised at four sites and absent from
+  the table until now. The ID CN-2 is deliberately unused: it held the
+  replicate FPC warning, which shipped as row CB-3 of the neighbouring arc
+- `tests/testthat/test-conversion.R` — 15 new blocks, and one existing block
+  extended to the dual pattern
+- `tests/testthat/_snaps/conversion.md` — two new snapshots. Both are
+  insertions; every one of the eight existing blocks is unchanged
+- `vignettes/surveycore-vs-survey.Rmd` — one §5 table row and §5.1
+- `changelog/fix-as-svydesign-bridge.md` — this file
+
+`NEWS.md`, `NAMESPACE`, `DESCRIPTION`, `R/core-constructors.R` and
+`R/methods-print.R` show no diff.
+
+## Verification
+
+Every figure below is computed in the test block that asserts it, from
+`get_means()` on the source design. No test pastes a printed literal.
+
+- Both shapes reproduce surveycore's own mean at tolerance 1e-10 and its
+  standard error at 1e-8. The default `confint()` bounds agree at 1e-6,
+  because a default `confint()` on a `svystat` or a `svrepstat` uses
+  `df = Inf`, which is what surveycore reports for a nonprob design
+- The replicate shape keeps all eight replicate columns:
+  `ncol(stats::weights(converted, "analysis"))` is 8 and every name `bw_1` to
+  `bw_8` reaches the converted design's own data frame
+- Neither shape raises `surveycore_warning_replicate_fpc_dropped`
+- A plain shape carrying one zero-weight row converts and still matches at
+  1e-8. That fixture cannot be constructed directly —
+  `.validate_weights()` rejects any non-positive weight — so it is built in
+  two steps, by writing the edited frame back into `@data`. The
+  `survey_nonprob` validator checks only that no weight is negative and that
+  the column holds one positive value, so a single zero passes it; the
+  `survey_taylor` and `survey_replicate` validators repeat the strict check,
+  which is why the case exists on this class alone
+- Measured degrees of freedom on the 40-row fixture, against `Inf` on the
+  surveycore design: 39 on the plain shape, 7 on the replicate shape with 8
+  columns, 38 on the plain shape with one zero-weight row, and 7 on the
+  replicate shape with the same zero weight. The last figure holds because
+  `degf.svyrep.design` reads the rank of the replicate weight matrix and not
+  the row count
+- `as_tbl_svy()` returns a `tbl_svy` on both shapes and propagates the
+  conversion warning on the plain one
+- The round trip returns a `survey_replicate` and not a `survey_nonprob`, and
+  `get_means()` on the rebuilt design raises no
+  `surveycore_warning_nonprob_srs_fallback`
+- `devtools::test(filter = "conversion")`: FAIL 0, WARN 0
