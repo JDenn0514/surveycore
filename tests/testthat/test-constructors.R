@@ -626,6 +626,52 @@ test_that("as_survey_replicate() computes JK1 default scale = (R-1)/R", {
   expect_equal(d@variables$scale, (n_rep - 1L) / n_rep)
 })
 
+test_that("as_survey_replicate() computes JK2 default scale = 1", {
+  # JK2 is the paired jackknife: the per-stratum factors belong in `rscales`,
+  # so the overall scale stays at 1. survey::svrepdesign() fixes it at 1 and
+  # as_survey_nonprob() already agreed; the replicate constructor used the
+  # delete-one factor (R-1)/R and was low by sqrt((R-1)/R) (issue #242).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 10L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK2"
+  )
+  expect_equal(d@variables$scale, 1)
+  expect_false(isTRUE(all.equal(d@variables$scale, (n_rep - 1L) / n_rep)))
+})
+
+test_that("as_survey_replicate() and as_survey_nonprob() agree on JK2 scale", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 10L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2"
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JK2",
+    rscales = rep(1, length(repwt_cols))
+  )
+  expect_equal(d_rep@variables$scale, d_np@variables$scale)
+})
+
 test_that("as_survey_replicate() computes bootstrap default scale = 1/R", {
   df <- make_survey_data(
     n = 100,

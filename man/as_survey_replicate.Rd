@@ -30,18 +30,21 @@ columns. Must select at least one column. Supports tidy-select helpers
 (e.g., \code{starts_with("repwt")}). Required.}
 
 \item{type}{Character. Replicate weight method. One of \code{"JK1"} (delete-1
-jackknife), \code{"JK2"} (delete-1 jackknife, stratified), \code{"JKn"} (delete-1
-jackknife with varying replication counts), \code{"BRR"} (balanced repeated
-replication), \code{"Fay"} (Fay's method, a modified BRR), \code{"bootstrap"},
-\code{"ACS"} (used in American Community Survey), \code{"successive-difference"},
-or \code{"other"} (user-specified scale). Case-sensitive.}
+jackknife), \code{"JK2"} (paired jackknife, two PSUs per stratum), \code{"JKn"}
+(delete-1 jackknife with varying replication counts), \code{"BRR"} (balanced
+repeated replication), \code{"Fay"} (Fay's method, a modified BRR),
+\code{"bootstrap"}, \code{"ACS"} (used in American Community Survey),
+\code{"successive-difference"}, or \code{"other"} (user-specified scale).
+Case-sensitive.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}, \code{"JK2"}, and
-\code{"JKn"}; \code{1/R} for \code{"BRR"}, \code{"Fay"}, and \code{"bootstrap"}; \code{4/R} for
-\code{"ACS"} and \code{"successive-difference"} (per Ash 2014 / Fay & Train 1995);
-\code{1} for \code{"other"}.}
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"} and \code{"JKn"}; \code{1/R}
+for \code{"BRR"}, \code{"Fay"}, and \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and
+\code{"successive-difference"} (per Ash 2014 / Fay & Train 1995); \code{1} for
+\code{"JK2"} and \code{"other"}. \code{"JK2"} is the paired jackknife, so its
+per-stratum factors belong in \code{rscales} and the overall scale stays at
+\code{1}. This matches \code{survey::svrepdesign()} and \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of

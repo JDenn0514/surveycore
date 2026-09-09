@@ -104,6 +104,19 @@
 
 ## Bug fixes
 
+* `as_survey_replicate(type = "JK2")` now defaults `scale` to `1` instead of
+  `(R-1)/R`. **This moves published numbers.** Every JK2 design built without
+  an explicit `scale` reported a standard error low by a factor of
+  `sqrt((R-1)/R)`; its standard errors rise by `1/sqrt((R-1)/R)` under this
+  release. On an 8-replicate design the error was 6.5%. `(R-1)/R` is the
+  delete-one jackknife factor. JK2 is the paired jackknife, where each
+  replicate is a half sample and the per-stratum factors belong in `rscales`,
+  so the overall scale stays at `1`. `survey::svrepdesign()` fixes it at `1`
+  and `as_survey_nonprob()` already did too, so the two surveycore replicate
+  constructors disagreed with each other about the same replicate type. They
+  now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
+  to reproduce the old numbers. (#242)
+
 * `from_svydesign()` on a `survey::svrepdesign` object no longer loses the
   replicate weights. It read the replicate column names straight off the
   object, and `survey::as.svrepdesign()` names the columns of the matrix it
