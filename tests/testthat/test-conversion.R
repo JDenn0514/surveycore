@@ -2115,6 +2115,7 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
 #   X-16. Export parity for JKn [numerical]
 #   X-17. Every accepted replicate type crosses both routes
 #   X-18. Export parity with no FPC recorded, and no condition raised
+#   X-19. A replicate column of zeros passes through [numerical]
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Build a replicate design that records an FPC column. make_survey_data()
@@ -2660,6 +2661,49 @@ test_that("as_svydesign() converts a bootstrap design with no FPC and matches it
   expect_true(inherits(sv, "svyrep.design"))
 
   sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-19. §IV.2 step 6 and §VI property 2. A replicate column of zeros is
+#       legal: "JK1" and "JKn" delete a whole PSU per replicate, so a deleted
+#       row genuinely carries weight 0 in that replicate. The route gives the
+#       columns no special handling and passes them through, so the design
+#       converts with no condition of its own and reports surveycore's own
+#       numbers.
+test_that("as_svydesign() passes a zeroed replicate column through [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 432L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  df[[repwt_cols[[1L]]]] <- 0
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JK1"
+  )
+  expect_true(all(d@data[[repwt_cols[[1L]]]] == 0))
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The zeros reached the exported design unchanged.
+  expect_equal(sum(sv$repweights[, 1L]), 0, tolerance = 1e-10)
+
+  # survey::svymean() reports its own simpleWarning here — '1 replicates
+  # gave NA results and were discarded'. That is survey's variance code
+  # reacting to the zeros, not the conversion. surveycore discards the same
+  # replicate, which is why the two standard errors still agree.
+  sm <- suppressWarnings(survey::svymean(~y1, sv), classes = "simpleWarning")
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 })
