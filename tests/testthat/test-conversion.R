@@ -2104,6 +2104,18 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
 #   X-5.  No FPC recorded, no warning
 #   X-6.  The drop leaves the surveycore design untouched
 #   X-7.  A design that names no replicate column is refused
+#   X-8.  A Fay design exports with its scale and its source's SE
+#   X-9.  The constructor's default Fay scale recovers rho = 0
+#   X-10. A Fay scale that yields no rho is refused
+#   X-11. A Fay design that records no scale is refused
+#   X-12. Round-trip parity on a JKn source [numerical]
+#   X-13. Round-trip parity on a Fay source [numerical]
+#   X-14. Round-trip parity through the FPC drop [numerical]
+#   X-15. Export parity for bootstrap [numerical]
+#   X-16. Export parity for JKn [numerical]
+#   X-17. Every accepted replicate type crosses both routes
+#   X-18. Export parity with no FPC recorded, and no condition raised
+#   X-19. A replicate column of zeros passes through [numerical]
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Build a replicate design that records an FPC column. make_survey_data()
@@ -2299,4 +2311,399 @@ test_that("as_svydesign() rejects a replicate design that names no replicate col
     fixed = TRUE
   )
   expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# Build the survey Taylor design that the Fay and round-trip blocks convert
+# from. as.svrepdesign() reports the factor form, which is the path nearly
+# every real conversion takes.
+make_taylor_source <- function(seed = 421L, n = 60L) {
+  set.seed(seed)
+  data.frame(
+    strata = rep(1:6, each = n %/% 6L),
+    psu = rep(1:12, each = n %/% 12L),
+    wt = runif(n, 1, 4),
+    y1 = rnorm(n, mean = 10, sd = 2)
+  )
+}
+
+# Build a replicate design of a given type, with no FPC recorded. The data is
+# the same block make_rep_fpc() uses; only the recorded type and the scale
+# arguments change.
+make_rep_type <- function(type = "BRR", seed = 430L, rscales = NULL) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = seed
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    rscales = rscales
+  )
+}
+
+# X-8. §IV.2 step 4 and §VI property 9. The anchor is the measured case: a
+#      design built with fay.rho = 0.3 recovers 0.3 exactly. Without the
+#      recovery the call stops with survey's own 'With type='Fay' you must
+#      supply the correct rho'.
+test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_identical(d@variables$type, "Fay")
+
+  sv <- as_svydesign(d)
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The shrinkage factor the replicates were built with, recovered from the
+  # recorded scale alone.
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+
+  # The scale is the design's own, and the source's. Step 3 passes no scale
+  # for "Fay": survey recomputes it from the recovered rho.
+  expect_equal(sv$scale, d@variables$scale, tolerance = 1e-10)
+  expect_equal(sv$scale, src$scale, tolerance = 1e-10)
+
+  sm_src <- survey::svymean(~y1, src)
+  sm_out <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm_out)[["y1"]], coef(sm_src)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_out)),
+    as.numeric(survey::SE(sm_src)),
+    tolerance = 1e-8
+  )
+})
+
+# X-9. §IV.6. as_survey_replicate(type = "Fay") with no scale fills 1 / n_rep,
+#      which recovers rho = 0. A Fay design with rho = 0 is the BRR case, so
+#      the constructor never produces the missing-scale state.
+test_that("as_svydesign() recovers rho = 0 from the default Fay scale", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "Fay", seed = 422L)
+
+  n_rep <- length(d@variables$repweights)
+  expect_equal(d@variables$scale, 1 / n_rep, tolerance = 1e-10)
+
+  sv <- as_svydesign(d)
+  expect_equal(sv$rho, 0, tolerance = 1e-10)
+  expect_equal(sv$scale, d@variables$scale, tolerance = 1e-10)
+
+  # Export parity, §VI property 2, on the recovered branch.
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-10. §IV.2 step 4, out-of-range arm. as_survey_replicate() accepts any
+#       numeric scale — no validator checks its value — so a scale whose
+#       product with the replicate count is below 1 puts the recovered
+#       shrinkage factor below 0. Measured: scale 0.05 over 8 replicates
+#       gives -0.581.
+test_that("as_svydesign() refuses a Fay design whose scale yields no rho", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 80L,
+    n_psu = 16L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 423L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_length(repwt_cols, 8L)
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "Fay",
+    scale = 0.05
+  )
+  expect_equal(d@variables$scale, 0.05, tolerance = 1e-10)
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+  msg <- conditionMessage(cnd)
+  expect_match(msg, "0.05", fixed = TRUE)
+  expect_match(msg, "shrinkage", fixed = TRUE)
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# X-11. §IV.2 step 4, missing-scale arm. The exported survey_replicate()
+#       constructor takes an untyped variables list and its validator checks
+#       neither scale nor type, so a "Fay" design with no scale key at all is
+#       reachable — issue #198's own reproduction builds one. The message
+#       reads "none" here, so this arm needs a snapshot of its own.
+test_that("as_svydesign() refuses a Fay design that records no scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 424L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = repwt_cols,
+      type = "Fay",
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      visible_vars = NULL
+    )
+  )
+  expect_null(d@variables$scale)
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+  expect_match(conditionMessage(cnd), "none", fixed = TRUE)
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# X-12. §VI property 3. The round trip crosses the import route and then the
+#       export route, so a loss on either leg shows here.
+test_that("as_svydesign(from_svydesign(b)) reproduces b's mean, SE and CI [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source(seed = 425L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  b <- survey::as.svrepdesign(tay, type = "JKn")
+
+  rt <- as_svydesign(from_svydesign(b))
+  expect_true(inherits(rt, "svyrep.design"))
+
+  sm_b <- survey::svymean(~y1, b)
+  sm_rt <- survey::svymean(~y1, rt)
+  expect_equal(coef(sm_rt)[["y1"]], coef(sm_b)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_rt)),
+    as.numeric(survey::SE(sm_b)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.numeric(confint(sm_rt)),
+    as.numeric(confint(sm_b)),
+    tolerance = 1e-6
+  )
+})
+
+# X-13. §VI properties 3 and 9 together. The Fay leg of the round trip needs
+#       the recovered shrinkage factor twice: once to build the exported
+#       design, and once for the numbers it reports.
+test_that("the round trip reproduces a Fay source's mean, SE and CI [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source(seed = 426L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  b <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.5)
+
+  rt <- as_svydesign(from_svydesign(b))
+  expect_equal(rt$rho, 0.5, tolerance = 1e-10)
+  expect_equal(rt$scale, b$scale, tolerance = 1e-10)
+
+  sm_b <- survey::svymean(~y1, b)
+  sm_rt <- survey::svymean(~y1, rt)
+  expect_equal(coef(sm_rt)[["y1"]], coef(sm_b)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm_rt)),
+    as.numeric(survey::SE(sm_b)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.numeric(confint(sm_rt)),
+    as.numeric(confint(sm_b)),
+    tolerance = 1e-6
+  )
+})
+
+# X-14. §VI properties 2 and 3 on a design that records an FPC. The export
+#       leg warns and drops (§IV.2 step 5); the returned design still
+#       reproduces surveycore's own numbers, because surveycore's replicate
+#       variance never reads the FPC (§IV.5).
+test_that("a round trip through the FPC drop still matches the design [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 427L)
+  sc <- get_means(d, y1, variance = "se")
+  sc_ci <- get_means(d, y1, variance = "ci")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  d2 <- from_svydesign(sv)
+
+  # The re-imported design records no FPC, and reports the same numbers.
+  expect_null(d2@variables$fpc)
+  sc2 <- get_means(d2, y1, variance = "se")
+  sc2_ci <- get_means(d2, y1, variance = "ci")
+  expect_equal(sc2$mean[[1L]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(sc2$se[[1L]], sc$se[[1L]], tolerance = 1e-8)
+  expect_equal(sc2_ci$ci_low[[1L]], sc_ci$ci_low[[1L]], tolerance = 1e-6)
+  expect_equal(sc2_ci$ci_high[[1L]], sc_ci$ci_high[[1L]], tolerance = 1e-6)
+})
+
+# X-15. §VI property 2 for "bootstrap". survey refuses an FPC for this type
+#       with 'Separate fpc not needed for bootstrap', so the drop is what
+#       lets the design convert at all.
+test_that("as_svydesign() reproduces surveycore's mean and SE for bootstrap [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(type = "bootstrap", seed = 428L)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-16. §VI property 2 for "JKn", the type survey accepts an FPC for. It
+#       needs rscales of its own, for reasons unrelated to the FPC.
+test_that("as_svydesign() reproduces surveycore's mean and SE for JKn [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(type = "JKn", seed = 429L, rscales = rep(1, 5L))
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-17. §VI property 8. All nine types as_survey_replicate() accepts cross
+#       the export route and then the import route, Fay included. survey
+#       reports its own simpleWarning for the types that ignore a scale —
+#       'with type ACS scale= and rscales= are not needed' — and for "other"
+#       with no rscales. Those are untouched behaviour of the scale argument
+#       (step 3), so muffle them by class.
+test_that("every accepted replicate type crosses both conversion routes", {
+  skip_if_not_installed("survey")
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "Fay",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    rs <- if (ty %in% c("JK2", "JKn")) rep(1, 5L) else NULL
+    d <- make_rep_type(type = ty, seed = 430L, rscales = rs)
+    expect_identical(d@variables$type, ty)
+
+    sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning")
+    expect_true(inherits(sv, "svyrep.design"))
+    expect_identical(sv$type, ty)
+
+    d2 <- from_svydesign(sv)
+    expect_identical(d2@variables$type, ty)
+    expect_length(d2@variables$repweights, length(d@variables$repweights))
+    expect_identical(nrow(d2@data), nrow(d@data))
+  }
+})
+
+# X-18. §IV.6 first row and §VI property 2 together. X-5 shows the silent
+#       branch on the default type, and X-15 shows bootstrap parity through
+#       the FPC drop. Neither covers the pair: a design of an accepted type
+#       that records no FPC converts without raising anything, and the design
+#       it returns reports surveycore's own numbers.
+test_that("as_svydesign() converts a bootstrap design with no FPC and matches it [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "bootstrap", seed = 431L)
+  expect_null(d@variables$fpc)
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-19. §IV.2 step 6 and §VI property 2. A replicate column of zeros is
+#       legal: "JK1" and "JKn" delete a whole PSU per replicate, so a deleted
+#       row genuinely carries weight 0 in that replicate. The route gives the
+#       columns no special handling and passes them through, so the design
+#       converts with no condition of its own and reports surveycore's own
+#       numbers.
+test_that("as_svydesign() passes a zeroed replicate column through [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 432L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  df[[repwt_cols[[1L]]]] <- 0
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JK1"
+  )
+  expect_true(all(d@data[[repwt_cols[[1L]]]] == 0))
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+
+  # The zeros reached the exported design unchanged.
+  expect_equal(sum(sv$repweights[, 1L]), 0, tolerance = 1e-10)
+
+  # survey::svymean() reports its own simpleWarning here — '1 replicates
+  # gave NA results and were discarded'. That is survey's variance code
+  # reacting to the zeros, not the conversion. surveycore discards the same
+  # replicate, which is why the two standard errors still agree.
+  sm <- suppressWarnings(survey::svymean(~y1, sv), classes = "simpleWarning")
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 })
