@@ -104,6 +104,64 @@
 
 ## Bug fixes
 
+* `from_svydesign()` on a `survey::svrepdesign` object no longer loses the
+  replicate weights. It read the replicate column names straight off the
+  object, and `survey::as.svrepdesign()` names the columns of the matrix it
+  builds for no replicate type and on neither `compress` setting, so the route
+  stored zero names, wrote no columns, and raised nothing. The converted design
+  carried no replicate weights, and the loss surfaced later during analysis as
+  `surveycore_error_all_replicates_na`, pointing at the analysis call. The
+  route now expands the matrix — including survey's compressed storage form —
+  generates names on the `..surveycore_repwt_N..` pattern when survey supplies
+  none, and writes one column per replicate on every conversion. (#197, #239)
+
+* `from_svydesign()` now folds the base weight into a replicate matrix that
+  holds replication factors. `survey::as.svrepdesign()` reports
+  `combined.weights` as `FALSE` for every replicate type, and storing those
+  factors unchanged left the point estimate correct while moving the standard
+  error by a design-dependent amount — measured at 35%, 8%, 4%, 10% and 0.1%
+  across five designs, in both directions, with nothing warning. Each replicate
+  column is now multiplied by the base weight, so the returned design carries
+  finished weights. The correction is silent: both forms describe the same
+  design, the product is exact, and `survey` performs the same multiplication
+  itself at call time. `?from_svydesign` no longer claims the replicate weights
+  are preserved, and documents the generated column block. (#197, #241)
+
+* `from_svydesign()` now refuses four `survey` designs it cannot carry, each
+  with a typed condition instead of a silently wrong design or a bare `survey`
+  error: an unsupported replicate type
+  (`surveycore_error_replicate_type_unsupported` — `survey::as.svrepdesign()`
+  also produces `"subbootstrap"` and `"mrbbootstrap"`), a zero-row design
+  (`surveycore_error_empty_data`), a replicate matrix with no usable distinct
+  name per column (`surveycore_error_repweights_names_lost`), and a generated
+  name that already names a column of the design data
+  (`surveycore_error_repwt_name_collision`). (#197, #247)
+
+* `as_svydesign()` on a `survey_replicate` design that records a finite
+  population correction now succeeds. It passed the per-row FPC column to
+  `survey::svrepdesign()`, which takes one value per replicate and checks the
+  length against the replicate count, so every such design failed with
+  survey's own `fpc is wrong length` and the caller had no way around it. The
+  FPC is now dropped with a typed warning naming the column,
+  `surveycore_warning_replicate_fpc_dropped`. Dropping is correct rather than
+  translating: surveycore's replicate variance never reads the FPC, so the
+  exported design reproduces surveycore's own standard errors, while a
+  per-replicate translation would return numbers surveycore does not produce.
+  The FPC stays on the surveycore design. (#198, #249)
+
+* `as_svydesign()` now exports a Fay replicate design. `survey::svrepdesign()`
+  requires `rho` for `type = "Fay"` and the route passed none, so a Fay design
+  could not be exported at all. The shrinkage factor is now recovered from the
+  recorded scale, and a design whose scale yields no usable factor raises
+  `surveycore_error_fay_rho_unrecoverable`. `as_svydesign(from_svydesign(x))`
+  now returns the estimate and standard error it started with, for every
+  replicate type. (#198, #250)
+
+* `as_svydesign()` now refuses a `survey_replicate` design that names no
+  replicate weight column, with `surveycore_error_repweights_empty`, rather
+  than letting `survey::svrepdesign()` fail with an untyped
+  `missing value where TRUE/FALSE needed`. (#198, #249)
+
 * `survey_data(x, haven_class = TRUE)` now leaves a column that carries a class
   of its own alone. The rebuild wrote the `haven_labelled` class chain over the
   whole class vector, so a `factor` that carried a `labels` attribute came back
