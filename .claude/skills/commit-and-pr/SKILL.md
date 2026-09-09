@@ -16,7 +16,7 @@ description: >
 ## HARD CONSTRAINT — READ THIS FIRST
 
 **Your write surface is exactly one file:**
-`changelog/phase-{X}/{branch-name}.md` — the changelog entry for this branch.
+`changelog/{type}-{slug}.md` — the changelog entry for this branch.
 Everything else in this skill is git, `gh`, and R check commands.
 
 If you notice code that should change, add a `TODO:` note to the PR body,
@@ -69,23 +69,27 @@ the user re-requests the merge or runs `/merge`.
 
 Read `.claude/skills/changelog-workflow.md` for the canonical format.
 
-The changelog file lives at: `changelog/phase-{X}/{branch-name}.md`
+The changelog file lives directly in `changelog/`, named
+`{type}-{slug}.md` — the Conventional Commit type of the work plus a short
+kebab-case name for the change. The name describes the change, not the
+branch. The `changelog/phase-*/` subdirectories are historical; nothing new
+goes in them.
 
 Steps:
-1. Determine the phase per `changelog-workflow.md` §Location and Timing —
-   ask the user if unclear
-2. Check if `changelog/phase-{X}/{branch-name}.md` exists
+1. Pick the type and slug per `changelog-workflow.md` §Location and Timing
+2. Check whether an entry for this work already exists in `changelog/`
 3. **If it does not exist:** create it following `changelog-workflow.md`,
    using `git log develop..HEAD --oneline` to populate the `## Changes` section
 4. **If it exists:** verify it is populated — not empty, no `<!-- TODO -->`
-   placeholders, `## Changes` has at least one real bullet
+   placeholders, `## Summary` has a paragraph and `## Changes` has at least
+   one real bullet
 
 **If the changelog entry is missing or empty, STOP and report:**
 
 ```
 No changelog entry found for this branch.
 
-Expected: changelog/phase-{X}/{branch-name}.md
+Expected: changelog/{type}-{slug}.md
 
 The changelog entry must be created before opening the PR.
 ```
