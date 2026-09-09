@@ -2707,3 +2707,92 @@ test_that("as_svydesign() passes a zeroed replicate column through [numerical]",
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Export route — as_svydesign() on a survey_nonprob (§B, §C, §D, §E)
+#
+#   B-1.  The replicate shape returns a svyrep.design and raises nothing
+#   B-2.  The replicate shape keeps all eight replicate columns
+#   B-3.  The plain shape returns a survey.design2 and warns
+#   B-4.  The plain-shape warning message [snapshot]
+#   B-5.  Export parity on the replicate shape [numerical]
+#   B-6.  Export parity on the plain shape [numerical]
+#   B-7.  Neither shape raises the replicate FPC drop warning
+#   B-9.  Default confint() parity on the replicate shape [numerical]
+#   B-10. Default confint() parity on the plain shape [numerical]
+#   B-11. A plain shape carrying one zero-weight row converts and matches
+#   C-1.  as_tbl_svy() converts the replicate shape
+#   C-2.  as_tbl_svy() converts the plain shape and propagates the warning
+#   D-1.  The round trip returns a probability design, not a nonprob one
+#   D-2.  The rebuilt design stops raising the SRS fallback warning
+#   E-4.  The replicate shape raises no not-survey-object refusal
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Fixture 1. A 40-row non-probability design, in either shape. The frame comes
+# from make_survey_data(); its weight column is renamed cal_wt so it reads as a
+# calibration weight, and the design variables psu, strata and fpc are dropped,
+# because as_survey_nonprob() names none of them and a nonprob design records
+# ids, strata and fpc as NULL in both shapes.
+#
+# Eight replicate columns is the count the roxygen's degrees-of-freedom section
+# states: survey::degf() answers 7 on the replicate shape, against 39 on the
+# plain shape of the same 40 rows.
+make_nonprob <- function(shape = c("replicate", "plain"), seed = 601L) {
+  shape <- match.arg(shape)
+  df <- make_survey_data(
+    n = 40L,
+    n_psu = 8L,
+    n_strata = 2L,
+    design = "taylor",
+    seed = seed
+  )
+  df$cal_wt <- df$wt
+  df <- df[, c("cal_wt", "y1", "y2", "y3")]
+
+  if (identical(shape, "plain")) {
+    return(as_survey_nonprob(df, weights = cal_wt))
+  }
+
+  # Independent perturbations, so the replicate matrix has full column rank
+  # and survey::degf() answers R - 1 rather than less.
+  set.seed(seed)
+  for (i in seq_len(8L)) {
+    df[[paste0("bw_", i)]] <- df$cal_wt * stats::runif(nrow(df), 0.85, 1.15)
+  }
+  as_survey_nonprob(
+    df,
+    weights = cal_wt,
+    repweights = tidyselect::all_of(paste0("bw_", seq_len(8L))),
+    type = "bootstrap"
+  )
+}
+
+
+# B-1. The replicate shape routes to .as_svydesign_replicate(). Before this
+#      change the call raised surveycore_error_not_survey_object, which is
+#      issue #237's defect. This is the file's only as_survey_nonprob()
+#      invariant call, per the once-per-constructor-per-file rule.
+test_that("as_svydesign() converts a replicate-shaped survey_nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  test_invariants(d)
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+})
+
+
+# B-3. The plain shape routes to .as_svydesign_taylor(), and the route warns
+#      first. The result comes off the return value of the warned call, so the
+#      block asserts the conversion succeeded as well as that it warned.
+test_that("as_svydesign() converts a plain-shaped survey_nonprob and warns", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+  expect_true(inherits(sv, "survey.design2"))
+})

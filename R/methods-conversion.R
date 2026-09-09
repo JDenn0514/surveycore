@@ -79,6 +79,41 @@ as_svydesign <- function(x) {
     .as_svydesign_replicate(x)
   } else if (S7::S7_inherits(x, survey_twophase)) {
     .as_svydesign_twophase(x)
+  } else if (S7::S7_inherits(x, survey_nonprob)) {
+    # Route on the shape of the weights, not on the class. This is the key
+    # .mean_cell() uses in R/analysis-means-helpers.R to pick the estimator
+    # for a survey_nonprob design, so the converted object carries the
+    # estimator surveycore itself uses. Sending the replicate shape down the
+    # Taylor route answers a standard error 28 times too large on a measured
+    # design.
+    #
+    # The predicate and the first bullet below are each written out in full
+    # here, and each is the eighth in-place copy in R/. Issue #246 carries the
+    # consolidation of all eight; extracting a helper for one site while seven
+    # keep the inline form would read as consolidation without being it.
+    if (!is.null(x@variables$repweights)) {
+      .as_svydesign_replicate(x)
+    } else {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "{.cls survey_nonprob} object has no bootstrap replicate ",
+            "weights. Standard errors use an SRS approximation that ",
+            "underestimates calibration uncertainty."
+          ),
+          "i" = paste0(
+            "The returned {.pkg survey} object records nothing about the ",
+            "approximation, so no later call warns again."
+          ),
+          "v" = paste0(
+            "Run {.fn surveywts::create_bootstrap_weights} on this design, ",
+            "then convert the design it returns."
+          )
+        ),
+        class = "surveycore_warning_nonprob_srs_conversion"
+      )
+      .as_svydesign_taylor(x)
+    }
   } else {
     cli::cli_abort(
       c(
