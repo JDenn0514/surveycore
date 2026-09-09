@@ -7,8 +7,8 @@
 as_tbl_svy(x)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.
-\code{survey_nonprob} is not supported and will error.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object.}
 }
 \value{
 A \code{srvyr::tbl_svy} object. Value labels are not carried into the

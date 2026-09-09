@@ -7,25 +7,85 @@
 as_svydesign(x)
 }
 \arguments{
-\item{x}{A \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object.}
+\item{x}{A \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object.}
 }
 \value{
 A \code{survey::svydesign}, \code{survey::svrepdesign}, or \code{survey::twophase}
-object. Value labels are not carried into the returned object — the
-\code{survey} package has no metadata system. To read the data back with
-\code{haven}-style classes rebuilt, use \code{survey_data(x, haven_class = TRUE)} on
-the surveycore design instead.
+object. The returned class follows the input class, and for a
+\code{survey_nonprob} design it follows the design's shape: a design that names
+replicate weights returns a \code{svrepdesign}, and a design that names none
+returns a \code{svydesign}. Value labels are not carried into the returned
+object — the \code{survey} package has no metadata system. To read the data
+back with \code{haven}-style classes rebuilt, use
+\code{survey_data(x, haven_class = TRUE)} on the surveycore design instead.
 }
 \description{
-Converts a \code{survey_taylor}, \code{survey_replicate}, or \code{survey_twophase} object
-to the corresponding \code{survey} package object: \code{svydesign}, \code{svrepdesign},
-or \code{twophase}. Useful for accessing \code{survey} package estimation functions
-or for round-trip testing.
+Converts a \code{survey_taylor}, \code{survey_replicate}, \code{survey_twophase}, or
+\code{survey_nonprob} object to the corresponding \code{survey} package object:
+\code{svydesign}, \code{svrepdesign}, or \code{twophase}. Useful for accessing \code{survey}
+package estimation functions or for round-trip testing.
 }
 \details{
 Metadata (variable labels, value labels) is NOT carried over — the \code{survey}
 package has no metadata system.
 }
+\section{A non-probability design}{
+
+A \code{survey_nonprob} design converts on the shape of its weights. A design
+that names replicate weights becomes a \code{svrepdesign} and keeps every
+replicate column, so the converted object computes the replicate variance
+surveycore computes. A design that names none becomes a \code{svydesign} with
+\code{ids = ~1}, and the call warns: the standard errors then use a simple random
+sample approximation that charges nothing for calibration uncertainty, and
+the returned object records nothing about it. See \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} for
+the two variance modes.
+
+The conversion drops the design's calibration provenance and its reference
+sample, and the round trip does not return a non-probability design.
+\code{from_svydesign()} on a converted design returns a \code{survey_taylor} or a
+\code{survey_replicate} object, because a \code{survey} object records nothing that
+marks a sample as non-probability. The rebuilt design reports design-based
+standard errors and no longer warns, on data that has not changed. Keep the
+original object when you need any of that.
+}
+
+\section{Degrees of freedom on a converted design}{
+
+surveycore reports \code{Inf} degrees of freedom for a \code{survey_nonprob} design,
+and the \code{survey} package computes a finite number from the converted object.
+A 40-row design with no replicate weights converts to 39, and the same
+design with 8 replicate weight columns converts to 7. Both counts carry a
+qualifier. Without replicate weights the \code{survey} package counts the rows
+whose weight is not zero and subtracts 1, so the same design with one
+zero-weight row converts to 38. With replicate weights it takes the
+numerical rank of the matrix of replicate weights and subtracts 1, so the
+figure is \code{R - 1} at full column rank and lower otherwise.
+
+The difference reaches a result only when the caller asks for it. A default
+\code{confint()} call on a \code{svystat} or a \code{svrepstat} uses \code{df = Inf}, so the
+default interval from \code{survey::svymean()} matches surveycore's. The gap
+appears when the caller passes \code{degf(design)}, or calls a \code{survey} function
+that reads \code{degf()} itself, such as \code{svyglm()} or \code{svyttest()}. See
+\code{vignette("surveycore-vs-survey")} for the two counting rules in the source.
+}
+
+\section{A filtered design's domain}{
+
+The converted object represents the full stored sample and not the active
+domain. \code{filter()} from surveytidy keeps every row and marks domain
+membership in a logical column named by \code{SURVEYCORE_DOMAIN_COL}, which holds
+\code{"..surveycore_domain.."}. \code{as_svydesign()} passes that column through as
+ordinary data and never installs it as the converted object's restriction,
+so \code{survey::svymean()} on the result answers for every row. The point
+estimate differs from the domain estimate, not the standard error alone.
+
+A caller who wants the domain has to subset the returned object on that
+column: \code{subset(converted, ..surveycore_domain..)} does it, and reproduces
+\code{get_means()} on the filtered design exactly. Calling \code{get_means()} on the
+filtered design needs no subset at all.
+}
+
 \examples{
 d <- as_survey(
   nhanes_2017,
