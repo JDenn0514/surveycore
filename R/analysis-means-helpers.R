@@ -317,8 +317,15 @@
     ))
   }
 
-  # HT Taylor linearization: n/(n-1) * sum(z_i^2), z_i = w_i*(y_i-ybar)/N_hat
-  var_ybar <- (n_d / (n_d - 1L)) * sum(w_sub^2 * (y_sub - ybar)^2) / N_d^2
+  # HT Taylor linearization: n/(n-1) * sum(z_i^2), z_i = w_i*(y_i-ybar)/N_hat.
+  # n is the FULL sample size, never the domain size. survey keeps each
+  # retained row's recorded stratum sample size when a design is subset, so
+  # survey::svydesign(ids = ~1) takes this factor from the full sample on a
+  # domain too, and .taylor_mean_cell() agrees. Taking it from the domain
+  # inflated every domain SE by sqrt((n_d/(n_d-1)) / (n/(n-1))): 1.3% on a
+  # domain of 20 of 40 rows, 10.4% on a domain of 5 of 40.
+  n_full <- nrow(data)
+  var_ybar <- (n_full / (n_full - 1L)) * sum(w_sub^2 * (y_sub - ybar)^2) / N_d^2
   se <- sqrt(max(0, var_ybar))
 
   # SRS-equivalent SE for deff
