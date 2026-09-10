@@ -3048,3 +3048,346 @@ test_that("as_svydesign() raises no refusal for a replicate-shaped nonprob", {
   )
   expect_true(inherits(sv, "svyrep.design"))
 })
+
+
+# ── Domain restriction on the Taylor route ───────────────────────────────────
+#
+# Issue #245. A design that surveytidy's filter() has marked keeps every row
+# and records domain membership in the column SURVEYCORE_DOMAIN_COL names.
+# as_svydesign() used to pass that column through as ordinary data, so
+# survey::svymean() on the converted object answered for the full sample.
+# .as_svydesign_taylor() now indexes the object it builds by the marker, so
+# the converted object answers the domain estimate.
+#
+# This section covers the Taylor route and the survey_nonprob shape that names
+# no replicate weights, because as_svydesign() sends that shape into the same
+# helper after its SRS warning.
+
+# Fixture. A 50-row stratified cluster design with a domain marked by hand.
+# The mask splits on y1's median, so it keeps rows in both strata and thins no
+# stratum to one PSU.
+make_filtered_taylor <- function(seed = 42L) {
+  d <- make_taylor(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. get_means() on the filtered design is the
+# reference, because that is the answer the same design already gives through
+# surveycore's own estimator.
+test_that("as_svydesign() converts a filtered Taylor design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows and the default threshold is 30; the estimate itself
+  # does not depend on the argument.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The same agreement on a marker that surveytidy's filter() wrote, rather than
+# one written by hand. filter() is how a domain arrives in practice, and it
+# records the column this helper reads.
+test_that("as_svydesign() converts a filter()-marked Taylor design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::filter(make_taylor(), y1 > 50)
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The same agreement on a real design. nhanes_2017 has 9,254 rows in 15 strata,
+# so the domain leaves every stratum populated and the two estimators are
+# compared on a design no synthetic generator produced.
+test_that("as_svydesign() converts a filtered nhanes design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- as_survey(
+    nhanes_2017,
+    ids = sdmvpsu,
+    weights = wtint2yr,
+    strata = sdmvstra,
+    nest = TRUE
+  )
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$riagendr == 1
+  d@data <- df
+  sc <- get_means(d, ridageyr, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~ridageyr, sv, na.rm = TRUE)
+
+  expect_identical(nrow(sv$variables), sum(df$riagendr == 1))
+  expect_equal(coef(sm)[["ridageyr"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The Taylor call site serves a second input shape. as_svydesign() sends a
+# survey_nonprob design that names no replicate weights into
+# .as_svydesign_taylor() after its SRS warning, so the restriction reaches
+# that shape with no branch of its own. The two conversion warnings are
+# pre-existing and the restriction changes neither.
+test_that("as_svydesign() converts a filtered plain-shaped nonprob to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  mask <- df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_warning(
+    sc <- get_means(d, y1, variance = "se", min_cell_n = 1L),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_warning(
+    sv <- as_svydesign(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+
+  sm <- survey::svymean(~y1, sv)
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+
+  # The point estimate agrees and the standard error does not, for a reason
+  # this write surface does not reach. .calibrated_mean_cell() in
+  # R/analysis-means-helpers.R takes its finite correction from the domain
+  # size, n_d / (n_d - 1). survey's `[` keeps each retained row's recorded
+  # stratum sample size, so survey::svymean() takes the same correction from
+  # the full sample, n / (n - 1) — and so does surveycore's own
+  # .taylor_mean_cell(). The two standard errors therefore stand in exactly
+  # that ratio, which this block pins rather than tolerates.
+  n_full <- nrow(df)
+  n_dom <- sum(mask)
+  expect_equal(
+    sc$se[[1L]] / as.numeric(survey::SE(sm)),
+    sqrt((n_dom / (n_dom - 1L)) / (n_full / (n_full - 1L))),
+    tolerance = 1e-8
+  )
+
+  # The converted object itself is right. The identical frame and the
+  # identical domain, converted through as_survey() rather than
+  # as_survey_nonprob(), agrees with the same 20-row converted object to 1e-8
+  # — so the difference above belongs to the fallback estimator and not to
+  # the restriction.
+  sc_taylor <- get_means(
+    as_survey(df, weights = cal_wt),
+    y1,
+    variance = "se",
+    min_cell_n = 1L
+  )
+  expect_equal(
+    as.numeric(survey::SE(sm)),
+    sc_taylor$se[[1L]],
+    tolerance = 1e-8
+  )
+
+  # The marker column stays in the converted object's data, and every value
+  # left in it is TRUE.
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An unfiltered design carries no marker column, so the helper returns the
+# object un-indexed and the conversion is what it was before this change.
+test_that("as_svydesign() converts an unfiltered Taylor design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  sv <- as_svydesign(d)
+
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# A marker that selects everything is indexed anyway. There is no all-TRUE
+# column to detect on an unfiltered design, so presence of the column is the
+# whole guard, and indexing by an all-TRUE mask has to cost nothing.
+test_that("as_svydesign() converts an all-TRUE marker to every row [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(TRUE, nrow(df))
+  d@data <- df
+  sc <- get_means(d, y1, variance = "se")
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), nrow(df))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The route restricts the object it built and never the design it was given,
+# so the same design converts the same way twice.
+test_that("as_svydesign() leaves the input design unchanged", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  n_before <- nrow(survey_data(d))
+  mask_before <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  sv1 <- as_svydesign(d)
+
+  expect_identical(nrow(survey_data(d)), n_before)
+  expect_identical(
+    survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]],
+    mask_before
+  )
+
+  sv2 <- as_svydesign(d)
+  expect_identical(nrow(sv2$variables), nrow(sv1$variables))
+})
+
+
+# The round trip is the guard on the choice of `[` over subset(). survey's
+# subset() methods overwrite the stored call, and from_svydesign() reads the
+# design variables back out of that call inside a tryCatch that returns NULL
+# on failure — so a lost call reads as a design that names no ids and no
+# strata, with nothing raised.
+test_that("the round trip on a filtered Taylor design recovers the design variables", {
+  skip_if_not_installed("survey")
+  keys <- c("ids", "strata", "weights")
+  filtered <- from_svydesign(as_svydesign(make_filtered_taylor()))
+  unfiltered <- from_svydesign(as_svydesign(make_taylor()))
+
+  expect_identical(filtered@variables[keys], unfiltered@variables[keys])
+})
+
+
+# The comparison above is only worth something if the unfiltered round trip
+# names all three, so that block asserts it.
+test_that("the round trip on an unfiltered Taylor design names ids, strata and weights", {
+  skip_if_not_installed("survey")
+  rebuilt <- from_svydesign(as_svydesign(make_taylor()))
+
+  expect_identical(rebuilt@variables$ids, "psu")
+  expect_identical(rebuilt@variables$strata, "strata")
+  expect_identical(rebuilt@variables$weights, "wt")
+})
+
+
+# The mechanism behind the two blocks above: `[` never rewrites the stored
+# call, so the expression from_svydesign() parses is the same expression on a
+# filtered design as on an unfiltered one.
+test_that("the restriction leaves the converted object's stored call unchanged", {
+  skip_if_not_installed("survey")
+  filtered <- as_svydesign(make_filtered_taylor())
+  unfiltered <- as_svydesign(make_taylor())
+
+  expect_identical(deparse(filtered$call), deparse(unfiltered$call))
+})
+
+
+# The restriction raises nothing of its own on this route, for any domain.
+# as.logical() is what makes the claim hold for a marker column that is not
+# logical; a character column raised an unclassed base error without it.
+test_that("as_svydesign() raises no condition on a filtered Taylor design", {
+  skip_if_not_installed("survey")
+  expect_no_condition(sv <- as_svydesign(make_filtered_taylor()))
+  expect_true(inherits(sv, "survey.design2"))
+})
+
+
+# The marker column's type does not change which rows survive. Nothing in the
+# package guarantees the column is logical, no validator checks its type, and
+# code in this repository already writes an integer one. as.logical() is what
+# makes the mask work on all five types: `&` alone errors on a character
+# column and returns an all-NA mask on a factor one, which yields an object
+# that later dies inside survey with `invalid 'type' (list) of argument`.
+test_that("as_svydesign() selects the same rows for every marker column type", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+
+  markers <- list(
+    logical = mask,
+    integer = as.integer(mask),
+    double = as.numeric(mask),
+    character = as.character(mask),
+    factor = factor(mask, levels = c(FALSE, TRUE))
+  )
+
+  for (nm in names(markers)) {
+    df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- markers[[nm]]
+    d@data <- df
+    expect_no_condition(sv <- as_svydesign(d))
+    expect_identical(nrow(sv$variables), sum(mask), info = nm)
+  }
+})
+
+
+# A factor whose levels say nothing about domain membership converts to all
+# NA, which the mask reads as an empty domain. That is safe and inspectable,
+# where `&` alone gave a 200-row object with a corrupt probability vector.
+test_that("as_svydesign() reads an unconvertible marker as an empty domain", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- factor(
+    rep(c("yes", "no"), length.out = nrow(df))
+  )
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+})
+
+
+# A row whose marker is NA falls outside the domain. `!is.na(r)` does this,
+# and it also absorbs the NA that as.logical() returns for a value it cannot
+# convert.
+test_that("as_svydesign() treats an NA marker row as outside the domain", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+  mask[[which(mask)[[1L]]]] <- NA
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), sum(mask, na.rm = TRUE))
+})
+
+
+# A filter that matches no row still converts, and the conversion raises no
+# condition. On the Taylor route the caller then reads 0 with a standard error
+# of 0 out of survey; the empty object is survey's to interpret, not this
+# helper's to refuse.
+test_that("as_svydesign() converts an all-FALSE marker to a zero-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], 0, tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), 0, tolerance = 1e-8)
+})
