@@ -3168,27 +3168,18 @@ test_that("as_svydesign() converts a filtered plain-shaped nonprob to the domain
   expect_identical(nrow(sv$variables), sum(mask))
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
 
-  # The point estimate agrees and the standard error does not, for a reason
-  # this write surface does not reach. .calibrated_mean_cell() in
-  # R/analysis-means-helpers.R takes its finite correction from the domain
-  # size, n_d / (n_d - 1). survey's `[` keeps each retained row's recorded
-  # stratum sample size, so survey::svymean() takes the same correction from
-  # the full sample, n / (n - 1) — and so does surveycore's own
-  # .taylor_mean_cell(). The two standard errors therefore stand in exactly
-  # that ratio, which this block pins rather than tolerates.
-  n_full <- nrow(df)
-  n_dom <- sum(mask)
-  expect_equal(
-    sc$se[[1L]] / as.numeric(survey::SE(sm)),
-    sqrt((n_dom / (n_dom - 1L)) / (n_full / (n_full - 1L))),
-    tolerance = 1e-8
-  )
+  # The standard error agrees too. It did not until PR #263:
+  # .calibrated_mean_cell() took its finite correction from the domain size,
+  # n_d / (n_d - 1), where survey::svymean() takes it from the full sample,
+  # n / (n - 1), because survey's `[` keeps each retained row's recorded
+  # stratum sample size. The two stood in exactly that ratio. #263 re-based
+  # the correction on the full sample, so this is now a plain parity check.
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 
-  # The converted object itself is right. The identical frame and the
-  # identical domain, converted through as_survey() rather than
-  # as_survey_nonprob(), agrees with the same 20-row converted object to 1e-8
-  # — so the difference above belongs to the fallback estimator and not to
-  # the restriction.
+  # The same frame and the same domain, converted through as_survey() rather
+  # than as_survey_nonprob(), gives the same standard error. The calibrated
+  # fallback and the Taylor estimator agree on a domain, which is the
+  # property #263 established and this block keeps under guard.
   sc_taylor <- get_means(
     as_survey(df, weights = cal_wt),
     y1,
