@@ -21,6 +21,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-08 | #249 | 11 | 273 | 24.8 | 0 | 0 | — |
 | 2026-09-08 | #250 | 12 | 479 | 39.9 | 1 | 1 | — |
 | 2026-09-09 | #259 | 18 | 441 | 24.5 | 0 | 0 | — |
+| 2026-09-10 | #263 | — | 162 | — | 0 | 0 | — |
 
 ## Notes on individual rows
 
@@ -120,3 +121,16 @@ row-count loophole, and **#251** two documentation corrections that had to wait
 for the warning they describe. None is a fix to #259; each was recorded as
 out of scope before the build. Read them as scope decisions, not as debt this
 row created.
+
+- **#263** — not a PR of any implementation plan, so it has no test-spec row
+  count and no additions-per-row figure. It exists because PR 1 of the
+  `as-svydesign-domain` arc raised a HOLD: test-spec row A-4 required SE parity
+  with `survey` on a `survey_nonprob` design, and a pre-existing defect in
+  `.calibrated_mean_cell()` made that parity impossible. The user chose to fix
+  the defect, and it shipped ahead of PR 1 so that row A-4 became true as
+  written and no frozen artifact had to be amended. Both BLOCK counts are 0:
+  the gates passed on the first run and the reviewer passed on its first
+  review. Two HOLDs sit behind the row and neither was a BLOCK — the PR 1 HOLD
+  that created this PR, and a builder HOLD on a one-row domain, deferred as
+  D17 and filed as #265. The row is excluded from any re-derivation of the row
+  bound, since a PR with no stated row count cannot inform a per-row figure.
