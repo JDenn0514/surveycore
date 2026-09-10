@@ -3329,6 +3329,20 @@ test_that("as_svydesign() selects the same rows for every marker column type", {
     d@data <- df
     expect_no_condition(sv <- as_svydesign(d))
     expect_identical(nrow(sv$variables), sum(mask), info = nm)
+
+    # The row count alone passes on a corrupt object, so the probabilities
+    # are checked too. Indexing by the all-NA mask that `&` returned on the
+    # factor marker gave an object whose probability vector was neither
+    # finite nor infinite; estimating on it died three frames down inside
+    # survey with `invalid 'type' (list) of argument`. A numeric probability
+    # vector with a finite value for every retained row is the state that
+    # cannot hold on such an object. The two tests are one expectation so
+    # that a list-valued vector fails here rather than erroring in
+    # is.finite().
+    expect_true(
+      is.numeric(sv$prob) && all(is.finite(sv$prob)),
+      info = nm
+    )
   }
 })
 
@@ -3384,4 +3398,109 @@ test_that("as_svydesign() converts an all-FALSE marker to a zero-row object", {
   sm <- survey::svymean(~y1, sv)
   expect_equal(coef(sm)[["y1"]], 0, tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), 0, tolerance = 1e-8)
+})
+
+
+# A marker with exactly one TRUE gives a one-row object, and the conversion
+# raises nothing. survey's `[` is content with one row; what survey reports if
+# a caller then estimates on that object belongs to survey, so this block
+# asserts nothing about estimation.
+test_that("as_svydesign() converts a single-TRUE marker to a one-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- rep(FALSE, nrow(df))
+  mask[[1L]] <- TRUE
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 1L)
+})
+
+
+# A marker of nothing but NA is the all-FALSE case reached by the other half
+# of the mask: as.logical() leaves the NAs alone and `!is.na(r)` drops every
+# row. On the Taylor route the empty object then answers 0 with a standard
+# error of 0, as it does for an all-FALSE marker.
+test_that("as_svydesign() converts an all-NA marker to a zero-row object", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(NA, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], 0, tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), 0, tolerance = 1e-8)
+})
+
+
+# as_tbl_svy() inherits the restriction with no edit of its own. It calls
+# as_svydesign() and wraps the result, so the tbl_svy it hands to srvyr
+# carries one row per marked row.
+test_that("as_tbl_svy() inherits the restriction on a filtered Taylor design", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_filtered_taylor()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  ts <- as_tbl_svy(d)
+
+  expect_true(inherits(ts, "tbl_svy"))
+  expect_identical(nrow(ts$variables), sum(mask))
+})
+
+
+# The round trip agrees with the converted object on the numbers, not only on
+# the design variables. The rebuilt design is a design over the domain rows
+# carrying an all-TRUE marker, so surveycore's own estimator answers what
+# survey answers on the object the rebuild read.
+test_that("the round trip on a filtered Taylor design agrees on the numbers [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_taylor()
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+  ci <- stats::confint(sm)
+
+  rebuilt <- from_svydesign(sv)
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows and the default threshold is 30.
+  sc <- get_means(rebuilt, y1, variance = c("se", "ci"), min_cell_n = 1L)
+
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  expect_equal(sc$ci_low[[1L]], ci[[1L, 1L]], tolerance = 1e-6)
+  expect_equal(sc$ci_high[[1L]], ci[[1L, 2L]], tolerance = 1e-6)
+})
+
+
+# The all-TRUE marker column travels back into the rebuilt design, where the
+# print method reads it and reports a domain. The original N is unrecoverable
+# from a survey object, which records a subset and not a marker, so the
+# rebuilt design's row count is its new total and the line names the same
+# number twice.
+test_that("the round trip on a filtered Taylor design prints n of n rows", {
+  skip_if_not_installed("survey")
+  rebuilt <- from_svydesign(as_svydesign(make_filtered_taylor()))
+  df <- survey_data(rebuilt)
+  n <- nrow(df)
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(df))
+  expect_true(all(df[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+
+  # The inner capture takes the tibble on stdout, the outer one takes the cli
+  # text on the message stream, so the block prints nothing during a run.
+  out <- capture.output(
+    invisible(capture.output(print(rebuilt))),
+    type = "message"
+  )
+  expect_true(any(grepl(
+    paste0("Domain: ", n, " of ", n, " rows"),
+    out,
+    fixed = TRUE
+  )))
 })
