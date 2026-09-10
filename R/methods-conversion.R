@@ -26,6 +26,50 @@
 }
 
 
+# Restrict a converted survey-package design object to the active domain.
+#
+# surveytidy's filter() keeps every row of @data and marks domain membership
+# in the column SURVEYCORE_DOMAIN_COL names. A conversion route calls this
+# helper on the object it has just built, immediately before returning it, so
+# the converted object answers for the domain and not for the full stored
+# sample (issue #245). The input design is never restricted.
+#
+# The frame comes off the converted object rather than from a second argument.
+# The correct frame is a function of the object's class, and a caller that
+# passes it can pass the wrong one: the @data-side vector is one row per
+# phase-1 row, where a two-phase object's phase-1 sample holds only the
+# phase-2 rows, and indexing with it raises an unclassed
+# `logical subscript too long`. The class this helper serves today,
+# survey.design2, keeps the frame at converted$variables.
+#
+# `[` and never subset(). All three of survey's subset() methods end with
+# `x$call <- sys.call(-1)`, which overwrites the call the route stored.
+# .as_svydesign_taylor() builds that call with bquote() so the formulas are
+# inlined, and from_svydesign() reads ids, strata, weights, fpc and nest back
+# out of it, each read wrapped in a tryCatch that returns NULL on failure. A
+# round trip through subset() therefore loses ids and strata with nothing
+# raised. `[` leaves the stored call alone.
+#
+# as.logical() before the mask. Nothing in the package guarantees the marker
+# column is logical and no validator checks its type; code in this repository
+# already writes an integer one. `&` alone errors on a character column and
+# returns an all-NA mask on a factor one. With as.logical() first, a logical,
+# integer, double, character or FALSE/TRUE factor column all select the same
+# rows. `!is.na(r)` reads NA as outside the domain, and absorbs the NA that
+# as.logical() returns for a value it cannot convert.
+#' @noRd
+.restrict_to_domain <- function(converted) {
+  frame <- converted$variables
+
+  if (!SURVEYCORE_DOMAIN_COL %in% names(frame)) {
+    return(converted)
+  }
+
+  r <- as.logical(frame[[SURVEYCORE_DOMAIN_COL]])
+  converted[r & !is.na(r), ]
+}
+
+
 # ── as_svydesign ──────────────────────────────────────────────────────────────
 
 #' Convert a surveycore Design Object to a survey Package Design
@@ -204,7 +248,7 @@ as_svydesign <- function(x) {
   # themselves, so the stored call names real columns and the round trip works.
   # `data` is left as an expression on purpose: it is not read back, and
   # inlining a whole data frame into a stored call is wasteful.
-  eval(bquote(survey::svydesign(
+  converted <- eval(bquote(survey::svydesign(
     ids = .(ids_formula),
     strata = .(.to_formula(strata_var)),
     weights = .(.to_formula(weights_var)),
@@ -212,6 +256,8 @@ as_svydesign <- function(x) {
     data = x@data,
     nest = .(isTRUE(x@variables$nest))
   )))
+
+  .restrict_to_domain(converted)
 }
 
 
