@@ -3204,8 +3204,11 @@ test_that("as_svydesign() converts a filtered plain-shaped nonprob to the domain
 test_that("as_svydesign() converts an unfiltered Taylor design unrestricted", {
   skip_if_not_installed("survey")
   d <- make_taylor()
-  sv <- as_svydesign(d)
 
+  # No marker column means no indexing step, so nothing at all fires here.
+  # The filtered case has the same requirement and no pre-existing condition
+  # to tolerate either.
+  expect_no_condition(sv <- as_svydesign(d))
   expect_identical(nrow(sv$variables), nrow(survey_data(d)))
   expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
 })
