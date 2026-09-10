@@ -1266,3 +1266,156 @@ test_that("get_means() .survey_result$group_cols contains group vars when groupe
   sr <- attr(result, ".survey_result")
   expect_identical(sr$group_cols, "strata")
 })
+
+# ---------------------------------------------------------------------------
+# Category 19: Oracle — calibrated (survey_nonprob) domain SE
+#
+# .calibrated_mean_cell() takes its n/(n-1) finite correction from the FULL
+# sample, not from the domain. survey::svydesign(ids = ~1) does the same: a
+# subset design keeps every retained row's recorded stratum sample size, so
+# the factor is the same on a domain as on the whole sample. The blocks below
+# pin that against survey at several domain sizes. The error the full-sample
+# factor removes grows as the domain shrinks, so the smallest domain is the
+# sharpest test.
+# ---------------------------------------------------------------------------
+
+test_that("get_means() calibrated domain SE matches survey::svymean() across domain sizes [oracle]", {
+  skip_if_not_installed("survey")
+
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 701L)
+
+  for (k in c(50L, 20L, 10L, 5L, 2L)) {
+    df$dom <- seq_len(100L) <= k
+
+    sc <- as_survey_nonprob(df, weights = wt)
+    sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$dom
+    sc_est <- suppressWarnings(get_means(sc, y1, variance = "se"))
+
+    sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+    sv_est <- survey::svymean(~y1, subset(sv, dom))
+    sv_se <- as.numeric(survey::SE(sv_est))
+
+    lbl <- paste0("domain size ", k)
+    expect_identical(sc_est$n[[1L]], k, label = lbl)
+    expect_equal(
+      sc_est$mean[[1L]],
+      coef(sv_est)[["y1"]],
+      tolerance = 1e-10,
+      label = paste0("mean, ", lbl)
+    )
+    expect_equal(
+      sc_est$se[[1L]],
+      sv_se,
+      tolerance = 1e-8,
+      label = paste0("se, ", lbl)
+    )
+  }
+})
+
+test_that("get_means() calibrated domain SE rejects a domain-sized correction factor [oracle]", {
+  skip_if_not_installed("survey")
+
+  # Guard against a later re-base of the factor onto the domain. At a domain
+  # of 5 of 100 rows the two factors differ by ~11%, far outside the 1e-8 SE
+  # tolerance, so this block fails loudly if the domain count comes back.
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 702L)
+  df$dom <- seq_len(100L) <= 5L
+
+  sc <- as_survey_nonprob(df, weights = wt)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$dom
+  sc_est <- suppressWarnings(get_means(sc, y1, variance = "se"))
+
+  sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+  sv_se <- as.numeric(survey::SE(survey::svymean(~y1, subset(sv, dom))))
+
+  w_d <- df$wt[df$dom]
+  y_d <- df$y1[df$dom]
+  n_d <- length(y_d)
+  nhat <- sum(w_d)
+  ybar <- sum(w_d * y_d) / nhat
+  se_domain_factor <- sqrt(
+    (n_d / (n_d - 1L)) * sum(w_d^2 * (y_d - ybar)^2) / nhat^2
+  )
+
+  expect_equal(sc_est$se[[1L]], sv_se, tolerance = 1e-8)
+  expect_gt(abs(se_domain_factor - sv_se), 1e-8)
+})
+
+test_that("get_means() calibrated grouped SEs match survey::svymean() per group [oracle]", {
+  skip_if_not_installed("survey")
+
+  df <- make_survey_data(n = 150L, n_psu = 10L, n_strata = 3L, seed = 703L)
+  df$g <- rep(c("a", "b", "c"), times = c(90L, 50L, 10L))
+
+  sc <- as_survey_nonprob(df, weights = wt)
+  sc_est <- suppressWarnings(get_means(sc, y1, group = g, variance = "se"))
+
+  for (i in seq_len(nrow(sc_est))) {
+    grp <- sc_est$g[[i]]
+    df$sel <- df$g == grp
+    sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+    sv_est <- survey::svymean(~y1, subset(sv, sel))
+
+    lbl <- paste0("group ", grp)
+    expect_equal(
+      sc_est$mean[[i]],
+      coef(sv_est)[["y1"]],
+      tolerance = 1e-10,
+      label = paste0("mean, ", lbl)
+    )
+    expect_equal(
+      sc_est$se[[i]],
+      as.numeric(survey::SE(sv_est)),
+      tolerance = 1e-8,
+      label = paste0("se, ", lbl)
+    )
+  }
+})
+
+test_that("get_means() calibrated domain SE matches survey::svymean() with NA outcomes [oracle]", {
+  skip_if_not_installed("survey")
+
+  # survey counts every row of the design in n, including rows na.rm drops
+  # from the estimate. nrow(design@data) is therefore the right count here.
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 704L)
+  df$y1[c(2L, 5L, 9L, 14L, 23L, 61L)] <- NA_real_
+  df$dom <- seq_len(100L) <= 30L
+
+  sc <- as_survey_nonprob(df, weights = wt)
+  sc@data[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$dom
+  sc_est <- suppressWarnings(get_means(sc, y1, variance = "se", na.rm = TRUE))
+
+  sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+  sv_est <- survey::svymean(~y1, subset(sv, dom), na.rm = TRUE)
+
+  n_complete <- sum(df$dom & !is.na(df$y1))
+  expect_identical(sc_est$n[[1L]], n_complete)
+  expect_equal(sc_est$mean[[1L]], coef(sv_est)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    sc_est$se[[1L]],
+    as.numeric(survey::SE(sv_est)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_means() calibrated full-sample SE is unchanged and matches survey::svymean() [oracle]", {
+  skip_if_not_installed("survey")
+
+  # No domain: the full-sample and domain counts coincide, so this block must
+  # hold under either factor. It fails only if the full-sample path breaks.
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 705L)
+
+  sc <- as_survey_nonprob(df, weights = wt)
+  sc_est <- suppressWarnings(get_means(sc, y1, variance = "se"))
+
+  sv <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+  sv_est <- survey::svymean(~y1, sv)
+
+  expect_identical(sc_est$n[[1L]], 100L)
+  expect_equal(sc_est$mean[[1L]], coef(sv_est)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    sc_est$se[[1L]],
+    as.numeric(survey::SE(sv_est)),
+    tolerance = 1e-8
+  )
+})
