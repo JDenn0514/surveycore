@@ -3823,6 +3823,35 @@ make_filtered_twophase <- function(seed = 42L) {
   d
 }
 
+# Condition capture for this section. The two-phase route emits untyped
+# conditions of survey's own, so expect_no_condition() cannot state the claim
+# the blocks below need: that the restriction adds no condition of
+# surveycore's. A bare suppressWarnings() cannot state it either, because it
+# discards a surveycore warning as readily as survey's. So the collector runs
+# the call, records every condition it signals, and returns the surveycore
+# classes among them, which is character(0) when there are none. The
+# expression is evaluated in the calling block, so
+# collect_surveycore_classes(sv <- as_svydesign(d)) leaves `sv` behind exactly
+# as expect_warning() does.
+collect_surveycore_classes <- function(expr) {
+  seen <- list()
+  withCallingHandlers(
+    force(expr),
+    condition = function(cnd) {
+      seen[[length(seen) + 1L]] <<- cnd
+      if (inherits(cnd, "warning")) {
+        invokeRestart("muffleWarning")
+      }
+      if (inherits(cnd, "message")) {
+        invokeRestart("muffleMessage")
+      }
+    }
+  )
+  as.character(unlist(lapply(seen, function(cnd) {
+    grep("^surveycore_", class(cnd), value = TRUE)
+  })))
+}
+
 
 # The estimate a caller reads off the converted object is the domain estimate
 # and not the full-sample one. get_means() cannot be the reference on this
@@ -3929,13 +3958,16 @@ test_that("as_svydesign() converts a filtered two-phase design that names no pha
 # An unfiltered two-phase design carries no marker column, so the helper
 # returns the object un-indexed and the conversion is what it was before this
 # change: the phase-1 full frame holds one row per design row, the phase-1
-# sample holds one row per phase-2 row, and every probability is finite.
+# sample holds one row per phase-2 row, and every probability is finite. The
+# call raises nothing beyond survey's own untyped conditions: the no-marker
+# path returns before it builds a mask, so it has nothing to report.
 test_that("as_svydesign() converts an unfiltered two-phase design unrestricted", {
   skip_if_not_installed("survey")
   d <- make_twophase_ids2()
   df <- survey_data(d)
 
-  sv <- suppressWarnings(as_svydesign(d))
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
 
   expect_identical(nrow(sv$phase1$full$variables), nrow(df))
   expect_identical(nrow(sv$phase1$sample$variables), sum(df$subset))
@@ -3946,9 +3978,11 @@ test_that("as_svydesign() converts an unfiltered two-phase design unrestricted",
 })
 
 
-# A filter that matches no row still converts. On this route the object keeps
-# every row and none of them keeps a finite probability, so survey answers
-# NaN rather than the zero the Taylor route answers.
+# A filter that matches no row still converts, and it converts silently: an
+# empty domain is not an error and the helper raises nothing of its own for
+# it. On this route the object keeps every row and none of them keeps a finite
+# probability, so survey answers NaN rather than the zero the Taylor route
+# answers.
 test_that("as_svydesign() converts an all-FALSE two-phase marker to no finite probability", {
   skip_if_not_installed("survey")
   d <- make_twophase_ids2()
@@ -3957,7 +3991,8 @@ test_that("as_svydesign() converts an all-FALSE two-phase marker to no finite pr
   d@data <- df
   n_phase2 <- sum(df$subset)
 
-  sv <- suppressWarnings(as_svydesign(d))
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
 
   expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
   expect_false(any(is.finite(sv$prob)))
@@ -3969,7 +4004,8 @@ test_that("as_svydesign() converts an all-FALSE two-phase marker to no finite pr
 
 # A marker of nothing but NA is the all-FALSE case reached by the other half
 # of the mask: as.logical() leaves the NAs alone and `!is.na(r)` drops every
-# row from the domain.
+# row from the domain. It is as silent as the all-FALSE case, and for the same
+# reason.
 test_that("as_svydesign() converts an all-NA two-phase marker to no finite probability", {
   skip_if_not_installed("survey")
   d <- make_twophase_ids2()
@@ -3978,7 +4014,8 @@ test_that("as_svydesign() converts an all-NA two-phase marker to no finite proba
   d@data <- df
   n_phase2 <- sum(df$subset)
 
-  sv <- suppressWarnings(as_svydesign(d))
+  classes <- collect_surveycore_classes(sv <- as_svydesign(d))
+  expect_identical(classes, character(0L))
 
   expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
   expect_false(any(is.finite(sv$prob)))
@@ -4041,37 +4078,17 @@ test_that("the round trip on a filtered two-phase design rebuilds the full phase
 })
 
 
-# The restriction adds no surveycore condition on this route, for any domain.
+# The restriction adds no surveycore condition on this route for an ordinary
+# domain either, which is the case the three blocks above do not cover.
 # expect_no_condition() cannot say so here: survey's own `[.twophase` emits an
 # untyped warning when a domain thins a stratum to one PSU, and that
-# expectation would fail on it. So the block collects every condition the call
-# signals and asserts that none of them carries a surveycore class. The
-# collector stays local to this block.
+# expectation would fail on it.
 test_that("as_svydesign() raises no surveycore condition on a filtered two-phase design", {
   skip_if_not_installed("survey")
   d <- make_filtered_twophase()
 
-  collect <- function(expr) {
-    seen <- list()
-    withCallingHandlers(
-      force(expr),
-      condition = function(cnd) {
-        seen[[length(seen) + 1L]] <<- cnd
-        if (inherits(cnd, "warning")) {
-          invokeRestart("muffleWarning")
-        }
-        if (inherits(cnd, "message")) {
-          invokeRestart("muffleMessage")
-        }
-      }
-    )
-    seen
-  }
-
-  seen <- collect(as_svydesign(d))
-  surveycore_classes <- unlist(lapply(seen, function(cnd) {
-    grep("^surveycore_", class(cnd), value = TRUE)
-  }))
-
-  expect_identical(as.character(surveycore_classes), character(0L))
+  expect_identical(
+    collect_surveycore_classes(as_svydesign(d)),
+    character(0L)
+  )
 })
