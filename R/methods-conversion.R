@@ -413,7 +413,7 @@ as_svydesign <- function(x) {
     )
   }
 
-  survey::svrepdesign(
+  converted <- survey::svrepdesign(
     weights = x@data[[wts_var]],
     repweights = x@data[, rep_vars, drop = FALSE],
     type = x@variables$type,
@@ -423,6 +423,8 @@ as_svydesign <- function(x) {
     mse = isTRUE(x@variables$mse),
     data = x@data
   )
+
+  .restrict_to_domain(converted)
 }
 
 
