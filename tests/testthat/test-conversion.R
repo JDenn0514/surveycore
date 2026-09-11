@@ -3773,3 +3773,305 @@ test_that("as_svydesign() warns once about a dropped FPC on a filtered replicate
   expect_identical(nrow(sv$variables), sum(mask))
   expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
 })
+
+
+# ── Domain restriction on the two-phase route ────────────────────────────────
+#
+# Issue #245, the third and last call site. The two-phase route differs from
+# the other four in two ways, and both are forced by the survey package.
+#
+# Which frame. A two-phase object keeps the marker column at
+# phase1$sample$variables, not at variables, because @data holds one row per
+# phase-1 row where the converted object's phase-1 sample holds only the
+# phase-2 rows. Indexing with the @data-side vector raises a bare
+# `logical subscript too long`. The helper reads the object's class and picks
+# the frame itself, so this call site passes nothing extra.
+#
+# How the domain applies. `[.twophase` removes no row. It keeps every row and
+# sets each excluded row's probability to Inf, so on this route "zero rows"
+# reads as "no finite probability" and the row count never changes.
+
+# Fixture. A 60-row two-phase design that names a phase-2 cluster identifier,
+# 29 of whose rows reach phase 2. The file's own make_twophase() names none.
+make_twophase_ids2 <- function(seed = 42L) {
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = seed
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  as_survey_twophase(phase1, ids2 = psu, subset = subset)
+}
+
+# The same design with a domain marked by hand. The mask splits on y1's
+# median over all 60 phase-1 rows, which leaves 14 of the 29 phase-2 rows
+# inside the domain and thins no stratum to one PSU.
+make_filtered_twophase <- function(seed = 42L) {
+  d <- make_twophase_ids2(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. get_means() cannot be the reference on this
+# route: surveycore's two-phase estimator weights by the phase-1 weight column
+# where survey's two-phase object weights by the combined two-phase
+# probability, and the two answers differ on an unfiltered design as well
+# (issue #261, pinned by the block below). The reference here is therefore
+# what a caller got by restricting the converted object by hand, which is what
+# this function's documentation told them to do before the change: a two-phase
+# object built straight from survey, indexed by the marker column read off its
+# own phase-1 sample variables.
+test_that("as_svydesign() converts a filtered two-phase design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  test_invariants(d)
+  df <- survey_data(d)
+
+  oracle <- suppressWarnings(survey::twophase(
+    id = list(~psu, ~psu),
+    strata = list(~strata, NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  ))
+  r <- as.logical(
+    oracle$phase1$sample$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  )
+  by_hand <- suppressWarnings(oracle[r & !is.na(r), ])
+  sm_hand <- suppressWarnings(survey::svymean(~y1, by_hand))
+
+  sv <- suppressWarnings(as_svydesign(d))
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+
+  expect_equal(coef(sm)[["y1"]], coef(sm_hand)[["y1"]], tolerance = 1e-10)
+  expect_equal(
+    as.numeric(survey::SE(sm)),
+    as.numeric(survey::SE(sm_hand)),
+    tolerance = 1e-8
+  )
+})
+
+
+# The two estimators disagree on this route, and the disagreement is not the
+# domain's doing. surveycore's two-phase estimator weights by the phase-1
+# weight column; survey's two-phase object weights by the combined two-phase
+# probability. Both hand computations below reproduce their estimator exactly,
+# and they answer different numbers on a design carrying no domain at all.
+# Issue #261 owns the gap and nothing in this change closes it, so this block
+# pins it: it fails if the gap ever moves.
+test_that("the two-phase estimators weight differently on an unfiltered design [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  sv <- suppressWarnings(as_svydesign(d))
+  frame <- sv$phase1$sample$variables
+
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # phase-2 sample holds 29 rows against a default threshold of 30, and the
+  # argument does not touch the estimate.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+  by_phase1_weight <- stats::weighted.mean(frame$y1, frame$wt)
+  expect_equal(sc$mean[[1L]], by_phase1_weight, tolerance = 1e-10)
+
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  by_combined_prob <- stats::weighted.mean(frame$y1, 1 / sv$prob)
+  expect_equal(coef(sm)[["y1"]], by_combined_prob, tolerance = 1e-10)
+
+  expect_false(isTRUE(all.equal(by_phase1_weight, by_combined_prob)))
+})
+
+
+# `[.twophase` removes no row, so the count that records the restriction is
+# the count of finite probabilities. Each excluded row keeps its place and
+# takes an infinite probability, which weights it out of every estimate. This
+# block asserts no row count on purpose.
+test_that("as_svydesign() leaves one finite probability per marked phase-2 row", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+  marked_phase2 <- sum(df[[surveycore::SURVEYCORE_DOMAIN_COL]] & df$subset)
+
+  sv <- suppressWarnings(as_svydesign(d))
+
+  expect_identical(sum(is.finite(sv$prob)), marked_phase2)
+})
+
+
+# The file's own two-phase builder names no phase-2 cluster identifier, so it
+# reaches survey::twophase() through a different formula list than the fixture
+# above. The restriction applies to it too, and the conversion does not stop.
+test_that("as_svydesign() converts a filtered two-phase design that names no phase-2 ids", {
+  skip_if_not_installed("survey")
+  d <- make_twophase()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  marked_phase2 <- sum(df[[surveycore::SURVEYCORE_DOMAIN_COL]] & df$subset)
+
+  expect_no_error(sv <- suppressWarnings(as_svydesign(d)))
+  expect_identical(sum(is.finite(sv$prob)), marked_phase2)
+})
+
+
+# An unfiltered two-phase design carries no marker column, so the helper
+# returns the object un-indexed and the conversion is what it was before this
+# change: the phase-1 full frame holds one row per design row, the phase-1
+# sample holds one row per phase-2 row, and every probability is finite.
+test_that("as_svydesign() converts an unfiltered two-phase design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+
+  sv <- suppressWarnings(as_svydesign(d))
+
+  expect_identical(nrow(sv$phase1$full$variables), nrow(df))
+  expect_identical(nrow(sv$phase1$sample$variables), sum(df$subset))
+  expect_false(
+    surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$phase1$sample$variables)
+  )
+  expect_true(all(is.finite(sv$prob)))
+})
+
+
+# A filter that matches no row still converts. On this route the object keeps
+# every row and none of them keeps a finite probability, so survey answers
+# NaN rather than the zero the Taylor route answers.
+test_that("as_svydesign() converts an all-FALSE two-phase marker to no finite probability", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+  n_phase2 <- sum(df$subset)
+
+  sv <- suppressWarnings(as_svydesign(d))
+
+  expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
+  expect_false(any(is.finite(sv$prob)))
+
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  expect_true(is.nan(coef(sm)[["y1"]]))
+})
+
+
+# A marker of nothing but NA is the all-FALSE case reached by the other half
+# of the mask: as.logical() leaves the NAs alone and `!is.na(r)` drops every
+# row from the domain.
+test_that("as_svydesign() converts an all-NA two-phase marker to no finite probability", {
+  skip_if_not_installed("survey")
+  d <- make_twophase_ids2()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(NA, nrow(df))
+  d@data <- df
+  n_phase2 <- sum(df$subset)
+
+  sv <- suppressWarnings(as_svydesign(d))
+
+  expect_identical(nrow(sv$phase1$sample$variables), n_phase2)
+  expect_false(any(is.finite(sv$prob)))
+
+  sm <- suppressWarnings(survey::svymean(~y1, sv))
+  expect_true(is.nan(coef(sm)[["y1"]]))
+})
+
+
+# The marker column stays in the converted object's data on every route, and
+# its values read differently on the two kinds of route. This block is the
+# cross-check on a route that removes rows: every value left in the column is
+# TRUE, because the rows marked FALSE are gone.
+test_that("the marker column survives a Taylor conversion with every value TRUE", {
+  skip_if_not_installed("survey")
+  sv <- as_svydesign(make_filtered_taylor())
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# On the two-phase route no row is removed, so the marker column arrives
+# unchanged and still marks the zero-weighted rows FALSE. Its values are the
+# design's own marker read over the phase-2 rows, mixed and not all TRUE.
+test_that("the marker column survives a two-phase conversion with its values unchanged", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+  expected <- df[[surveycore::SURVEYCORE_DOMAIN_COL]][df$subset]
+
+  sv <- suppressWarnings(as_svydesign(d))
+  frame <- sv$phase1$sample$variables
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(frame))
+  expect_identical(frame[[surveycore::SURVEYCORE_DOMAIN_COL]], expected)
+  expect_false(all(expected))
+  expect_true(any(expected))
+})
+
+
+# The two-phase round trip recovers the domain, because the restriction
+# removed nothing for it to lose. from_svydesign() reads the phase-1 full
+# frame, which the restriction never touched, so the rebuilt design carries
+# every phase-1 row and the original unrestricted marker.
+test_that("the round trip on a filtered two-phase design rebuilds the full phase-1 frame", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+  df <- survey_data(d)
+
+  sv <- suppressWarnings(as_svydesign(d))
+  rebuilt <- suppressWarnings(from_svydesign(sv))
+  rebuilt_df <- survey_data(rebuilt)
+
+  expect_identical(nrow(rebuilt_df), nrow(df))
+  expect_identical(
+    rebuilt_df[[surveycore::SURVEYCORE_DOMAIN_COL]],
+    df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  )
+})
+
+
+# The restriction adds no surveycore condition on this route, for any domain.
+# expect_no_condition() cannot say so here: survey's own `[.twophase` emits an
+# untyped warning when a domain thins a stratum to one PSU, and that
+# expectation would fail on it. So the block collects every condition the call
+# signals and asserts that none of them carries a surveycore class. The
+# collector stays local to this block.
+test_that("as_svydesign() raises no surveycore condition on a filtered two-phase design", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_twophase()
+
+  collect <- function(expr) {
+    seen <- list()
+    withCallingHandlers(
+      force(expr),
+      condition = function(cnd) {
+        seen[[length(seen) + 1L]] <<- cnd
+        if (inherits(cnd, "warning")) {
+          invokeRestart("muffleWarning")
+        }
+        if (inherits(cnd, "message")) {
+          invokeRestart("muffleMessage")
+        }
+      }
+    )
+    seen
+  }
+
+  seen <- collect(as_svydesign(d))
+  surveycore_classes <- unlist(lapply(seen, function(cnd) {
+    grep("^surveycore_", class(cnd), value = TRUE)
+  }))
+
+  expect_identical(as.character(surveycore_classes), character(0L))
+})
