@@ -39,8 +39,15 @@
 # passes it can pass the wrong one: the @data-side vector is one row per
 # phase-1 row, where a two-phase object's phase-1 sample holds only the
 # phase-2 rows, and indexing with it raises an unclassed
-# `logical subscript too long`. The class this helper serves today,
-# survey.design2, keeps the frame at converted$variables.
+# `logical subscript too long`. The helper serves three classes.
+# survey.design2 and svyrep.design keep the frame at converted$variables. A
+# twophase2 object keeps it at converted$phase1$sample$variables, and carries
+# no converted$variables at all.
+#
+# The two-phase route is also the one route on which `[` removes no row. It
+# keeps every row and sets each excluded row's probability to Inf, which
+# weights that row out of every estimate. So on that route the observable is
+# the count of finite probabilities and not the row count.
 #
 # `[` and never subset(). All three of survey's subset() methods end with
 # `x$call <- sys.call(-1)`, which overwrites the call the route stored.
@@ -59,7 +66,11 @@
 # as.logical() returns for a value it cannot convert.
 #' @noRd
 .restrict_to_domain <- function(converted) {
-  frame <- converted$variables
+  frame <- if (inherits(converted, "twophase2")) {
+    converted$phase1$sample$variables
+  } else {
+    converted$variables
+  }
 
   if (!SURVEYCORE_DOMAIN_COL %in% names(frame)) {
     return(converted)
@@ -460,7 +471,7 @@ as_svydesign <- function(x) {
   # weights so survey can compute the probability-weighted estimates.
   weights_arg <- if (method == "full") NULL else list(p1_weights, NULL)
 
-  survey::twophase(
+  converted <- survey::twophase(
     id = list(p1_id, p2_id),
     strata = list(p1_strata, p2_strata),
     weights = weights_arg,
@@ -469,6 +480,8 @@ as_svydesign <- function(x) {
     subset = .to_formula(subset_var),
     method = method
   )
+
+  .restrict_to_domain(converted)
 }
 
 
