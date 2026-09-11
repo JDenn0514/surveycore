@@ -99,9 +99,11 @@
 #'   object. The returned class follows the input class, and for a
 #'   `survey_nonprob` design it follows the design's shape: a design that names
 #'   replicate weights returns a `svrepdesign`, and a design that names none
-#'   returns a `svydesign`. Value labels are not carried into the returned
-#'   object — the `survey` package has no metadata system. To read the data
-#'   back with `haven`-style classes rebuilt, use
+#'   returns a `svydesign`. A filtered input returns an object restricted to
+#'   the active domain; the `A filtered design's domain` section below states
+#'   what that means on each route. Value labels are not carried into the
+#'   returned object — the `survey` package has no metadata system. To read
+#'   the data back with `haven`-style classes rebuilt, use
 #'   `survey_data(x, haven_class = TRUE)` on the surveycore design instead.
 #'
 #' @section A non-probability design:
@@ -141,18 +143,60 @@
 #' `vignette("surveycore-vs-survey")` for the two counting rules in the source.
 #'
 #' @section A filtered design's domain:
-#' The converted object represents the full stored sample and not the active
-#' domain. `filter()` from surveytidy keeps every row and marks domain
-#' membership in a logical column named by `SURVEYCORE_DOMAIN_COL`, which holds
-#' `"..surveycore_domain.."`. `as_svydesign()` passes that column through as
-#' ordinary data and never installs it as the converted object's restriction,
-#' so `survey::svymean()` on the result answers for every row. The point
-#' estimate differs from the domain estimate, not the standard error alone.
+#' The converted object represents the active domain and not the full stored
+#' sample. `survey::svymean()` on it answers the domain estimate.
 #'
-#' A caller who wants the domain has to subset the returned object on that
-#' column: `subset(converted, ..surveycore_domain..)` does it, and reproduces
-#' `get_means()` on the filtered design exactly. Calling `get_means()` on the
-#' filtered design needs no subset at all.
+#' A domain arrives from `filter()` in surveytidy. That verb keeps every row
+#' and marks domain membership in a logical column named by
+#' `SURVEYCORE_DOMAIN_COL`, which holds `"..surveycore_domain.."`. The
+#' restriction applies whenever that column is present. A design that was
+#' never filtered carries no such column and converts with no restriction.
+#'
+#' The marker column stays in the converted object's data. It is an internal
+#' marker and not survey data. On the routes that remove rows, every value
+#' left in it is `TRUE`. On the two-phase route, which removes no row, the
+#' column arrives unchanged and still marks the zero-weighted rows `FALSE`. A
+#' row whose marker is `NA` counts as outside the domain.
+#'
+#' A filter that matches no row still converts, and the conversion raises no
+#' surveycore condition on any route. What `survey` reports afterwards
+#' depends on the route:
+#'
+#' * Taylor, and a non-probability design that names no replicate weights:
+#'   an estimate of 0 with a standard error of 0.
+#' * Replicate, and a non-probability design that names replicate weights:
+#'   an error from `survey` at estimation time.
+#' * Two-phase: `NaN`.
+#'
+#' The two-phase route applies the domain by weighting the excluded rows out
+#' rather than by removing them. Each excluded row takes an infinite
+#' probability, so the converted object's row count does not change while its
+#' estimates answer for the domain. Its point estimate still differs from
+#' `get_means()` on the filtered design, for a reason independent of the
+#' domain: surveycore's two-phase estimator weights by the phase-1 weight
+#' column, and `survey`'s two-phase object weights by the combined two-phase
+#' probability. On one measured design `get_means()` answers 58.458 where
+#' `survey::svymean()` on the converted object answers 58.067. The same
+#' difference sits on the unfiltered design, 48.9245 against 49.20304.
+#'
+#' A round trip through `from_svydesign()` recovers the restricted rows and
+#' not the original sample. On the four routes that remove rows, the rebuilt
+#' design's row count is its new total. The original row count is
+#' unrecoverable from the object, because a `survey` object records a subset
+#' and not a marker. The all-`TRUE` marker column travels back, so the
+#' rebuilt design prints `Domain: n of n rows`, which looks identical to a
+#' design that was never filtered. Printing a filtered design shows the
+#' domain count and the stored count; after a round trip the two counts are
+#' the same number twice. Keep the original design when you need the original
+#' row count. The two-phase route is the exception: it removes no row, so its
+#' round trip recovers the marker at both levels and the rebuilt design prints
+#' two different counts.
+#'
+#' `as_tbl_svy()` hands a `tbl_svy` that is already restricted to `srvyr`.
+#' `srvyr`'s own `filter()` removes rows where surveycore's `filter()` marks a
+#' domain. The two verbs share a name and differ in semantics, so a caller who
+#' chains surveycore's `filter()` into `srvyr::filter()` filters an object
+#' that is already restricted.
 #'
 #' @examples
 #' d <- as_survey(
