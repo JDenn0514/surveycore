@@ -3504,3 +3504,272 @@ test_that("the round trip on a filtered Taylor design prints n of n rows", {
     fixed = TRUE
   )))
 })
+
+
+# ── Domain restriction on the replicate route and both nonprob shapes ────────
+#
+# Issue #245, the second call site. .as_svydesign_replicate() now indexes the
+# object it builds by the marker column, exactly as .as_svydesign_taylor()
+# does. One call site serves two input shapes: a survey_replicate design, and
+# a survey_nonprob design that names replicate weights, which as_svydesign()
+# already sends here on the shape of the weights. The section also covers the
+# survey_nonprob shape that names none, because that shape reaches the Taylor
+# call site and its SRS warning has to keep its class and its count.
+
+# Fixture. The file's 50-row BRR replicate design with a domain marked by
+# hand. The mask splits on y1's median, so it keeps rows in both strata.
+make_filtered_rep <- function(seed = 42L) {
+  d <- make_rep(seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+# Fixture. The file's 40-row non-probability design in either shape, with a
+# domain marked the same way.
+make_filtered_nonprob <- function(
+  shape = c("replicate", "plain"),
+  seed = 601L
+) {
+  d <- make_nonprob(match.arg(shape), seed = seed)
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  d
+}
+
+
+# The estimate a caller reads off the converted object is the domain estimate
+# and not the full-sample one. get_means() on the filtered design is the
+# reference, because that is the answer the same design already gives through
+# surveycore's own replicate estimator.
+test_that("as_svydesign() converts a filtered replicate design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_rep()
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  # min_cell_n = 1 keeps the AAPOR small-cell warning out of the way. The
+  # domain holds 25 rows against a default threshold of 30, and the argument
+  # does not touch the estimate.
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+
+  # The marker column stays in the converted object's data, and every value
+  # left in it is TRUE.
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# The same agreement on a marker that surveytidy's filter() wrote rather than
+# one written by hand. filter() is how a domain arrives in practice, and it
+# records the column this helper reads.
+test_that("as_svydesign() converts a filter()-marked replicate design to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("surveytidy")
+  d <- surveytidy::filter(make_rep(), y1 > 50)
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+
+# The replicate call site serves a second input shape. as_svydesign() routes a
+# survey_nonprob design that names replicate weights into
+# .as_svydesign_replicate(), so the restriction reaches that shape with no
+# branch of its own and no ninth copy of the routing predicate.
+test_that("as_svydesign() converts a filtered replicate nonprob to the domain [numerical]", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_nonprob("replicate")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+
+  sv <- as_svydesign(d)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+
+  expect_true(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An unfiltered replicate design carries no marker column, so the helper
+# returns the object un-indexed and the conversion is what it was before this
+# change. This fixture records no FPC, so nothing at all may fire.
+test_that("as_svydesign() converts an unfiltered replicate design unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_rep()
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# The same on the unfiltered replicate-shaped nonprob design, which reaches
+# the same call site.
+test_that("as_svydesign() converts an unfiltered replicate nonprob unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# The unfiltered plain-shaped nonprob design raises the one condition that
+# shape already raises, and no other. The SRS warning fires in as_svydesign()
+# itself, before dispatch, so the restriction can neither double it nor
+# suppress it.
+test_that("as_svydesign() converts an unfiltered plain nonprob unrestricted", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), nrow(survey_data(d)))
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(sv$variables))
+})
+
+
+# A filter that matches no row still converts, and the conversion raises no
+# condition. What the caller then reads out of survey is survey's to decide:
+# on the replicate route survey refuses to estimate on an empty object, with
+# an untyped error of its own. The block asserts that error by message, with
+# no class and no snapshot, because the condition is not surveycore's.
+test_that("as_svydesign() converts an all-FALSE marker on the replicate route to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_rep()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+
+  expect_error(survey::svymean(~y1, sv), "All replicates contained NAs")
+})
+
+
+# The same empty domain on the replicate-shaped nonprob design: zero rows and
+# nothing raised by the conversion.
+test_that("as_svydesign() converts an all-FALSE marker on a replicate nonprob to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("replicate")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), 0L)
+})
+
+
+# The same empty domain on the plain-shaped nonprob design: zero rows, and
+# the SRS warning alone.
+test_that("as_svydesign() converts an all-FALSE marker on a plain nonprob to zero rows", {
+  skip_if_not_installed("survey")
+  d <- make_nonprob("plain")
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- rep(FALSE, nrow(df))
+  d@data <- df
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), 0L)
+})
+
+
+# as_tbl_svy() inherits the restriction on the nonprob shape that names no
+# replicate weights, with no edit of its own: it calls as_svydesign() and
+# wraps the result, so it propagates the SRS warning and the domain rows
+# together.
+test_that("as_tbl_svy() inherits the restriction on a filtered plain nonprob", {
+  skip_if_not_installed("survey")
+  skip_if_not_installed("srvyr")
+  d <- make_filtered_nonprob("plain")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_warning(
+    ts <- as_tbl_svy(d),
+    class = "surveycore_warning_nonprob_srs_conversion"
+  )
+
+  expect_true(inherits(ts, "tbl_svy"))
+  expect_identical(nrow(ts$variables), sum(mask))
+})
+
+
+# The restriction adds no condition of its own on either shape that reaches
+# the replicate call site, whatever the domain.
+test_that("as_svydesign() raises no condition on a filtered replicate design", {
+  skip_if_not_installed("survey")
+  expect_no_condition(as_svydesign(make_filtered_rep()))
+  expect_no_condition(as_svydesign(make_filtered_nonprob("replicate")))
+})
+
+
+# On the filtered plain-shaped nonprob design the SRS warning fires exactly
+# once and nothing else fires. The inner expectation consumes the typed
+# warning and re-raises anything it does not match; the outer one fails on a
+# second copy of the same warning, or on any other warning.
+test_that("as_svydesign() raises the SRS warning once on a filtered plain nonprob", {
+  skip_if_not_installed("survey")
+  d <- make_filtered_nonprob("plain")
+  mask <- survey_data(d)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_nonprob_srs_conversion"
+    )
+  )
+  expect_identical(nrow(sv$variables), sum(mask))
+})
+
+
+# The FPC warning fires inside the replicate route before the object is built,
+# so the restriction can neither double it nor suppress it. The result comes
+# off the return value of the warned call, and the domain row count is read
+# from that object.
+test_that("as_svydesign() warns once about a dropped FPC on a filtered replicate design", {
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc()
+  df <- survey_data(d)
+  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  d@data <- df
+  mask <- df[[surveycore::SURVEYCORE_DOMAIN_COL]]
+
+  expect_no_warning(
+    expect_warning(
+      sv <- as_svydesign(d),
+      class = "surveycore_warning_replicate_fpc_dropped"
+    )
+  )
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
