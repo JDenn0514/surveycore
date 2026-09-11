@@ -22,6 +22,11 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-08 | #250 | 12 | 479 | 39.9 | 1 | 1 | — |
 | 2026-09-09 | #259 | 18 | 441 | 24.5 | 0 | 0 | — |
 | 2026-09-10 | #263 | — | 162 | — | 0 | 0 | — |
+| 2026-09-10 | #266 | 11 | 384 | 34.9 | 1 | 0 | — |
+| 2026-09-10 | #267 | 11 | 119 | 10.8 | 0 | 0 | — |
+| 2026-09-11 | #268 | 11 | 272 | 24.7 | 0 | 0 | — |
+| 2026-09-11 | #269 | 10 | 336 | 33.6 | 1 | 0 | — |
+| 2026-09-11 | #270 | — | 58 | — | 0 | 0 | — |
 
 ## Notes on individual rows
 
@@ -134,3 +139,58 @@ row created.
   that created this PR, and a builder HOLD on a one-row domain, deferred as
   D17 and filed as #265. The row is excluded from any re-derivation of the row
   bound, since a PR with no stated row count cannot inform a per-row figure.
+
+- **#266** — as-svydesign-domain PR 1 of 5. 11 stated rows, inside the bound of
+  12, and 384 additions. One tester BLOCK: the unfiltered-Taylor row asserted
+  two of the three things the test-spec's section C preamble requires, missing
+  "the call raises no condition", so a warning there would have passed
+  undetected. The requirement sits in the section preamble rather than in the
+  row's own table cell, which is why a row-by-row reading missed it and a
+  reader working only from the test-spec caught it. Fixed in one commit and
+  re-audited to 11 of 11. Zero reviewer BLOCKs. The PR also carries four
+  marker-column blocks the plan had allocated to PR 2; the reviewer ruled that
+  benign, because PR 2's write surface is the same test file and can extend
+  them, unlike the issue #165 case where the later PR was locked out of the
+  file. PR 1 depended on #263, which had to land first for row A-4's standard
+  error parity to be satisfiable at all.
+
+- **#267** — as-svydesign-domain PR 2 of 5, tests only. 11 stated rows and 119
+  additions, the lowest additions-per-row figure in the ledger at 10.8. That
+  figure is misleading as evidence for the bound: five of the eleven rows were
+  already satisfied by blocks that shipped inside #266, whose builder wrote
+  them without being able to see the row ledger. Counting only the rows this
+  pull request actually implemented — six, including finishing one that #266
+  left half covered — gives about 20 additions per row, in line with the rest
+  of the ledger. Both BLOCK counts are 0. The half-covered row is the one worth
+  remembering: #266's marker-type loop asserted the selected row count and that
+  no condition fires, and both of those pass on a converted object whose
+  probability vector is corrupt, so the row guarded nothing until #267 added
+  the finite-probability assertion.
+- **#268** — as-svydesign-domain PR 3 of 5. 11 stated rows and 272 additions,
+  24.7 per row, inside the bound of 12. The production diff is four lines: one
+  call site in the replicate route. The other 268 additions are 13 test blocks
+  and two fixtures. Both BLOCK counts are 0 and both stages passed on the first
+  pass. Two of the eleven rows cover input shapes that reach an existing call
+  site with no new code (the two `survey_nonprob` shapes), so the row count
+  overstates the production surface and the additions-per-row figure is a test
+  figure. The reviewer counted 13 blocks where implementation.md said 14; the
+  file holds 13.
+- **#269** — as-svydesign-domain PR 4 of 5, the two-phase route. 10 stated
+  rows and 336 additions, 33.6 per row, inside the bound of 12. Tester BLOCKs
+  1, reviewer BLOCKs 0. The BLOCK was a contract miss on three edge-case
+  blocks: they wrapped the conversion in `suppressWarnings()` and asserted
+  nothing about conditions where the rows require "no surveycore condition".
+  The fix added one collector helper and 17 net lines. The production diff is
+  21 lines: a frame branch inside the helper, one call site, one comment
+  paragraph. This is the arc's judgment-heavy PR — the route removes no row
+  and applies the domain by infinite probability, and one block pins the
+  pre-existing estimator gap (issue #261) so the row fails if it moves — and
+  it drew the arc's only tester BLOCK after PR 1's. The row count predicted
+  the size well; the BLOCK came from an assertion left implicit, not from
+  scope.
+- **#270** — as-svydesign-domain PR 5 of 5, documentation only. No test-spec
+  row by design, so `Rows` and `Adds/row` are `—`, as for #263. 58 additions,
+  all roxygen in one `R/` file; the regenerated `man/` page and the changelog
+  entry sit outside the counted surface. Both BLOCK counts are 0. The arc's
+  five PRs together: 43 stated rows, 1169 counted additions, one tester BLOCK
+  (#269) and no reviewer BLOCK.
