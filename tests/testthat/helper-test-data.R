@@ -1083,6 +1083,54 @@ make_all_designs <- function(seed = 42L) {
 }
 
 # ------------------------------------------------------------------------------
+# set_domain_marker()
+# ------------------------------------------------------------------------------
+
+#' Write a domain marker column of a named storage type onto a design
+#'
+#' Writes the column named by `SURVEYCORE_DOMAIN_COL` into `design@data` and
+#' returns the design. The `survey_base` validator runs on the write, so a
+#' call with a non-logical `type` aborts with
+#' `surveycore_error_domain_not_logical`. Wrap such a call in `expect_error()`.
+#'
+#' The write goes through `new_data[SURVEYCORE_DOMAIN_COL] <- list(value)`.
+#' Single-bracket assignment of a one-element list takes an atomic vector and
+#' a list alike, so one line covers all six types.
+#'
+#' @param design A survey design object of any concrete class.
+#' @param type   One of "logical", "integer", "double", "character", "factor",
+#'   "list". The storage type the marker column is written as.
+#' @param mask   Logical vector of length nrow(design@data) that the marker is
+#'   built from, or NULL (default) for an alternating mask that starts TRUE.
+#' @return The design, with the marker column written.
+#' @keywords internal
+set_domain_marker <- function(design, type, mask = NULL) {
+  type <- match.arg(
+    type,
+    c("logical", "integer", "double", "character", "factor", "list")
+  )
+
+  if (is.null(mask)) {
+    mask <- rep(c(TRUE, FALSE), length.out = nrow(design@data))
+  }
+
+  value <- switch(
+    type,
+    logical = mask,
+    integer = as.integer(mask),
+    double = as.numeric(mask),
+    character = as.character(mask),
+    factor = factor(mask, levels = c(FALSE, TRUE)),
+    list = as.list(mask)
+  )
+
+  new_data <- design@data
+  new_data[SURVEYCORE_DOMAIN_COL] <- list(value)
+  design@data <- new_data
+  design
+}
+
+# ------------------------------------------------------------------------------
 # make_na_group_design()
 # ------------------------------------------------------------------------------
 
