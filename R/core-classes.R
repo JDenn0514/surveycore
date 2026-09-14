@@ -291,7 +291,9 @@ survey_metadata <- S7::new_class(
 #'
 #' @section Properties:
 #' \describe{
-#'   \item{`data`}{A `data.frame` containing the survey data.}
+#'   \item{`data`}{A `data.frame` containing the survey data. A column that
+#'     carries the domain marker name must be logical; a column of any other
+#'     type is rejected on construction and on every property write.}
 #'   \item{`metadata`}{A [survey_metadata] object.}
 #'   \item{`variables`}{A named list of design specification (varies by
 #'     subclass).}
@@ -338,7 +340,37 @@ survey_base <- S7::new_class(
       default = quote(character(0))
     ),
     call = S7::new_property(default = NULL)
-  )
+  ),
+  # Layer 1 validator. It runs for every subclass, on construction and on
+  # every property write. The name lookup comes first: it is the cheap test
+  # and it returns on the common path, where no design carries the column.
+  validator = function(self) {
+    if (!SURVEYCORE_DOMAIN_COL %in% names(self@data)) {
+      return(NULL)
+    }
+
+    # ── Domain marker column must be logical ─────────────────────────────────
+    # The storage type is the whole check. A logical vector carrying
+    # attributes, or a logical matrix, passes.
+    if (!is.logical(self@data[[SURVEYCORE_DOMAIN_COL]])) {
+      col_class <- class(self@data[[SURVEYCORE_DOMAIN_COL]])
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "Domain column {.field {SURVEYCORE_DOMAIN_COL}} must be ",
+            "logical, not {.cls {col_class}}."
+          ),
+          "i" = paste0(
+            "{.fn surveytidy::filter} writes this column as a logical ",
+            "mask; {.code TRUE} marks a row inside the active domain."
+          )
+        ),
+        class = "surveycore_error_domain_not_logical"
+      )
+    }
+
+    NULL
+  }
 )
 
 
