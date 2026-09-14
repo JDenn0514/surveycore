@@ -3304,63 +3304,55 @@ test_that("as_svydesign() raises no condition on a filtered Taylor design", {
 })
 
 
-# The marker column's type does not change which rows survive. Nothing in the
-# package guarantees the column is logical, no validator checks its type, and
-# code in this repository already writes an integer one. as.logical() is what
-# makes the mask work on all five types: `&` alone errors on a character
-# column and returns an all-NA mask on a factor one, which yields an object
-# that later dies inside survey with `invalid 'type' (list) of argument`.
-test_that("as_svydesign() selects the same rows for every marker column type", {
+# The marker column reaches the conversion route as a logical vector only.
+# The survey_base validator rejects every other type at the write, so a
+# design that carries an integer, double, character or factor marker cannot
+# be built and never reaches as_svydesign().
+test_that("as_svydesign() converts a logical marker and the four other types abort at the write", {
   skip_if_not_installed("survey")
   d <- make_taylor()
   df <- survey_data(d)
   mask <- df$y1 > stats::median(df$y1)
 
-  markers <- list(
-    logical = mask,
-    integer = as.integer(mask),
-    double = as.numeric(mask),
-    character = as.character(mask),
-    factor = factor(mask, levels = c(FALSE, TRUE))
-  )
+  for (nm in c("logical", "integer", "double", "character", "factor")) {
+    if (nm == "logical") {
+      marked <- set_domain_marker(d, nm, mask = mask)
+      expect_no_condition(sv <- as_svydesign(marked))
+      expect_identical(nrow(sv$variables), sum(mask), info = nm)
 
-  for (nm in names(markers)) {
-    df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- markers[[nm]]
-    d@data <- df
-    expect_no_condition(sv <- as_svydesign(d))
-    expect_identical(nrow(sv$variables), sum(mask), info = nm)
-
-    # The row count alone passes on a corrupt object, so the probabilities
-    # are checked too. Indexing by the all-NA mask that `&` returned on the
-    # factor marker gave an object whose probability vector was neither
-    # finite nor infinite; estimating on it died three frames down inside
-    # survey with `invalid 'type' (list) of argument`. A numeric probability
-    # vector with a finite value for every retained row is the state that
-    # cannot hold on such an object. The two tests are one expectation so
-    # that a list-valued vector fails here rather than erroring in
-    # is.finite().
-    expect_true(
-      is.numeric(sv$prob) && all(is.finite(sv$prob)),
-      info = nm
-    )
+      # The row count alone passes on a corrupt object, so the probabilities
+      # are checked too. A numeric probability vector with a finite value for
+      # every retained row is the state a corrupt object cannot hold. The two
+      # tests are one expectation so that a list-valued vector fails here
+      # rather than erroring inside is.finite().
+      expect_true(
+        is.numeric(sv$prob) && all(is.finite(sv$prob)),
+        info = nm
+      )
+    } else {
+      expect_error(
+        set_domain_marker(d, nm, mask = mask),
+        class = "surveycore_error_domain_not_logical"
+      )
+    }
   }
 })
 
 
-# A factor whose levels say nothing about domain membership converts to all
-# NA, which the mask reads as an empty domain. That is safe and inspectable,
-# where `&` alone gave a 200-row object with a corrupt probability vector.
-test_that("as_svydesign() reads an unconvertible marker as an empty domain", {
-  skip_if_not_installed("survey")
+# A factor whose levels say nothing about domain membership is a programming
+# error in the code that wrote the column, not a domain to interpret. The
+# validator rejects it at the write and no conversion runs.
+test_that("a factor marker column aborts at the write", {
   d <- make_taylor()
   df <- survey_data(d)
-  df[[surveycore::SURVEYCORE_DOMAIN_COL]] <- factor(
-    rep(c("yes", "no"), length.out = nrow(df))
+  df[surveycore::SURVEYCORE_DOMAIN_COL] <- list(
+    factor(rep(c("yes", "no"), length.out = nrow(df)))
   )
-  d@data <- df
 
-  expect_no_condition(sv <- as_svydesign(d))
-  expect_identical(nrow(sv$variables), 0L)
+  expect_error(
+    d@data <- df,
+    class = "surveycore_error_domain_not_logical"
+  )
 })
 
 

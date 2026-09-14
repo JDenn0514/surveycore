@@ -27,7 +27,9 @@ class is abstract and cannot be instantiated directly — use
 \section{Properties}{
 
 \describe{
-\item{\code{data}}{A \code{data.frame} containing the survey data.}
+\item{\code{data}}{A \code{data.frame} containing the survey data. A column that
+carries the domain marker name must be logical; a column of any other
+type is rejected on construction and on every property write.}
 \item{\code{metadata}}{A \link{survey_metadata} object.}
 \item{\code{variables}}{A named list of design specification (varies by
 subclass).}

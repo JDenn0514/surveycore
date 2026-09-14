@@ -72,6 +72,16 @@
 
 ## Breaking changes
 
+* A survey design object now rejects a domain marker column that is not
+  logical. The column named by `SURVEYCORE_DOMAIN_COL` marks which rows sit
+  inside the active domain, and the design's class validator tests its storage
+  type on construction and on every property write. A column of any other type
+  aborts with the new error class `surveycore_error_domain_not_logical`. Code
+  that wrote an integer, double, character or factor marker raised no condition
+  before and reported an estimate computed from a mask the package had coerced
+  for it. `surveytidy::filter()` writes a logical column, so a design built
+  through it is unaffected. (#262)
+
 * A survey design object no longer stores the `haven_labelled` class on any
   column of its data. Every write to the design's data drops that class and
   keeps every other attribute, so the `label` string, the `labels` value-label

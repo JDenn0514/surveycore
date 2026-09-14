@@ -1797,3 +1797,38 @@ test_that("X-15: the setter drops a stacked caller class on both routes", {
   expect_false(inherits(assigned@data$y, "my_class"))
   expect_identical(attr(assigned@data$y, "label", exact = TRUE), "Outcome")
 })
+
+
+# ── survey_base validator: the domain marker column must be logical ───────────
+
+test_that("survey_base validator rejects a non-logical marker on survey_taylor", {
+  design <- make_all_designs(seed = 7L)$taylor
+  expect_error(
+    set_domain_marker(design, "integer"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a non-logical marker on survey_replicate", {
+  design <- make_all_designs(seed = 7L)$replicate
+  expect_error(
+    set_domain_marker(design, "integer"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a non-logical marker on survey_twophase", {
+  design <- make_all_designs(seed = 7L)$twophase
+  expect_error(
+    set_domain_marker(design, "integer"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a non-logical marker on survey_nonprob", {
+  design <- make_all_designs(seed = 7L)$calibrated
+  expect_error(
+    set_domain_marker(design, "integer"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
