@@ -457,9 +457,8 @@ test_that("get_quantiles() respects domain filter", {
     nest = TRUE
   )
   d_dom <- d_full
-  d_dom@data[[SURVEYCORE_DOMAIN_COL]] <- as.integer(
+  d_dom@data[[SURVEYCORE_DOMAIN_COL]] <-
     !is.na(d_full@data$group) & d_full@data$group == "A"
-  )
 
   result_dom <- get_quantiles(d_dom, y1, probs = 0.5, variance = c("ci", "se"))
   result_full <- get_quantiles(
@@ -846,9 +845,8 @@ test_that("get_quantiles() empty domain (n = 0) returns NA estimate", {
   )
   # Mark domain as empty: no rows belong to "NONEXISTENT_GROUP"
   d_empty <- d_full
-  d_empty@data[[SURVEYCORE_DOMAIN_COL]] <- as.integer(
+  d_empty@data[[SURVEYCORE_DOMAIN_COL]] <-
     !is.na(d_full@data$group) & d_full@data$group == "NONEXISTENT_GROUP"
-  )
 
   result <- get_quantiles(d_empty, y1, probs = 0.5)
   test_result_invariants(result, "survey_quantiles")
