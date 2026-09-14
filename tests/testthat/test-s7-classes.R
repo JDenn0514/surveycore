@@ -1833,6 +1833,77 @@ test_that("survey_base validator rejects a non-logical marker on survey_nonprob"
   )
 })
 
+test_that("survey_base validator rejects a double marker column", {
+  design <- make_all_designs(seed = 7L)$taylor
+  expect_error(
+    set_domain_marker(design, "double"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a character marker column", {
+  design <- make_all_designs(seed = 7L)$taylor
+  expect_error(
+    set_domain_marker(design, "character"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a factor marker column", {
+  design <- make_all_designs(seed = 7L)$taylor
+  expect_error(
+    set_domain_marker(design, "factor"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("survey_base validator rejects a list marker column", {
+  design <- make_all_designs(seed = 7L)$taylor
+  expect_error(
+    set_domain_marker(design, "list"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("as_survey() rejects data already carrying an integer marker", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 7L)
+  df[[SURVEYCORE_DOMAIN_COL]] <- rep(c(1L, 0L), length.out = nrow(df))
+  expect_error(
+    as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("as_survey_nonprob() rejects data with an integer marker", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 7L)
+  df[[SURVEYCORE_DOMAIN_COL]] <- rep(c(1L, 0L), length.out = nrow(df))
+  expect_error(
+    as_survey_nonprob(df, weights = wt),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("a failed marker assignment leaves the design without the column", {
+  design <- make_all_designs(seed = 7L)$taylor
+  new_data <- design@data
+  new_data[[SURVEYCORE_DOMAIN_COL]] <- rep(
+    c(1L, 0L),
+    length.out = nrow(new_data)
+  )
+  expect_error(
+    design@data <- new_data,
+    class = "surveycore_error_domain_not_logical"
+  )
+  expect_false(SURVEYCORE_DOMAIN_COL %in% names(design@data))
+})
+
 
 # ── Accept path: a logical marker column passes, whatever its NA content ──────
 
@@ -1867,7 +1938,67 @@ test_that("survey_base validator accepts an all-NA logical marker", {
   expect_true(all(is.na(marked@data[[SURVEYCORE_DOMAIN_COL]])))
 })
 
-# PR 3 inserts rows 2.4-2.8 here, between row 2.3 above and row 2.9 below.
+test_that("an all-NA logical marker passes on a replicate design", {
+  design <- make_all_designs(seed = 7L)$replicate
+  mask <- rep(NA, length.out = nrow(design@data))
+  expect_no_error(
+    marked <- set_domain_marker(design, "logical", mask = mask),
+    class = "surveycore_error_domain_not_logical"
+  )
+  expect_true(all(is.na(marked@data[[SURVEYCORE_DOMAIN_COL]])))
+})
+
+test_that("a label attribute on a logical marker survives the write", {
+  design <- make_all_designs(seed = 7L)$taylor
+  mask <- rep(c(TRUE, FALSE), length.out = nrow(design@data))
+  attr(mask, "label") <- "Inside active domain"
+  expect_no_error(
+    marked <- set_domain_marker(design, "logical", mask = mask),
+    class = "surveycore_error_domain_not_logical"
+  )
+  stored <- marked@data[[SURVEYCORE_DOMAIN_COL]]
+  expect_true(is.logical(stored))
+  expect_identical(
+    attr(stored, "label", exact = TRUE),
+    "Inside active domain"
+  )
+})
+
+test_that("survey_base validator accepts a logical(0) marker on zero rows", {
+  design <- make_all_designs(seed = 7L)$taylor
+  design@data <- design@data[0L, , drop = FALSE]
+  expect_no_error(
+    marked <- set_domain_marker(design, "logical"),
+    class = "surveycore_error_domain_not_logical"
+  )
+  expect_identical(nrow(marked@data), 0L)
+  expect_identical(marked@data[[SURVEYCORE_DOMAIN_COL]], logical(0))
+})
+
+# The zero-row reject counterpart of the row above: the type is wrong whatever
+# the column length.
+test_that("survey_base validator rejects an integer(0) marker on zero rows", {
+  design <- make_all_designs(seed = 7L)$taylor
+  design@data <- design@data[0L, , drop = FALSE]
+  expect_error(
+    set_domain_marker(design, "integer"),
+    class = "surveycore_error_domain_not_logical"
+  )
+})
+
+test_that("a marker write leaves a two-phase design's subset column alone", {
+  design <- make_all_designs(seed = 7L)$twophase
+  subset_var <- design@variables$subset
+  before <- design@data[[subset_var]]
+  mask <- rep(c(TRUE, FALSE), length.out = nrow(design@data))
+  mask[3L] <- NA
+  expect_no_error(
+    marked <- set_domain_marker(design, "logical", mask = mask),
+    class = "surveycore_error_domain_not_logical"
+  )
+  expect_identical(marked@data[[subset_var]], before)
+  expect_identical(sum(is.na(marked@data[[SURVEYCORE_DOMAIN_COL]])), 1L)
+})
 
 test_that("survey_base validator accepts a haven_labelled logical marker", {
   skip_if_not_installed("haven")
