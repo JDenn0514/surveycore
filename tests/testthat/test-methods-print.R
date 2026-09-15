@@ -1816,3 +1816,72 @@ test_that("metadata_info block renders in every design class", {
     )
   }
 })
+
+
+# ── 57. Domain count agreement (issue #262) ──────────────────────────────────
+
+# The blocks below read the printed domain line back and assert on the two
+# numbers in it. They write no snapshot. `make_domain_pair()` builds a 200-row
+# fixture, and a snapshot would pin every line the print method writes for it,
+# so an unrelated change to the method would fail these blocks for a reason
+# they do not test.
+
+# The one printed line that starts "Domain: ", with any ANSI styling removed.
+domain_line <- function(x) {
+  out <- cli::ansi_strip(capture_design_output(print(x))$cli)
+  out[grepl("^Domain: ", out)]
+}
+
+# The two counts the domain line reports: `n` in-domain rows out of `total`.
+domain_counts <- function(x) {
+  line <- domain_line(x)
+  expect_length(line, 1L)
+  parts <- regmatches(line, regexec("^Domain: ([0-9]+) of ([0-9]+)", line))[[1]]
+  list(n = as.integer(parts[2L]), total = as.integer(parts[3L]))
+}
+
+
+test_that("the domain line counts TRUE markers over every row", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  pair <- make_domain_pair("taylor")
+
+  counts <- domain_counts(pair$a)
+  expect_identical(counts$n, sum(pair$mask))
+  expect_identical(counts$total, nrow(pair$a@data))
+})
+
+
+test_that("the printed domain count equals an ungrouped get_means() n", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  pair <- make_domain_pair("taylor")
+
+  result <- get_means(pair$a, y1)
+  expect_identical(domain_counts(pair$a)$n, result$n)
+})
+
+
+test_that("an NA marker prints the same domain line as a FALSE marker", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  pair <- make_domain_pair("taylor")
+
+  line_a <- domain_line(pair$a)
+  expect_length(line_a, 1L)
+  expect_identical(line_a, domain_line(pair$b))
+})
+
+
+test_that("print.survey_twophase() domain line counts phase 2 rows only", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  pair <- make_domain_pair("twophase")
+  ph2 <- pair$a@data[[pair$a@variables$subset]]
+  expect_false(anyNA(ph2))
+
+  # The fixture marks at least one in-domain row outside phase 2, so a line
+  # counting the whole sample would report a larger number than this one.
+  expect_lt(sum(pair$mask & ph2), sum(pair$mask))
+
+  counts <- domain_counts(pair$a)
+  expect_identical(counts$n, sum(pair$mask & ph2))
+  expect_identical(counts$total, sum(ph2))
+  expect_identical(domain_line(pair$a), domain_line(pair$b))
+})
