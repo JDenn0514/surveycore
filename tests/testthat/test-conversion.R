@@ -4165,12 +4165,9 @@ test_that("as_svydesign() drops an NA marker row on the replicate route", {
 # value is derived from the fixture rather than written down.
 #
 # The design is rebuilt from the pair's frame and marker with
-# method = "full". make_domain_pair("twophase") ships method = "approx", and
-# .restrict_to_domain() tests inherits(converted, "twophase2"), which an
-# "approx" object does not satisfy: survey::twophase(method = "approx")
-# returns class "twophase", that object carries no $variables, and the helper
-# returns it unrestricted. That gap is a defect of its own, filed as issue
-# #276, and deliberately not pinned by an assertion here.
+# method = "full", because make_domain_pair("twophase") ships
+# method = "approx" and this block states the "full" claim. The "approx"
+# claim is the block at the end of this file (issue #276).
 test_that("as_svydesign() voids rather than removes the excluded two-phase rows", {
   skip_if_not_installed("survey")
   pair <- make_domain_pair("twophase")
@@ -4217,4 +4214,49 @@ test_that("as_svydesign() keeps every row of a design with no marker column", {
   expect_no_condition(sv <- as_svydesign(d))
   expect_identical(nrow(sv$variables), nrow(df))
   expect_identical(rownames(sv$variables), rownames(df))
+})
+
+
+# The same claim on the other two-phase class. survey::twophase() returns
+# class "twophase2" for method = "full" and class "twophase" for
+# method = "approx", and neither object carries $variables: both keep the
+# frame at phase1$sample$variables. .restrict_to_domain() tested only the
+# first class, so an "approx" object fell to the $variables branch, `frame`
+# became NULL, the name test failed, and the helper returned the full stored
+# sample with nothing signalled (issue #276).
+#
+# make_domain_pair("twophase") ships method = "approx", so the pair's own
+# design is the fixture and no rebuild is needed. The observable is the
+# finite-probability count, as in the block above: it is the rows that are
+# both in-domain and in phase 2, and it is derived from the fixture rather
+# than written down. On this class `[` also removes the excluded rows, where
+# `[` on a twophase2 object keeps them and writes Inf into their
+# probabilities, so the row count answers the same number here. Measured
+# before the fix: 74 finite probabilities over 74 rows, which is the
+# unrestricted phase-2 count. After: 52, which is the domain.
+test_that("as_svydesign() restricts an approx two-phase design to the domain", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("twophase")
+  df <- survey_data(pair$a)
+
+  in_phase2 <- sum(df$subset)
+  in_domain_and_phase2 <- sum(pair$mask & df$subset)
+
+  sv <- as_svydesign(pair$a)
+
+  expect_true(inherits(sv, "twophase"))
+  expect_false(inherits(sv, "twophase2"))
+
+  # The count the defect got wrong.
+  expect_identical(sum(is.finite(sv$prob)), in_domain_and_phase2)
+  expect_identical(length(sv$prob), in_domain_and_phase2)
+  expect_identical(
+    nrow(sv$phase1$sample$variables),
+    in_domain_and_phase2
+  )
+
+  # The fixture marks in-domain rows that phase 2 excludes, so the domain
+  # count and the phase-2 count are different numbers on this data and the
+  # block above cannot pass on an unrestricted object.
+  expect_lt(in_domain_and_phase2, in_phase2)
 })

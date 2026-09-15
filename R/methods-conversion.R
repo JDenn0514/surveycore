@@ -39,10 +39,16 @@
 # passes it can pass the wrong one: the @data-side vector is one row per
 # phase-1 row, where a two-phase object's phase-1 sample holds only the
 # phase-2 rows, and indexing with it raises an unclassed
-# `logical subscript too long`. The helper serves three classes.
-# survey.design2 and svyrep.design keep the frame at converted$variables. A
-# twophase2 object keeps it at converted$phase1$sample$variables, and carries
-# no converted$variables at all.
+# `logical subscript too long`. The helper serves four classes.
+# survey.design2 and svyrep.design keep the frame at converted$variables.
+# Both two-phase classes keep it at converted$phase1$sample$variables and
+# carry no converted$variables at all: survey::twophase() returns class
+# twophase2 for method = "full" and class twophase for method = "approx". The
+# class test named only twophase2 until issue #276, so an "approx" object
+# reached the converted$variables branch, read a NULL frame, failed the name
+# test and returned unrestricted with nothing signalled. The else branch is
+# now unreachable for a two-phase object and still carries the Taylor and
+# replicate routes.
 #
 # The two-phase route is also the one route on which `[` removes no row. It
 # keeps every row and sets each excluded row's probability to Inf, which
@@ -72,7 +78,9 @@
 # gives it on the analysis side.
 #' @noRd
 .restrict_to_domain <- function(converted) {
-  frame <- if (inherits(converted, "twophase2")) {
+  frame <- if (
+    inherits(converted, "twophase2") || inherits(converted, "twophase")
+  ) {
     converted$phase1$sample$variables
   } else {
     converted$variables
