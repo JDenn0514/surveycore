@@ -1800,3 +1800,91 @@ test_that(".apply_group_labels() gives one result for both haven answers when no
     c("GroupA", "GroupB")
   )
 })
+
+
+# ── Category 16: .apply_domain() resolves an NA marker to FALSE ──────────────
+
+# `make_domain_pair()` (helper-test-data.R) returns two designs built from one
+# data frame: `a` stores a marker holding three `NA` values, `b` stores the
+# same marker with those three written as `FALSE`. `.apply_domain()` resolves
+# an `NA` to `FALSE`, so every analysis function must read one set of in-domain
+# rows from both designs and return one set of numbers.
+
+# Compare two results column by column. A whole-object comparison also reads
+# the `.meta` attribute, which records the call that built each result, so two
+# results from two designs never match as objects even when every number
+# agrees.
+expect_domain_invariance <- function(result_a, result_b) {
+  expect_identical(names(result_a), names(result_b))
+  for (nm in names(result_b)) {
+    expect_identical(result_a[[nm]], result_b[[nm]], info = nm)
+  }
+}
+
+test_that("get_means() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(get_means(pair$a, y1), get_means(pair$b, y1))
+})
+
+test_that("get_totals() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(get_totals(pair$a, y1), get_totals(pair$b, y1))
+})
+
+test_that("get_freqs() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(get_freqs(pair$a, group), get_freqs(pair$b, group))
+})
+
+test_that("get_quantiles() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(
+    get_quantiles(pair$a, y1),
+    get_quantiles(pair$b, y1)
+  )
+})
+
+test_that("get_ratios() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(
+    get_ratios(pair$a, y1, y2),
+    get_ratios(pair$b, y1, y2)
+  )
+})
+
+test_that("get_corr() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  expect_domain_invariance(
+    get_corr(pair$a, c(y1, y2)),
+    get_corr(pair$b, c(y1, y2))
+  )
+})
+
+test_that("a grouped get_means() on an NA marker reports only real groups", {
+  pair <- make_domain_pair("taylor")
+  result <- get_means(pair$a, y1, group = group)
+  in_domain_levels <- sort(unique(pair$a@data$group[pair$mask]))
+
+  expect_false(anyNA(result$group))
+  expect_identical(sort(as.character(result$group)), in_domain_levels)
+  expect_identical(sum(result$n), sum(pair$mask))
+})
+
+test_that("an all-NA marker names the same empty domain as an all-FALSE one", {
+  pair <- make_domain_pair("taylor")
+  n <- nrow(pair$b@data)
+  design_na <- set_domain_marker(pair$b, "logical", mask = rep(NA, n))
+  design_false <- set_domain_marker(pair$b, "logical", mask = rep(FALSE, n))
+
+  result_na <- get_means(design_na, y1)
+  expect_domain_invariance(result_na, get_means(design_false, y1))
+  expect_identical(result_na$n, 0L)
+})
+
+test_that(".apply_domain() returns logical(0) for a zero-row design", {
+  pair <- make_domain_pair("taylor")
+  design <- pair$b
+  design@data <- design@data[0L, , drop = FALSE]
+
+  expect_identical(.apply_domain(design), logical(0))
+})

@@ -1131,6 +1131,109 @@ set_domain_marker <- function(design, type, mask = NULL) {
 }
 
 # ------------------------------------------------------------------------------
+# make_domain_pair()
+# ------------------------------------------------------------------------------
+
+#' Build a pair of designs that differ only in how the marker records NA
+#'
+#' Returns two designs built from one data frame and one marker vector:
+#'
+#' - `a` carries a marker column holding at least one `NA`;
+#' - `b` carries the same marker with every `NA` written as `FALSE`;
+#' - `mask` is the resolved logical vector `b` carries, with no `NA`.
+#'
+#' The pair exists so a test can assert that `a` and `b` give identical
+#' numbers. `.apply_domain()` resolves an `NA` marker to `FALSE`, so the two
+#' designs name the same in-domain rows and every analysis function must agree
+#' on them.
+#'
+#' The `"twophase"` variant places at least one `TRUE` marker row outside
+#' phase 2, so a test can tell a domain restriction apart from the phase-2
+#' subset.
+#'
+#' @param class One of "taylor", "replicate", "twophase", "nonprob". The
+#'   concrete class both designs carry.
+#' @param seed  Random seed passed to `make_survey_data()`. Default 42.
+#' @return A list of three: `a`, `b` and `mask`.
+#' @keywords internal
+make_domain_pair <- function(
+  class = c("taylor", "replicate", "twophase", "nonprob"),
+  seed = 42L
+) {
+  class <- match.arg(class)
+
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = switch(
+      class,
+      taylor = "taylor",
+      nonprob = "taylor",
+      replicate = "replicate",
+      twophase = "twophase"
+    ),
+    type = "brr",
+    seed = seed
+  )
+
+  design <- switch(
+    class,
+    taylor = as_survey(
+      df,
+      ids = psu,
+      weights = wt,
+      strata = strata,
+      fpc = fpc,
+      nest = TRUE
+    ),
+    replicate = as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(grep("^repwt_", names(df), value = TRUE)),
+      type = "BRR"
+    ),
+    twophase = as_survey_twophase(
+      as_survey(
+        df,
+        ids = psu,
+        weights = wt,
+        strata = strata,
+        fpc = fpc,
+        nest = TRUE
+      ),
+      subset = subset,
+      method = "approx"
+    ),
+    nonprob = as_survey_nonprob(df, weights = wt)
+  )
+
+  n <- nrow(design@data)
+
+  # Every fourth row is out of domain; three scattered rows hold NA.
+  stored <- rep(TRUE, n)
+  stored[seq(2L, n, by = 4L)] <- FALSE
+  na_rows <- c(3L, 47L, 130L)
+  stored[na_rows] <- NA
+
+  # The two-phase fixture must mark at least one row that phase 2 excludes,
+  # so a test can tell the domain restriction apart from the subset.
+  if (class == "twophase") {
+    outside_phase2 <- setdiff(which(!design@data$subset), na_rows)
+    stored[outside_phase2[1L]] <- TRUE
+  }
+
+  resolved <- stored
+  resolved[is.na(resolved)] <- FALSE
+
+  list(
+    a = set_domain_marker(design, "logical", mask = stored),
+    b = set_domain_marker(design, "logical", mask = resolved),
+    mask = resolved
+  )
+}
+
+# ------------------------------------------------------------------------------
 # make_na_group_design()
 # ------------------------------------------------------------------------------
 
