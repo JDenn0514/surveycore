@@ -57,13 +57,19 @@
 # round trip through subset() therefore loses ids and strata with nothing
 # raised. `[` leaves the stored call alone.
 #
-# as.logical() before the mask. Nothing in the package guarantees the marker
-# column is logical and no validator checks its type; code in this repository
-# already writes an integer one. `&` alone errors on a character column and
-# returns an all-NA mask on a factor one. With as.logical() first, a logical,
-# integer, double, character or FALSE/TRUE factor column all select the same
-# rows. `!is.na(r)` reads NA as outside the domain, and absorbs the NA that
-# as.logical() returns for a value it cannot convert.
+# No coercion before the mask. The survey_base validator rejects a marker
+# column of any type but logical, on construction and on every later write to
+# @data, so a design that reaches a conversion route carries a logical column
+# and can carry nothing else (issue #262). An earlier revision called
+# as.logical() here. That turned a wrong column type into a silently wrong
+# row set where the validator now raises
+# `surveycore_error_domain_not_logical` at the write.
+#
+# `!is.na(r)` stays, and is still load-bearing. The validator forbids a
+# non-logical column; it does not forbid NA. A logical marker can hold NA,
+# and an NA in an index vector selects a phantom row of NAs. The guard reads
+# an NA marker as outside the domain, which is the reading .apply_domain()
+# gives it on the analysis side.
 #' @noRd
 .restrict_to_domain <- function(converted) {
   frame <- if (inherits(converted, "twophase2")) {
@@ -76,7 +82,7 @@
     return(converted)
   }
 
-  r <- as.logical(frame[[SURVEYCORE_DOMAIN_COL]])
+  r <- frame[[SURVEYCORE_DOMAIN_COL]]
   converted[r & !is.na(r), ]
 }
 

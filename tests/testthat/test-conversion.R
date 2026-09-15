@@ -3295,8 +3295,8 @@ test_that("the restriction leaves the converted object's stored call unchanged",
 
 
 # The restriction raises nothing of its own on this route, for any domain.
-# as.logical() is what makes the claim hold for a marker column that is not
-# logical; a character column raised an unclassed base error without it.
+# The class validator is what makes the claim hold: a marker column that is
+# not logical aborts at the write and never reaches this route.
 test_that("as_svydesign() raises no condition on a filtered Taylor design", {
   skip_if_not_installed("survey")
   expect_no_condition(sv <- as_svydesign(make_filtered_taylor()))
@@ -3356,9 +3356,9 @@ test_that("a factor marker column aborts at the write", {
 })
 
 
-# A row whose marker is NA falls outside the domain. `!is.na(r)` does this,
-# and it also absorbs the NA that as.logical() returns for a value it cannot
-# convert.
+# A row whose marker is NA falls outside the domain. `!is.na(r)` does this.
+# The validator forbids a non-logical marker column; it does not forbid NA,
+# so the guard is still the only thing that keeps an NA out of the index.
 test_that("as_svydesign() treats an NA marker row as outside the domain", {
   skip_if_not_installed("survey")
   d <- make_taylor()
@@ -4083,4 +4083,138 @@ test_that("as_svydesign() raises no surveycore condition on a filtered two-phase
     collect_surveycore_classes(as_svydesign(d)),
     character(0L)
   )
+})
+
+
+# ── The marker reaches the conversion routes uncoerced (#262) ─────────────────
+#
+# .restrict_to_domain() reads the marker column with no as.logical() around
+# it. The survey_base validator rejects every type but logical at the write,
+# so the coercion guarded against a state the package can no longer reach.
+# The five blocks below are regression rows: each one held before the
+# coercion came out and must still hold after.
+#
+# The `[` the helper calls behaves differently on the two-phase route. On the
+# Taylor, replicate and nonprob routes it removes the out-of-domain rows, so
+# the observable is the row count. On the two-phase route it removes no row
+# and writes Inf into an excluded row's probability, so the observable there
+# is the count of finite probabilities.
+
+# A logical marker selects exactly the rows it marks TRUE. rownames() is the
+# observable rather than the row count alone: the count passes on an object
+# that kept the wrong rows, where the rownames name the rows that survived.
+test_that("as_svydesign() keeps only the marked rows of a logical Taylor marker", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+  mask <- df$y1 > stats::median(df$y1)
+  marked <- set_domain_marker(d, "logical", mask = mask)
+
+  sv <- as_svydesign(marked)
+
+  expect_identical(nrow(sv$variables), sum(mask))
+  expect_identical(rownames(sv$variables), as.character(which(mask)))
+  expect_true(all(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]]))
+})
+
+
+# An NA marker row is outside the domain, and `!is.na(r)` is what puts it
+# there. Without that guard the NA would index a phantom row of NAs rather
+# than drop one. make_domain_pair() writes NA into three scattered rows, and
+# `mask` is the same marker with each NA resolved to FALSE, so sum(mask) is
+# the count the conversion must return.
+test_that("as_svydesign() drops an NA marker row on the Taylor route", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("taylor")
+  stored <- survey_data(pair$a)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  na_rows <- which(is.na(stored))
+
+  sv <- as_svydesign(pair$a)
+
+  expect_gt(length(na_rows), 0L)
+  expect_identical(nrow(sv$variables), sum(pair$mask))
+  expect_identical(rownames(sv$variables), as.character(which(pair$mask)))
+  expect_false(any(as.character(na_rows) %in% rownames(sv$variables)))
+  expect_false(any(is.na(sv$variables[[surveycore::SURVEYCORE_DOMAIN_COL]])))
+})
+
+
+# The replicate route restricts the same way and drops the same rows. The
+# replicate weight matrix is subset alongside the frame, so its row count has
+# to follow the frame's.
+test_that("as_svydesign() drops an NA marker row on the replicate route", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("replicate")
+  stored <- survey_data(pair$a)[[surveycore::SURVEYCORE_DOMAIN_COL]]
+  na_rows <- which(is.na(stored))
+
+  sv <- as_svydesign(pair$a)
+
+  expect_gt(length(na_rows), 0L)
+  expect_identical(nrow(sv$variables), sum(pair$mask))
+  expect_identical(rownames(sv$variables), as.character(which(pair$mask)))
+  expect_false(any(as.character(na_rows) %in% rownames(sv$variables)))
+  expect_identical(nrow(sv$repweights), sum(pair$mask))
+})
+
+
+# The two-phase route removes no row. It writes Inf into the probability of
+# every row the domain excludes, and a row outside phase 2 already carries an
+# infinite probability. So the finite-probability count is the rows that are
+# BOTH in-domain AND in phase 2, and not the in-domain count. The expected
+# value is derived from the fixture rather than written down.
+#
+# The design is rebuilt from the pair's frame and marker with
+# method = "full". make_domain_pair("twophase") ships method = "approx", and
+# .restrict_to_domain() tests inherits(converted, "twophase2"), which an
+# "approx" object does not satisfy: survey::twophase(method = "approx")
+# returns class "twophase", that object carries no $variables, and the helper
+# returns it unrestricted. That gap is a defect of its own, filed as issue
+# #276, and deliberately not pinned by an assertion here.
+test_that("as_svydesign() voids rather than removes the excluded two-phase rows", {
+  skip_if_not_installed("survey")
+  pair <- make_domain_pair("twophase")
+  df <- survey_data(pair$a)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  d <- as_survey_twophase(phase1, subset = subset, method = "full")
+
+  in_phase2 <- sum(df$subset)
+  in_domain_and_phase2 <- sum(pair$mask & df$subset)
+
+  sv <- as_svydesign(d)
+
+  # The restriction removes no row: the phase-1 sample of the converted
+  # object still holds one row per phase-2 row.
+  expect_identical(nrow(sv$phase1$sample$variables), in_phase2)
+  expect_identical(length(sv$prob), in_phase2)
+
+  # The excluded rows are voided instead.
+  expect_identical(sum(is.finite(sv$prob)), in_domain_and_phase2)
+
+  # The fixture marks in-domain rows that phase 2 excludes, so the two counts
+  # the comment distinguishes are different numbers on this data.
+  expect_lt(in_domain_and_phase2, sum(pair$mask))
+})
+
+
+# A design that carries no marker column converts untouched. The helper
+# returns early on the name test, so every row survives and nothing is
+# signalled.
+test_that("as_svydesign() keeps every row of a design with no marker column", {
+  skip_if_not_installed("survey")
+  d <- make_taylor()
+  df <- survey_data(d)
+
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(df))
+
+  expect_no_condition(sv <- as_svydesign(d))
+  expect_identical(nrow(sv$variables), nrow(df))
+  expect_identical(rownames(sv$variables), rownames(df))
 })
