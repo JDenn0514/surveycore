@@ -1924,3 +1924,76 @@ test_that(".apply_domain() returns logical(0) for a zero-row design", {
 
   expect_identical(.apply_domain(design), logical(0))
 })
+
+
+# ── Category 17: a design carrying no marker column ──────────────────────────
+
+# Every block below builds a design straight from the constructor, so `@data`
+# holds no marker column at all. `.apply_domain()` takes its second branch for
+# such a design and names every row in-domain. The blocks pin that branch: the
+# validator and the `NA` resolution must leave an unfiltered design untouched.
+
+make_unfiltered_design <- function(seed = 42L) {
+  df <- make_survey_data(n = 200L, n_psu = 10L, n_strata = 2L, seed = seed)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+}
+
+# The print method writes its design lines to the message stream and the data
+# preview to the output stream. Capture both and keep the message lines.
+# `capture_design_output()` in test-methods-print.R does the same job, but a
+# function defined in one test file is not visible in another.
+capture_cli_lines <- function(expr) {
+  cli_lines <- character(0L)
+  utils::capture.output(
+    cli_lines <- utils::capture.output(force(expr), type = "message")
+  )
+  cli::ansi_strip(cli_lines)
+}
+
+
+test_that("an ungrouped get_means() with no marker covers every row", {
+  design <- make_unfiltered_design()
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(design@data))
+
+  result <- get_means(design, y1)
+  expect_identical(result$n, nrow(design@data))
+})
+
+
+test_that("a grouped get_means() with no marker gives one row per level", {
+  design <- make_unfiltered_design()
+  group_levels <- sort(unique(design@data$group))
+
+  result <- get_means(design, y1, group = group)
+  expect_identical(sort(as.character(result$group)), group_levels)
+  expect_identical(nrow(result), length(group_levels))
+  expect_identical(sum(result$n), nrow(design@data))
+})
+
+
+test_that("a design with no marker column prints no domain line", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  design <- make_unfiltered_design()
+
+  out <- capture_cli_lines(print(design))
+  expect_gt(length(out), 0L)
+  expect_false(any(grepl("^Domain: ", out)))
+})
+
+
+test_that("assigning data with no marker column raises no condition", {
+  design <- make_unfiltered_design()
+  new_data <- design@data
+  new_data$y1 <- new_data$y1 + 1
+
+  expect_no_condition(design@data <- new_data)
+  expect_false(surveycore::SURVEYCORE_DOMAIN_COL %in% names(design@data))
+  expect_identical(design@data$y1, new_data$y1)
+})
