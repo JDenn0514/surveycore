@@ -475,13 +475,23 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' is retained for correct variance estimation; only the estimation sum is
 #' restricted to in-domain rows.
 #'
+#' A stored `NA` marker resolves to `FALSE`. Thirteen call sites index
+#' `design@data` with the returned vector, and an `NA` element selects a row of
+#' all `NA` values. In a grouped call that phantom row becomes a group
+#' combination that no real row supports. The `survey_base` validator
+#' guarantees the stored column is logical, so this helper does one job and
+#' adds no coercion.
+#'
 #' @param design A survey design object.
-#' @return Logical vector of length `nrow(design@data)`. `TRUE` for in-domain
-#'   rows.
+#' @return Logical vector of length `nrow(design@data)`, holding no `NA`.
+#'   `TRUE` for in-domain rows; `FALSE` for a row whose stored marker is
+#'   `FALSE` or `NA`.
 #' @noRd
 .apply_domain <- function(design) {
   if (SURVEYCORE_DOMAIN_COL %in% names(design@data)) {
-    design@data[[SURVEYCORE_DOMAIN_COL]]
+    stored <- design@data[[SURVEYCORE_DOMAIN_COL]]
+    stored[is.na(stored)] <- FALSE
+    stored
   } else {
     rep(TRUE, nrow(design@data))
   }
