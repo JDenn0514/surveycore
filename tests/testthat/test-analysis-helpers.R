@@ -1821,43 +1821,79 @@ expect_domain_invariance <- function(result_a, result_b) {
   }
 }
 
+# `get_diffs()` and `get_pairwise()` coerce a character column to a factor and
+# warn when they do. Both designs of a pair carry the factor already, so the
+# blocks below read one fixed level order and raise no incidental warning.
+with_factor_group <- function(pair) {
+  levels_group <- factor(pair$b@data$group)
+  pair$a@data$group <- levels_group
+  pair$b@data$group <- levels_group
+  list(a = pair$a, b = pair$b)
+}
+
 test_that("get_means() reads an NA marker and a FALSE marker the same way", {
   pair <- make_domain_pair("taylor")
-  expect_domain_invariance(get_means(pair$a, y1), get_means(pair$b, y1))
-})
-
-test_that("get_totals() reads an NA marker and a FALSE marker the same way", {
-  pair <- make_domain_pair("taylor")
-  expect_domain_invariance(get_totals(pair$a, y1), get_totals(pair$b, y1))
-})
-
-test_that("get_freqs() reads an NA marker and a FALSE marker the same way", {
-  pair <- make_domain_pair("taylor")
-  expect_domain_invariance(get_freqs(pair$a, group), get_freqs(pair$b, group))
+  expect_domain_invariance(
+    get_means(pair$a, y1, group = group),
+    get_means(pair$b, y1, group = group)
+  )
 })
 
 test_that("get_quantiles() reads an NA marker and a FALSE marker the same way", {
   pair <- make_domain_pair("taylor")
   expect_domain_invariance(
-    get_quantiles(pair$a, y1),
-    get_quantiles(pair$b, y1)
+    get_quantiles(pair$a, y1, group = group),
+    get_quantiles(pair$b, y1, group = group)
   )
 })
 
-test_that("get_ratios() reads an NA marker and a FALSE marker the same way", {
+test_that("get_diffs() reads an NA marker and a FALSE marker the same way", {
   pair <- make_domain_pair("taylor")
+  designs <- with_factor_group(pair)
+
   expect_domain_invariance(
-    get_ratios(pair$a, y1, y2),
-    get_ratios(pair$b, y1, y2)
+    get_diffs(designs$a, y1, treats = group),
+    get_diffs(designs$b, y1, treats = group)
   )
 })
 
-test_that("get_corr() reads an NA marker and a FALSE marker the same way", {
+test_that("get_t_test() reads an NA marker and a FALSE marker the same way", {
   pair <- make_domain_pair("taylor")
-  expect_domain_invariance(
-    get_corr(pair$a, c(y1, y2)),
-    get_corr(pair$b, c(y1, y2))
+
+  # A two-level factor, so `by` names exactly two groups and the level order
+  # is fixed.
+  arm <- factor(
+    ifelse(pair$b@data$group == "A", "treatment", "control"),
+    levels = c("control", "treatment")
   )
+  design_a <- pair$a
+  design_b <- pair$b
+  design_a@data$arm <- arm
+  design_b@data$arm <- arm
+
+  expect_domain_invariance(
+    get_t_test(design_a, y1, by = arm),
+    get_t_test(design_b, y1, by = arm)
+  )
+})
+
+test_that("get_pairwise() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  designs <- with_factor_group(pair)
+
+  expect_domain_invariance(
+    get_pairwise(designs$a, y1, by = group),
+    get_pairwise(designs$b, y1, by = group)
+  )
+})
+
+test_that("survey_glm() reads an NA marker and a FALSE marker the same way", {
+  pair <- make_domain_pair("taylor")
+  coefs_a <- summary(survey_glm(pair$a, y1 ~ y2))$coefficients
+  coefs_b <- summary(survey_glm(pair$b, y1 ~ y2))$coefficients
+
+  expect_identical(rownames(coefs_a), rownames(coefs_b))
+  expect_domain_invariance(as.data.frame(coefs_a), as.data.frame(coefs_b))
 })
 
 test_that("a grouped get_means() on an NA marker reports only real groups", {
