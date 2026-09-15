@@ -4169,8 +4169,8 @@ test_that("as_svydesign() drops an NA marker row on the replicate route", {
 # .restrict_to_domain() tests inherits(converted, "twophase2"), which an
 # "approx" object does not satisfy: survey::twophase(method = "approx")
 # returns class "twophase", that object carries no $variables, and the helper
-# returns it unrestricted. That gap is a defect of its own. It is raised as a
-# HOLD against this PR and deliberately not pinned by an assertion here.
+# returns it unrestricted. That gap is a defect of its own, filed as issue
+# #276, and deliberately not pinned by an assertion here.
 test_that("as_svydesign() voids rather than removes the excluded two-phase rows", {
   skip_if_not_installed("survey")
   pair <- make_domain_pair("twophase")
