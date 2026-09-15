@@ -114,6 +114,16 @@
 
 ## Bug fixes
 
+* `as_svydesign()` on a filtered two-phase design built with
+  `method = "approx"` now returns the domain. It returned the full stored
+  sample and raised no condition, so the caller read a full-sample estimate
+  as a domain estimate. The internal restriction tested only the class
+  `survey::twophase(method = "full")` returns, so an `"approx"` object looked
+  for its frame in a place that class does not use, found none, and passed
+  the object through untouched. On the package's own two-phase fixture the
+  converted object reported 74 finite probabilities where the domain holds
+  52. Both two-phase classes now take the same branch. (#276)
+
 * An analysis of a filtered design whose domain marker holds `NA` no longer
   fails. The `NA` marker selected a row of `NA` values, and the call then
   stopped with `missing value where TRUE/FALSE needed`, or with `variable
