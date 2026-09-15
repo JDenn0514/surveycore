@@ -114,12 +114,13 @@
 
 ## Bug fixes
 
-* A grouped analysis of a filtered design no longer reports a group that no
-  in-domain row supports. A domain marker holding `NA` selected a row of all
-  `NA` values, which reached the grouped result as a group combination of its
-  own. Every `get_*()` function now reads an `NA` marker as outside the
-  domain, and the numbers agree with a design whose marker stores `FALSE` in
-  that place. (#262)
+* An analysis of a filtered design whose domain marker holds `NA` no longer
+  fails. The `NA` marker selected a row of `NA` values, and the call then
+  stopped with `missing value where TRUE/FALSE needed`, or with `variable
+  lengths differ`, instead of returning an estimate. A grouped call stopped
+  on the group combination that the `NA` row created. Every `get_*()`
+  function now reads an `NA` marker as outside the domain, and the numbers
+  agree with a design whose marker stores `FALSE` in that place. (#262)
 
 * `as_survey_replicate(type = "JK2")` now defaults `scale` to `1` instead of
   `(R-1)/R`. **This moves published numbers.** Every JK2 design built without
