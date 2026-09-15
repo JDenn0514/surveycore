@@ -27,6 +27,12 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-11 | #268 | 11 | 272 | 24.7 | 0 | 0 | — |
 | 2026-09-11 | #269 | 10 | 336 | 33.6 | 1 | 0 | — |
 | 2026-09-11 | #270 | — | 58 | — | 0 | 0 | — |
+| 2026-09-14 | #272 | 8 | 169 | 21.1 | 0 | 0 | — |
+| 2026-09-14 | #273 | 4 | 55 | 13.8 | 0 | 0 | — |
+| 2026-09-14 | #274 | 12 | 132 | 11.0 | 0 | 0 | — |
+| 2026-09-15 | #275 | 9 | 248 | 27.6 | 1 | 1 | — |
+| 2026-09-15 | #277 | 5 | 153 | 30.6 | 0 | 0 | — |
+| 2026-09-15 | #278 | 8 | 142 | 17.8 | 0 | 0 | — |
 
 ## Notes on individual rows
 
@@ -194,3 +200,70 @@ row created.
   entry sit outside the counted surface. Both BLOCK counts are 0. The arc's
   five PRs together: 43 stated rows, 1169 counted additions, one tester BLOCK
   (#269) and no reviewer BLOCK.
+- **#272** — domain-marker-logical PR 1 of 6, the `survey_base` validator.
+  8 stated rows and 169 additions, 21.1 per row, inside the bound of 12. Both
+  BLOCK counts are 0. The production diff is 34 lines: the validator
+  body, one roxygen sentence, and nothing else; the other 135 additions are
+  the `set_domain_marker()` fixture (48), four new test blocks (35), the
+  repair of four existing blocks, the NEWS entry and error row 103. The PR
+  carried a live HOLD into the build — nothing in the package had yet proved
+  S7 runs a parent validator for a subclass — and it resolved without one,
+  which is why a contract-changing PR came in at the low end of the
+  additions-per-row range.
+- **#273** — domain-marker-logical PR 2 of 6, the validator's accept path.
+  4 stated rows and 55 additions, 13.8 per row, the lowest ratio in the sample.
+  Both BLOCK counts are 0. Test-only: one file, no `R/` or `man/` path, and the
+  shared `set_domain_marker()` fixture read rather than edited. The low ratio is
+  what a PR split purely to stay inside a budget looks like — the entry exists
+  because PR 1 hit 9 acceptance criteria against a bound of 8, so its
+  accept-path rows moved here. Four blocks at ~14 lines each is the floor for a
+  real row, which suggests the 12-row bound is not the binding constraint for
+  test-only entries; the criteria bound is.
+- **#274** — domain-marker-logical PR 3 of 6, the validator's type and shape
+  breadth. 12 stated rows and 132 additions, 11.0 per row — the lowest ratio in
+  the sample, on the entry that sits exactly at the 12-row bound. Both BLOCK
+  counts are 0. Test-only, one file. Read with #273 (13.8 per row) this is the
+  clearer signal: a reject-path row asserting one typed error class costs
+  roughly 10 lines, so a 12-row bound derived from PRs averaging 25–35 lines per
+  row does not bind a test-only entry anywhere near its real size. #274 could
+  have carried twice the rows and still been a small, readable PR. The binding
+  constraint on these three entries was the 8-criteria bound, not the row bound.
+  Worth re-deriving the row bound separately for test-only entries before the
+  next plan.
+- **#275** — domain-marker-logical PR 4 of 6, the `.apply_domain()` `NA`
+  resolution. 9 stated rows and 248 additions, 27.6 per row, inside the bound of
+  12. It is the arc's first entry with a non-zero BLOCK count: one tester BLOCK
+  and one reviewer BLOCK. Neither touched the production change, which was
+  correct in the first build and never moved — `.apply_domain()` is 16 lines of
+  the 248. The tester BLOCK was four invariance blocks pointed at four functions
+  the test-spec cuts by name, which the builder could not have known because
+  `spec.md` names no analysis function anywhere (see the run's `decisions.md`
+  D23). The reviewer BLOCK was a `NEWS.md` entry describing a symptom no
+  measurement in the PR supports. Read against #272 (8 rows, 169 additions, 0
+  BLOCKs), the lesson is not that this PR was larger but that a row count
+  predicts additions well and predicts BLOCK risk not at all: what drove both
+  BLOCKs was a behavioural constant living in only one of the two artifacts.
+- **#277** — domain-marker-logical PR 5 of 6, the `.restrict_to_domain()`
+  coercion removal. 5 stated rows and 153 additions, 30.6 per row, the highest
+  ratio in the arc and still inside the bound of 12. Both BLOCK counts are 0 —
+  the arc's only PR to clear builder, tester and reviewer with no cycle. The
+  ratio is high because the five rows are conversion rows: each builds a design,
+  converts it through `survey`, and asserts on `rownames()`, which costs roughly
+  three times a typed-error row. Read with #273 (13.8) and #274 (11.0), the
+  spread across test-only and test-heavy entries is now 11 to 31 additions per
+  row, which is the clearest argument yet that one row bound cannot serve both
+  kinds of entry. The PR also raised a HOLD that became issue #276, a
+  pre-existing silent no-op in the same function; the HOLD cost one round trip
+  and no rework, because the finding was out of scope rather than a defect in
+  the work.
+- **#278** — domain-marker-logical PR 6 of 6, the printed-count agreement rows.
+  8 stated rows and 142 additions, 17.8 per row, inside the bound of 12. Both
+  BLOCK counts are 0. Test-only, two files, append-only. The arc's six entries
+  now span 11.0 to 30.6 additions per row against a single bound of 12 derived
+  from PRs averaging 25 to 35 — the spread is the finding, not any one row. A
+  test-only entry asserting typed errors (#274, 11.0) and a test-heavy entry
+  building and converting designs (#277, 30.6) cannot share one row bound
+  usefully. Re-derive separately for the two kinds before the next plan.
+  Whole arc: 46 stated rows, 899 counted additions, one tester BLOCK and one
+  reviewer BLOCK, both on #275 and both traceable to a behavioural constant that
+  existed in only one of the two artifacts (D23).
