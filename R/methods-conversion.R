@@ -50,10 +50,15 @@
 # now unreachable for a two-phase object and still carries the Taylor and
 # replicate routes.
 #
-# The two-phase route is also the one route on which `[` removes no row. It
-# keeps every row and sets each excluded row's probability to Inf, which
-# weights that row out of every estimate. So on that route the observable is
-# the count of finite probabilities and not the row count.
+# The two two-phase classes differ in what `[` does, and the observable
+# differs with them. A twophase2 object keeps every row and sets each
+# excluded row's probability to Inf, which weights that row out of every
+# estimate, so there the observable is the count of finite probabilities and
+# not the row count. A twophase object removes the excluded rows outright,
+# so there the observable is the row count and every surviving probability
+# is finite. Measured on a 312-row phase-1 sample with half the rows marked:
+# twophase2 returns 312 rows and 156 finite probabilities; twophase returns
+# 156 rows and 156 finite probabilities.
 #
 # `[` and never subset(). All three of survey's subset() methods end with
 # `x$call <- sys.call(-1)`, which overwrites the call the route stored.
