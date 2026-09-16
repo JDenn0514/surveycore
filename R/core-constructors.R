@@ -604,9 +604,11 @@ as_survey <- function(
 #'   the number of replicates `R`: `(R-1)/R` for `"JK1"` and `"JKn"`; `1/R`
 #'   for `"BRR"`, `"Fay"`, and `"bootstrap"`; `4/R` for `"ACS"` and
 #'   `"successive-difference"` (per Ash 2014 / Fay & Train 1995); `1` for
-#'   `"JK2"` and `"other"`. `"JK2"` is the paired jackknife, so its
-#'   per-stratum factors belong in `rscales` and the overall scale stays at
-#'   `1`. This matches `survey::svrepdesign()` and [as_survey_nonprob()].
+#'   `"JK2"` and `"other"`. `"JK2"` is the paired jackknife. Each replicate
+#'   is a half sample, so the per-stratum factor is already inside the
+#'   replicate weights: `rscales` stays at `rep(1, R)` and the overall scale
+#'   stays at `1`. `survey::svrepdesign()` forces both, and
+#'   [as_survey_nonprob()] agrees.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
 #'   replicate weight columns selected by `repweights`.
@@ -795,9 +797,10 @@ as_survey_replicate <- function(
     scale <- switch(
       type,
       JK1 = (n_rep - 1L) / n_rep,
-      # JK2 is the paired jackknife: each replicate is a half sample, and the
-      # per-stratum factors belong in `rscales`, not in the overall scale. The
-      # (R-1)/R factor is the delete-one jackknife factor and does not apply.
+      # JK2 is the paired jackknife: each replicate is a half sample, so the
+      # per-stratum factor is already inside the replicate weights. It is not
+      # in `rscales` and not in the overall scale. The (R-1)/R delete-one
+      # jackknife factor does not apply.
       # survey::svrepdesign() fixes scale = 1 for JK2, and
       # as_survey_nonprob() already agrees with it (issue #242).
       JK2 = 1,

@@ -42,9 +42,11 @@ formula. If \code{NULL} (default), computed automatically from \code{type} and
 the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"} and \code{"JKn"}; \code{1/R}
 for \code{"BRR"}, \code{"Fay"}, and \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and
 \code{"successive-difference"} (per Ash 2014 / Fay & Train 1995); \code{1} for
-\code{"JK2"} and \code{"other"}. \code{"JK2"} is the paired jackknife, so its
-per-stratum factors belong in \code{rscales} and the overall scale stays at
-\code{1}. This matches \code{survey::svrepdesign()} and \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}.}
+\code{"JK2"} and \code{"other"}. \code{"JK2"} is the paired jackknife. Each replicate
+is a half sample, so the per-stratum factor is already inside the
+replicate weights: \code{rscales} stays at \code{rep(1, R)} and the overall scale
+stays at \code{1}. \code{survey::svrepdesign()} forces both, and
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}} agrees.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
