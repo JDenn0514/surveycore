@@ -627,8 +627,9 @@ test_that("as_survey_replicate() computes JK1 default scale = (R-1)/R", {
 })
 
 test_that("as_survey_replicate() computes JK2 default scale = 1", {
-  # JK2 is the paired jackknife: the per-stratum factors belong in `rscales`,
-  # so the overall scale stays at 1. survey::svrepdesign() fixes it at 1 and
+  # JK2 is the paired jackknife: each replicate is a half sample, so the
+  # per-stratum factor is already inside the replicate weights and the overall
+  # scale stays at 1. survey::svrepdesign() fixes it at 1 and
   # as_survey_nonprob() already agreed; the replicate constructor used the
   # delete-one factor (R-1)/R and was low by sqrt((R-1)/R) (issue #242).
   df <- make_survey_data(
