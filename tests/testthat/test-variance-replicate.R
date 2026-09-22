@@ -28,13 +28,20 @@ test_that("get_means() replicate SE matches survey::svymean() — BRR design", {
     repweights = all_of(repwt_cols),
     type = "BRR"
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "BRR",
-    mse = TRUE,
-    data = d
+  test_invariants(sc)
+
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1 / length(repwt_cols), tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -64,13 +71,18 @@ test_that("get_totals() replicate SE matches survey::svytotal() — BRR design",
     repweights = all_of(repwt_cols),
     type = "BRR"
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "BRR",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1 / length(repwt_cols), tolerance = 1e-8)
 
   sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
@@ -217,13 +229,18 @@ test_that("get_means() replicate: mse=FALSE matches survey with mse=FALSE", {
     type = "BRR",
     mse = FALSE
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "BRR",
-    mse = FALSE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "BRR",
+      mse = FALSE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1 / length(repwt_cols), tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -287,13 +304,18 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
   )
   # survey hardcodes scale = 1/R for BRR internally; the scale= argument is
   # ignored. Both packages independently compute (1/n_rep) * sum((theta_r - theta)^2).
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "BRR",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1 / n_rep, tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -371,13 +393,18 @@ test_that("get_means() successive-difference SE matches survey::svymean()", {
     type = "successive-difference",
     mse = TRUE
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "successive-difference",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "successive-difference",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 4 / length(repwt_cols), tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -408,13 +435,18 @@ test_that("get_totals() successive-difference SE matches survey::svytotal()", {
     type = "successive-difference",
     mse = TRUE
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "successive-difference",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "successive-difference",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 4 / length(repwt_cols), tolerance = 1e-8)
 
   sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
@@ -445,13 +477,18 @@ test_that("get_means() ACS SE matches survey::svymean()", {
     type = "ACS",
     mse = TRUE
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "ACS",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "ACS",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 4 / length(repwt_cols), tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -482,13 +519,18 @@ test_that("get_totals() ACS SE matches survey::svytotal()", {
     type = "ACS",
     mse = TRUE
   )
-  sv <- survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "ACS",
-    mse = TRUE,
-    data = d
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "ACS",
+      mse = TRUE,
+      data = d
+    )
   )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 4 / length(repwt_cols), tolerance = 1e-8)
 
   sc_total <- get_totals(sc, y1, variance = c("se", "ci"))
   sv_total <- survey::svytotal(~y1, sv, na.rm = TRUE)
