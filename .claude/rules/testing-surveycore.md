@@ -10,6 +10,7 @@ file covers only what is specific to surveycore.
 |----------|--------|
 | Invariant checks | `test_invariants(design)` once per constructor per test FILE — not per block |
 | Both input modes | A behavioural row runs in both modes only when the mode changes what it asserts |
+| Oracle tests against `survey` | Never hand `survey` a number surveycore computed; assert the SE. Rules 2 and 3 and the per-type table apply to `svrepdesign()` only |
 | Layer 1 errors (S7 validators) | `class=` only — no snapshot |
 | Layer 3 errors (constructors) | Dual: `expect_error(class=)` + `expect_snapshot(error=TRUE)` |
 | Variance numerical tolerance | Point: 1e-10, SE/variance: 1e-8, CI bounds: 1e-6 |
@@ -160,6 +161,86 @@ nothing enforces. At 1.3% of the suite the guard is worth more than the
 saving, so the rows stay.
 
 Measured 2026-08-27 on `develop` at `e7493f0`.
+
+## The oracle rule — never hand `survey` a number surveycore computed
+
+An oracle test compares a surveycore result against `survey`. It proves
+something only when the two sides reach their numbers independently. Five
+rules follow.
+
+**Which rules reach which design.** Rules 1, 4 and 5 hold for every oracle
+test against `survey`, whatever the design class. Rules 2 and 3 and the
+per-type table below name arguments of `survey::svrepdesign()`, so they reach
+replicate designs only. An author writing a Taylor or two-phase oracle applies
+rules 1, 4 and 5 and reads rules 2 and 3 as the principle behind them: pass
+the other side no number this side computed.
+
+1. **Build both sides from the same inputs.** Same data frame, same weight
+   column, same replicate columns, same `type`, same `mse`. Pass `mse`
+   explicitly to both sides.
+2. **Pass `scale` to neither side.** `survey::svrepdesign()` honours a
+   supplied `scale` for JK1, JKn, bootstrap and `other`, so a block that
+   passes surveycore's default in gets the same number back out. The
+   comparison then cannot disagree, and a wrong default stays green. This is
+   how issue #242 survived 22 releases. Read this rule with the scope
+   paragraph at the end: a round-trip test is not an oracle test, and rule 2
+   does not reach it.
+3. **Pass `rscales` to JKn only.** `survey` refuses JKn with combined weights
+   and no `rscales`. Pass the same literal to both sides. Never read `rscales`
+   off the surveycore design. `survey` discards a supplied `rscales` for JK2,
+   ACS and successive-difference, so a block that supplies it there gets a
+   warning in place of a comparison.
+4. **Assert the standard error, not the point estimate alone.** The scale
+   enters the variance only. A design with a wrong scale returns the same
+   point estimate, so a block that asserts the point estimate alone reports
+   green on a wrong default. Assert the confidence bounds too; they inherit
+   the error.
+5. **Assert the condition `survey` raises. Do not silence it.** A warning from
+   `svrepdesign()` is the test telling you `survey` computed the value itself.
+   `suppressWarnings()` round an oracle call hides that.
+
+Three further constraints follow from the first five.
+
+- **Never assert one side's stored scale against the other side's.** Assert
+  each against a literal. An assertion that compares the two sides to each
+  other is the same round trip in a different shape.
+- **A formula forbidden as an argument is still allowed as an assertion
+  literal.** The two acts differ. Passing `(R-1)/R` into `svrepdesign()` sets
+  the number the other side computes with, which is the round trip. Writing
+  `(R-1)/R` in an `expect_equal()` states what the block claims the number is,
+  and the block turns red when the number moves. So the same formula may be
+  banned from a constructor call and required in an assertion in the same
+  block. JK1 is the worked case.
+- **Match `survey`'s conditions by message text, not by class.** Every
+  condition in `svrepdesign()` is a bare `warning()` or `stop()`, so the only
+  class is `simpleWarning` or `simpleError`. That class also matches the
+  "Data do not look like combined weights" warning, which means the fixture is
+  broken rather than that the comparison held. The message text names the
+  branch; the class does not. The missing `class =` here is a property of
+  `survey`, and it breaches neither house rule that could be read to require
+  one. `.claude/rules/code-style.md` governs surveycore's own
+  `cli::cli_abort()` and `cli::cli_warn()` calls; an oracle block writes none.
+  `.claude/rules/testing-standards.md` §Assertions requires `class =` on every
+  `expect_warning()`; it governs surveycore's own typed conditions, and
+  `survey` supplies no class to name.
+
+Rule 4's confidence-bound clause carries one precondition. **Both sides must
+build the interval from the same distribution and the same degrees of
+freedom.** They do today, and both use the normal approximation.
+`survey`'s `confint()` methods for `svrepstat` and `svystat` default to
+`df = Inf`, and `survey:::tconfint` takes its critical value from `qt()` at
+that df, which returns the normal one. surveycore assigns `degf <- Inf`
+unconditionally in each Phase 1 analysis file, and the replicate path reaches
+`.degf()` through none of them. Assert the bounds only while both statements
+hold. A change to degrees of freedom on either side moves every bound and
+leaves the point estimate and the standard error intact — the same shape a
+wrong scale produces, from a different cause.
+
+A later PR that moves surveycore's replicate path to design-based degrees of
+freedom must revisit `tests/testthat/test-variance-replicate.R` in the same
+PR. Every confidence-bound assertion in the block set fails at once when it
+lands, and the failure reads as a scale defect unless the reader knows this
+clause.
 
 ## S7 error testing layers
 
