@@ -105,25 +105,38 @@ test_that("get_means() replicate SE matches survey::svymean() — JK1 design", {
     seed = 15
   )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-
-  # Compute scale explicitly to avoid survey package "guessing" warning.
   n_rep <- length(repwt_cols)
-  jk1_scale <- (n_rep - 1L) / n_rep
 
   sc <- as_survey_replicate(
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "JK1"
-  )
-  sv <- suppressWarnings(survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
     type = "JK1",
-    scale = jk1_scale,
-    mse = TRUE,
-    data = d
-  ))
+    mse = TRUE
+  )
+
+  # survey has no JK1 default: with combined weights it guesses (R-1)/R and
+  # says so. Match the fragment, not the full text, which carries "(n-1)/n"
+  # and reads as a regular-expression group; and not "JK1" alone, which also
+  # matches the "rho not relevant to JK1 design" branch on four other types.
+  jk1_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JK1",
+      mse = TRUE,
+      data = d
+    )
+  )
+  expect_length(jk1_warnings, 1L)
+  expect_match(
+    jk1_warnings,
+    "guessing n=number of replicates",
+    fixed = TRUE
+  )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, (n_rep - 1) / n_rep, tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
@@ -155,18 +168,32 @@ test_that("get_means() replicate SE matches survey::svymean() — JK2 design", {
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "JK2"
+    type = "JK2",
+    mse = TRUE
   )
   expect_equal(sc@variables$scale, 1)
 
-  sv <- suppressWarnings(survey::svrepdesign(
-    weights = d$wt,
-    repweights = d[, repwt_cols],
-    type = "JK2",
-    mse = TRUE,
-    data = d
-  ))
-  expect_equal(sv$scale, 1)
+  # survey warns for JK2 unconditionally, even when the caller supplies
+  # neither scale nor rscales, so the block asserts the warning instead of
+  # hiding it.
+  jk2_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JK2",
+      mse = TRUE,
+      data = d
+    )
+  )
+  expect_length(jk2_warnings, 1L)
+  expect_match(
+    jk2_warnings,
+    "with type JK2 scale= and rscales= are not needed",
+    fixed = TRUE
+  )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1, tolerance = 1e-8)
 
   sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
   sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
