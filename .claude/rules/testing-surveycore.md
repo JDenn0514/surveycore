@@ -242,6 +242,60 @@ PR. Every confidence-bound assertion in the block set fails at once when it
 lands, and the failure reads as a scale defect unless the reader knows this
 clause.
 
+The table below is the evidence for rules 2 and 3, measured on `survey` 4.5
+under R 4.6.1.
+
+| Type | Default scale | A supplied `scale` | A supplied `rscales` |
+|---|---|---|---|
+| BRR | `1/R` | warn, discard | honoured |
+| Fay | `1/(R * (1 - rho)^2)` | discard, no warning | honoured |
+| JK1 | `(R-1)/R`, guessed | honoured | honoured |
+| JK2 | `1` | warn, discard | warn, discard |
+| JKn | `1` | honoured | required, honoured |
+| bootstrap | `1/(R-1)` | honoured | honoured |
+| ACS | `4/R` | warn, discard | warn, discard |
+| successive-difference | `4/R` | warn, discard | warn, discard |
+| other | `1` | honoured | honoured |
+
+**The per-type table is a snapshot.** It records `survey` 4.5. Before you
+write a new block, build a probe design on your installed version and read
+back what it does with a supplied `scale` and `rscales` for your type. A later
+`survey` release can change a default or a message without changing its
+interface.
+
+**Read a failure against the `survey` version first.** When an oracle block
+turns red, check the installed `survey` version against the one the table
+records before you treat the failure as a surveycore regression. A changed
+default on the oracle side moves the target and produces the same red.
+
+### What the rule covers
+
+The rule covers tests that prove surveycore's variance correct by an
+independent comparison against `survey`. Both sides compute their own number,
+and the test claims they agree.
+
+It does not cover a round-trip test. A round-trip test builds one design,
+converts it, and asks whether the conversion carried the design's own values
+across. `as_svydesign()` passes surveycore's stored scale into
+`svrepdesign()` by design, and that is the behaviour under test, not a defect.
+Two blocks in `tests/testthat/test-conversion.R` work this way:
+
+- `as_svydesign(survey_replicate) gives svymean matching survey::svrepdesign
+  [numerical]` — it compares a converted design against a directly built
+  `survey` design on the same fixture;
+- `from_svydesign() + as_svydesign() replicate round-trip agrees [numerical]`
+  — it starts from a `survey` design, converts it out and back, and compares
+  the two `survey` designs.
+
+Both are correct and both stay. They prove conversion fidelity. They make no
+claim about which default is right, so rule 2 does not reach them. Tell the
+two apart by the question the block asks: an oracle test asks "is surveycore's
+number right", a round-trip test asks "did the conversion carry the number
+across".
+
+It does not cover `as_survey_nonprob()`: `survey` has no non-probability
+design class, so it cannot be an oracle for one (`plans/issue-cleanup.md` D1).
+
 ## S7 error testing layers
 
 - **Layer 1 — S7 class validators** (`R/00-s7-classes.R`): structural
