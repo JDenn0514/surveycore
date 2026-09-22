@@ -963,3 +963,62 @@ test_that("get_means() bootstrap SE disagrees with survey::svymean() — issue #
     tolerance = 1e-8
   )
 })
+
+test_that("get_means() replicate SE matches survey::svymean() — other design", {
+  skip_if_not_installed("survey")
+
+  # The generator has no "other" mode, so the block builds type = "other" on
+  # the jk1 replicate columns, the way the JK2 block builds on them.
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "other",
+    mse = TRUE
+  )
+
+  # survey warns for type "other" when the caller supplies neither scale nor
+  # rscales, and it raises the same warning when a scale IS supplied. So
+  # supplying one silences nothing and still feeds survey a number this side
+  # computed; the block supplies neither and asserts the warning instead.
+  # capture_warnings() plus expect_length() counts them, because a fragment
+  # match alone passes when a second, unexpected warning fires alongside —
+  # including the "Data do not look like combined weights" warning that means
+  # the fixture moved.
+  other_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "other",
+      mse = TRUE,
+      data = d
+    )
+  )
+  expect_length(other_warnings, 1L)
+  expect_match(
+    other_warnings,
+    "scale or rscales not specified, set to 1",
+    fixed = TRUE
+  )
+
+  # Guards survey's default; a failure means survey changed, not surveycore; SE/variance row, 1e-8.
+  expect_equal(sv$scale, 1, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
