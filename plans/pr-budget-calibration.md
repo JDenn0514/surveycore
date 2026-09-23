@@ -33,6 +33,15 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-15 | #275 | 9 | 248 | 27.6 | 1 | 1 | — |
 | 2026-09-15 | #277 | 5 | 153 | 30.6 | 0 | 0 | — |
 | 2026-09-15 | #278 | 8 | 142 | 17.8 | 0 | 0 | — |
+| 2026-09-22 | #281 | 12 | 0 | — | 0 | 0 | — |
+| 2026-09-22 | #282 | 6 | 0 | — | 0 | 0 | — |
+| 2026-09-22 | #283 | 7 | 90 | 12.9 | 0 | 0 | — |
+| 2026-09-22 | #284 | 10 | 48 | 4.8 | 0 | 0 | — |
+| 2026-09-22 | #285 | 3 | 84 | 28.0 | 0 | 0 | — |
+| 2026-09-22 | #286 | 10 | 81 | 8.1 | 0 | 0 | — |
+| 2026-09-22 | #287 | 6 | 59 | 9.8 | 0 | 0 | — |
+| 2026-09-23 | #288 | 10 | 49 | 4.9 | 0 | 0 | — |
+| 2026-09-23 | #289 | 8 | 0 | — | 0 | 0 | — |
 
 ## Notes on individual rows
 
@@ -267,3 +276,80 @@ row created.
   Whole arc: 46 stated rows, 899 counted additions, one tester BLOCK and one
   reviewer BLOCK, both on #275 and both traceable to a behavioural constant that
   existed in only one of the two artifacts (D23).
+- **#281** — replicate-oracle-tests PR 1 of 9, the oracle rule's core. 12 stated
+  rows, at the bound. Both BLOCK counts are 0. **The Additions column reads 0,
+  and that is the column failing, not the pull request.** The formula counts `R`
+  and `tests` only, and this entry writes neither: its whole surface is 81
+  added lines in `.claude/rules/testing-surveycore.md`. Adds/row is left blank
+  because 0/12 would state something false about a real 81-line change.
+
+  Two consequences for the re-derivation. First, three of this arc's nine
+  entries are documentation-only — PRs 1, 2 and 9 all write that one rules file
+  — so three of the nine rows this arc contributes will carry a 0 the formula
+  cannot fix. Exclude them from the additions distribution rather than reading
+  them as tiny pull requests. Second, the arc supplies the case that the #278
+  note asked for. That note argued one row bound cannot serve both a test-only
+  and a test-heavy entry. A documentation-only entry is a third kind, and it is
+  not merely lighter — it is unmeasured. A bound derived from an additions
+  count cannot rank an entry whose additions the count does not see.
+
+  This ledger now holds 19 rows. The schema in `artifact-schemas.md` says to
+  re-derive the bound of 12 at 20, so the next merged pull request crosses that
+  line. Backfill `Follow-up fixes` first, as the schema requires, and derive
+  separately for the three kinds now visible: source-and-test, test-only, and
+  documentation-only.
+- **#282** — replicate-oracle-tests PR 2 of 9, the rule's per-type evidence
+  table and scope subsection. 6 stated rows, inside the bound. Both BLOCK counts
+  are 0. Additions read 0 for the same reason as #281: the whole surface is 54
+  added lines in `.claude/rules/testing-surveycore.md`, which the formula does
+  not count. Adds/row left blank.
+
+  **This row is the 20th, so the re-derivation the schema asks for is now due.**
+  Do it before the next plan, not mid-arc — re-deriving the bound while a
+  PLAN_READY plan is executing would change the figure that plan was validated
+  against. Seven entries of this arc are still unmerged.
+
+  One measurement this entry adds, which the additions column cannot show.
+  #281 and #282 both carried a real authoring cost that the ledger records as
+  zero, and they were not equal: #281 transcribed 81 lines of settled text,
+  while #282 had to probe nine replicate types against the installed `survey`
+  three ways each before it could ship 54 lines. The probe was the work; the
+  54 lines were the easy part. A documentation-only entry's cost tracks the
+  evidence it has to gather, not the lines it writes, and no column here sees
+  that. Worth a column or a note convention when the bound is re-derived.
+- **#283 to #289** — the rest of the replicate-oracle arc. Rows 7, 10, 3, 10,
+  6, 10, 8; additions 90, 48, 84, 81, 59, 49, 0. **Every BLOCK count in the
+  arc is 0**, tester and reviewer, across all nine entries.
+
+  **The whole arc: 72 stated rows, 411 counted additions, 0 BLOCKs.** Three
+  of the nine entries are documentation-only and the formula scores them 0,
+  so 411 is the additions of six entries against 72 rows of nine.
+
+  Adds/row across the six measurable entries runs **4.8 to 28.0**, which is a
+  wider spread than the whole `domain-marker-logical` arc produced and is the
+  clearest evidence yet that one row bound cannot serve these entries. The two
+  extremes are worth naming, because the row count ranks them backwards:
+
+  | Entry | Rows | Additions | Adds/row | What it wrote |
+  |---|--:|--:|--:|---|
+  | #285 JKn | 3 | 84 | 28.0 | one new pinned block, written whole |
+  | #284 JK1/JK2 | 10 | 48 | 4.8 | two blocks rewritten in place |
+
+  #285 states three rows and writes 84 lines; #284 states ten and writes 48.
+  A bound that treats 12 rows as "large" would have flagged #284 and passed
+  #285, when #285 is the bigger piece of authoring. The reason is structural:
+  **a row counts what must be proved, not what must be written.** #284's ten
+  rows are mostly one-line greps over a file — no `scale`, no
+  `suppressWarnings()`, no computed-scale line — while #285's three rows each
+  require a whole block to exist first.
+
+  A better predictor than the row count, on this arc's evidence, is **how many
+  test blocks the entry authors from scratch**: #285 and #286 wrote one each
+  at 84 and 81 additions, #287 one at 59, #288 one at 49, and #283 edited
+  eight existing blocks at 90. Consider counting new blocks alongside rows
+  when the bound is re-derived.
+
+  **The ledger now holds 27 rows**, past the 20 the schema sets for
+  re-derivation. Backfill `Follow-up fixes` first. Derive separately for the
+  three kinds now visible — source-and-test, test-only, documentation-only —
+  and treat a documentation-only entry's `0` as unmeasured rather than small.
