@@ -1022,3 +1022,52 @@ test_that("get_means() replicate SE matches survey::svymean() — other design",
   expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
   expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
+
+test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
+  skip_if_not_installed("survey")
+
+  # This block compares nothing. survey refuses type = "Fay" without a rho
+  # before it builds anything, and surveycore has no rho argument today, so
+  # no comparison is possible. Issue #243 owns the gap: a later PR adds the
+  # rho argument and rewrites this block into a real oracle comparison.
+  #
+  # The first half asserts what another package refuses to do, so that half
+  # guards survey's behaviour and not surveycore's. A failure there most
+  # likely means survey changed its message or dropped the requirement —
+  # read it that way before reading it as a surveycore regression.
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+  n_rep <- length(repwt_cols)
+
+  # The error is a bare stop(), so it carries no class but simpleError, and
+  # the message text is the only thing that names the branch.
+  expect_error(
+    survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "Fay",
+      data = d
+    ),
+    "With type='Fay' you must supply the correct rho",
+    fixed = TRUE
+  )
+
+  # surveycore builds the design and stores the BRR scale, 1 / R, because it
+  # has no rho to shrink by. R is 10 here, not 20: the generator returns
+  # n_psu %/% 2 replicate columns in the fay mode as it does in brr.
+  # SE/variance row, 1e-8.
+  sc <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "Fay"
+  )
+  expect_equal(sc@variables$scale, 1 / n_rep, tolerance = 1e-8)
+})
