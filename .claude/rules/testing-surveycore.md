@@ -1,6 +1,6 @@
 # surveycore Testing: Package-Specific Standards
 
-**Version:** 1.2
+**Version:** 1.3
 **Status:** Decided — extends `testing-standards.md`; read that first. This
 file covers only what is specific to surveycore.
 
@@ -295,6 +295,20 @@ across".
 
 It does not cover `as_survey_nonprob()`: `survey` has no non-probability
 design class, so it cannot be an oracle for one (`plans/issue-cleanup.md` D1).
+
+### Sanctioned exceptions in `test-variance-replicate.R`
+
+Two blocks in that file break the rule's normal shape on purpose. Both close
+with a named issue. Anything else that breaks the shape is a violation.
+
+- **The JKn and bootstrap blocks wrap three failing assertions in
+  `testthat::expect_failure()`.** surveycore's stored default disagrees with
+  `survey` today, and branch protection needs a green suite. Issue #253
+  changes the two defaults and deletes the wrappers.
+- **The Fay block compares nothing.** `survey` refuses `type = "Fay"` without
+  a `rho`, and surveycore has no `rho` argument, so the block asserts the
+  refusal on one side and the stored scale on the other. Issue #243 adds the
+  argument and rewrites the block into a real comparison.
 
 ## S7 error testing layers
 
