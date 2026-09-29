@@ -298,13 +298,18 @@ design class, so it cannot be an oracle for one (`plans/issue-cleanup.md` D1).
 
 ### Sanctioned exceptions in `test-variance-replicate.R`
 
-Two blocks in that file break the rule's normal shape on purpose. Both close
-with a named issue. Anything else that breaks the shape is a violation.
+**One** block in that file breaks the rule's normal shape on purpose. It
+closes with a named issue. Anything else that breaks the shape is a
+violation.
 
-- **The JKn and bootstrap blocks wrap three failing assertions in
-  `testthat::expect_failure()`.** surveycore's stored default disagrees with
-  `survey` today, and branch protection needs a green suite. Issue #253
-  changes the two defaults and deletes the wrappers.
+There were two. The JKn and bootstrap blocks used to wrap three failing
+assertions each in `testthat::expect_failure()`, because surveycore's stored
+defaults disagreed with `survey` and branch protection needs a green suite.
+Issue #253 moved both defaults — JKn to `1`, bootstrap to `1/(R-1)` — and
+deleted all six wrappers along with the two closing ratio assertions. Those
+blocks now pass unwrapped and are ordinary oracle tests. Do not restore the
+wrappers, and do not read their absence as a violation.
+
 - **The Fay block compares nothing.** `survey` refuses `type = "Fay"` without
   a `rho`, and surveycore has no `rho` argument, so the block asserts the
   refusal on one side and the stored scale on the other. Issue #243 adds the

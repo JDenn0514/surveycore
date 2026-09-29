@@ -145,6 +145,28 @@
   now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
   to reproduce the old numbers. (#242)
 
+* `as_survey_replicate()` now defaults `scale` to `1` for `type = "JKn"` and
+  to `1/(R-1)` for `type = "bootstrap"`, instead of `(R-1)/R` and `1/R`.
+  **This moves published numbers.** Both old defaults multiplied the variance
+  by `(R-1)/R`, so a standard error from either type rises by
+  `1/sqrt((R-1)/R)` under this release — 2.6% on a 20-replicate design. Pass
+  `scale = (R-1)/R` for `"JKn"`, or `scale = 1/R` for `"bootstrap"`, to
+  reproduce the old numbers. The other seven replicate types are unchanged.
+
+  The two corrections do not have the same standing. For `"JKn"`, `(R-1)/R`
+  is the factor of the *unstratified* delete-one jackknife and names `"JK1"`
+  only. JKn is the stratified form, whose per-stratum factor belongs in
+  `rscales` and not in the overall scale, so the overall scale stays at `1`
+  (Wolter 2007, *Introduction to Variance Estimation*, 2nd ed., ch. 4). That
+  is a formula error, and the old default was wrong for every stratified
+  design. For `"bootstrap"`, `1/(R-1)` is the value `survey::svrepdesign()`
+  computes, and this change aligns surveycore with that convention; it does
+  **not** mean an older `1/R` number was wrong. `1/R` is the population form
+  of the bootstrap variance divisor, and `as_survey_nonprob()` keeps it,
+  because `survey` has no non-probability design class and so is not an
+  oracle for one. See `?as_survey_nonprob` for the size of that divergence.
+  (#253)
+
 * `from_svydesign()` on a `survey::svrepdesign` object no longer loses the
   replicate weights. It read the replicate column names straight off the
   object, and `survey::as.svrepdesign()` names the columns of the matrix it
