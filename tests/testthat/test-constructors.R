@@ -862,6 +862,171 @@ test_that("as_survey_replicate() JKn with rscales = NULL stores scale = 1", {
   expect_null(d@variables$rscales)
 })
 
+test_that("as_survey_replicate() refuses four frames before the scale switch", {
+  # Every validator runs ahead of the default-scale switch, so each frame
+  # below raises its own class and none of them reaches a stored scale
+  # (spec E7). Each frame is built inline because the frame content is the
+  # thing each assertion is about.
+  base_df <- data.frame(
+    y1 = c(41.7, 38.2, 44.1, 39.9, 42.6),
+    wt = c(2.5, 3.1, 2.8, 2.2, 3.4)
+  )
+  for (i in 1:4) {
+    base_df[[paste0("repwt_", i)]] <- base_df$wt * (0.9 + i / 100)
+  }
+
+  expect_error(
+    as_survey_replicate(
+      base_df[0, , drop = FALSE],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_empty_data"
+  )
+
+  expect_error(
+    as_survey_replicate(
+      base_df,
+      weights = wt,
+      repweights = starts_with("no_such_prefix_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_repweights_empty"
+  )
+
+  zero_wt <- base_df
+  zero_wt$wt <- 0
+  expect_error(
+    as_survey_replicate(
+      zero_wt,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_weights_all_zero"
+  )
+
+  expect_error(
+    as_survey_replicate(
+      base_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = c(1, 1)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+})
+
+test_that("as_survey_replicate() stores the default scale of all nine types", {
+  # One frame, one design per type, no `scale` argument. The nine values are
+  # the After column of the default scale table in the spec. Two of them
+  # moved in issue #253; the other seven are pinned here, so a later edit to
+  # any one of the nine turns exactly one assertion red.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  stored <- function(ty) {
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty
+    )@variables$scale
+  }
+
+  expect_equal(stored("JK1"), (n_rep - 1L) / n_rep)
+  expect_equal(stored("JK2"), 1)
+  expect_equal(stored("JKn"), 1)
+  expect_equal(stored("BRR"), 1 / n_rep)
+  expect_equal(stored("Fay"), 1 / n_rep)
+  expect_equal(stored("bootstrap"), 1 / (n_rep - 1L))
+  expect_equal(stored("ACS"), 4 / n_rep)
+  expect_equal(stored("successive-difference"), 4 / n_rep)
+  expect_equal(stored("other"), 1)
+})
+
+test_that("as_survey_replicate() builds on an all-NA outcome column", {
+  # The default depends on `type` and R alone, so a column that is NA in
+  # every row stores the same scale as any other frame. Both constructions
+  # raise no condition and store the supplied rscales unchanged (spec E7).
+  na_df <- data.frame(
+    y1 = rep(NA_real_, 10),
+    wt = c(2.5, 3.1, 2.8, 2.2, 3.4, 2.9, 3.6, 2.4, 3.0, 2.7)
+  )
+  for (i in 1:8) {
+    na_df[[paste0("repwt_", i)]] <- na_df$wt * (0.9 + i / 100)
+  }
+  n_rep <- 8L
+  rsc <- seq(0.5, 0.95, length.out = n_rep)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      na_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = rsc
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      na_df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      rscales = rsc
+    )
+  )
+
+  expect_true(all(is.na(d_jkn@data$y1)))
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+  expect_equal(d_jkn@variables$rscales, rsc)
+  expect_equal(d_boot@variables$rscales, rsc)
+})
+
+test_that("as_survey_replicate() refuses a weight column mixing zeros with positives", {
+  # .validate_weights() refuses any non-NA weight that is not strictly
+  # positive, and it runs ahead of the scale switch, so neither type stores
+  # a scale on this frame. A wholly zero column takes the other class
+  # (spec E7).
+  mixed <- data.frame(
+    y1 = c(41.7, 38.2, 44.1, 39.9, 42.6, 40.3),
+    wt = c(0, 3.1, 2.8, 0, 3.4, 2.9)
+  )
+  for (i in 1:4) {
+    mixed[[paste0("repwt_", i)]] <- 2.5 * (0.9 + i / 100)
+  }
+
+  expect_error(
+    as_survey_replicate(
+      mixed,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    ),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_error(
+    as_survey_replicate(
+      mixed,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_weights_nonpositive"
+  )
+})
+
 test_that("as_survey_replicate() stores repweights as column names (not matrix)", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 12L)
   d <- as_survey_replicate(
@@ -1392,6 +1557,50 @@ test_that("as_survey_twophase() accepts survey_replicate phase-1", {
   tp <- as_survey_twophase(phase_rep, subset = in_phase2)
   test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
+})
+
+test_that("as_survey_twophase() carries the phase-1 scale of both changed types", {
+  # The two-phase constructor copies phase1@variables wholesale, so each
+  # changed default arrives in @variables$phase1$scale and is not recomputed
+  # (issue #253). Each value is asserted against its own literal, never one
+  # against the other.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 258L
+  )
+  df$in_phase2 <- rep(c(TRUE, FALSE), length.out = nrow(df))
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  p1_jkn <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn"
+  )
+  p1_boot <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap"
+  )
+
+  expect_no_condition(tp_jkn <- as_survey_twophase(p1_jkn, subset = in_phase2))
+  expect_no_condition(
+    tp_boot <- as_survey_twophase(p1_boot, subset = in_phase2)
+  )
+
+  expect_identical(tp_jkn@variables$phase1$type, "JKn")
+  expect_identical(tp_boot@variables$phase1$type, "bootstrap")
+  expect_equal(tp_jkn@variables$phase1$scale, 1, tolerance = 1e-8)
+  expect_equal(
+    tp_boot@variables$phase1$scale,
+    1 / (n_rep - 1L),
+    tolerance = 1e-8
+  )
 })
 
 # Row 20: subset not provided
