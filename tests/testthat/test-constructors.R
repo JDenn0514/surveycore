@@ -862,7 +862,45 @@ test_that("as_survey_replicate() JKn with rscales = NULL stores scale = 1", {
   expect_null(d@variables$rscales)
 })
 
-test_that("as_survey_replicate() refuses four frames before the scale switch", {
+test_that("as_survey_replicate() stores both changed defaults on a two-row frame", {
+  # The default depends on `type` and R alone and on nothing in the data, so
+  # the smallest frame the constructor accepts stores the same two values as
+  # the 200-row, 20-column frame above: 1 for JKn and 1/19 at R = 20.
+  # Two rows and not one: .validate_data() refuses a single-row frame, and
+  # the block below asserts that refusal.
+  small <- data.frame(
+    y1 = c(41.7, 38.2),
+    wt = c(2.5, 3.1)
+  )
+  for (i in 1:20) {
+    small[[paste0("repwt_", i)]] <- small$wt * (0.9 + i / 100)
+  }
+  n_rep <- 20L
+  expect_identical(nrow(small), 2L)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      small,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      small,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    )
+  )
+
+  expect_identical(length(d_jkn@variables$repweights), n_rep)
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+})
+
+test_that("as_survey_replicate() refuses five frames before the scale switch", {
   # Every validator runs ahead of the default-scale switch, so each frame
   # below raises its own class and none of them reaches a stored scale
   # (spec E7). Each frame is built inline because the frame content is the
@@ -883,6 +921,19 @@ test_that("as_survey_replicate() refuses four frames before the scale switch", {
       type = "JKn"
     ),
     class = "surveycore_error_empty_data"
+  )
+
+  # .validate_data() raises Error 4 ahead of the switch, so the single-row
+  # refusal does not depend on `type`. The JK1 block below reaches the same
+  # guard from the other type; neither block repeats the other's coverage.
+  expect_error(
+    as_survey_replicate(
+      base_df[1, , drop = FALSE],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    ),
+    class = "surveycore_error_single_row"
   )
 
   expect_error(
