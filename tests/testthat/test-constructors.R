@@ -925,7 +925,9 @@ test_that("as_survey_replicate() refuses five frames before the scale switch", {
 
   # .validate_data() raises Error 4 ahead of the switch, so the single-row
   # refusal does not depend on `type`. The JK1 block below reaches the same
-  # guard from the other type; neither block repeats the other's coverage.
+  # guard and the same lines, so this assertion adds no line coverage. It is
+  # here to complete the refusal inventory for the two types whose default
+  # this work changed, beside the four refusals above.
   expect_error(
     as_survey_replicate(
       base_df[1, , drop = FALSE],
