@@ -1741,6 +1741,10 @@ test_that("get_corr() polychoric nonprob r matches replicate, CI narrower", {
   # the factor: it reads 0.94876099 against 0.94868330, out by 7.8e-05.
   # Taken in z it is exact. Measured at R = 10: 0.94868329805051332
   # against sqrt(9 / 10) = 0.94868329805051377. SE/variance row, 1e-8.
+  #
+  # This assertion rests on that construction. If get_corr() moves off
+  # Fisher's z, the ratio stops holding and this block turns red with no
+  # scale defect behind it. Read the CI construction before the scale.
   z <- atanh(result_nonprob$r[[1L]])
   expect_equal(
     (z - atanh(result_nonprob$ci_low[[1L]])) /
