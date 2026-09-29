@@ -116,7 +116,13 @@ for non-probability samples.
 When \code{repweights} is supplied, the variance estimator uses the replicate
 formula: \code{V = scale * sum(rscales * (theta_r - theta)^2)}. For bootstrap
 replicates (\code{type = "bootstrap"}), the default \code{scale = 1/R} follows Wu
-(2022) and Chen et al. (2021). For jackknife replicates (\code{type = "JK1"},
+(2022) and Chen et al. (2021). \code{survey::svrepdesign()} uses \code{1/(R - 1)}
+for the bootstrap, and \code{\link[=as_survey_replicate]{as_survey_replicate()}} matches that value. This
+constructor keeps \code{1/R} because \code{survey} has no non-probability design
+class and so is not an oracle for one. On the same frame the bootstrap
+standard error from \code{as_survey_nonprob()} is therefore smaller than the
+one from \code{\link[=as_survey_replicate]{as_survey_replicate()}} by a factor of \code{sqrt((R - 1)/R)}, a
+fall of 2.5\% at \code{R = 20}. For jackknife replicates (\code{type = "JK1"},
 \code{"JK2"}, or \code{"JKn"}), scale and rscales follow the standard jackknife
 variance conventions; see \code{type} for defaults.
 

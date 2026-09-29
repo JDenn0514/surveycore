@@ -1020,3 +1020,149 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
   )
   expect_equal(sc@variables$scale, 1 / n_rep, tolerance = 1e-8)
 })
+
+# ---------------------------------------------------------------------------
+# Block 25: One bootstrap replicate column — the infinite scale in the engine
+# ---------------------------------------------------------------------------
+
+test_that("one bootstrap replicate: a moving estimate gives an infinite SE", {
+  skip_if_not_installed("survey")
+
+  # type = "bootstrap" at R = 1 stores 1 / (R - 1), which is 1 / 0 and so
+  # Inf, and the constructor raises nothing (issue #253). The infinite scale
+  # reaches the variance, and the replicate deviation decides what arrives
+  # there. This frame gives the one replicate column its own weights, so the
+  # deviation is not zero and the product is infinite. The old default gave
+  # 1 / R = 1 at R = 1, which is finite, so this outcome is new.
+  set.seed(253)
+  n <- 40
+  d <- data.frame(
+    y1 = rnorm(n, 10, 2),
+    wt = runif(n, 0.5, 2),
+    repwt_1 = runif(n, 0.5, 2)
+  )
+
+  # The premise. On the same frame an explicit scale = 1 gives a finite,
+  # positive standard error, so the infinity below comes from the scale and
+  # from nothing else in the data.
+  sc_one <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of("repwt_1"),
+    type = "bootstrap",
+    mse = TRUE,
+    scale = 1
+  )
+  m_one <- get_means(sc_one, y1, variance = c("se", "ci"), min_cell_n = 1L)
+  expect_true(is.finite(m_one$se))
+  expect_gt(m_one$se, 0)
+
+  # The conclusion.
+  expect_no_condition(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = all_of("repwt_1"),
+      type = "bootstrap",
+      mse = TRUE
+    )
+  )
+  expect_true(is.infinite(sc@variables$scale))
+
+  expect_no_condition(
+    sc_mean <- get_means(sc, y1, variance = c("se", "ci"), min_cell_n = 1L)
+  )
+  expect_true(is.infinite(sc_mean$se))
+  expect_true(is.infinite(sc_mean$ci_low))
+  expect_true(is.infinite(sc_mean$ci_high))
+
+  # survey reaches the same outcome from the same inputs. Each side is
+  # asserted against its own literal and never against the other side.
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, "repwt_1", drop = FALSE],
+      type = "bootstrap",
+      mse = TRUE,
+      data = d
+    )
+  )
+  expect_true(is.infinite(sv$scale))
+
+  expect_no_condition(sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE))
+  expect_true(is.infinite(as.numeric(survey::SE(sv_mean))))
+  expect_true(is.infinite(confint(sv_mean)[1]))
+  expect_true(is.infinite(confint(sv_mean)[2]))
+})
+
+test_that("one bootstrap replicate: an equal estimate gives a NaN SE", {
+  skip_if_not_installed("survey")
+
+  # E1's other outcome. The one replicate column is a copy of the base
+  # weight column, so the replicate estimate equals the full-sample estimate,
+  # the deviation is exactly zero, and Inf * 0 is NaN under IEEE 754.
+  #
+  # The values are whole numbers on purpose. The full-sample path sums
+  # y * w and the replicate path takes a BLAS dot product, so the two
+  # summation orders agree bit for bit only while every partial sum is
+  # exact. With real-valued weights the deviation lands one ulp from zero,
+  # the product is Inf, and the block would assert the wrong outcome.
+  set.seed(7)
+  n <- 40
+  d <- data.frame(
+    y1 = as.numeric(sample(2:30, n, replace = TRUE)),
+    wt = as.numeric(sample(1:9, n, replace = TRUE))
+  )
+  d$repwt_1 <- d$wt
+
+  # The premise. At an explicit scale = 1 the standard error is exactly 0.
+  # That is the ordinary degenerate design and not an error state; the NaN
+  # below comes from the infinite scale meeting that zero.
+  sc_one <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of("repwt_1"),
+    type = "bootstrap",
+    mse = TRUE,
+    scale = 1
+  )
+  m_one <- get_means(sc_one, y1, variance = c("se", "ci"), min_cell_n = 1L)
+  expect_equal(m_one$se, 0, tolerance = 0)
+
+  # The conclusion.
+  expect_no_condition(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = all_of("repwt_1"),
+      type = "bootstrap",
+      mse = TRUE
+    )
+  )
+  expect_true(is.infinite(sc@variables$scale))
+
+  expect_no_condition(
+    sc_mean <- get_means(sc, y1, variance = c("se", "ci"), min_cell_n = 1L)
+  )
+  expect_true(is.nan(sc_mean$se))
+  expect_true(is.nan(sc_mean$ci_low))
+  expect_true(is.nan(sc_mean$ci_high))
+
+  # survey reaches the same outcome from the same inputs. Each side is
+  # asserted against its own literal and never against the other side.
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, "repwt_1", drop = FALSE],
+      type = "bootstrap",
+      mse = TRUE,
+      data = d
+    )
+  )
+  expect_true(is.infinite(sv$scale))
+
+  expect_no_condition(sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE))
+  expect_true(is.nan(as.numeric(survey::SE(sv_mean))))
+  expect_true(is.nan(confint(sv_mean)[1]))
+  expect_true(is.nan(confint(sv_mean)[2]))
+})
