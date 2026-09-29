@@ -1354,7 +1354,13 @@ as_survey_twophase <- function(
 #' When `repweights` is supplied, the variance estimator uses the replicate
 #' formula: `V = scale * sum(rscales * (theta_r - theta)^2)`. For bootstrap
 #' replicates (`type = "bootstrap"`), the default `scale = 1/R` follows Wu
-#' (2022) and Chen et al. (2021). For jackknife replicates (`type = "JK1"`,
+#' (2022) and Chen et al. (2021). `survey::svrepdesign()` uses `1/(R - 1)`
+#' for the bootstrap, and [as_survey_replicate()] matches that value. This
+#' constructor keeps `1/R` because `survey` has no non-probability design
+#' class and so is not an oracle for one. On the same frame the bootstrap
+#' standard error from `as_survey_nonprob()` is therefore smaller than the
+#' one from [as_survey_replicate()] by a factor of `sqrt((R - 1)/R)`, a
+#' fall of 2.5% at `R = 20`. For jackknife replicates (`type = "JK1"`,
 #' `"JK2"`, or `"JKn"`), scale and rscales follow the standard jackknife
 #' variance conventions; see `type` for defaults.
 #'

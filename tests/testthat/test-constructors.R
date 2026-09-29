@@ -1007,6 +1007,111 @@ test_that("as_survey_replicate() stores the default scale of all nine types", {
   expect_equal(stored("other"), 1)
 })
 
+test_that("as_survey_nonprob() matches as_survey_replicate() on JKn", {
+  # Cross-constructor. Both defaults are 1 for JKn, so the two designs
+  # return the same mean and the same standard error on one frame. Each
+  # stored value is asserted against the literal 1 and never against the
+  # other side (.claude/rules/testing-surveycore.md).
+  #
+  # The overlap with the nine-type table block above is deliberate. That
+  # block pins the replicate JKn value on its own (`:1001` at this PR's
+  # base). This block asserts the relationship between the two
+  # constructors, which no single-side block can state.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "jkn",
+    seed = 31L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  rs <- rep(1, n_rep)
+
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JKn",
+    mse = TRUE,
+    rscales = rs
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "JKn",
+    mse = TRUE,
+    rscales = rs
+  )
+
+  # SE/variance row, 1e-8.
+  expect_equal(d_rep@variables$scale, 1, tolerance = 1e-8)
+  expect_equal(d_np@variables$scale, 1, tolerance = 1e-8)
+
+  m_rep <- get_means(d_rep, y1, variance = "se", min_cell_n = 1L)
+  m_np <- get_means(d_np, y1, variance = "se", min_cell_n = 1L)
+
+  expect_equal(m_np$mean, m_rep$mean, tolerance = 1e-10)
+  expect_equal(m_np$se, m_rep$se, tolerance = 1e-8)
+})
+
+test_that("as_survey_nonprob() keeps 1/R where as_survey_replicate() moved", {
+  # Cross-constructor. as_survey_replicate() moved to 1/(R-1) with issue
+  # #253; as_survey_nonprob() keeps 1/R by decision D1, because survey has
+  # no non-probability design class and so is not an oracle for one. On the
+  # same frame the nonprob standard error is the smaller of the two, by
+  # sqrt((R-1)/R). Each stored value is asserted against its own literal
+  # and never against the other side.
+  #
+  # The overlap with two existing blocks is deliberate. The nine-type table
+  # block above pins the replicate bootstrap value alone, and the block
+  # titled "as_survey_nonprob() computes default scale = 1/R and rscales =
+  # rep(1, R)" (`:2484` at this PR's base) pins the nonprob value alone.
+  # Neither can state the relationship between the two constructors.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "bootstrap",
+    seed = 32L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+
+  d_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "bootstrap",
+    mse = TRUE
+  )
+  d_np <- as_survey_nonprob(
+    df,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "bootstrap",
+    mse = TRUE
+  )
+
+  # SE/variance row, 1e-8.
+  expect_equal(d_rep@variables$scale, 1 / (n_rep - 1L), tolerance = 1e-8)
+  expect_equal(d_np@variables$scale, 1 / n_rep, tolerance = 1e-8)
+
+  m_rep <- get_means(d_rep, y1, variance = "se", min_cell_n = 1L)
+  m_np <- get_means(d_np, y1, variance = "se", min_cell_n = 1L)
+
+  # The scale enters the variance only, so the point estimates agree.
+  expect_equal(m_np$mean, m_rep$mean, tolerance = 1e-10)
+  expect_equal(
+    m_np$se / m_rep$se,
+    sqrt((n_rep - 1L) / n_rep),
+    tolerance = 1e-8
+  )
+})
+
 test_that("as_survey_replicate() builds on an all-NA outcome column", {
   # The default depends on `type` and R alone, so a column that is NA in
   # every row stores the same scale as any other frame. Both constructions
