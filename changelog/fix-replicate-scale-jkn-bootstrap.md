@@ -134,8 +134,12 @@ widening.
 - the full suite went from `[ FAIL 0 | WARN 256 | SKIP 4 | PASS 12005 ]` to
   `[ FAIL 0 | WARN 256 | SKIP 4 | PASS 12100 ]`. The 256 warnings are
   pre-existing AAPOR small-cell warnings and held at 256 through every PR
-- `R CMD check --as-cran` gives 0 errors, 0 warnings and the two pre-approved
-  notes throughout; `pkgdown::build_site()` builds; line coverage held at
-  96.15% at every PR, against a 95% floor
+- `R CMD check --as-cran` gives 0 errors, 0 warnings and two notes throughout,
+  the same two the baseline carries: `checking CRAN incoming feasibility`,
+  which `.claude/rules/r-package-conventions.md` pre-approves, and `checking
+  for hidden files and directories`, a pre-existing note that `.Rbuildignore`
+  causes and no single PR can fix. No third note appeared at any PR.
+  `pkgdown::build_site()` builds; line coverage held at 96.15% at every PR,
+  against a 95% floor
 - **no file under `tests/testthat/_snaps/` changed**, arc-wide, measured
   across every merge
