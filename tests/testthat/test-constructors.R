@@ -691,6 +691,177 @@ test_that("as_survey_replicate() computes bootstrap default scale = 1/(R-1)", {
   expect_equal(d@variables$scale, 1 / (n_rep - 1))
 })
 
+test_that("as_survey_replicate() JKn and bootstrap defaults rise by R/(R-1)", {
+  # Both changed defaults multiply the variance by R/(R-1), so each stored
+  # value is its old value times that ratio (issue #253).
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 253L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  expect_no_condition(
+    d_jkn <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn"
+    )
+  )
+  expect_no_condition(
+    d_boot <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap"
+    )
+  )
+
+  jkn_old <- (n_rep - 1L) / n_rep
+  boot_old <- 1 / n_rep
+
+  expect_equal(d_jkn@variables$scale, 1)
+  expect_equal(d_boot@variables$scale, 1 / (n_rep - 1L))
+
+  expect_false(isTRUE(all.equal(d_jkn@variables$scale, jkn_old)))
+  expect_false(isTRUE(all.equal(d_boot@variables$scale, boot_old)))
+
+  expect_gt(d_jkn@variables$scale, jkn_old)
+  expect_gt(d_boot@variables$scale, boot_old)
+
+  expect_equal(
+    d_jkn@variables$scale / jkn_old,
+    n_rep / (n_rep - 1L),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    d_boot@variables$scale / boot_old,
+    n_rep / (n_rep - 1L),
+    tolerance = 1e-8
+  )
+})
+
+test_that("as_survey_replicate() JKn scale stays 1 with non-uniform rscales", {
+  # The per-stratum factor lives in rscales. The constructor folds no part of
+  # it into scale and normalises nothing (spec E6).
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 254L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  rsc <- seq(0.5, 0.95, length.out = n_rep)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    rscales = rsc
+  )
+  expect_equal(d@variables$scale, 1)
+  expect_equal(d@variables$rscales, rsc)
+  expect_identical(length(d@variables$rscales), n_rep)
+})
+
+test_that("as_survey_replicate() scale at one and two replicate columns", {
+  # 1/(R-1) is 1 at R = 2 and Inf at R = 1. The constructor stores Inf and
+  # raises nothing, which is what survey::svrepdesign() does (spec E1, E2).
+  # JKn does not depend on R, so R = 1 stores 1 as well (spec E3).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    type = "bootstrap",
+    seed = 255L
+  )
+
+  d_two <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(c("repwt_1", "repwt_2")),
+    type = "bootstrap"
+  )
+  expect_equal(d_two@variables$scale, 1)
+
+  expect_no_condition(
+    d_one <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = all_of("repwt_1"),
+      type = "bootstrap"
+    )
+  )
+  expect_true(is.infinite(d_one@variables$scale))
+  expect_equal(d_one@variables$scale, Inf)
+
+  d_jkn_one <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of("repwt_1"),
+    type = "JKn"
+  )
+  expect_equal(d_jkn_one@variables$scale, 1)
+})
+
+test_that("as_survey_replicate() stores an explicit scale verbatim", {
+  # An explicit scale skips the switch. It is the route back to the
+  # pre-change numbers for both changed types (spec E4).
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    type = "jkn",
+    seed = 256L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  d_jkn <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    scale = (n_rep - 1L) / n_rep
+  )
+  d_boot <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "bootstrap",
+    scale = 1 / n_rep
+  )
+  expect_equal(d_jkn@variables$scale, (n_rep - 1L) / n_rep)
+  expect_equal(d_boot@variables$scale, 1 / n_rep)
+})
+
+test_that("as_survey_replicate() JKn with rscales = NULL stores scale = 1", {
+  # A NULL rscales makes the variance path substitute rep(1L, R), so no
+  # jackknife factor enters at all. The constructor still raises nothing
+  # (spec E5); issue #255 owns the refusal.
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    type = "jkn",
+    seed = 257L
+  )
+  expect_no_condition(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      rscales = NULL
+    )
+  )
+  expect_equal(d@variables$scale, 1)
+  expect_null(d@variables$rscales)
+})
+
 test_that("as_survey_replicate() stores repweights as column names (not matrix)", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 12L)
   d <- as_survey_replicate(
