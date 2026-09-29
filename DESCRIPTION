@@ -63,6 +63,8 @@ Suggests:
     covr,
     knitr,
     rmarkdown
+Remotes:
+    JDenn0514/surveytidy
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/JDenn0514/surveycore, https://jdenn0514.github.io/surveycore/
