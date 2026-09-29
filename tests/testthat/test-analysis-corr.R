@@ -1694,7 +1694,7 @@ test_that("get_corr() polychoric raises PC-7 for survey_twophase (regression gua
   )
 })
 
-test_that("get_corr() polychoric: survey_nonprob with repweights matches survey_replicate numerically", {
+test_that("get_corr() polychoric nonprob r matches replicate, CI narrower", {
   df <- make_survey_data(n = 200L, design = "taylor", seed = 101L)
   df$ord1 <- cut(df$y1, breaks = 5, labels = FALSE, include.lowest = TRUE)
   df$ord1 <- factor(df$ord1, ordered = TRUE)
@@ -1706,6 +1706,7 @@ test_that("get_corr() polychoric: survey_nonprob with repweights matches survey_
       exp(rnorm(nrow(df), mean = 0, sd = 0.1))
   }
   repwt_cols <- paste0("repwt_", seq_len(10L))
+  n_rep <- length(repwt_cols)
   d_nonprob <- as_survey_nonprob(
     df,
     weights = wt,
@@ -1724,11 +1725,32 @@ test_that("get_corr() polychoric: survey_nonprob with repweights matches survey_
     method = "polychoric"
   )
   result_rep <- get_corr(d_rep, x = c(ord1, ord2), method = "polychoric")
+  # The scale enters the variance only, so the estimate is unmoved.
   expect_equal(result_nonprob$r[[1L]], result_rep$r[[1L]], tolerance = 1e-10)
+
+  # The two constructors store a different bootstrap scale, by decision D1
+  # of plans/issue-cleanup.md: as_survey_nonprob() keeps 1/R and
+  # as_survey_replicate() moved to survey's 1/(R-1) in issue #253. The
+  # nonprob interval is therefore the narrower of the two, so its lower
+  # bound sits higher. This holds whatever the sign of r, and r is
+  # negative on this fixture. The gap is a decision and not a defect.
+  expect_gt(result_nonprob$ci_low[[1L]], result_rep$ci_low[[1L]])
+
+  # The size of the gap. The bound is built on Fisher's z, which is
+  # symmetric in z and not in r, so the half-width ratio taken in r misses
+  # the factor: it reads 0.94876099 against 0.94868330, out by 7.8e-05.
+  # Taken in z it is exact. Measured at R = 10: 0.94868329805051332
+  # against sqrt(9 / 10) = 0.94868329805051377. SE/variance row, 1e-8.
+  #
+  # This assertion rests on that construction. If get_corr() moves off
+  # Fisher's z, the ratio stops holding and this block turns red with no
+  # scale defect behind it. Read the CI construction before the scale.
+  z <- atanh(result_nonprob$r[[1L]])
   expect_equal(
-    result_nonprob$ci_low[[1L]],
-    result_rep$ci_low[[1L]],
-    tolerance = 1e-6
+    (z - atanh(result_nonprob$ci_low[[1L]])) /
+      (z - atanh(result_rep$ci_low[[1L]])),
+    sqrt((n_rep - 1) / n_rep),
+    tolerance = 1e-8
   )
 })
 

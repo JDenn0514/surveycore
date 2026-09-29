@@ -803,19 +803,13 @@ test_that("get_corr() replicate returns NA for domain with fewer than 2 paired o
 # Block 24: Oracle blocks for the remaining replicate types
 # ---------------------------------------------------------------------------
 
-test_that("get_means() JKn SE disagrees with survey::svymean() — issue #253", {
+test_that("get_means() JKn SE matches survey::svymean() — issue #253", {
   skip_if_not_installed("survey")
 
-  # surveycore stores (R-1)/R for JKn where survey stores 1, so surveycore's
-  # standard error is low by sqrt((R-1)/R) and both confidence bounds inherit
-  # the gap. Issue #253 corrects the surveycore default. Until it lands the
-  # three expect_failure() wrappers below pin the wrong numbers, so branch
-  # protection can still merge.
-  #
-  # When issue #253 lands, delete FOUR lines: the three expect_failure()
-  # wrapper lines and the ratio assertion at the end of this block. Deleting
-  # only the three leaves the ratio assertion to fail against the corrected
-  # default.
+  # Both sides store scale = 1 for JKn, so the standard error and both
+  # confidence bounds agree. surveycore stored (R-1)/R until issue #253
+  # moved the default to 1; the three assertions below ran wrapped in
+  # testthat::expect_failure() until that change landed.
   d <- make_survey_data(
     n = 200,
     n_psu = 20,
@@ -860,42 +854,19 @@ test_that("get_means() JKn SE disagrees with survey::svymean() — issue #253", 
   # The point estimate agrees exactly: the scale enters the variance only.
   expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
 
-  # One assertion per wrapper. expect_failure() passes on exactly one failing
-  # assertion and zero passing ones, so a wrapper holding all three fails.
-  testthat::expect_failure(
-    expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
-  )
-  testthat::expect_failure(
-    expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
-  )
-  testthat::expect_failure(
-    expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
-  )
-
-  # A wrapper cannot say why it failed. This names the exact factor the two
-  # sides differ by, so the block proves "wrong by this amount" and not merely
-  # "different". Measured at R = 20: 0.974679434480991 against
-  # sqrt(19 / 20) = 0.974679434480896. SE/variance row, 1e-8.
-  expect_equal(
-    sc_mean$se / as.numeric(survey::SE(sv_mean)),
-    sqrt((n_rep - 1) / n_rep),
-    tolerance = 1e-8
-  )
+  # The scale enters the variance, so these three carry the comparison.
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
-test_that("get_means() bootstrap SE disagrees with survey::svymean() — issue #253", {
+test_that("get_means() bootstrap SE matches survey::svymean() — issue #253", {
   skip_if_not_installed("survey")
 
-  # surveycore stores 1/R for bootstrap where survey stores 1/(R-1), so
-  # surveycore's standard error is low by sqrt((R-1)/R) and both confidence
-  # bounds inherit the gap. Issue #253 corrects the surveycore default.
-  # Until it lands the three expect_failure() wrappers below pin the wrong
-  # numbers, so branch protection can still merge.
-  #
-  # When issue #253 lands, delete FOUR lines: the three expect_failure()
-  # wrapper lines and the ratio assertion at the end of this block.
-  # Deleting only the three leaves the ratio assertion to fail against the
-  # corrected default.
+  # Both sides store scale = 1/(R-1) for the bootstrap, so the standard
+  # error and both confidence bounds agree. surveycore stored 1/R until
+  # issue #253 moved the default; the three assertions below ran wrapped
+  # in testthat::expect_failure() until that change landed.
   d <- make_survey_data(
     n = 200,
     n_psu = 20,
@@ -936,32 +907,10 @@ test_that("get_means() bootstrap SE disagrees with survey::svymean() — issue #
   # The point estimate agrees exactly: the scale enters the variance only.
   expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
 
-  # One assertion per wrapper. expect_failure() passes on exactly one
-  # failing assertion and zero passing ones, so a wrapper holding all three
-  # fails.
-  testthat::expect_failure(
-    expect_equal(
-      sc_mean$se,
-      as.numeric(survey::SE(sv_mean)),
-      tolerance = 1e-8
-    )
-  )
-  testthat::expect_failure(
-    expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
-  )
-  testthat::expect_failure(
-    expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
-  )
-
-  # A wrapper cannot say why it failed. This names the exact factor the two
-  # sides differ by, so the block proves "wrong by this amount" and not
-  # merely "different". Measured at R = 20: 0.974679434480991 against
-  # sqrt(19 / 20) = 0.974679434480896. SE/variance row, 1e-8.
-  expect_equal(
-    sc_mean$se / as.numeric(survey::SE(sv_mean)),
-    sqrt((n_rep - 1) / n_rep),
-    tolerance = 1e-8
-  )
+  # The scale enters the variance, so these three carry the comparison.
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
 })
 
 test_that("get_means() replicate SE matches survey::svymean() — other design", {

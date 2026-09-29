@@ -5,7 +5,9 @@
 #   - SRS fallback warning when no repweights
 #   - degf = Inf for all survey_nonprob objects
 #   - domain_replicates_na warning for >5% NA replicates
-#   - Bitwise identity with survey_replicate using same data
+#   - Agreement with survey_replicate using same data: the point estimate
+#     is bitwise identical, and the SE differs by the scale both
+#     constructors store for the bootstrap (decision D1)
 
 
 # ── Helper: build survey_nonprob with repweights ──────────────────────────────
@@ -135,11 +137,12 @@ test_that("get_covariance() on repweight-equipped survey_nonprob emits no srs_fa
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Section 4: Bitwise identity with survey_replicate (same data + weights)
+# Section 4: Agreement with survey_replicate (same data + weights)
 # ══════════════════════════════════════════════════════════════════════════════
 
-test_that("get_means() SE is bitwise identical for survey_nonprob and survey_replicate with same data", {
-  df_rep <- .make_nonprob_rep(n = 200L, R = 20L, seed = 42L)
+test_that("get_means() nonprob SE is sqrt((R-1)/R) of the replicate SE", {
+  n_rep <- 20L
+  df_rep <- .make_nonprob_rep(n = 200L, R = n_rep, seed = 42L)
 
   d_np <- as_survey_nonprob(
     df_rep,
@@ -157,7 +160,22 @@ test_that("get_means() SE is bitwise identical for survey_nonprob and survey_rep
   result_np <- get_means(d_np, y1, variance = "se")
   result_rep <- get_means(d_rep, y1, variance = "se")
 
-  expect_identical(result_np$se, result_rep$se)
+  # The two constructors store a different bootstrap scale, by decision D1
+  # of plans/issue-cleanup.md. as_survey_nonprob() keeps 1/R because survey
+  # has no non-probability design class and so is not an oracle for one;
+  # as_survey_replicate() moved to survey's 1/(R-1) in issue #253. The
+  # nonprob standard error is therefore smaller by sqrt((R-1)/R). The gap
+  # is a decision and not a defect, and this block pins its exact size.
+  # Measured at R = 20: 0.97467943448089656 against
+  # sqrt(19 / 20) = 0.97467943448089633. SE/variance row, 1e-8.
+  expect_equal(
+    result_np$se / result_rep$se,
+    sqrt((n_rep - 1) / n_rep),
+    tolerance = 1e-8
+  )
+
+  # The scale enters the variance only, so the point estimate is unmoved
+  # and stays bitwise identical.
   expect_identical(result_np$mean, result_rep$mean)
 })
 

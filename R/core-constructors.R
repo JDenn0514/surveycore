@@ -601,20 +601,59 @@ as_survey <- function(
 #'   Case-sensitive.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
-#'   the number of replicates `R`: `(R-1)/R` for `"JK1"` and `"JKn"`; `1/R`
-#'   for `"BRR"`, `"Fay"`, and `"bootstrap"`; `4/R` for `"ACS"` and
+#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for `"BRR"`
+#'   and `"Fay"`; `1/(R-1)` for `"bootstrap"`; `4/R` for `"ACS"` and
 #'   `"successive-difference"` (per Ash 2014 / Fay & Train 1995); `1` for
-#'   `"JK2"` and `"other"`. `"JK2"` is the paired jackknife. Each replicate
-#'   is a half sample, so the per-stratum factor is already inside the
-#'   replicate weights: `rscales` stays at `rep(1, R)` and the overall scale
-#'   stays at `1`. `survey::svrepdesign()` forces both, and
-#'   [as_survey_nonprob()] agrees.
+#'   `"JKn"`, `"JK2"` and `"other"`.
+#'
+#'   `"JK2"` is the paired jackknife. Each replicate is a half sample, so
+#'   the per-stratum factor is already inside the replicate weights:
+#'   `rscales` stays at `rep(1, R)` and the overall scale stays at `1`.
+#'   `survey::svrepdesign()` forces both, and [as_survey_nonprob()] agrees.
+#'
+#'   `"JKn"` is the stratified delete-one jackknife. Its per-stratum factor
+#'   belongs in `rscales` and not in the overall scale. The factor is
+#'   `(n_h - 1) / n_h` when PSUs are selected with replacement, or when the
+#'   sampling fraction is negligible. `rscales = NULL` leaves no jackknife
+#'   factor in the variance at all.
+#'
+#'   A caller who samples PSUs without replacement at a sampling fraction
+#'   that is not negligible folds the correction into each `rscales` entry
+#'   by hand, which makes the entry `(n_h - 1) * (1 - n_h / N_h) / n_h`.
+#'   Here `n_h` is the number of sample PSUs in stratum `h`, and `N_h` is
+#'   the number of population PSUs in stratum `h`. The caller supplies
+#'   `N_h` from their own sampling frame, and `rscales` is the only route
+#'   for the correction: the `fpc` argument does not reach the factor for
+#'   any replicate type.
+#'
+#'   `"bootstrap"` divides by `R - 1`, which is the value
+#'   `survey::svrepdesign()` computes at `bootstrap.average = 1`.
+#'   surveycore has no `bootstrap.average` argument, so a caller cannot
+#'   build a design with one and this default is always `1/(R-1)`; a design
+#'   imported from `survey` keeps its effective scale exactly, in both
+#'   directions. A bootstrap design of one replicate column gives
+#'   `scale = Inf`, and `survey::svrepdesign()` stores `Inf` for the same
+#'   input.
+#'
+#'   [as_survey_nonprob()] keeps `1/R` for `"bootstrap"`, so the same
+#'   `type` string means a different divisor in the two constructors. The
+#'   difference is a decision and not a defect; see [as_survey_nonprob()]
+#'   for the reason and the size of the gap.
+#'
+#'   Pass `scale` explicitly to reproduce numbers published before these
+#'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+#'   `scale = 1 / R` for `"bootstrap"`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
-#'   replicate weight columns selected by `repweights`.
+#'   replicate weight columns selected by `repweights`. For a stratified
+#'   jackknife whose PSUs are selected without replacement at a sampling
+#'   fraction that is not negligible, the `scale` argument gives the entry
+#'   to build here.
 #' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). Used by some replicate methods to
-#'   adjust the variance estimator. `NULL` means no FPC correction.
+#'   correction column (a single column). `NULL` means no FPC correction.
+#'   The argument has no effect for a replicate design: no replicate
+#'   variance formula reads it. Put the without-replacement correction into
+#'   `rscales` instead; the `scale` argument gives the entry to build.
 #' @param fpctype Character. How `fpc` is interpreted: `"fraction"` (sampling
 #'   fraction, 0–1) or `"correction"` (multiplier for the replicate variance).
 #'   Default `"fraction"`. Case-sensitive.
@@ -804,13 +843,22 @@ as_survey_replicate <- function(
       # survey::svrepdesign() fixes scale = 1 for JK2, and
       # as_survey_nonprob() already agrees with it (issue #242).
       JK2 = 1,
-      JKn = (n_rep - 1L) / n_rep,
+      # JKn is the stratified delete-one jackknife. Its per-stratum factor
+      # belongs in `rscales`, not in the overall scale. (R-1)/R is the
+      # factor of the unstratified jackknife and names "JK1" only.
+      # survey::svrepdesign() fixes scale = 1 for JKn; @param scale carries
+      # the formula and its with-replacement condition (issue #253).
+      JKn = 1,
       # BRR variance formula: (1/R) * sum((theta_r - theta)^2). The survey
       # package hardcodes this same formula internally (scale= is ignored for
       # BRR). Oracle test in test-variance-replicate.R verifies agreement.
       BRR = 1 / n_rep,
       Fay = 1 / n_rep,
-      bootstrap = 1 / n_rep,
+      # survey::svrepdesign() computes bootstrap.average / (R - 1).
+      # surveycore has no bootstrap.average argument, so this line is
+      # always 1 / (R - 1). as_survey_nonprob() keeps 1 / R by decision
+      # D1; @param scale carries the rest (issue #253).
+      bootstrap = 1 / (n_rep - 1L),
       ACS = 4 / n_rep,
       `successive-difference` = 4 / n_rep,
       other = 1

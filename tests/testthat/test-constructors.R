@@ -673,7 +673,7 @@ test_that("as_survey_replicate() and as_survey_nonprob() agree on JK2 scale", {
   expect_equal(d_rep@variables$scale, d_np@variables$scale)
 })
 
-test_that("as_survey_replicate() computes bootstrap default scale = 1/R", {
+test_that("as_survey_replicate() computes bootstrap default scale = 1/(R-1)", {
   df <- make_survey_data(
     n = 100,
     n_psu = 10L,
@@ -688,7 +688,7 @@ test_that("as_survey_replicate() computes bootstrap default scale = 1/R", {
     repweights = starts_with("repwt_"),
     type = "bootstrap"
   )
-  expect_equal(d@variables$scale, 1 / n_rep)
+  expect_equal(d@variables$scale, 1 / (n_rep - 1))
 })
 
 test_that("as_survey_replicate() stores repweights as column names (not matrix)", {

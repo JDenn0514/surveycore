@@ -39,22 +39,61 @@ Case-sensitive.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"} and \code{"JKn"}; \code{1/R}
-for \code{"BRR"}, \code{"Fay"}, and \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}; \code{1/R} for \code{"BRR"}
+and \code{"Fay"}; \code{1/(R-1)} for \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and
 \code{"successive-difference"} (per Ash 2014 / Fay & Train 1995); \code{1} for
-\code{"JK2"} and \code{"other"}. \code{"JK2"} is the paired jackknife. Each replicate
-is a half sample, so the per-stratum factor is already inside the
-replicate weights: \code{rscales} stays at \code{rep(1, R)} and the overall scale
-stays at \code{1}. \code{survey::svrepdesign()} forces both, and
-\code{\link[=as_survey_nonprob]{as_survey_nonprob()}} agrees.}
+\code{"JKn"}, \code{"JK2"} and \code{"other"}.
+
+\code{"JK2"} is the paired jackknife. Each replicate is a half sample, so
+the per-stratum factor is already inside the replicate weights:
+\code{rscales} stays at \code{rep(1, R)} and the overall scale stays at \code{1}.
+\code{survey::svrepdesign()} forces both, and \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} agrees.
+
+\code{"JKn"} is the stratified delete-one jackknife. Its per-stratum factor
+belongs in \code{rscales} and not in the overall scale. The factor is
+\code{(n_h - 1) / n_h} when PSUs are selected with replacement, or when the
+sampling fraction is negligible. \code{rscales = NULL} leaves no jackknife
+factor in the variance at all.
+
+A caller who samples PSUs without replacement at a sampling fraction
+that is not negligible folds the correction into each \code{rscales} entry
+by hand, which makes the entry \code{(n_h - 1) * (1 - n_h / N_h) / n_h}.
+Here \code{n_h} is the number of sample PSUs in stratum \code{h}, and \code{N_h} is
+the number of population PSUs in stratum \code{h}. The caller supplies
+\code{N_h} from their own sampling frame, and \code{rscales} is the only route
+for the correction: the \code{fpc} argument does not reach the factor for
+any replicate type.
+
+\code{"bootstrap"} divides by \code{R - 1}, which is the value
+\code{survey::svrepdesign()} computes at \code{bootstrap.average = 1}.
+surveycore has no \code{bootstrap.average} argument, so a caller cannot
+build a design with one and this default is always \code{1/(R-1)}; a design
+imported from \code{survey} keeps its effective scale exactly, in both
+directions. A bootstrap design of one replicate column gives
+\code{scale = Inf}, and \code{survey::svrepdesign()} stores \code{Inf} for the same
+input.
+
+\code{\link[=as_survey_nonprob]{as_survey_nonprob()}} keeps \code{1/R} for \code{"bootstrap"}, so the same
+\code{type} string means a different divisor in the two constructors. The
+difference is a decision and not a defect; see \code{\link[=as_survey_nonprob]{as_survey_nonprob()}}
+for the reason and the size of the gap.
+
+Pass \code{scale} explicitly to reproduce numbers published before these
+two defaults moved: \code{scale = (R - 1) / R} for \code{"JKn"} and
+\code{scale = 1 / R} for \code{"bootstrap"}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
-replicate weight columns selected by \code{repweights}.}
+replicate weight columns selected by \code{repweights}. For a stratified
+jackknife whose PSUs are selected without replacement at a sampling
+fraction that is not negligible, the \code{scale} argument gives the entry
+to build here.}
 
 \item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
-correction column (a single column). Used by some replicate methods to
-adjust the variance estimator. \code{NULL} means no FPC correction.}
+correction column (a single column). \code{NULL} means no FPC correction.
+The argument has no effect for a replicate design: no replicate
+variance formula reads it. Put the without-replacement correction into
+\code{rscales} instead; the \code{scale} argument gives the entry to build.}
 
 \item{fpctype}{Character. How \code{fpc} is interpreted: \code{"fraction"} (sampling
 fraction, 0–1) or \code{"correction"} (multiplier for the replicate variance).
