@@ -1002,7 +1002,11 @@ test_that("as_survey_replicate() stores the default scale of all nine types, Fay
   expect_equal(stored("JK2"), 1)
   expect_equal(stored("JKn"), 1)
   expect_equal(stored("BRR"), 1 / n_rep)
-  expect_equal(stored("Fay", rho = 0.3), 1 / (n_rep * (1 - 0.3)^2))
+  expect_equal(
+    stored("Fay", rho = 0.3),
+    1 / (n_rep * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
   expect_equal(stored("bootstrap"), 1 / (n_rep - 1L))
   expect_equal(stored("ACS"), 4 / n_rep)
   expect_equal(stored("successive-difference"), 4 / n_rep)
@@ -1047,7 +1051,7 @@ test_that("as_survey_replicate() stores rho and the Fay scale for type = \"Fay\"
     rho = 0.3
   )
 
-  expect_equal(d@variables$rho, 0.3)
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
   expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
   expect_identical(d@variables$type, "Fay")
 })
