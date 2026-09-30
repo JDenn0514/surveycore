@@ -1009,6 +1009,15 @@ from_svydesign <- function(x) {
     data[[rep_cols[j]]] <- as.numeric(rep_mat[, j])
   }
 
+  # Store rho for a Fay source only, copied unchanged. survey keeps a rho on
+  # objects of other types too: as.svrepdesign(type = "BRR") stores 0, and
+  # svrepdesign(type = "BRR", rho = 0.3) stores 0.3 after a warning. Neither
+  # value means anything for those types, so they import as NULL. The key is
+  # present for every type. The scale stays x$scale, so the imported
+  # standard errors do not move. A Fay rho that is NULL or out of range
+  # imports without a condition; the export route refuses it.
+  rho <- if (identical(x$type, "Fay")) x$rho else NULL
+
   variables <- list(
     weights = weights_var,
     repweights = rep_cols,
@@ -1016,6 +1025,7 @@ from_svydesign <- function(x) {
     scale = x$scale,
     rscales = x$rscales,
     mse = isTRUE(x$mse),
+    rho = rho,
     fpc = NULL,
     fpctype = "fraction",
     probs_provided = FALSE,
