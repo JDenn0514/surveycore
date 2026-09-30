@@ -581,7 +581,7 @@ survey_taylor <- S7::new_class(
 #' @param metadata A [survey_metadata] object. Created automatically by
 #'   [as_survey_replicate()].
 #' @param variables A named list of design specification (weights,
-#'   repweights, type, scale, rscales, fpc, fpctype, mse). Set
+#'   repweights, type, scale, rscales, fpc, fpctype, mse, rho). Set
 #'   automatically by [as_survey_replicate()].
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
@@ -607,6 +607,8 @@ survey_taylor <- S7::new_class(
 #'   \item{`fpc`}{FPC column name or `NULL`.}
 #'   \item{`fpctype`}{`"fraction"` or `"correction"`.}
 #'   \item{`mse`}{Logical. Use MSE estimates?}
+#'   \item{`rho`}{Fay shrinkage factor for \code{type = "Fay"}; \code{NULL}
+#'     for every other type.}
 #' }
 #'
 #' @return A `survey_replicate` object.
@@ -648,8 +650,7 @@ survey_taylor <- S7::new_class(
 #' Association} \bold{88}(423), 1013--1020.
 #'
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
-#' \emph{Journal of the American Statistical Association}
-#' \bold{85}(410), 895--904.
+#' \emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 #'
 #' Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 #' methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),

@@ -122,6 +122,39 @@
       i The design has type "BRR" and stores no `rho`.
       v Remove `rho`, or use `type = "Fay"` if the replicate weights are Fay weights.
 
+# as_survey_replicate() invalid-rho message names the class and at most five values
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = "0.5")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <character>: 0.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = numeric(0))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: a value of length 0.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6))
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: 0.1, 0.2, 0.3, 0.4, 0.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code
