@@ -567,3 +567,23 @@ CN-3 is a distinct class from row NB-2
 describes `get_*()` behaviour on a surveycore design; CN-3 describes an object
 leaving surveycore's hands. Its first bullet repeats NB-2's word for word, so
 one concept keeps one phrasing.
+
+### replicate-fay-rho rows (2026-09-30)
+
+Issue #243. `as_survey_replicate()` gains `rho`, the Fay shrinkage factor.
+All three rows are user-facing constructor conditions, so they carry the full
+CLI x/i/v register. `FR` is the prefix for Fay `rho`. `TP` is the prefix
+for the two-phase row a later PR of the same issue adds. Row CB-4 above is
+restated for this work in the same PR that ships the code; its new text is
+fixed in the `replicate-fay-rho` spec.
+
+**Variable bindings.** `{rho_txt}` = the supplied `rho` as text:
+`paste(format(utils::head(rho, 5L)), collapse = ", ")`, or `"a value of
+length 0"` when `length(rho)` is 0; `{rho_cls}` = `class(rho)[[1L]]`;
+`{type}` = the replicate type after `match.arg()`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| FR-1 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is `NULL` (not supplied, or supplied as `NULL`) | ERROR | `surveycore_error_fay_rho_missing` | `"x" = "{.code type = \"Fay\"} requires {.arg rho}.", "i" = "{.arg rho} is the Fay shrinkage factor the replicate weights were built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} needs it.", "v" = "Pass the value the survey's technical documentation gives, for example {.code rho = 0.5}."` |
+| FR-2 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is not `NULL` and is not one finite number in `[0, 1)`: not numeric (logical and character included), a `dim` attribute (a 1 x 1 matrix or array), length other than 1, `NA`, `NaN`, infinite, below 0, or 1 or more | ERROR | `surveycore_error_fay_rho_invalid` | `"x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.", "i" = "Got {.cls {rho_cls}}: {rho_txt}.", "v" = "Pass the Fay shrinkage factor as one number, for example {.code rho = 0.5}."` |
+| FR-3 | `as_survey_replicate()` | `type` is not `"Fay"` and `rho` is not `NULL`. The design stores `rho = NULL` | WARN | `surveycore_warning_rho_ignored` | `"!" = "{.arg rho} applies only to {.code type = \"Fay\"} and was ignored.", "i" = "The design has type {.val {type}} and stores no {.arg rho}.", "v" = "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate weights are Fay weights."` |
