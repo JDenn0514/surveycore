@@ -972,11 +972,12 @@ test_that("as_survey_replicate() refuses five frames before the scale switch", {
   )
 })
 
-test_that("as_survey_replicate() stores the default scale of all nine types", {
+test_that("as_survey_replicate() stores the default scale of all nine types, Fay with rho", {
   # One frame, one design per type, no `scale` argument. The nine values are
   # the After column of the default scale table in the spec. Two of them
   # moved in issue #253; the other seven are pinned here, so a later edit to
-  # any one of the nine turns exactly one assertion red.
+  # any one of the nine turns exactly one assertion red. Fay needs `rho`
+  # (issue #243), so its line passes rho = 0.3 and expects the Fay scale.
   df <- make_survey_data(
     n = 200,
     n_psu = 20L,
@@ -987,12 +988,13 @@ test_that("as_survey_replicate() stores the default scale of all nine types", {
   n_rep <- sum(startsWith(names(df), "repwt_"))
   expect_identical(n_rep, 20L)
 
-  stored <- function(ty) {
+  stored <- function(ty, rho = NULL) {
     as_survey_replicate(
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = ty
+      type = ty,
+      rho = rho
     )@variables$scale
   }
 
@@ -1000,11 +1002,172 @@ test_that("as_survey_replicate() stores the default scale of all nine types", {
   expect_equal(stored("JK2"), 1)
   expect_equal(stored("JKn"), 1)
   expect_equal(stored("BRR"), 1 / n_rep)
-  expect_equal(stored("Fay"), 1 / n_rep)
+  expect_equal(stored("Fay", rho = 0.3), 1 / (n_rep * (1 - 0.3)^2))
   expect_equal(stored("bootstrap"), 1 / (n_rep - 1L))
   expect_equal(stored("ACS"), 4 / n_rep)
   expect_equal(stored("successive-difference"), 4 / n_rep)
   expect_equal(stored("other"), 1)
+})
+
+test_that("as_survey_replicate() takes rho as the fifth formal, after type", {
+  expect_identical(
+    names(formals(as_survey_replicate)),
+    c(
+      "data",
+      "weights",
+      "repweights",
+      "type",
+      "rho",
+      "scale",
+      "rscales",
+      "fpc",
+      "fpctype",
+      "mse",
+      "calibration"
+    )
+  )
+})
+
+test_that("as_survey_replicate() stores rho and the Fay scale for type = \"Fay\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  n_rep <- sum(startsWith(names(df), "repwt_"))
+  expect_identical(n_rep, 20L)
+
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+
+  expect_equal(d@variables$rho, 0.3)
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+  expect_identical(d@variables$type, "Fay")
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with no rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_fay_rho_missing"
+  )
+  expect_match(conditionMessage(cnd), "rho", fixed = TRUE)
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with rho = 1.5", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 1.5
+    ),
+    class = "surveycore_error_fay_rho_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 1.5
+    )
+  )
+})
+
+test_that("as_survey_replicate() warns and discards rho for the eight other types", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty,
+        rho = 0.3
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+    d_plain <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty
+    )
+    expect_null(d@variables$rho)
+    expect_identical(d@variables$scale, d_plain@variables$scale)
+  }
+})
+
+test_that("as_survey_replicate() warning for rho with type = \"BRR\" shows the FR-3 text", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      rho = 0.3
+    )
+  )
 })
 
 test_that("as_survey_nonprob() matches as_survey_replicate() on JKn", {

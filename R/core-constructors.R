@@ -766,6 +766,7 @@ as_survey_replicate <- function(
     "successive-difference",
     "other"
   ),
+  rho = NULL,
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
@@ -830,7 +831,72 @@ as_survey_replicate <- function(
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)
 
+  # ── Fay shrinkage factor (issue #243) ───────────────────────────────────────
+  # These rules run after every existing check, so an empty frame or a bad
+  # rscales length raises its own error first. For Fay the scale always
+  # comes from rho: a supplied `scale` is discarded with no condition, as
+  # survey::svrepdesign() does.
+
+  if (identical(type, "Fay")) {
+    if (is.null(rho)) {
+      cli::cli_abort(
+        c(
+          "x" = "{.code type = \"Fay\"} requires {.arg rho}.",
+          "i" = paste0(
+            "{.arg rho} is the Fay shrinkage factor the replicate weights were ",
+            "built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} ",
+            "needs it."
+          ),
+          "v" = paste0(
+            "Pass the value the survey's technical documentation gives, for ",
+            "example {.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_missing"
+      )
+    }
+    if (!.is_valid_rho(rho)) {
+      rho_cls <- class(rho)[[1L]]
+      rho_txt <- if (length(rho) == 0L) {
+        "a value of length 0"
+      } else {
+        paste(format(utils::head(rho, 5L)), collapse = ", ")
+      }
+      cli::cli_abort(
+        c(
+          "x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.",
+          "i" = "Got {.cls {rho_cls}}: {rho_txt}.",
+          "v" = paste0(
+            "Pass the Fay shrinkage factor as one number, for example ",
+            "{.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_invalid"
+      )
+    }
+    rho <- as.double(unname(rho))
+    scale <- 1 / (n_rep * (1 - rho)^2)
+  } else if (!is.null(rho)) {
+    # The value of rho is not checked for the other types (decision P2).
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg rho} applies only to {.code type = \"Fay\"} and was ",
+          "ignored."
+        ),
+        "i" = "The design has type {.val {type}} and stores no {.arg rho}.",
+        "v" = paste0(
+          "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate ",
+          "weights are Fay weights."
+        )
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+    rho <- NULL
+  }
+
   # ── Compute default scale based on type and n_rep ───────────────────────────
+  # No Fay entry: the Fay scale is set above from rho, whatever `scale` held.
 
   if (is.null(scale)) {
     scale <- switch(
@@ -853,7 +919,6 @@ as_survey_replicate <- function(
       # package hardcodes this same formula internally (scale= is ignored for
       # BRR). Oracle test in test-variance-replicate.R verifies agreement.
       BRR = 1 / n_rep,
-      Fay = 1 / n_rep,
       # survey::svrepdesign() computes bootstrap.average / (R - 1).
       # surveycore has no bootstrap.average argument, so this line is
       # always 1 / (R - 1). as_survey_nonprob() keeps 1 / R by decision
@@ -876,6 +941,7 @@ as_survey_replicate <- function(
     fpc = fpc_var,
     fpctype = fpctype,
     mse = isTRUE(mse),
+    rho = rho,
     visible_vars = NULL
   )
 
