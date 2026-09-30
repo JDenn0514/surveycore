@@ -2120,10 +2120,10 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
 #   X-5.  No FPC recorded, no warning
 #   X-6.  The drop leaves the surveycore design untouched
 #   X-7.  A design that names no replicate column is refused
-#   X-8.  A Fay design exports with its scale and its source's SE
-#   X-9.  The constructor's default Fay scale recovers rho = 0
-#   X-10. A Fay scale that yields no rho is refused
-#   X-11. A Fay design that records no scale is refused
+#   X-8.  A Fay design exports with its stored rho, its scale and its SE
+#   X-9.  A Fay design built with rho = 0.3 or rho = 0 carries its rho across
+#   X-10. A Fay design that stores no usable rho is refused
+#   X-11. A Fay design that records neither scale nor rho is refused
 #   X-12. Round-trip parity on a JKn source [numerical]
 #   X-13. Round-trip parity on a Fay source [numerical]
 #   X-14. Round-trip parity through the FPC drop [numerical]
@@ -2219,8 +2219,8 @@ test_that("as_svydesign() without an FPC reproduces surveycore's mean and SE [nu
 #      type', and for "bootstrap" with 'Separate fpc not needed for
 #      bootstrap'. It accepts one for "JK1" and "JKn". The rule does not
 #      depend on the type: warn, drop, convert, and let no bare survey error
-#      reach the caller. "Fay" is out of scope here — it needs the recovered
-#      shrinkage factor.
+#      reach the caller. "Fay" is out of scope here — it needs a stored
+#      rho, which make_rep_fpc() does not pass.
 test_that("as_svydesign() warns and converts for every replicate type carrying an FPC", {
   skip_if_not_installed("survey")
   types <- c("JK1", "JK2", "BRR", "bootstrap", "ACS", "successive-difference")
@@ -2370,10 +2370,10 @@ make_rep_type <- function(
   )
 }
 
-# X-8. §IV.2 step 4 and §VI property 9. The anchor is the measured case: a
-#      design built with fay.rho = 0.3 recovers 0.3 exactly. Without the
-#      recovery the call stops with survey's own 'With type='Fay' you must
-#      supply the correct rho'.
+# X-8. §IV.2 step 4 and §VI property 9. A survey design built with
+#      fay.rho = 0.3 imports with rho = 0.3, and the export route carries that
+#      stored rho back to survey. Without a rho the call stops with survey's
+#      own 'With type='Fay' you must supply the correct rho'.
 test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]", {
   skip_if_not_installed("survey")
   df <- make_taylor_source()
@@ -2392,12 +2392,12 @@ test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]
   sv <- as_svydesign(d)
   expect_true(inherits(sv, "svyrep.design"))
 
-  # The shrinkage factor the replicates were built with, recovered from the
-  # recorded scale alone.
+  # The shrinkage factor the replicates were built with, carried across in
+  # the stored rho.
   expect_equal(sv$rho, 0.3, tolerance = 1e-10)
 
   # The scale is the design's own, and the source's. Step 3 passes no scale
-  # for "Fay": survey recomputes it from the recovered rho.
+  # for "Fay": survey computes it from the stored rho.
   expect_equal(sv$scale, d@variables$scale, tolerance = 1e-10)
   expect_equal(sv$scale, src$scale, tolerance = 1e-10)
 
@@ -2411,32 +2411,147 @@ test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]
   )
 })
 
-# X-9. §IV.6. as_survey_replicate(type = "Fay") with no scale fills 1 / n_rep,
-#      which recovers rho = 0. A Fay design with rho = 0 is the BRR case, so
-#      the constructor never produces the missing-scale state.
-test_that("as_svydesign() recovers rho = 0 from the default Fay scale", {
+# X-9. The export route passes the stored rho to survey::svrepdesign() and no
+#      scale. survey computes 1 / (R * (1 - rho)^2) from that rho, the same
+#      scale as_survey_replicate() stores, so the SE agrees with get_means().
+test_that("as_svydesign() exports a Fay design built with rho = 0.3 [numerical]", {
   skip_if_not_installed("survey")
-  d <- make_rep_type(type = "Fay", seed = 422L, rho = 0)
+  d <- make_rep_type(type = "Fay", rho = 0.3)
 
-  n_rep <- length(d@variables$repweights)
-  expect_equal(d@variables$scale, 1 / n_rep, tolerance = 1e-10)
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_true(inherits(sv, "svyrep.design"))
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / (5 * (1 - 0.3)^2), tolerance = 1e-8)
 
-  sv <- as_svydesign(d)
-  expect_equal(sv$rho, 0, tolerance = 1e-10)
-  expect_equal(sv$scale, d@variables$scale, tolerance = 1e-10)
-
-  # Export parity, §VI property 2, on the recovered branch.
   sc <- get_means(d, y1, variance = "se")
   sm <- survey::svymean(~y1, sv)
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
 })
 
-# X-11. §IV.2 step 4, missing-scale arm. The exported survey_replicate()
-#       constructor takes an untyped variables list and its validator checks
-#       neither scale nor type, so a "Fay" design with no scale key at all is
-#       reachable — issue #198's own reproduction builds one. The message
-#       reads "none" here, so this arm needs a snapshot of its own.
+test_that("as_svydesign() exports a Fay design built with rho = 0", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "Fay", rho = 0)
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_equal(sv$rho, 0, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / 5, tolerance = 1e-8)
+})
+
+test_that("as_svydesign() passes no rho for a BRR design", {
+  skip_if_not_installed("survey")
+  d <- make_rep_type(type = "BRR")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_null(sv$rho)
+})
+
+# The domain restriction runs after the Fay rho is passed, so a filtered Fay
+# design keeps its rho and its scale, and the SE matches the domain estimate.
+test_that("as_svydesign() exports a Fay design with a domain column [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "fay",
+    seed = 15L
+  )
+  df[[SURVEYCORE_DOMAIN_COL]] <- df$y1 > stats::median(df$y1)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "Fay",
+    rho = 0.3
+  )
+
+  sv <- as_svydesign(d)
+  expect_equal(sv$rho, 0.3, tolerance = 1e-10)
+  expect_equal(sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+# X-10. The exported survey_replicate() constructor takes an untyped
+#       variables list, so a Fay design with no usable rho is reachable. Build
+#       one by hand on the make_rep_type() data, with extra entries appended
+#       to the variables list.
+make_fay_by_hand <- function(extra = list()) {
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  survey_replicate(
+    data = df,
+    variables = c(
+      list(
+        weights = "wt",
+        repweights = repwt_cols,
+        type = "Fay",
+        scale = 1 / 5,
+        rscales = NULL,
+        fpc = NULL,
+        fpctype = "fraction",
+        mse = TRUE,
+        visible_vars = NULL
+      ),
+      extra
+    )
+  )
+}
+
+test_that("as_svydesign() refuses a Fay design with no rho key", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand()
+  expect_false("rho" %in% names(d@variables))
+
+  cnd <- expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+  expect_match(conditionMessage(cnd), "rho", fixed = TRUE)
+  expect_match(conditionMessage(cnd), "as_survey_replicate", fixed = TRUE)
+  expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+test_that("as_svydesign() refuses a Fay design whose rho key is NULL", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand(list(rho = NULL))
+  expect_true("rho" %in% names(d@variables))
+
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("as_svydesign() refuses a Fay design whose stored rho is 1.5", {
+  skip_if_not_installed("survey")
+  d <- make_fay_by_hand(list(rho = 1.5))
+  expect_equal(d@variables$rho, 1.5, tolerance = 1e-10)
+
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+# X-11. The exported survey_replicate() constructor takes an untyped
+#       variables list and its validator checks neither scale nor type, so a
+#       "Fay" design with no scale key and no rho key is reachable — issue
+#       #198's own reproduction builds one. The export route reads rho, not
+#       the scale, so the refusal is the same CB-4 condition.
 test_that("as_svydesign() refuses a Fay design that records no scale", {
   skip_if_not_installed("survey")
   df <- make_survey_data(
@@ -2462,13 +2577,75 @@ test_that("as_svydesign() refuses a Fay design that records no scale", {
     )
   )
   expect_null(d@variables$scale)
+  expect_false("rho" %in% names(d@variables))
 
-  cnd <- expect_error(
+  expect_error(
     as_svydesign(d),
     class = "surveycore_error_fay_rho_unrecoverable"
   )
-  expect_match(conditionMessage(cnd), "none", fixed = TRUE)
   expect_snapshot(error = TRUE, as_svydesign(d))
+})
+
+# from_svydesign() copies a survey Fay object's rho unchanged and raises
+# nothing, whatever the value. The export route then refuses the design,
+# because the stored rho is not one finite number in [0, 1).
+make_fay_svrep <- function(rho) {
+  df <- make_survey_data(
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 4L,
+    design = "replicate",
+    type = "fay",
+    seed = 15L
+  )
+  survey::svrepdesign(
+    data = df,
+    weights = ~wt,
+    repweights = "repwt_[0-9]+",
+    type = "Fay",
+    rho = rho,
+    combined.weights = TRUE,
+    mse = TRUE
+  )
+}
+
+test_that("a survey Fay design with rho = 1.5 imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 1.5)
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_equal(d@variables$rho, 1.5, tolerance = 1e-10)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("a survey Fay design with rho set to NA imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 0.3)
+  src$rho <- NA
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_identical(d@variables$rho, NA)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
+})
+
+test_that("a survey Fay design with no rho element imports but does not export", {
+  skip_if_not_installed("survey")
+  src <- make_fay_svrep(rho = 0.3)
+  src$rho <- NULL
+  expect_false("rho" %in% names(src))
+
+  expect_no_condition(d <- from_svydesign(src))
+  expect_null(d@variables$rho)
+  expect_error(
+    as_svydesign(d),
+    class = "surveycore_error_fay_rho_unrecoverable"
+  )
 })
 
 # X-12. §VI property 3. The round trip crosses the import route and then the

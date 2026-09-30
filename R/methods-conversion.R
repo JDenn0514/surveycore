@@ -375,70 +375,42 @@ as_svydesign <- function(x) {
     x@variables$scale
   }
 
-  # Recover Fay's shrinkage factor from the recorded scale. This is required,
-  # not an improvement: svrepdesign.default() holds
+  # Carry Fay's shrinkage factor across from @variables$rho. survey needs it:
+  # svrepdesign.default() holds
   #   if (type == "Fay" && is.null(rho))
   #     stop("With type='Fay' you must supply the correct rho")
   # so without rho the export route fails outright for a Fay design.
   #
-  # The recovery inverts survey's own formula. survey computes a Fay design's
-  # scale as 1 / (n_rep * (1 - rho)^2), and the import route stores that
-  # value in @variables$scale, so solving for rho returns the shrinkage
-  # factor the replicates were built with. Measured: a design built with
-  # fay.rho = 0.3 recovers 0.3 exactly and rebuilds with the source's own
-  # scale.
+  # The scale argument above stays NULL for "Fay". survey computes the scale
+  # as 1 / (n_rep * (1 - rho)^2) from this rho, which is the formula
+  # as_survey_replicate() uses, so the exported standard errors match.
   #
-  # The scale argument above stays NULL for "Fay". survey recomputes the
-  # scale from this rho, and this rho came from the stored scale, so the
-  # rebuilt scale equals the stored one. Passing rho alone reproduces it.
+  # A Fay design can carry no usable rho: survey_replicate() takes an untyped
+  # variables list, a design built before surveycore stored rho has no key,
+  # and from_svydesign() copies a survey object's rho unchanged. A missing
+  # key reads as NULL. Every other type passes rho = NULL, whatever is
+  # stored.
   rho_arg <- NULL
   if (isTRUE(x@variables$type == "Fay")) {
-    fay_scale <- x@variables$scale
-
-    # The binding is a character string on every branch, including the NULL
-    # branch, so the message renders without a special case.
-    scale_txt <- if (is.null(fay_scale)) {
-      "none"
-    } else {
-      paste(format(fay_scale), collapse = ", ")
-    }
-
-    scale_usable <- length(fay_scale) == 1L &&
-      is.numeric(fay_scale) &&
-      is.finite(fay_scale) &&
-      fay_scale > 0
-    rho_arg <- if (scale_usable) {
-      1 - sqrt(1 / (fay_scale * length(rep_vars)))
-    } else {
-      NA_real_
-    }
-
-    # Both arms are reachable. A scale whose product with the replicate count
-    # is below 1 puts the recovered rho below 0, and as_survey_replicate()
-    # accepts any numeric scale. A missing scale comes from the exported
-    # survey_replicate() constructor, whose variables list is untyped and
-    # whose validator checks neither scale nor type;
-    # as_survey_replicate(type = "Fay") fills 1 / n_rep, which recovers
-    # rho = 0 — legal, and the BRR case.
-    if (!scale_usable || is.na(rho_arg) || rho_arg < 0 || rho_arg >= 1) {
+    rho_arg <- x@variables[["rho"]]
+    if (!.is_valid_rho(rho_arg)) {
       cli::cli_abort(
         c(
           "x" = paste0(
-            "{.fn as_svydesign} cannot recover the {.val Fay} shrinkage ",
-            "factor for this design."
+            "{.fn as_svydesign} cannot export this {.val Fay} design: it ",
+            "records no usable {.arg rho}."
           ),
           "i" = paste0(
             "{.fn survey::svrepdesign} requires {.arg rho} for ",
-            "{.code type = \"Fay\"}, and surveycore derives it from the ",
-            "recorded scale."
+            "{.code type = \"Fay\"}."
           ),
           "i" = paste0(
-            "The recorded scale is {.val {scale_txt}} and yields no value ",
-            "in {.code [0, 1)}."
+            "A {.val Fay} design built before surveycore stored {.arg rho} ",
+            "records none."
           ),
           "v" = paste0(
-            "Rebuild the design with {.fn as_survey_replicate} and pass the ",
-            "{.arg scale} the {.val Fay} replicates were built with."
+            "Rebuild the design with ",
+            "{.code as_survey_replicate(type = \"Fay\", rho = )}."
           )
         ),
         class = "surveycore_error_fay_rho_unrecoverable"
