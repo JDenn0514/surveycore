@@ -1387,6 +1387,242 @@ test_that("as_survey_replicate() warns and does not check rho = \"a\" for type =
   expect_null(d@variables$rho)
 })
 
+test_that("as_survey_replicate() accepts rho = 0 for Fay, stores the BRR scale and keeps type \"Fay\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0
+  )
+  expect_equal(d@variables$rho, 0, tolerance = 1e-10)
+  expect_equal(d@variables$scale, 1 / 20, tolerance = 1e-8)
+  expect_identical(d@variables$type, "Fay")
+})
+
+test_that("as_survey_replicate() stores an integer rho = 0L as the double 0", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0L
+  )
+  expect_identical(d@variables$rho, 0)
+})
+
+test_that("as_survey_replicate() stores a named rho = c(a = 0.3) unnamed", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = c(a = 0.3)
+  )
+  expect_null(names(d@variables$rho))
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+})
+
+test_that("as_survey_replicate() accepts rho = 0.999 for Fay and stores its scale", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.999
+  )
+  expect_equal(
+    d@variables$scale,
+    1 / (20 * (1 - 0.999)^2),
+    tolerance = 1e-8
+  )
+})
+
+test_that("as_survey_replicate() discards a supplied scale for Fay with no warning", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_no_warning(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = 0.3,
+      scale = 99
+    )
+  )
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() keeps rscales for Fay and still stores the Fay scale", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3,
+    rscales = rep(2, 20)
+  )
+  expect_identical(d@variables$rscales, rep(2, 20))
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() accepts mse = FALSE for Fay", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3,
+    mse = FALSE
+  )
+  expect_identical(d@variables$mse, FALSE)
+})
+
+test_that("as_survey_replicate() builds Fay with one replicate column and stores scale 4 at rho = 0.5", {
+  df <- data.frame(
+    y = c(2.1, 3.4, 1.8, 4.0),
+    wt = c(1, 2, 3, 4),
+    rep1 = c(1.5, 1, 4.5, 2)
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = rep1,
+    type = "Fay",
+    rho = 0.5
+  )
+  expect_identical(d@variables$repweights, "rep1")
+  expect_equal(d@variables$scale, 1 / (1 - 0.5)^2, tolerance = 1e-8)
+  expect_equal(d@variables$scale, 4, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() raises the empty-data error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df[0, ],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_empty_data"
+  )
+})
+
+test_that("as_survey_replicate() raises the single-row error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df[1, ],
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay"
+    ),
+    class = "surveycore_error_single_row"
+  )
+})
+
+test_that("as_survey_replicate() raises the rscales-length error before the missing-rho error", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rscales = rep(1, 3)
+    ),
+    class = "surveycore_error_rscales_length"
+  )
+})
+
+test_that("update_design() keeps the stored rho of a Fay design when the weights change", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  df$wt2 <- df$wt * 1.05
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  d2 <- suppressMessages(update_design(d, weights = wt2))
+  expect_identical(d2@variables$weights, "wt2")
+  expect_equal(d2@variables$rho, 0.3, tolerance = 1e-10)
+})
+
 test_that("as_survey_nonprob() matches as_survey_replicate() on JKn", {
   # Cross-constructor. Both defaults are 1 for JKn, so the two designs
   # return the same mean and the same standard error on one frame. Each
