@@ -2518,7 +2518,11 @@ test_that("the round trip reproduces a Fay source's mean, SE and CI [numerical]"
   )
   b <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.5)
 
-  rt <- as_svydesign(from_svydesign(b))
+  # The import leg stores the source's rho before the export leg runs.
+  d <- from_svydesign(b)
+  expect_equal(d@variables$rho, 0.5, tolerance = 1e-10)
+
+  rt <- as_svydesign(d)
   expect_equal(rt$rho, 0.5, tolerance = 1e-10)
   expect_equal(rt$scale, b$scale, tolerance = 1e-10)
 
@@ -2633,7 +2637,102 @@ test_that("every accepted replicate type crosses both conversion routes", {
     expect_identical(d2@variables$type, ty)
     expect_length(d2@variables$repweights, length(d@variables$repweights))
     expect_identical(nrow(d2@data), nrow(d@data))
+    if (ty == "Fay") {
+      expect_equal(d2@variables$rho, 0.3, tolerance = 1e-10)
+    }
   }
+})
+
+# from_svydesign() stores survey's rho for a Fay source and NULL for every
+# other type (spec §V). The stored scale stays the source's own, so the
+# imported standard error does not move.
+test_that("from_svydesign() stores the rho of a survey Fay design [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "Fay", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+  expect_equal(d@variables$scale, src$scale, tolerance = 1e-10)
+
+  sc <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, src)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+test_that("from_svydesign() stores rho as NULL for a survey BRR design", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  src <- survey::as.svrepdesign(tay, type = "BRR")
+  expect_identical(src$rho, 0)
+
+  d <- from_svydesign(src)
+  expect_true("rho" %in% names(d@variables))
+  expect_identical(d@variables$rho, NULL)
+})
+
+test_that("from_svydesign() drops the rho a survey BRR design was built with", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  # survey keeps rho on a BRR object and says so with a bare warning, so
+  # match it by message text.
+  expect_warning(
+    src <- survey::svrepdesign(
+      data = df,
+      repweights = "^repwt_",
+      weights = ~wt,
+      type = "BRR",
+      rho = 0.3,
+      combined.weights = TRUE,
+      mse = TRUE
+    ),
+    "does not use 'rho=' argument",
+    fixed = TRUE
+  )
+  expect_equal(src$rho, 0.3, tolerance = 1e-10)
+
+  d <- from_svydesign(src)
+  expect_true("rho" %in% names(d@variables))
+  expect_identical(d@variables$rho, NULL)
+})
+
+test_that("from_svydesign() imports a BRR build with fay.rho as a Fay design", {
+  skip_if_not_installed("survey")
+  df <- make_taylor_source()
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  # survey relabels this object "Fay".
+  src <- survey::as.svrepdesign(tay, type = "BRR", fay.rho = 0.3)
+
+  d <- from_svydesign(src)
+  expect_identical(d@variables$type, "Fay")
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
 })
 
 # X-18. §IV.6 first row and §VI property 2 together. X-5 shows the silent
