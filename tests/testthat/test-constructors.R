@@ -1174,6 +1174,219 @@ test_that("as_survey_replicate() warning for rho with type = \"BRR\" shows the F
   )
 })
 
+test_that("as_survey_replicate() stores the rho key for every type", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = ty
+    )
+    expect_true("rho" %in% names(d@variables))
+    expect_identical(d@variables$rho, NULL)
+  }
+  d_fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  expect_true("rho" %in% names(d_fay@variables))
+})
+
+test_that("as_survey_replicate() binds a positional fifth argument to rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  d <- as_survey_replicate(df, wt, starts_with("repwt_"), "Fay", 0.3)
+  expect_equal(d@variables$rho, 0.3, tolerance = 1e-10)
+  expect_equal(d@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() refuses type = \"Fay\" with rho = NULL passed explicitly", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = NULL
+    ),
+    class = "surveycore_error_fay_rho_missing"
+  )
+})
+
+test_that("as_survey_replicate() invalid-rho message names the class and at most five values", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = "0.5"
+    ),
+    class = "surveycore_error_fay_rho_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = "0.5"
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = numeric(0)
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "Fay",
+      rho = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses every rho that is not one finite number in [0, 1)", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  bad_rho <- list(
+    -0.1,
+    1,
+    NA,
+    NA_real_,
+    NaN,
+    Inf,
+    -Inf,
+    numeric(0),
+    c(0.1, 0.2),
+    TRUE,
+    factor("0.5"),
+    list(0.5),
+    matrix(0.3),
+    array(0.3, c(1, 1, 1))
+  )
+  expect_identical(length(bad_rho), 14L)
+  for (bad in bad_rho) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "Fay",
+        rho = bad
+      ),
+      class = "surveycore_error_fay_rho_invalid"
+    )
+  }
+})
+
+test_that("as_survey_replicate() raises no warning for the eight other types with no rho", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_no_warning(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty
+      )
+    )
+  }
+})
+
+test_that("as_survey_replicate() warns and does not check rho = \"a\" for type = \"BRR\"", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20L,
+    design = "replicate",
+    type = "jkn",
+    seed = 259L
+  )
+  expect_no_error(
+    expect_warning(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "BRR",
+        rho = "a"
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+  )
+  expect_null(d@variables$rho)
+})
+
 test_that("as_survey_nonprob() matches as_survey_replicate() on JKn", {
   # Cross-constructor. Both defaults are 1 for JKn, so the two designs
   # return the same mean and the same standard error on one frame. Each
