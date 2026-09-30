@@ -595,16 +595,38 @@ as_survey <- function(
 #' @param type Character. Replicate weight method. One of `"JK1"` (delete-1
 #'   jackknife), `"JK2"` (paired jackknife, two PSUs per stratum), `"JKn"`
 #'   (delete-1 jackknife with varying replication counts), `"BRR"` (balanced
-#'   repeated replication), `"Fay"` (Fay's method, a modified BRR),
-#'   `"bootstrap"`, `"ACS"` (used in American Community Survey),
+#'   repeated replication), `"Fay"` (Fay's method, a modified BRR; needs
+#'   `rho`), `"bootstrap"`, `"ACS"` (used in American Community Survey),
 #'   `"successive-difference"`, or `"other"` (user-specified scale).
 #'   Case-sensitive.
+#' @param rho Numeric scalar or `NULL` (default). The Fay shrinkage factor:
+#'   the factor the replicate weights were built with. Each Fay replicate
+#'   multiplies the weights of one half sample by `2 - rho` and the weights
+#'   of the other half sample by `rho`. Required when `type = "Fay"`. The
+#'   valid range is `[0, 1)`, and `rho = 0` gives BRR. An integer is
+#'   accepted and stored as a double; a value with a `dim` attribute is
+#'   refused. Find the value in the survey's technical documentation, where
+#'   it is often called the Fay coefficient or epsilon. surveycore cannot
+#'   check that the value matches the replicate columns.
+#'
+#'   The Fay scale `1 / (R * (1 - rho)^2)` assumes a two-PSU-per-stratum
+#'   layout with Hadamard-balanced half samples, which surveycore does not
+#'   check; the scale is exact for totals and first-order for means and
+#'   ratios. `type` stays `"Fay"` at `rho = 0`, unlike
+#'   `survey::as.svrepdesign()`, which relabels it `"BRR"`.
+#'
+#'   For every other `type`, a supplied `rho` is ignored with a warning and
+#'   the design stores no `rho`.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
-#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for `"BRR"`
-#'   and `"Fay"`; `1/(R-1)` for `"bootstrap"`; `4/R` for `"ACS"` and
-#'   `"successive-difference"` (per Ash 2014 / Fay & Train 1995); `1` for
-#'   `"JKn"`, `"JK2"` and `"other"`.
+#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for
+#'   `"BRR"`; `1 / (R * (1 - rho)^2)` for `"Fay"`; `1/(R-1)` for
+#'   `"bootstrap"`; `4/R` for `"ACS"` and `"successive-difference"` (per
+#'   Ash 2014 / Fay & Train 1995); `1` for `"JKn"`, `"JK2"` and `"other"`.
+#'
+#'   For `"Fay"`, a supplied `scale` is discarded with no warning, as
+#'   `survey::svrepdesign()` does, and the Fay scale always comes from
+#'   `rho`.
 #'
 #'   `"JK2"` is the paired jackknife. Each replicate is a half sample, so
 #'   the per-stratum factor is already inside the replicate weights:
@@ -722,6 +744,25 @@ as_survey <- function(
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
 #'   type = "JK1"
 #' )
+#'
+#' # Fay's method: 4 replicate columns built with rho = 0.5
+#' set.seed(1)
+#' df_fay <- data.frame(
+#'   y = rnorm(20),
+#'   wt = runif(20, 1, 3)
+#' )
+#' for (r in 1:4) {
+#'   factor_r <- sample(c(0.5, 1.5), 20, replace = TRUE)
+#'   df_fay[[paste0("rep", r)]] <- df_fay$wt * factor_r
+#' }
+#' d_fay <- as_survey_replicate(
+#'   df_fay,
+#'   weights = wt,
+#'   repweights = starts_with("rep"),
+#'   type = "Fay",
+#'   rho = 0.5
+#' )
+#' d_fay
 #' @references
 #' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
 #' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.
@@ -766,6 +807,7 @@ as_survey_replicate <- function(
     "successive-difference",
     "other"
   ),
+  rho = NULL,
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
@@ -830,7 +872,72 @@ as_survey_replicate <- function(
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)
 
+  # ── Fay shrinkage factor (issue #243) ───────────────────────────────────────
+  # These rules run after every existing check, so an empty frame or a bad
+  # rscales length raises its own error first. For Fay the scale always
+  # comes from rho: a supplied `scale` is discarded with no condition, as
+  # survey::svrepdesign() does.
+
+  if (identical(type, "Fay")) {
+    if (is.null(rho)) {
+      cli::cli_abort(
+        c(
+          "x" = "{.code type = \"Fay\"} requires {.arg rho}.",
+          "i" = paste0(
+            "{.arg rho} is the Fay shrinkage factor the replicate weights were ",
+            "built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} ",
+            "needs it."
+          ),
+          "v" = paste0(
+            "Pass the value the survey's technical documentation gives, for ",
+            "example {.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_missing"
+      )
+    }
+    if (!.is_valid_rho(rho)) {
+      rho_cls <- class(rho)[[1L]]
+      rho_txt <- if (length(rho) == 0L) {
+        "a value of length 0"
+      } else {
+        paste(format(utils::head(rho, 5L)), collapse = ", ")
+      }
+      cli::cli_abort(
+        c(
+          "x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.",
+          "i" = "Got {.cls {rho_cls}}: {rho_txt}.",
+          "v" = paste0(
+            "Pass the Fay shrinkage factor as one number, for example ",
+            "{.code rho = 0.5}."
+          )
+        ),
+        class = "surveycore_error_fay_rho_invalid"
+      )
+    }
+    rho <- as.double(unname(rho))
+    scale <- 1 / (n_rep * (1 - rho)^2)
+  } else if (!is.null(rho)) {
+    # The value of rho is not checked for the other types (decision P2).
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg rho} applies only to {.code type = \"Fay\"} and was ",
+          "ignored."
+        ),
+        "i" = "The design has type {.val {type}} and stores no {.arg rho}.",
+        "v" = paste0(
+          "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate ",
+          "weights are Fay weights."
+        )
+      ),
+      class = "surveycore_warning_rho_ignored"
+    )
+    rho <- NULL
+  }
+
   # ── Compute default scale based on type and n_rep ───────────────────────────
+  # No Fay entry: the Fay scale is set above from rho, whatever `scale` held.
 
   if (is.null(scale)) {
     scale <- switch(
@@ -853,7 +960,6 @@ as_survey_replicate <- function(
       # package hardcodes this same formula internally (scale= is ignored for
       # BRR). Oracle test in test-variance-replicate.R verifies agreement.
       BRR = 1 / n_rep,
-      Fay = 1 / n_rep,
       # survey::svrepdesign() computes bootstrap.average / (R - 1).
       # surveycore has no bootstrap.average argument, so this line is
       # always 1 / (R - 1). as_survey_nonprob() keeps 1 / R by decision
@@ -876,6 +982,7 @@ as_survey_replicate <- function(
     fpc = fpc_var,
     fpctype = fpctype,
     mse = isTRUE(mse),
+    rho = rho,
     visible_vars = NULL
   )
 

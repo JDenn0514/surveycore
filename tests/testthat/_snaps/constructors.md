@@ -90,6 +90,38 @@
       Error in `as_survey()`:
       x `nest = TRUE` requires `strata` to be specified
 
+# as_survey_replicate() refuses type = "Fay" with no rho
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `type = "Fay"` requires `rho`.
+      i `rho` is the Fay shrinkage factor the replicate weights were built with, and the Fay scale `1 / (R * (1 - rho)^2)` needs it.
+      v Pass the value the survey's technical documentation gives, for example `rho = 0.5`.
+
+# as_survey_replicate() refuses type = "Fay" with rho = 1.5
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "Fay",
+      rho = 1.5)
+    Condition
+      Error in `as_survey_replicate()`:
+      x `rho` must be a single finite number in `[0, 1)`.
+      i Got <numeric>: 1.5.
+      v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
+
+# as_survey_replicate() warning for rho with type = "BRR" shows the FR-3 text
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"),
+      type = "BRR", rho = 0.3)
+    Condition
+      Warning:
+      ! `rho` applies only to `type = "Fay"` and was ignored.
+      i The design has type "BRR" and stores no `rho`.
+      v Remove `rho`, or use `type = "Fay"` if the replicate weights are Fay weights.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code

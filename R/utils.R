@@ -1183,3 +1183,18 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 .compute_nonprob_scale <- function(type, R) {
   switch(type, bootstrap = 1 / R, JK1 = (R - 1) / R, JK2 = 1, JKn = 1)
 }
+
+# ── .is_valid_rho() ───────────────────────────────────────────────────────────
+
+# Used by R/core-constructors.R and R/methods-conversion.R (issue #243).
+# TRUE when rho is one finite number in [0, 1) with no dim attribute;
+# FALSE otherwise. Never errors. The dim() test refuses a 1 x 1 matrix and a
+# 1 x 1 x 1 array, which pass every other test.
+.is_valid_rho <- function(rho) {
+  is.numeric(rho) &&
+    is.null(dim(rho)) &&
+    length(rho) == 1L &&
+    is.finite(rho) &&
+    rho >= 0 &&
+    rho < 1
+}

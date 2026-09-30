@@ -2345,7 +2345,12 @@ make_taylor_source <- function(seed = 421L, n = 60L) {
 # Build a replicate design of a given type, with no FPC recorded. The data is
 # the same block make_rep_fpc() uses; only the recorded type and the scale
 # arguments change.
-make_rep_type <- function(type = "BRR", seed = 430L, rscales = NULL) {
+make_rep_type <- function(
+  type = "BRR",
+  rho = NULL,
+  seed = 430L,
+  rscales = NULL
+) {
   df <- make_survey_data(
     n = 50L,
     n_psu = 10L,
@@ -2360,6 +2365,7 @@ make_rep_type <- function(type = "BRR", seed = 430L, rscales = NULL) {
     weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
     type = type,
+    rho = rho,
     rscales = rscales
   )
 }
@@ -2410,7 +2416,7 @@ test_that("as_svydesign() exports a Fay design with its scale and SE [numerical]
 #      the constructor never produces the missing-scale state.
 test_that("as_svydesign() recovers rho = 0 from the default Fay scale", {
   skip_if_not_installed("survey")
-  d <- make_rep_type(type = "Fay", seed = 422L)
+  d <- make_rep_type(type = "Fay", seed = 422L, rho = 0)
 
   n_rep <- length(d@variables$repweights)
   expect_equal(d@variables$scale, 1 / n_rep, tolerance = 1e-10)
@@ -2424,43 +2430,6 @@ test_that("as_svydesign() recovers rho = 0 from the default Fay scale", {
   sm <- survey::svymean(~y1, sv)
   expect_equal(coef(sm)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
   expect_equal(as.numeric(survey::SE(sm)), sc$se[[1L]], tolerance = 1e-8)
-})
-
-# X-10. §IV.2 step 4, out-of-range arm. as_survey_replicate() accepts any
-#       numeric scale — no validator checks its value — so a scale whose
-#       product with the replicate count is below 1 puts the recovered
-#       shrinkage factor below 0. Measured: scale 0.05 over 8 replicates
-#       gives -0.581.
-test_that("as_svydesign() refuses a Fay design whose scale yields no rho", {
-  skip_if_not_installed("survey")
-  df <- make_survey_data(
-    n = 80L,
-    n_psu = 16L,
-    n_strata = 2L,
-    design = "replicate",
-    type = "brr",
-    seed = 423L
-  )
-  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  expect_length(repwt_cols, 8L)
-
-  d <- as_survey_replicate(
-    df,
-    weights = wt,
-    repweights = tidyselect::all_of(repwt_cols),
-    type = "Fay",
-    scale = 0.05
-  )
-  expect_equal(d@variables$scale, 0.05, tolerance = 1e-10)
-
-  cnd <- expect_error(
-    as_svydesign(d),
-    class = "surveycore_error_fay_rho_unrecoverable"
-  )
-  msg <- conditionMessage(cnd)
-  expect_match(msg, "0.05", fixed = TRUE)
-  expect_match(msg, "shrinkage", fixed = TRUE)
-  expect_snapshot(error = TRUE, as_svydesign(d))
 })
 
 # X-11. §IV.2 step 4, missing-scale arm. The exported survey_replicate()
@@ -2648,7 +2617,12 @@ test_that("every accepted replicate type crosses both conversion routes", {
   )
   for (ty in types) {
     rs <- if (ty %in% c("JK2", "JKn")) rep(1, 5L) else NULL
-    d <- make_rep_type(type = ty, seed = 430L, rscales = rs)
+    d <- make_rep_type(
+      type = ty,
+      rho = if (ty == "Fay") 0.3 else NULL,
+      seed = 430L,
+      rscales = rs
+    )
     expect_identical(d@variables$type, ty)
 
     sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning")
