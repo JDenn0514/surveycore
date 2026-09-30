@@ -595,16 +595,38 @@ as_survey <- function(
 #' @param type Character. Replicate weight method. One of `"JK1"` (delete-1
 #'   jackknife), `"JK2"` (paired jackknife, two PSUs per stratum), `"JKn"`
 #'   (delete-1 jackknife with varying replication counts), `"BRR"` (balanced
-#'   repeated replication), `"Fay"` (Fay's method, a modified BRR),
-#'   `"bootstrap"`, `"ACS"` (used in American Community Survey),
+#'   repeated replication), `"Fay"` (Fay's method, a modified BRR; needs
+#'   `rho`), `"bootstrap"`, `"ACS"` (used in American Community Survey),
 #'   `"successive-difference"`, or `"other"` (user-specified scale).
 #'   Case-sensitive.
+#' @param rho Numeric scalar or `NULL` (default). The Fay shrinkage factor:
+#'   the factor the replicate weights were built with. Each Fay replicate
+#'   multiplies the weights of one half sample by `2 - rho` and the weights
+#'   of the other half sample by `rho`. Required when `type = "Fay"`. The
+#'   valid range is `[0, 1)`, and `rho = 0` gives BRR. An integer is
+#'   accepted and stored as a double; a value with a `dim` attribute is
+#'   refused. Find the value in the survey's technical documentation, where
+#'   it is often called the Fay coefficient or epsilon. surveycore cannot
+#'   check that the value matches the replicate columns.
+#'
+#'   The Fay scale `1 / (R * (1 - rho)^2)` assumes a two-PSU-per-stratum
+#'   layout with Hadamard-balanced half samples, which surveycore does not
+#'   check; the scale is exact for totals and first-order for means and
+#'   ratios. `type` stays `"Fay"` at `rho = 0`, unlike
+#'   `survey::as.svrepdesign()`, which relabels it `"BRR"`.
+#'
+#'   For every other `type`, a supplied `rho` is ignored with a warning and
+#'   the design stores no `rho`.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
-#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for `"BRR"`
-#'   and `"Fay"`; `1/(R-1)` for `"bootstrap"`; `4/R` for `"ACS"` and
-#'   `"successive-difference"` (per Ash 2014 / Fay & Train 1995); `1` for
-#'   `"JKn"`, `"JK2"` and `"other"`.
+#'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for
+#'   `"BRR"`; `1 / (R * (1 - rho)^2)` for `"Fay"`; `1/(R-1)` for
+#'   `"bootstrap"`; `4/R` for `"ACS"` and `"successive-difference"` (per
+#'   Ash 2014 / Fay & Train 1995); `1` for `"JKn"`, `"JK2"` and `"other"`.
+#'
+#'   For `"Fay"`, a supplied `scale` is discarded with no warning, as
+#'   `survey::svrepdesign()` does, and the Fay scale always comes from
+#'   `rho`.
 #'
 #'   `"JK2"` is the paired jackknife. Each replicate is a half sample, so
 #'   the per-stratum factor is already inside the replicate weights:
@@ -722,6 +744,25 @@ as_survey <- function(
 #'   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
 #'   type = "JK1"
 #' )
+#'
+#' # Fay's method: 4 replicate columns built with rho = 0.5
+#' set.seed(1)
+#' df_fay <- data.frame(
+#'   y = rnorm(20),
+#'   wt = runif(20, 1, 3)
+#' )
+#' for (r in 1:4) {
+#'   factor_r <- sample(c(0.5, 1.5), 20, replace = TRUE)
+#'   df_fay[[paste0("rep", r)]] <- df_fay$wt * factor_r
+#' }
+#' d_fay <- as_survey_replicate(
+#'   df_fay,
+#'   weights = wt,
+#'   repweights = starts_with("rep"),
+#'   type = "Fay",
+#'   rho = 0.5
+#' )
+#' d_fay
 #' @references
 #' Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
 #' for labour force surveys. \emph{The Statistician} \bold{48}(3), 379--391.

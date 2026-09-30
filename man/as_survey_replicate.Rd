@@ -10,6 +10,7 @@ as_survey_replicate(
   repweights,
   type = c("JK1", "JK2", "JKn", "BRR", "Fay", "bootstrap", "ACS",
     "successive-difference", "other"),
+  rho = NULL,
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
@@ -32,17 +33,40 @@ columns. Must select at least one column. Supports tidy-select helpers
 \item{type}{Character. Replicate weight method. One of \code{"JK1"} (delete-1
 jackknife), \code{"JK2"} (paired jackknife, two PSUs per stratum), \code{"JKn"}
 (delete-1 jackknife with varying replication counts), \code{"BRR"} (balanced
-repeated replication), \code{"Fay"} (Fay's method, a modified BRR),
-\code{"bootstrap"}, \code{"ACS"} (used in American Community Survey),
+repeated replication), \code{"Fay"} (Fay's method, a modified BRR; needs
+\code{rho}), \code{"bootstrap"}, \code{"ACS"} (used in American Community Survey),
 \code{"successive-difference"}, or \code{"other"} (user-specified scale).
 Case-sensitive.}
 
+\item{rho}{Numeric scalar or \code{NULL} (default). The Fay shrinkage factor:
+the factor the replicate weights were built with. Each Fay replicate
+multiplies the weights of one half sample by \code{2 - rho} and the weights
+of the other half sample by \code{rho}. Required when \code{type = "Fay"}. The
+valid range is \verb{[0, 1)}, and \code{rho = 0} gives BRR. An integer is
+accepted and stored as a double; a value with a \code{dim} attribute is
+refused. Find the value in the survey's technical documentation, where
+it is often called the Fay coefficient or epsilon. surveycore cannot
+check that the value matches the replicate columns.
+
+The Fay scale \code{1 / (R * (1 - rho)^2)} assumes a two-PSU-per-stratum
+layout with Hadamard-balanced half samples, which surveycore does not
+check; the scale is exact for totals and first-order for means and
+ratios. \code{type} stays \code{"Fay"} at \code{rho = 0}, unlike
+\code{survey::as.svrepdesign()}, which relabels it \code{"BRR"}.
+
+For every other \code{type}, a supplied \code{rho} is ignored with a warning and
+the design stores no \code{rho}.}
+
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
-the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}; \code{1/R} for \code{"BRR"}
-and \code{"Fay"}; \code{1/(R-1)} for \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and
-\code{"successive-difference"} (per Ash 2014 / Fay & Train 1995); \code{1} for
-\code{"JKn"}, \code{"JK2"} and \code{"other"}.
+the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}; \code{1/R} for
+\code{"BRR"}; \code{1 / (R * (1 - rho)^2)} for \code{"Fay"}; \code{1/(R-1)} for
+\code{"bootstrap"}; \code{4/R} for \code{"ACS"} and \code{"successive-difference"} (per
+Ash 2014 / Fay & Train 1995); \code{1} for \code{"JKn"}, \code{"JK2"} and \code{"other"}.
+
+For \code{"Fay"}, a supplied \code{scale} is discarded with no warning, as
+\code{survey::svrepdesign()} does, and the Fay scale always comes from
+\code{rho}.
 
 \code{"JK2"} is the paired jackknife. Each replicate is a half sample, so
 the per-stratum factor is already inside the replicate weights:
@@ -181,6 +205,25 @@ d_sub <- as_survey_replicate(
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
   type = "JK1"
 )
+
+# Fay's method: 4 replicate columns built with rho = 0.5
+set.seed(1)
+df_fay <- data.frame(
+  y = rnorm(20),
+  wt = runif(20, 1, 3)
+)
+for (r in 1:4) {
+  factor_r <- sample(c(0.5, 1.5), 20, replace = TRUE)
+  df_fay[[paste0("rep", r)]] <- df_fay$wt * factor_r
+}
+d_fay <- as_survey_replicate(
+  df_fay,
+  weights = wt,
+  repweights = starts_with("rep"),
+  type = "Fay",
+  rho = 0.5
+)
+d_fay
 }
 \references{
 Canty, A.J. and Davison, A.C. (1999) Resampling-based variance estimation
