@@ -776,8 +776,7 @@ as_survey <- function(
 #' Association} \bold{88}(423), 1013--1020.
 #'
 #' Judkins, D.R. (1990) Fay's method for variance estimation.
-#' \emph{Journal of the American Statistical Association}
-#' \bold{85}(410), 895--904.
+#' \emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 #'
 #' Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 #' methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),

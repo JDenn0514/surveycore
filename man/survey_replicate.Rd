@@ -21,7 +21,7 @@ survey_replicate(
 \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{variables}{A named list of design specification (weights,
-repweights, type, scale, rscales, fpc, fpctype, mse). Set
+repweights, type, scale, rscales, fpc, fpctype, mse, rho). Set
 automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
@@ -58,6 +58,8 @@ a property.}
 \item{\code{fpc}}{FPC column name or \code{NULL}.}
 \item{\code{fpctype}}{\code{"fraction"} or \code{"correction"}.}
 \item{\code{mse}}{Logical. Use MSE estimates?}
+\item{\code{rho}}{Fay shrinkage factor for \code{type = "Fay"}; \code{NULL}
+for every other type.}
 }
 }
 
@@ -91,8 +93,7 @@ procedures in survey sampling. \emph{Journal of the American Statistical
 Association} \bold{88}(423), 1013--1020.
 
 Judkins, D.R. (1990) Fay's method for variance estimation.
-\emph{Journal of the American Statistical Association}
-\bold{85}(410), 895--904.
+\emph{Journal of Official Statistics} \bold{6}(3), 223--239.
 
 Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on resampling
 methods for complex surveys. \emph{Survey Methodology} \bold{18}(2),
