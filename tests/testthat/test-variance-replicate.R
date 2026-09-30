@@ -975,10 +975,10 @@ test_that("get_means() replicate SE matches survey::svymean() — other design",
 test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
   skip_if_not_installed("survey")
 
-  # This block compares nothing. survey refuses type = "Fay" without a rho
-  # before it builds anything, and surveycore has no rho argument today, so
-  # no comparison is possible. Issue #243 owns the gap: a later PR adds the
-  # rho argument and rewrites this block into a real oracle comparison.
+  # This block compares nothing yet. survey refuses type = "Fay" without a
+  # rho before it builds anything. surveycore now takes rho, and rho = 0
+  # gives the BRR scale, 1 / R. A later PR of issue #243 rewrites this block
+  # into an oracle comparison.
   #
   # The first half asserts what another package refuses to do, so that half
   # guards survey's behaviour and not surveycore's. A failure there most
@@ -1008,15 +1008,16 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
     fixed = TRUE
   )
 
-  # surveycore builds the design and stores the BRR scale, 1 / R, because it
-  # has no rho to shrink by. R is 10 here, not 20: the generator returns
+  # surveycore builds the design and stores the BRR scale, 1 / R, because
+  # rho = 0 shrinks by nothing. R is 10 here, not 20: the generator returns
   # n_psu %/% 2 replicate columns in the fay mode as it does in brr.
   # SE/variance row, 1e-8.
   sc <- as_survey_replicate(
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "Fay"
+    type = "Fay",
+    rho = 0
   )
   expect_equal(sc@variables$scale, 1 / n_rep, tolerance = 1e-8)
 })
