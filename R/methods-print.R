@@ -334,6 +334,18 @@ S7::method(print, survey_taylor) <- function(
 
 # ── print.survey_replicate ─────────────────────────────────────────────────
 
+# Used by print() and summary() for survey_replicate only, so it stays in
+# this file. Returns the rho to show for a Fay design with a usable stored
+# rho, else NULL.
+#' @noRd
+.fay_rho_to_print <- function(x) {
+  rho <- x@variables[["rho"]]
+  if (!identical(x@variables$type, "Fay") || !.is_valid_rho(rho)) {
+    return(NULL)
+  }
+  rho
+}
+
 # Print a Replicate Weights Survey Design
 #
 # @param x A survey_replicate object.
@@ -364,11 +376,18 @@ S7::method(print, survey_replicate) <- function(
   }
 
   n_reps <- length(x@variables$repweights)
+  rho <- .fay_rho_to_print(x)
+  rho_suffix <- if (is.null(rho)) "" else ", rho = {.val {rho}}"
 
   # ── Header ────────────────────────────────────────────────────────────────
   cli::cli_h1("Survey Design")
   cli::cli_text(
-    "{.cls survey_replicate} ({toupper(x@variables$type)}, {n_reps} replicates)"
+    paste0(
+      "{.cls survey_replicate} ({toupper(x@variables$type)}, ",
+      "{n_reps} replicates",
+      rho_suffix,
+      ")"
+    )
   )
   display_name <- .dataset_display_name(x@metadata)
   if (!is.null(display_name)) {
@@ -401,6 +420,9 @@ S7::method(print, survey_replicate) <- function(
       )
     ))
     cli::cli_bullets(c("*" = "Scale: {.val {x@variables$scale}}"))
+    if (!is.null(rho)) {
+      cli::cli_bullets(c("*" = "Rho: {.val {rho}}"))
+    }
     cli::cli_bullets(c("*" = "MSE: {.val {isTRUE(x@variables$mse)}}"))
 
     fpc_var <- x@variables$fpc
@@ -806,10 +828,17 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
   x <- object
 
   n_reps <- length(x@variables$repweights)
+  rho <- .fay_rho_to_print(x)
+  rho_suffix <- if (is.null(rho)) "" else ", rho = {.val {rho}}"
 
   cli::cli_h1("Survey Design Summary")
   cli::cli_text(
-    "Type: replicate weights ({toupper(x@variables$type)}, {n_reps} replicates)"
+    paste0(
+      "Type: replicate weights ({toupper(x@variables$type)}, ",
+      "{n_reps} replicates",
+      rho_suffix,
+      ")"
+    )
   )
   cli::cli_text("Sample size: {.val {nrow(x@data)}}")
 
@@ -823,6 +852,9 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
   cli::cli_text("Weights: {.field {wts_var}}")
   .print_weight_distribution(wts)
   cli::cli_text("Scale: {.val {x@variables$scale}}")
+  if (!is.null(rho)) {
+    cli::cli_text("Rho: {.val {rho}}")
+  }
   cli::cli_text("MSE: {.val {isTRUE(x@variables$mse)}}")
 
   fpc_var <- x@variables$fpc

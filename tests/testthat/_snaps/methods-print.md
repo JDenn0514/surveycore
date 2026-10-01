@@ -1120,3 +1120,176 @@
       5   0.9     1     0 a    
       6   1.1     2     1 b    
 
+# print.survey_replicate class line shows rho for a Fay design
+
+    Code
+      print(d)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+
+# print.survey_replicate full=TRUE puts the Rho line after Scale
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design specification --
+      
+      * Weights: wt
+      * Replicates: 10 FAY replicate weight column(s)
+      * Scale: 0.4
+      * Rho: 0.5
+      * MSE: TRUE
+      * FPC: not specified
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+
+# summary.survey_replicate shows rho on the type line and after Scale
+
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (FAY, 10 replicates, rho = 0.5)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      Scale: 0.4
+      Rho: 0.5
+      MSE: TRUE
+      
+      Metadata: 0 of 18 variable(s) labeled
+
+# a Fay design with no rho key prints and summarises no rho
+
+    Code
+      print(d, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_replicate> (FAY, 10 replicates)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design specification --
+      
+      * Weights: wt
+      * Replicates: 10 FAY replicate weight column(s)
+      * Scale: 0.4
+      * MSE: TRUE
+      * FPC: not specified
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 200 x 18
+         psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+         <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+       1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+       2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+       3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+       4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+       5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+       6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+       7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+       8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+       9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+      10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+      # i 190 more rows
+      # i 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+      #   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
+    Code
+      summary(d)
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (FAY, 10 replicates)
+      Sample size: 200
+      Weighted N: 2368
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.37 – 22.05
+      * Mean: 11.84
+      * CV: 0.28
+      Scale: 0.4
+      MSE: TRUE
+      
+      Metadata: 0 of 18 variable(s) labeled
+
