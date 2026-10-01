@@ -296,24 +296,11 @@ across".
 It does not cover `as_survey_nonprob()`: `survey` has no non-probability
 design class, so it cannot be an oracle for one (`plans/issue-cleanup.md` D1).
 
-### Sanctioned exceptions in `test-variance-replicate.R`
-
-**One** block in that file breaks the rule's normal shape on purpose. It
-closes with a named issue. Anything else that breaks the shape is a
-violation.
-
-There were two. The JKn and bootstrap blocks used to wrap three failing
-assertions each in `testthat::expect_failure()`, because surveycore's stored
-defaults disagreed with `survey` and branch protection needs a green suite.
-Issue #253 moved both defaults — JKn to `1`, bootstrap to `1/(R-1)` — and
-deleted all six wrappers along with the two closing ratio assertions. Those
-blocks now pass unwrapped and are ordinary oracle tests. Do not restore the
-wrappers, and do not read their absence as a violation.
-
-- **The Fay block compares nothing.** `survey` refuses `type = "Fay"` without
-  a `rho`, and surveycore has no `rho` argument, so the block asserts the
-  refusal on one side and the stored scale on the other. Issue #243 adds the
-  argument and rewrites the block into a real comparison.
+`tests/testthat/test-variance-replicate.R` has no sanctioned exceptions to
+the rule. The last one was the Fay block, which compared nothing because
+surveycore had no `rho` argument. Issue #243 added `rho`, and the Fay
+comparisons against `survey` are now ordinary oracle tests. Do not
+reintroduce `testthat::expect_failure()` wrappers into that file.
 
 ## S7 error testing layers
 
