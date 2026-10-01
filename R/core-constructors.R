@@ -1017,11 +1017,11 @@ as_survey_replicate <- function(
 #' for all Phase 2 design variable arguments.
 #'
 #' @param phase1 A survey design object (inheriting from `survey_base`)
-#'   representing the Phase 1 design. Accepts `survey_taylor` or
-#'   `survey_replicate` objects.
+#'   representing the Phase 1 design. Accepts a `survey_taylor` object.
+#'   A `survey_replicate` object is refused: the phase-1 variance for a
+#'   replicate design is not implemented.
 #'   Its `@data` must contain ALL rows from both phases, plus a logical
-#'   indicator column for Phase 2 membership. Create with [as_survey()]
-#'   or [as_survey_replicate()].
+#'   indicator column for Phase 2 membership. Create with [as_survey()].
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
 #'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
 #'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
@@ -1107,8 +1107,7 @@ as_survey_replicate <- function(
 #' \doi{10.1007/s12561-009-9001-6}
 #'
 #' @seealso
-#'   [as_survey()] for Taylor series designs,
-#'   [as_survey_replicate()] for replicate-weight designs
+#'   [as_survey()] for Taylor series designs
 #'
 #' @family constructors
 #' @export
@@ -1133,12 +1132,34 @@ as_survey_twophase <- function(
           "{.arg phase1} must be a survey design object ",
           "({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}."
         ),
-        "i" = paste0(
-          "Create it first with {.fn as_survey} or ",
-          "{.fn as_survey_replicate}."
-        )
+        "i" = "Create it first with {.fn as_survey}."
       ),
       class = "surveycore_error_phase1_class"
+    )
+  }
+
+  # ── Error TP-1: phase1 must not be a replicate design ───────────────────────
+  # The phase-1 variance code reads only the phase-1 strata, ids and fpc keys,
+  # so a replicate phase 1 would get a standard error that ignores its
+  # replicate weights. This check runs before every subset check.
+
+  if (S7::S7_inherits(phase1, survey_replicate)) {
+    cli::cli_abort(
+      c(
+        "x" = paste0(
+          "{.fn as_survey_twophase} does not accept a {.cls survey_replicate} ",
+          "phase 1."
+        ),
+        "i" = paste0(
+          "Phase 1 variance for a replicate design is not implemented, and ",
+          "{.pkg survey} has no two-phase design with a replicate phase 1."
+        ),
+        "v" = paste0(
+          "Build phase 1 with {.fn as_survey} from the design's cluster, ",
+          "strata and weight columns."
+        )
+      ),
+      class = "surveycore_error_twophase_replicate_phase1"
     )
   }
 
