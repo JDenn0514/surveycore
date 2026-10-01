@@ -1006,6 +1006,363 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
 })
 
 # ---------------------------------------------------------------------------
+# Block 24b: Fay oracle comparisons against survey::svrepdesign(type = "Fay")
+# ---------------------------------------------------------------------------
+#
+# Every Fay comparison builds both sides from the same frame, weight column
+# and replicate columns. Both sides get mse and rho as the same literal, and
+# neither side gets scale. Each side's stored scale is asserted on its own
+# against the literal 1 / (10 * (1 - rho)^2): the fay mode of the generator
+# returns n_psu %/% 2 = 10 replicate columns here.
+#
+# Degrees of freedom: the confidence bounds agree only while both packages
+# build the interval from the normal approximation. surveycore uses infinite
+# degrees of freedom on the replicate path, and survey's confint() defaults
+# to df = Inf. A move to design-based degrees of freedom on either side
+# moves every bound while the mean and the SE stay. Read that failure as a
+# degrees-of-freedom change, not a scale defect, and revisit these blocks in
+# the same PR.
+
+# Builds the Fay fixture and both designs at one rho and one mse. Neither
+# constructor may raise a warning; the call passes each literal to both
+# sides and reads nothing off the surveycore design.
+make_fay_oracle_pair <- function(rho, mse) {
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = all_of(repwt_cols),
+      type = "Fay",
+      rho = rho,
+      mse = mse
+    )
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "Fay",
+      rho = rho,
+      mse = mse,
+      data = d
+    )
+  )
+  list(sc = sc, sv = sv)
+}
+
+test_that("get_means() Fay SE matches survey::svymean() at rho = 0.3", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.3, mse = TRUE)
+
+  # Stored scale, each side against the literal; SE/variance row, 1e-8.
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc_mean <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() Fay SE matches survey::svymean() at rho = 0", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0, mse = TRUE)
+
+  # rho = 0 shrinks by nothing, so the literal is the BRR scale 1 / 10.
+  expect_equal(pair$sc@variables$scale, 1 / 10, tolerance = 1e-8)
+  expect_equal(pair$sv$scale, 1 / 10, tolerance = 1e-8)
+
+  sc_mean <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() Fay SE matches survey::svymean() at rho = 0.5", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.5, mse = TRUE)
+
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.5)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.5)^2), tolerance = 1e-8)
+
+  sc_mean <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() Fay SE matches survey::svymean() at rho = 0.9", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.9, mse = TRUE)
+
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.9)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.9)^2), tolerance = 1e-8)
+
+  sc_mean <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() Fay SE matches survey::svymean() with mse = FALSE", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.3, mse = FALSE)
+
+  # mse moves the centre of the replicate deviations, not the scale.
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc_mean <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_totals() Fay SE matches survey::svytotal() at rho = 0.3", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.3, mse = TRUE)
+
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc_total <- get_totals(pair$sc, y1, variance = c("se", "ci"))
+  sv_total <- survey::svytotal(~y1, pair$sv)
+
+  expect_equal(sc_total$total, coef(sv_total)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_total$se, as.numeric(survey::SE(sv_total)), tolerance = 1e-8)
+  expect_equal(sc_total$ci_low, confint(sv_total)[1], tolerance = 1e-6)
+  expect_equal(sc_total$ci_high, confint(sv_total)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() grouped Fay SE matches survey::svyby() per group", {
+  skip_if_not_installed("survey")
+
+  pair <- make_fay_oracle_pair(rho = 0.3, mse = TRUE)
+
+  expect_equal(
+    pair$sc@variables$scale,
+    1 / (10 * (1 - 0.3)^2),
+    tolerance = 1e-8
+  )
+  expect_equal(pair$sv$scale, 1 / (10 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc_by <- get_means(pair$sc, y1, group = group, variance = c("se", "ci"))
+  sv_by <- survey::svyby(~y1, ~group, pair$sv, survey::svymean)
+  sv_ci <- confint(sv_by)
+
+  # Rows are matched by group level, not by position.
+  idx <- match(sc_by$group, sv_by$group)
+  expect_identical(sort(sc_by$group), sort(as.character(sv_by$group)))
+  expect_false(anyNA(idx))
+
+  expect_equal(sc_by$mean, sv_by$y1[idx], tolerance = 1e-10)
+  expect_equal(sc_by$se, sv_by$se[idx], tolerance = 1e-8)
+  expect_equal(sc_by$ci_low, unname(sv_ci[idx, 1]), tolerance = 1e-6)
+  expect_equal(sc_by$ci_high, unname(sv_ci[idx, 2]), tolerance = 1e-6)
+})
+
+# ---------------------------------------------------------------------------
+# Block 24c: Fay against BRR and rscales — surveycore only
+# ---------------------------------------------------------------------------
+
+test_that("Fay at rho = 0 gives the BRR SE and the BRR scale", {
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  fay <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "Fay",
+    rho = 0,
+    mse = TRUE
+  )
+  brr <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "BRR",
+    mse = TRUE
+  )
+
+  expect_equal(fay@variables$scale, 1 / 10, tolerance = 1e-8)
+  expect_equal(brr@variables$scale, 1 / 10, tolerance = 1e-8)
+
+  fay_se <- get_means(fay, y1, variance = "se")$se
+  brr_se <- get_means(brr, y1, variance = "se")$se
+  expect_equal(fay_se, brr_se, tolerance = 1e-8)
+})
+
+test_that("Fay at rho = 0.5 gives twice the BRR SE and the same mean", {
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  fay <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "Fay",
+    rho = 0.5,
+    mse = TRUE
+  )
+  brr <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "BRR",
+    mse = TRUE
+  )
+
+  fay_res <- get_means(fay, y1, variance = "se")
+  brr_res <- get_means(brr, y1, variance = "se")
+
+  # 1 / (1 - 0.5)^2 = 4 on the variance, so 2 on the SE.
+  expect_equal(fay_res$se / brr_res$se, 2, tolerance = 1e-8)
+  expect_equal(fay_res$mean, brr_res$mean, tolerance = 1e-10)
+})
+
+test_that("Fay rscales = rep(2, 10) multiplies the SE by sqrt(2)", {
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  with_rscales <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "Fay",
+    rho = 0.3,
+    rscales = rep(2, 10),
+    mse = TRUE
+  )
+  without_rscales <- as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = all_of(repwt_cols),
+    type = "Fay",
+    rho = 0.3,
+    mse = TRUE
+  )
+
+  se_with <- get_means(with_rscales, y1, variance = "se")$se
+  se_without <- get_means(without_rscales, y1, variance = "se")$se
+  expect_equal(se_with / se_without, sqrt(2), tolerance = 1e-8)
+})
+
+test_that("get_means() on an all-NA outcome agrees for Fay and BRR", {
+  # Inline edge-case frame: 8 rows, 4 Fay replicate columns built with
+  # rho = 0.3, so each half-sample is multiplied by 1.7 or 0.3.
+  df <- data.frame(
+    wt = c(1, 2, 3, 4, 1.5, 2.5, 3.5, 4.5),
+    y1 = rep(NA_real_, 8)
+  )
+  half <- list(
+    c(1.7, 0.3, 1.7, 0.3, 1.7, 0.3, 1.7, 0.3),
+    c(1.7, 1.7, 0.3, 0.3, 1.7, 1.7, 0.3, 0.3),
+    c(1.7, 0.3, 0.3, 1.7, 1.7, 0.3, 0.3, 1.7),
+    c(1.7, 1.7, 1.7, 1.7, 0.3, 0.3, 0.3, 0.3)
+  )
+  for (r in 1:4) {
+    df[[paste0("repwt_", r)]] <- df$wt * half[[r]]
+  }
+
+  fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(paste0("repwt_", 1:4)),
+    type = "Fay",
+    rho = 0.3,
+    mse = TRUE
+  )
+  brr <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = all_of(paste0("repwt_", 1:4)),
+    type = "BRR",
+    mse = TRUE
+  )
+
+  # Both return; neither raises. The NA positions match.
+  fay_res <- get_means(fay, y1, variance = c("se", "ci"))
+  brr_res <- get_means(brr, y1, variance = c("se", "ci"))
+
+  expect_identical(is.na(fay_res$mean), is.na(brr_res$mean))
+  expect_identical(is.na(fay_res$se), is.na(brr_res$se))
+  expect_identical(fay_res$n, brr_res$n)
+})
+
+# ---------------------------------------------------------------------------
 # Block 25: One bootstrap replicate column — the infinite scale in the engine
 # ---------------------------------------------------------------------------
 
