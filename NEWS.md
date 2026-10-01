@@ -72,6 +72,25 @@
 
 ## Breaking changes
 
+* `as_survey_replicate()` gains `rho`, the Fay shrinkage factor, and
+  `type = "Fay"` now requires it (`surveycore_error_fay_rho_missing`). The Fay
+  scale is now `1 / (R * (1 - rho)^2)`. Before this change a Fay design used
+  the BRR scale `1/R`, so every Fay standard error was too small. Rebuilt with
+  the correct `rho`, a standard error is the old one divided by `1 - rho`: 1.43
+  times as large at `rho = 0.3`, and twice as large at `rho = 0.5`. Point
+  estimates do not change. Rebuild saved Fay designs with `rho`: a saved design
+  keeps the old scale. A supplied `scale` is now discarded for Fay, as in
+  `survey`. `rho` passed with any other type raises
+  `surveycore_warning_rho_ignored` and is discarded. `from_svydesign()` carries
+  a `survey` Fay design's `rho` across. `print()` and `summary()` show `rho`
+  for a Fay design. (#243)
+
+* `as_survey_replicate()`'s new `rho` argument sits after `type` and before
+  `scale`, the order `survey::svrepdesign()` uses. `scale`, `rscales`, `fpc`,
+  `fpctype`, `mse` and `calibration` each move one position later. A call that
+  passed any of them by position now binds the value to the wrong argument;
+  name those arguments. Calls that name them are unaffected. (#243)
+
 * `as_survey_twophase()` now refuses a `survey_replicate` phase 1 with
   `surveycore_error_twophase_replicate_phase1`. The phase-1 variance code reads
   only the phase-1 strata, cluster and FPC columns, so a replicate phase 1 got
@@ -218,13 +237,13 @@
   per-replicate translation would return numbers surveycore does not produce.
   The FPC stays on the surveycore design. (#198, #249)
 
-* `as_svydesign()` now exports a Fay replicate design. `survey::svrepdesign()`
-  requires `rho` for `type = "Fay"` and the route passed none, so a Fay design
-  could not be exported at all. The shrinkage factor is now recovered from the
-  recorded scale, and a design whose scale yields no usable factor raises
-  `surveycore_error_fay_rho_unrecoverable`. `as_svydesign(from_svydesign(x))`
-  now returns the estimate and standard error it started with, for every
-  replicate type. (#198, #250)
+* `as_svydesign()` now exports a Fay replicate design. It passes the design's
+  stored `rho` to `survey::svrepdesign()`, which requires one for
+  `type = "Fay"`. A Fay design that records no `rho`, such as one saved by an
+  earlier version, raises `surveycore_error_fay_rho_unrecoverable`; rebuild it
+  with `as_survey_replicate(type = "Fay", rho = )`.
+  `as_svydesign(from_svydesign(x))` returns the estimate and standard error it
+  started with, for every replicate type. (#198, #250, #243)
 
 * `as_svydesign()` now refuses a `survey_replicate` design that names no
   replicate weight column, with `surveycore_error_repweights_empty`, rather

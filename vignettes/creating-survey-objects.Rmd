@@ -296,9 +296,10 @@ the correct type from your codebook's technical documentation.
 | `"successive-difference"` | Successive Difference      | "SDR" or "successive difference replication"      | ACS 1-year PUMS [@census2022]            |
 | `"ACS"`                 | ACS variant                  | Specific to ACS 5-year methodology                | ACS 5-year PUMS                          |
 
-The Fay epsilon parameter (`fay_rho`) controls how much each replicate weight
+The Fay shrinkage factor (`rho`) controls how much each replicate weight
 differs from the full-sample weight. Its value is specified in the survey's
 technical documentation [@fay1989; @judkins1990].
+`as_survey_replicate()` requires `rho` when `type = "Fay"`.
 
 ### 3.2 Worked example: ACS PUMS 2022 — Wyoming
 
@@ -871,7 +872,7 @@ arguments:
 | "FPC", "finite population correction", "population size"         | `fpc =`                                              |                                           |
 | "replicate weights", "bootstrap weights", "BRR weights"          | `repweights =`                                       | Use `as_survey_replicate()`               |
 | "base weight", "design weight" (with separate replicates)        | `weights =` in `as_survey_replicate()`               |                                           |
-| "Fay coefficient", "Fay factor", "epsilon"                       | `fay_rho =`                                          | With `type = "Fay"`                       |
+| "Fay coefficient", "Fay factor", "epsilon"                       | `rho =`                                              | With `type = "Fay"`                       |
 | "raking weights", "post-stratification weights", "cal weights"   | `weights =` in `as_survey_nonprob()`                 | Non-probability design                    |
 | "two-phase", "double sampling", "case-cohort"                    | Phase 1 → `as_survey()`, then `as_survey_twophase()` |                                           |
 
