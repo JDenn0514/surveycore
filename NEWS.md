@@ -72,6 +72,12 @@
 
 ## Breaking changes
 
+* `as_survey_twophase()` now refuses a `survey_replicate` phase 1 with
+  `surveycore_error_twophase_replicate_phase1`. The phase-1 variance code reads
+  only the phase-1 strata, cluster and FPC columns, so a replicate phase 1 got
+  a standard error that ignored its replicate weights. `survey` has no such
+  design. This reverses PR #74. Build phase 1 with `as_survey()`. (#243)
+
 * A survey design object now rejects a domain marker column that is not
   logical. The column named by `SURVEYCORE_DOMAIN_COL` marks which rows sit
   inside the active domain, and the design's class validator tests its storage
