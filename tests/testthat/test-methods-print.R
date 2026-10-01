@@ -1885,3 +1885,125 @@ test_that("print.survey_twophase() domain line counts phase 2 rows only", {
   expect_identical(counts$total, sum(ph2))
   expect_identical(domain_line(pair$a), domain_line(pair$b))
 })
+
+
+# ── Fay rho in print() and summary() ──────────────────────────────────────
+
+# Fay design: 10 replicate columns, rho = 0.5, so the scale is
+# 1 / (10 * (1 - 0.5)^2) = 0.4.
+make_fay_design <- function() {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "fay",
+    seed = 15
+  )
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.5
+  )
+}
+
+# The same design rebuilt by hand with the given rho key value (NULL drops
+# the key) and type. The exported constructor takes an untyped variables
+# list, so it reaches stored states that as_survey_replicate() refuses.
+rebuild_fay_design <- function(d, rho = NULL, type = "Fay") {
+  vars <- d@variables
+  vars[["rho"]] <- rho
+  vars[["type"]] <- type
+  survey_replicate(data = d@data, metadata = d@metadata, variables = vars)
+}
+
+# The cli lines of an output. The inner capture drops the tibble body, which
+# goes to stdout.
+cli_lines <- function(expr) {
+  utils::capture.output(
+    invisible(utils::capture.output(expr)),
+    type = "message"
+  )
+}
+
+
+test_that("print.survey_replicate class line shows rho for a Fay design", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_fay_design()
+  test_invariants(d)
+  expect_equal(d@variables$scale, 0.4, tolerance = 1e-8)
+
+  lines <- cli_lines(print(d))
+  expect_true(
+    "<survey_replicate> (FAY, 10 replicates, rho = 0.5)" %in% lines
+  )
+  expect_snapshot(print(d))
+})
+
+
+test_that("print.survey_replicate full=TRUE puts the Rho line after Scale", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_fay_design()
+
+  # cli draws the bullet as a Unicode dot or as "*", by locale.
+  lines <- sub("^\\S+ ", "", cli_lines(print(d, full = TRUE)))
+  scale_at <- which(lines == "Scale: 0.4")
+  expect_length(scale_at, 1L)
+  expect_identical(lines[scale_at + 1L], "Rho: 0.5")
+  expect_snapshot(print(d, full = TRUE))
+})
+
+
+test_that("summary.survey_replicate shows rho on the type line and after Scale", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_fay_design()
+
+  lines <- cli_lines(summary(d))
+  expect_true(
+    "Type: replicate weights (FAY, 10 replicates, rho = 0.5)" %in% lines
+  )
+  scale_at <- which(lines == "Scale: 0.4")
+  expect_length(scale_at, 1L)
+  expect_identical(lines[scale_at + 1L], "Rho: 0.5")
+  expect_snapshot(summary(d))
+})
+
+
+test_that("a Fay design with no rho key prints and summarises no rho", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- rebuild_fay_design(make_fay_design())
+  expect_false("rho" %in% names(d@variables))
+
+  lines <- c(cli_lines(print(d, full = TRUE)), cli_lines(summary(d)))
+  expect_false(any(grepl("Rho:", lines, fixed = TRUE)))
+  expect_false(any(grepl("rho =", lines, fixed = TRUE)))
+  expect_snapshot({
+    print(d, full = TRUE)
+    summary(d)
+  })
+})
+
+
+test_that("a Fay design with an unusable stored rho prints no rho", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  base <- make_fay_design()
+  bad_rhos <- list(1, -0.1, NA_real_, c(0.5, 0.5), "0.5", matrix(0.5))
+
+  for (bad in bad_rhos) {
+    d <- rebuild_fay_design(base, rho = bad)
+    lines <- c(cli_lines(print(d, full = TRUE)), cli_lines(summary(d)))
+    expect_false(any(grepl("rho", lines, ignore.case = TRUE)))
+  }
+})
+
+
+test_that("a non-Fay design with a stored rho key prints no rho", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- rebuild_fay_design(make_fay_design(), rho = 0.5, type = "BRR")
+  expect_identical(d@variables$rho, 0.5)
+
+  lines <- c(cli_lines(print(d, full = TRUE)), cli_lines(summary(d)))
+  expect_false(any(grepl("rho", lines, ignore.case = TRUE)))
+})
