@@ -2681,7 +2681,7 @@ test_that("as_svydesign(from_svydesign(b)) reproduces b's mean, SE and CI [numer
 })
 
 # X-13. §VI properties 3 and 9 together. The Fay leg of the round trip needs
-#       the recovered shrinkage factor twice: once to build the exported
+#       the stored shrinkage factor twice: once to build the exported
 #       design, and once for the numbers it reports.
 test_that("the round trip reproduces a Fay source's mean, SE and CI [numerical]", {
   skip_if_not_installed("survey")
