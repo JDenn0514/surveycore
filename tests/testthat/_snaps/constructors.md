@@ -227,7 +227,17 @@
     Condition
       Error in `as_survey_twophase()`:
       x `phase1` must be a survey design object (<survey_base>), not <data.frame>.
-      i Create it first with `as_survey()` or `as_survey_replicate()`.
+      i Create it first with `as_survey()`.
+
+# as_survey_twophase() refuses a survey_replicate phase-1
+
+    Code
+      as_survey_twophase(phase_rep, subset = in_phase2)
+    Condition
+      Error in `as_survey_twophase()`:
+      x `as_survey_twophase()` does not accept a <survey_replicate> phase 1.
+      i Phase 1 variance for a replicate design is not implemented, and survey has no two-phase design with a replicate phase 1.
+      v Build phase 1 with `as_survey()` from the design's cluster, strata and weight columns.
 
 # as_survey_twophase() errors when subset is not provided [row 20]
 

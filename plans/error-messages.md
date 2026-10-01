@@ -48,7 +48,7 @@ against the messages defined here.
 | 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
 | 17 | `as_survey_replicate()` | `scale`/`rscales` length mismatch | ERROR | `surveycore_error_rscales_length` | `"Length of {.arg rscales} ({length(rscales)}) must equal number of replicate weights ({n_rep})"` |
 | 18 | `as_survey_replicate()` | `type` not in valid set | ERROR | *(handled by match.arg)* | `"'{type}' is not a valid replicate type. Choose from: {.val {valid_types}}"` |
-| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1]]}}. Create it first with {.fn as_survey}, {.fn as_survey_srs}, or {.fn as_survey_replicate}."` |
+| 19 | `as_survey_twophase()` | `phase1` is not a survey design object | ERROR | `surveycore_error_phase1_class` | `"x" = "{.arg phase1} must be a survey design object ({.cls survey_base}), not {.cls {class(phase1)[[1L]]}}.", "i" = "Create it first with {.fn as_survey}."` |
 | 20 | `as_survey_twophase()` | `subset` not provided (missing) | ERROR | `surveycore_error_subset_missing` | `"{.arg subset} is required: a logical column indicating Phase 2 membership"` |
 | 21 | `as_survey_twophase()` | `subset` selects >1 column | ERROR | `surveycore_error_subset_multiple` | `"{.arg subset} must select exactly one column, not {length(subset_cols)}"` |
 | 22 | `as_survey_twophase()` | `subset` column is not logical | ERROR | `surveycore_error_subset_not_logical` | `"{.arg subset} column {.field {subset_var}} must be logical, not {.cls {class(data[[subset_var]])}}"` |
@@ -573,9 +573,9 @@ one concept keeps one phrasing.
 ### replicate-fay-rho rows (2026-09-30)
 
 Issue #243. `as_survey_replicate()` gains `rho`, the Fay shrinkage factor.
-All three rows are user-facing constructor conditions, so they carry the full
+All four rows are user-facing constructor conditions, so they carry the full
 CLI x/i/v register. `FR` is the prefix for Fay `rho`. `TP` is the prefix
-for the two-phase row a later PR of the same issue adds. Row CB-4 above is
+for the two-phase row TP-1, which the same issue adds. Row CB-4 above is
 restated for this work in the same PR that ships the code; its new text is
 fixed in the `replicate-fay-rho` spec.
 
@@ -589,3 +589,4 @@ length 0"` when `length(rho)` is 0; `{rho_cls}` = `class(rho)[[1L]]`;
 | FR-1 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is `NULL` (not supplied, or supplied as `NULL`) | ERROR | `surveycore_error_fay_rho_missing` | `"x" = "{.code type = \"Fay\"} requires {.arg rho}.", "i" = "{.arg rho} is the Fay shrinkage factor the replicate weights were built with, and the Fay scale {.code 1 / (R * (1 - rho)^2)} needs it.", "v" = "Pass the value the survey's technical documentation gives, for example {.code rho = 0.5}."` |
 | FR-2 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is not `NULL` and is not one finite number in `[0, 1)`: not numeric (logical and character included), a `dim` attribute (a 1 x 1 matrix or array), length other than 1, `NA`, `NaN`, infinite, below 0, or 1 or more | ERROR | `surveycore_error_fay_rho_invalid` | `"x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.", "i" = "Got {.cls {rho_cls}}: {rho_txt}.", "v" = "Pass the Fay shrinkage factor as one number, for example {.code rho = 0.5}."` |
 | FR-3 | `as_survey_replicate()` | `type` is not `"Fay"` and `rho` is not `NULL`. The design stores `rho = NULL` | WARN | `surveycore_warning_rho_ignored` | `"!" = "{.arg rho} applies only to {.code type = \"Fay\"} and was ignored.", "i" = "The design has type {.val {type}} and stores no {.arg rho}.", "v" = "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate weights are Fay weights."` |
+| TP-1 | `as_survey_twophase()` | `phase1` is a `survey_replicate`, of any replicate type. Checked directly after row 19 and before every `subset` check. Decision S9 of issue #243; reverses PR #74 | ERROR | `surveycore_error_twophase_replicate_phase1` | `"x" = "{.fn as_survey_twophase} does not accept a {.cls survey_replicate} phase 1.", "i" = "Phase 1 variance for a replicate design is not implemented, and {.pkg survey} has no two-phase design with a replicate phase 1.", "v" = "Build phase 1 with {.fn as_survey} from the design's cluster, strata and weight columns."` |

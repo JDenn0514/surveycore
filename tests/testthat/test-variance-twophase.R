@@ -426,7 +426,7 @@ test_that("get_means() twophase with method='simple' returns finite estimates", 
   expect_true(is.finite(result$mean[[1L]]))
 })
 
-# ── Section 5: SRS / replicate phase-1 designs ──────────────────────────────
+# ── Section 5: SRS phase-1 designs ──────────────────────────────────────────
 
 test_that("two-phase with SRS phase-1 matches survey [oracle]", {
   skip_if_not_installed("survival")
@@ -483,28 +483,4 @@ test_that("two-phase with SRS phase-1 get_totals matches survey [oracle]", {
   expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
   expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
   expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
-})
-
-test_that("two-phase with survey_replicate phase-1 constructs and estimates", {
-  df <- make_survey_data(
-    n = 100,
-    n_psu = 10L,
-    design = "replicate",
-    seed = 801L
-  )
-  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
-
-  phase_rep <- as_survey_replicate(
-    df,
-    weights = wt,
-    repweights = starts_with("repwt_"),
-    type = "JK1"
-  )
-  tp <- as_survey_twophase(phase_rep, subset = in_phase2, method = "approx")
-
-  expect_true(S7::S7_inherits(tp, survey_twophase))
-
-  result <- get_means(tp, y1, variance = "se")
-  expect_true(is.finite(result$mean[[1L]]))
-  expect_gte(result$se[[1L]], 0)
 })

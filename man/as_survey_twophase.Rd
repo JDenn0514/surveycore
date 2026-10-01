@@ -16,11 +16,11 @@ as_survey_twophase(
 }
 \arguments{
 \item{phase1}{A survey design object (inheriting from \code{survey_base})
-representing the Phase 1 design. Accepts \code{survey_taylor} or
-\code{survey_replicate} objects.
+representing the Phase 1 design. Accepts a \code{survey_taylor} object.
+A \code{survey_replicate} object is refused: the phase-1 variance for a
+replicate design is not implemented.
 Its \verb{@data} must contain ALL rows from both phases, plus a logical
-indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}
-or \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
+indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}.}
 
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
 column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:
@@ -120,8 +120,7 @@ two-phase stratified samples: applications in epidemiology.
 \doi{10.1007/s12561-009-9001-6}
 }
 \seealso{
-\code{\link[=as_survey]{as_survey()}} for Taylor series designs,
-\code{\link[=as_survey_replicate]{as_survey_replicate()}} for replicate-weight designs
+\code{\link[=as_survey]{as_survey()}} for Taylor series designs
 
 Other constructors:
 \code{\link[=as_caldata]{as_caldata()}},

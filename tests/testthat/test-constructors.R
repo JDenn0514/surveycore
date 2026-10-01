@@ -2314,12 +2314,16 @@ test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no 
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt))
   tp <- as_survey_twophase(phase1, subset = subset)
+  test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
 })
 
-test_that("as_survey_twophase() accepts survey_replicate phase-1", {
+test_that("as_survey_twophase() refuses a survey_replicate phase-1", {
   df <- make_survey_data(
-    n = 100, n_psu = 10L, design = "replicate", seed = 20L
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
   )
   df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
   phase_rep <- as_survey_replicate(
@@ -2328,52 +2332,108 @@ test_that("as_survey_twophase() accepts survey_replicate phase-1", {
     repweights = starts_with("repwt_"),
     type = "JK1"
   )
-  tp <- as_survey_twophase(phase_rep, subset = in_phase2)
-  test_invariants(tp)
-  expect_true(S7::S7_inherits(tp, survey_twophase))
+  expect_error(
+    as_survey_twophase(phase_rep, subset = in_phase2),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_twophase(phase_rep, subset = in_phase2)
+  )
 })
 
-test_that("as_survey_twophase() carries the phase-1 scale of both changed types", {
-  # The two-phase constructor copies phase1@variables wholesale, so each
-  # changed default arrives in @variables$phase1$scale and is not recomputed
-  # (issue #253). Each value is asserted against its own literal, never one
-  # against the other.
+test_that("as_survey_twophase() refuses a replicate phase-1 of all nine types", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
+  )
+  df$in_phase2 <- c(rep(TRUE, 50), rep(FALSE, 50))
+  other_types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (rep_type in other_types) {
+    phase_rep <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = rep_type
+    )
+    expect_error(
+      as_survey_twophase(phase_rep, subset = in_phase2),
+      class = "surveycore_error_twophase_replicate_phase1",
+      label = rep_type
+    )
+  }
+  phase_fay <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "Fay",
+    rho = 0.3
+  )
+  expect_error(
+    as_survey_twophase(phase_fay, subset = in_phase2),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+})
+
+test_that("as_survey_twophase() refuses a replicate phase-1 before checking subset", {
+  df <- make_survey_data(
+    n = 100,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 20L
+  )
+  phase_rep <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  expect_error(
+    as_survey_twophase(phase_rep),
+    class = "surveycore_error_twophase_replicate_phase1"
+  )
+})
+
+test_that("as_survey_twophase() refuses a Fay phase-1 with a half-rows subset", {
   df <- make_survey_data(
     n = 200,
-    n_psu = 20L,
+    n_psu = 20,
+    n_strata = 4,
     design = "replicate",
-    type = "jkn",
-    seed = 258L
+    type = "fay",
+    seed = 15
   )
-  df$in_phase2 <- rep(c(TRUE, FALSE), length.out = nrow(df))
-  n_rep <- sum(startsWith(names(df), "repwt_"))
-  expect_identical(n_rep, 20L)
-
-  p1_jkn <- as_survey_replicate(
+  df$half <- rep(c(TRUE, FALSE), length.out = nrow(df))
+  phase_fay <- as_survey_replicate(
     df,
     weights = wt,
     repweights = starts_with("repwt_"),
-    type = "JKn"
+    type = "Fay",
+    rho = 0.3
   )
-  p1_boot <- as_survey_replicate(
-    df,
-    weights = wt,
-    repweights = starts_with("repwt_"),
-    type = "bootstrap"
+  expect_error(
+    as_survey_twophase(phase_fay, subset = half),
+    class = "surveycore_error_twophase_replicate_phase1"
   )
+})
 
-  expect_no_condition(tp_jkn <- as_survey_twophase(p1_jkn, subset = in_phase2))
-  expect_no_condition(
-    tp_boot <- as_survey_twophase(p1_boot, subset = in_phase2)
-  )
-
-  expect_identical(tp_jkn@variables$phase1$type, "JKn")
-  expect_identical(tp_boot@variables$phase1$type, "bootstrap")
-  expect_equal(tp_jkn@variables$phase1$scale, 1, tolerance = 1e-8)
-  expect_equal(
-    tp_boot@variables$phase1$scale,
-    1 / (n_rep - 1L),
-    tolerance = 1e-8
+test_that("as_survey_twophase() does not refuse a survey_nonprob phase-1 as replicate", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- as_survey_nonprob(df, weights = wt)
+  expect_no_error(
+    as_survey_twophase(phase1, subset = subset),
+    class = "surveycore_error_twophase_replicate_phase1"
   )
 })
 
