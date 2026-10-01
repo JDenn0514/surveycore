@@ -975,15 +975,12 @@ test_that("get_means() replicate SE matches survey::svymean() — other design",
 test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
   skip_if_not_installed("survey")
 
-  # This block compares nothing yet. survey refuses type = "Fay" without a
-  # rho before it builds anything. surveycore now takes rho, and rho = 0
-  # gives the BRR scale, 1 / R. A later PR of issue #243 rewrites this block
-  # into an oracle comparison.
-  #
-  # The first half asserts what another package refuses to do, so that half
-  # guards survey's behaviour and not surveycore's. A failure there most
-  # likely means survey changed its message or dropped the requirement —
-  # read it that way before reading it as a surveycore regression.
+  # survey refuses type = "Fay" without a rho before it builds anything.
+  # This block asserts what another package refuses to do, so it guards
+  # survey's behaviour and not surveycore's. A failure here most likely
+  # means survey changed its message or dropped the requirement — read it
+  # that way before reading it as a surveycore regression. The Fay oracle
+  # comparisons that follow pass rho to both sides.
   d <- make_survey_data(
     n = 200,
     n_psu = 20,
@@ -993,7 +990,6 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
     seed = 15
   )
   repwt_cols <- grep("^repwt_", names(d), value = TRUE)
-  n_rep <- length(repwt_cols)
 
   # The error is a bare stop(), so it carries no class but simpleError, and
   # the message text is the only thing that names the branch.
@@ -1007,19 +1003,6 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
     "With type='Fay' you must supply the correct rho",
     fixed = TRUE
   )
-
-  # surveycore builds the design and stores the BRR scale, 1 / R, because
-  # rho = 0 shrinks by nothing. R is 10 here, not 20: the generator returns
-  # n_psu %/% 2 replicate columns in the fay mode as it does in brr.
-  # SE/variance row, 1e-8.
-  sc <- as_survey_replicate(
-    d,
-    weights = wt,
-    repweights = all_of(repwt_cols),
-    type = "Fay",
-    rho = 0
-  )
-  expect_equal(sc@variables$scale, 1 / n_rep, tolerance = 1e-8)
 })
 
 # ---------------------------------------------------------------------------
