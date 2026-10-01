@@ -1,0 +1,251 @@
+== M0 versions
+R: R version 4.6.1 (2026-06-24 ucrt)
+survey: 4.5
+surveycore: 1.1.0.9000
+
+== M1 survey:::svrepdesign.default, lines naming rho, Fay or scale
+   2:     data = NULL, degf = NULL, type = c("BRR", "Fay", "JK1", "JKn", 
+   4:     combined.weights = TRUE, rho = NULL, bootstrap.average = NULL, 
+   5:     scale = NULL, rscales = NULL, fpc = NULL, fpctype = c("fraction", 
+  10:     if (type == "Fay" && is.null(rho)) 
+  11:         stop("With type='Fay' you must supply the correct rho")
+  13:         "JK2") && !is.null(rho)) 
+  14:         warning("rho not relevant to JK1 design: ignored.")
+  15:     if (type %in% c("other") && !is.null(rho)) 
+  16:         warning("rho ignored.")
+  71:     if (!is.null(rscales) && !(length(rscales) %in% c(1, ncol(repweights)))) {
+  72:         stop(paste("rscales has length ", length(rscales), ", should be ncol(repweights)", 
+  76:         if (!is.null(scale) | !is.null(rscales)) 
+  77:             warning(paste("with type", type, "scale= and rscales= are not needed and will be ignored"))
+  80:         if (!is.null(scale)) 
+  81:             warning("type='BRR' does not use 'scale=' argument")
+  82:         if (!is.null(rho)) 
+  83:             warning("type='BRR' does not use 'rho=' argument, you may want type='Fay'")
+  84:         scale <- 1/ncol(repweights)
+  86:     if (type == "Fay") 
+  87:         scale <- 1/(ncol(repweights) * (1 - rho)^2)
+  91:         if (is.null(scale)) 
+  92:             scale <- bootstrap.average/(ncol(repweights) - 1)
+  93:         if (is.null(rscales)) 
+  94:             rscales <- rep(1, ncol(repweights))
+  96:     if (type == "JK1" && is.null(scale)) {
+  98:             warning("scale (n-1)/n not provided: guessing from weights")
+  99:             scale <- 1/max(repweights[, 1])
+ 103:             scale <- (probably.n - 1)/probably.n
+ 104:             warning("scale (n-1)/n not provided: guessing n=number of replicates")
+ 107:     if (type == "JKn" && is.null(rscales)) {
+ 109:             warning("rscales (n-1)/n not provided:guessing from weights")
+ 110:             rscales <- 1/apply(repweights, 2, max)
+ 112:         else stop("Must provide rscales for combined JKn weights")
+ 115:         rscales <- rep(1, ncol(repweights))
+ 116:         scale <- 4/ncol(repweights)
+ 119:         warning(paste("with type", type, "scale= and rscales= are not needed and will be ignored"))
+ 120:         rscales <- rep(1, ncol(repweights))
+ 121:         scale <- 1
+ 123:     if (type == "other" && (is.null(rscales) || is.null(scale))) {
+ 124:         if (is.null(rscales)) 
+ 125:             rscales <- rep(1, NCOL(repweights))
+ 126:         if (is.null(scale)) 
+ 127:             scale <- 1
+ 128:         warning("scale or rscales not specified, set to 1")
+ 130:     if (is.null(rscales)) 
+ 131:         rscales <- rep(1, NCOL(repweights))
+ 136:         if (type %in% c("BRR", "Fay", "JK2", "ACS", "successive-difference")) 
+ 140:         if (length(fpc) != length(rscales)) 
+ 146:         rscales <- rscales * fpc
+ 148:     if (is.null(scale)) 
+ 149:         scale <- 1
+ 150:     rval <- list(type = type, scale = scale, rscales = rscales, 
+ 151:         rho = rho, call = sys.call(), combined.weights = combined.weights)
+
+== M1b survey:::svrVar, whole body
+function (thetas, scale, rscales, na.action = getOption("na.action"), 
+    mse = getOption("survey.replicates.mse"), coef) 
+{
+    thetas <- get(na.action)(thetas)
+    naa <- attr(thetas, "na.action")
+    if (!is.null(naa)) {
+        rscales <- rscales[-naa]
+        if (length(rscales)) 
+            warning(length(naa), " replicates gave NA results and were discarded.")
+        else stop("All replicates contained NAs")
+    }
+    if (is.null(mse)) 
+        mse <- FALSE
+    if (length(dim(thetas)) == 2) {
+        if (mse) {
+            meantheta <- coef
+        }
+        else {
+            meantheta <- colMeans(thetas[rscales > 0, , drop = FALSE])
+        }
+        v <- crossprod(sweep(thetas, 2, meantheta, "-") * sqrt(rscales)) * 
+            scale
+    }
+    else {
+        if (mse) {
+            meantheta <- coef
+        }
+        else {
+            meantheta <- mean(thetas[rscales > 0])
+        }
+        v <- sum((thetas - meantheta)^2 * rscales) * scale
+    }
+    attr(v, "na.replicates") <- naa
+    attr(v, "means") <- meantheta
+    return(v)
+}
+<bytecode: 0x000002598588b9a0>
+<environment: namespace:survey>
+
+== M1c as.svrepdesign source, lines naming rho, Fay or type
+   1: function (design, type = c("auto", "JK1", "JKn", "BRR", "bootstrap", 
+   2:     "subbootstrap", "mrbbootstrap", "Fay"), fay.rho = 0, fpc = NULL, 
+   3:     fpctype = NULL, ..., compress = TRUE, mse = getOption("survey.replicates.mse")) 
+   8:     type <- match.arg(type)
+   9:     if (type == "auto") {
+  11:             type <- "JK1"
+  12:         else type <- "JKn"
+  15:     if (type == "JK1" && design$has.strata) 
+  17:     if (type %in% c("JKn", "BRR", "Fay") && !design$has.strata) 
+  20:         fpctype <- "population"
+  25:         else if (type %in% c("Fay", "BRR")) {
+  31:                 if (NCOL(fpc) > 1 && type != "mrbbootstrap") {
+  47:         if (type %in% c("Fay", "BRR", "subbootstrap")) 
+  48:             stop(paste("fpc information cannot be used for type=", 
+  49:                 type))
+  50:         if (is.null(fpctype)) 
+  51:             stop("fpctype must be supplied if fpc is supplied")
+  53:     if (type == "JK1") {
+  54:         r <- jk1weights(design$cluster[, 1], fpc = fpc, fpctype = fpctype, 
+  61:         type <- "JK1"
+  64:     else if (type %in% c("BRR", "Fay")) {
+  67:                 1], ..., fay.rho = fay.rho, compress = compress, 
+  70:             1], ..., fay.rho = fay.rho, compress = compress, 
+  75:         if (fay.rho == 0) 
+  76:             type <- "BRR"
+  77:         else type <- "Fay"
+  79:         scale <- 1/(ncol(repweights) * (1 - fay.rho)^2)
+  81:     else if (type == "JKn") {
+  84:                 1], fpc = fpc, fpctype = fpctype, compress = compress)
+  86:             1], fpc = fpc, fpctype = fpctype, compress = compress)
+  92:     else if (type == "bootstrap") {
+  95:                 1], fpc = fpc, fpctype = fpctype, compress = compress, 
+  98:             1], fpc = fpc, fpctype = fpctype, compress = compress, 
+ 105:     else if (type == "subbootstrap") {
+ 116:     else if (type == "mrbbootstrap") {
+ 128:         type = type, rho = fay.rho, scale = scale, rscales = rscales, 
+
+== fixture: make_survey_data(n = 200, n_psu = 20, n_strata = 4, design = 'replicate', type = 'fay', seed = 15); R = 10
+
+== M2 SE agreement: survey Fay(rho) vs surveycore scale 1/(R(1-rho)^2)
+-- svrepdesign Fay rho=0 mse=TRUE
+   sv$scale=0.1 sv$rho=0 formula=0.1
+   mean diff=0.000e+00  se sv=0.0476228676217971 sc=0.0476228676218052 diff=8.035e-15  ci diffs=-1.421e-14 1.421e-14
+-- svrepdesign Fay rho=0.3 mse=TRUE
+   sv$scale=0.204081632653061 sv$rho=0.3 formula=0.204081632653061
+   mean diff=0.000e+00  se sv=0.0680326680311388 sc=0.0680326680311503 diff=1.148e-14  ci diffs=-2.132e-14 2.132e-14
+-- svrepdesign Fay rho=0.5 mse=TRUE
+   sv$scale=0.4 sv$rho=0.5 formula=0.4
+   mean diff=0.000e+00  se sv=0.0952457352435943 sc=0.0952457352436104 diff=1.607e-14  ci diffs=-3.553e-14 3.553e-14
+-- svrepdesign Fay rho=0.9 mse=TRUE
+   sv$scale=10 sv$rho=0.9 formula=10
+   mean diff=0.000e+00  se sv=0.476228676217972 sc=0.476228676218052 diff=8.032e-14  ci diffs=-1.563e-13 1.563e-13
+-- svrepdesign Fay rho=0 mse=FALSE
+   sv$scale=0.1 sv$rho=0 formula=0.1
+   mean diff=0.000e+00  se sv=0.0473065129109953 sc=0.0473065129110028 diff=7.508e-15  ci diffs=-1.421e-14 1.421e-14
+-- svrepdesign Fay rho=0.3 mse=FALSE
+   sv$scale=0.204081632653061 sv$rho=0.3 formula=0.204081632653061
+   mean diff=0.000e+00  se sv=0.0675807327299933 sc=0.067580732730004 diff=1.073e-14  ci diffs=-2.132e-14 2.132e-14
+-- svrepdesign Fay rho=0.5 mse=FALSE
+   sv$scale=0.4 sv$rho=0.5 formula=0.4
+   mean diff=0.000e+00  se sv=0.0946130258219906 sc=0.0946130258220056 diff=1.502e-14  ci diffs=-2.842e-14 2.842e-14
+-- svrepdesign Fay rho=0.9 mse=FALSE
+   sv$scale=10 sv$rho=0.9 formula=10
+   mean diff=0.000e+00  se sv=0.473065129109953 sc=0.473065129110028 diff=7.505e-14  ci diffs=-1.421e-13 1.421e-13
+
+== M3 rho = 0 Fay equals BRR on the survey side
+-- svrepdesign BRR
+   BRR se=0.0476228676217971  Fay(0) se=0.0476228676217971  BRR$rho=NULL  names has rho: TRUE
+
+== M4 a supplied scale with type = 'Fay'
+-- Fay rho=0.3 scale=99
+   sv$scale=0.204081632653061
+
+== M5 rho supplied for other types
+-- type BRR rho = 0.3
+   warnings: type='BRR' does not use 'rho=' argument, you may want type='Fay'
+   $rho=0.3 $scale=0.1
+-- type JK1 rho = 0.3
+   warnings: rho not relevant to JK1 design: ignored. | scale (n-1)/n not provided: guessing n=number of replicates
+   $rho=0.3 $scale=0.9
+-- type JK2 rho = 0.3
+   warnings: rho not relevant to JK1 design: ignored. | with type JK2 scale= and rscales= are not needed and will be ignored
+   $rho=0.3 $scale=1
+-- type bootstrap rho = 0.3
+   $rho=0.3 $scale=0.1111111
+-- type ACS rho = 0.3
+   warnings: rho not relevant to JK1 design: ignored.
+   $rho=0.3 $scale=0.4
+-- type other rho = 0.3
+   warnings: rho ignored. | scale or rscales not specified, set to 1
+   $rho=0.3 $scale=1
+
+== M6 survey's own validation of rho for type = 'Fay'
+-- rho = 1
+   $scale=Inf
+-- rho = -0.2
+   $scale=0.06944444
+-- rho = 1.5
+   $scale=0.4
+-- rho = NA_real_
+   $scale=NA
+-- rho = c(0.1, 0.2)
+   $scale=0.12345680.15625
+-- rho = "a"
+   ERROR: non-numeric argument to binary operator
+-- rho = 0L
+   $scale=0.1
+-- rho = TRUE
+   $scale=Inf
+
+== M7 as.svrepdesign on a Taylor design
+-- list(type = "Fay", fay.rho = 0.3)
+   $type=Fay $rho=0.3 $scale=0.255102040816327 combined.weights=FALSE R=8
+-- list(type = "BRR")
+   $type=BRR $rho=0 $scale=0.125 combined.weights=FALSE R=8
+-- list(type = "BRR", fay.rho = 0.3)
+   $type=Fay $rho=0.3 $scale=0.255102040816327 combined.weights=FALSE R=8
+
+== M8 surveycore today: from_svydesign on a survey Fay design
+   @variables names: weights, repweights, type, scale, rscales, mse, fpc, fpctype, probs_provided, visible_vars
+   @variables$scale=0.255102040816327
+   @variables$rho present: FALSE
+   imported SE=0.318786100006704  survey SE=0.3187861000067
+
+== M9 surveycore today: as_survey_replicate(type = 'Fay'), no rho
+   stored scale=0.1 (1/R = 0.1)
+   rho=0.3: old se=0.0476228676218052 new se=0.0680326680311503 ratio new/old=1.42857142857143 1/(1-rho)=1.42857142857143
+   rho=0.5: old se=0.0476228676218052 new se=0.0952457352436104 ratio new/old=2 1/(1-rho)=2
+   print() of the legacy design:
+
+── Survey Design ───────────────────────────────────────────────────────────────
+<survey_replicate> (FAY, 10 replicates)
+Sample size: 200
+
+# A tibble: 200 × 18
+   psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+   <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+ 1 psu_1 stratum_1   656 12.5   39.3  0.228     0 C       13.3     12.5   14.3 
+ 2 psu_1 stratum_1   656 11.1   55.9  1.87      0 C       12.1     11.2    9.98
+ 3 psu_1 stratum_1   656  9.95  58.3 -0.266     1 B        9.91    10.1   10.5 
+ 4 psu_1 stratum_1   656 13.7   48.6 -1.45      0 B       12.7     12.7   14.4 
+ 5 psu_1 stratum_1   656 12.7   35.6 -2.26      0 A       12.7     13.5   11.2 
+ 6 psu_1 stratum_1   656 14.5   65.7 -0.222     0 A       16.9     13.0   14.3 
+ 7 psu_1 stratum_1   656 12.3   58.6 -1.48      0 A       11.8     13.6   13.2 
+ 8 psu_1 stratum_1   656 11.1   59.4  0.437     0 A       11.7     10.8   11.1 
+ 9 psu_1 stratum_1   656 12.2   43.1 -0.979     0 C       11.3     11.3   12.8 
+10 psu_2 stratum_1   656 14.5   41.5  1.08      1 A       13.3     12.9   14.8 
+# ℹ 190 more rows
+# ℹ 7 more variables: repwt_4 <dbl>, repwt_5 <dbl>, repwt_6 <dbl>,
+#   repwt_7 <dbl>, repwt_8 <dbl>, repwt_9 <dbl>, repwt_10 <dbl>
