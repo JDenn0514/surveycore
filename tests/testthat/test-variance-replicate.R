@@ -1005,6 +1005,38 @@ test_that("survey::svrepdesign() refuses Fay without rho — Fay design", {
   )
 })
 
+test_that("survey::svrepdesign() refuses JKn combined weights with no rscales", {
+  skip_if_not_installed("survey")
+
+  # survey refuses type = "JKn" on combined weights when no rscales is
+  # supplied. as_survey_replicate() mirrors this refusal for JKn (issue #255).
+  # This block guards survey's behaviour and not surveycore's: a failure here
+  # means survey changed its message or dropped the requirement.
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # The error is a bare stop(), so it carries no class but simpleError, and
+  # the message text is the only thing that names the branch.
+  expect_error(
+    survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JKn",
+      mse = TRUE,
+      data = d
+    ),
+    "Must provide rscales for combined JKn weights",
+    fixed = TRUE
+  )
+})
+
 # ---------------------------------------------------------------------------
 # Block 24b: Fay oracle comparisons against survey::svrepdesign(type = "Fay")
 # ---------------------------------------------------------------------------
