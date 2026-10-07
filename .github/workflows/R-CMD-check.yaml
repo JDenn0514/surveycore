@@ -13,6 +13,9 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    # A stalled package-mirror download in setup-r otherwise holds the job
+    # for GitHub's 6-hour default. The longest healthy job took 22 minutes.
+    timeout-minutes: 45
     continue-on-error: ${{ matrix.config.allow_failure }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
