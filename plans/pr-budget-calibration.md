@@ -56,6 +56,7 @@ pull requests of one feature. Re-derive it once this ledger holds 20 rows.
 | 2026-09-30 | #307 | 12 | 357 | 29.8 | 0 | 0 | — |
 | 2026-09-30 | #308 | 9 | 123 | 13.7 | 0 | 0 | — |
 | 2026-09-30 | #309 | 5 | 0 | 0.0 | 0 | 0 | — |
+| 2026-10-07 | #311 | 6 | 230 | 38.3 | 0 | 0 | — |
 
 ## Notes on individual rows
 
