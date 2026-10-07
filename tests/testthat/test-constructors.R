@@ -709,7 +709,8 @@ test_that("as_survey_replicate() JKn and bootstrap defaults rise by R/(R-1)", {
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = "JKn"
+      type = "JKn",
+      rscales = rep(1, n_rep)
     )
   )
   expect_no_condition(
@@ -804,7 +805,8 @@ test_that("as_survey_replicate() scale at one and two replicate columns", {
     df,
     weights = wt,
     repweights = all_of("repwt_1"),
-    type = "JKn"
+    type = "JKn",
+    rscales = 1
   )
   expect_equal(d_jkn_one@variables$scale, 1)
 })
@@ -825,7 +827,8 @@ test_that("as_survey_replicate() stores an explicit scale verbatim", {
     weights = wt,
     repweights = starts_with("repwt_"),
     type = "JKn",
-    scale = (n_rep - 1L) / n_rep
+    scale = (n_rep - 1L) / n_rep,
+    rscales = rep(1, n_rep)
   )
   d_boot <- as_survey_replicate(
     df,
@@ -838,28 +841,64 @@ test_that("as_survey_replicate() stores an explicit scale verbatim", {
   expect_equal(d_boot@variables$scale, 1 / n_rep)
 })
 
-test_that("as_survey_replicate() JKn with rscales = NULL stores scale = 1", {
-  # A NULL rscales makes the variance path substitute rep(1L, R), so no
-  # jackknife factor enters at all. The constructor still raises nothing
-  # (spec E5); issue #255 owns the refusal.
+test_that("as_survey_replicate() refuses JKn with no rscales", {
+  # JKn replicate weights are combined weights, so the stratum factor
+  # (n_h - 1) / n_h reaches the variance only through rscales. A NULL
+  # rscales would drop it silently; survey::svrepdesign() refuses the same
+  # input (issue #255).
   df <- make_survey_data(
-    n = 100,
-    n_psu = 10L,
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
     design = "replicate",
-    type = "jkn",
-    seed = 257L
+    type = "jk1",
+    seed = 15
   )
-  expect_no_condition(
-    d <- as_survey_replicate(
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_error(
+    as_survey_replicate(
       df,
       weights = wt,
-      repweights = starts_with("repwt_"),
-      type = "JKn",
-      rscales = NULL
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn"
+    ),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn"
     )
   )
-  expect_equal(d@variables$scale, 1)
-  expect_null(d@variables$rscales)
+})
+
+test_that("as_survey_replicate() refuses JKn with no rscales before the rho warning", {
+  # The JKn refusal runs before the rho step, so a JKn call that also
+  # supplies rho raises the error and no rho warning.
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_no_warning(
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = "JKn",
+        rho = 0.3
+      ),
+      class = "surveycore_error_stratified_jk_rscales_unset"
+    )
+  )
 })
 
 test_that("as_survey_replicate() stores both changed defaults on a two-row frame", {
@@ -883,7 +922,8 @@ test_that("as_survey_replicate() stores both changed defaults on a two-row frame
       small,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = "JKn"
+      type = "JKn",
+      rscales = rep(1, n_rep)
     )
   )
   expect_no_condition(
@@ -988,19 +1028,20 @@ test_that("as_survey_replicate() stores the default scale of all nine types, Fay
   n_rep <- sum(startsWith(names(df), "repwt_"))
   expect_identical(n_rep, 20L)
 
-  stored <- function(ty, rho = NULL) {
+  stored <- function(ty, rho = NULL, rscales = NULL) {
     as_survey_replicate(
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
       type = ty,
-      rho = rho
+      rho = rho,
+      rscales = rscales
     )@variables$scale
   }
 
   expect_equal(stored("JK1"), (n_rep - 1L) / n_rep)
   expect_equal(stored("JK2"), 1)
-  expect_equal(stored("JKn"), 1)
+  expect_equal(stored("JKn", rscales = rep(1, 20)), 1)
   expect_equal(stored("BRR"), 1 / n_rep)
   expect_equal(
     stored("Fay", rho = 0.3),
@@ -1140,7 +1181,8 @@ test_that("as_survey_replicate() warns and discards rho for the eight other type
         weights = wt,
         repweights = starts_with("repwt_"),
         type = ty,
-        rho = 0.3
+        rho = 0.3,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
       ),
       class = "surveycore_warning_rho_ignored"
     )
@@ -1148,7 +1190,8 @@ test_that("as_survey_replicate() warns and discards rho for the eight other type
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = ty
+      type = ty,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
     )
     expect_null(d@variables$rho)
     expect_identical(d@variables$scale, d_plain@variables$scale)
@@ -1197,7 +1240,8 @@ test_that("as_survey_replicate() stores the rho key for every type", {
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = ty
+      type = ty,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
     )
     expect_true("rho" %in% names(d@variables))
     expect_identical(d@variables$rho, NULL)
@@ -1358,7 +1402,8 @@ test_that("as_survey_replicate() raises no warning for the eight other types wit
         df,
         weights = wt,
         repweights = starts_with("repwt_"),
-        type = ty
+        type = ty,
+        rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
       )
     )
   }
@@ -2365,7 +2410,8 @@ test_that("as_survey_twophase() refuses a replicate phase-1 of all nine types", 
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = rep_type
+      type = rep_type,
+      rscales = if (identical(rep_type, "JKn")) rep(1, 5) else NULL
     )
     expect_error(
       as_survey_twophase(phase_rep, subset = in_phase2),
