@@ -590,3 +590,28 @@ length 0"` when `length(rho)` is 0; `{rho_cls}` = `class(rho)[[1L]]`;
 | FR-2 | `as_survey_replicate()` | `type` is `"Fay"` and `rho` is not `NULL` and is not one finite number in `[0, 1)`: not numeric (logical and character included), a `dim` attribute (a 1 x 1 matrix or array), length other than 1, `NA`, `NaN`, infinite, below 0, or 1 or more | ERROR | `surveycore_error_fay_rho_invalid` | `"x" = "{.arg rho} must be a single finite number in {.code [0, 1)}.", "i" = "Got {.cls {rho_cls}}: {rho_txt}.", "v" = "Pass the Fay shrinkage factor as one number, for example {.code rho = 0.5}."` |
 | FR-3 | `as_survey_replicate()` | `type` is not `"Fay"` and `rho` is not `NULL`. The design stores `rho = NULL` | WARN | `surveycore_warning_rho_ignored` | `"!" = "{.arg rho} applies only to {.code type = \"Fay\"} and was ignored.", "i" = "The design has type {.val {type}} and stores no {.arg rho}.", "v" = "Remove {.arg rho}, or use {.code type = \"Fay\"} if the replicate weights are Fay weights."` |
 | TP-1 | `as_survey_twophase()` | `phase1` is a `survey_replicate`, of any replicate type. Checked directly after row 19 and before every `subset` check. Decision S9 of issue #243; reverses PR #74 | ERROR | `surveycore_error_twophase_replicate_phase1` | `"x" = "{.fn as_survey_twophase} does not accept a {.cls survey_replicate} phase 1.", "i" = "Phase 1 variance for a replicate design is not implemented, and {.pkg survey} has no two-phase design with a replicate phase 1.", "v" = "Build phase 1 with {.fn as_survey} from the design's cluster, strata and weight columns."` |
+
+### replicate-supplied-args rows (2026-10-01)
+
+Issue #255. `RS` is the prefix for replicate supplied arguments. RS-1 is the
+single class for "the replicate type ignores this argument": one warning
+names every discarded argument in its bullet. RS-2 adds a call site to an
+existing class. RS-3 records the `as_survey_nonprob()` site of the same class,
+which shipped without a register row.
+
+**Variable bindings.** `{ignored}` = the discarded argument names, in the
+order `"scale"`, `"rscales"`; `{n_ignored}` = `length(ignored)`; `{type}` =
+the replicate type after `match.arg()`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RS-1 | `as_survey_replicate()` | `type` is `"BRR"`, `"JK2"`, `"ACS"` or `"successive-difference"` and `scale` is not `NULL`; or `type` is `"JK2"`, `"ACS"` or `"successive-difference"` and `rscales` is not `NULL`. One warning names every discarded argument. The design stores the type's own `scale` and `rscales = NULL`. No warning when neither is supplied (D8). Also carried as the second class of FR-3 | WARN | `surveycore_warning_replicate_arg_ignored` | `"!" = "{.arg {ignored}} {?has/have} no effect for this replicate type and {?was/were} ignored.", "i" = "For type {.val {type}}, the design stores the type's own {cli::qty(n_ignored)}value{?s}, as {.fn survey::svrepdesign} does.", "v" = "Remove {.arg {ignored}} from the call."` |
+| RS-2 | `as_survey_replicate()` | `type` is `"JKn"` and `rscales` is `NULL`. Checked after the `rscales` length and value checks and before the `rho` step | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.code type = \"JKn\"} requires {.arg rscales}.", "i" = "JKn replicate weights are combined weights, so the stratum factor {.code (n_h - 1) / n_h} reaches the variance only through {.arg rscales}. {.fn survey::svrepdesign} refuses the same input.", "v" = "Pass {.arg rscales} with one entry per replicate column: {.code (n_h - 1) / n_h}, where {.code n_h} is the number of PSUs in the stratum the replicate drops a PSU from."` |
+| RS-3 | `as_survey_nonprob()` | `type` is `"JK2"` or `"JKn"` and `rscales` is `NULL`. Shipped before this work; recorded here | ERROR | `surveycore_error_stratified_jk_rscales_unset` | `"x" = "{.arg type} = {.val {type}} requires explicit {.arg rscales}.", "i" = "Stratified jackknife rscales are stratum-specific: {.code (n_h - 1) / n_h}. Supplying {.code NULL} would silently use {.code rep(1, R)}, which is statistically incorrect for JK2/JKn.", "v" = "Compute {.code rscales} as {.code (n_h - 1) / n_h} where {.code n_h} is the number of units in stratum {.code h}, indexed to replicate order."` |
+
+**Updated trigger descriptions for existing rows:**
+
+- Row FR-3 (`surveycore_warning_rho_ignored`): the condition now carries two
+  classes, `c("surveycore_warning_rho_ignored",
+  "surveycore_warning_replicate_arg_ignored")`. The trigger and message do not
+  change.
