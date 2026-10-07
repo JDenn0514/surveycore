@@ -15,6 +15,9 @@ permissions: read-all
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
+    # A stalled package-mirror download in setup-r otherwise holds the job
+    # for GitHub's 6-hour default. The longest healthy job took 22 minutes.
+    timeout-minutes: 45
     # Only restrict concurrency for non-PR jobs
     concurrency:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
