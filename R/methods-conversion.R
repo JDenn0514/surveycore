@@ -367,12 +367,26 @@ as_svydesign <- function(x) {
     )
   }
 
-  # BRR and Fay do not use a separate scale factor — survey::svrepdesign()
-  # warns if scale is passed for those types.
-  scale_arg <- if (isTRUE(x@variables$type %in% c("BRR", "Fay"))) {
+  # survey::svrepdesign() computes its own scale for BRR, Fay, JK2, ACS and
+  # successive-difference, and its own rscales, rep(1, R), for JK2, ACS and
+  # successive-difference. Passing the stored value changes no number survey
+  # computes. For BRR it raises survey's 'does not use scale=' warning, and
+  # for ACS and successive-difference it raises survey's 'scale= and rscales=
+  # are not needed' warning, so the route passes NULL for these types (issue
+  # #255). survey warns on every JK2 call regardless, whatever the call
+  # passes; decision D8 of plans/issue-cleanup.md records the divergence:
+  # as_survey_replicate() warns only when the caller supplies scale or
+  # rscales. The two predicates are the sets as_survey_replicate() reads,
+  # and isTRUE() turns a NULL stored type into FALSE.
+  scale_arg <- if (isTRUE(.replicate_ignores_scale(x@variables$type))) {
     NULL
   } else {
     x@variables$scale
+  }
+  rscales_arg <- if (isTRUE(.replicate_ignores_rscales(x@variables$type))) {
+    NULL
+  } else {
+    x@variables$rscales
   }
 
   # Carry Fay's shrinkage factor across from @variables$rho. survey needs it:
@@ -465,7 +479,7 @@ as_svydesign <- function(x) {
     type = x@variables$type,
     scale = scale_arg,
     rho = rho_arg,
-    rscales = x@variables$rscales,
+    rscales = rscales_arg,
     mse = isTRUE(x@variables$mse),
     data = x@data
   )

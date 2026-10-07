@@ -1198,3 +1198,21 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
     rho >= 0 &&
     rho < 1
 }
+
+# ── .replicate_ignores_scale() ───────────────────────────────────────────────
+#
+# Returns TRUE for the replicate types whose scale survey::svrepdesign()
+# computes itself and does not take from the caller. Call sites:
+# as_survey_replicate() and .as_svydesign_replicate().
+.replicate_ignores_scale <- function(type) {
+  type %in% c("BRR", "Fay", "JK2", "ACS", "successive-difference")
+}
+
+# ── .replicate_ignores_rscales() ─────────────────────────────────────────────
+#
+# Returns TRUE for the replicate types whose rscales survey::svrepdesign()
+# sets to rep(1, R) and does not take from the caller. Call sites:
+# as_survey_replicate() and .as_svydesign_replicate().
+.replicate_ignores_rscales <- function(type) {
+  type %in% c("JK2", "ACS", "successive-difference")
+}
