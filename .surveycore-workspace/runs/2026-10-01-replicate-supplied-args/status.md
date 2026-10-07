@@ -1,0 +1,6 @@
+2026-10-01T00:00:00Z  NEW  (issue #255)
+2026-10-01T00:05:00Z  COMPREHENDED  (no methods — auto; per-type table already read from survey source in issue #255)
+2026-10-01T00:40:00Z  DRAFT  (planner; HOLD-1 open: stored value of a discarded rscales)
+2026-10-06T00:30:00Z  METHODS_REVIEWED  (PASS pass 1; lenses 2,3,5 run; M-1, M-2 advisory, wording resolved)
+2026-10-06T01:30:00Z  SPEC_REVIEWED  (PASS pass 2; 6 REQUIRED + 1 SUGGESTION resolved in pass 1)
+2026-10-06T01:32:00Z  SPEC_READY  (copied to plans/)
