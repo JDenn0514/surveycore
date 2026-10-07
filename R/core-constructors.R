@@ -871,6 +871,31 @@ as_survey_replicate <- function(
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)
 
+  # ── JKn requires rscales (issue #255) ───────────────────────────────────────
+  # JKn replicate weights are combined weights, so the stratum factor
+  # (n_h - 1) / n_h reaches the variance only through rscales. This check
+  # runs before the rho step, so a JKn call that also passes rho raises this
+  # error and no rho warning.
+
+  if (identical(type, "JKn") && is.null(rscales)) {
+    cli::cli_abort(
+      c(
+        "x" = "{.code type = \"JKn\"} requires {.arg rscales}.",
+        "i" = paste0(
+          "JKn replicate weights are combined weights, so the stratum factor ",
+          "{.code (n_h - 1) / n_h} reaches the variance only through ",
+          "{.arg rscales}. {.fn survey::svrepdesign} refuses the same input."
+        ),
+        "v" = paste0(
+          "Pass {.arg rscales} with one entry per replicate column: ",
+          "{.code (n_h - 1) / n_h}, where {.code n_h} is the number of PSUs ",
+          "in the stratum the replicate drops a PSU from."
+        )
+      ),
+      class = "surveycore_error_stratified_jk_rscales_unset"
+    )
+  }
+
   # ── Fay shrinkage factor (issue #243) ───────────────────────────────────────
   # These rules run after every existing check, so an empty frame or a bad
   # rscales length raises its own error first. For Fay the scale always

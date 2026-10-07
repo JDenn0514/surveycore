@@ -90,6 +90,17 @@
       Error in `as_survey()`:
       x `nest = TRUE` requires `strata` to be specified
 
+# as_survey_replicate() refuses JKn with no rscales
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "JKn")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `type = "JKn"` requires `rscales`.
+      i JKn replicate weights are combined weights, so the stratum factor `(n_h - 1) / n_h` reaches the variance only through `rscales`. `survey::svrepdesign()` refuses the same input.
+      v Pass `rscales` with one entry per replicate column: `(n_h - 1) / n_h`, where `n_h` is the number of PSUs in the stratum the replicate drops a PSU from.
+
 # as_survey_replicate() refuses type = "Fay" with no rho
 
     Code

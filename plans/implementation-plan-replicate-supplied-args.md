@@ -224,7 +224,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
 
 ## PR map
 
-- [ ] PR 1: `fix/replicate-export-ignored-args` — the register rows, the two
+- [x] PR 1: `fix/replicate-export-ignored-args` — the register rows, the two
   shared predicates, and the export route stops passing `scale` and
   `rscales` that `survey` overrides
   - **Budget** — 6 test-spec rows | 7 criteria
