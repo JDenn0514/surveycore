@@ -1,0 +1,193 @@
+── Installing package surveycore into temporary library ────────────────────────
+── Building pkgdown site for package surveycore ────────────────────────────────
+Reading from: C:/Users/jdennen/surveycore
+Writing to: C:/Users/jdennen/surveycore/docs
+── Sitrep ──────────────────────────────────────────────────────────────────────
+✔ URLs ok.
+✔ Favicons ok.
+✔ Open graph metadata ok.
+✔ Articles metadata ok.
+✔ Reference metadata ok.
+── Initialising site ───────────────────────────────────────────────────────────
+── Building home ───────────────────────────────────────────────────────────────
+✖ Icon "fab fa-github" lacks an `aria-label`.
+ℹ Specify `aria-label` to make the icon accessible to screen readers.
+ℹ Learn more in `vignette(pkgdown::accessibility)`.
+This message is displayed once every 8 hours.
+Reading CLAUDE.md
+Writing `CLAUDE.html`
+Reading CODE_OF_CONDUCT.md
+Reading VENDORED.md
+Reading .github/CONTRIBUTING.md
+Reading .github/PULL_REQUEST_TEMPLATE.md
+Reading LICENSE.md
+Reading README.md
+Writing `404.html`
+── Building function reference ─────────────────────────────────────────────────
+Writing `reference/index.html`
+Reading man/acs_pums_wy.Rd
+Reading man/add_survey.Rd
+Reading man/anes_2024.Rd
+Reading man/anova.survey_glm_fit.Rd
+Reading man/as_caldata.Rd
+Reading man/as_survey.Rd
+Writing `reference/as_survey.html`
+Reading man/as_survey_collection.Rd
+Reading man/as_survey_nonprob.Rd
+Writing `reference/as_survey_nonprob.html`
+Reading man/as_survey_replicate.Rd
+Writing `reference/as_survey_replicate.html`
+Reading man/as_survey_twophase.Rd
+Writing `reference/as_survey_twophase.html`
+Reading man/as_svydesign.Rd
+Writing `reference/as_svydesign.html`
+Reading man/as_tbl_svy.Rd
+Writing `reference/as_tbl_svy.html`
+Reading man/ca_api_2000.Rd
+Reading man/classify_question_type.Rd
+Writing `reference/classify_question_type.html`
+Reading man/clean.Rd
+Reading man/coef.survey_result.Rd
+Reading man/confint.survey_result.Rd
+Reading man/dot-get_design_vars_flat.Rd
+Reading man/extract_dataset_metadata.Rd
+Writing `reference/extract_dataset_metadata.html`
+Reading man/extract_data_name.Rd
+Writing `reference/extract_data_name.html`
+Reading man/extract_field_dates.Rd
+Writing `reference/extract_field_dates.html`
+Reading man/extract_field_period.Rd
+Writing `reference/extract_field_period.html`
+Reading man/extract_higher_is.Rd
+Writing `reference/extract_higher_is.html`
+Reading man/extract_metadata.Rd
+Writing `reference/extract_metadata.html`
+Reading man/extract_missing_codes.Rd
+Writing `reference/extract_missing_codes.html`
+Reading man/extract_question_preface.Rd
+Writing `reference/extract_question_preface.html`
+Reading man/extract_reverse_coded.Rd
+Writing `reference/extract_reverse_coded.html`
+Reading man/extract_sata.Rd
+Writing `reference/extract_sata.html`
+Reading man/extract_survey_name.Rd
+Writing `reference/extract_survey_name.html`
+Reading man/extract_universe.Rd
+Writing `reference/extract_universe.html`
+Reading man/extract_val_labels.Rd
+Writing `reference/extract_val_labels.html`
+Reading man/extract_var_extra.Rd
+Writing `reference/extract_var_extra.html`
+Reading man/extract_var_label.Rd
+Writing `reference/extract_var_label.html`
+Reading man/extract_var_note.Rd
+Writing `reference/extract_var_note.html`
+Reading man/extract_vendor.Rd
+Writing `reference/extract_vendor.html`
+Reading man/from_svydesign.Rd
+Writing `reference/from_svydesign.html`
+Reading man/from_tbl_svy.Rd
+Reading man/get_anova.Rd
+Reading man/get_corr.Rd
+Writing `reference/get_corr.html`
+Reading man/get_covariance.Rd
+Reading man/get_diffs.Rd
+Reading man/get_effective_n.Rd
+Reading man/get_freqs.Rd
+Reading man/get_means.Rd
+Reading man/get_pairwise.Rd
+Reading man/get_quantiles.Rd
+Reading man/get_ratios.Rd
+Reading man/get_totals.Rd
+Reading man/get_t_test.Rd
+Reading man/get_variance.Rd
+Reading man/gss_2024.Rd
+Reading man/infer_question_prefaces.Rd
+Writing `reference/infer_question_prefaces.html`
+Reading man/meta.Rd
+Reading man/nhanes_2017.Rd
+Writing `reference/nhanes_2017.html`
+Reading man/ns_wave1.Rd
+Reading man/pew_jewish_2020.Rd
+Reading man/pew_npors_2025.Rd
+Reading man/print.survey_anova.Rd
+Reading man/print.survey_diffs.Rd
+Reading man/print.survey_effective_n.Rd
+Reading man/print.survey_pairwise.Rd
+Reading man/print.survey_result.Rd
+Reading man/print.survey_t_test.Rd
+Reading man/remove_survey.Rd
+Reading man/SE.default.Rd
+Reading man/SE.Rd
+Reading man/SE.survey_result.Rd
+Reading man/set_collection_id.Rd
+Reading man/set_collection_if_missing_var.Rd
+Reading man/set_dataset_metadata.Rd
+Writing `reference/set_dataset_metadata.html`
+Reading man/set_data_name.Rd
+Writing `reference/set_data_name.html`
+Reading man/set_field_dates.Rd
+Writing `reference/set_field_dates.html`
+Reading man/set_field_period.Rd
+Writing `reference/set_field_period.html`
+Reading man/set_higher_is.Rd
+Writing `reference/set_higher_is.html`
+Reading man/set_missing_codes.Rd
+Writing `reference/set_missing_codes.html`
+Reading man/set_question_preface.Rd
+Writing `reference/set_question_preface.html`
+Reading man/set_reverse_coded.Rd
+Writing `reference/set_reverse_coded.html`
+Reading man/set_sata.Rd
+Writing `reference/set_sata.html`
+Reading man/set_survey_name.Rd
+Writing `reference/set_survey_name.html`
+Reading man/set_universe.Rd
+Writing `reference/set_universe.html`
+Reading man/set_val_labels.Rd
+Writing `reference/set_val_labels.html`
+Reading man/set_var_extra.Rd
+Writing `reference/set_var_extra.html`
+Reading man/set_var_label.Rd
+Writing `reference/set_var_label.html`
+Reading man/set_var_note.Rd
+Writing `reference/set_var_note.html`
+Reading man/set_vendor.Rd
+Writing `reference/set_vendor.html`
+Reading man/SURVEYCORE_DOMAIN_COL.Rd
+Reading man/survey_base.Rd
+Writing `reference/survey_base.html`
+Reading man/survey_collection.Rd
+Reading man/survey_data.Rd
+Writing `reference/survey_data.html`
+Reading man/survey_glm.Rd
+Reading man/survey_glm_fit.Rd
+Reading man/survey_metadata.Rd
+Writing `reference/survey_metadata.html`
+Reading man/survey_nonprob.Rd
+Reading man/survey_replicate.Rd
+Writing `reference/survey_replicate.html`
+Reading man/survey_taylor.Rd
+Reading man/survey_twophase.Rd
+Reading man/survey_weighting_history.Rd
+Writing `reference/survey_weighting_history.html`
+Reading man/update_design.Rd
+Reading man/vcov.survey_result.Rd
+── Building articles ───────────────────────────────────────────────────────────
+Reading vignettes/creating-survey-objects.Rmd
+Writing `articles/creating-survey-objects.html`
+Reading vignettes/getting-started.Rmd
+Writing `articles/getting-started.html`
+Reading vignettes/surveycore-vs-survey.Rmd
+Writing `articles/surveycore-vs-survey.html`
+── Building news ───────────────────────────────────────────────────────────────
+Writing `news/index.html`
+── Building sitemap ────────────────────────────────────────────────────────────
+Writing `sitemap.xml`
+── Building docs for llms ──────────────────────────────────────────────────────
+[WARNING] Duplicate identifier 'non-probability-samples' at input line 99 column 61
+── Building redirects ──────────────────────────────────────────────────────────
+── Building search index ───────────────────────────────────────────────────────
+── Checking for problems ───────────────────────────────────────────────────────
+── Finished building pkgdown site for package surveycore ───────────────────────
+── Finished building pkgdown site for package surveycore ───────────────────────

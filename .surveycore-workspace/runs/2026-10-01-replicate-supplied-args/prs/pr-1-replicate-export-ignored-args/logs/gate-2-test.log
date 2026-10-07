@@ -1,0 +1,3025 @@
+ℹ Testing surveycore
+WARNING: 'test-analysis-corr.R:98:3' --------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(d, x = c(y1, y2)) at test-analysis-corr.R:98:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-corr.R:1094:3' ------------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(...) at test-analysis-corr.R:1094:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+WARNING: 'test-analysis-corr.R:1119:3' ------------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(...) at test-analysis-corr.R:1119:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+WARNING: 'test-analysis-corr.R:1386:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(na_design_cal, x = c(y1, y2), variance = "se") at test-analysis-corr.R:1386:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-corr.R:1387:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(...) at test-analysis-corr.R:1387:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-corr.R:1387:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(...) at test-analysis-corr.R:1387:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-corr.R:1387:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(...) at test-analysis-corr.R:1387:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-corr.R:1518:3' ------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(sc, x = c(y1, y2), variance = "se") at test-analysis-corr.R:1518:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+WARNING: 'test-analysis-corr.R:1561:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(sc, x = c(y1, y2), variance = "se") at test-analysis-corr.R:1561:3
+ 2.   └─surveycore:::.corr_vcov_pair(...) at surveycore/R/analysis-corr.R:461:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-corr-helpers.R:31:7
+
+WARNING: 'test-analysis-covariance.R:225:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_variance(d, y, variance = "se") at test-analysis-covariance.R:225:3
+ 2.   └─surveycore:::.variance_cell(design, vn, domain_vec) at surveycore/R/analysis-variance.R:291:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-variance-helpers.R:503:7
+
+WARNING: 'test-analysis-covariance.R:324:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_covariance(d, c(a, b), variance = "se") at test-analysis-covariance.R:324:3
+ 2.   └─surveycore:::.covariance_pair_result(...) at surveycore/R/analysis-covariance.R:386:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-covariance-helpers.R:560:7
+
+WARNING: 'test-analysis-covariance.R:935:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-analysis-covariance.R:935:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_covariance(sc, c(y1, one))
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-covariance.R:480:5
+
+WARNING: 'test-analysis-covariance.R:961:3' ----------
+! Pair (allna, allna) is all-`NA` on the active domain. Returning `NaN` with `n = 0`.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-analysis-covariance.R:961:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_covariance(sc, c(allna, y1b), diagonal = TRUE)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-covariance.R:442:7
+
+WARNING: 'test-analysis-covariance.R:1031:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_covariance(d, c(a, b), variance = "se") at test-analysis-covariance.R:1031:3
+ 2.   └─surveycore:::.covariance_pair_result(...) at surveycore/R/analysis-covariance.R:386:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-covariance-helpers.R:560:7
+
+i Skipped 2 surveys missing the requested variable: "w1" and "w2".
+# A survey_diffs result
+# Design: Taylor series | Family: gaussian (identity)
+# DV: y | Treatment: arm (ref: Ctrl)
+# Method: coefficient / intercept
+# A <survey_diffs> [2 × 4]
+# A tibble: 2 x 4
+  arm   estimate  mean     n
+  <fct>    <dbl> <dbl> <int>
+1 Ctrl      0     0.5    100
+2 T1        0.05  0.55   100
+WARNING: 'test-analysis-diffs-helpers.R:697:3' ----------
+! Treatment level "A" has only 2 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-analysis-diffs-helpers.R:697:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore:::.build_diffs_output(...)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-analysis-diffs-helpers.R:697:3' ----------
+! Treatment level "B" has only 1 observation (threshold: 30).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-analysis-diffs-helpers.R:697:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore:::.build_diffs_output(...)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-analysis-diffs-helpers.R:740:3' ----------
+contrasts dropped from factor treats due to missing levels
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(d_zero, dv ~ treats) at test-analysis-diffs-helpers.R:740:3
+ 2.   ├─base::do.call(stats::glm, glm_args) at surveycore/R/glm.R:1098:5
+ 3.   ├─stats (local) `<fn>`(...)
+ 4.   │ └─base::eval(mf, parent.frame())
+ 5.   │   └─base::eval(mf, parent.frame())
+ 6.   ├─stats::model.frame(...)
+ 7.   └─stats::model.frame.default(...)
+
+WARNING: 'test-analysis-diffs.R:623:3' ------------
+! No weights provided.
+i Treating as equal-probability sampling within clusters (unknown population size).
+i Population totals will equal sample totals, not estimated population totals.
+Backtrace:
+    ▆
+ 1. └─surveycore::as_survey(df, ids = psu, strata = strata) at test-analysis-diffs.R:623:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/core-constructors.R:294:7
+
+WARNING: 'test-analysis-diffs.R:636:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(d, dv, treats, ref_level = "Control") at test-analysis-diffs.R:636:3
+ 2.   └─surveycore::survey_glm(...) at surveycore/R/analysis-diffs.R:387:3
+ 3.     └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 4.       └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-analysis-freqs.R:930:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, group) at test-analysis-freqs.R:930:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:930:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, group) at test-analysis-freqs.R:930:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:930:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, group) at test-analysis-freqs.R:930:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1126:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, group = gender) at test-analysis-freqs.R:1126:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1142:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, group = gender, label_values = FALSE) at test-analysis-freqs.R:1142:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1189:3' -----------
+! 3 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x) at test-analysis-freqs.R:1189:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1352:3' -----------
+! 3 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp) at test-analysis-freqs.R:1352:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1360:3' -----------
+! 5 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp, na.rm = FALSE) at test-analysis-freqs.R:1360:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1368:3' -----------
+! 5 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp, na.rm = FALSE) at test-analysis-freqs.R:1368:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1378:3' -----------
+! 5 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp, na.rm = FALSE) at test-analysis-freqs.R:1378:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1387:3' -----------
+! 16 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE) at test-analysis-freqs.R:1387:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1406:3' -----------
+! 18 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = c(grp, grp2), na.rm = FALSE) at test-analysis-freqs.R:1406:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1441:3' -----------
+! 3 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE) at test-analysis-freqs.R:1441:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1471:3' -----------
+! 4 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, group = grp, na.rm = FALSE, label_values = TRUE) at test-analysis-freqs.R:1471:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1484:3' -----------
+! 5 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3, na.rm = FALSE) at test-analysis-freqs.R:1484:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1493:3' -----------
+! 3 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, y3) at test-analysis-freqs.R:1493:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1526:3' -----------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, focal, group = grp_na, na.rm = FALSE) at test-analysis-freqs.R:1526:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1557:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design, y3, variance = "se") at test-analysis-freqs.R:1557:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1558:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1558:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1597:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design_rep, y3, variance = "se") at test-analysis-freqs.R:1597:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1598:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1598:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1671:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design_cal, y3, variance = "se") at test-analysis-freqs.R:1671:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1671:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design_cal, y3, variance = "se") at test-analysis-freqs.R:1671:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1671:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design_cal, y3, variance = "se") at test-analysis-freqs.R:1671:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:1672:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1672:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1694:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(na_design_srs, y3, variance = "se") at test-analysis-freqs.R:1694:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1695:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(...) at test-analysis-freqs.R:1695:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1799:3' -----------
+! 3 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(sc, x = group) at test-analysis-freqs.R:1799:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1817:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(sc, x = group) at test-analysis-freqs.R:1817:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1832:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(sc, x = x) at test-analysis-freqs.R:1832:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:1854:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(sc, x = group) at test-analysis-freqs.R:1854:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:2066:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2066:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2066:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2066:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2072:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d2, ind_A, variance = "se") at test-analysis-freqs.R:2072:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-freqs.R:2073:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d2, ind_B, variance = "se") at test-analysis-freqs.R:2073:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-freqs.R:2097:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2097:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2097:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2097:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2122:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, cat, group = grp, variance = "se") at test-analysis-freqs.R:2122:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2122:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, cat, group = grp, variance = "se") at test-analysis-freqs.R:2122:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2122:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, cat, group = grp, variance = "se") at test-analysis-freqs.R:2122:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2122:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, cat, group = grp, variance = "se") at test-analysis-freqs.R:2122:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2122:3' -----------
+! 4 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, cat, group = grp, variance = "se") at test-analysis-freqs.R:2122:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-freqs.R:2141:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2141:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2141:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2141:3
+ 2.   └─surveycore:::.freq_cell(design, num, denom) at surveycore/R/analysis-freqs.R:356:9
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-freqs-helpers.R:345:7
+
+WARNING: 'test-analysis-freqs.R:2141:3' -----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, x, variance = "se") at test-analysis-freqs.R:2141:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-analysis-helpers.R:1475:3' ----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(get_means(d, y, group = grp), class = "surveycore_warning_domain_replicates_na") at test-analysis-helpers.R:1475:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_means(d, y, group = grp)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-helpers.R:1498:3' ----------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. ├─base::withCallingHandlers(...) at test-analysis-helpers.R:1498:3
+ 2. └─surveycore::get_means(d, y, group = grp)
+ 3.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:85:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y1) at test-analysis-means.R:85:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:240:3' ------------
+! 4 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, group = c(g1, g2)) at test-analysis-means.R:240:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:268:3' ------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = NULL, na.rm = FALSE) at test-analysis-means.R:268:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:375:3' ------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = NULL, na.rm = TRUE) at test-analysis-means.R:375:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:397:3' ------------
+! `strata` (strata) has only 1 unique value — stratification has no effect
+Backtrace:
+    ▆
+ 1. └─surveycore::as_survey(...) at test-analysis-means.R:397:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/core-constructors.R:532:7
+
+WARNING: 'test-analysis-means.R:470:5' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y1) at test-analysis-means.R:470:5
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:577:3' ------------
+! 2 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, group = grp, variance = NULL, label_vars = TRUE) at test-analysis-means.R:577:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:701:3' ------------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y1, group = c(grp, grp2), na.rm = FALSE) at test-analysis-means.R:701:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:720:3' ------------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y1, group = c(grp, grp2), na.rm = FALSE) at test-analysis-means.R:720:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:962:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(na_design_cal, y1, variance = "se") at test-analysis-means.R:962:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:963:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(...) at test-analysis-means.R:963:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:963:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(...) at test-analysis-means.R:963:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:963:3' ------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(...) at test-analysis-means.R:963:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:1107:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-analysis-means.R:1107:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:1161:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-analysis-means.R:1161:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:1172:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-analysis-means.R:1172:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:1181:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-analysis-means.R:1181:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-means.R:1181:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-analysis-means.R:1181:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:1191:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y1, variance = "se") at test-analysis-means.R:1191:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-means.R:1212:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y1, variance = "se") at test-analysis-means.R:1212:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-analysis-quantiles.R:130:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(d, y1, probs = 0.5) at test-analysis-quantiles.R:130:3
+ 2.   └─surveycore:::.quantile_woodruff_cell(...) at surveycore/R/analysis-quantiles.R:293:9
+ 3.     └─surveycore:::.mean_cell(design, tmp_col, active_domain) at surveycore/R/analysis-quantiles-helpers.R:190:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-quantiles.R:972:3' ----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(...) at test-analysis-quantiles.R:972:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-quantiles.R:320:5
+
+WARNING: 'test-analysis-quantiles.R:991:3' ----------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(...) at test-analysis-quantiles.R:991:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-quantiles.R:320:5
+
+WARNING: 'test-analysis-quantiles.R:1248:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(na_design_cal, y1, probs = 0.5, variance = "se") at test-analysis-quantiles.R:1248:3
+ 2.   └─surveycore:::.quantile_woodruff_cell(...) at surveycore/R/analysis-quantiles.R:293:9
+ 3.     └─surveycore:::.mean_cell(design, tmp_col, active_domain) at surveycore/R/analysis-quantiles-helpers.R:190:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-quantiles.R:1249:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(...) at test-analysis-quantiles.R:1249:3
+ 2.   └─surveycore:::.quantile_woodruff_cell(...) at surveycore/R/analysis-quantiles.R:293:9
+ 3.     └─surveycore:::.mean_cell(design, tmp_col, active_domain) at surveycore/R/analysis-quantiles-helpers.R:190:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-quantiles.R:1249:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(...) at test-analysis-quantiles.R:1249:3
+ 2.   └─surveycore:::.quantile_woodruff_cell(...) at surveycore/R/analysis-quantiles.R:293:9
+ 3.     └─surveycore:::.mean_cell(design, tmp_col, active_domain) at surveycore/R/analysis-quantiles-helpers.R:190:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-quantiles.R:1249:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_quantiles(...) at test-analysis-quantiles.R:1249:3
+ 2.   └─surveycore:::.quantile_woodruff_cell(...) at surveycore/R/analysis-quantiles.R:293:9
+ 3.     └─surveycore:::.mean_cell(design, tmp_col, active_domain) at surveycore/R/analysis-quantiles-helpers.R:190:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-analysis-ratios.R:123:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:123:3
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:123:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:123:3
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:123:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:123:3
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:434:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d_domain, y1, y2, group = strata) at test-analysis-ratios.R:434:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-ratios.R:365:5
+
+WARNING: 'test-analysis-ratios.R:745:5' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:745:5
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:745:5' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:745:5
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:745:5' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(d, y1, y2) at test-analysis-ratios.R:745:5
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:912:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:912:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-ratios.R:365:5
+
+WARNING: 'test-analysis-ratios.R:938:3' -----------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:938:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-ratios.R:365:5
+
+WARNING: 'test-analysis-ratios.R:1197:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(na_design_cal, y1, y2, variance = "se") at test-analysis-ratios.R:1197:3
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1197:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(na_design_cal, y1, y2, variance = "se") at test-analysis-ratios.R:1197:3
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1197:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(na_design_cal, y1, y2, variance = "se") at test-analysis-ratios.R:1197:3
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, denom_name, domain_vec) at surveycore/R/analysis-ratios.R:290:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.total_cell(design, num_name, domain_vec) at surveycore/R/analysis-ratios.R:324:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-ratios.R:1198:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_ratios(...) at test-analysis-ratios.R:1198:3
+ 2.   └─surveycore:::.delta_ratio_cell(...) at surveycore/R/analysis-ratios.R:340:7
+ 3.     └─surveycore:::.total_cell(design, tmp_col, domain) at surveycore/R/analysis-ratios-helpers.R:107:3
+ 4.       └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-t-test.R:280:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_t_test(d_np, outcome, by = grp2) at test-analysis-t-test.R:280:3
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:320:5
+ 3.   └─surveycore::survey_glm(outcome ~ grp2, design = design_g, family = stats::gaussian())
+ 4.     └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 5.       └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+# A survey_t_test result
+# Design: Taylor series | N: 400
+# DV: outcome | By: grp2 (A vs. B)
+# A <tbl_df> [1 × 13]
+# A tibble: 1 x 13
+  level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high t_stat    df
+  <chr>   <chr>      <dbl>  <dbl>  <dbl> <int> <int>  <dbl>   <dbl>  <dbl> <dbl>
+1 A       B           3.51   50.9   54.4   209   191   1.16    5.86   3.18    15
+# i 2 more variables: p_value <dbl>, stars <chr>
+WARNING: 'test-analysis-t-test.R:750:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_pairwise(d_np, outcome, by = grp3) at test-analysis-t-test.R:750:3
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:820:5
+ 3.   └─surveycore::get_t_test(...)
+ 4.     ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:320:5
+ 5.     └─surveycore::survey_glm(outcome ~ grp3, design = design_g, family = stats::gaussian())
+ 6.       └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 7.         └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-analysis-t-test.R:750:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_pairwise(d_np, outcome, by = grp3) at test-analysis-t-test.R:750:3
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:820:5
+ 3.   └─surveycore::get_t_test(...)
+ 4.     ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:320:5
+ 5.     └─surveycore::survey_glm(outcome ~ grp3, design = design_g, family = stats::gaussian())
+ 6.       └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 7.         └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-analysis-t-test.R:750:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_pairwise(d_np, outcome, by = grp3) at test-analysis-t-test.R:750:3
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:820:5
+ 3.   └─surveycore::get_t_test(...)
+ 4.     ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:320:5
+ 5.     └─surveycore::survey_glm(outcome ~ grp3, design = design_g, family = stats::gaussian())
+ 6.       └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 7.         └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+# A survey_pairwise result
+# Design: Taylor series | N: 400
+# DV: outcome | By: grp3 (3 levels, 3 pairs)
+# Adjustment: holm
+# A <tbl_df> [3 × 13]
+# A tibble: 3 x 13
+  level_a level_b estimate mean_a mean_b   n_a   n_b ci_low ci_high  t_stat
+  <chr>   <chr>      <dbl>  <dbl>  <dbl> <int> <int>  <dbl>   <dbl>   <dbl>
+1 X       Y        -0.910    53.1   52.2   145   136  -3.59    1.77 -0.725 
+2 X       Z        -0.847    53.1   52.3   145   119  -3.77    2.08 -0.617 
+3 Y       Z         0.0631   52.2   52.3   136   119  -2.78    2.91  0.0473
+# i 3 more variables: df <dbl>, p_value <dbl>, stars <chr>
+WARNING: 'test-analysis-totals.R:119:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y1) at test-analysis-totals.R:119:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:373:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y, variance = NULL) at test-analysis-totals.R:373:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:392:5' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y1) at test-analysis-totals.R:392:5
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:405:5' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d) at test-analysis-totals.R:405:5
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:513:3' -----------
+! 6 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y1, group = c(grp, grp2), na.rm = FALSE) at test-analysis-totals.R:513:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:532:3' -----------
+! 8 cells have fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y1, group = c(grp, grp2), na.rm = FALSE) at test-analysis-totals.R:532:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:775:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(na_design_cal, y1, variance = "se") at test-analysis-totals.R:775:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:776:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(...) at test-analysis-totals.R:776:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:776:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(...) at test-analysis-totals.R:776:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:776:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(...) at test-analysis-totals.R:776:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:965:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-analysis-totals.R:965:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:999:3' -----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-analysis-totals.R:999:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:1010:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-analysis-totals.R:1010:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:1019:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-analysis-totals.R:1019:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-analysis-totals.R:1019:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-analysis-totals.R:1019:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:1029:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y1, variance = "se") at test-analysis-totals.R:1029:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-analysis-totals.R:1050:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y1, variance = "se") at test-analysis-totals.R:1050:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+i Skipped 2 surveys missing the requested variable: "w1" and "w2".
+WARNING: 'test-analysis-variance-twophase-nonprob.R:137:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_variance(d, y, variance = "se") at test-analysis-variance-twophase-nonprob.R:137:3
+ 2.   └─surveycore:::.variance_cell(design, vn, domain_vec) at surveycore/R/analysis-variance.R:291:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-variance-helpers.R:503:7
+
+WARNING: 'test-analysis-variance-twophase-nonprob.R:176:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_variance(d, y, variance = "se") at test-analysis-variance-twophase-nonprob.R:176:3
+ 2.   └─surveycore:::.variance_cell(design, vn, domain_vec) at surveycore/R/analysis-variance.R:291:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-variance-helpers.R:503:7
+
+WARNING: 'test-analysis-variance-twophase-nonprob.R:222:3' ----------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_variance(d, y) at test-analysis-variance-twophase-nonprob.R:222:3
+ 2.   └─surveycore:::.variance_cell(design, vn, domain_vec) at surveycore/R/analysis-variance.R:291:7
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-variance-helpers.R:503:7
+
+WARNING: 'test-analysis-variance.R:762:3' ----------
+! All values of b are `NA` in the active domain. Returning `NaN` with `n = 0`.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-analysis-variance.R:762:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_variance(sc, c(a, b), na_handling = "listwise")
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-variance.R:341:7
+
+WARNING: 'test-analysis-variance.R:774:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(get_variance(sc, one), class = "surveycore_warning_variance_insufficient_n") at test-analysis-variance.R:774:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_variance(sc, one)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-variance.R:370:5
+
+WARNING: 'test-collection-if-missing-var-rename.R:55:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_freqs(coll, grp2, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:55:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_freqs(coll, grp2, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-freqs.R:146:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-collection-if-missing-var-rename.R:65:3' ----------
+! Treatment level "M" has only 29 observations (threshold: 30).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_diffs(coll, y1, treats = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:65:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_diffs(coll, y1, treats = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 18.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-collection-if-missing-var-rename.R:65:3' ----------
+! Treatment level "F" has only 26 observations (threshold: 30).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_diffs(coll, y1, treats = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:65:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_diffs(coll, y1, treats = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 18.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-collection-if-missing-var-rename.R:92:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_t_test(coll, y1, by = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:92:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_t_test(coll, y1, by = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-t-test.R:121:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       └─cli::cli_warn(...) at surveycore/R/analysis-t-test.R:295:9
+
+WARNING: 'test-collection-if-missing-var-rename.R:92:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_t_test(coll, y1, by = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:92:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_t_test(coll, y1, by = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-t-test.R:121:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       └─cli::cli_warn(...) at surveycore/R/analysis-t-test.R:295:9
+
+WARNING: 'test-collection-if-missing-var-rename.R:99:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_pairwise(coll, y1, by = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:99:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_pairwise(coll, y1, by = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-t-test.R:679:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:820:5
+ 18.       └─surveycore::get_t_test(...)
+ 19.         └─cli::cli_warn(...) at surveycore/R/analysis-t-test.R:295:9
+
+WARNING: 'test-collection-if-missing-var-rename.R:99:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_no_error(get_pairwise(coll, y1, by = sex, .if_missing_var = "skip")) at test-collection-if-missing-var-rename.R:99:3
+  2. │ └─testthat:::expect_no_(...)
+  3. │   └─testthat:::quasi_capture(enquo(object), NULL, capture)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ ├─base::withRestarts(...)
+  6. │     │ │ └─base (local) withOneRestart(expr, restarts[[1L]])
+  7. │     │ │   └─base (local) doWithOneRestart(return(expr), restart)
+  8. │     │ └─base::withCallingHandlers(...)
+  9. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 10. └─surveycore::get_pairwise(coll, y1, by = sex, .if_missing_var = "skip")
+ 11.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-t-test.R:679:5
+ 12.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 13.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 17.       ├─rlang::inject(...) at surveycore/R/analysis-t-test.R:820:5
+ 18.       └─surveycore::get_t_test(...)
+ 19.         └─cli::cli_warn(...) at surveycore/R/analysis-t-test.R:295:9
+
+WARNING: 'test-constructors.R:2931:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se") at test-constructors.R:2931:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:2931:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se") at test-constructors.R:2931:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-constructors.R:2942:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y, variance = "se") at test-constructors.R:2942:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-constructors.R:2942:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y, variance = "se") at test-constructors.R:2942:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+
+-- Survey Design ---------------------------------------------------------------
+<survey_nonprob> (non-probability) [experimental]
+* Variance: SRS approximation (no bootstrap replicate weights)
+Sample size: 10
+
+# A tibble: 10 x 2
+       y     w
+   <int> <dbl>
+ 1     1     1
+ 2     2     1
+ 3     3     1
+ 4     4     1
+ 5     5     1
+ 6     6     1
+ 7     7     1
+ 8     8     1
+ 9     9     1
+10    10     1
+
+-- Survey Design Summary -------------------------------------------------------
+Type: non-probability [experimental]
+Sample size: 10
+Weighted N: 10
+
+
+-- Design --
+
+Weights: w
+* Range: 1 – 1
+* Mean: 1
+* CV: 0
+Calibration provenance: none stored
+
+Metadata: 0 of 2 variable(s) labeled
+WARNING: 'test-constructors.R:3083:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se") at test-constructors.R:3083:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:3083:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se") at test-constructors.R:3083:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-constructors.R:3102:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y, variance = "se") at test-constructors.R:3102:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-constructors.R:3102:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d, y, variance = "se") at test-constructors.R:3102:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-constructors.R:3116:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d_sc, y, variance = c("se", "ci")) at test-constructors.R:3116:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:3136:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(d_sc, y, variance = c("se", "ci")) at test-constructors.R:3136:3
+ 2.   └─surveycore:::.total_cell(design, x_name, domain) at surveycore/R/analysis-totals.R:232:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-totals-helpers.R:372:7
+
+WARNING: 'test-constructors.R:3164:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se", na.rm = FALSE) at test-constructors.R:3164:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:3164:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, variance = "se", na.rm = FALSE) at test-constructors.R:3164:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-constructors.R:3176:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d_full, y, variance = NULL, na.rm = TRUE) at test-constructors.R:3176:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:3176:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d_full, y, variance = NULL, na.rm = TRUE) at test-constructors.R:3176:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-constructors.R:3177:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d_missing, y, variance = NULL, na.rm = TRUE) at test-constructors.R:3177:3
+ 2.   └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-constructors.R:3177:3' -------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d_missing, y, variance = NULL, na.rm = TRUE) at test-constructors.R:3177:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-effective-n.R:169:3' ---------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d, y1, method = "deff") at test-effective-n.R:169:3
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-effective-n.R:307:5
+ 3.   └─surveycore::get_means(...)
+ 4.     └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 5.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-effective-n.R:202:5' ---------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d, y1, method = "deff") at test-effective-n.R:202:5
+ 2.   ├─rlang::inject(...) at surveycore/R/analysis-effective-n.R:307:5
+ 3.   └─surveycore::get_means(...)
+ 4.     └─surveycore:::.mean_cell(design, x_name, domain) at surveycore/R/analysis-means.R:227:5
+ 5.       └─cli::cli_warn(...) at surveycore/R/analysis-means-helpers.R:362:7
+
+WARNING: 'test-effective-n.R:272:3' ---------------
+! Grouping variable grp has only one observed level ("A"). Grouped estimates will have a single row.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d4, group = grp) at test-effective-n.R:272:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-effective-n.R:208:9
+
+WARNING: 'test-effective-n.R:272:3' ---------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d4, group = grp) at test-effective-n.R:272:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-effective-n.R:278:7
+
+WARNING: 'test-effective-n.R:288:3' ---------------
+! Grouping variable grp has only one observed level ("A"). Grouped estimates will have a single row.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d_domain, group = grp) at test-effective-n.R:288:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-effective-n.R:208:9
+
+WARNING: 'test-effective-n.R:288:3' ---------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_effective_n(d_domain, group = grp) at test-effective-n.R:288:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-effective-n.R:278:7
+
+SKIP: 'test-glm-anova-numerical.R:287:3' ----------
+Reason: acs_pums_wy missing replicate weights
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:260:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X, y = y, weights = w_full/w_mean, family = fam) at surveycore/R/glm-anova.R:272:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:282:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X2, y = y2, weights = w_red/w_mean, family = fam2) at surveycore/R/glm-anova.R:294:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:260:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X, y = y, weights = w_full/w_mean, family = fam) at surveycore/R/glm-anova.R:272:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:282:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X2, y = y2, weights = w_red/w_mean, family = fam2) at surveycore/R/glm-anova.R:294:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:260:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X, y = y, weights = w_full/w_mean, family = fam) at surveycore/R/glm-anova.R:272:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:282:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X2, y = y2, weights = w_red/w_mean, family = fam2) at surveycore/R/glm-anova.R:294:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:260:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X, y = y, weights = w_full/w_mean, family = fam) at surveycore/R/glm-anova.R:272:9
+
+WARNING: 'test-glm-anova.R:142:7' -----------------
+non-integer #successes in a binomial glm!
+Backtrace:
+    ▆
+ 1. └─surveycore::get_anova(fit, method = m, test = t) at test-glm-anova.R:142:7
+ 2.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+ 3.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 4.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 5.         ├─base::tryCatch(...) at surveycore/R/glm-anova.R:282:5
+ 6.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 7.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 8.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 9.         └─stats::glm.fit(x = X2, y = y2, weights = w_red/w_mean, family = fam2) at surveycore/R/glm-anova.R:294:9
+
+WARNING: 'test-glm-anova.R:332:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(designs$calibrated, y1 ~ y2 + y3) at test-glm-anova.R:332:3
+ 2.   └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:333:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(r <- get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:333:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 11.         └─surveycore:::.refit_drop_terms(model, test_terms) at surveycore/R/glm-anova.R:203:7
+ 12.           └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 13.             ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 14.             └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 15.               └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:333:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(r <- get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:333:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.refit_drop_terms(current, this_term) at surveycore/R/glm-anova.R:438:7
+ 11.         └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 12.           ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 13.           └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 14.             └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:333:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(r <- get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:333:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 11.         └─surveycore:::.refit_drop_terms(model, test_terms) at surveycore/R/glm-anova.R:203:7
+ 12.           └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 13.             ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 14.             └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 15.               └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:389:3' -----------------
+! `strata` (strata) has only 1 unique value — stratification has no effect
+Backtrace:
+    ▆
+ 1. └─surveycore::as_survey(df, ids = psu, strata = strata, weights = wt) at test-glm-anova.R:389:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/core-constructors.R:532:7
+
+WARNING: 'test-glm-anova.R:390:3' -----------------
+! Design degrees of freedom (2) minus model parameters (5) is ≤ 0. Clamping `df_residual = 1`.
+i CI bounds and p-values are conservative.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(d, y ~ x1 + x2 + x3 + x4 + x5) at test-glm-anova.R:390:3
+ 2.   └─surveycore:::.glm_degrees_of_freedom(design, n_coef = length(coef_names)) at surveycore/R/glm.R:1184:3
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:590:5
+
+SKIP: 'test-glm-anova.R:481:3' --------------------
+Reason: A-20 requires a hand-built fit whose @design@data domain column differs from the refit's; deferred to follow-up PR
+
+SKIP: 'test-glm-anova.R:531:3' --------------------
+Reason: A-13 trigger requires careful numerical construction; tracked for follow-up PR
+
+WARNING: 'test-glm-anova.R:536:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(designs$calibrated, y1 ~ y2 + y3) at test-glm-anova.R:536:3
+ 2.   └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:537:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:537:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 11.         └─surveycore:::.refit_drop_terms(model, test_terms) at surveycore/R/glm-anova.R:203:7
+ 12.           └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 13.             ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 14.             └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 15.               └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:537:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:537:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.refit_drop_terms(current, this_term) at surveycore/R/glm-anova.R:438:7
+ 11.         └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 12.           ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 13.           └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 14.             └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:537:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(get_anova(fit), class = "surveycore_warning_nonprob_inference") at test-glm-anova.R:537:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_anova(fit)
+  8.   └─surveycore:::.get_anova_single(...) at surveycore/R/glm-anova-dispatch.R:156:5
+  9.     └─surveycore:::.anova_sequential(...) at surveycore/R/glm-anova.R:783:5
+ 10.       └─surveycore:::.reg_term_test(...) at surveycore/R/glm-anova.R:424:5
+ 11.         └─surveycore:::.refit_drop_terms(model, test_terms) at surveycore/R/glm-anova.R:203:7
+ 12.           └─surveycore::survey_glm(...) at surveycore/R/glm-anova.R:52:3
+ 13.             ├─base::withCallingHandlers(...) at surveycore/R/glm.R:1159:5
+ 14.             └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1159:5
+ 15.               └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:790:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(designs$calibrated, y1 ~ y2) at test-glm-anova.R:790:3
+ 2.   └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm-anova.R:791:3' -----------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(designs$calibrated, y1 ~ y2 + y3) at test-glm-anova.R:791:3
+ 2.   └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+Survey-weighted GLM
+
+Family:  gaussian (identity link)
+Formula: y1 ~ y2 + y3
+Design:  Taylor series
+
+Coefficients:
+(Intercept)          y2          y3 
+    51.1868     -0.0624     -2.6042 
+
+Degrees of freedom: 16 (design-based)
+Survey-weighted GLM
+
+Call:
+survey_glm(design = .glm_taylor(), formula = y1 ~ y2 + y3) 
+
+Deviance Residuals:
+     Min       1Q   Median       3Q      Max 
+-93.3797 -18.7253  -0.4633  22.9540  75.4878 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 51.1868   0.7268    70.4262  0.0000  ***
+y2          -0.0624   0.8308    -0.0752  0.9412     
+y3          -2.6042   1.4802    -1.7594  0.1003     
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for gaussian family taken to be 986.9)
+
+    Null deviance: 197426 on 199 degrees of freedom
+Residual deviance: 194412 on 197 degrees of freedom
+AIC: 1492
+
+Design df: 16 (taylor)
+WARNING: 'test-glm-numerical.R:122:3' -------------
+! <survey_nonprob> object has no bootstrap replicate weights. Standard errors use an SRS approximation that underestimates calibration uncertainty.
+i Run `surveywts::create_bootstrap_weights()` on this design for correct SEs.
+Backtrace:
+    ▆
+ 1. └─surveycore::survey_glm(d_sc, y1 ~ y2 + y3) at test-glm-numerical.R:122:3
+ 2.   └─surveycore:::.glm_vcov_dispatch(...) at surveycore/R/glm.R:1171:5
+ 3.     └─cli::cli_warn(...) at surveycore/R/glm.R:409:7
+
+WARNING: 'test-glm.R:297:3' -----------------------
+! `survey_glm()` did not converge.
+i Increase `control$maxit` or simplify the model.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(...) at test-glm.R:297:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::survey_glm(d, y_sep ~ x_sep, family = binomial())
+ 8.   └─cli::cli_warn(...) at surveycore/R/glm.R:1104:5
+
+WARNING: 'test-glm.R:359:3' -----------------------
+glm.fit: algorithm did not converge
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(...) at test-glm.R:359:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::survey_glm(d, y1 ~ y2 + y3, control = list(maxit = 1L))
+  8.   ├─base::do.call(stats::glm, glm_args) at surveycore/R/glm.R:1098:5
+  9.   └─stats (local) `<fn>`(...)
+ 10.     ├─base::eval(...)
+ 11.     │ └─base::eval(...)
+ 12.     └─stats::glm.fit(...)
+
+x is ignored when method = 'kish'
+x is ignored when method = 'kish'
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 50 x 8
+  psu   strata      fpc    wt    y1     y2    y3 group
+  <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+1 psu_1 stratum_1   378  14.3  50.9 -0.122     1 A    
+# i 49 more rows
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 50 x 10
+   psu   strata     fpc    wt    y1      y2    y3 group   prob ..surveycore_wt..
+   <chr> <chr>    <dbl> <dbl> <dbl>   <dbl> <int> <chr>  <dbl>             <dbl>
+ 1 psu_1 stratum~   378  14.3  50.9 -0.122      1 A     0.0701              14.3
+ 2 psu_1 stratum~   378  21.8  20.1  0.188      0 B     0.0459              21.8
+ 3 psu_1 stratum~   378  14.4  52.8  0.119      1 B     0.0697              14.4
+ 4 psu_2 stratum~   378  18.9  46.3 -0.0251     0 A     0.0530              18.9
+ 5 psu_2 stratum~   378  23.0  51.9  0.108      0 B     0.0435              23.0
+ 6 psu_2 stratum~   378  11.0  55.8 -0.485      0 C     0.0908              11.0
+ 7 psu_2 stratum~   378  13.8  64.0 -0.504      0 A     0.0727              13.8
+ 8 psu_2 stratum~   378  14.2  42.7 -1.66       0 B     0.0706              14.2
+ 9 psu_3 stratum~   378  16.5  63.0 -0.382      1 C     0.0606              16.5
+10 psu_3 stratum~   378  13.7  53.4 -0.513      1 A     0.0728              13.7
+# i 40 more rows
+# A tibble: 30 x 9
+   psu   strata      fpc    wt    y1      y2    y3 group ..surveycore_wt..
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>             <int>
+ 1 psu_1 stratum_1   218  14.3  41.5  1.04       1 B                     1
+ 2 psu_1 stratum_1   218  21.8  25.9  0.921      1 B                     1
+ 3 psu_2 stratum_1   218  14.4  50.4  0.721      0 B                     1
+ 4 psu_2 stratum_1   218  18.9  52.1 -1.04       1 A                     1
+ 5 psu_2 stratum_1   218  23.0  46.4 -0.0902     0 A                     1
+ 6 psu_3 stratum_1   218  11.0  57.6  0.624      0 C                     1
+ 7 psu_3 stratum_1   218  13.7  42.7 -0.954      0 B                     1
+ 8 psu_4 stratum_1   218  14.2  36.3 -0.543      0 B                     1
+ 9 psu_4 stratum_1   218  16.5  54.3  0.581      0 C                     1
+10 psu_4 stratum_1   218  13.7  41.9  0.768      0 C                     1
+# i 20 more rows
+# A tibble: 50 x 13
+  psu   strata      fpc    wt    y1     y2    y3 group repwt_1 repwt_2 repwt_3
+  <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+1 psu_1 stratum_1   378  14.3  50.9 -0.122     1 A        14.4    13.2    13.3
+# i 49 more rows
+# i 2 more variables: repwt_4 <dbl>, repwt_5 <dbl>
+# A tibble: 60 x 11
+  psu   strata      fpc    wt    y1    y2    y3 group subset phase1_prob
+  <chr> <chr>     <dbl> <dbl> <dbl> <dbl> <int> <chr> <lgl>        <dbl>
+1 psu_1 stratum_1   451  14.3  60.4 -2.02     0 B     TRUE        0.0687
+# i 59 more rows
+# i 1 more variable: phase2_prob <dbl>
+# A tibble: 50 x 13
+   psu   strata      fpc    wt    y1      y2    y3 group repwt_1 repwt_2 repwt_3
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A        14.4    13.2   13.3 
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B        19.0    22.6   20.3 
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B        11.6    12.6   15.2 
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A        17.5    19.0   19.0 
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B        22.9    21.2   24.3 
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C        12.7    13.1    9.77
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A        15.3    12.5   15.1 
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B        14.0    15.2   14.9 
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C        18.0    15.3   15.9 
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A        11.8    13.1   15.8 
+# i 40 more rows
+# i 2 more variables: repwt_4 <dbl>, repwt_5 <dbl>
+# A tibble: 50 x 14
+   psu   strata      fpc    wt    y1      y2    y3 group repwt_1 repwt_2 repwt_3
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>   <dbl>   <dbl>   <dbl>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A        14.4    13.2   13.3 
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B        19.0    22.6   20.3 
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B        11.6    12.6   15.2 
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A        17.5    19.0   19.0 
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B        22.9    21.2   24.3 
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C        12.7    13.1    9.77
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A        15.3    12.5   15.1 
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B        14.0    15.2   14.9 
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C        18.0    15.3   15.9 
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A        11.8    13.1   15.8 
+# i 40 more rows
+# i 3 more variables: repwt_4 <dbl>, repwt_5 <dbl>, fpc_rep <int>
+# A tibble: 60 x 11
+   psu   strata      fpc    wt    y1         y2    y3 group subset phase1_prob
+   <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl>        <dbl>
+ 1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE        0.0687
+ 2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE       0.0687
+ 3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE       0.0687
+ 4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE        0.0687
+ 5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE       0.0687
+ 6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE        0.0687
+ 7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE        0.0687
+ 8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE       0.0687
+ 9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE        0.0687
+10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE        0.0687
+# i 50 more rows
+# i 1 more variable: phase2_prob <dbl>
+# A tibble: 60 x 11
+   psu   strata      fpc    wt    y1         y2    y3 group subset phase1_prob
+   <chr> <chr>     <dbl> <dbl> <dbl>      <dbl> <int> <chr> <lgl>        <dbl>
+ 1 psu_1 stratum_1   451  14.3  60.4 -2.02          0 B     TRUE        0.0687
+ 2 psu_1 stratum_1   451  21.8  59.2 -1.22          0 B     FALSE       0.0687
+ 3 psu_1 stratum_1   451  14.4  57.2  0.180         1 B     FALSE       0.0687
+ 4 psu_1 stratum_1   451  18.9  39.6  0.568         1 C     TRUE        0.0687
+ 5 psu_2 stratum_1   451  23.0  49.1 -0.493         1 A     FALSE       0.0687
+ 6 psu_2 stratum_1   451  11.0  56.2  0.0000629     0 C     TRUE        0.0687
+ 7 psu_2 stratum_1   451  13.8  40.5  1.12          0 A     TRUE        0.0687
+ 8 psu_2 stratum_1   451  14.2  44.6  1.44          0 C     FALSE       0.0687
+ 9 psu_2 stratum_1   451  16.5  55.8 -1.10          0 A     TRUE        0.0687
+10 psu_2 stratum_1   451  13.7  57.7 -0.117         1 B     TRUE        0.0687
+# i 50 more rows
+# i 1 more variable: phase2_prob <dbl>
+# A tibble: 30 x 2
+         y     w
+     <dbl> <dbl>
+ 1  0.828  2.00 
+ 2  0.0757 1.11 
+ 3  0.126  1.85 
+ 4  2.27   1.22 
+ 5 -0.838  1.30 
+ 6 -0.469  1.48 
+ 7  0.0155 1.20 
+ 8  0.961  1.41 
+ 9 -0.281  0.965
+10  0.0697 1.51 
+# i 20 more rows
+# A tibble: 100 x 11
+   psu   strata      fpc    wt    y1     y2    y3 group subset phase1_prob
+   <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr> <lgl>        <dbl>
+ 1 psu_1 stratum_1   538 11.6   50.9 -1.43      0 C     FALSE       0.0967
+ 2 psu_1 stratum_1   538 12.0   46.7 -0.718     0 C     FALSE       0.0967
+ 3 psu_1 stratum_1   538 12.1   42.0  0.205     1 A     TRUE        0.0967
+ 4 psu_1 stratum_1   538 11.6   30.8 -1.90      0 A     FALSE       0.0967
+ 5 psu_1 stratum_1   538  9.12  53.7 -0.449     0 A     FALSE       0.0967
+ 6 psu_1 stratum_1   538 10.3   56.6  0.523     0 B     TRUE        0.0967
+ 7 psu_1 stratum_1   538  9.43  69.5 -0.123     0 C     FALSE       0.0967
+ 8 psu_1 stratum_1   538 10.7   55.8 -1.11      1 B     TRUE        0.0967
+ 9 psu_1 stratum_1   538 10.5   39.5 -0.774     1 C     FALSE       0.0967
+10 psu_1 stratum_1   538 10.1   39.8  0.615     0 C     FALSE       0.0967
+# i 90 more rows
+# i 1 more variable: phase2_prob <dbl>
+# A tibble: 50 x 8
+   psu   strata      fpc    wt    y1      y2    y3 group
+   <chr> <chr>     <dbl> <dbl> <dbl>   <dbl> <int> <chr>
+ 1 psu_1 stratum_1   378  14.3  50.9 -0.122      1 A    
+ 2 psu_1 stratum_1   378  21.8  20.1  0.188      0 B    
+ 3 psu_1 stratum_1   378  14.4  52.8  0.119      1 B    
+ 4 psu_2 stratum_1   378  18.9  46.3 -0.0251     0 A    
+ 5 psu_2 stratum_1   378  23.0  51.9  0.108      0 B    
+ 6 psu_2 stratum_1   378  11.0  55.8 -0.485      0 C    
+ 7 psu_2 stratum_1   378  13.8  64.0 -0.504      0 A    
+ 8 psu_2 stratum_1   378  14.2  42.7 -1.66       0 B    
+ 9 psu_3 stratum_1   378  16.5  63.0 -0.382      1 C    
+10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A    
+# i 40 more rows
+# A tibble: 10 x 6
+       y    wt    r1    r2    r3    r4
+   <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1     1     1     1     1     1     1
+ 2     2     1     1     1     1     1
+ 3     3     1     1     1     1     1
+ 4     4     1     1     1     1     1
+ 5     5     1     1     1     1     1
+ 6     6     1     1     1     1     1
+ 7     7     1     1     1     1     1
+ 8     8     1     1     1     1     1
+ 9     9     1     1     1     1     1
+10    10     1     1     1     1     1
+# A tibble: 10 x 6
+       y    wt    r1    r2    r3    r4
+   <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1     1     1     1     1     1     1
+ 2     2     1     1     1     1     1
+ 3     3     1     1     1     1     1
+ 4     4     1     1     1     1     1
+ 5     5     1     1     1     1     1
+ 6     6     1     1     1     1     1
+ 7     7     1     1     1     1     1
+ 8     8     1     1     1     1     1
+ 9     9     1     1     1     1     1
+10    10     1     1     1     1     1
+# A tibble: 10 x 6
+       y    wt    r1    r2    r3    r4
+   <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1     1     1     1     1     1     1
+ 2     2     1     1     1     1     1
+ 3     3     1     1     1     1     1
+ 4     4     1     1     1     1     1
+ 5     5     1     1     1     1     1
+ 6     6     1     1     1     1     1
+ 7     7     1     1     1     1     1
+ 8     8     1     1     1     1     1
+ 9     9     1     1     1     1     1
+10    10     1     1     1     1     1
+# A tibble: 10 x 6
+       y    wt    r1    r2    r3    r4
+   <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1     1     1     1     1     1     1
+ 2     2     1     1     1     1     1
+ 3     3     1     1     1     1     1
+ 4     4     1     1     1     1     1
+ 5     5     1     1     1     1     1
+ 6     6     1     1     1     1     1
+ 7     7     1     1     1     1     1
+ 8     8     1     1     1     1     1
+ 9     9     1     1     1     1     1
+10    10     1     1     1     1     1
+# A tibble: 10 x 2
+       y    wt
+   <int> <dbl>
+ 1     1     1
+ 2     2     1
+ 3     3     1
+ 4     4     1
+ 5     5     1
+ 6     6     1
+ 7     7     1
+ 8     8     1
+ 9     9     1
+10    10     1
+
+-- Survey Design ---------------------------------------------------------------
+<survey_nonprob> (non-probability, JK1, 4 replicates) [experimental]
+Sample size: 10
+
+# A tibble: 10 x 6
+       y    wt    r1    r2    r3    r4
+   <int> <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1     1     1     1     1     1     1
+ 2     2     1     1     1     1     1
+ 3     3     1     1     1     1     1
+ 4     4     1     1     1     1     1
+ 5     5     1     1     1     1     1
+ 6     6     1     1     1     1     1
+ 7     7     1     1     1     1     1
+ 8     8     1     1     1     1     1
+ 9     9     1     1     1     1     1
+10    10     1     1     1     1     1
+WARNING: 'test-nonprob-bootstrap-variance.R:201:3' ----------
+Unknown or uninitialised column: `se`.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_equal(result_np$se, result_rep$se, tolerance = 1e-10) at test-nonprob-bootstrap-variance.R:201:3
+ 2. │ └─testthat::quasi_label(enquo(object), label)
+ 3. │   └─rlang::eval_bare(expr, quo_get_env(quo))
+ 4. ├─result_np$se
+ 5. └─tibble:::`$.tbl_df`(result_np, se)
+
+WARNING: 'test-nonprob-bootstrap-variance.R:201:3' ----------
+Unknown or uninitialised column: `se`.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_equal(result_np$se, result_rep$se, tolerance = 1e-10) at test-nonprob-bootstrap-variance.R:201:3
+ 2. │ └─testthat::quasi_label(enquo(expected), expected.label)
+ 3. │   └─rlang::eval_bare(expr, quo_get_env(quo))
+ 4. ├─result_rep$se
+ 5. └─tibble:::`$.tbl_df`(result_rep, se)
+
+WARNING: 'test-nonprob-bootstrap-variance.R:307:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_warning(get_means(d_np, y1, group = grp), class = "surveycore_warning_domain_replicates_na") at test-nonprob-bootstrap-variance.R:307:3
+ 2. │ └─testthat:::expect_condition_matching_(...)
+ 3. │   └─testthat:::quasi_capture(...)
+ 4. │     ├─testthat (local) .capture(...)
+ 5. │     │ └─base::withCallingHandlers(...)
+ 6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 7. └─surveycore::get_means(d_np, y1, group = grp)
+ 8.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-nonprob-bootstrap-variance.R:385:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(d, fac) at test-nonprob-bootstrap-variance.R:385:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-nonprob-bootstrap-variance.R:460:3' ----------
+! Grouping variable grp has only one observed level ("one_level"). Grouped estimates will have a single row.
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(d, y, group = grp) at test-nonprob-bootstrap-variance.R:460:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:174:9
+
+WARNING: 'test-srr-compliance.R:98:3' -------------
+Unknown or uninitialised column: `se`.
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_true(all(is.finite(result$se))) at test-srr-compliance.R:98:3
+ 2. │ └─testthat::quasi_label(enquo(object), label)
+ 3. │   └─rlang::eval_bare(expr, quo_get_env(quo))
+ 4. ├─result$se
+ 5. └─tibble:::`$.tbl_df`(result, se)
+
+SKIP: 'test-srr-compliance.R:294:3' ---------------
+Reason: Set SURVEYCORE_EXTENDED_TESTS=true to run extended tests
+
+WARNING: 'test-srr-compliance.R:349:3' ------------
+glm.fit: algorithm did not converge
+Backtrace:
+     ▆
+  1. ├─testthat::expect_warning(...) at test-srr-compliance.R:349:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::survey_glm(...)
+  8.   ├─base::do.call(stats::glm, glm_args) at surveycore/R/glm.R:1098:5
+  9.   └─stats (local) `<fn>`(...)
+ 10.     ├─base::eval(...)
+ 11.     │ └─base::eval(...)
+ 12.     └─stats::glm.fit(...)
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 16 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 14 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 20 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 26 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 21 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 17 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 19 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 16 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 25 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 20 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 23 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 21 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "ctrl" has only 14 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t1" has only 18 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:280:3' ----------
+! Treatment level "t2" has only 24 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_diffs(...) at test-survey-collection-dispatch.R:280:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-diffs.R:187:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 9.         └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 16 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 14 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 20 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 26 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 22 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 21 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 17 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 19 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 16 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 25 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 20 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 23 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 21 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "ctrl" has only 14 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t1" has only 18 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+WARNING: 'test-survey-collection-dispatch.R:287:3' ----------
+! Treatment level "t2" has only 24 observations (threshold: 30).
+Backtrace:
+    ▆
+ 1. └─surveycore (local) .oracle_dispatch(...) at test-survey-collection-dispatch.R:287:3
+ 2.   └─base::lapply(names(coll), function(nm) fn(coll[[nm]], ...)) at test-survey-collection-dispatch.R:208:3
+ 3.     └─surveycore (local) FUN(X[[i]], ...)
+ 4.       └─surveycore (local) fn(coll[[nm]], ...) at test-survey-collection-dispatch.R:208:30
+ 5.         └─surveycore:::.build_diffs_output(...) at surveycore/R/analysis-diffs.R:423:3
+ 6.           └─cli::cli_warn(...) at surveycore/R/analysis-diffs-helpers.R:444:7
+
+i Skipped 2 surveys missing the requested variable: "w1" and "w2".
+WARNING: 'test-survey-collection-dispatch.R:441:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_error(get_means(coll, y1, group = grp), class = "surveycore_error_collection_bind_type_mismatch") at test-survey-collection-dispatch.R:441:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_means(coll, y1, group = grp)
+  8.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-means.R:115:5
+  9.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 10.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 11.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 12.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 13.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 14.       └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-survey-collection-dispatch.R:441:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─testthat::expect_error(get_means(coll, y1, group = grp), class = "surveycore_error_collection_bind_type_mismatch") at test-survey-collection-dispatch.R:441:3
+  2. │ └─testthat:::expect_condition_matching_(...)
+  3. │   └─testthat:::quasi_capture(...)
+  4. │     ├─testthat (local) .capture(...)
+  5. │     │ └─base::withCallingHandlers(...)
+  6. │     └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+  7. └─surveycore::get_means(coll, y1, group = grp)
+  8.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-means.R:115:5
+  9.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 10.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 11.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 12.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 13.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 14.       └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-survey-collection-dispatch.R:499:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+     ▆
+  1. ├─base::suppressMessages(get_means(coll, y1, group = grp, .if_missing_var = "skip")) at test-survey-collection-dispatch.R:499:3
+  2. │ └─base::withCallingHandlers(...)
+  3. └─surveycore::get_means(coll, y1, group = grp, .if_missing_var = "skip")
+  4.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-means.R:115:5
+  5.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+  6.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  7.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  8.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  9.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 10.       └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+i Skipped 1 survey missing the requested variable: "only".
+WARNING: 'test-survey-collection-dispatch.R:636:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(coll, shared) at test-survey-collection-dispatch.R:636:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-freqs.R:146:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-survey-collection-dispatch.R:636:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_freqs(coll, shared) at test-survey-collection-dispatch.R:636:3
+ 2.   └─surveycore:::.dispatch_over_collection(...) at surveycore/R/analysis-freqs.R:146:5
+ 3.     ├─base::tryCatch(...) at surveycore/R/survey-collection.R:751:5
+ 4.     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 5.     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 6.     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 7.     └─surveycore (local) fn(collection@surveys[[nm]], ...) at surveycore/R/survey-collection.R:751:5
+ 8.       └─cli::cli_warn(...) at surveycore/R/analysis-freqs.R:398:5
+
+WARNING: 'test-variance-replicate.R:798:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(sc, x = c(y1, y2), variance = "se") at test-variance-replicate.R:798:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+WARNING: 'test-variance-srs.R:164:3' --------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-variance-srs.R:164:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-variance-srs.R:177:3' --------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se") at test-variance-srs.R:177:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-variance-srs.R:203:3' --------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se", na.rm = FALSE) at test-variance-srs.R:203:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-variance-srs.R:219:3' --------------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_totals(sc, y, variance = "se", na.rm = FALSE) at test-variance-srs.R:219:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-totals.R:255:5
+
+WARNING: 'test-variance-taylor.R:171:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = c("se", "ci")) at test-variance-taylor.R:171:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-variance-taylor.R:204:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = c("se", "ci"), na.rm = TRUE) at test-variance-taylor.R:204:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-variance-taylor.R:342:3' -----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_means(sc, y, variance = "se") at test-variance-taylor.R:342:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-means.R:248:5
+
+WARNING: 'test-variance-twophase.R:319:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(sc, x = c(y1, y2), variance = "se") at test-variance-twophase.R:319:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+WARNING: 'test-variance-twophase.R:352:3' ----------
+! 1 cell has fewer than 30 unweighted observations. Estimates in these cells may be unreliable for public reporting (AAPOR guidance).
+Backtrace:
+    ▆
+ 1. └─surveycore::get_corr(sc, x = c(y1, y2), variance = "se") at test-variance-twophase.R:352:3
+ 2.   └─cli::cli_warn(...) at surveycore/R/analysis-corr.R:498:5
+
+[ FAIL 0 | WARN 256 | SKIP 4 | PASS 12374 ]

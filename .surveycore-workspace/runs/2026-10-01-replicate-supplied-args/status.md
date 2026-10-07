@@ -6,3 +6,4 @@
 2026-10-06T01:32:00Z  SPEC_READY  (copied to plans/)
 2026-10-07T00:00:00Z  PLAN_READY  (plan review PASS pass 3; 6 PRs, 59 rows; copied to plans/)
 2026-10-07T00:00:00Z  SHIPPING  (pipeline-ship start; baseline on develop a9e501b, tree c98c3ef: FAIL 0 | WARN 256 | PASS 12353; coverage 96.17%; R CMD check baseline not re-run — develop CI green at a9e501b. Run directory held in worktree ../surveycore-rundir on fix/replicate-supplied-args)
+2026-10-07T19:15:00Z  PR 1 MERGED  (#311, squash 9e9f09e; tester PASS, reviewer PASS, 0 BLOCKs; tests FAIL 0 | WARN 256 | PASS 12374; coverage 96.17%; CI pkgdown and test-coverage hung in setup-r twice and were re-run; ledger row and plans/ checkbox committed on PR 2's branch)
