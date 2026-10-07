@@ -1,0 +1,6 @@
+COVERAGE_PCT=96.17
+CHANGED_FILE_PCT R/core-constructors.R=96.94
+UNCOVERED_LINE R/core-constructors.R:414
+UNCOVERED_LINE R/core-constructors.R:2026
+UNCOVERED_LINE R/core-constructors.R:2117
+UNCOVERED_COUNT=3

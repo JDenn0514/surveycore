@@ -1,0 +1,137 @@
+── Installing package surveycore into temporary library ────────────────────────
+── Building pkgdown site for package surveycore ────────────────────────────────
+Reading from: C:/Users/jdennen/surveycore
+Writing to: C:/Users/jdennen/surveycore/docs
+── Sitrep ──────────────────────────────────────────────────────────────────────
+✔ URLs ok.
+✔ Favicons ok.
+✔ Open graph metadata ok.
+✔ Articles metadata ok.
+✔ Reference metadata ok.
+── Initialising site ───────────────────────────────────────────────────────────
+── Building home ───────────────────────────────────────────────────────────────
+✖ Icon "fab fa-github" lacks an `aria-label`.
+ℹ Specify `aria-label` to make the icon accessible to screen readers.
+ℹ Learn more in `vignette(pkgdown::accessibility)`.
+This message is displayed once every 8 hours.
+Reading CLAUDE.md
+Reading CODE_OF_CONDUCT.md
+Reading VENDORED.md
+Reading .github/CONTRIBUTING.md
+Reading .github/PULL_REQUEST_TEMPLATE.md
+Reading LICENSE.md
+Reading README.md
+Writing `404.html`
+── Building function reference ─────────────────────────────────────────────────
+Reading man/acs_pums_wy.Rd
+Reading man/add_survey.Rd
+Reading man/anes_2024.Rd
+Reading man/anova.survey_glm_fit.Rd
+Reading man/as_caldata.Rd
+Reading man/as_survey.Rd
+Reading man/as_survey_collection.Rd
+Reading man/as_survey_nonprob.Rd
+Reading man/as_survey_replicate.Rd
+Reading man/as_survey_twophase.Rd
+Reading man/as_svydesign.Rd
+Reading man/as_tbl_svy.Rd
+Reading man/ca_api_2000.Rd
+Reading man/classify_question_type.Rd
+Reading man/clean.Rd
+Reading man/coef.survey_result.Rd
+Reading man/confint.survey_result.Rd
+Reading man/dot-get_design_vars_flat.Rd
+Reading man/extract_dataset_metadata.Rd
+Reading man/extract_data_name.Rd
+Reading man/extract_field_dates.Rd
+Reading man/extract_field_period.Rd
+Reading man/extract_higher_is.Rd
+Reading man/extract_metadata.Rd
+Reading man/extract_missing_codes.Rd
+Reading man/extract_question_preface.Rd
+Reading man/extract_reverse_coded.Rd
+Reading man/extract_sata.Rd
+Reading man/extract_survey_name.Rd
+Reading man/extract_universe.Rd
+Reading man/extract_val_labels.Rd
+Reading man/extract_var_extra.Rd
+Reading man/extract_var_label.Rd
+Reading man/extract_var_note.Rd
+Reading man/extract_vendor.Rd
+Reading man/from_svydesign.Rd
+Reading man/from_tbl_svy.Rd
+Reading man/get_anova.Rd
+Reading man/get_corr.Rd
+Reading man/get_covariance.Rd
+Reading man/get_diffs.Rd
+Reading man/get_effective_n.Rd
+Reading man/get_freqs.Rd
+Reading man/get_means.Rd
+Reading man/get_pairwise.Rd
+Reading man/get_quantiles.Rd
+Reading man/get_ratios.Rd
+Reading man/get_totals.Rd
+Reading man/get_t_test.Rd
+Reading man/get_variance.Rd
+Reading man/gss_2024.Rd
+Reading man/infer_question_prefaces.Rd
+Reading man/meta.Rd
+Reading man/nhanes_2017.Rd
+Reading man/ns_wave1.Rd
+Reading man/pew_jewish_2020.Rd
+Reading man/pew_npors_2025.Rd
+Reading man/print.survey_anova.Rd
+Reading man/print.survey_diffs.Rd
+Reading man/print.survey_effective_n.Rd
+Reading man/print.survey_pairwise.Rd
+Reading man/print.survey_result.Rd
+Reading man/print.survey_t_test.Rd
+Reading man/remove_survey.Rd
+Reading man/SE.default.Rd
+Reading man/SE.Rd
+Reading man/SE.survey_result.Rd
+Reading man/set_collection_id.Rd
+Reading man/set_collection_if_missing_var.Rd
+Reading man/set_dataset_metadata.Rd
+Reading man/set_data_name.Rd
+Reading man/set_field_dates.Rd
+Reading man/set_field_period.Rd
+Reading man/set_higher_is.Rd
+Reading man/set_missing_codes.Rd
+Reading man/set_question_preface.Rd
+Reading man/set_reverse_coded.Rd
+Reading man/set_sata.Rd
+Reading man/set_survey_name.Rd
+Reading man/set_universe.Rd
+Reading man/set_val_labels.Rd
+Reading man/set_var_extra.Rd
+Reading man/set_var_label.Rd
+Reading man/set_var_note.Rd
+Reading man/set_vendor.Rd
+Reading man/SURVEYCORE_DOMAIN_COL.Rd
+Reading man/survey_base.Rd
+Reading man/survey_collection.Rd
+Reading man/survey_data.Rd
+Reading man/survey_glm.Rd
+Reading man/survey_glm_fit.Rd
+Reading man/survey_metadata.Rd
+Reading man/survey_nonprob.Rd
+Reading man/survey_replicate.Rd
+Reading man/survey_taylor.Rd
+Reading man/survey_twophase.Rd
+Reading man/survey_weighting_history.Rd
+Reading man/update_design.Rd
+Reading man/vcov.survey_result.Rd
+── Building articles ───────────────────────────────────────────────────────────
+Reading vignettes/creating-survey-objects.Rmd
+Reading vignettes/getting-started.Rmd
+Reading vignettes/surveycore-vs-survey.Rmd
+── Building news ───────────────────────────────────────────────────────────────
+── Building sitemap ────────────────────────────────────────────────────────────
+── Building docs for llms ──────────────────────────────────────────────────────
+[WARNING] Duplicate identifier 'non-probability-samples' at input line 99 column 61
+── Building redirects ──────────────────────────────────────────────────────────
+── Building search index ───────────────────────────────────────────────────────
+── Checking for problems ───────────────────────────────────────────────────────
+── Finished building pkgdown site for package surveycore ───────────────────────
+── Finished building pkgdown site for package surveycore ───────────────────────

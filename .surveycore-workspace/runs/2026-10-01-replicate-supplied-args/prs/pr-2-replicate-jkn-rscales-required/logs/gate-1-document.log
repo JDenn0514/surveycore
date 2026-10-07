@@ -1,0 +1,15 @@
+ℹ Updating surveycore documentation
+ℹ Loading surveycore
+──────────────────── rOpenSci Statistical Software Standards ───────────────────
+
+── @srrstats standards (108 / 150): 
+  * [EA2.4, EA2.6, EA3.0, EA3.1, EA4.0, EA4.1, EA4.2, EA5.2, EA5.3, EA6.0, EA6.0a, EA6.0b, EA6.0c, EA6.0d, EA6.0e] on line#89 of file [R/analysis-helpers.R]
+  * [G2.0, G2.1, G2.1a, G2.13, G2.14a, G2.15] on line#51 of file [R/core-validators.R]
+  * [RE4.2, RE4.3, RE4.4, RE4.5, RE4.6, RE4.7, RE4.8, RE4.9, RE4.10, RE4.11, RE4.13, RE4.17, RE4.18, RE6.0, RE6.1, RE6.2, RE7.3] on line#80 of file [R/glm-methods.R]
+  * [RE1.0, RE1.1, RE1.2, RE1.3, RE1.3a, RE1.4, RE2.0, RE2.1, RE2.2, RE2.4, RE2.4a, RE2.4b, RE3.0, RE3.1, RE3.2, RE3.3, RE4.0, RE5.0] on line#97 of file [R/glm.R]
+  * [G1.4, G1.6, G2.0a, G2.2, G2.3, G2.3a, G2.4, G2.4d, G2.6, G2.7, G2.8, G2.10, G2.14, G2.14b, G5.0, G5.1, G5.2, G5.2a, G5.2b, G5.4, G5.4b, G5.5, G1.0, G1.1, G1.2, G1.3, G1.4a, G2.3b, G2.9, G2.11, G2.12, G2.16, G3.0, G5.6, G5.6a, EA1.0, EA1.1, EA1.2, EA1.3] on line#207 of file [R/srr-stats-standards.R]
+  * [G5.3, G5.8, G5.8a, G5.8b, G5.8c, G5.8d, G5.9, G5.9a, G5.10, G5.12, RE7.0, RE7.1, RE7.2] on line#59 of file [tests/testthat/test-srr-compliance.R]
+
+── @srrstatsNA standards (42 / 150): 
+  * [G1.5, G2.4a, G2.4b, G2.4c, G2.4e, G2.5, G2.14c, G3.1, G3.1a, G4.0, G5.4a, G5.4c, G5.6b, G5.7, G5.9b, G5.11, G5.11a, EA2.0, EA2.1, EA2.2, EA2.2a, EA2.2b, EA2.3, EA2.5, EA5.0, EA5.0a, EA5.0b, EA5.1, EA5.4, EA5.5, EA5.6, EA6.1, RE2.3, RE4.1, RE4.12, RE4.14, RE4.15, RE4.16, RE6.3, RE7.0a, RE7.1a, RE7.4] on line#359 of file [R/srr-stats-standards.R]
+────────────────────────────────────────────────────────────────────────────────
