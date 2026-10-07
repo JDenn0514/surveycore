@@ -2226,11 +2226,11 @@ test_that("as_svydesign() warns and converts for every replicate type carrying a
   types <- c("JK1", "JK2", "BRR", "bootstrap", "ACS", "successive-difference")
   for (ty in types) {
     d <- make_rep_fpc(type = ty, seed = 404L)
-    # survey::svrepdesign() reports its own simpleWarning for the types that
-    # ignore a scale — 'with type JK2 scale= and rscales= are not needed'.
-    # That is untouched behaviour of the scale argument (step 3), not of the
-    # FPC, so muffle it by class and leave the typed condition to reach
-    # expect_warning().
+    # Only JK2 makes survey::svrepdesign() warn about ignored arguments: it
+    # reports its own simpleWarning, 'with type JK2 scale= and rscales= are
+    # not needed', on every JK2 call, whatever the call passes. That is not
+    # behaviour of the FPC, so muffle it by class and leave the typed
+    # condition to reach expect_warning().
     expect_warning(
       sv <- suppressWarnings(as_svydesign(d), classes = "simpleWarning"),
       class = "surveycore_warning_replicate_fpc_dropped"
@@ -2779,10 +2779,10 @@ test_that("as_svydesign() reproduces surveycore's mean and SE for JKn [numerical
 
 # X-17. §VI property 8. All nine types as_survey_replicate() accepts cross
 #       the export route and then the import route, Fay included. survey
-#       reports its own simpleWarning for the types that ignore a scale —
-#       'with type ACS scale= and rscales= are not needed' — and for "other"
-#       with no rscales. Those are untouched behaviour of the scale argument
-#       (step 3), so muffle them by class.
+#       reports its own simpleWarning for every JK2 design and for "other"
+#       with no rscales. Only JK2 makes survey warn about ignored arguments;
+#       the "other" warning says survey set a missing scale or rscales to 1.
+#       Neither is behaviour of the conversion, so muffle them by class.
 test_that("every accepted replicate type crosses both conversion routes", {
   skip_if_not_installed("survey")
   types <- c(
@@ -2818,6 +2818,159 @@ test_that("every accepted replicate type crosses both conversion routes", {
       expect_equal(d2@variables$rho, 0.3, tolerance = 1e-10)
     }
   }
+})
+
+# Issue #255. survey::svrepdesign() computes its own scale and sets rscales to
+# rep(1, R) for ACS and successive-difference. A design imported from such a
+# survey object stores both values, and the export route must pass neither:
+# passing them changes no number survey computes and makes survey warn
+# 'scale= and rscales= are not needed'.
+test_that("as_svydesign() passes no scale or rscales for an imported ACS or successive-difference design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  for (ty in c("ACS", "successive-difference")) {
+    expect_no_warning(
+      src <- survey::svrepdesign(
+        weights = df$wt,
+        repweights = df[, repwt_cols],
+        type = ty,
+        mse = TRUE,
+        data = df
+      )
+    )
+    d <- from_svydesign(src)
+    expect_identical(d@variables$rscales, rep(1, 5))
+
+    expect_no_warning(sv <- as_svydesign(d))
+    expect_equal(
+      as.numeric(survey::SE(survey::svymean(~y1, sv))),
+      as.numeric(survey::SE(survey::svymean(~y1, src))),
+      tolerance = 1e-8
+    )
+  }
+})
+
+# Issue #255. survey::svrepdesign() warns on every JK2 call, whatever the call
+# passes, so the export route cannot avoid that one warning. surveycore adds
+# no condition of its own on either side of the conversion.
+test_that("as_svydesign() raises only survey's JK2 warning for a JK2 design built with no scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  expect_no_condition(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2"
+    )
+  )
+
+  w <- testthat::capture_warnings(sv <- as_svydesign(d))
+  expect_length(w, 1L)
+  expect_match(
+    w,
+    "with type JK2 scale= and rscales= are not needed and will be ignored",
+    fixed = TRUE
+  )
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    get_means(d, y1, variance = "se")$se,
+    tolerance = 1e-8
+  )
+})
+
+# Issue #255. BRR is a member of the set of types whose scale survey
+# computes itself. A design imported from a survey BRR object stores survey's
+# own 1 / R, and the export route passes no scale, so survey raises no
+# 'does not use scale=' warning.
+test_that("as_svydesign() passes no scale for an imported BRR design", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  expect_no_warning(
+    src <- survey::svrepdesign(
+      weights = df$wt,
+      repweights = df[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      data = df
+    )
+  )
+  d <- from_svydesign(src)
+  expect_equal(d@variables$scale, 1 / 5, tolerance = 1e-8)
+
+  expect_no_warning(sv <- as_svydesign(d))
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    as.numeric(survey::SE(survey::svymean(~y1, src))),
+    tolerance = 1e-8
+  )
+})
+
+# Issue #255. The export route tests the stored type through isTRUE(), so a
+# design that stores no type reaches survey::svrepdesign() and does not fail
+# on a zero-length condition first. The BRR fallback, the one warning and the
+# scale of 0.2 are survey 4.5 behaviour: with type = NULL, svrepdesign()
+# takes its first type, "BRR", and discards the passed scale. A failure on a
+# later survey version means survey changed.
+test_that("as_svydesign() converts a replicate design that stores no type", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- survey_replicate(
+    data = df,
+    variables = list(
+      weights = "wt",
+      repweights = repwt_cols,
+      type = NULL,
+      scale = 1 / 5,
+      rscales = NULL,
+      fpc = NULL,
+      fpctype = "fraction",
+      mse = TRUE,
+      rho = NULL,
+      visible_vars = NULL
+    )
+  )
+
+  w <- testthat::capture_warnings(sv <- as_svydesign(d))
+  expect_length(w, 1L)
+  expect_match(w, "type='BRR' does not use 'scale=' argument", fixed = TRUE)
+  expect_true(inherits(sv, "svyrep.design"))
+  expect_equal(sv$scale, 0.2, tolerance = 1e-8)
 })
 
 # from_svydesign() stores survey's rho for a Fay source and NULL for every
