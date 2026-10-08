@@ -960,6 +960,42 @@ as_survey_replicate <- function(
     rho <- NULL
   }
 
+  # ── Discard arguments survey::svrepdesign() ignores (issue #255) ────────────
+  # A supplied scale for BRR, JK2, ACS or successive-difference is discarded
+  # with one warning, and the switch below stores the type's own value. The
+  # value is not checked: any non-NULL scale counts as supplied. Fay is in
+  # the predicate's set but is excluded here, because the Fay step above has
+  # already set scale from rho and discards a supplied scale silently.
+
+  ignored <- character(0)
+  if (
+    .replicate_ignores_scale(type) &&
+      !identical(type, "Fay") &&
+      !is.null(scale)
+  ) {
+    ignored <- c(ignored, "scale")
+  }
+  if (length(ignored) > 0L) {
+    n_ignored <- length(ignored)
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "{.arg {ignored}} {?has/have} no effect for this replicate type ",
+          "and {?was/were} ignored."
+        ),
+        "i" = paste0(
+          "For type {.val {type}}, the design stores the type's own ",
+          "{cli::qty(n_ignored)}value{?s}, as {.fn survey::svrepdesign} does."
+        ),
+        "v" = "Remove {.arg {ignored}} from the call."
+      ),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    if ("scale" %in% ignored) {
+      scale <- NULL
+    }
+  }
+
   # ── Compute default scale based on type and n_rep ───────────────────────────
   # No Fay entry: the Fay scale is set above from rho, whatever `scale` held.
 
