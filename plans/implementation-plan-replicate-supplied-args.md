@@ -761,7 +761,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/test-conversion.R`
   - **Pipeline tier**: recommended
 
-- [ ] PR 5: `test/replicate-supplied-scale-oracle` — oracle blocks against
+- [x] PR 5: `test/replicate-supplied-scale-oracle` — oracle blocks against
   `survey` for a supplied scale, and export parity on all nine types
   - **Budget** — 10 test-spec rows | 5 criteria
     - Rows: §6 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9; §7 7.1
