@@ -88,8 +88,7 @@ computes those values itself, so the exported design gives the same numbers.
 - The oracle blocks compare surveycore against `survey::svrepdesign()` at
   these tolerances: point estimate 1e-10, standard error 1e-8, confidence
   bounds 1e-6.
-- `devtools::test()` on this PR's branch reports 13017 expectations, no
-  failure, 4 skips and 256 warnings, the count of AAPOR small-cell warnings
-  already on `develop`.
-- Package coverage with `NOT_CRAN=true`: COVERAGE_PENDING (from the gate 6
-  run).
+- `devtools::test()` on this PR's branch reports
+  `[ FAIL 0 | WARN 256 | SKIP 4 | PASS 12757 ]`. The 256 warnings are the
+  count already on `develop`.
+- Package coverage with `NOT_CRAN=true`: 96.18%, the same as `develop`.
