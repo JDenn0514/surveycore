@@ -1539,3 +1539,591 @@ test_that("one bootstrap replicate: an equal estimate gives a NaN SE", {
   expect_true(is.nan(confint(sv_mean)[1]))
   expect_true(is.nan(confint(sv_mean)[2]))
 })
+
+# ---------------------------------------------------------------------------
+# Block 26: Oracle blocks for a supplied scale — issue #255
+# ---------------------------------------------------------------------------
+
+# Every block below builds both sides from the same jk1 frame (R = 20), the
+# same weight column, the same 20 replicate columns and the same type, with
+# mse = TRUE and scale = 0.6 on both sides. Each side's stored scale is
+# asserted against a literal and never against the other side's scale.
+#
+# The first four types are the ones survey keeps a supplied scale for: JK1,
+# JKn, bootstrap and other. The last five are the ones survey discards it
+# for and computes its own: BRR, Fay, JK2, ACS and successive-difference.
+#
+# The confidence bounds agree only while both packages build the interval
+# from the normal approximation (see the Block 24b header).
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale kept — JK1", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey keeps a supplied scale for JK1, so
+  # each side computes with 0.6 on its own, and the block turns red if
+  # surveycore drops or alters it.
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK1",
+      mse = TRUE,
+      scale = 0.6
+    )
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JK1",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+
+  expect_equal(sc@variables$scale, 0.6, tolerance = 1e-8)
+  expect_equal(sv$scale, 0.6, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+
+  # The scale multiplies the variance, so the SE moves by the square root of
+  # the supplied scale over the JK1 default (R - 1) / R = 19 / 20.
+  expect_no_warning(
+    sc_default <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK1",
+      mse = TRUE
+    )
+  )
+  default_se <- get_means(sc_default, y1, variance = "se")$se
+  expect_equal(
+    sc_mean$se / default_se,
+    sqrt(0.6 / (19 / 20)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale kept — JKn", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey keeps a supplied scale for JKn, so
+  # each side computes with 0.6 on its own, and the block turns red if
+  # surveycore drops or alters it. Rule 3: JKn is the one type that gets
+  # rscales on the survey side, because survey refuses combined JKn weights
+  # without it. The literal rep(1, 20) is written once per side.
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn",
+      mse = TRUE,
+      scale = 0.6,
+      rscales = rep(1, 20)
+    )
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JKn",
+      mse = TRUE,
+      scale = 0.6,
+      rscales = rep(1, 20),
+      data = d
+    )
+  )
+
+  expect_equal(sc@variables$scale, 0.6, tolerance = 1e-8)
+  expect_equal(sv$scale, 0.6, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+
+  # The scale multiplies the variance, so the SE moves by the square root of
+  # the supplied scale over the JKn default 1.
+  expect_no_warning(
+    sc_default <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JKn",
+      mse = TRUE,
+      rscales = rep(1, 20)
+    )
+  )
+  default_se <- get_means(sc_default, y1, variance = "se")$se
+  expect_equal(sc_mean$se / default_se, sqrt(0.6 / 1), tolerance = 1e-8)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale kept — bootstrap", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey keeps a supplied scale for the
+  # bootstrap, so each side computes with 0.6 on its own, and the block
+  # turns red if surveycore drops or alters it.
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "bootstrap",
+      mse = TRUE,
+      scale = 0.6
+    )
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "bootstrap",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+
+  expect_equal(sc@variables$scale, 0.6, tolerance = 1e-8)
+  expect_equal(sv$scale, 0.6, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+
+  # The scale multiplies the variance, so the SE moves by the square root of
+  # the supplied scale over the bootstrap default 1 / (R - 1) = 1 / 19.
+  expect_no_warning(
+    sc_default <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "bootstrap",
+      mse = TRUE
+    )
+  )
+  default_se <- get_means(sc_default, y1, variance = "se")$se
+  expect_equal(
+    sc_mean$se / default_se,
+    sqrt(0.6 / (1 / 19)),
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale kept — other", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey keeps a supplied scale for
+  # "other", so each side computes with 0.6 on its own, and the block turns
+  # red if surveycore drops or alters it. Neither side gets rscales.
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "other",
+      mse = TRUE,
+      scale = 0.6
+    )
+  )
+
+  # survey warns for "other" when the call leaves scale or rscales out, and
+  # this call leaves rscales out. Count the warnings so a second one, such as
+  # "Data do not look like combined weights", cannot pass unseen.
+  other_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "other",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+  expect_length(other_warnings, 1L)
+  expect_match(
+    other_warnings,
+    "scale or rscales not specified, set to 1",
+    fixed = TRUE
+  )
+
+  expect_equal(sc@variables$scale, 0.6, tolerance = 1e-8)
+  expect_equal(sv$scale, 0.6, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+
+  # The scale multiplies the variance, so the SE moves by the square root of
+  # the supplied scale over the "other" default 1.
+  expect_no_warning(
+    sc_default <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "other",
+      mse = TRUE
+    )
+  )
+  default_se <- get_means(sc_default, y1, variance = "se")$se
+  expect_equal(sc_mean$se / default_se, sqrt(0.6 / 1), tolerance = 1e-8)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale discarded — BRR", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey discards a supplied scale for BRR
+  # and computes its own 1 / R, so the block turns red if surveycore keeps
+  # 0.6, which is the defect issue #255 reports.
+  expect_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      mse = TRUE,
+      scale = 0.6
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+  brr_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "BRR",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+  expect_length(brr_warnings, 1L)
+  expect_match(
+    brr_warnings,
+    "type='BRR' does not use 'scale=' argument",
+    fixed = TRUE
+  )
+
+  expect_equal(sc@variables$scale, 1 / 20, tolerance = 1e-8)
+  expect_equal(sv$scale, 1 / 20, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale discarded — Fay", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey discards a supplied scale for Fay
+  # and computes its own 1 / (R * (1 - rho)^2), so the block turns red if
+  # surveycore keeps 0.6, which is the defect issue #255 reports. Neither
+  # package raises a condition for it. Both sides get rho = 0.3.
+  expect_no_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "Fay",
+      rho = 0.3,
+      mse = TRUE,
+      scale = 0.6
+    )
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "Fay",
+      rho = 0.3,
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+
+  expect_equal(sc@variables$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+  expect_equal(sv$scale, 1 / (20 * (1 - 0.3)^2), tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale discarded — JK2", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey discards a supplied scale for JK2
+  # and computes its own 1, so the block turns red if surveycore keeps 0.6,
+  # which is the defect issue #255 reports.
+  expect_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "JK2",
+      mse = TRUE,
+      scale = 0.6
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+  jk2_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "JK2",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+  expect_length(jk2_warnings, 1L)
+  expect_match(
+    jk2_warnings,
+    "with type JK2 scale= and rscales= are not needed and will be ignored",
+    fixed = TRUE
+  )
+
+  expect_equal(sc@variables$scale, 1, tolerance = 1e-8)
+  expect_equal(sv$scale, 1, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale discarded — ACS", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey discards a supplied scale for ACS
+  # and computes its own 4 / R, so the block turns red if surveycore keeps
+  # 0.6, which is the defect issue #255 reports.
+  expect_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "ACS",
+      mse = TRUE,
+      scale = 0.6
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+  acs_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "ACS",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+  expect_length(acs_warnings, 1L)
+  expect_match(
+    acs_warnings,
+    "with type ACS scale= and rscales= are not needed and will be ignored",
+    fixed = TRUE
+  )
+
+  expect_equal(sc@variables$scale, 4 / 20, tolerance = 1e-8)
+  expect_equal(sv$scale, 4 / 20, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})
+
+test_that("get_means() SE matches survey::svymean() with a supplied scale discarded — successive-difference", {
+  skip_if_not_installed("survey")
+
+  d <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+
+  # Oracle rule 2 allows scale = 0.6 on both sides. 0.6 is a caller literal
+  # written in this block, not a value read off a design, and it equals none
+  # of the nine defaults at R = 20. survey discards a supplied scale for
+  # successive-difference and computes its own 4 / R, so the block turns red
+  # if surveycore keeps 0.6, which is the defect issue #255 reports.
+  expect_warning(
+    sc <- as_survey_replicate(
+      d,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "successive-difference",
+      mse = TRUE,
+      scale = 0.6
+    ),
+    class = "surveycore_warning_replicate_arg_ignored"
+  )
+  sd_warnings <- testthat::capture_warnings(
+    sv <- survey::svrepdesign(
+      weights = d$wt,
+      repweights = d[, repwt_cols],
+      type = "successive-difference",
+      mse = TRUE,
+      scale = 0.6,
+      data = d
+    )
+  )
+  expect_length(sd_warnings, 1L)
+  expect_match(
+    sd_warnings,
+    paste(
+      "with type successive-difference scale= and rscales= are not needed",
+      "and will be ignored"
+    ),
+    fixed = TRUE
+  )
+
+  expect_equal(sc@variables$scale, 4 / 20, tolerance = 1e-8)
+  expect_equal(sv$scale, 4 / 20, tolerance = 1e-8)
+
+  sc_mean <- get_means(sc, y1, variance = c("se", "ci"))
+  sv_mean <- survey::svymean(~y1, sv, na.rm = TRUE)
+
+  expect_equal(sc_mean$mean, coef(sv_mean)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_mean$se, as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+  expect_equal(sc_mean$ci_low, confint(sv_mean)[1], tolerance = 1e-6)
+  expect_equal(sc_mean$ci_high, confint(sv_mean)[2], tolerance = 1e-6)
+})

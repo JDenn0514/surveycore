@@ -2973,6 +2973,96 @@ test_that("as_svydesign() converts a replicate design that stores no type", {
   expect_equal(sv$scale, 0.2, tolerance = 1e-8)
 })
 
+# Issue #255, spec §IV numerical property. A design built with a supplied
+# scale exports to a survey object whose svymean() reproduces get_means(), on
+# all nine types. JK1, JKn, bootstrap and other store the supplied 0.6, and
+# the export route passes it to survey, which keeps it. The other five store
+# the type's own value, and survey computes the same value again on export.
+# This block asks whether the conversion carries the number across, so it is
+# a round-trip test and oracle rule 2 does not reach it.
+test_that("as_svydesign() reproduces get_means() for all nine types built with a supplied scale", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 430L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+
+  # The scale survey stores on export, one literal per type at R = 5.
+  expected_scale <- list(
+    "JK1" = 0.6,
+    "JK2" = 1,
+    "JKn" = 0.6,
+    "BRR" = 1 / 5,
+    "Fay" = 1 / (5 * (1 - 0.3)^2),
+    "bootstrap" = 0.6,
+    "ACS" = 4 / 5,
+    "successive-difference" = 4 / 5,
+    "other" = 0.6
+  )
+  discards_scale <- c("BRR", "JK2", "ACS", "successive-difference")
+  # survey warns on every JK2 call, and for "other" when the call leaves
+  # rscales out. No other type makes survey warn on export.
+  export_warning <- c(
+    "JK2" = paste(
+      "with type JK2 scale= and rscales= are not needed",
+      "and will be ignored"
+    ),
+    "other" = "scale or rscales not specified, set to 1"
+  )
+
+  for (ty in names(expected_scale)) {
+    build_design <- function() {
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        rho = if (ty == "Fay") 0.3 else NULL,
+        mse = TRUE,
+        scale = 0.6,
+        rscales = if (ty == "JKn") rep(1, 5) else NULL
+      )
+    }
+    if (ty %in% discards_scale) {
+      expect_warning(
+        d <- build_design(),
+        class = "surveycore_warning_replicate_arg_ignored"
+      )
+    } else {
+      expect_no_warning(d <- build_design())
+    }
+
+    if (ty %in% names(export_warning)) {
+      w <- testthat::capture_warnings(sv <- as_svydesign(d))
+      expect_length(w, 1L)
+      expect_match(w, export_warning[[ty]], fixed = TRUE, info = ty)
+    } else {
+      expect_no_warning(sv <- as_svydesign(d))
+    }
+
+    sm <- survey::svymean(~y1, sv)
+    sc <- get_means(d, y1, variance = "se")
+    expect_equal(
+      coef(sm)[["y1"]],
+      sc$mean[[1L]],
+      tolerance = 1e-10,
+      info = ty
+    )
+    expect_equal(
+      as.numeric(survey::SE(sm)),
+      sc$se[[1L]],
+      tolerance = 1e-8,
+      info = ty
+    )
+    expect_equal(sv$scale, expected_scale[[ty]], tolerance = 1e-8, info = ty)
+  }
+})
+
 # from_svydesign() stores survey's rho for a Fay source and NULL for every
 # other type (spec §V). The stored scale stays the source's own, so the
 # imported standard error does not move.
