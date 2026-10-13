@@ -614,7 +614,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/_snaps/constructors.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 4: `fix/replicate-rscales-discard` — `as_survey_replicate()`
+- [x] PR 4: `fix/replicate-rscales-discard` — `as_survey_replicate()`
   discards a supplied `rscales` for JK2, ACS and successive-difference
   - **Budget** — 12 test-spec rows | 8 criteria
     - Rows: §5 5.5, 5.7, 5.8, 5.9, 5.11, 5.14, 5.15, 5.17, 5.19, 5.21, 5.27;
