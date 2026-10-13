@@ -133,3 +133,25 @@ Source: `plan-review.md` §Pass 2. All rows applied. No budget figure moved.
   those, and drops the claim that the stored scale passes through. The block
   title is now "as_svydesign() converts a replicate design that stores no
   type"; PR 1 criterion 4 uses it.
+
+## S-1 — PR 6 also updates the vignette (SETTLED 2026-10-13, user)
+
+The PR 3 and PR 4 reviewers found that
+`vignettes/creating-survey-objects.Rmd` §3.4 ("The `scale` and `rscales`
+arguments") tells users to override both arguments when a codebook gives
+custom values. After PRs 2 to 4 that advice is incomplete: BRR, JK2, ACS and
+successive-difference discard a supplied `scale` with
+`surveycore_warning_replicate_arg_ignored`; JK2, ACS and
+successive-difference discard a supplied `rscales` the same way; and JKn
+refuses a call with no `rscales`. `spec.md` §I put vignettes out of scope.
+
+The user chose to fold the fix into PR 6, the documentation PR, so the
+vignette lands with the same wording as the help page and `NEWS.md`.
+
+- PR 6's write surface gains `vignettes/creating-survey-objects.Rmd`. Gate 9
+  reads it as part of PR 6's **Files touched**.
+- The change is confined to §3.4: a few sentences, no new code chunk that
+  calls `survey`, and no change elsewhere in the vignette.
+- The test-spec gains no row. The tester checks the vignette builds (gate 5
+  pkgdown, and R CMD check builds vignettes) and that §3.4 states the three
+  facts above. The reviewer checks it agrees with the roxygen text.
