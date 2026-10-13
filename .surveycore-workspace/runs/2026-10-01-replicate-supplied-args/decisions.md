@@ -155,3 +155,25 @@ vignette lands with the same wording as the help page and `NEWS.md`.
 - The test-spec gains no row. The tester checks the vignette builds (gate 5
   pkgdown, and R CMD check builds vignettes) and that §3.4 states the three
   facts above. The reviewer checks it agrees with the roxygen text.
+
+## HOLD-2 — PR 6 reviewer BLOCK: older NEWS advice made false (OPEN 2026-10-13)
+
+The PR 6 reviewer returned BLOCK (prs/pr-6-replicate-rho-class-and-docs/review.md).
+Tester PASS; all gates pass on tree 8192c49.
+
+- `NEWS.md` lines 197–198, the #242 entry in the unreleased section, tell a
+  JK2 user to pass `scale = (R-1)/R` to reproduce the old numbers. Since PR 3
+  (#314) JK2 discards a supplied `scale` with
+  `surveycore_warning_replicate_arg_ignored` and stores `1`, so the advice
+  yields the new number. The reviewer reports that `type = "other"` with
+  `scale = (R-1)/R` reproduces the pre-#242 JK2 result, because
+  `R/variance-replicate.R` does not branch on `type`.
+- `NEWS.md` line 205, the #253 entry, and roxygen fact 7 tell a JKn user to
+  pass `scale = (R-1)/R`. An old JKn call with no `rscales` is now refused
+  (PR 2, #312), so the advice also needs `rscales = rep(1, R)`.
+- The builder could not fix either: `spec.md` §IX allows only the three new
+  NEWS entries. The defect is in the spec, so the route is a §IX erratum,
+  then a builder pass.
+
+Pipeline stopped for the user, per the run's instruction to stop on any
+reviewer BLOCK. Reviewer BLOCK count for PR 6: 1.
