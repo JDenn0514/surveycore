@@ -495,7 +495,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/_snaps/constructors.md`
   - **Pipeline tier**: recommended
 
-- [ ] PR 3: `fix/replicate-scale-discard` — `as_survey_replicate()` discards a
+- [x] PR 3: `fix/replicate-scale-discard` — `as_survey_replicate()` discards a
   supplied `scale` for BRR, JK2, ACS and successive-difference, with the new
   warning
   - **Budget** — 12 test-spec rows | 8 criteria
