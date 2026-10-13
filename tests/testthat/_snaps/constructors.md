@@ -166,6 +166,17 @@
       i Got <numeric>: 0.1, 0.2, 0.3, 0.4, 0.5.
       v Pass the Fay shrinkage factor as one number, for example `rho = 0.5`.
 
+# as_survey_replicate() discard warning names scale alone
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", scale = 0.6)
+    Condition
+      Warning:
+      ! `scale` has no effect for this replicate type and was ignored.
+      i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `scale` from the call.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code

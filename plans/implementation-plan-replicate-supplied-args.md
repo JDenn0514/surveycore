@@ -404,7 +404,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/test-variance-replicate.R`
   - **Pipeline tier**: recommended
 
-- [ ] PR 2: `fix/replicate-jkn-rscales-required` — `as_survey_replicate()`
+- [x] PR 2: `fix/replicate-jkn-rscales-required` — `as_survey_replicate()`
   refuses JKn with no `rscales`
   - **Budget** — 12 test-spec rows | 7 criteria
     - Rows: §5 5.16, 5.18; §8 T1, T2, T3, T4, T5, T6, T7, T8, T9, T10
