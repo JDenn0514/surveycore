@@ -1,0 +1,10 @@
+* checking for file './DESCRIPTION' ... OK
+* preparing 'surveycore':
+* checking DESCRIPTION meta-information ... OK
+* installing the package (it is needed to build vignettes)
+* creating vignettes ... OK
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+Removed empty directory 'surveycore/.worktrees'
+* building 'surveycore_1.1.0.9000.tar.gz'
+
