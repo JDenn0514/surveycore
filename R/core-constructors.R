@@ -955,7 +955,10 @@ as_survey_replicate <- function(
           "weights are Fay weights."
         )
       ),
-      class = "surveycore_warning_rho_ignored"
+      class = c(
+        "surveycore_warning_rho_ignored",
+        "surveycore_warning_replicate_arg_ignored"
+      )
     )
     rho <- NULL
   }
