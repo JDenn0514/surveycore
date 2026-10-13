@@ -177,6 +177,28 @@
       i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
       v Remove `scale` from the call.
 
+# as_survey_replicate() discard warning names scale and rscales together
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "JK2", scale = 0.6, rscales = rep(0.5, 20))
+    Condition
+      Warning:
+      ! `scale` and `rscales` have no effect for this replicate type and were ignored.
+      i For type "JK2", the design stores the type's own values, as `survey::svrepdesign()` does.
+      v Remove `scale` and `rscales` from the call.
+
+# as_survey_replicate() discard warning names rscales alone
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "ACS", rscales = rep(0.5, 20))
+    Condition
+      Warning:
+      ! `rscales` has no effect for this replicate type and was ignored.
+      i For type "ACS", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `rscales` from the call.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code

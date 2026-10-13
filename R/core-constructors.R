@@ -961,11 +961,14 @@ as_survey_replicate <- function(
   }
 
   # ── Discard arguments survey::svrepdesign() ignores (issue #255) ────────────
-  # A supplied scale for BRR, JK2, ACS or successive-difference is discarded
-  # with one warning, and the switch below stores the type's own value. The
-  # value is not checked: any non-NULL scale counts as supplied. Fay is in
-  # the predicate's set but is excluded here, because the Fay step above has
-  # already set scale from rho and discards a supplied scale silently.
+  # A supplied scale for BRR, JK2, ACS or successive-difference is discarded,
+  # and the switch below stores the type's own value. The value is not
+  # checked: any non-NULL scale counts as supplied. Fay is in the predicate's
+  # set but is excluded here, because the Fay step above has already set
+  # scale from rho and discards a supplied scale silently. A supplied rscales
+  # for JK2, ACS or successive-difference is discarded too, and the design
+  # stores NULL. .validate_rscales() has already checked it above. One
+  # warning names every discarded argument, "scale" before "rscales".
 
   ignored <- character(0)
   if (
@@ -974,6 +977,9 @@ as_survey_replicate <- function(
       !is.null(scale)
   ) {
     ignored <- c(ignored, "scale")
+  }
+  if (.replicate_ignores_rscales(type) && !is.null(rscales)) {
+    ignored <- c(ignored, "rscales")
   }
   if (length(ignored) > 0L) {
     n_ignored <- length(ignored)
@@ -993,6 +999,9 @@ as_survey_replicate <- function(
     )
     if ("scale" %in% ignored) {
       scale <- NULL
+    }
+    if ("rscales" %in% ignored) {
+      rscales <- NULL
     }
   }
 
