@@ -72,6 +72,26 @@
 
 ## Breaking changes
 
+* `as_survey_replicate()` now ignores a supplied `scale` for `"BRR"`, `"JK2"`,
+  `"ACS"` and `"successive-difference"`, and a supplied `rscales` for `"JK2"`,
+  `"ACS"` and `"successive-difference"`, as `survey::svrepdesign()` does. It
+  stores the type's own value and warns with
+  `surveycore_warning_replicate_arg_ignored`. A caller who passed one of these
+  gets the standard error `survey` computes, which differs from the one
+  surveycore returned before. Nothing changes when the caller supplies
+  neither, and surveycore then raises no warning, unlike `survey` for `"JK2"`.
+  `"Fay"` already ignored `scale` with no warning. The `rho` warning,
+  `surveycore_warning_rho_ignored`, now also carries the new class. (#255)
+
+* `as_survey_replicate(type = "JKn")` now requires `rscales` and refuses
+  `rscales = NULL` with `surveycore_error_stratified_jk_rscales_unset`, as
+  `survey::svrepdesign()` refuses combined JKn weights without it. Before this
+  change the design built with `rep(1, R)` and left the jackknife factor out of
+  the variance. To migrate, pass `rscales` with one entry per replicate column,
+  for example `(n_h - 1) / n_h`, where `n_h` is the number of PSUs in the
+  stratum the replicate drops a PSU from. `"JK2"` with no `rscales` still
+  builds. (#255, #244)
+
 * `as_survey_replicate()` gains `rho`, the Fay shrinkage factor, and
   `type = "Fay"` now requires it (`surveycore_error_fay_rho_missing`). The Fay
   scale is now `1 / (R * (1 - rho)^2)`. Before this change a Fay design used
@@ -138,6 +158,13 @@
   `polyserial` on that pair is unaffected. (#175)
 
 ## Bug fixes
+
+* `as_svydesign()` no longer passes `scale` to `survey::svrepdesign()` for
+  `"BRR"`, `"Fay"`, `"JK2"`, `"ACS"` and `"successive-difference"`, or
+  `rscales` for `"JK2"`, `"ACS"` and `"successive-difference"`. `survey`
+  computes those values itself. The exported design computes the same numbers,
+  and `survey` no longer warns about the ignored arguments for `"ACS"` and
+  `"successive-difference"`. It still warns for every `"JK2"` design. (#255)
 
 * `as_svydesign()` on a filtered two-phase design built with
   `method = "approx"` now returns the domain. It returned the full stored
