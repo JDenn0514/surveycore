@@ -616,13 +616,34 @@ as_survey <- function(
 #'   `survey::as.svrepdesign()`, which relabels it `"BRR"`.
 #'
 #'   For every other `type`, a supplied `rho` is ignored with a warning and
-#'   the design stores no `rho`.
+#'   the design stores no `rho`. The warning has the class
+#'   `surveycore_warning_rho_ignored` and also the class
+#'   `surveycore_warning_replicate_arg_ignored`. For `"JKn"` with no
+#'   `rscales`, the refusal fires and no `rho` warning is raised, where
+#'   `survey::svrepdesign()` raises both.
 #' @param scale Numeric. Scaling factor applied to the replicate variance
 #'   formula. If `NULL` (default), computed automatically from `type` and
 #'   the number of replicates `R`: `(R-1)/R` for `"JK1"`; `1/R` for
 #'   `"BRR"`; `1 / (R * (1 - rho)^2)` for `"Fay"`; `1/(R-1)` for
 #'   `"bootstrap"`; `4/R` for `"ACS"` and `"successive-difference"` (per
 #'   Ash 2014 / Fay & Train 1995); `1` for `"JKn"`, `"JK2"` and `"other"`.
+#'
+#'   For `"JK1"`, `"JKn"`, `"bootstrap"` and `"other"`, a supplied `scale`
+#'   is stored as given.
+#'
+#'   For `"BRR"`, `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
+#'   `scale` is ignored with a warning of class
+#'   `surveycore_warning_replicate_arg_ignored`, and the design stores the
+#'   type's own value from the list above. `survey::svrepdesign()` also
+#'   ignores a supplied `scale` for these four types. Any value other than
+#'   `NULL` counts as supplied, even one equal to the type's own value, and
+#'   surveycore does not check it.
+#'
+#'   surveycore warns only when the caller supplies `scale` or `rscales`.
+#'   `survey::svrepdesign()` warns on every `"JK2"` call, even when the
+#'   caller supplies neither. surveycore does not copy that warning: a
+#'   warning that fires when the caller passed nothing tells the caller
+#'   nothing, and warnings that no one asserts hide new ones.
 #'
 #'   For `"Fay"`, a supplied `scale` is discarded with no warning, as
 #'   `survey::svrepdesign()` does, and the Fay scale always comes from
@@ -636,8 +657,9 @@ as_survey <- function(
 #'   `"JKn"` is the stratified delete-one jackknife. Its per-stratum factor
 #'   belongs in `rscales` and not in the overall scale. The factor is
 #'   `(n_h - 1) / n_h` when PSUs are selected with replacement, or when the
-#'   sampling fraction is negligible. `rscales = NULL` leaves no jackknife
-#'   factor in the variance at all.
+#'   sampling fraction is negligible. `"JKn"` requires `rscales`, and
+#'   `rscales = NULL` is refused, as `survey::svrepdesign()` refuses it for
+#'   combined weights.
 #'
 #'   A caller who samples PSUs without replacement at a sampling fraction
 #'   that is not negligible folds the correction into each `rscales` entry
@@ -667,10 +689,25 @@ as_survey <- function(
 #'   `scale = 1 / R` for `"bootstrap"`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
-#'   replicate weight columns selected by `repweights`. For a stratified
-#'   jackknife whose PSUs are selected without replacement at a sampling
-#'   fraction that is not negligible, the `scale` argument gives the entry
-#'   to build here.
+#'   replicate weight columns selected by `repweights`, with no `NA` and no
+#'   negative value. These length and value checks run on a supplied
+#'   `rscales` for every `type`, including the three that ignore it.
+#'
+#'   Required for `"JKn"`: `rscales = NULL` is refused with
+#'   `surveycore_error_stratified_jk_rscales_unset`.
+#'
+#'   For `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
+#'   `rscales` is ignored with the same warning as a supplied `scale`,
+#'   `surveycore_warning_replicate_arg_ignored`. The design stores `NULL`,
+#'   which the variance treats as `rep(1, R)`. `survey::svrepdesign()`
+#'   forces `rep(1, R)` for these three types.
+#'
+#'   For `"JKn"` and the other five types, `"JK1"`, `"BRR"`, `"Fay"`,
+#'   `"bootstrap"` and `"other"`, a supplied `rscales` is stored as given.
+#'
+#'   For a stratified jackknife whose PSUs are selected without replacement
+#'   at a sampling fraction that is not negligible, the `scale` argument
+#'   gives the entry to build here.
 #' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
 #'   correction column (a single column). `NULL` means no FPC correction.
 #'   The argument has no effect for a replicate design: no replicate
@@ -1498,7 +1535,11 @@ as_survey_twophase <- function(
 #'       \code{"JK1"}, never \code{"jackknife"}.}
 #'     \item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
 #'       Requires explicit \code{rscales} (stratum-specific scale factors of
-#'       the form \code{(n_h - 1) / n_h}).}
+#'       the form \code{(n_h - 1) / n_h}). \code{as_survey_replicate()}
+#'       accepts \code{"JK2"} with no \code{rscales}, as
+#'       \code{survey::svrepdesign()} does; \code{as_survey_nonprob()} keeps
+#'       the refusal, because \code{survey} has no non-probability design
+#'       class and so is not the reference for this constructor.}
 #'     \item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
 #'       designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
 #'   }
