@@ -2797,7 +2797,7 @@ test_that("every accepted replicate type crosses both conversion routes", {
     "other"
   )
   for (ty in types) {
-    rs <- if (ty %in% c("JK2", "JKn")) rep(1, 5L) else NULL
+    rs <- if (identical(ty, "JKn")) rep(1, 5L) else NULL
     d <- make_rep_type(
       type = ty,
       rho = if (ty == "Fay") 0.3 else NULL,
