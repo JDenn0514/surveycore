@@ -156,7 +156,7 @@ vignette lands with the same wording as the help page and `NEWS.md`.
   pkgdown, and R CMD check builds vignettes) and that §3.4 states the three
   facts above. The reviewer checks it agrees with the roxygen text.
 
-## HOLD-2 — PR 6 reviewer BLOCK: older NEWS advice made false (OPEN 2026-10-13)
+## HOLD-2 — PR 6 reviewer BLOCK: older NEWS advice made false (SETTLED 2026-10-13, user)
 
 The PR 6 reviewer returned BLOCK (prs/pr-6-replicate-rho-class-and-docs/review.md).
 Tester PASS; all gates pass on tree 8192c49.
@@ -177,3 +177,22 @@ Tester PASS; all gates pass on tree 8192c49.
 
 Pipeline stopped for the user, per the run's instruction to stop on any
 reviewer BLOCK. Reviewer BLOCK count for PR 6: 1.
+
+**Resolution: E-1.** The user chose the erratum route on 2026-10-13.
+`spec.md` §IX Erratum E-1 permits PR 6 three edits and no other edit to an
+older entry, and gives each as literal text:
+
+- E-1.1, the #242 entry: the JK2 recipe becomes `type = "other"` with
+  `scale = (R-1)/R`, keeping any `rscales` the old call passed, and says that
+  `type = "JK2"` cannot reproduce the old numbers.
+- E-1.2, the #253 entry: a new sentence says an old JKn call that passed no
+  `rscales` also needs `rscales = rep(1, R)`.
+- E-1.3, roxygen fact 7 of `@param scale`: the same JKn sentence, after the
+  kept "Pass `scale` explicitly" sentence.
+
+The builder measures four claims (M1 to M4) on fixture F1 before writing, with
+standard errors compared at `1e-8`, and raises a HOLD if any fails.
+`implementation-plan.md` PR 6 gains task 12a and criterion 8; `test-spec.md`
+gains row 9.6. PR 6's budget becomes 8 rows and 8 criteria. The write surface
+does not change. The reviewer's three non-blocking findings are not part of
+E-1.

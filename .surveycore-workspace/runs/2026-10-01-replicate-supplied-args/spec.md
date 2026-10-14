@@ -626,6 +626,249 @@ Under `## Bug fixes`, one entry:
 
 ---
 
+## IX Erratum E-1 (2026-10-13, HOLD-2)
+
+**Status**: SETTLED by the user on 2026-10-13. It applies to PR 6 only.
+
+### Defect
+
+Section IX is a closed list of three new entries. It gives no fact for two
+sentences in older entries of the same development section of `NEWS.md`.
+PRs 2 and 3 of this work made those sentences wrong:
+
+- The #242 entry ends "Pass `scale = (R-1)/R` explicitly to reproduce the old
+  numbers." Since PR 3 (#314), `type = "JK2"` ignores a supplied `scale`,
+  warns with `surveycore_warning_replicate_arg_ignored`, and stores `1`. A
+  caller who follows the advice gets a warning and the new number.
+- The #253 entry says "Pass `scale = (R-1)/R` for `"JKn"`, or `scale = 1/R`
+  for `"bootstrap"`, to reproduce the old numbers." Roxygen fact 7 (Section
+  III) says the same for `"JKn"`. Since PR 2 (#312), a `"JKn"` call with no
+  `rscales` is refused. An old call that passed no `rscales` follows the
+  advice and gets `surveycore_error_stratified_jk_rscales_unset`.
+
+### Permitted edits (closed list)
+
+PR 6 makes exactly these three edits, and no other edit to an entry older
+than the three Section IX entries:
+
+| Id | File | Edit |
+|---|---|---|
+| E-1.1 | `NEWS.md` | The last sentence of the #242 entry. Two lines out, four lines in. |
+| E-1.2 | `NEWS.md` | One new sentence after "reproduce the old numbers." in the first paragraph of the #253 entry. One line out, three lines in. |
+| E-1.3 | `R/core-constructors.R`, then `man/as_survey_replicate.Rd` by `devtools::document()` | One new sentence at the end of the "Pass `scale` explicitly" paragraph of `@param scale` in `as_survey_replicate()`. |
+
+All three files are already in PR 6's write surface. No other file changes for
+E-1. The second paragraph of the #253 entry does not change.
+
+### What "the old numbers" means
+
+The variance of a replicate design is `scale * sum(rscales * (theta_r -
+theta)^2)`, with `rscales = NULL` read as `rep(1, R)`. The variance code reads
+`scale`, `rscales` and `mse`, and does not read `type`. Point estimates do not
+depend on `scale` or `rscales`.
+
+- **JK2, "the old numbers"** are the standard errors that
+  `as_survey_replicate(type = "JK2")` returned before #242 for a call that
+  passed no `scale`. Such a design stored `scale = (R-1)/R`, the `"JK1"`
+  default today. It stored a supplied `rscales` as given, as `"JK1"` does
+  today, and stored `NULL` when the call passed none.
+- **JKn, "the old numbers"** are the standard errors that
+  `as_survey_replicate(type = "JKn")` returned before #253 for a call that
+  passed no `scale`. Such a design stored `scale = (R-1)/R`. It stored a
+  supplied `rscales` as given, and it accepted a call with no `rscales`,
+  stored `NULL`, and read it as `rep(1, R)`.
+
+The confidence bounds follow the standard error, because the analysis
+functions use the normal critical value for every replicate type.
+
+### E-1.1 — the #242 entry
+
+Remove these two lines, which are lines 197 and 198 of `NEWS.md` at
+`7593539`:
+
+```
+  now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
+  to reproduce the old numbers. (#242)
+```
+
+Put these four lines in their place:
+
+```
+  now agree, and both agree with `survey`. To reproduce the old numbers, build
+  the design with `type = "other"` and `scale = (R-1)/R`, and keep any
+  `rscales` the old call passed. `type = "JK2"` cannot reproduce them,
+  because it now ignores a supplied `scale` and `rscales`. (#242)
+```
+
+### E-1.2 — the #253 entry
+
+Remove this line, which is line 206 of `NEWS.md` at `7593539`:
+
+```
+  reproduce the old numbers. The other seven replicate types are unchanged.
+```
+
+Put these three lines in its place:
+
+```
+  reproduce the old numbers. An old `"JKn"` call that passed no `rscales` also
+  needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.
+  The other seven replicate types are unchanged.
+```
+
+The lines before it (204 and 205) do not change.
+
+### E-1.3 — roxygen fact 7
+
+Section III roxygen fact 7 is corrected. Its rationale said `"JKn"` and
+`"bootstrap"` "both keep a supplied scale". That is true, but `"JKn"` also
+refuses a call with no `rscales`, so the scale alone does not reproduce an old
+`"JKn"` number. The corrected fact 7:
+
+> 7. The existing sentence "Pass `scale` explicitly to reproduce numbers
+>    published before these two defaults moved" stays, with its two values. A
+>    new sentence follows it: an old `"JKn"` call that passed no `rscales` also
+>    needs `rscales = rep(1, R)`, because `"JKn"` refuses `rscales = NULL`.
+
+These are the three roxygen lines at `7593539`:
+
+```r
+#'   Pass `scale` explicitly to reproduce numbers published before these
+#'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+#'   `scale = 1 / R` for `"bootstrap"`.
+```
+
+These are the five lines that replace them:
+
+```r
+#'   Pass `scale` explicitly to reproduce numbers published before these
+#'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+#'   `scale = 1 / R` for `"bootstrap"`. An old `"JKn"` call that passed no
+#'   `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` refuses
+#'   `rscales = NULL`.
+```
+
+The roxygen writes `(R - 1) / R` with spaces and `NEWS.md` writes `(R-1)/R`.
+Each file keeps its own form.
+
+### Measure before writing
+
+The three edits state four claims. The builder measures each one on the
+current code before writing any text. The measurement is a scratch session.
+It adds no test block and changes no file.
+
+| Claim | Statement |
+|---|---|
+| M1 | For a JK2 call with no `rscales`, `type = "other"` with `scale = (R-1)/R` gives the old standard error: the current JK2 standard error times `sqrt((R-1)/R)`, as the #242 entry states. |
+| M2 | For a JK2 call with `rscales`, `type = "other"` with `scale = (R-1)/R` and the same `rscales` gives the old standard error: the one from a design that stores `scale = (R-1)/R` and that `rscales`. A current `"JK1"` call with the same `rscales` and no `scale` stores that pair. |
+| M3 | For a JKn call with no `scale` and no `rscales`, `type = "JKn"` with `scale = (R-1)/R` and `rscales = rep(1, R)` gives the old standard error: the current JKn standard error with `rscales = rep(1, R)`, times `sqrt((R-1)/R)`. |
+| M4 | The two old pieces of advice fail on their own: JK2 with `scale = (R-1)/R` warns and gives the current JK2 number, and JKn with only `scale = (R-1)/R` is refused. |
+
+The fixture is `make_survey_data()` from `tests/testthat/helper-test-data.R`,
+which `devtools::load_all()` sources. Two standard errors agree when they are
+equal to `1e-8`, the house tolerance for a standard error. Run this script:
+
+```r
+devtools::load_all()
+
+d <- make_survey_data(
+  n = 200,
+  n_psu = 20,
+  n_strata = 4,
+  design = "replicate",
+  type = "jk1",
+  seed = 15
+)
+repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+n_rep <- length(repwt_cols)
+stopifnot(n_rep == 20L)
+old_factor <- (n_rep - 1) / n_rep
+r_custom <- seq(0.5, 1.45, by = 0.05)
+
+build <- function(type, ...) {
+  as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    ...
+  )
+}
+se_of <- function(design) {
+  get_means(design, y1, variance = "se")$se[[1L]]
+}
+
+# M1: JK2, an old call with no rscales.
+se_jk2_now <- se_of(build("JK2"))
+testthat::expect_gt(se_jk2_now, 0)
+testthat::expect_no_warning(
+  d_m1 <- build("other", scale = old_factor)
+)
+testthat::expect_equal(
+  se_of(d_m1),
+  sqrt(old_factor) * se_jk2_now,
+  tolerance = 1e-8
+)
+
+# M2: JK2, an old call with rscales = r_custom.
+d_old_m2 <- build("JK1", rscales = r_custom)
+testthat::expect_equal(
+  d_old_m2@variables$scale,
+  old_factor,
+  tolerance = 1e-8
+)
+testthat::expect_equal(
+  d_old_m2@variables$rscales,
+  r_custom,
+  tolerance = 1e-8
+)
+testthat::expect_no_warning(
+  d_m2 <- build("other", scale = old_factor, rscales = r_custom)
+)
+testthat::expect_equal(se_of(d_m2), se_of(d_old_m2), tolerance = 1e-8)
+
+# M3: JKn, an old call with no scale and no rscales.
+se_jkn_now <- se_of(build("JKn", rscales = rep(1, n_rep)))
+testthat::expect_no_warning(
+  d_m3 <- build("JKn", scale = old_factor, rscales = rep(1, n_rep))
+)
+testthat::expect_equal(
+  se_of(d_m3),
+  sqrt(old_factor) * se_jkn_now,
+  tolerance = 1e-8
+)
+
+# M4: each old piece of advice fails on its own.
+testthat::expect_warning(
+  d_m4 <- build("JK2", scale = old_factor),
+  class = "surveycore_warning_replicate_arg_ignored"
+)
+testthat::expect_equal(se_of(d_m4), se_jk2_now, tolerance = 1e-8)
+testthat::expect_error(
+  build("JKn", scale = old_factor),
+  class = "surveycore_error_stratified_jk_rscales_unset"
+)
+
+print(
+  c(
+    se_jk2_now = se_jk2_now,
+    se_m1 = se_of(d_m1),
+    se_old_m2 = se_of(d_old_m2),
+    se_m2 = se_of(d_m2),
+    se_jkn_now = se_jkn_now,
+    se_m3 = se_of(d_m3)
+  ),
+  digits = 15
+)
+```
+
+A failed expectation stops the script. When every expectation passes, the
+builder writes E-1.1, E-1.2 and E-1.3 and records the printed values. When
+any expectation fails, the builder writes none of the three edits and raises
+a HOLD that names the failed claim and the two values it compared.
+
+---
+
 ## X. Existing assertions this change breaks (closed list)
 
 These eleven existing blocks fail or warn after the change. Each must be
