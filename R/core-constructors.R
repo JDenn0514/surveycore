@@ -686,7 +686,9 @@ as_survey <- function(
 #'
 #'   Pass `scale` explicitly to reproduce numbers published before these
 #'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
-#'   `scale = 1 / R` for `"bootstrap"`.
+#'   `scale = 1 / R` for `"bootstrap"`. An old `"JKn"` call that passed no
+#'   `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` refuses
+#'   `rscales = NULL`.
 #' @param rscales Numeric vector of replicate-specific scaling factors, or
 #'   `NULL`. If provided, must have the same length as the number of
 #'   replicate weight columns selected by `repweights`, with no `NA` and no

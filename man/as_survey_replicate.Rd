@@ -126,7 +126,9 @@ for the reason and the size of the gap.
 
 Pass \code{scale} explicitly to reproduce numbers published before these
 two defaults moved: \code{scale = (R - 1) / R} for \code{"JKn"} and
-\code{scale = 1 / R} for \code{"bootstrap"}.}
+\code{scale = 1 / R} for \code{"bootstrap"}. An old \code{"JKn"} call that passed no
+\code{rscales} also needs \code{rscales = rep(1, R)}, because \code{"JKn"} refuses
+\code{rscales = NULL}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of

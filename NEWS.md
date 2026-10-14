@@ -194,8 +194,10 @@
   so the overall scale stays at `1`. `survey::svrepdesign()` fixes it at `1`
   and `as_survey_nonprob()` already did too, so the two surveycore replicate
   constructors disagreed with each other about the same replicate type. They
-  now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
-  to reproduce the old numbers. (#242)
+  now agree, and both agree with `survey`. To reproduce the old numbers, build
+  the design with `type = "other"` and `scale = (R-1)/R`, and keep any
+  `rscales` the old call passed. `type = "JK2"` cannot reproduce them,
+  because it now ignores a supplied `scale` and `rscales`. (#242)
 
 * `as_survey_replicate()` now defaults `scale` to `1` for `type = "JKn"` and
   to `1/(R-1)` for `type = "bootstrap"`, instead of `(R-1)/R` and `1/R`.
@@ -203,7 +205,9 @@
   by `(R-1)/R`, so a standard error from either type rises by
   `1/sqrt((R-1)/R)` under this release — 2.6% on a 20-replicate design. Pass
   `scale = (R-1)/R` for `"JKn"`, or `scale = 1/R` for `"bootstrap"`, to
-  reproduce the old numbers. The other seven replicate types are unchanged.
+  reproduce the old numbers. An old `"JKn"` call that passed no `rscales` also
+  needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.
+  The other seven replicate types are unchanged.
 
   The two corrections do not have the same standing. For `"JKn"`, `(R-1)/R`
   is the factor of the *unstratified* delete-one jackknife and names `"JK1"`
