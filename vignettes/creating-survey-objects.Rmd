@@ -345,8 +345,18 @@ svy_jewish
 ### 3.4 The `scale` and `rscales` arguments
 
 Most users can omit `scale` and `rscales`. surveycore computes defaults based
-on `type` and the number of replicates. Override them only when your
-codebook's technical documentation specifies custom values [@wolter2007, ch. 3].
+on `type` and the number of replicates. One type is an exception:
+`type = "JKn"` requires `rscales`, and a call with no `rscales` is refused.
+
+Some types ignore these arguments, as `survey::svrepdesign()` does. For
+`"BRR"`, `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied `scale`
+is ignored. For `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
+`rscales` is ignored. surveycore drops the value, uses the type's own value,
+and warns with `surveycore_warning_replicate_arg_ignored`. For `"Fay"`, the
+scale always comes from `rho`.
+
+For the other types, override `scale` or `rscales` only when your codebook's
+technical documentation specifies custom values [@wolter2007, ch. 3].
 
 ---
 

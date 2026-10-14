@@ -8,7 +8,8 @@
 **Input state**: SPEC_READY (spec revision 2, test-spec revision 2, HOLD-1 and
 D-g settled in `decisions.md`)
 **PR count**: 6
-**Test-spec rows**: 59, each given to exactly one PR (§Row assignment)
+**Test-spec rows**: 60, each given to exactly one PR (§Row assignment); row
+9.6 added by erratum E-1 (2026-10-13)
 
 ## HOLDs
 
@@ -761,7 +762,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/test-conversion.R`
   - **Pipeline tier**: recommended
 
-- [ ] PR 5: `test/replicate-supplied-scale-oracle` — oracle blocks against
+- [x] PR 5: `test/replicate-supplied-scale-oracle` — oracle blocks against
   `survey` for a supplied scale, and export parity on all nine types
   - **Budget** — 10 test-spec rows | 5 criteria
     - Rows: §6 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9; §7 7.1
@@ -869,8 +870,9 @@ Pass `mse = TRUE` to both sides of every block that compares against
 
 - [ ] PR 6: `fix/replicate-rho-class-and-docs` — the `rho` warning gains the
   second class; roxygen, `NEWS.md` and the changelog record the whole change
-  - **Budget** — 7 test-spec rows | 7 criteria
-    - Rows: §5 5.22, 5.23, 5.26; §9 9.2, 9.3, 9.4, 9.5
+  - **Budget** — 8 test-spec rows | 8 criteria (row 9.6 and criterion 8
+    added by erratum E-1, 2026-10-13)
+    - Rows: §5 5.22, 5.23, 5.26; §9 9.2, 9.3, 9.4, 9.5, 9.6
   - **Tasks**
     1. Write a failing test in `tests/testthat/test-constructors.R`, title
        "as_survey_replicate() rho warning carries the replicate_arg_ignored
@@ -1071,6 +1073,214 @@ Pass `mse = TRUE` to both sides of every block that compares against
         `devtools::document()` leaves no diff, the task 11 checks give the
         counts it names (with lines joined by `tr '\r\n' '  '`, on both the
         roxygen source and the Rd), and G holds.
+    12a. Erratum E-1 (`spec.md` §IX Erratum E-1, HOLD-2 in `decisions.md`).
+        Two sentences in older entries of `NEWS.md` and one roxygen sentence
+        are wrong since PRs 2 and 3. Make exactly the three edits below and
+        no other edit to an entry older than the three entries of task 8.
+        Do the steps in order.
+        1. Measure first. In a scratch R session at the repository root, run
+           the script below. It writes no file and adds no test block.
+           `devtools::load_all()` sources
+           `tests/testthat/helper-test-data.R`, which defines
+           `make_survey_data()`. Every comparison uses `tolerance = 1e-8`,
+           this plan's value for a standard error and for a stored scale.
+
+           ```r
+           devtools::load_all()
+
+           d <- make_survey_data(
+             n = 200,
+             n_psu = 20,
+             n_strata = 4,
+             design = "replicate",
+             type = "jk1",
+             seed = 15
+           )
+           repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+           n_rep <- length(repwt_cols)
+           stopifnot(n_rep == 20L)
+           old_factor <- (n_rep - 1) / n_rep
+           r_custom <- seq(0.5, 1.45, by = 0.05)
+
+           build <- function(type, ...) {
+             as_survey_replicate(
+               d,
+               weights = wt,
+               repweights = tidyselect::all_of(repwt_cols),
+               type = type,
+               ...
+             )
+           }
+           se_of <- function(design) {
+             get_means(design, y1, variance = "se")$se[[1L]]
+           }
+
+           # M1: JK2, an old call with no rscales.
+           se_jk2_now <- se_of(build("JK2"))
+           testthat::expect_gt(se_jk2_now, 0)
+           testthat::expect_no_warning(
+             d_m1 <- build("other", scale = old_factor)
+           )
+           testthat::expect_equal(
+             se_of(d_m1),
+             sqrt(old_factor) * se_jk2_now,
+             tolerance = 1e-8
+           )
+
+           # M2: JK2, an old call with rscales = r_custom.
+           d_old_m2 <- build("JK1", rscales = r_custom)
+           testthat::expect_equal(
+             d_old_m2@variables$scale,
+             old_factor,
+             tolerance = 1e-8
+           )
+           testthat::expect_equal(
+             d_old_m2@variables$rscales,
+             r_custom,
+             tolerance = 1e-8
+           )
+           testthat::expect_no_warning(
+             d_m2 <- build("other", scale = old_factor, rscales = r_custom)
+           )
+           testthat::expect_equal(se_of(d_m2), se_of(d_old_m2), tolerance = 1e-8)
+
+           # M3: JKn, an old call with no scale and no rscales.
+           se_jkn_now <- se_of(build("JKn", rscales = rep(1, n_rep)))
+           testthat::expect_no_warning(
+             d_m3 <- build("JKn", scale = old_factor, rscales = rep(1, n_rep))
+           )
+           testthat::expect_equal(
+             se_of(d_m3),
+             sqrt(old_factor) * se_jkn_now,
+             tolerance = 1e-8
+           )
+
+           # M4: each old piece of advice fails on its own.
+           testthat::expect_warning(
+             d_m4 <- build("JK2", scale = old_factor),
+             class = "surveycore_warning_replicate_arg_ignored"
+           )
+           testthat::expect_equal(se_of(d_m4), se_jk2_now, tolerance = 1e-8)
+           testthat::expect_error(
+             build("JKn", scale = old_factor),
+             class = "surveycore_error_stratified_jk_rscales_unset"
+           )
+
+           print(
+             c(
+               se_jk2_now = se_jk2_now,
+               se_m1 = se_of(d_m1),
+               se_old_m2 = se_of(d_old_m2),
+               se_m2 = se_of(d_m2),
+               se_jkn_now = se_jkn_now,
+               se_m3 = se_of(d_m3)
+             ),
+             digits = 15
+           )
+           ```
+
+           Why these are the old numbers. Before #242, a JK2 call with no
+           `scale` stored `(R-1)/R`, the JK1 default today, and stored a
+           supplied `rscales` as given, as JK1 does today. Before #253, a JKn
+           call with no `scale` stored `(R-1)/R` and read a missing `rscales`
+           as `rep(1, R)`. The variance is `scale * sum(rscales * dev^2)` and
+           reads no `type`, so the old standard error is the current one
+           times `sqrt((R-1)/R)` where only the scale moved (M1, M3), and the
+           JK1 design's standard error where both values are kept (M2).
+
+           A failed expectation stops the script. If any fails, make none of
+           the edits below. Write a HOLD in `implementation.md` that names the
+           claim (M1 to M4) and the two values it compared, and stop. If all
+           pass, record the six printed values in `implementation.md`.
+        2. `NEWS.md`, the #242 entry (E-1.1). Remove these two lines (lines
+           197 and 198 at `7593539`):
+
+           ```
+             now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
+             to reproduce the old numbers. (#242)
+           ```
+
+           Put these four lines in their place, byte for byte, each with its
+           two-space indent:
+
+           ```
+             now agree, and both agree with `survey`. To reproduce the old numbers, build
+             the design with `type = "other"` and `scale = (R-1)/R`, and keep any
+             `rscales` the old call passed. `type = "JK2"` cannot reproduce them,
+             because it now ignores a supplied `scale` and `rscales`. (#242)
+           ```
+        3. `NEWS.md`, the #253 entry (E-1.2). Remove this line (line 206 at
+           `7593539`):
+
+           ```
+             reproduce the old numbers. The other seven replicate types are unchanged.
+           ```
+
+           Put these three lines in its place, byte for byte:
+
+           ```
+             reproduce the old numbers. An old `"JKn"` call that passed no `rscales` also
+             needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.
+             The other seven replicate types are unchanged.
+           ```
+
+           Lines 204 and 205 and the entry's second paragraph do not change.
+        4. `R/core-constructors.R`, `@param scale` of `as_survey_replicate()`
+           (E-1.3, corrected roxygen fact 7). Replace these three lines (687 to
+           689 at `7593539`):
+
+           ```r
+           #'   Pass `scale` explicitly to reproduce numbers published before these
+           #'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+           #'   `scale = 1 / R` for `"bootstrap"`.
+           ```
+
+           with these five lines:
+
+           ```r
+           #'   Pass `scale` explicitly to reproduce numbers published before these
+           #'   two defaults moved: `scale = (R - 1) / R` for `"JKn"` and
+           #'   `scale = 1 / R` for `"bootstrap"`. An old `"JKn"` call that passed no
+           #'   `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` refuses
+           #'   `rscales = NULL`.
+           ```
+
+           Then run `devtools::document()` and commit the regenerated
+           `man/as_survey_replicate.Rd` with the source.
+        5. Verify with lines joined. `rd_text` from task 11 works on any file.
+           Use single quotes round each pattern: the patterns hold backticks,
+           which double quotes would run as a command. Plain `grep` reads a
+           basic regular expression, where `(`, `)` and `{` are literal and
+           `.` matches any one character; that `.` stands for `\`, `{` and `}`
+           in the Rd patterns. Each command is one line; the comment above it
+           gives the count it must print.
+
+           ```bash
+           rd_text() { tr '\r\n' '  ' < "$1" | tr -s ' '; }
+
+           # 0 on this branch:
+           rd_text NEWS.md | grep -c 'Pass `scale = (R-1)/R` explicitly'
+           # 1 on the develop copy (proves the check above can see the text):
+           tmp=$(mktemp); git show origin/develop:NEWS.md > "$tmp"
+           rd_text "$tmp" | grep -c 'Pass `scale = (R-1)/R` explicitly'
+           # 1:
+           rd_text NEWS.md | grep -c 'build the design with `type = "other"` and `scale = (R-1)/R`, and keep any `rscales` the old call passed'
+           # 1:
+           rd_text NEWS.md | grep -c 'cannot reproduce them, because it now ignores a supplied `scale` and `rscales`. (#242)'
+           # 1:
+           rd_text NEWS.md | grep -c 'An old `"JKn"` call that passed no `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.'
+           # 1:
+           rd_text man/as_survey_replicate.Rd | grep -c 'also needs .code.rscales = rep(1, R)., because .code."JKn". refuses .code.rscales = NULL.'
+           # 1 (the kept sentence):
+           rd_text man/as_survey_replicate.Rd | grep -ci 'reproduce numbers published before these two defaults moved'
+           # exactly the three lines removed in steps 2 and 3, no other line:
+           git diff -U0 origin/develop...HEAD -- NEWS.md | grep '^-[^-]'
+           ```
+
+           Then: `devtools::document()` leaves no diff, the full suite passes
+           with 256 warnings, and G holds. No test file and no snapshot
+           changes in this task. `changelog/fix-replicate-supplied-args.md`
+           changes only if the gate figures move.
   - **Acceptance criteria**
     1. "as_survey_replicate() rho warning carries the replicate_arg_ignored
        class" passes for all eight types (5.22).
@@ -1098,6 +1308,13 @@ Pass `mse = TRUE` to both sides of every block that compares against
        `## Summary`, `## Files Modified`, `## Changes` and
        `## Verification`, and names issues #255 and #244.
     7. G, including `devtools::document()` leaving no diff (9.5).
+    8. Erratum E-1 (task 12a). The measurement script of task 12a step 1
+       runs to the end with no failed expectation, and its six printed values
+       are recorded in `implementation.md`. Every count in the task 12a step
+       5 block is the count its comment gives, with lines joined by
+       `tr '\r\n' '  '` (not `tr '\n' ' '`). The NEWS diff against
+       `origin/develop` removes exactly the three lines quoted in task 12a
+       steps 2 and 3 (9.6).
   - **Files touched**
     - `R/core-constructors.R`
     - `man/as_survey_replicate.Rd` (generated)
@@ -1110,7 +1327,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
 
 ## Row assignment
 
-59 rows. Each appears once.
+60 rows. Each appears once. (59 before erratum E-1 added row 9.6.)
 
 | PR | Rows | Count |
 |---|---|---|
@@ -1119,10 +1336,10 @@ Pass `mse = TRUE` to both sides of every block that compares against
 | 3 | 5.1, 5.2, 5.3, 5.4, 5.6, 5.10, 5.12, 5.13, 5.20, 5.24, 5.25, 5.28 | 12 |
 | 4 | 5.5, 5.7, 5.8, 5.9, 5.11, 5.14, 5.15, 5.17, 5.19, 5.21, 5.27, T11 | 12 |
 | 5 | 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.1 | 10 |
-| 6 | 5.22, 5.23, 5.26, 9.2, 9.3, 9.4, 9.5 | 7 |
+| 6 | 5.22, 5.23, 5.26, 9.2, 9.3, 9.4, 9.5, 9.6 | 8 |
 
 By section: §5 rows 5.1 to 5.28 (28), §6 rows 6.1 to 6.10 (10), §7 rows 7.1
-to 7.4 (4), §8 rows T1 to T12 (12), §9 rows 9.1 to 9.5 (5).
+to 7.4 (4), §8 rows T1 to T12 (12), §9 rows 9.1 to 9.6 (6).
 
 New snapshot entries, by PR, and no others: PR 2 the JKn refusal; PR 3 the
 BRR scale-only warning; PR 4 the JK2 two-argument warning and the ACS

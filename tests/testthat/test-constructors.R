@@ -2157,6 +2157,123 @@ test_that("as_survey_replicate() discards scale and rscales by the closed type s
   }
 })
 
+test_that("as_survey_replicate() rho warning carries the replicate_arg_ignored class", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  build <- function(ty) {
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = ty,
+      rho = 0.3,
+      rscales = if (identical(ty, "JKn")) rep(1, 20) else NULL
+    )
+  }
+  types <- c(
+    "JK1",
+    "JK2",
+    "JKn",
+    "BRR",
+    "bootstrap",
+    "ACS",
+    "successive-difference",
+    "other"
+  )
+  for (ty in types) {
+    expect_warning(
+      d <- build(ty),
+      class = "surveycore_warning_replicate_arg_ignored"
+    )
+    expect_warning(
+      build(ty),
+      class = "surveycore_warning_rho_ignored"
+    )
+    expect_null(d@variables$rho)
+  }
+})
+
+test_that("as_survey_replicate() raises the rho warning before the discard warning", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  expect_snapshot(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      rho = 0.3,
+      scale = 0.6
+    )
+  )
+  w <- testthat::capture_warnings(
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = "BRR",
+      rho = 0.3,
+      scale = 0.6
+    )
+  )
+  expect_length(w, 2L)
+  expect_equal(d@variables$scale, 1 / 20, tolerance = 1e-8)
+})
+
+test_that("as_survey_replicate() raises the rho warning and one discard warning for scale, rscales and rho together", {
+  df <- make_survey_data(
+    n = 200,
+    n_psu = 20,
+    n_strata = 4,
+    design = "replicate",
+    type = "jk1",
+    seed = 15
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  own_scale <- c(
+    "JK2" = 1,
+    "ACS" = 4 / 20,
+    "successive-difference" = 4 / 20
+  )
+  for (ty in names(own_scale)) {
+    w <- testthat::capture_warnings(
+      d <- as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = tidyselect::all_of(repwt_cols),
+        type = ty,
+        scale = 0.6,
+        rscales = rep(0.5, 20),
+        rho = 0.3
+      )
+    )
+    expect_length(w, 2L)
+    expect_match(w[[1L]], "applies only to", fixed = TRUE)
+    expect_match(
+      w[[2L]],
+      "have no effect for this replicate type",
+      fixed = TRUE
+    )
+    expect_equal(d@variables$scale, own_scale[[ty]], tolerance = 1e-8)
+    expect_null(d@variables$rscales)
+    expect_null(d@variables$rho)
+  }
+})
+
 test_that("as_survey_replicate() keeps a supplied rscales for JK1, JKn, BRR, Fay, bootstrap and other", {
   df <- make_survey_data(
     n = 200,

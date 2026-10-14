@@ -199,6 +199,21 @@
       i For type "ACS", the design stores the type's own value, as `survey::svrepdesign()` does.
       v Remove `rscales` from the call.
 
+# as_survey_replicate() raises the rho warning before the discard warning
+
+    Code
+      d <- as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
+        repwt_cols), type = "BRR", rho = 0.3, scale = 0.6)
+    Condition
+      Warning:
+      ! `rho` applies only to `type = "Fay"` and was ignored.
+      i The design has type "BRR" and stores no `rho`.
+      v Remove `rho`, or use `type = "Fay"` if the replicate weights are Fay weights.
+      Warning:
+      ! `scale` has no effect for this replicate type and was ignored.
+      i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
+      v Remove `scale` from the call.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code

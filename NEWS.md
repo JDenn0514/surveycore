@@ -72,6 +72,26 @@
 
 ## Breaking changes
 
+* `as_survey_replicate()` now ignores a supplied `scale` for `"BRR"`, `"JK2"`,
+  `"ACS"` and `"successive-difference"`, and a supplied `rscales` for `"JK2"`,
+  `"ACS"` and `"successive-difference"`, as `survey::svrepdesign()` does. It
+  stores the type's own value and warns with
+  `surveycore_warning_replicate_arg_ignored`. A caller who passed one of these
+  gets the standard error `survey` computes, which differs from the one
+  surveycore returned before. Nothing changes when the caller supplies
+  neither, and surveycore then raises no warning, unlike `survey` for `"JK2"`.
+  `"Fay"` already ignored `scale` with no warning. The `rho` warning,
+  `surveycore_warning_rho_ignored`, now also carries the new class. (#255)
+
+* `as_survey_replicate(type = "JKn")` now requires `rscales` and refuses
+  `rscales = NULL` with `surveycore_error_stratified_jk_rscales_unset`, as
+  `survey::svrepdesign()` refuses combined JKn weights without it. Before this
+  change the design built with `rep(1, R)` and left the jackknife factor out of
+  the variance. To migrate, pass `rscales` with one entry per replicate column,
+  for example `(n_h - 1) / n_h`, where `n_h` is the number of PSUs in the
+  stratum the replicate drops a PSU from. `"JK2"` with no `rscales` still
+  builds. (#255, #244)
+
 * `as_survey_replicate()` gains `rho`, the Fay shrinkage factor, and
   `type = "Fay"` now requires it (`surveycore_error_fay_rho_missing`). The Fay
   scale is now `1 / (R * (1 - rho)^2)`. Before this change a Fay design used
@@ -139,6 +159,13 @@
 
 ## Bug fixes
 
+* `as_svydesign()` no longer passes `scale` to `survey::svrepdesign()` for
+  `"BRR"`, `"Fay"`, `"JK2"`, `"ACS"` and `"successive-difference"`, or
+  `rscales` for `"JK2"`, `"ACS"` and `"successive-difference"`. `survey`
+  computes those values itself. The exported design computes the same numbers,
+  and `survey` no longer warns about the ignored arguments for `"ACS"` and
+  `"successive-difference"`. It still warns for every `"JK2"` design. (#255)
+
 * `as_svydesign()` on a filtered two-phase design built with
   `method = "approx"` now returns the domain. It returned the full stored
   sample and raised no condition, so the caller read a full-sample estimate
@@ -167,8 +194,10 @@
   so the overall scale stays at `1`. `survey::svrepdesign()` fixes it at `1`
   and `as_survey_nonprob()` already did too, so the two surveycore replicate
   constructors disagreed with each other about the same replicate type. They
-  now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
-  to reproduce the old numbers. (#242)
+  now agree, and both agree with `survey`. To reproduce the old numbers, build
+  the design with `type = "other"` and `scale = (R-1)/R`, and keep any
+  `rscales` the old call passed. `type = "JK2"` cannot reproduce them,
+  because it now ignores a supplied `scale` and `rscales`. (#242)
 
 * `as_survey_replicate()` now defaults `scale` to `1` for `type = "JKn"` and
   to `1/(R-1)` for `type = "bootstrap"`, instead of `(R-1)/R` and `1/R`.
@@ -176,7 +205,9 @@
   by `(R-1)/R`, so a standard error from either type rises by
   `1/sqrt((R-1)/R)` under this release — 2.6% on a 20-replicate design. Pass
   `scale = (R-1)/R` for `"JKn"`, or `scale = 1/R` for `"bootstrap"`, to
-  reproduce the old numbers. The other seven replicate types are unchanged.
+  reproduce the old numbers. An old `"JKn"` call that passed no `rscales` also
+  needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.
+  The other seven replicate types are unchanged.
 
   The two corrections do not have the same standing. For `"JKn"`, `(R-1)/R`
   is the factor of the *unstratified* delete-one jackknife and names `"JK1"`

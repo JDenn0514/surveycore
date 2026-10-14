@@ -48,7 +48,11 @@ replication unit. For clustered designs, use \code{"JK2"} or
 \code{"JK1"}, never \code{"jackknife"}.}
 \item{\code{"JK2"}}{Stratified jackknife. Default scale: \code{1}.
 Requires explicit \code{rscales} (stratum-specific scale factors of
-the form \code{(n_h - 1) / n_h}).}
+the form \code{(n_h - 1) / n_h}). \code{as_survey_replicate()}
+accepts \code{"JK2"} with no \code{rscales}, as
+\code{survey::svrepdesign()} does; \code{as_survey_nonprob()} keeps
+the refusal, because \code{survey} has no non-probability design
+class and so is not the reference for this constructor.}
 \item{\code{"JKn"}}{Equivalent to \code{"JK2"} for stratified nonprob
 designs. Default scale: \code{1}. Requires explicit \code{rscales}.}
 }}

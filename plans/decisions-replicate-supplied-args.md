@@ -133,3 +133,66 @@ Source: `plan-review.md` §Pass 2. All rows applied. No budget figure moved.
   those, and drops the claim that the stored scale passes through. The block
   title is now "as_svydesign() converts a replicate design that stores no
   type"; PR 1 criterion 4 uses it.
+
+## S-1 — PR 6 also updates the vignette (SETTLED 2026-10-13, user)
+
+The PR 3 and PR 4 reviewers found that
+`vignettes/creating-survey-objects.Rmd` §3.4 ("The `scale` and `rscales`
+arguments") tells users to override both arguments when a codebook gives
+custom values. After PRs 2 to 4 that advice is incomplete: BRR, JK2, ACS and
+successive-difference discard a supplied `scale` with
+`surveycore_warning_replicate_arg_ignored`; JK2, ACS and
+successive-difference discard a supplied `rscales` the same way; and JKn
+refuses a call with no `rscales`. `spec.md` §I put vignettes out of scope.
+
+The user chose to fold the fix into PR 6, the documentation PR, so the
+vignette lands with the same wording as the help page and `NEWS.md`.
+
+- PR 6's write surface gains `vignettes/creating-survey-objects.Rmd`. Gate 9
+  reads it as part of PR 6's **Files touched**.
+- The change is confined to §3.4: a few sentences, no new code chunk that
+  calls `survey`, and no change elsewhere in the vignette.
+- The test-spec gains no row. The tester checks the vignette builds (gate 5
+  pkgdown, and R CMD check builds vignettes) and that §3.4 states the three
+  facts above. The reviewer checks it agrees with the roxygen text.
+
+## HOLD-2 — PR 6 reviewer BLOCK: older NEWS advice made false (SETTLED 2026-10-13, user)
+
+The PR 6 reviewer returned BLOCK (prs/pr-6-replicate-rho-class-and-docs/review.md).
+Tester PASS; all gates pass on tree 8192c49.
+
+- `NEWS.md` lines 197–198, the #242 entry in the unreleased section, tell a
+  JK2 user to pass `scale = (R-1)/R` to reproduce the old numbers. Since PR 3
+  (#314) JK2 discards a supplied `scale` with
+  `surveycore_warning_replicate_arg_ignored` and stores `1`, so the advice
+  yields the new number. The reviewer reports that `type = "other"` with
+  `scale = (R-1)/R` reproduces the pre-#242 JK2 result, because
+  `R/variance-replicate.R` does not branch on `type`.
+- `NEWS.md` line 205, the #253 entry, and roxygen fact 7 tell a JKn user to
+  pass `scale = (R-1)/R`. An old JKn call with no `rscales` is now refused
+  (PR 2, #312), so the advice also needs `rscales = rep(1, R)`.
+- The builder could not fix either: `spec.md` §IX allows only the three new
+  NEWS entries. The defect is in the spec, so the route is a §IX erratum,
+  then a builder pass.
+
+Pipeline stopped for the user, per the run's instruction to stop on any
+reviewer BLOCK. Reviewer BLOCK count for PR 6: 1.
+
+**Resolution: E-1.** The user chose the erratum route on 2026-10-13.
+`spec.md` §IX Erratum E-1 permits PR 6 three edits and no other edit to an
+older entry, and gives each as literal text:
+
+- E-1.1, the #242 entry: the JK2 recipe becomes `type = "other"` with
+  `scale = (R-1)/R`, keeping any `rscales` the old call passed, and says that
+  `type = "JK2"` cannot reproduce the old numbers.
+- E-1.2, the #253 entry: a new sentence says an old JKn call that passed no
+  `rscales` also needs `rscales = rep(1, R)`.
+- E-1.3, roxygen fact 7 of `@param scale`: the same JKn sentence, after the
+  kept "Pass `scale` explicitly" sentence.
+
+The builder measures four claims (M1 to M4) on fixture F1 before writing, with
+standard errors compared at `1e-8`, and raises a HOLD if any fails.
+`implementation-plan.md` PR 6 gains task 12a and criterion 8; `test-spec.md`
+gains row 9.6. PR 6's budget becomes 8 rows and 8 criteria. The write surface
+does not change. The reviewer's three non-blocking findings are not part of
+E-1.

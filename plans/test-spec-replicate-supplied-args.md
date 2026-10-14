@@ -427,6 +427,166 @@ stays unchanged. The only snapshot changes allowed are new entries for rows
 | 9.3 | `man/as_survey_nonprob.Rd` states that `as_survey_replicate()` accepts JK2 with no `rscales` and that `as_survey_nonprob()` keeps the refusal |
 | 9.4 | `NEWS.md` development section has two Breaking-changes entries citing #255 (one also #244) and one Bug-fixes entry for `as_svydesign()` citing #255. The JKn entry (the one citing #244) carries an action clause that tells the caller to pass `rscales` with one entry per replicate column, and gives `(n_h - 1) / n_h` as the example value |
 | 9.5 | `devtools::document()` produces no diff |
+| 9.6 | Erratum E-1 (2026-10-13). Three parts, all in §9.6 below: (a) the measurement script runs to the end with no failed expectation; (b) the `NEWS.md` and `man/as_survey_replicate.Rd` text checks give the counts stated; (c) the `NEWS.md` diff against `origin/develop` removes exactly the three lines quoted, and no other line |
+
+### 9.6 Erratum E-1 checks
+
+**What the new text claims.** Two older `NEWS.md` entries in the development
+section, the #242 entry (JK2) and the #253 entry (JKn), tell the caller how to
+reproduce the standard errors of earlier releases. The help page for
+`as_survey_replicate()` says the same for JKn. After E-1:
+
+- JK2: build the design with `type = "other"` and `scale = (R-1)/R`, and keep
+  any `rscales` the old call passed. `type = "JK2"` with `scale = (R-1)/R`
+  now warns with `surveycore_warning_replicate_arg_ignored` and gives the new
+  number.
+- JKn: `scale = (R-1)/R`, plus `rscales = rep(1, R)` for an old call that
+  passed no `rscales`. JKn with `scale` alone is refused with
+  `surveycore_error_stratified_jk_rscales_unset`.
+
+**The old numbers.** Before #242, a JK2 design built with no `scale` stored
+`(R-1)/R`, which is the JK1 default today, and stored a supplied `rscales` as
+given, as JK1 does today. Before #253, a JKn design built with no `scale`
+stored `(R-1)/R` and read a missing `rscales` as `rep(1, R)`. The replicate
+variance is `scale * sum(rscales * dev^2)`, so where only the stored scale
+moved, the old standard error is the current one times `sqrt((R-1)/R)`.
+
+**(a) Measurement.** Run this script from the repository root on the branch
+under test. Standard errors compare at `tolerance = 1e-8`, the SE tolerance of
+§11. A failed expectation stops the script. Record the six printed values.
+
+```r
+devtools::load_all()
+
+d <- make_survey_data(
+  n = 200,
+  n_psu = 20,
+  n_strata = 4,
+  design = "replicate",
+  type = "jk1",
+  seed = 15
+)
+repwt_cols <- grep("^repwt_", names(d), value = TRUE)
+n_rep <- length(repwt_cols)
+stopifnot(n_rep == 20L)
+old_factor <- (n_rep - 1) / n_rep
+r_custom <- seq(0.5, 1.45, by = 0.05)
+
+build <- function(type, ...) {
+  as_survey_replicate(
+    d,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = type,
+    ...
+  )
+}
+se_of <- function(design) {
+  get_means(design, y1, variance = "se")$se[[1L]]
+}
+
+# M1: JK2, an old call with no rscales.
+se_jk2_now <- se_of(build("JK2"))
+testthat::expect_gt(se_jk2_now, 0)
+testthat::expect_no_warning(
+  d_m1 <- build("other", scale = old_factor)
+)
+testthat::expect_equal(
+  se_of(d_m1),
+  sqrt(old_factor) * se_jk2_now,
+  tolerance = 1e-8
+)
+
+# M2: JK2, an old call with rscales = r_custom.
+d_old_m2 <- build("JK1", rscales = r_custom)
+testthat::expect_equal(
+  d_old_m2@variables$scale,
+  old_factor,
+  tolerance = 1e-8
+)
+testthat::expect_equal(
+  d_old_m2@variables$rscales,
+  r_custom,
+  tolerance = 1e-8
+)
+testthat::expect_no_warning(
+  d_m2 <- build("other", scale = old_factor, rscales = r_custom)
+)
+testthat::expect_equal(se_of(d_m2), se_of(d_old_m2), tolerance = 1e-8)
+
+# M3: JKn, an old call with no scale and no rscales.
+se_jkn_now <- se_of(build("JKn", rscales = rep(1, n_rep)))
+testthat::expect_no_warning(
+  d_m3 <- build("JKn", scale = old_factor, rscales = rep(1, n_rep))
+)
+testthat::expect_equal(
+  se_of(d_m3),
+  sqrt(old_factor) * se_jkn_now,
+  tolerance = 1e-8
+)
+
+# M4: each old piece of advice fails on its own.
+testthat::expect_warning(
+  d_m4 <- build("JK2", scale = old_factor),
+  class = "surveycore_warning_replicate_arg_ignored"
+)
+testthat::expect_equal(se_of(d_m4), se_jk2_now, tolerance = 1e-8)
+testthat::expect_error(
+  build("JKn", scale = old_factor),
+  class = "surveycore_error_stratified_jk_rscales_unset"
+)
+
+print(
+  c(
+    se_jk2_now = se_jk2_now,
+    se_m1 = se_of(d_m1),
+    se_old_m2 = se_of(d_old_m2),
+    se_m2 = se_of(d_m2),
+    se_jkn_now = se_jkn_now,
+    se_m3 = se_of(d_m3)
+  ),
+  digits = 15
+)
+```
+
+**(b) Text checks.** The checkout stores files with `\r\n` line ends, and the
+text wraps, so join lines first with `tr '\r\n' '  '`. Do not use
+`tr '\n' ' '`: it leaves a `\r` inside a wrapped phrase. Use single quotes
+round each pattern, because the patterns hold backticks. Plain `grep` reads a
+basic regular expression: `(`, `)` and `{` are literal, and `.` matches any
+one character. In the Rd patterns, `.` stands for the `\`, `{` and `}` of
+`\code{...}`. The joined text is one line, so each count is 0 or 1. The
+comment above each command gives the count it must print.
+
+```bash
+flat_text() { tr '\r\n' '  ' < "$1" | tr -s ' '; }
+
+# 0 on the branch:
+flat_text NEWS.md | grep -c 'Pass `scale = (R-1)/R` explicitly'
+# 1 on the develop copy (proves the check above can see the text):
+tmp=$(mktemp); git show origin/develop:NEWS.md > "$tmp"
+flat_text "$tmp" | grep -c 'Pass `scale = (R-1)/R` explicitly'
+# 1:
+flat_text NEWS.md | grep -c 'build the design with `type = "other"` and `scale = (R-1)/R`, and keep any `rscales` the old call passed'
+# 1:
+flat_text NEWS.md | grep -c 'cannot reproduce them, because it now ignores a supplied `scale` and `rscales`. (#242)'
+# 1:
+flat_text NEWS.md | grep -c 'An old `"JKn"` call that passed no `rscales` also needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.'
+# 1:
+flat_text man/as_survey_replicate.Rd | grep -c 'also needs .code.rscales = rep(1, R)., because .code."JKn". refuses .code.rscales = NULL.'
+# 1 (the sentence the new one follows is kept):
+flat_text man/as_survey_replicate.Rd | grep -ci 'reproduce numbers published before these two defaults moved'
+```
+
+**(c) Nothing else in older entries changes.** Run
+`git diff -U0 origin/develop...HEAD -- NEWS.md | grep '^-[^-]'`. It prints
+exactly these three lines, in this order, and no other line:
+
+```
+-  now agree, and both agree with `survey`. Pass `scale = (R-1)/R` explicitly
+-  to reproduce the old numbers. (#242)
+-  reproduce the old numbers. The other seven replicate types are unchanged.
+```
 
 ---
 

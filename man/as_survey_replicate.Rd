@@ -55,7 +55,11 @@ ratios. \code{type} stays \code{"Fay"} at \code{rho = 0}, unlike
 \code{survey::as.svrepdesign()}, which relabels it \code{"BRR"}.
 
 For every other \code{type}, a supplied \code{rho} is ignored with a warning and
-the design stores no \code{rho}.}
+the design stores no \code{rho}. The warning has the class
+\code{surveycore_warning_rho_ignored} and also the class
+\code{surveycore_warning_replicate_arg_ignored}. For \code{"JKn"} with no
+\code{rscales}, the refusal fires and no \code{rho} warning is raised, where
+\code{survey::svrepdesign()} raises both.}
 
 \item{scale}{Numeric. Scaling factor applied to the replicate variance
 formula. If \code{NULL} (default), computed automatically from \code{type} and
@@ -63,6 +67,23 @@ the number of replicates \code{R}: \code{(R-1)/R} for \code{"JK1"}; \code{1/R} f
 \code{"BRR"}; \code{1 / (R * (1 - rho)^2)} for \code{"Fay"}; \code{1/(R-1)} for
 \code{"bootstrap"}; \code{4/R} for \code{"ACS"} and \code{"successive-difference"} (per
 Ash 2014 / Fay & Train 1995); \code{1} for \code{"JKn"}, \code{"JK2"} and \code{"other"}.
+
+For \code{"JK1"}, \code{"JKn"}, \code{"bootstrap"} and \code{"other"}, a supplied \code{scale}
+is stored as given.
+
+For \code{"BRR"}, \code{"JK2"}, \code{"ACS"} and \code{"successive-difference"}, a supplied
+\code{scale} is ignored with a warning of class
+\code{surveycore_warning_replicate_arg_ignored}, and the design stores the
+type's own value from the list above. \code{survey::svrepdesign()} also
+ignores a supplied \code{scale} for these four types. Any value other than
+\code{NULL} counts as supplied, even one equal to the type's own value, and
+surveycore does not check it.
+
+surveycore warns only when the caller supplies \code{scale} or \code{rscales}.
+\code{survey::svrepdesign()} warns on every \code{"JK2"} call, even when the
+caller supplies neither. surveycore does not copy that warning: a
+warning that fires when the caller passed nothing tells the caller
+nothing, and warnings that no one asserts hide new ones.
 
 For \code{"Fay"}, a supplied \code{scale} is discarded with no warning, as
 \code{survey::svrepdesign()} does, and the Fay scale always comes from
@@ -76,8 +97,9 @@ the per-stratum factor is already inside the replicate weights:
 \code{"JKn"} is the stratified delete-one jackknife. Its per-stratum factor
 belongs in \code{rscales} and not in the overall scale. The factor is
 \code{(n_h - 1) / n_h} when PSUs are selected with replacement, or when the
-sampling fraction is negligible. \code{rscales = NULL} leaves no jackknife
-factor in the variance at all.
+sampling fraction is negligible. \code{"JKn"} requires \code{rscales}, and
+\code{rscales = NULL} is refused, as \code{survey::svrepdesign()} refuses it for
+combined weights.
 
 A caller who samples PSUs without replacement at a sampling fraction
 that is not negligible folds the correction into each \code{rscales} entry
@@ -104,14 +126,31 @@ for the reason and the size of the gap.
 
 Pass \code{scale} explicitly to reproduce numbers published before these
 two defaults moved: \code{scale = (R - 1) / R} for \code{"JKn"} and
-\code{scale = 1 / R} for \code{"bootstrap"}.}
+\code{scale = 1 / R} for \code{"bootstrap"}. An old \code{"JKn"} call that passed no
+\code{rscales} also needs \code{rscales = rep(1, R)}, because \code{"JKn"} refuses
+\code{rscales = NULL}.}
 
 \item{rscales}{Numeric vector of replicate-specific scaling factors, or
 \code{NULL}. If provided, must have the same length as the number of
-replicate weight columns selected by \code{repweights}. For a stratified
-jackknife whose PSUs are selected without replacement at a sampling
-fraction that is not negligible, the \code{scale} argument gives the entry
-to build here.}
+replicate weight columns selected by \code{repweights}, with no \code{NA} and no
+negative value. These length and value checks run on a supplied
+\code{rscales} for every \code{type}, including the three that ignore it.
+
+Required for \code{"JKn"}: \code{rscales = NULL} is refused with
+\code{surveycore_error_stratified_jk_rscales_unset}.
+
+For \code{"JK2"}, \code{"ACS"} and \code{"successive-difference"}, a supplied
+\code{rscales} is ignored with the same warning as a supplied \code{scale},
+\code{surveycore_warning_replicate_arg_ignored}. The design stores \code{NULL},
+which the variance treats as \code{rep(1, R)}. \code{survey::svrepdesign()}
+forces \code{rep(1, R)} for these three types.
+
+For \code{"JKn"} and the other five types, \code{"JK1"}, \code{"BRR"}, \code{"Fay"},
+\code{"bootstrap"} and \code{"other"}, a supplied \code{rscales} is stored as given.
+
+For a stratified jackknife whose PSUs are selected without replacement
+at a sampling fraction that is not negligible, the \code{scale} argument
+gives the entry to build here.}
 
 \item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
 correction column (a single column). \code{NULL} means no FPC correction.
