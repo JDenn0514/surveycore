@@ -868,7 +868,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/test-conversion.R`
   - **Pipeline tier**: recommended
 
-- [ ] PR 6: `fix/replicate-rho-class-and-docs` — the `rho` warning gains the
+- [x] PR 6: `fix/replicate-rho-class-and-docs` — the `rho` warning gains the
   second class; roxygen, `NEWS.md` and the changelog record the whole change
   - **Budget** — 8 test-spec rows | 8 criteria (row 9.6 and criterion 8
     added by erratum E-1, 2026-10-13)

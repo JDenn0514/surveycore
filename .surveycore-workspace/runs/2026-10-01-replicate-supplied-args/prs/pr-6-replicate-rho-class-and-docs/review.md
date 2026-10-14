@@ -1,7 +1,8 @@
 # Review — PR 6 — replicate-rho-class-and-docs
 
-**Verdict**: BLOCK
-**Date**: 2026-10-13 16:46
+**Verdict**: PASS (re-review after BLOCK 1, tree `e435b04`; see the last
+section). First-pass verdict: BLOCK.
+**Date**: 2026-10-13 16:46 (first pass); re-review 2026-10-13
 
 Branch `fix/replicate-rho-class-and-docs`, HEAD `7593539`, tree
 `4adbc7403a9bebc34b0181f2e3f5e72cbb821a1e`, base `origin/develop` `fa75e83`
@@ -132,3 +133,53 @@ entries meet the plan. The development section of `NEWS.md` still tells a
 JK2 user to pass `scale = (R-1)/R`, which PR 3 made ineffective. The spec's
 closed NEWS list left the builder no way to fix it. Route to the planner for
 a §IX erratum, then re-dispatch the builder.
+
+## Re-review after BLOCK 1
+
+**Verdict**: PASS
+**Date**: 2026-10-13
+
+HEAD `ffe0897`, tree `e435b04447494af5c2953af3d7d381e9021988b6`, merge base
+`fa75e83` = `origin/develop`. Since tree `4adbc74`: `d21a4db` (leader, the
+four `plans/` copies of E-1) and `ffe0897` (builder, `NEWS.md`,
+`R/core-constructors.R` roxygen, `man/as_survey_replicate.Rd`).
+
+1. BLOCK resolved. The #242 entry no longer says "Pass `scale = (R-1)/R`
+   explicitly" (joined-line count 0 on the branch, 1 on `origin/develop`). It
+   now points to `type = "other"` with `scale = (R-1)/R` and the old
+   `rscales`. The #253 entry and roxygen fact 7 add the `rscales = rep(1, R)`
+   sentence for JKn. The text is true: `mse` defaults to `TRUE` for every
+   type (`R/core-constructors.R` line 853), the variance reads no `type`, and
+   M1-M4 hold. Builder (`implementation.md` §BLOCK fix 1) and tester
+   (`audit.md` §Re-audit, row 9.6(a), own run) printed the same six values to
+   15 digits: se_m1 / se_jk2_now = se_m3 / se_jkn_now = 0.974679434480896
+   = sqrt(19/20). se_m2 = se_old_m2 = 0.241558699385359.
+2. Criterion 8, the part the tester cannot see: `implementation.md` records
+   all six printed values. Confirmed. The other parts are in `audit.md`.
+3. Narrow erratum: `git diff origin/develop...HEAD -- NEWS.md` removes three
+   lines, exactly the two of E-1.1 and the one of E-1.2. The added text is
+   byte for byte the spec §IX quotes. Lines 204-205 and the second #253
+   paragraph are unchanged. The roxygen hunk is the one E-1.3 sentence; the
+   Rd hunk is its `document()` rendering. Edited lines are at most 78
+   characters. No test, snapshot, vignette or `as_survey_nonprob.Rd` change.
+4. `plans/{spec,test-spec,implementation-plan,decisions}-replicate-supplied-args.md`
+   are byte-identical (`cmp`) to the run directory files.
+5. Gates on tree `e435b04` (`logs-fix1/`): document wrote nothing;
+   `[ FAIL 0 | WARN 256 | SKIP 4 | PASS 12757 ]`; examples PASS; `Status:
+   1 NOTE` in both check logs (CRAN incoming feasibility, pre-approved);
+   pkgdown PASS; `COVERAGE_PCT=96.18`. Uncovered lines 414, 2117, 2208 are
+   the first pass's three, moved by two roxygen lines.
+6. Tolerance: row 9.6 fixes 1e-8; audit reports 1e-8 on every numeric row.
+7. Scope: write surface = Files touched + S-1 vignette + leader `plans/`
+   commits. Unchanged from the first pass except the four `plans/` copies.
+
+The first-pass convergence, profile-gate and ruling sections still hold.
+
+Non-blocking findings carried forward, out of this PR by the user's
+narrow-erratum choice:
+
+1. `?as_survey_replicate` JK2 paragraph says `as_survey_nonprob()` "agrees";
+   it agrees on the scale only, because it requires `rscales` for JK2.
+2. Vignette §3.4 does not say that BRR and Fay keep a supplied `rscales`.
+3. `?as_survey_nonprob` `@param rscales` says `NULL` sets `rep(1, R)`, while
+   its JK2 and JKn items say `rscales` is required.
