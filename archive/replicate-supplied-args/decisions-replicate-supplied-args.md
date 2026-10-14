@@ -1,5 +1,7 @@
 # Decisions — replicate-supplied-args
 
+> Archive note: the spec, test-spec, decisions and implementation-plan documents for this request moved from plans/ into this directory at archive time (2026-10-14). Each citation of their plans/ path is marked [no such file].
+
 ## HOLD-1 — What a discarded `rscales` stores (SETTLED 2026-10-06)
 
 **Question:** For JK2, ACS and successive-difference, `as_survey_replicate()`
@@ -99,9 +101,9 @@ moved.
   separately at line 660 as "One more block stays green with no edit to its
   code". Changing "eleven" to "twelve" would make the sentence false, because
   X12 neither fails nor warns. Both copies (`spec.md` in this run directory
-  and `plans/spec-replicate-supplied-args.md`) are unchanged.
+  and `plans/spec-replicate-supplied-args.md` [no such file]) are unchanged.
 - L5-2 — applied. The three `plans/` files from commit `3957966` and
-  `plans/implementation-plan-replicate-supplied-args.md` ship with PR 1 and
+  `plans/implementation-plan-replicate-supplied-args.md` [no such file] ship with PR 1 and
   are in its Files touched; G item 9 allows `plans/` and `changelog/` and
   keeps `.surveycore-workspace/` forbidden.
 - L5-3 — declined, per the review: `spec.md` §I excludes vignettes.

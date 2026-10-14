@@ -1,5 +1,7 @@
 # Implementation plan — replicate-supplied-args
 
+> Archive note: the spec, test-spec, decisions and implementation-plan documents for this request moved from plans/ into this directory at archive time (2026-10-14). Each citation of their plans/ path is marked [no such file].
+
 **Status**: PLAN_READY (plan review PASS at pass 3; see `plan-review.md`)
 **Date**: 2026-10-07
 **Revision**: 3 (plan review pass 1 and pass 2 findings applied; see
@@ -102,10 +104,10 @@ the run directory, so this plan schedules no commit that deletes it.
 pipeline-ship picks the mechanism that keeps it out of the diff.
 
 The planning copies under `plans/` do ship, with PR 1:
-`plans/spec-replicate-supplied-args.md`,
-`plans/test-spec-replicate-supplied-args.md` and
-`plans/decisions-replicate-supplied-args.md` (added in commit `3957966`), and
-`plans/implementation-plan-replicate-supplied-args.md`.
+`plans/spec-replicate-supplied-args.md` [no such file],
+`plans/test-spec-replicate-supplied-args.md` [no such file] and
+`plans/decisions-replicate-supplied-args.md` [no such file] (added in commit `3957966`), and
+`plans/implementation-plan-replicate-supplied-args.md` [no such file].
 
 ## Standard gates (criterion G)
 
@@ -391,13 +393,13 @@ Pass `mse = TRUE` to both sides of every block that compares against
     7. G.
   - **Files touched**
     - `plans/error-messages.md`
-    - `plans/spec-replicate-supplied-args.md` (planning copy, from commit
+    - `plans/spec-replicate-supplied-args.md` [no such file] (planning copy, from commit
       `3957966`)
-    - `plans/test-spec-replicate-supplied-args.md` (planning copy, from
+    - `plans/test-spec-replicate-supplied-args.md` [no such file] (planning copy, from
       commit `3957966`)
-    - `plans/decisions-replicate-supplied-args.md` (planning copy, from
+    - `plans/decisions-replicate-supplied-args.md` [no such file] (planning copy, from
       commit `3957966`)
-    - `plans/implementation-plan-replicate-supplied-args.md` (planning
+    - `plans/implementation-plan-replicate-supplied-args.md` [no such file] (planning
       copy)
     - `R/utils.R`
     - `R/methods-conversion.R`
@@ -868,7 +870,7 @@ Pass `mse = TRUE` to both sides of every block that compares against
     - `tests/testthat/test-conversion.R`
   - **Pipeline tier**: recommended
 
-- [ ] PR 6: `fix/replicate-rho-class-and-docs` — the `rho` warning gains the
+- [x] PR 6: `fix/replicate-rho-class-and-docs` — the `rho` warning gains the
   second class; roxygen, `NEWS.md` and the changelog record the whole change
   - **Budget** — 8 test-spec rows | 8 criteria (row 9.6 and criterion 8
     added by erratum E-1, 2026-10-13)
