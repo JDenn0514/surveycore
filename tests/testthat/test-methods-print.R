@@ -451,12 +451,117 @@ test_that("print.survey_replicate() shows groups when @groups is set", {
 test_that("print.survey_replicate() with FPC covers FPC design_info block", {
   withr::local_options(list(width = 80L, cli.width = 80L))
   d <- make_rep_design()
-  # Add a synthetic FPC column to trigger the FPC design_info block
+  # Record an FPC column the way surveywts' create_*_weights() does.
   d@data$fpc_rep <- rep(500L, nrow(d@data))
   d@variables$fpc <- "fpc_rep"
-  d@variables$fpctype <- "population"
   out <- capture.output(print(d, design_info = TRUE), type = "message")
-  expect_true(any(grepl("FPC", out)))
+  expect_true(any(grepl(
+    "FPC: fpc_rep (application not recorded)",
+    out,
+    fixed = TRUE
+  )))
+})
+
+# ── 37b. Replicate FPC states (issue #320) ──────────────────────────────────
+# @variables$fpc_applied says whether and where the FPC reached the variance.
+# print() renders the data too, so its blocks snapshot the FPC line alone;
+# summary() is snapshotted whole.
+
+# The FPC line(s) print(design_info = TRUE) writes for a design.
+# cli::cli_fmt() collects the cli lines as text, so they reach no condition
+# handler, and capture.output() discards the data preview print() writes to
+# stdout.
+replicate_fpc_lines <- function(d) {
+  out <- NULL
+  utils::capture.output(out <- cli::cli_fmt(print(d, design_info = TRUE)))
+  grep("FPC", out, value = TRUE, fixed = TRUE)
+}
+
+# A BRR design recording an FPC column in the given state.
+make_rep_fpc_state <- function(state) {
+  d <- make_rep_design()
+  d@variables$fpc <- "fpc"
+  d@variables$fpc_applied <- state
+  d
+}
+
+# A JK1 design built with a numeric fpc. The argument is not called `fpc`:
+# the data has an `fpc` column, and a bare `fpc = fpc` names that column.
+make_rep_numeric_fpc <- function(fraction) {
+  df <- make_survey_data(n = 50L, n_psu = 10L, design = "replicate", seed = 42L)
+  as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = fraction,
+    fpctype = "fraction"
+  )
+}
+
+test_that("print.survey_replicate() renders each FPC state", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot({
+    cat(replicate_fpc_lines(make_rep_fpc_state("rscales")), sep = "\n")
+    cat(replicate_fpc_lines(make_rep_fpc_state("repweights")), sep = "\n")
+    cat(replicate_fpc_lines(make_rep_fpc_state("none")), sep = "\n")
+    cat(replicate_fpc_lines(make_rep_fpc_state(NULL)), sep = "\n")
+    cat(replicate_fpc_lines(make_rep_design()), sep = "\n")
+  })
+})
+
+test_that("print.survey_replicate() shows the fraction of a numeric fpc", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot({
+    cat(replicate_fpc_lines(make_rep_numeric_fpc(0.1)), sep = "\n")
+    cat(
+      replicate_fpc_lines(make_rep_numeric_fpc(c(0.05, 0.1, 0.1, 0.2, 0.25))),
+      sep = "\n"
+    )
+  })
+})
+
+test_that("print.survey_replicate() renders a recorded state with no column or fraction", {
+  # The state from_svydesign() imports from svrepdesign(fpc = ): the
+  # correction is in rscales, and neither the column nor f is known.
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d_rscales <- make_rep_design()
+  d_rscales@variables$fpc_applied <- "rscales"
+  d_none <- make_rep_design()
+  d_none@variables$fpc_applied <- "none"
+  expect_identical(
+    replicate_fpc_lines(d_rscales),
+    "* FPC: applied in replicate scales"
+  )
+  expect_identical(replicate_fpc_lines(d_none), "* FPC: not applied")
+})
+
+test_that("print.survey_replicate() reads a design with no fpc_applied key as unrecorded", {
+  # A design saved before issue #320 carries no key at all.
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_rep_fpc_state(NULL)
+  vars <- d@variables
+  vars$fpc_applied <- NULL
+  vars$fpc_fraction <- NULL
+  d@variables <- vars
+  expect_false("fpc_applied" %in% names(d@variables))
+  expect_identical(
+    replicate_fpc_lines(d),
+    "* FPC: fpc (application not recorded)"
+  )
+})
+
+test_that("summary.survey_replicate() renders each FPC state", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(summary(make_rep_fpc_state("rscales")))
+  expect_snapshot(summary(make_rep_fpc_state("repweights")))
+  expect_snapshot(summary(make_rep_fpc_state("none")))
+  expect_snapshot(summary(make_rep_fpc_state(NULL)))
+})
+
+test_that("summary.survey_replicate() shows the fraction of a numeric fpc", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  expect_snapshot(summary(make_rep_numeric_fpc(0.1)))
 })
 
 # ── 39. print.survey_twophase — groups + Phase 2 strata/ids ─────────────────

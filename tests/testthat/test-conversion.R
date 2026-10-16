@@ -2291,6 +2291,181 @@ test_that("as_svydesign() leaves the surveycore design untouched when it drops t
   )
 })
 
+# ── Replicate FPC record keys across the bridge (issue #320) ─────────────────
+# CB-3 fires only when @variables$fpc names a column and
+# @variables$fpc_applied is NULL: the design does not record whether the
+# correction was applied. No state passes an fpc to survey::svrepdesign().
+
+test_that("as_svydesign() raises no FPC warning when the design records where the FPC went", {
+  skip_if_not_installed("survey")
+  for (state in c("rscales", "repweights", "none")) {
+    d <- make_rep_fpc(seed = 431L)
+    d@variables$fpc_applied <- state
+    expect_no_warning(sv <- as_svydesign(d))
+    expect_true(inherits(sv, "svyrep.design"))
+    # No fpc reaches survey: the call names none, and rscales is the stored
+    # value (NULL for BRR, which survey fills with rep(1, R)).
+    expect_null(sv$call[["fpc"]])
+    expect_equal(sv$rscales, rep(1, length(d@variables$repweights)))
+  }
+})
+
+test_that("as_svydesign() reproduces surveycore's mean and SE in every FPC state [numerical]", {
+  skip_if_not_installed("survey")
+  for (state in list("rscales", "repweights", "none", NULL)) {
+    d <- make_rep_fpc(seed = 432L)
+    d@variables$fpc_applied <- state
+    sc <- get_means(d, y1, variance = "se")
+    if (is.null(state)) {
+      expect_warning(
+        sv <- as_svydesign(d),
+        class = "surveycore_warning_replicate_fpc_dropped"
+      )
+    } else {
+      expect_no_warning(sv <- as_svydesign(d))
+    }
+    sv_mean <- survey::svymean(~y1, sv)
+    expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+    expect_equal(
+      as.numeric(survey::SE(sv_mean)),
+      sc$se[[1L]],
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("as_svydesign() does not apply a numeric fpc a second time [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 433L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  f <- c(0.05, 0.1, 0.15, 0.2, 0.25)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "JK1",
+    fpc = f,
+    fpctype = "fraction"
+  )
+  expect_identical(d@variables$fpc_applied, "rscales")
+  sc <- get_means(d, y1, variance = "se")
+
+  expect_no_warning(sv <- as_svydesign(d))
+  # The export passes the corrected rscales once and no fpc, so survey does
+  # not multiply by 1 - f again.
+  expect_null(sv$call[["fpc"]])
+  expect_equal(sv$rscales, 1 - f)
+  sv_mean <- survey::svymean(~y1, sv)
+  expect_equal(coef(sv_mean)[["y1"]], sc$mean[[1L]], tolerance = 1e-10)
+  expect_equal(as.numeric(survey::SE(sv_mean)), sc$se[[1L]], tolerance = 1e-8)
+})
+
+test_that("as_svydesign() warns on a design with no fpc_applied key at all", {
+  # A design saved before issue #320 carries no key; it reads as NULL.
+  skip_if_not_installed("survey")
+  d <- make_rep_fpc(seed = 434L)
+  vars <- d@variables
+  vars$fpc_applied <- NULL
+  vars$fpc_fraction <- NULL
+  d@variables <- vars
+  expect_false("fpc_applied" %in% names(d@variables))
+  expect_warning(
+    as_svydesign(d),
+    class = "surveycore_warning_replicate_fpc_dropped"
+  )
+})
+
+test_that("from_svydesign() records an svrepdesign() fpc as applied in rscales", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 435L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  f <- rep(0.1, n_rep)
+  expect_warning(
+    sv <- survey::svrepdesign(
+      weights = ~wt,
+      repweights = df[, repwt_cols],
+      type = "JK1",
+      fpc = f,
+      fpctype = "fraction",
+      mse = TRUE,
+      combined.weights = TRUE,
+      data = df
+    ),
+    "scale (n-1)/n not provided",
+    fixed = TRUE
+  )
+  d <- from_svydesign(sv)
+  test_invariants(d)
+  expect_identical(d@variables$fpc_applied, "rscales")
+  # The stored call is not evaluated: no column, no fraction.
+  expect_null(d@variables$fpc)
+  expect_null(d@variables$fpc_fraction)
+  # survey already multiplied rscales by 1 - f; the import keeps it.
+  expect_equal(d@variables$rscales, rep(0.9, n_rep))
+
+  # The record keeps the export quiet, and the SE survives the round trip.
+  expect_no_warning(sv2 <- as_svydesign(d))
+  expect_equal(
+    as.numeric(survey::SE(survey::svymean(~y1, sv2))),
+    as.numeric(survey::SE(survey::svymean(~y1, sv))),
+    tolerance = 1e-8
+  )
+})
+
+test_that("from_svydesign() records no FPC for a source built without one", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 50L,
+    n_psu = 10L,
+    design = "replicate",
+    seed = 436L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  sv <- survey::svrepdesign(
+    weights = ~wt,
+    repweights = df[, repwt_cols],
+    type = "BRR",
+    mse = TRUE,
+    combined.weights = TRUE,
+    data = df
+  )
+  d <- from_svydesign(sv)
+  expect_true(all(c("fpc_applied", "fpc_fraction") %in% names(d@variables)))
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc_fraction)
+})
+
+test_that("from_svydesign() records no FPC for an as.svrepdesign() source", {
+  # as.svrepdesign() keeps no trace of the source design's FPC: its call
+  # names only the design. The import cannot tell, so it records nothing.
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 100L, n_psu = 20L, n_strata = 4L, seed = 437L)
+  tay <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    fpc = ~fpc,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  sv <- survey::as.svrepdesign(tay, type = "JKn")
+  expect_null(sv$call[["fpc"]])
+  d <- from_svydesign(sv)
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc)
+})
+
 # X-7. §IV.2 step 2 and §VI property 11. The state is reachable through the
 #      exported survey_replicate() constructor, which takes an untyped
 #      variables list and never calls .validate_data_frame(). No

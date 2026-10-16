@@ -818,6 +818,14 @@ test_invariants <- function(design) {
         label = paste0("replicate weight column '", rw, "' is numeric")
       )
     }
+    # The FPC record keys (issue #320) are present on every replicate design
+    # as_survey_replicate() and from_svydesign() build; values may be NULL.
+    for (key in c("fpc", "fpctype", "fpc_applied", "fpc_fraction")) {
+      testthat::expect_true(
+        key %in% names(design@variables),
+        label = paste0("@variables has '", key, "' key")
+      )
+    }
   }
 
   # Additional check for survey_twophase: subset column must be logical

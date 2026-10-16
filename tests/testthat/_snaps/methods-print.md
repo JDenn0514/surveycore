@@ -519,6 +519,161 @@
       10 psu_3 stratum_1   378  13.7  53.4 -0.513      1 A     FALSE                
       # i 40 more rows
 
+# print.survey_replicate() renders each FPC state
+
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("rscales")), sep = "\n")
+    Output
+      * FPC: fpc (applied in replicate scales)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("repweights")), sep = "\n")
+    Output
+      * FPC: fpc (applied in replicate weights)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state("none")), sep = "\n")
+    Output
+      * FPC: fpc (not applied)
+    Code
+      cat(replicate_fpc_lines(make_rep_fpc_state(NULL)), sep = "\n")
+    Output
+      * FPC: fpc (application not recorded)
+    Code
+      cat(replicate_fpc_lines(make_rep_design()), sep = "\n")
+    Output
+      * FPC: not specified
+
+# print.survey_replicate() shows the fraction of a numeric fpc
+
+    Code
+      cat(replicate_fpc_lines(make_rep_numeric_fpc(0.1)), sep = "\n")
+    Output
+      * FPC: f = 0.1 (applied in replicate scales)
+    Code
+      cat(replicate_fpc_lines(make_rep_numeric_fpc(c(0.05, 0.1, 0.1, 0.2, 0.25))),
+      sep = "\n")
+    Output
+      * FPC: f = 0.05 to 0.25 (applied in replicate scales)
+
+# summary.survey_replicate() renders each FPC state
+
+    Code
+      summary(make_rep_fpc_state("rscales"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (applied in replicate scales)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state("repweights"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (applied in replicate weights)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state("none"))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (not applied)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+---
+
+    Code
+      summary(make_rep_fpc_state(NULL))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (BRR, 5 replicates)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      Scale: 0.2
+      MSE: TRUE
+      FPC: fpc (application not recorded)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
+# summary.survey_replicate() shows the fraction of a numeric fpc
+
+    Code
+      summary(make_rep_numeric_fpc(0.1))
+    Message
+      
+      -- Survey Design Summary -------------------------------------------------------
+      Type: replicate weights (JK1, 5 replicates)
+      Sample size: 50
+      Weighted N: 660
+      
+      
+      -- Design --
+      
+      Weights: wt
+      * Range: 7.23 – 21.26
+      * Mean: 13.21
+      * CV: 0.258
+      Scale: 0.8
+      MSE: TRUE
+      FPC: f = 0.1 (applied in replicate scales)
+      
+      Metadata: 0 of 13 variable(s) labeled
+
 # print.survey_taylor shows per-stage FPC for 2-stage design
 
     Code

@@ -21,8 +21,8 @@ survey_replicate(
 \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{variables}{A named list of design specification (weights,
-repweights, type, scale, rscales, fpc, fpctype, mse, rho). Set
-automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
+repweights, type, scale, rscales, fpc, fpctype, fpc_applied,
+fpc_fraction, mse, rho). Set automatically by \code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{groups}{Set by surveytidy's \code{group_by()}. Always \code{character(0)} in
 standalone surveycore use.}
@@ -55,8 +55,19 @@ a property.}
 \item{\code{scale}}{Numeric scaling factor for variance estimation.}
 \item{\code{rscales}}{Numeric vector of replicate-specific scales, or
 \code{NULL}.}
-\item{\code{fpc}}{FPC column name or \code{NULL}.}
-\item{\code{fpctype}}{\code{"fraction"} or \code{"correction"}.}
+\item{\code{fpc}}{Name of the FPC column the design was built from, or
+\code{NULL}. Provenance only: no replicate variance formula reads it.}
+\item{\code{fpctype}}{\code{"fraction"} or \code{"correction"}: how to read the \code{fpc}
+column.}
+\item{\code{fpc_applied}}{Where the finite population correction reached
+the variance: \code{"rscales"} (inside \code{rscales}), \code{"repweights"} (inside
+the replicate weight columns), \code{"none"} (an FPC was available and was
+not applied), or \code{NULL} (no FPC was available, or the design predates
+this key). With \code{fpc} set and \code{fpc_applied} \code{NULL}, whether the FPC
+was applied is not recorded.}
+\item{\code{fpc_fraction}}{The sampling fraction \code{f} per replicate, a numeric
+vector with one value per replicate column, when
+\code{\link[=as_survey_replicate]{as_survey_replicate()}} applied a numeric \code{fpc}; otherwise \code{NULL}.}
 \item{\code{mse}}{Logical. Use MSE estimates?}
 \item{\code{rho}}{Fay shrinkage factor for \code{type = "Fay"}; \code{NULL}
 for every other type.}
