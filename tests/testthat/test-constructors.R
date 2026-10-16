@@ -2848,6 +2848,22 @@ test_that("as_survey_replicate() refuses an NA-holding fpc column before reading
   )
 })
 
+test_that("as_survey_replicate() reports a non-data-frame before reading fpc [row 1]", {
+  # The column check reads names(data) only for a data frame, so a list
+  # with an fpc element still raises the data-frame error first.
+  expect_error(
+    as_survey_replicate(
+      list(x = 1:5, fpc = rep(0.1, 5)),
+      weights = x,
+      repweights = starts_with("r"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_not_data_frame"
+  )
+})
+
 test_that("as_survey_replicate() accepts an explicit fpc = NULL", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   expect_no_error(
