@@ -14,6 +14,7 @@
 #   cloud.r-project.org
 #   p3m.dev
 #   packagemanager.posit.co
+#   rspm-sync.rstudio.com
 #   *.r-universe.dev
 #   r-universe.dev
 #   archive.ubuntu.com
@@ -61,7 +62,13 @@ EOF
 
 # 3. R packages: Imports, Suggests and the development tools. pak installs
 #    the system libraries that each package needs.
+#    p3m.dev sends each binary download on to rspm-sync.rstudio.com. When that
+#    host is not on the network list, the download fails here.
 Rscript -e 'install.packages("pak")'
+if ! Rscript -e 'quit(status = !requireNamespace("pak", quietly = TRUE))'; then
+  echo "pak was not installed. Check that rspm-sync.rstudio.com is on the network list."
+  exit 1
+fi
 Rscript - <<'EOF'
 pkgs <- c(
   # Imports
