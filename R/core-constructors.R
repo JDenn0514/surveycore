@@ -667,8 +667,7 @@ as_survey <- function(
 #'   Here `n_h` is the number of sample PSUs in stratum `h`, and `N_h` is
 #'   the number of population PSUs in stratum `h`. The caller supplies
 #'   `N_h` from their own sampling frame, and `rscales` is the only route
-#'   for the correction: the `fpc` argument does not reach the factor for
-#'   any replicate type.
+#'   for the correction: the `fpc` argument is refused.
 #'
 #'   `"bootstrap"` divides by `R - 1`, which is the value
 #'   `survey::svrepdesign()` computes at `bootstrap.average = 1`.
@@ -710,14 +709,19 @@ as_survey <- function(
 #'   For a stratified jackknife whose PSUs are selected without replacement
 #'   at a sampling fraction that is not negligible, the `scale` argument
 #'   gives the entry to build here.
-#' @param fpc <[`tidy-select`][tidyselect::language]> Finite population
-#'   correction column (a single column). `NULL` means no FPC correction.
-#'   The argument has no effect for a replicate design: no replicate
-#'   variance formula reads it. Put the without-replacement correction into
-#'   `rscales` instead; the `scale` argument gives the entry to build.
-#' @param fpctype Character. How `fpc` is interpreted: `"fraction"` (sampling
-#'   fraction, 0–1) or `"correction"` (multiplier for the replicate variance).
-#'   Default `"fraction"`. Case-sensitive.
+#' @param fpc,fpctype Not supported. Leave both as `NULL`. Supplying either
+#'   raises an error of class `surveycore_error_replicate_fpc_unsupported`.
+#'   No replicate variance formula reads a finite population correction
+#'   column, so `fpc` never changed a standard error in any earlier version.
+#'
+#'   To apply a finite population correction, fold it into `rscales`:
+#'   multiply each entry by `1 - f`, where `f` is the sampling fraction for
+#'   that replicate, for example `rscales = rscales * (1 - f)`. For `"JKn"`,
+#'   `f` is the sampling fraction of the stratum the replicate drops a PSU
+#'   from. This is exactly what `survey::svrepdesign()` does with its own
+#'   `fpc` argument, which it accepts only for `"JK1"`, `"JKn"` and
+#'   `"other"`. Its `fpctype = "correction"` form is already `1 - f`, so
+#'   multiply `rscales` by that value directly.
 #' @param mse Logical. If `TRUE` (default), use mean-squared-error estimates
 #'   (subtract the full-sample estimate rather than the mean replicate estimate
 #'   when computing variance). Recommended for most designs.
@@ -849,13 +853,45 @@ as_survey_replicate <- function(
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
-  fpctype = c("fraction", "correction"),
+  fpctype = NULL,
   mse = TRUE,
   calibration = NULL
 ) {
   call <- match.call()
   type <- match.arg(type)
-  fpctype <- match.arg(fpctype)
+
+  # ── Refuse a finite population correction (issue #251) ─────────────────────
+  # No replicate variance formula reads an FPC column, so the argument never
+  # changed a standard error. survey::svrepdesign() applies its own fpc as
+  # rscales * (1 - f), which a caller reproduces through `rscales`. This runs
+  # before every other check: the refusal does not depend on the data.
+
+  fpc_supplied <- !rlang::quo_is_null(rlang::enquo(fpc))
+  fpctype_supplied <- !is.null(fpctype)
+  if (fpc_supplied || fpctype_supplied) {
+    refused <- c("fpc", "fpctype")[c(fpc_supplied, fpctype_supplied)]
+    cli::cli_abort(
+      c(
+        "x" = "{.fn as_survey_replicate} does not accept {.arg {refused}}.",
+        "i" = paste0(
+          "No replicate variance formula reads a finite population ",
+          "correction column, so {.arg fpc} never changed a standard error."
+        ),
+        "i" = paste0(
+          "{.fn survey::svrepdesign} applies a replicate FPC by multiplying ",
+          "{.arg rscales} by {.code 1 - f}, where {.code f} is the sampling ",
+          "fraction."
+        ),
+        "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.",
+        "v" = paste0(
+          "Remove {.arg {refused}} and pass ",
+          "{.code rscales = rscales * (1 - f)} instead, with one entry per ",
+          "replicate column."
+        )
+      ),
+      class = "surveycore_error_replicate_fpc_unsupported"
+    )
+  }
 
   # ── Layer 3: data-level validation ─────────────────────────────────────────
   .validate_data_frame(data)
@@ -888,14 +924,6 @@ as_survey_replicate <- function(
   repweights_vars <- names(repweights_cols)
   n_rep <- length(repweights_vars)
 
-  fpc_var <- .resolve_single_col(
-    rlang::enquo(fpc),
-    data,
-    "fpc",
-    class_none = "surveycore_error_fpc_not_found",
-    class_multi = "surveycore_error_fpc_multiple"
-  )
-
   # ── Business-rule validations ───────────────────────────────────────────────
 
   # Validate weights column (all zero / non-positive check via Layer 2)
@@ -903,9 +931,6 @@ as_survey_replicate <- function(
 
   # Validate repweights columns are numeric (Layer 2)
   .validate_repweights(repweights_vars, data)
-
-  # Validate fpc column if provided (no NAs allowed)
-  .validate_fpc(fpc_var, data)
 
   # Error 17: rscales length must match number of replicates (Layer 2)
   .validate_rscales(rscales, n_rep)
@@ -1090,8 +1115,10 @@ as_survey_replicate <- function(
     type = type,
     scale = scale,
     rscales = rscales,
-    fpc = fpc_var,
-    fpctype = fpctype,
+    # The keys stay so every @variables list keeps the same shape;
+    # from_svydesign() stores the same two values.
+    fpc = NULL,
+    fpctype = "fraction",
     mse = isTRUE(mse),
     rho = rho,
     visible_vars = NULL

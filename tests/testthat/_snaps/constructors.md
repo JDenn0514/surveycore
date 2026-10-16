@@ -214,6 +214,45 @@
       i For type "BRR", the design stores the type's own value, as `survey::svrepdesign()` does.
       v Remove `scale` from the call.
 
+# as_survey_replicate() refuses an fpc column [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = fpc)
+    Condition
+      Error in `as_survey_replicate()`:
+      x `as_survey_replicate()` does not accept `fpc`.
+      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
+      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Remove `fpc` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+
+# as_survey_replicate() refuses fpctype on its own [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
+      fpctype = "correction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `as_survey_replicate()` does not accept `fpctype`.
+      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
+      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Remove `fpctype` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+
+# as_survey_replicate() names both fpc and fpctype when both are supplied [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JKn",
+      rscales = rep(1, 4L), fpc = fpc, fpctype = "correction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `as_survey_replicate()` does not accept `fpc` and `fpctype`.
+      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
+      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Remove `fpc` and `fpctype` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
     Code
@@ -788,15 +827,6 @@
       Error in `as_survey()`:
       x Stage-2 FPC column fpc2_bad is not constant within parent clusters.
       i FPC fractions must be the same for all units within each parent cluster.
-
-# as_survey_replicate() still rejects multi-column fpc
-
-    Code
-      as_survey_replicate(df, weights = wt, repweights = tidyselect::all_of(
-        repwt_cols), type = "BRR", fpc = c(fpc, fpc2))
-    Condition
-      Error in `as_survey_replicate()`:
-      x `fpc` must select exactly one column, not 2
 
 # as_survey_nonprob() rejects type = 'BRR' with surveycore_error_type_unsupported_for_nonprob
 
