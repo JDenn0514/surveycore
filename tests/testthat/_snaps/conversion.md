@@ -55,6 +55,7 @@
     Condition
       Warning:
       ! `as_svydesign()` dropped the finite population correction column fpc.
+      i The design does not record whether the correction is already inside the replicate scales or weights.
       i `survey::svrepdesign()` takes one FPC value per replicate, and a <survey_replicate> design records one value per row.
       i surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.
       v Call `survey::svrepdesign()` directly with `fpc` to apply a per-replicate correction.

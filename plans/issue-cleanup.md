@@ -287,6 +287,41 @@ route in its `"v"` bullet and in `@param fpc,fpctype`:
 block in `test-constructors.R` pins it. Consequence 4 holds as written:
 `from_svydesign()`'s replicate route stores `fpc = NULL`.
 
+**Amended again (2026-10-16, #320): a numeric `fpc` is accepted.** The
+decision above refused the argument outright. It now refuses the *column*
+form only, and accepts a number or one value per replicate, which it folds
+into `rscales`. This is the "working replicate FPC" the paragraph above said to
+file as a feature, built to `survey`'s lines 132-147.
+
+Why the refusal narrowed:
+
+- **The quantity is now the right one.** The refusal rested on the shape
+  mismatch: a per-row column is the wrong quantity, and no reshape fixes it. A
+  per-replicate `f` is the quantity `survey::svrepdesign()` applies, at the
+  place it applies it: `rscales <- rscales * (1 - f)`. The objection does not
+  reach it.
+- **A caller now exists.** surveywts' `create_*_weights()` copies a Taylor
+  design's `fpc` onto every replicate design it builds. For most methods the
+  correction is already inside `rscales` or the replicate weights, and for
+  BRR, Fay, Rao-Wu and Antal-Tillé it is lost; the design cannot say which.
+  #320 adds `@variables$fpc_applied` so that it can, and surveywts#130 sets
+  it. Once designs record where an FPC went, `as_survey_replicate()` needs a
+  form it can apply and record, and the `rscales` route is it.
+- **Nothing breaks.** The column form stays refused with RF-1, and `fpctype`
+  alone is still refused. A call that worked before #320 builds the same
+  design, with the two new keys at `NULL`.
+
+What it matches and where it departs. Types: `"JK1"`, `"JKn"` and `"other"`
+only, as `survey` allows. `fpctype` is required whenever `fpc` is given, as in
+`survey` (line 133-134): the same `0.9` reads as `f` or as `1 - f`, and the two
+give very different standard errors. One convenience departs: a scalar is
+recycled to length `R`, where `survey` takes length `R` only. The record keys
+are `@variables$fpc_applied` (`"rscales"`, `"repweights"`, `"none"` or `NULL`)
+and `@variables$fpc_fraction` (the `f` vector, so that `print()` can show it
+without recovering it from `rscales`). Consequence 4 gains one line:
+`survey` stores no `fpc` field, only the call, so `from_svydesign()` sets
+`fpc_applied = "rscales"` when `x$call[["fpc"]]` is not `NULL`.
+
 ---
 
 ## The header every issue gets

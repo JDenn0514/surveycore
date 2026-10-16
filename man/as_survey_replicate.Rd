@@ -106,8 +106,9 @@ that is not negligible folds the correction into each \code{rscales} entry
 by hand, which makes the entry \code{(n_h - 1) * (1 - n_h / N_h) / n_h}.
 Here \code{n_h} is the number of sample PSUs in stratum \code{h}, and \code{N_h} is
 the number of population PSUs in stratum \code{h}. The caller supplies
-\code{N_h} from their own sampling frame, and \code{rscales} is the only route
-for the correction: the \code{fpc} argument is refused.
+\code{N_h} from their own sampling frame. The \code{fpc} argument applies the
+same correction: \code{fpc = n_h / N_h} per replicate, with
+\code{fpctype = "fraction"}.
 
 \code{"bootstrap"} divides by \code{R - 1}, which is the value
 \code{survey::svrepdesign()} computes at \code{bootstrap.average = 1}.
@@ -151,19 +152,39 @@ For a stratified jackknife whose PSUs are selected without replacement
 at a sampling fraction that is not negligible, the \code{scale} argument
 gives the entry to build here.}
 
-\item{fpc, fpctype}{Not supported. Leave both as \code{NULL}. Supplying either
-raises an error of class \code{surveycore_error_replicate_fpc_unsupported}.
-No replicate variance formula reads a finite population correction
-column, so \code{fpc} never changed a standard error in any earlier version.
+\item{fpc}{A finite population correction, as a number or as one value per
+replicate column, or \code{NULL} (default, no correction). A number is
+recycled to every replicate. Accepted for \code{"JK1"}, \code{"JKn"} and
+\code{"other"} only, as in \code{survey::svrepdesign()}; every other type raises
+an error of class \code{surveycore_error_replicate_fpc_type_unsupported}.
+For \code{"bootstrap"} the correction belongs in the replicate weights
+themselves.
 
-To apply a finite population correction, fold it into \code{rscales}:
-multiply each entry by \code{1 - f}, where \code{f} is the sampling fraction for
-that replicate, for example \code{rscales = rscales * (1 - f)}. For \code{"JKn"},
-\code{f} is the sampling fraction of the stratum the replicate drops a PSU
-from. This is exactly what \code{survey::svrepdesign()} does with its own
-\code{fpc} argument, which it accepts only for \code{"JK1"}, \code{"JKn"} and
-\code{"other"}. Its \code{fpctype = "correction"} form is already \code{1 - f}, so
-multiply \code{rscales} by that value directly.}
+The correction is applied the way \code{survey::svrepdesign()} applies its
+own \code{fpc}: each \code{rscales} entry is multiplied by \code{1 - f}, where \code{f} is
+the sampling fraction for that replicate. A \code{NULL} \code{rscales} starts from
+\code{rep(1, R)}. For \code{"JKn"}, \code{f} is the sampling fraction of the stratum
+the replicate drops a PSU from, and \code{rscales} is still required. The
+design stores the corrected \code{rscales} and records the fraction, so
+\code{print()} shows it.
+
+A column is not accepted. A bare name, or a single string, that names a
+column of \code{data} raises an error of class
+\code{surveycore_error_replicate_fpc_unsupported}, even when a variable of
+the same name exists in the calling environment. No replicate variance
+formula reads a per-row FPC column. To use such a variable, write
+\code{.env$name}. Any other expression is evaluated in the calling
+environment. A value that is not numeric, has the wrong length, holds
+\code{NA} or lies out of range raises an error of class
+\code{surveycore_error_replicate_fpc_invalid}.}
+
+\item{fpctype}{How to read \code{fpc}: \code{"fraction"} (the sampling fraction
+\code{f}, with \verb{0 <= f < 1}) or \code{"correction"} (\code{1 - f}, used as given,
+with \verb{0 < 1 - f <= 1}). Required whenever \code{fpc} is supplied, as in
+\code{survey::svrepdesign()}, because the same number reads either way and
+the two give different standard errors. Must match exactly. Supplying
+\code{fpctype} without \code{fpc} raises an error of class
+\code{surveycore_error_replicate_fpc_unsupported}.}
 
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate
@@ -246,6 +267,17 @@ d_sub <- as_survey_replicate(
   weights = pwgtp,
   repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
   type = "JK1"
+)
+
+# A finite population correction: a 5\% sampling fraction, folded into
+# the replicate scales
+d_fpc <- as_survey_replicate(
+  acs_pums_wy,
+  weights = pwgtp,
+  repweights = c(pwgtp1, pwgtp2, pwgtp3, pwgtp4),
+  type = "JK1",
+  fpc = 0.05,
+  fpctype = "fraction"
 )
 
 # Fay's method: 4 replicate columns built with rho = 0.5

@@ -2644,6 +2644,10 @@ test_that("as_survey_replicate() stores mse as logical", {
   expect_false(d2@variables$mse)
 })
 
+# ── Replicate FPC: the column form is refused (RF-1, RF-1b) ──────────────────
+# Issues #251 and #320. A bare name or a single string that names a column of
+# `data` is a column, whatever the calling environment holds.
+
 test_that("as_survey_replicate() refuses an fpc column [RF-1]", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   expect_error(
@@ -2652,7 +2656,8 @@ test_that("as_survey_replicate() refuses an fpc column [RF-1]", {
       weights = wt,
       repweights = starts_with("repwt_"),
       type = "JK1",
-      fpc = fpc
+      fpc = fpc,
+      fpctype = "fraction"
     ),
     class = "surveycore_error_replicate_fpc_unsupported"
   )
@@ -2663,12 +2668,99 @@ test_that("as_survey_replicate() refuses an fpc column [RF-1]", {
       weights = wt,
       repweights = starts_with("repwt_"),
       type = "JK1",
-      fpc = fpc
+      fpc = fpc,
+      fpctype = "fraction"
     )
   )
 })
 
-test_that("as_survey_replicate() refuses fpctype on its own [RF-1]", {
+test_that("as_survey_replicate() reads a bare column name as the column when a variable shares it [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  # A numeric variable of the same name, valid as a numeric fpc, exists in
+  # this frame. The column still wins.
+  fpc <- 0.1
+  expect_true("fpc" %in% names(df))
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses a string that names a column [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = "fpc",
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_match(conditionMessage(cnd), "names the column", fixed = TRUE)
+})
+
+test_that("as_survey_replicate() accepts .env$ for a variable that shares a column's name", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  fpc <- 0.1
+  d_env <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = .env$fpc,
+    fpctype = "fraction"
+  )
+  d_lit <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 0.1,
+    fpctype = "fraction"
+  )
+  expect_identical(d_env@variables, d_lit@variables)
+  expect_identical(d_env@variables$fpc_applied, "rscales")
+})
+
+test_that("as_survey_replicate() points the column refusal at a number and .env [RF-1]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_unsupported"
+  )
+  expect_match(conditionMessage(cnd), "fpc = 0.05", fixed = TRUE)
+  expect_match(conditionMessage(cnd), ".env$fpc", fixed = TRUE)
+})
+
+test_that("as_survey_replicate() refuses fpctype on its own [RF-1b]", {
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   expect_error(
     as_survey_replicate(
@@ -2692,73 +2784,43 @@ test_that("as_survey_replicate() refuses fpctype on its own [RF-1]", {
   )
 })
 
-test_that("as_survey_replicate() names both fpc and fpctype when both are supplied [RF-1]", {
+test_that("as_survey_replicate() refuses the column form before checking the type [RF-1]", {
+  # The column refusal runs first, so a column fpc with a type that refuses
+  # any fpc, and an fpctype alongside, still raises RF-1 and names the column.
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   cnd <- expect_error(
     as_survey_replicate(
       df,
       weights = wt,
       repweights = starts_with("repwt_"),
-      type = "JKn",
-      rscales = rep(1, 4L),
+      type = "BRR",
       fpc = fpc,
       fpctype = "correction"
     ),
     class = "surveycore_error_replicate_fpc_unsupported"
   )
-  expect_match(conditionMessage(cnd), "fpc", fixed = TRUE)
-  expect_match(conditionMessage(cnd), "fpctype", fixed = TRUE)
-  expect_snapshot(
-    error = TRUE,
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = starts_with("repwt_"),
-      type = "JKn",
-      rscales = rep(1, 4L),
-      fpc = fpc,
-      fpctype = "correction"
-    )
-  )
+  expect_match(conditionMessage(cnd), "names the column", fixed = TRUE)
 })
 
-test_that("as_survey_replicate() points the fpc refusal at rscales [RF-1]", {
-  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
-  cnd <- expect_error(
-    as_survey_replicate(
-      df,
-      weights = wt,
-      repweights = starts_with("repwt_"),
-      type = "JK1",
-      fpc = fpc
-    ),
-    class = "surveycore_error_replicate_fpc_unsupported"
-  )
-  expect_match(
-    conditionMessage(cnd),
-    "rscales = rscales * (1 - f)",
-    fixed = TRUE
-  )
-})
-
-test_that("as_survey_replicate() refuses fpc before resolving the column [RF-1]", {
-  # The refusal does not depend on the data: a name that matches no column,
-  # a multi-column selection, and a column with NA values all raise RF-1 and
-  # not the column-level fpc errors as_survey() raises.
+test_that("as_survey_replicate() refuses an NA-holding fpc column before reading it [RF-1]", {
+  # The refusal does not read the column: a column holding NA raises RF-1
+  # and not a column-level fpc error. A name that matches no column, or a
+  # tidyselect helper, is not a column: it is evaluated, and fails [RF-3c].
   df <- data.frame(
     y = 1:5,
     wt = rep(1, 5),
     r1 = rep(1, 5),
-    fpc1 = c(1000L, NA_integer_, 1000L, 1000L, 1000L),
-    fpc2 = rep(2000L, 5)
+    r2 = rep(1, 5),
+    fpc1 = c(1000L, NA_integer_, 1000L, 1000L, 1000L)
   )
   expect_error(
     as_survey_replicate(
       df,
       weights = wt,
-      repweights = r1,
+      repweights = c(r1, r2),
       type = "JK1",
-      fpc = no_such_column
+      fpc = fpc1,
+      fpctype = "fraction"
     ),
     class = "surveycore_error_replicate_fpc_unsupported"
   )
@@ -2766,21 +2828,39 @@ test_that("as_survey_replicate() refuses fpc before resolving the column [RF-1]"
     as_survey_replicate(
       df,
       weights = wt,
-      repweights = r1,
+      repweights = c(r1, r2),
       type = "JK1",
-      fpc = starts_with("fpc")
+      fpc = no_such_column,
+      fpctype = "fraction"
     ),
-    class = "surveycore_error_replicate_fpc_unsupported"
+    class = "surveycore_error_replicate_fpc_invalid"
   )
   expect_error(
     as_survey_replicate(
       df,
       weights = wt,
-      repweights = r1,
+      repweights = c(r1, r2),
       type = "JK1",
-      fpc = fpc1
+      fpc = starts_with("fpc"),
+      fpctype = "fraction"
     ),
-    class = "surveycore_error_replicate_fpc_unsupported"
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+})
+
+test_that("as_survey_replicate() reports a non-data-frame before reading fpc [row 1]", {
+  # The column check reads names(data) only for a data frame, so a list
+  # with an fpc element still raises the data-frame error first.
+  expect_error(
+    as_survey_replicate(
+      list(x = 1:5, fpc = rep(0.1, 5)),
+      weights = x,
+      repweights = starts_with("r"),
+      type = "JK1",
+      fpc = fpc,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_not_data_frame"
   )
 })
 
@@ -2797,12 +2877,216 @@ test_that("as_survey_replicate() accepts an explicit fpc = NULL", {
     )
   )
   expect_null(d@variables$fpc)
+  expect_null(d@variables$fpc_applied)
+})
+
+# ── Replicate FPC: a numeric fpc is folded into rscales (issue #320) ──────────
+
+test_that("as_survey_replicate() records a numeric fpc in rscales and the two keys", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  n_rep <- 5L
+  f <- seq(0.05, 0.25, length.out = n_rep)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = f,
+    fpctype = "fraction"
+  )
+  expect_identical(length(d@variables$repweights), n_rep)
+  expect_equal(d@variables$rscales, 1 - f)
+  expect_identical(d@variables$fpc_applied, "rscales")
+  expect_identical(d@variables$fpc_fraction, f)
+  # No column is named, and the overall scale is the JK1 default.
+  expect_null(d@variables$fpc)
+  expect_identical(d@variables$fpctype, "fraction")
+  expect_equal(d@variables$scale, (n_rep - 1) / n_rep)
+})
+
+test_that("as_survey_replicate() recycles a scalar fpc to every replicate", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "other",
+    fpc = 0.1,
+    fpctype = "fraction"
+  )
+  expect_identical(d@variables$fpc_fraction, rep(0.1, 5L))
+  expect_equal(d@variables$rscales, rep(0.9, 5L))
+})
+
+test_that("as_survey_replicate() stores the same fraction for fpctype \"correction\"", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  correction <- seq(0.95, 0.75, length.out = 5L)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = correction,
+    fpctype = "correction"
+  )
+  # The correction is used as given, as survey::svrepdesign() uses it.
+  expect_identical(d@variables$rscales, correction)
+  expect_equal(d@variables$fpc_fraction, 1 - correction)
+  expect_identical(d@variables$fpc_applied, "rscales")
+})
+
+test_that("as_survey_replicate() multiplies a supplied rscales by the correction", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  rscales <- c(0.5, 0.6, 0.7, 0.8, 0.9)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JKn",
+    rscales = rscales,
+    fpc = 0.2,
+    fpctype = "fraction"
+  )
+  expect_equal(d@variables$rscales, rscales * 0.8)
+})
+
+test_that("as_survey_replicate() accepts the fpc boundary values 0 and 1", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  d_f0 <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 0,
+    fpctype = "fraction"
+  )
+  d_c1 <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1",
+    fpc = 1,
+    fpctype = "correction"
+  )
+  expect_identical(d_f0@variables$rscales, rep(1, 5L))
+  expect_identical(d_c1@variables$rscales, rep(1, 5L))
+  expect_identical(d_c1@variables$fpc_fraction, rep(0, 5L))
+})
+
+test_that("as_survey_replicate() leaves both FPC keys NULL without an fpc", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = starts_with("repwt_"),
+    type = "JK1"
+  )
+  expect_true(all(c("fpc_applied", "fpc_fraction") %in% names(d@variables)))
+  expect_null(d@variables$fpc_applied)
+  expect_null(d@variables$fpc_fraction)
+  expect_null(d@variables$rscales)
+})
+
+test_that("as_survey_replicate() still requires rscales for JKn when fpc is given [RS-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JKn",
+      fpc = 0.1,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_stratified_jk_rscales_unset"
+  )
+})
+
+# Oracle: survey::svrepdesign(fpc = , fpctype = ). Both sides get the same
+# data, weights, replicate columns, type and mse, and survey gets the fpc in
+# its own form: length R. Neither side gets `scale`; only JKn gets `rscales`,
+# the same literal on both sides (.claude/rules/testing-surveycore.md).
+fpc_oracle_check <- function(type, rscales = NULL, survey_warning = NULL) {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  n_rep <- length(repwt_cols)
+  f_vec <- seq(0.05, 0.4, length.out = n_rep)
+  cases <- list(
+    list(fpc = 0.15, fpctype = "fraction", sv_fpc = rep(0.15, n_rep)),
+    list(fpc = f_vec, fpctype = "fraction", sv_fpc = f_vec),
+    list(fpc = 0.85, fpctype = "correction", sv_fpc = rep(0.85, n_rep)),
+    list(fpc = 1 - f_vec, fpctype = "correction", sv_fpc = 1 - f_vec)
+  )
+  for (cs in cases) {
+    d <- as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = tidyselect::all_of(repwt_cols),
+      type = type,
+      rscales = rscales,
+      fpc = cs$fpc,
+      fpctype = cs$fpctype,
+      mse = TRUE
+    )
+    build_sv <- function() {
+      survey::svrepdesign(
+        weights = df$wt,
+        repweights = df[, repwt_cols],
+        type = type,
+        rscales = rscales,
+        fpc = cs$sv_fpc,
+        fpctype = cs$fpctype,
+        mse = TRUE,
+        combined.weights = TRUE,
+        data = df
+      )
+    }
+    # survey's own condition for this type, matched by message text.
+    if (is.null(survey_warning)) {
+      expect_no_warning(sv <- build_sv())
+    } else {
+      expect_warning(sv <- build_sv(), survey_warning, fixed = TRUE)
+    }
+
+    sc <- get_means(d, y1, variance = c("se", "ci"))
+    sv_mean <- survey::svymean(~y1, sv)
+    sv_ci <- stats::confint(sv_mean)
+    expect_equal(sc$mean[[1L]], coef(sv_mean)[["y1"]], tolerance = 1e-10)
+    expect_equal(
+      sc$se[[1L]],
+      as.numeric(survey::SE(sv_mean)),
+      tolerance = 1e-8
+    )
+    expect_equal(sc$ci_low[[1L]], sv_ci[1L, 1L], tolerance = 1e-6)
+    expect_equal(sc$ci_high[[1L]], sv_ci[1L, 2L], tolerance = 1e-6)
+  }
+}
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for JK1 [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check(
+    "JK1",
+    survey_warning = "scale (n-1)/n not provided: guessing n=number of replicates"
+  )
+})
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for JKn [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check("JKn", rscales = c(0.8, 0.8, 0.75, 0.75, 0.75))
+})
+
+test_that("as_survey_replicate() with a numeric fpc matches survey's fpc for other [numerical]", {
+  skip_if_not_installed("survey")
+  fpc_oracle_check(
+    "other",
+    survey_warning = "scale or rscales not specified, set to 1"
+  )
 })
 
 test_that("as_survey_replicate() with rscales * (1 - f) matches survey's fpc [numerical]", {
   skip_if_not_installed("survey")
-  # The route the RF-1 refusal points to: folding the correction into
-  # rscales reproduces survey::svrepdesign(fpc = , fpctype = "fraction").
+  # The by-hand route, still valid: folding the correction into rscales
+  # reproduces survey::svrepdesign(fpc = , fpctype = "fraction").
   df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
   n_rep <- length(repwt_cols)
@@ -2820,7 +3104,6 @@ test_that("as_survey_replicate() with rscales * (1 - f) matches survey's fpc [nu
     weights = df$wt,
     repweights = df[, repwt_cols],
     type = "JKn",
-    scale = 1,
     rscales = rscales,
     fpc = f,
     fpctype = "fraction",
@@ -2833,6 +3116,275 @@ test_that("as_survey_replicate() with rscales * (1 - f) matches survey's fpc [nu
   sv_mean <- survey::svymean(~y1, sv)
   expect_equal(sc$mean[[1L]], coef(sv_mean)[["y1"]], tolerance = 1e-10)
   expect_equal(sc$se[[1L]], as.numeric(survey::SE(sv_mean)), tolerance = 1e-8)
+})
+
+# ── Replicate FPC: types and values refused (RF-2, RF-3) ─────────────────────
+
+test_that("as_survey_replicate() refuses a numeric fpc for every type survey refuses [RF-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  types <- c("BRR", "Fay", "JK2", "bootstrap", "ACS", "successive-difference")
+  for (ty in types) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = ty,
+        rho = if (ty == "Fay") 0.5 else NULL,
+        fpc = 0.1,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_type_unsupported"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "BRR",
+      fpc = 0.1,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() points a bootstrap fpc at the replicate weights [RF-2]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      fpc = 0.1,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_type_unsupported"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "bootstrap",
+      fpc = 0.1,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() requires fpctype with a numeric fpc [RF-3a]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpctype that is not exactly one of the two strings [RF-3b]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  bad <- list("frac", c("fraction", "correction"), NA_character_, 1)
+  for (ft in bad) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = 0.1,
+        fpctype = ft
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0.1,
+      fpctype = "frac"
+    )
+  )
+})
+
+test_that("as_survey_replicate() wraps an fpc that fails to evaluate [RF-3c]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cnd <- expect_error(
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = no_such_variable,
+      fpctype = "fraction"
+    ),
+    class = "surveycore_error_replicate_fpc_invalid"
+  )
+  # The evaluation error is kept as the parent.
+  expect_true(inherits(cnd$parent, "error"))
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = no_such_variable,
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses a non-numeric fpc [RF-3d]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  bad <- list("0.1", TRUE, factor("a"), matrix(0.1, 5L, 1L), list(0.1))
+  for (val in bad) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = "0.1",
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc of the wrong length [RF-3e]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  for (val in list(numeric(0), c(0.1, 0.2), rep(0.1, 6L))) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, 0.2),
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc holding NA or a non-finite value [RF-3f]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  for (val in list(NA_real_, NaN, Inf, c(0.1, NA, 0.1, Inf, 0.1))) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = val,
+        fpctype = "fraction"
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, NA, 0.1, Inf, 0.1),
+      fpctype = "fraction"
+    )
+  )
+})
+
+test_that("as_survey_replicate() refuses an fpc outside its range [RF-3g]", {
+  df <- make_survey_data(n = 100, n_psu = 10L, design = "replicate", seed = 14L)
+  cases <- list(
+    list(fpc = 1, fpctype = "fraction"),
+    list(fpc = -0.1, fpctype = "fraction"),
+    list(fpc = 0, fpctype = "correction"),
+    list(fpc = 1.2, fpctype = "correction")
+  )
+  for (cs in cases) {
+    expect_error(
+      as_survey_replicate(
+        df,
+        weights = wt,
+        repweights = starts_with("repwt_"),
+        type = "JK1",
+        fpc = cs$fpc,
+        fpctype = cs$fpctype
+      ),
+      class = "surveycore_error_replicate_fpc_invalid"
+    )
+  }
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = c(0.1, 1, 0.1, 1.5, 0.1),
+      fpctype = "fraction"
+    )
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(
+      df,
+      weights = wt,
+      repweights = starts_with("repwt_"),
+      type = "JK1",
+      fpc = 0,
+      fpctype = "correction"
+    )
+  )
 })
 
 test_that("as_survey_replicate() sets fpc = NULL when not provided", {
@@ -3040,6 +3592,8 @@ test_that("as_survey_replicate() populates all expected @variables keys", {
     "rscales",
     "fpc",
     "fpctype",
+    "fpc_applied",
+    "fpc_fraction",
     "mse"
   )
   expect_true(all(expected_keys %in% names(d@variables)))

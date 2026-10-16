@@ -38,6 +38,8 @@
   rscales = NULL,
   fpc = NULL,
   fpctype = "fraction",
+  fpc_applied = NULL,
+  fpc_fraction = NULL,
   mse = TRUE
 ) {
   list(
@@ -48,6 +50,8 @@
     rscales = rscales,
     fpc = fpc,
     fpctype = fpctype,
+    fpc_applied = fpc_applied,
+    fpc_fraction = fpc_fraction,
     mse = mse,
     visible_vars = NULL
   )
@@ -485,6 +489,110 @@ test_that("survey_replicate validator: non-numeric repweight column", {
     ),
     class = "surveycore_error_repweights_not_numeric"
   )
+})
+
+
+# ── survey_replicate validator: FPC record keys (issue #320, RF-4) ─────────────
+
+test_that("survey_replicate() validator rejects an fpc_applied outside the three states [RF-4]", {
+  df <- .df_rep(R = 4L)
+  expect_error(
+    survey_replicate(
+      data = df,
+      variables = .rep_vars(
+        repweights = paste0("rw", 1:4),
+        fpc_applied = "maybe"
+      )
+    ),
+    class = "surveycore_error_replicate_fpc_record_invalid"
+  )
+  for (bad in list(NA_character_, c("rscales", "none"), 1, TRUE)) {
+    expect_error(
+      survey_replicate(
+        data = df,
+        variables = .rep_vars(
+          repweights = paste0("rw", 1:4),
+          fpc_applied = bad
+        )
+      ),
+      class = "surveycore_error_replicate_fpc_record_invalid"
+    )
+  }
+})
+
+test_that("survey_replicate() validator rejects fpc_applied set on an existing design [RF-4]", {
+  df <- .df_rep(R = 4L)
+  d <- survey_replicate(
+    data = df,
+    variables = .rep_vars(repweights = paste0("rw", 1:4))
+  )
+  expect_error(
+    d@variables$fpc_applied <- "maybe",
+    class = "surveycore_error_replicate_fpc_record_invalid"
+  )
+})
+
+test_that("survey_replicate() validator accepts every fpc_applied state", {
+  df <- .df_rep(R = 4L)
+  for (state in list(NULL, "rscales", "repweights", "none")) {
+    d <- survey_replicate(
+      data = df,
+      variables = .rep_vars(
+        repweights = paste0("rw", 1:4),
+        fpc = NULL,
+        fpc_applied = state
+      )
+    )
+    expect_identical(d@variables[["fpc_applied"]], state)
+  }
+})
+
+test_that("survey_replicate() validator accepts a design with no FPC record keys", {
+  # A design saved before issue #320, or built as surveywts builds one,
+  # carries neither key; a missing key reads as NULL.
+  df <- .df_rep(R = 4L)
+  vars <- .rep_vars(repweights = paste0("rw", 1:4))
+  vars$fpc_applied <- NULL
+  vars$fpc_fraction <- NULL
+  expect_false("fpc_applied" %in% names(vars))
+  expect_no_error(survey_replicate(data = df, variables = vars))
+})
+
+test_that("survey_replicate() validator rejects a malformed fpc_fraction [RF-4]", {
+  df <- .df_rep(R = 4L)
+  bad <- list(
+    c(0.1, 0.1),
+    rep(1.5, 4L),
+    rep(-0.1, 4L),
+    c(0.1, NA, 0.1, 0.1),
+    rep("0.1", 4L)
+  )
+  for (val in bad) {
+    expect_error(
+      survey_replicate(
+        data = df,
+        variables = .rep_vars(
+          repweights = paste0("rw", 1:4),
+          fpc_applied = "rscales",
+          fpc_fraction = val
+        )
+      ),
+      class = "surveycore_error_replicate_fpc_record_invalid"
+    )
+  }
+})
+
+test_that("survey_replicate() validator accepts an fpc_fraction on the closed interval [0, 1]", {
+  df <- .df_rep(R = 4L)
+  d <- survey_replicate(
+    data = df,
+    variables = .rep_vars(
+      repweights = paste0("rw", 1:4),
+      fpc_applied = "rscales",
+      fpc_fraction = c(0, 0.25, 0.5, 1)
+    )
+  )
+  expect_identical(d@variables$fpc_fraction, c(0, 0.25, 0.5, 1))
 })
 
 

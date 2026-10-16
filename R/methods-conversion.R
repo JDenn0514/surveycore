@@ -449,12 +449,23 @@ as_svydesign <- function(x) {
   #
   # The FPC stays on x: @variables$fpc, @variables$fpctype and the column in
   # @data are all untouched, and a second call warns again.
-  if (!is.null(fpc_var)) {
+  #
+  # The warning fires only when the design does not record whether the FPC
+  # was applied: a column in @variables$fpc and no @variables$fpc_applied
+  # (issue #320). For "rscales" and "repweights" the correction is already
+  # in what is exported, and for "none" nothing was applied, so in those
+  # states nothing is dropped. No state passes an fpc to svrepdesign(): it
+  # would multiply rscales a second time. [[ ]] reads a missing key as NULL.
+  if (!is.null(fpc_var) && is.null(x@variables[["fpc_applied"]])) {
     cli::cli_warn(
       c(
         "!" = paste0(
           "{.fn as_svydesign} dropped the finite population correction ",
           "column {.field {fpc_var}}."
+        ),
+        "i" = paste0(
+          "The design does not record whether the correction is already ",
+          "inside the replicate scales or weights."
         ),
         "i" = paste0(
           "{.fn survey::svrepdesign} takes one FPC value per replicate, and ",
@@ -1004,6 +1015,19 @@ from_svydesign <- function(x) {
   # imports without a condition; the export route refuses it.
   rho <- if (identical(x$type, "Fay")) x$rho else NULL
 
+  # survey keeps no fpc field on a replicate design: svrepdesign.default()
+  # multiplies rscales by the correction (lines 132-147) and leaves the
+  # argument only in the stored call. A call that names fpc therefore means
+  # the correction is inside x$rscales (issue #320). The expression is not
+  # evaluated, so fpc and fpc_fraction stay NULL. as.svrepdesign() keeps no
+  # trace of the source design's FPC, so its objects import NULL, the
+  # "nothing recorded" state.
+  fpc_applied <- if (is.call(x$call) && !is.null(x$call[["fpc"]])) {
+    "rscales"
+  } else {
+    NULL
+  }
+
   variables <- list(
     weights = weights_var,
     repweights = rep_cols,
@@ -1014,6 +1038,8 @@ from_svydesign <- function(x) {
     rho = rho,
     fpc = NULL,
     fpctype = "fraction",
+    fpc_applied = fpc_applied,
+    fpc_fraction = NULL,
     probs_provided = FALSE,
     visible_vars = NULL
   )

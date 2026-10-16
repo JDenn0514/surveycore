@@ -581,8 +581,8 @@ survey_taylor <- S7::new_class(
 #' @param metadata A [survey_metadata] object. Created automatically by
 #'   [as_survey_replicate()].
 #' @param variables A named list of design specification (weights,
-#'   repweights, type, scale, rscales, fpc, fpctype, mse, rho). Set
-#'   automatically by [as_survey_replicate()].
+#'   repweights, type, scale, rscales, fpc, fpctype, fpc_applied,
+#'   fpc_fraction, mse, rho). Set automatically by [as_survey_replicate()].
 #' @param groups Set by surveytidy's `group_by()`. Always `character(0)` in
 #'   standalone surveycore use.
 #' @param call Language object capturing the construction call.
@@ -604,8 +604,19 @@ survey_taylor <- S7::new_class(
 #'   \item{`scale`}{Numeric scaling factor for variance estimation.}
 #'   \item{`rscales`}{Numeric vector of replicate-specific scales, or
 #'     `NULL`.}
-#'   \item{`fpc`}{FPC column name or `NULL`.}
-#'   \item{`fpctype`}{`"fraction"` or `"correction"`.}
+#'   \item{`fpc`}{Name of the FPC column the design was built from, or
+#'     `NULL`. Provenance only: no replicate variance formula reads it.}
+#'   \item{`fpctype`}{`"fraction"` or `"correction"`: how to read the `fpc`
+#'     column.}
+#'   \item{`fpc_applied`}{Where the finite population correction reached
+#'     the variance: `"rscales"` (inside `rscales`), `"repweights"` (inside
+#'     the replicate weight columns), `"none"` (an FPC was available and was
+#'     not applied), or `NULL` (no FPC was available, or the design predates
+#'     this key). With `fpc` set and `fpc_applied` `NULL`, whether the FPC
+#'     was applied is not recorded.}
+#'   \item{`fpc_fraction`}{The sampling fraction `f` per replicate, a numeric
+#'     vector with one value per replicate column, when
+#'     [as_survey_replicate()] applied a numeric `fpc`; otherwise `NULL`.}
 #'   \item{`mse`}{Logical. Use MSE estimates?}
 #'   \item{`rho`}{Fay shrinkage factor for \code{type = "Fay"}; \code{NULL}
 #'     for every other type.}
@@ -748,6 +759,44 @@ survey_replicate <- S7::new_class(
           )
         }
       }
+    }
+
+    # ── FPC record keys (issue #320) ─────────────────────────────────────────
+    # [[ ]] reads a missing key as NULL: a design saved before #320, or one
+    # built here without the keys, records no FPC application and is valid.
+    fpc_applied <- self@variables[["fpc_applied"]]
+    if (
+      !is.null(fpc_applied) &&
+        !rlang::is_string(fpc_applied, c("rscales", "repweights", "none"))
+    ) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.field @variables$fpc_applied} must be {.code NULL}, ",
+            "{.val rscales}, {.val repweights} or {.val none}."
+          )
+        ),
+        class = "surveycore_error_replicate_fpc_record_invalid"
+      )
+    }
+    fpc_fraction <- self@variables[["fpc_fraction"]]
+    if (
+      !is.null(fpc_fraction) &&
+        !(is.numeric(fpc_fraction) &&
+          length(fpc_fraction) == length(repweights_vars) &&
+          all(is.finite(fpc_fraction)) &&
+          all(fpc_fraction >= 0 & fpc_fraction <= 1))
+    ) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.field @variables$fpc_fraction} must be {.code NULL} or a ",
+            "finite numeric vector in {.code [0, 1]} with one value per ",
+            "replicate column."
+          )
+        ),
+        class = "surveycore_error_replicate_fpc_record_invalid"
+      )
     }
 
     NULL

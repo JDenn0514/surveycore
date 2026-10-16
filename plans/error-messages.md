@@ -528,7 +528,7 @@ type the `survey` design records; `{accepted}` = the nine replicate types
 |---|---|---|---|---|---|
 | CB-1 | `from_svydesign()` (replicate) | The route cannot resolve one usable, distinct name per replicate column — an empty-string name, or a repeated name | ERROR | `surveycore_error_repweights_names_lost` | `"x" = "The {.pkg survey} design has {n_rep} replicate weight column{?s} but {n_names} usable column name{?s}.", "i" = "{.fn from_svydesign} needs one name per replicate column to store the weights in the design data.", "v" = "Rebuild the design with {.fn survey::svrepdesign} and pass {.arg repweights} as a data frame with one named column per replicate."` |
 | CB-2 | `from_svydesign()` (replicate) | The route generated the replicate column names, and one or more of them already names a column of the design data | ERROR | `surveycore_error_repwt_name_collision` | `"x" = "{.fn from_svydesign} cannot store the replicate weights under generated names.", "i" = "The design data already {cli::qty(n_collisions)}{?has a column/has columns} named {.field {collisions}}.", "i" = "A generated name reaches the data when an earlier conversion left its replicate columns there.", "v" = "Rename the conflicting {cli::qty(n_collisions)} column{?s} in the design data, then convert again."` |
-| CB-3 | `as_svydesign()` (replicate) | `@variables$fpc` names a column; the FPC is omitted from the `survey::svrepdesign()` call | WARN | `surveycore_warning_replicate_fpc_dropped` | `"!" = "{.fn as_svydesign} dropped the finite population correction column {.field {fpc_var}}.", "i" = "{.fn survey::svrepdesign} takes one FPC value per replicate, and a {.cls survey_replicate} design records one value per row.", "i" = "surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.", "v" = "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply a per-replicate correction."` |
+| CB-3 | `as_svydesign()` (replicate) | `@variables$fpc` names a column and `@variables$fpc_applied` is `NULL` (trigger narrowed by #320; see the replicate-fpc-applied block); the FPC is omitted from the `survey::svrepdesign()` call | WARN | `surveycore_warning_replicate_fpc_dropped` | `"!" = "{.fn as_svydesign} dropped the finite population correction column {.field {fpc_var}}.", "i" = "The design does not record whether the correction is already inside the replicate scales or weights.", "i" = "{.fn survey::svrepdesign} takes one FPC value per replicate, and a {.cls survey_replicate} design records one value per row.", "i" = "surveycore's replicate variance does not read the FPC, so the returned design reproduces surveycore's own standard errors.", "v" = "Call {.fn survey::svrepdesign} directly with {.arg fpc} to apply a per-replicate correction."` |
 | CB-4 | `as_svydesign()` (replicate) | `@variables$type` is `"Fay"` and `@variables$rho` is absent, `NULL`, or not a single finite number in `[0, 1)`. A design built before surveycore stored `rho` has no such key. | ERROR | `surveycore_error_fay_rho_unrecoverable` | `"x" = "{.fn as_svydesign} cannot export this {.val Fay} design: it records no usable {.arg rho}.", "i" = "{.fn survey::svrepdesign} requires {.arg rho} for {.code type = \"Fay\"}.", "i" = "A {.val Fay} design built before surveycore stored {.arg rho} records none.", "v" = "Rebuild the design with {.code as_survey_replicate(type = \"Fay\", rho = )}."` |
 | CB-5 | `from_svydesign()` (replicate) | `x$type` is not one of the nine replicate types `as_survey_replicate()` accepts — `survey::as.svrepdesign()` also produces `"subbootstrap"` and `"mrbbootstrap"` | ERROR | `surveycore_error_replicate_type_unsupported` | `"x" = "The {.pkg survey} design records replicate type {.val {rep_type}}, which surveycore does not accept.", "i" = "surveycore accepts {.val {accepted}}.", "v" = "Rebuild the design with {.fn survey::as.svrepdesign} and an accepted type, then convert it again."` |
 
@@ -633,4 +633,67 @@ as surveywts' `create_*_weights()` does, can still record an FPC.
 
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
-| RF-1 | `as_survey_replicate()` | `fpc` is not `NULL`, or `fpctype` is not `NULL`. Checked first, before the data frame is validated | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.fn as_survey_replicate} does not accept {.arg {refused}}.", "i" = "No replicate variance formula reads a finite population correction column, so {.arg fpc} never changed a standard error.", "i" = "{.fn survey::svrepdesign} applies a replicate FPC by multiplying {.arg rscales} by {.code 1 - f}, where {.code f} is the sampling fraction.", "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.", "v" = "Remove {.arg {refused}} and pass {.code rscales = rscales * (1 - f)} instead, with one entry per replicate column."` |
+| RF-1 | `as_survey_replicate()` | `fpc` names a column of `data`: a bare symbol, or a single string, equal to a column name. Checked first, before the data frame is validated, whenever `data` is a data frame. Restated by #320; see the block below | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.arg fpc} names the column {.field {fpc_col}}, and {.fn as_survey_replicate} does not accept an FPC column.", "i" = "No replicate variance formula reads a finite population correction column, so a column {.arg fpc} never changed a standard error.", "i" = "A replicate FPC is one value per replicate: {.fn survey::svrepdesign} multiplies {.arg rscales} by {.code 1 - f}, where {.code f} is the sampling fraction.", "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.", "v" = "Pass a number or one value per replicate column, for example {.code fpc = 0.05}, or write {.code .env${fpc_col}} to use a variable of that name from the calling environment."` |
+| RF-1b | `as_survey_replicate()` | `fpctype` is not `NULL` and `fpc` is `NULL`. Checked first, before the data frame is validated | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.arg fpctype} was supplied without {.arg fpc}.", "i" = "{.arg fpctype} says how to read {.arg fpc}: {.val fraction} for the sampling fraction {.code f}, {.val correction} for {.code 1 - f}.", "v" = "Remove {.arg fpctype}, or pass {.arg fpc} with it."` |
+
+### replicate-fpc-applied rows (2026-10-16)
+
+Issue #320, amending D12 in `plans/issue-cleanup.md`. `as_survey_replicate()`
+now accepts a numeric `fpc`, one number or one value per replicate, and folds
+it into `rscales` as `survey::svrepdesign()` does (`rscales * (1 - f)`). Every
+`survey_replicate` design records whether its FPC was applied, and where, in
+`@variables$fpc_applied`; `@variables$fpc_fraction` holds the `f` vector.
+
+**RF-1 is restated, not removed.** Its class is unchanged. Before #320 it fired
+on any non-`NULL` `fpc` or `fpctype`. It now fires on two triggers only, the
+column form (RF-1) and `fpctype` without `fpc` (RF-1b), each with its own
+message. A numeric `fpc` passes it.
+
+**How `fpc` is read.** `fpc` stays a quosure. A bare symbol or a single string
+that names a column of `data` is a column, and RF-1 refuses it, even when a
+variable of that name exists in the calling environment: the column wins, as
+in data masking. Anything else is evaluated in the calling environment with
+the `.env` pronoun available, so `.env$f` reaches a variable that shares a
+column's name. RF-3 handles every evaluated value.
+
+**Order.** RF-1 and RF-1b first. Then `.validate_data_frame()` and the
+column, `rscales` and JKn checks that already exist. Then RF-2, then RF-3 in
+the order of its sub-rows below.
+
+**Variable bindings.** `{fpc_col}` = the column name `fpc` resolved to;
+`{type}` = the replicate type; `{n_rep}` = the number of replicate columns;
+`{n_fpc}` = `length(fpc)`; `{fpc_cls}` = the first class of the evaluated
+`fpc`; `{fpctype_txt}` = the supplied `fpctype`, formatted; `{n_bad}` = the
+count of offending values; `{bounds}` = `[0, 1)` for `"fraction"`, `(0, 1]`
+for `"correction"`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RF-2 | `as_survey_replicate()` | A numeric `fpc` is supplied and `type` is not `"JK1"`, `"JKn"` or `"other"` | ERROR | `surveycore_error_replicate_fpc_type_unsupported` | `"x" = "{.arg fpc} applies to {.code type = \"JK1\"}, {.code \"JKn\"} and {.code \"other\"} only.", "i" = "The design has type {.val {type}}, and {.fn survey::svrepdesign} refuses {.arg fpc} for it too.", "v" = "Remove {.arg fpc}."` For `type = "bootstrap"` the `"i"` bullet is: `"i" = "A bootstrap FPC belongs in the replicate weights, built in when the weights are drawn. {.fn survey::svrepdesign} also refuses a separate one."` |
+| RF-3a | `as_survey_replicate()` | `fpc` is supplied and `fpctype` is `NULL` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} needs {.arg fpctype}.", "i" = "The same value reads as the sampling fraction {.code f} or as the correction {.code 1 - f}, and the two give different standard errors.", "v" = "Pass {.code fpctype = \"fraction\"} or {.code fpctype = \"correction\"}."` |
+| RF-3b | `as_survey_replicate()` | `fpctype` is not exactly one of the strings `"fraction"`, `"correction"`. No partial matching | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpctype} must be {.val fraction} or {.val correction}.", "i" = "Got {fpctype_txt}.", "v" = "Pass {.code fpctype = \"fraction\"} or {.code fpctype = \"correction\"}."` |
+| RF-3c | `as_survey_replicate()` | Evaluating `fpc` raises an error. The error is attached as the parent | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} could not be evaluated.", "i" = "Only a bare column name is read as a column. Any other {.arg fpc} is evaluated in the calling environment.", "v" = "Pass a number or one value per replicate column."` |
+| RF-3d | `as_survey_replicate()` | The evaluated `fpc` is not a numeric vector: not numeric, or carries a `dim` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} must be a numeric vector.", "i" = "Got {.cls {fpc_cls}}.", "v" = "Pass a number or one value per replicate column."` |
+| RF-3e | `as_survey_replicate()` | `length(fpc)` is neither 1 nor `R` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} must have length 1 or {n_rep}, one value per replicate column.", "i" = "Got length {n_fpc}."` |
+| RF-3f | `as_survey_replicate()` | `fpc` holds `NA`, `NaN` or an infinite value | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} contains {n_bad} missing or non-finite value{?s}.", "i" = "Every replicate needs a finite correction."` |
+| RF-3g | `as_survey_replicate()` | A value lies outside `[0, 1)` for `"fraction"`, or outside `(0, 1]` for `"correction"` | ERROR | `surveycore_error_replicate_fpc_invalid` | `"x" = "{.arg fpc} has {n_bad} value{?s} outside {.code {bounds}}.", "i" = "With {.code fpctype = \"fraction\"} each value is a sampling fraction {.code f} in {.code [0, 1)}; with {.code fpctype = \"correction\"} it is {.code 1 - f}, in {.code (0, 1]}.", "v" = "Check {.arg fpctype}, or pass {.code n / N} for each replicate."` |
+| RF-4 | `survey_replicate` validator (Layer 1) | `@variables$fpc_applied` is not `NULL` and not one of `"rscales"`, `"repweights"`, `"none"`; or `@variables$fpc_fraction` is not `NULL` and not a finite numeric vector in `[0, 1]` with one value per replicate column | ERROR | `surveycore_error_replicate_fpc_record_invalid` | `"x" = "{.field @variables$fpc_applied} must be {.code NULL}, {.val rscales}, {.val repweights} or {.val none}."` / `"x" = "{.field @variables$fpc_fraction} must be {.code NULL} or a finite numeric vector in {.code [0, 1]} with one value per replicate column."` |
+
+RF-4 is a structural validator error: `class =` only in tests, no snapshot.
+`fpc_fraction` is checked against the closed interval `[0, 1]`, wider than
+RF-3g's `[0, 1)`: a `"correction"` value below about `1e-16` stores
+`1 - c`, which rounds to `1` in double precision. A
+missing key reads as `NULL`, so a design saved before #320, or built by
+`survey_replicate()` without the keys, passes it.
+
+**Updated trigger descriptions for existing rows:**
+
+- Row CB-3 (`surveycore_warning_replicate_fpc_dropped`): fires only when
+  `@variables$fpc` names a column **and** `@variables$fpc_applied` is `NULL`,
+  the state in which the design does not record whether the correction was
+  applied. For `"rscales"` and `"repweights"` the correction is already in
+  what is exported; for `"none"` nothing was applied, so nothing is dropped.
+  The route passes no `fpc` to `survey::svrepdesign()` in every state. The
+  template gains one `"i"` bullet, second in order: `"i" = "The design does
+  not record whether the correction is already inside the replicate scales
+  or weights."`

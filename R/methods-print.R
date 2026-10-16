@@ -186,6 +186,59 @@
 }
 
 
+# Print the FPC line of a survey_replicate design (issue #320). The state
+# comes from @variables$fpc_applied: "rscales", "repweights" and "none" say
+# where the correction went; NULL with a recorded column means the design
+# does not record it. The subject is the column when one is recorded, else
+# the fraction range from @variables$fpc_fraction, else nothing. [[ ]] reads
+# a missing key as NULL, which is how a design saved before #320 reads.
+# @param x A survey_replicate object.
+# @param style "bullet" for print(), "text" for summary().
+# @param none_text Line printed when the design has no FPC, or NULL for none.
+# @return invisible(NULL)
+# @noRd
+.print_replicate_fpc <- function(x, style, none_text = NULL) {
+  fpc_var <- x@variables[["fpc"]]
+  applied <- x@variables[["fpc_applied"]]
+  fraction <- x@variables[["fpc_fraction"]]
+
+  where <- if (is.null(applied)) {
+    if (!is.null(fpc_var)) "application not recorded" else NULL
+  } else {
+    switch(
+      applied,
+      rscales = "applied in replicate scales",
+      repweights = "applied in replicate weights",
+      none = "not applied"
+    )
+  }
+
+  line <- if (is.null(where)) {
+    none_text
+  } else if (!is.null(fpc_var)) {
+    "FPC: {.field {fpc_var}} ({where})"
+  } else if (!is.null(fraction)) {
+    f_range <- format(range(fraction), digits = 4L)
+    f_txt <- if (f_range[[1L]] == f_range[[2L]]) {
+      paste0("f = ", f_range[[1L]])
+    } else {
+      paste0("f = ", f_range[[1L]], " to ", f_range[[2L]])
+    }
+    "FPC: {f_txt} ({where})"
+  } else {
+    "FPC: {where}"
+  }
+
+  if (!is.null(line)) {
+    if (identical(style, "bullet")) {
+      cli::cli_bullets(c("*" = line))
+    } else {
+      cli::cli_text(line)
+    }
+  }
+  invisible(NULL)
+}
+
 # ── print.survey_taylor ────────────────────────────────────────────────────
 
 # Print a Taylor Series Survey Design
@@ -425,14 +478,7 @@ S7::method(print, survey_replicate) <- function(
     }
     cli::cli_bullets(c("*" = "MSE: {.val {isTRUE(x@variables$mse)}}"))
 
-    fpc_var <- x@variables$fpc
-    if (!is.null(fpc_var)) {
-      cli::cli_bullets(c(
-        "*" = "FPC: {.field {fpc_var}} ({x@variables$fpctype})"
-      ))
-    } else {
-      cli::cli_bullets(c("*" = "FPC: not specified"))
-    }
+    .print_replicate_fpc(x, "bullet", none_text = "FPC: not specified")
   }
 
   # ── Weight distribution ───────────────────────────────────────────────────
@@ -857,10 +903,7 @@ S7::method(summary, survey_replicate) <- function(object, ...) {
   }
   cli::cli_text("MSE: {.val {isTRUE(x@variables$mse)}}")
 
-  fpc_var <- x@variables$fpc
-  if (!is.null(fpc_var)) {
-    cli::cli_text("FPC: {.field {fpc_var}} ({x@variables$fpctype})")
-  }
+  .print_replicate_fpc(x, "text")
 
   cli::cli_text("")
   display_name <- .dataset_display_name(x@metadata)

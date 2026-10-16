@@ -218,40 +218,148 @@
 
     Code
       as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
-      fpc = fpc)
+      fpc = fpc, fpctype = "fraction")
     Condition
       Error in `as_survey_replicate()`:
-      x `as_survey_replicate()` does not accept `fpc`.
-      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
-      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
+      x `fpc` names the column fpc, and `as_survey_replicate()` does not accept an FPC column.
+      i No replicate variance formula reads a finite population correction column, so a column `fpc` never changed a standard error.
+      i A replicate FPC is one value per replicate: `survey::svrepdesign()` multiplies `rscales` by `1 - f`, where `f` is the sampling fraction.
       i For a Taylor series design with an FPC, use `as_survey()`.
-      v Remove `fpc` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+      v Pass a number or one value per replicate column, for example `fpc = 0.05`, or write `.env$fpc` to use a variable of that name from the calling environment.
 
-# as_survey_replicate() refuses fpctype on its own [RF-1]
+# as_survey_replicate() reads a bare column name as the column when a variable shares it [RF-1]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = fpc, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` names the column fpc, and `as_survey_replicate()` does not accept an FPC column.
+      i No replicate variance formula reads a finite population correction column, so a column `fpc` never changed a standard error.
+      i A replicate FPC is one value per replicate: `survey::svrepdesign()` multiplies `rscales` by `1 - f`, where `f` is the sampling fraction.
+      i For a Taylor series design with an FPC, use `as_survey()`.
+      v Pass a number or one value per replicate column, for example `fpc = 0.05`, or write `.env$fpc` to use a variable of that name from the calling environment.
+
+# as_survey_replicate() refuses fpctype on its own [RF-1b]
 
     Code
       as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
       fpctype = "correction")
     Condition
       Error in `as_survey_replicate()`:
-      x `as_survey_replicate()` does not accept `fpctype`.
-      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
-      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
-      i For a Taylor series design with an FPC, use `as_survey()`.
-      v Remove `fpctype` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+      x `fpctype` was supplied without `fpc`.
+      i `fpctype` says how to read `fpc`: "fraction" for the sampling fraction `f`, "correction" for `1 - f`.
+      v Remove `fpctype`, or pass `fpc` with it.
 
-# as_survey_replicate() names both fpc and fpctype when both are supplied [RF-1]
+# as_survey_replicate() refuses a numeric fpc for every type survey refuses [RF-2]
 
     Code
-      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JKn",
-      rscales = rep(1, 4L), fpc = fpc, fpctype = "correction")
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "BRR",
+      fpc = 0.1, fpctype = "fraction")
     Condition
       Error in `as_survey_replicate()`:
-      x `as_survey_replicate()` does not accept `fpc` and `fpctype`.
-      i No replicate variance formula reads a finite population correction column, so `fpc` never changed a standard error.
-      i `survey::svrepdesign()` applies a replicate FPC by multiplying `rscales` by `1 - f`, where `f` is the sampling fraction.
-      i For a Taylor series design with an FPC, use `as_survey()`.
-      v Remove `fpc` and `fpctype` and pass `rscales = rscales * (1 - f)` instead, with one entry per replicate column.
+      x `fpc` applies to `type = "JK1"`, `"JKn"` and `"other"` only.
+      i The design has type "BRR", and `survey::svrepdesign()` refuses `fpc` for it too.
+      v Remove `fpc`.
+
+# as_survey_replicate() points a bootstrap fpc at the replicate weights [RF-2]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "bootstrap",
+      fpc = 0.1, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` applies to `type = "JK1"`, `"JKn"` and `"other"` only.
+      i A bootstrap FPC belongs in the replicate weights, built in when the weights are drawn. `survey::svrepdesign()` also refuses a separate one.
+      v Remove `fpc`.
+
+# as_survey_replicate() requires fpctype with a numeric fpc [RF-3a]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0.1)
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` needs `fpctype`.
+      i The same value reads as the sampling fraction `f` or as the correction `1 - f`, and the two give different standard errors.
+      v Pass `fpctype = "fraction"` or `fpctype = "correction"`.
+
+# as_survey_replicate() refuses an fpctype that is not exactly one of the two strings [RF-3b]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0.1, fpctype = "frac")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpctype` must be "fraction" or "correction".
+      i Got "frac".
+      v Pass `fpctype = "fraction"` or `fpctype = "correction"`.
+
+# as_survey_replicate() wraps an fpc that fails to evaluate [RF-3c]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = no_such_variable, fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` could not be evaluated.
+      i Only a bare column name is read as a column. Any other `fpc` is evaluated in the calling environment.
+      v Pass a number or one value per replicate column.
+      Caused by error:
+      ! object 'no_such_variable' not found
+
+# as_survey_replicate() refuses a non-numeric fpc [RF-3d]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = "0.1", fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must be a numeric vector.
+      i Got <character>.
+      v Pass a number or one value per replicate column.
+
+# as_survey_replicate() refuses an fpc of the wrong length [RF-3e]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, 0.2), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` must have length 1 or 5, one value per replicate column.
+      i Got length 2.
+
+# as_survey_replicate() refuses an fpc holding NA or a non-finite value [RF-3f]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, NA, 0.1, Inf, 0.1), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` contains 2 missing or non-finite values.
+      i Every replicate needs a finite correction.
+
+# as_survey_replicate() refuses an fpc outside its range [RF-3g]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = c(0.1, 1, 0.1, 1.5, 0.1), fpctype = "fraction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` has 2 values outside `[0, 1)`.
+      i With `fpctype = "fraction"` each value is a sampling fraction `f` in `[0, 1)`; with `fpctype = "correction"` it is `1 - f`, in `(0, 1]`.
+      v Check `fpctype`, or pass `n / N` for each replicate.
+
+---
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = starts_with("repwt_"), type = "JK1",
+      fpc = 0, fpctype = "correction")
+    Condition
+      Error in `as_survey_replicate()`:
+      x `fpc` has 1 value outside `(0, 1]`.
+      i With `fpctype = "fraction"` each value is a sampling fraction `f` in `[0, 1)`; with `fpctype = "correction"` it is `1 - f`, in `(0, 1]`.
+      v Check `fpctype`, or pass `n / N` for each replicate.
 
 # as_survey_replicate() errors when data is not a data frame [row 1]
 
