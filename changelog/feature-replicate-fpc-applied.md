@@ -91,4 +91,25 @@ as the data's `fpc` column whenever the data has one. It must write
 
 ## Verification
 
-<!-- filled in after the full run -->
+Run in a cloud session: R 4.6.1, survey 4.5, `LC_ALL=C.UTF-8`.
+
+- Full suite, `NOT_CRAN=true testthat::test_local()`: 12,948 passed,
+  0 failed, 39 skipped, 4 errors. All four errors are
+  `there is no package called 'surveytidy'` (surveytidy is not installable
+  here; CI runs them). The same four error on clean `develop`.
+- Clean `develop` in the C locale also shows 10 print-snapshot failures
+  (`<U+00D7>` and similar); they are locale artefacts and pass under
+  `C.UTF-8`.
+- `devtools::check(document = FALSE, args = c("--no-manual", "--no-tests"))`:
+  0 errors, 0 warnings, 1 note ("Unable to verify current time", the
+  sandbox's blocked network).
+- `R/variance-replicate.R` is byte-identical to `develop`
+  (`git diff --quiet develop -- R/variance-replicate.R`).
+- `air format --check` passes on every R file this PR changes, except the
+  lines already unformatted on `develop` in `test-constructors.R` and
+  `helper-test-data.R`, which this PR leaves alone.
+- `man/` regenerated with
+  `roxygen2::roxygenise(roclets = c("rd", "namespace", "collate"))`: the srr
+  roclet is not installed here, so `devtools::document()` fails.
+- Every snapshot change was reviewed against its register template before
+  it was accepted.
