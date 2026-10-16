@@ -72,6 +72,16 @@
 
 ## Breaking changes
 
+* `as_survey_replicate()` now refuses `fpc` and `fpctype` with
+  `surveycore_error_replicate_fpc_unsupported`. Neither argument ever changed a
+  replicate standard error: no replicate variance formula read the FPC column.
+  No published number moves. To apply a finite population correction, fold it
+  into `rscales`, as `survey::svrepdesign()` does with its own `fpc`: pass
+  `rscales = rscales * (1 - f)`, where `f` is the sampling fraction for each
+  replicate. A replicate design built with `survey_replicate()` directly, as
+  surveywts does, can still record an FPC column, and `as_svydesign()` still
+  drops it with `surveycore_warning_replicate_fpc_dropped`. (#251)
+
 * `as_survey_replicate()` now ignores a supplied `scale` for `"BRR"`, `"JK2"`,
   `"ACS"` and `"successive-difference"`, and a supplied `rscales` for `"JK2"`,
   `"ACS"` and `"successive-difference"`, as `survey::svrepdesign()` does. It

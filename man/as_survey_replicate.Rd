@@ -14,7 +14,7 @@ as_survey_replicate(
   scale = NULL,
   rscales = NULL,
   fpc = NULL,
-  fpctype = c("fraction", "correction"),
+  fpctype = NULL,
   mse = TRUE,
   calibration = NULL
 )
@@ -107,8 +107,7 @@ by hand, which makes the entry \code{(n_h - 1) * (1 - n_h / N_h) / n_h}.
 Here \code{n_h} is the number of sample PSUs in stratum \code{h}, and \code{N_h} is
 the number of population PSUs in stratum \code{h}. The caller supplies
 \code{N_h} from their own sampling frame, and \code{rscales} is the only route
-for the correction: the \code{fpc} argument does not reach the factor for
-any replicate type.
+for the correction: the \code{fpc} argument is refused.
 
 \code{"bootstrap"} divides by \code{R - 1}, which is the value
 \code{survey::svrepdesign()} computes at \code{bootstrap.average = 1}.
@@ -152,15 +151,19 @@ For a stratified jackknife whose PSUs are selected without replacement
 at a sampling fraction that is not negligible, the \code{scale} argument
 gives the entry to build here.}
 
-\item{fpc}{<\code{\link[tidyselect:language]{tidy-select}}> Finite population
-correction column (a single column). \code{NULL} means no FPC correction.
-The argument has no effect for a replicate design: no replicate
-variance formula reads it. Put the without-replacement correction into
-\code{rscales} instead; the \code{scale} argument gives the entry to build.}
+\item{fpc, fpctype}{Not supported. Leave both as \code{NULL}. Supplying either
+raises an error of class \code{surveycore_error_replicate_fpc_unsupported}.
+No replicate variance formula reads a finite population correction
+column, so \code{fpc} never changed a standard error in any earlier version.
 
-\item{fpctype}{Character. How \code{fpc} is interpreted: \code{"fraction"} (sampling
-fraction, 0–1) or \code{"correction"} (multiplier for the replicate variance).
-Default \code{"fraction"}. Case-sensitive.}
+To apply a finite population correction, fold it into \code{rscales}:
+multiply each entry by \code{1 - f}, where \code{f} is the sampling fraction for
+that replicate, for example \code{rscales = rscales * (1 - f)}. For \code{"JKn"},
+\code{f} is the sampling fraction of the stratum the replicate drops a PSU
+from. This is exactly what \code{survey::svrepdesign()} does with its own
+\code{fpc} argument, which it accepts only for \code{"JK1"}, \code{"JKn"} and
+\code{"other"}. Its \code{fpctype = "correction"} form is already \code{1 - f}, so
+multiply \code{rscales} by that value directly.}
 
 \item{mse}{Logical. If \code{TRUE} (default), use mean-squared-error estimates
 (subtract the full-sample estimate rather than the mean replicate estimate

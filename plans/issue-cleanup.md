@@ -275,6 +275,18 @@ cannot be given the right quantity is better removed than described.
 If a user later asks for a working replicate FPC, file it then as a feature with
 `survey`'s rules from lines 132-147 as the spec. Do not pre-build it.
 
+**Amended at implementation (2026-10-16, #251).** Consequences 1 and 2 did not
+ship. Their premise, that no replicate design can carry an FPC, is false: the
+exported `survey_replicate()` constructor takes an untyped `variables` list, and
+surveywts' `create_*_weights()` builds every replicate design through it,
+copying the source Taylor design's `fpc` across
+(`surveywts/R/replicate-utils.R`). So the export warning, row CB-3 and the two
+print lines stay reachable and stay in. The refusal also gained the `rscales`
+route in its `"v"` bullet and in `@param fpc,fpctype`:
+`rscales = rscales * (1 - f)` reproduces `survey`'s own `fpc`, and an oracle
+block in `test-constructors.R` pins it. Consequence 4 holds as written:
+`from_svydesign()`'s replicate route stores `fpc = NULL`.
+
 ---
 
 ## The header every issue gets

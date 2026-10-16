@@ -514,22 +514,7 @@ test_that("S-23b: as_survey_replicate() takes a labelled weight column", {
   expect_identical(out$labelled, out$plain)
 })
 
-test_that("S-23c: as_survey_replicate() takes a labelled fpc column", {
-  build <- function(labelled) {
-    d <- .ls_mark(.ls_frame(n_rep = 8L), "fpc", labelled)
-    as_survey_replicate(
-      d,
-      weights = wt,
-      repweights = tidyselect::starts_with("rw"),
-      type = "bootstrap",
-      fpc = fpc
-    )
-  }
-  out <- .ls_both(build, function(d) get_means(d, y))
-
-  expect_false(.ls_any_labelled(out$design))
-  expect_identical(out$labelled, out$plain)
-})
+# S-23c is retired: as_survey_replicate() refuses an fpc (issue #251).
 
 test_that("S-23d: as_survey_nonprob() takes a labelled weight column", {
   build <- function(labelled) {

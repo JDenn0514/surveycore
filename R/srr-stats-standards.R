@@ -16,12 +16,12 @@
 #' @srrstats {G2.0a} All @param entries for column-selecting arguments
 #'   explicitly state whether a single column or multiple columns are expected.
 #'
-#' @srrstats {G2.2} Parameters expected to be univariate (type, fpctype, mse,
-#'   nest) are validated via match.arg() or logical coercion, preventing
+#' @srrstats {G2.2} Parameters expected to be univariate (type, mse, nest)
+#'   are validated via match.arg() or logical coercion, preventing
 #'   multi-valued submission.
 #'
-#' @srrstats {G2.3} Univariate character parameters (type, fpctype, method)
-#'   use match.arg(), ensuring only permitted values are accepted.
+#' @srrstats {G2.3} Univariate character parameters (type, method) use
+#'   match.arg(), ensuring only permitted values are accepted.
 #'
 #' @srrstats {G2.3a} match.arg() is used for all character-valued control
 #'   parameters in constructors and analysis functions (e.g. type in
@@ -124,7 +124,7 @@
 #'
 #' @srrstats {G2.3b} All character parameters that use match.arg() are
 #'   explicitly documented as case-sensitive in their @param entries:
-#'   type and fpctype in as_survey_replicate(), method in
+#'   type in as_survey_replicate(), method in
 #'   as_survey_twophase(), format in get_corr(), scale in get_diffs().
 #' @srrstats {G2.9} surveycore does not perform implicit type conversions that
 #'   lose information. Design variable types (weights, FPC) are validated at

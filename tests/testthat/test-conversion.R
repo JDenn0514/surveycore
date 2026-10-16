@@ -2135,8 +2135,11 @@ test_that("from_svydesign() pluralizes the collision message at three collisions
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Build a replicate design that records an FPC column. make_survey_data()
-# supplies fpc as a per-stratum population size, which is what
-# as_survey_replicate(fpc = fpc) stores.
+# supplies fpc as a per-stratum population size. as_survey_replicate()
+# refuses an fpc (issue #251), so the column is recorded on @variables
+# afterwards. That is the state the exported survey_replicate() constructor
+# can still produce: surveywts' create_*_weights() carries the source
+# Taylor design's fpc across that way.
 make_rep_fpc <- function(type = "BRR", seed = 401L, rscales = NULL) {
   df <- make_survey_data(
     n = 50L,
@@ -2147,14 +2150,15 @@ make_rep_fpc <- function(type = "BRR", seed = 401L, rscales = NULL) {
     seed = seed
   )
   repwt_cols <- grep("^repwt_", names(df), value = TRUE)
-  as_survey_replicate(
+  d <- as_survey_replicate(
     df,
     weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
     type = type,
-    rscales = rscales,
-    fpc = fpc
+    rscales = rscales
   )
+  d@variables$fpc <- "fpc"
+  d
 }
 
 # X-1. §IV.2 step 5 and §VI property 6. The warning is not the whole

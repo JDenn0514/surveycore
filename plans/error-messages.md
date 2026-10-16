@@ -41,8 +41,8 @@ against the messages defined here.
 | 11 | `as_survey()` | `strata` selects 0 columns | ERROR | `surveycore_error_strata_not_found` | `"{.arg strata} matched no columns in {.arg data}"` |
 | 11b | `as_survey()` | `strata` selects >1 column | ERROR | `surveycore_error_strata_multiple` | `"{.arg strata} must select exactly one column, not {length(strata_cols)}"` |
 | 12 | `as_survey()` | `strata` resolves to 1 unique value | WARN | `surveycore_warning_single_stratum` | `"{.arg strata} ({.field {strata_var}}) has only 1 unique value — stratification has no effect"` |
-| 13 | `as_survey()` / `as_survey_replicate()` | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
-| 13b | `as_survey()` / `as_survey_replicate()` | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
+| 13 | `as_survey()` (not `as_survey_replicate()` since RF-1) | `fpc` selects 0 columns | ERROR | `surveycore_error_fpc_not_found` | `"{.arg fpc} matched no columns in {.arg data}"` |
+| 13b | `as_survey()` (not `as_survey_replicate()` since RF-1) | `fpc` selects >1 column | ERROR | `surveycore_error_fpc_multiple` | `"{.arg fpc} must select exactly one column, not {length(fpc_cols)}"` |
 | 14 | `as_survey()` | `fpc` column contains `NA` | ERROR | `surveycore_error_fpc_na` | `"{.arg fpc} column {.field {fpc_var}} contains {sum(is.na(fpc_col))} NA value(s). FPC must be fully observed."` |
 | 15 | `as_survey()` | `nest = TRUE` with no `strata` | ERROR | `surveycore_error_nest_without_strata` | `"{.arg nest = TRUE} requires {.arg strata} to be specified"` |
 | 16 | `as_survey_replicate()` | `repweights` selects 0 columns | ERROR | `surveycore_error_repweights_empty` | `"{.arg repweights} must select at least one column"` |
@@ -615,3 +615,22 @@ the replicate type after `match.arg()`.
   classes, `c("surveycore_warning_rho_ignored",
   "surveycore_warning_replicate_arg_ignored")`. The trigger and message do not
   change.
+
+### replicate-fpc-refusal rows (2026-10-16)
+
+Issue #251, decision D12. `RF` is the prefix for the replicate FPC refusal.
+`as_survey_replicate()` no longer accepts `fpc` or `fpctype`: no replicate
+variance formula read the column. The `"v"` bullet gives the `rscales` route,
+which is what `survey::svrepdesign()` does with its own `fpc`.
+
+Rows 13 and 13b no longer fire from `as_survey_replicate()`: RF-1 refuses
+`fpc` before any column is resolved. Row CB-3 stays, because a
+`survey_replicate` built with the exported `survey_replicate()` constructor,
+as surveywts' `create_*_weights()` does, can still record an FPC.
+
+**Variable bindings.** `{refused}` = the supplied arguments, in the order
+`"fpc"`, `"fpctype"`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| RF-1 | `as_survey_replicate()` | `fpc` is not `NULL`, or `fpctype` is not `NULL`. Checked first, before the data frame is validated | ERROR | `surveycore_error_replicate_fpc_unsupported` | `"x" = "{.fn as_survey_replicate} does not accept {.arg {refused}}.", "i" = "No replicate variance formula reads a finite population correction column, so {.arg fpc} never changed a standard error.", "i" = "{.fn survey::svrepdesign} applies a replicate FPC by multiplying {.arg rscales} by {.code 1 - f}, where {.code f} is the sampling fraction.", "i" = "For a Taylor series design with an FPC, use {.fn as_survey}.", "v" = "Remove {.arg {refused}} and pass {.code rscales = rscales * (1 - f)} instead, with one entry per replicate column."` |

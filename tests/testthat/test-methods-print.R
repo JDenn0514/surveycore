@@ -553,10 +553,11 @@ test_that("summary.survey_replicate() with FPC covers the FPC line", {
     d,
     weights = wt,
     repweights = tidyselect::all_of(repwt_cols),
-    type = "BRR",
-    fpc = fpc,
-    fpctype = "fraction"
+    type = "BRR"
   )
+  # as_survey_replicate() refuses an fpc (issue #251); the exported
+  # survey_replicate() constructor can still record one, as surveywts does.
+  sc@variables$fpc <- "fpc"
   out <- capture.output(summary(sc), type = "message")
   expect_true(any(grepl("FPC", out)))
 })
