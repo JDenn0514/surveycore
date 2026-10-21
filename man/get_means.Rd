@@ -94,7 +94,8 @@ A \code{survey_means} tibble (also inheriting \code{survey_result}). Columns:
 \item \code{df} — degrees of freedom used for CI calculation. Present only for
 \code{survey_taylor} designs with an active \verb{@calibration} object
 (GREG-corrected SE). For all other designs the normal approximation
-(\code{Inf}) is used and \code{df} is not included.
+(\code{Inf}) is used and \code{df} is not included. \code{confint()} on the result
+uses the same df, so it reproduces \code{ci_low} and \code{ci_high}.
 \item \code{n} — unweighted count of non-NA observations used in the estimate.
 \item \code{n_weighted} — sum of weights (only when requested).
 }

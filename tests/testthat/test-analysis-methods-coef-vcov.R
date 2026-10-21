@@ -709,16 +709,15 @@ test_that(".survey_result$df is Inf for replicate designs", {
   expect_true(all(is.infinite(attr(result, ".survey_result")$df)))
 })
 
-# ── §1.5 — df is finite for Taylor designs ────────────────────────────────────
+# ── §1.5 — df is Inf for non-calibrated Taylor designs (issue #271) ──────────
 
-test_that(".survey_result$df is finite for Taylor designs", {
+test_that(".survey_result$df is Inf for non-calibrated Taylor designs", {
   df <- make_survey_data(design = "taylor", seed = 5)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   test_invariants(d)
   result <- get_means(d, y1)
   df_val <- attr(result, ".survey_result")$df
-  expect_true(all(is.finite(df_val)))
-  expect_true(all(df_val >= 1))
+  expect_identical(df_val, rep(Inf, nrow(result)))
 })
 
 # ── §3.5 — Grouped quantiles group-major order ────────────────────────────────
@@ -739,20 +738,16 @@ test_that("coef.survey_result() returns group-major names for grouped quantiles"
   expect_true(length(n) == length(unique(df$strata)) * 3L)
 })
 
-# ── §6.3 — Taylor CI uses t-distribution (finite df) ─────────────────────────
+# ── §6.3 — Taylor CI uses the normal approximation (issue #271) ──────────────
 
-test_that("confint.survey_result() uses t-distribution for Taylor designs (finite df)", {
+test_that("confint.survey_result() uses the normal approximation for Taylor designs", {
   df <- make_survey_data(design = "taylor", seed = 63)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_means(d, y1, variance = "se")
-  df_stored <- attr(result, ".survey_result")$df
-  expect_true(all(is.finite(df_stored)))
   ci <- confint(result, level = 0.95)
-  se_val <- SE(result)
-  est_val <- coef(result)
-  expected_hw <- stats::qt(0.975, df = df_stored[1]) * se_val[1]
-  actual_hw <- ci[1, 2] - est_val[1]
-  expect_equal(actual_hw, expected_hw, tolerance = 1e-10)
+  expected_hw <- stats::qnorm(0.975) * SE(result)[1]
+  actual_hw <- ci[1, 2] - coef(result)[1]
+  expect_equal(unname(actual_hw), unname(expected_hw), tolerance = 1e-10)
 })
 
 # ── §6.4 — Replicate CI matches normal approximation ─────────────────────────
@@ -861,9 +856,11 @@ test_that("coef.survey_result() uses 'N' as name for get_totals() population-siz
   expect_identical(names(cv), "N")
 })
 
-# ── §8.5 — df value propagates to confint for small design ───────────────────
+# ── §8.5 — confint matches the CI columns on a small design (issue #271) ────
 
-test_that("confint.survey_result() uses finite design df for Taylor designs", {
+test_that("confint.survey_result() reproduces ci_low/ci_high when design df is small", {
+  # 4 PSUs in 2 strata => design df 2, where qt(0.975, 2) is 4.30 against
+  # qnorm(0.975) = 1.96, so a t-based confint() would be twice as wide.
   small_df <- data.frame(
     psu = c(1, 1, 2, 2, 3, 3, 4, 4),
     strata = c(1, 1, 1, 1, 2, 2, 2, 2),
@@ -871,14 +868,11 @@ test_that("confint.survey_result() uses finite design df for Taylor designs", {
     y1 = c(10, 12, 9, 11, 8, 7, 6, 9)
   )
   d <- as_survey(small_df, ids = psu, weights = wt, strata = strata)
-  result <- suppressWarnings(get_means(d, y1, variance = "se"))
-  df_stored <- attr(result, ".survey_result")$df
-  # 4 PSUs in 2 strata => df = sum(n_h - 1) = (2-1) + (2-1) = 2
-  expect_equal(df_stored[1], 2)
+  result <- suppressWarnings(
+    get_means(d, y1, variance = c("se", "ci"))
+  )
   ci <- confint(result, level = 0.95)
-  half_width <- ci[1, 2] - coef(result)[1]
-  expected_hw <- stats::qt(0.975, df = 2) * SE(result)[1]
-  expect_equal(half_width, expected_hw, tolerance = 1e-10)
+  expect_equal(unname(ci[1, ]), c(result$ci_low, result$ci_high))
 })
 
 # ── §8.6 — Replicate normal approximation ────────────────────────────────────
@@ -1225,4 +1219,73 @@ test_that("coef() for freq uses sequential row names when non_estimate_cols is e
   expect_true(is.numeric(cv))
   expect_equal(length(cv), nrow(r))
   expect_identical(names(cv), as.character(seq_len(nrow(r))))
+})
+
+# ── Issue #271 — confint() agrees with the CI columns on every design ─────────
+
+# A filtered Taylor design: the domain drops stratum_5 entirely and cuts
+# across the PSUs of the other four strata.
+make_filtered_taylor_271 <- function() {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 5L, seed = 271L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d@data[[SURVEYCORE_DOMAIN_COL]] <- df$strata != "stratum_5" &
+    seq_len(nrow(df)) %% 3L != 0L
+  d
+}
+
+test_that("confint() reproduces get_means() CI columns on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_means(d, y1, variance = c("se", "ci"))
+  ci <- confint(result)
+  expect_equal(unname(ci[, 1]), result$ci_low, tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), result$ci_high, tolerance = 1e-10)
+})
+
+test_that("confint() reproduces get_totals() CI columns on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_totals(d, y1, variance = c("se", "ci"))
+  ci <- confint(result)
+  expect_equal(unname(ci[, 1]), result$ci_low, tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), result$ci_high, tolerance = 1e-10)
+})
+
+test_that("confint() reproduces get_freqs() CI columns on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_freqs(d, group, variance = c("se", "ci"))
+  ci <- confint(result)
+  expect_equal(unname(ci[, 1]), result$ci_low, tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), result$ci_high, tolerance = 1e-10)
+})
+
+test_that("confint() reproduces get_ratios() CI columns on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_ratios(d, y1, y2, variance = c("se", "ci"))
+  ci <- confint(result)
+  expect_equal(unname(ci[, 1]), result$ci_low, tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), result$ci_high, tolerance = 1e-10)
+})
+
+test_that("confint() reproduces get_covariance() CI columns on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_covariance(d, x = c(y1, y2), variance = c("se", "ci"))
+  ci <- confint(result)
+  # The covariance CI columns carry a "label" attribute; compare values only.
+  expect_equal(unname(ci[, 1]), as.numeric(result$ci_low), tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), as.numeric(result$ci_high), tolerance = 1e-10)
+})
+
+test_that("confint() reproduces get_means() CI columns on a two-phase design", {
+  d <- make_all_designs(seed = 271L)$twophase
+  test_invariants(d)
+  result <- get_means(d, y1, variance = c("se", "ci"))
+  ci <- confint(result)
+  expect_equal(unname(ci[, 1]), result$ci_low, tolerance = 1e-10)
+  expect_equal(unname(ci[, 2]), result$ci_high, tolerance = 1e-10)
+})
+
+test_that(".survey_result$df is Inf on a filtered Taylor design", {
+  d <- make_filtered_taylor_271()
+  result <- get_means(d, y1)
+  df_val <- attr(result, ".survey_result")$df
+  expect_identical(df_val, rep(Inf, nrow(result)))
 })

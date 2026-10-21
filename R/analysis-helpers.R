@@ -1068,7 +1068,9 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' `survey_glm()` for t-distribution critical values in confidence intervals
 #' and Wald tests. Phase 1 analysis functions (`get_means()`, `get_totals()`,
 #' etc.) use `Inf` directly (normal approximation, matching
-#' `survey::svymean()` defaults) and do **not** call `.degf()`.
+#' `survey::svymean()` defaults) and do **not** call `.degf()`, so that
+#' `confint()` agrees with their `ci_low`/`ci_high` columns (issue #271).
+#' `get_quantiles()` and `get_corr()` still store it on their result.
 #'
 #' Design-specific formulas (matching `survey::degf()`):
 #' - Taylor: `Σ_h(n_h - 1)` = total PSUs − number of strata.

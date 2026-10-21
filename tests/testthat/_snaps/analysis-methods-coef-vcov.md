@@ -113,8 +113,8 @@
       ! `parm` contains 1 `NA` element(s).
       i `NA` elements are dropped before parameter selection.
     Output
-            2.5 %   97.5 %
-      y1 49.02904 51.67635
+           2.5 %   97.5 %
+      y1 49.1289 51.57648
 
 # confint() with partially unmatched parm emits surveycore_warning_parm_unmatched
 
@@ -126,8 +126,8 @@
       i Unmatched names: "not_a_param".
       i These parameters are dropped. Check `names(coef(result))` for valid names.
     Output
-              2.5 %   97.5 %
-      A:y1 47.58754 52.43242
+             2.5 %   97.5 %
+      A:y1 47.7703 52.24965
 
 # confint() with all unmatched parm emits warning and returns 0x2 matrix
 

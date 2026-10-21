@@ -1327,13 +1327,11 @@ test_that("get_covariance() attaches .survey_result with statistic = 'covariance
   expect_identical(sr$statistic, "covariance")
 })
 
-test_that("get_covariance() .survey_result$df is finite for non-calibrated Taylor design", {
+test_that("get_covariance() .survey_result$df is Inf for non-calibrated Taylor design", {
   df <- make_survey_data(n = 200, seed = 3)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
   result <- get_covariance(d, x = c(y1, y2))
   sr <- attr(result, ".survey_result")
-  # Non-calibrated Taylor designs now store finite design df (not Inf).
-  expect_true(all(is.finite(sr$df)))
-  expect_true(all(sr$df >= 1))
-  expect_equal(length(sr$df), nrow(result))
+  # Inf is the df behind the ci_low/ci_high columns (issue #271).
+  expect_identical(sr$df, rep(Inf, nrow(result)))
 })
