@@ -1471,6 +1471,32 @@ test_glm_tidy_invariants <- function(result) {
 }
 
 # ------------------------------------------------------------------------------
+# .testhelper_mark_domain()
+# ------------------------------------------------------------------------------
+
+#' Mark domain membership on a design without surveytidy
+#'
+#' Test-only helper. Writes the `..surveycore_domain..` column that
+#' `surveytidy::filter()` writes, so domain-estimation tests run where
+#' surveytidy is not installed (it is not on CRAN). Rows stay in `@data`;
+#' rows with `keep = FALSE` fall outside the active domain.
+#'
+#' @param design A survey design object with no existing domain column.
+#' @param keep Logical vector of length `nrow(design@data)` with no `NA` —
+#'   `TRUE` for rows inside the domain.
+#' @return `design` with `@data$..surveycore_domain..` set to `keep`.
+#' @keywords internal
+.testhelper_mark_domain <- function(design, keep) {
+  stopifnot(
+    is.logical(keep),
+    length(keep) == nrow(design@data),
+    !anyNA(keep)
+  )
+  design@data[["..surveycore_domain.."]] <- keep
+  design
+}
+
+# ------------------------------------------------------------------------------
 # make_replicate_nonconverger()
 # ------------------------------------------------------------------------------
 

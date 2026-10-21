@@ -2164,15 +2164,15 @@ test_that("PC-15 does not fire when the Inf row is outside the domain", {
   # The estimate uses only the active-domain rows, so an Inf the domain
   # excludes is not the gate's business. n drops by the filtered row.
   d <- .pc15_design(bad = "scale", value = Inf, row = 5L)
-  d_filt <- suppressWarnings(surveytidy::filter(d, id != 5L))
-  res <- get_corr(d_filt, x = c(scale, ord), method = "polyserial")
+  d_filt <- .testhelper_mark_domain(d, survey_data(d)$id != 5L)
+  res <-get_corr(d_filt, x = c(scale, ord), method = "polyserial")
   expect_identical(res$n, 299L)
   expect_true(is.finite(res$r))
 })
 
 test_that("PC-15 still fires for an Inf row the domain keeps", {
   d <- .pc15_design(bad = "scale", value = Inf, row = 5L)
-  d_filt <- suppressWarnings(surveytidy::filter(d, id != 6L))
+  d_filt <- .testhelper_mark_domain(d, survey_data(d)$id != 6L)
   expect_error(
     get_corr(d_filt, x = c(scale, ord), method = "polyserial"),
     class = "surveycore_error_polyserial_nonfinite_continuous"

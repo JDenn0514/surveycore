@@ -1303,6 +1303,7 @@ test_that("survey_glm() nonprob with repweights: multiple predictors @vcov match
 
 test_that("survey_glm() nonprob with repweights: binomial family invariants hold", {
   df2 <- make_survey_data(design = "replicate", type = "brr", seed = 3L)
+  df2$y_bin <- as.integer(df2$y1 > stats::median(df2$y1))
   d_rep2 <- as_survey_replicate(
     df2,
     weights = wt,
@@ -1318,7 +1319,6 @@ test_that("survey_glm() nonprob with repweights: binomial family invariants hold
     rscales = d_rep2@variables$rscales,
     mse = TRUE
   )
-  d_np2 <- surveytidy::mutate(d_np2, y_bin = as.integer(y1 > median(df2$y1)))
   fit <- survey_glm(d_np2, y_bin ~ y2, family = stats::binomial())
   test_glm_fit_invariants(fit)
   expect_true(all(is.finite(fit@vcov)))
@@ -1340,8 +1340,14 @@ test_that("survey_glm() nonprob NULL repweights: warning emitted exactly once", 
 
 test_that("survey_glm() nonprob domain estimation with repweights: @vcov matches oracle", {
   fx <- .glm_nonprob_fixtures()
-  d_np_dom <- surveytidy::filter(fx$d_np, y3 > 0)
-  d_rep_dom <- surveytidy::filter(fx$d_rep, y3 > 0)
+  d_np_dom <- .testhelper_mark_domain(
+    fx$d_np,
+    survey_data(fx$d_np)$y3 > 0
+  )
+  d_rep_dom <- .testhelper_mark_domain(
+    fx$d_rep,
+    survey_data(fx$d_rep)$y3 > 0
+  )
   fit_np <- survey_glm(d_np_dom, y1 ~ y2)
   fit_rep <- survey_glm(d_rep_dom, y1 ~ y2)
   test_glm_fit_invariants(fit_np)
