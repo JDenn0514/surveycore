@@ -353,6 +353,24 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 .SURVEYCORE_WT_COL <- "..surveycore_wt.."
 
 
+# TRUE when a two-phase design's Phase 1 carries no design information: no
+# weights or probs (the SRS fallback weight), no strata, no fpc, and no
+# repeated first-stage cluster. survey::twophase2() then treats Phase 1 as an
+# iid sample (its phase1_is_iid) rather than as a census, so the method =
+# "full" variance and the as_svydesign() conversion both need to know.
+#' @noRd
+.twophase_phase1_is_iid <- function(design) {
+  ph1 <- design@variables$phase1
+  ids <- if (!is.null(ph1$ids)) design@data[[ph1$ids[[1L]]]] else NULL
+
+  identical(ph1$weights, .SURVEYCORE_WT_COL) &&
+    !isTRUE(ph1$probs_provided) &&
+    is.null(ph1$strata) &&
+    is.null(ph1$fpc) &&
+    !anyDuplicated(ids)
+}
+
+
 # ── Internal tidy-select resolvers ───────────────────────────────────────────
 
 # Resolve a tidy-select quosure against a data frame.

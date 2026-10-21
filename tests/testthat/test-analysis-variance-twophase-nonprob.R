@@ -61,11 +61,13 @@ test_that("get_variance() twophase full matches survey::svyvar on pbc [oracle]",
   data("pbc", package = "survival", envir = environment())
   pbc_ph1 <- subset(pbc, !is.na(trt))
   pbc_ph1$in_ph2 <- !is.na(pbc_ph1$chol)
-  pbc_ph1$wt <- 1
   pbc_ph1$row_id <- seq_len(nrow(pbc_ph1))
   pbc_ph1$pi2 <- mean(pbc_ph1$in_ph2)
 
-  ph1_sc <- as_survey(pbc_ph1, ids = row_id, weights = wt)
+  expect_warning(
+    ph1_sc <- as_survey(pbc_ph1, ids = row_id),
+    class = "surveycore_warning_srs_no_weights"
+  )
   d_sc <- as_survey_twophase(
     ph1_sc,
     probs2 = pi2,
@@ -74,10 +76,11 @@ test_that("get_variance() twophase full matches survey::svyvar on pbc [oracle]",
   )
 
   d_sv <- survey::twophase(
-    id = list(~1, ~1),
+    id = list(~row_id, ~row_id),
+    probs = list(NULL, ~pi2),
     data = pbc_ph1,
     subset = ~in_ph2,
-    method = "approx"
+    method = "full"
   )
 
   sc_est <- get_variance(d_sc, chol, variance = "se")

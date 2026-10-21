@@ -5,12 +5,13 @@
 #
 # ATTRIBUTION — VENDORED CODE:
 # The functions .twophasevar(), .twophase_phase1_var(), .twophase_phase2_var(),
-# and .compute_phase2_probs() are adapted from the survey package by
-# Thomas Lumley
+# .twophase_full_var() and .compute_phase2_probs() are adapted from the survey
+# package by Thomas Lumley
 # (https://cran.r-project.org/package=survey), licensed under GPL-2 | GPL-3.
 # Modifications: integrated with S7 classes; three-method dispatch made
 # explicit; RCPP path removed; error messages converted to cli format;
-# data access via @variables instead of survey's internal list structure.
+# data access via @variables instead of survey's internal list structure;
+# the twophase2 check matrices reduced to grouped sums.
 # ---------------------------------------------------------------------------
 
 # ===========================================================================
@@ -56,6 +57,12 @@
     }
   }
 
+  # method = "full" is survey::twophase2()'s Horvitz-Thompson variance;
+  # "approx" and "simple" are survey::twophase()'s
+  if (identical(method, "full")) {
+    return(.twophase_full_var(influence, design))
+  }
+
   # Phase 1 variance contribution
   v1 <- .twophase_phase1_var(influence, design, method, lonely.psu)
 
@@ -63,7 +70,7 @@
     return(v1)
   }
 
-  # Phase 2 variance contribution (full and approx only)
+  # Phase 2 variance contribution (approx only)
   v2 <- .twophase_phase2_var(influence, design, subset, lonely.psu)
 
   v1 + v2
@@ -77,7 +84,7 @@
 # Compute phase 1 variance contribution.
 # Adapted from survey:::svyrecvar.phase1 / onestrat.phase1.
 # For "simple": standard .svy_recvar() with raw influence scores.
-# For "full"/"approx": implements the onestrat.phase1 formula directly:
+# For "approx": implements the onestrat.phase1 formula directly:
 #   V1 = sum_s { f_s * nPSUfull_s/(nPSUfull_s-1) *
 #                sum_j { ((x_j * pi2_j - xcenter_s) / sqrt(pi2_j))^2 } }
 # where nPSU_s = phase 2 PSUs in stratum, nPSUfull_s = phase 1 PSUs in stratum,
@@ -147,7 +154,7 @@
     return(v[1L, 1L])
   }
 
-  # full or approx: implement onestrat.phase1 formula using phase 2 rows only
+  # approx: implement onestrat.phase1 formula using phase 2 rows only
   ph2_idx <- which(subset)
   infl_ph2 <- influence[ph2_idx]
   strata_ph2 <- strata_all[ph2_idx]
@@ -230,7 +237,7 @@
 }
 
 
-# Compute phase 2 variance contribution (used by "full" and "approx" only).
+# Compute phase 2 variance contribution (used by "approx" only).
 # Adapted from the phase 2 component of survey:::twophasevar.
 # Returns a numeric scalar (extracts [1L, 1L] from the .svy_recvar() matrix).
 #' @noRd
@@ -311,38 +318,190 @@
 }
 
 
+# Compute the method = "full" variance: the double-expansion
+# Horvitz-Thompson estimator of survey:::twophase2var(),
+#   V = sum_ij x_i x_j * (D1 + D2 - D1 o D2)_ij,
+# over Phase 2 rows, where x is the (already weighted) influence and D1, D2
+# are survey's "check" matrices (pi_ij - pi_i pi_j) / pi_ij for each phase
+# (survey:::Dcheck_subset, survey:::Dcheck_strat, survey:::twophaseDcheck).
+# Each D takes one of three values for a pair of rows:
+#   same sampling unit            1 - p
+#   same stratum, other unit      -(1 - p) / (n_h - 1)
+#   otherwise                     0
+# where p is the unit's inclusion probability and n_h the number of units
+# sampled in the stratum. Each value is a function of the row i's unit, so
+# the quadratic form reduces to sums of x within groups and needs no n x n
+# matrix.
+#
+# Phase 1: p = 1 / w1 taken from each unit's first Phase 2 row (as survey
+# does); the off-diagonal term applies only with a Phase 1 fpc, because
+# survey treats a design without one as sampled with replacement. A Phase 1
+# with no weights, probs, strata or fpc and no repeated cluster is iid, as in
+# survey (phase1_is_iid): D1 is the identity, i.e. p = 0.
+# n_h counts the stratum's Phase 1 units. survey 4.5 reads n_h from the wrong
+# rows here (Dcheck_multi_subset passes a row-length sampsize that
+# Dcheck_subset indexes by unit), which changes the answer when a Phase 1 fpc
+# meets strata with unequal unit counts; this function uses the stratum's own
+# count.
+#
+# Both phases use their first-stage clusters only, and lonely PSUs need no
+# rule: a stratum with one unit has no off-diagonal pair.
+# Returns a numeric scalar.
+#' @noRd
+.twophase_full_var <- function(influence, design) {
+  data <- design@data
+  vars <- design@variables
+  ph1_vars <- vars$phase1
+  subset <- data[[vars$subset]]
+  n <- nrow(data)
+
+  # Phase 1 units (keyed by stratum, so nested and unique ids agree)
+  strata1 <- if (!is.null(ph1_vars$strata)) {
+    as.character(data[[ph1_vars$strata]])
+  } else {
+    rep("1", n)
+  }
+  ids1 <- if (!is.null(ph1_vars$ids)) {
+    as.character(data[[ph1_vars$ids[[1L]]]])
+  } else {
+    as.character(seq_len(n))
+  }
+  psu1 <- paste(strata1, ids1, sep = "\r")
+  n1_h <- .count_units(psu1, strata1, rep(TRUE, n))
+
+  phase1_is_iid <- .twophase_phase1_is_iid(design)
+
+  # Phase 2 units and probabilities
+  units2 <- .phase2_units(design)
+  pi2 <- .compute_phase2_probs(design, subset)
+  n2_h <- .count_units(units2$psu, units2$strata, subset)
+
+  # Restrict everything to Phase 2 rows
+  x <- influence[subset]
+  strata1 <- strata1[subset]
+  psu1 <- psu1[subset]
+  n1_h <- n1_h[subset]
+  strata2 <- units2$strata[subset]
+  psu2 <- units2$psu[subset]
+  n2_h <- n2_h[subset]
+
+  # Unit-level probabilities, from each unit's first Phase 2 row
+  first_of <- function(v, unit) v[match(unit, unit)]
+  p1 <- if (phase1_is_iid) {
+    rep(0, length(x))
+  } else {
+    first_of(1 / data[[ph1_vars$weights]][subset], psu1)
+  }
+  p2 <- first_of(pi2[subset], psu2)
+
+  same_unit1 <- 1 - p1
+  same_strat1 <- if (is.null(ph1_vars$fpc)) {
+    rep(0, length(x))
+  } else {
+    -(1 - p1) / (n1_h - 1)
+  }
+  same_strat1[n1_h <= 1] <- 0
+  same_unit2 <- 1 - p2
+  same_strat2 <- -(1 - p2) / (n2_h - 1)
+  same_strat2[n2_h <= 1] <- 0
+
+  # Sums of x over each row's groups
+  group_sum <- function(...) stats::ave(x, ..., FUN = sum)
+  s_u1 <- group_sum(psu1)
+  s_s1 <- group_sum(strata1)
+  s_u2 <- group_sum(psu2)
+  s_s2 <- group_sum(strata2)
+  s_u1u2 <- group_sum(psu1, psu2)
+  s_u1s2 <- group_sum(psu1, strata2)
+  s_s1u2 <- group_sum(strata1, psu2)
+  s_s1s2 <- group_sum(strata1, strata2)
+
+  # (D1 x)_i, (D2 x)_i and ((D1 o D2) x)_i; "other unit" sums subtract the
+  # same-unit part
+  d1x <- same_unit1 * s_u1 + same_strat1 * (s_s1 - s_u1)
+  d2x <- same_unit2 * s_u2 + same_strat2 * (s_s2 - s_u2)
+  d12x <- same_unit1 *
+    same_unit2 *
+    s_u1u2 +
+    same_unit1 * same_strat2 * (s_u1s2 - s_u1u2) +
+    same_strat1 * same_unit2 * (s_s1u2 - s_u1u2) +
+    same_strat1 * same_strat2 * (s_s1s2 - s_u1s2 - s_s1u2 + s_u1u2)
+
+  sum(x * (d1x + d2x - d12x))
+}
+
+
 # ===========================================================================
 # Section 3: Phase 2 probability computation
 # ===========================================================================
 
 # Derive conditional Phase 2 inclusion probabilities (pi2|1,i).
-# Adapted from internal probability computation in survey/R/twophase.R.
+# Adapted from the phase 2 design survey::twophase() and survey::twophase2()
+# build from data[subset, ].
+#
+# Priority: an explicit probs2 column, then fpc2, then the fraction of Phase 2
+# sampling units drawn within each Phase 2 stratum. A Phase 2 sampling unit is
+# the first-stage ids2 cluster when ids2 is given, and the row otherwise, so
+# cluster subsampling gets the cluster fraction (m_h / M_h) and not the row
+# fraction. With no strata2 the whole Phase 1 sample is one stratum.
 # Returns numeric vector of length nrow(design@data), with 1 for Phase 1-only
 # rows (influence = 0 there, so the placeholder value does not affect results).
 #' @noRd
 .compute_phase2_probs <- function(design, subset) {
   vars <- design@variables
-  n <- nrow(design@data)
-  pi2 <- rep(1, n)
+  data <- design@data
 
   if (!is.null(vars$phase2$probs)) {
-    # Priority 1: explicit probs column
-    pi2 <- as.numeric(design@data[[vars$phase2$probs]])
-    pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
-  } else if (!is.null(vars$phase2$strata)) {
-    # Priority 2: within-stratum sampling fraction (n2_stratum / n1_stratum)
-    strata2_all <- design@data[[vars$phase2$strata]]
-    frac_by_stratum <- tapply(subset, strata2_all, mean)
-    pi2 <- as.numeric(frac_by_stratum[as.character(strata2_all)])
-    pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
+    pi2 <- as.numeric(data[[vars$phase2$probs]])
   } else {
-    # Priority 3: overall fraction (n2 / n1)
-    frac <- mean(subset)
-    pi2[subset] <- frac
-    # Phase 1-only rows: pi2 stays 1
+    units <- .phase2_units(design)
+    n2_h <- .count_units(units$psu, units$strata, subset)
+    pi2 <- if (!is.null(vars$phase2$fpc)) {
+      fpc2 <- as.numeric(data[[vars$phase2$fpc]])
+      # survey::as.fpc() reads a column of values <= 1 as sampling fractions
+      # and anything else as population sizes
+      if (all(fpc2[subset] <= 1)) fpc2 else n2_h / fpc2
+    } else {
+      n2_h / .count_units(units$psu, units$strata, rep(TRUE, nrow(data)))
+    }
   }
 
+  pi2[!subset] <- 1 # Phase 1-only rows: placeholder 1
   pi2
+}
+
+
+# Phase 2 stratum and first-stage sampling-unit keys for every row. The unit
+# key carries the stratum, so a unit is counted within its own stratum.
+#' @noRd
+.phase2_units <- function(design) {
+  vars <- design@variables$phase2
+  data <- design@data
+  n <- nrow(data)
+
+  strata <- if (!is.null(vars$strata)) {
+    as.character(data[[vars$strata]])
+  } else {
+    rep("1", n)
+  }
+  ids <- if (!is.null(vars$ids)) {
+    as.character(data[[vars$ids[[1L]]]])
+  } else {
+    as.character(seq_len(n))
+  }
+
+  list(strata = strata, psu = paste(strata, ids, sep = "\r"))
+}
+
+
+# Number of distinct units per stratum among the rows `keep` selects, returned
+# for every row (0 for a stratum with no selected row).
+#' @noRd
+.count_units <- function(psu, strata, keep) {
+  counts <- tapply(psu[keep], strata[keep], function(p) length(unique(p)))
+  out <- as.numeric(counts[strata])
+  out[is.na(out)] <- 0
+  out
 }
 
 

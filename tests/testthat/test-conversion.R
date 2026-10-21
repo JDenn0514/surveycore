@@ -4518,15 +4518,11 @@ collect_surveycore_classes <- function(expr) {
 
 
 # The estimate a caller reads off the converted object is the domain estimate
-# and not the full-sample one. get_means() cannot be the reference on this
-# route: surveycore's two-phase estimator weights by the phase-1 weight column
-# where survey's two-phase object weights by the combined two-phase
-# probability, and the two answers differ on an unfiltered design as well
-# (issue #261, pinned by the block below). The reference here is therefore
-# what a caller got by restricting the converted object by hand, which is what
-# this function's documentation told them to do before the change: a two-phase
-# object built straight from survey, indexed by the marker column read off its
-# own phase-1 sample variables.
+# and not the full-sample one. The reference is what a caller gets by
+# restricting the converted object by hand: a two-phase object built straight
+# from survey, indexed by the marker column read off its own phase-1 sample
+# variables. method = "full" takes no weights argument, so the phase-1 weights
+# go in as probabilities, as the conversion passes them (issue #329).
 test_that("as_svydesign() converts a filtered two-phase design to the domain [numerical]", {
   skip_if_not_installed("survey")
   d <- make_filtered_twophase()
@@ -4536,6 +4532,7 @@ test_that("as_svydesign() converts a filtered two-phase design to the domain [nu
   oracle <- suppressWarnings(survey::twophase(
     id = list(~psu, ~psu),
     strata = list(~strata, NULL),
+    probs = list(~ I(1 / wt), NULL),
     fpc = list(~fpc, NULL),
     data = df,
     subset = ~subset,
@@ -4559,14 +4556,12 @@ test_that("as_svydesign() converts a filtered two-phase design to the domain [nu
 })
 
 
-# The two estimators disagree on this route, and the disagreement is not the
-# domain's doing. surveycore's two-phase estimator weights by the phase-1
-# weight column; survey's two-phase object weights by the combined two-phase
-# probability. Both hand computations below reproduce their estimator exactly,
-# and they answer different numbers on a design carrying no domain at all.
-# Issue #261 owns the gap and nothing in this change closes it, so this block
-# pins it: it fails if the gap ever moves.
-test_that("the two-phase estimators weight differently on an unfiltered design [numerical]", {
+# Issue #261: get_means() and survey::svymean() on the converted object once
+# answered different means on this design, because as_svydesign() handed
+# survey::twophase(method = "full") no phase-1 weights and survey took phase 1
+# as equal-probability. Both now weight by the combined two-phase probability,
+# and the two estimators agree on the estimate and the standard error.
+test_that("get_means() agrees with svymean() on a converted unfiltered two-phase design [numerical]", {
   skip_if_not_installed("survey")
   d <- make_twophase_ids2()
   sv <- suppressWarnings(as_svydesign(d))
@@ -4576,14 +4571,12 @@ test_that("the two-phase estimators weight differently on an unfiltered design [
   # phase-2 sample holds 29 rows against a default threshold of 30, and the
   # argument does not touch the estimate.
   sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
-  by_phase1_weight <- stats::weighted.mean(frame$y1, frame$wt)
-  expect_equal(sc$mean[[1L]], by_phase1_weight, tolerance = 1e-10)
-
   sm <- suppressWarnings(survey::svymean(~y1, sv))
   by_combined_prob <- stats::weighted.mean(frame$y1, 1 / sv$prob)
-  expect_equal(coef(sm)[["y1"]], by_combined_prob, tolerance = 1e-10)
 
-  expect_false(isTRUE(all.equal(by_phase1_weight, by_combined_prob)))
+  expect_equal(sc$mean[[1L]], by_combined_prob, tolerance = 1e-10)
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
 })
 
 
