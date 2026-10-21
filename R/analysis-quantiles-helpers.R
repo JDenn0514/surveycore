@@ -5,7 +5,6 @@
 # Functions:
 #   .last()                     — index of last TRUE (vendored from survey)
 #   .wtd_qs()                   — weighted quantile via sorted ECDF (vendored)
-#   .degf_woodruff()            — design-specific df for Woodruff t-critical
 #   .get_quantile_weights()     — effective weights (handles twophase)
 #   .quantile_woodruff_cell()   — Woodruff SE + CI for one (domain, prob) cell
 #
@@ -53,43 +52,6 @@
   pos <- .last(cumw <= p * sw)
   wlow <- p - cumw[pos] / sw
   if (wlow <= 0 || pos == n) x[pos] else x[pos + 1L]
-}
-
-
-# ── .degf_woodruff() ──────────────────────────────────────────────────────────
-#
-# Compute the degrees of freedom for the Woodruff t-critical value. Unlike
-# .degf() (which returns Inf for all designs), this uses the actual design df
-# to match survey::svyquantile()'s CI computation.
-#
-# Design-specific formulas:
-#   Taylor:      Σ(n_h - 1) = total PSUs - number of strata
-#   Replicate:   R - 1 where R = number of replicate columns
-#   Twophase:    Phase 1 Taylor df
-#   SRS:         n - 1
-#   Calibrated:  n - 1
-#
-# @param design A survey design object.
-# @return Numeric(1): degrees of freedom (>= 1).
-#' @noRd
-.degf_woodruff <- function(design) {
-  if (S7::S7_inherits(design, survey_taylor)) {
-    max(1, .degf_taylor(design@data, design@variables))
-  } else if (S7::S7_inherits(design, survey_replicate)) {
-    rep_mat <- as.matrix(design@data[,
-      design@variables$repweights,
-      drop = FALSE
-    ])
-    max(1L, ncol(rep_mat) - 1L)
-  } else if (S7::S7_inherits(design, survey_twophase)) {
-    subset <- design@data[[design@variables$subset]]
-    ph1_data <- design@data[subset, , drop = FALSE]
-    max(1, .degf_taylor(ph1_data, design@variables$phase1))
-  } else if (S7::S7_inherits(design, survey_nonprob)) {
-    Inf
-  } else {
-    max(1L, nrow(design@data) - 1L)
-  }
 }
 
 
@@ -144,8 +106,9 @@
 # @param prob          Numeric scalar in (0, 1): quantile probability.
 # @param conf_level    Numeric scalar in (0, 1): confidence level for Woodruff.
 # @param degf_w        Numeric(1): degrees of freedom for the t-critical value.
-#                      Use .degf_woodruff(design). Finite df gives CI bounds
-#                      that match survey::svyquantile() at 1e-6 tolerance.
+#                      Use .degf(design, rows) over the cell's non-missing
+#                      rows. Finite df gives CI bounds that match
+#                      survey::svyquantile() at 1e-6 tolerance.
 # @return Named list: estimate, se, ci_low, ci_high, se_srs, n, n_weighted.
 #' @noRd
 .quantile_woodruff_cell <- function(

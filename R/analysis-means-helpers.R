@@ -93,7 +93,8 @@
   se <- sqrt(max(0, v[1L, 1L]))
 
   # Calibration-adjusted degrees of freedom
-  df_design <- max(1L, .degf_taylor(data, vars))
+  # df over the cell's rows, not the full design (issue #326)
+  df_design <- max(1L, .degf_taylor(data[domain > 0, , drop = FALSE], vars))
   df_final <- df_design - cal_df_reduction
   if (df_final <= 0L) {
     cli::cli_warn(

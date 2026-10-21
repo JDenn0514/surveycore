@@ -88,7 +88,10 @@ that fires for every survey-weighted binomial model.
 
 \strong{Domain estimation:} Use \code{surveytidy::filter()} before calling
 \code{survey_glm()}. The GLM is fit on in-domain rows only; variance
-estimation uses the full design for correct design-based SEs.
+estimation uses the full design for correct design-based SEs. The design
+degrees of freedom count only the PSUs and strata holding a row used in
+the fit (in the domain and not dropped by \code{na.action}), matching
+\code{survey::svyglm()} on a \code{subset()} design.
 
 \strong{Multinomial response:} \code{cbind()} on the LHS of \code{formula} is not
 supported. Multinomial logistic regression is deferred to a later phase.

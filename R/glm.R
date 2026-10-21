@@ -116,9 +116,11 @@ NULL
 #' @param design The original [survey_base] survey design object.
 #' @param degf Raw design degrees of freedom (positive scalar). For
 #'   `survey_taylor` designs (including SRS, which is absorbed into Taylor):
-#'   number of PSUs minus number of strata. For `survey_replicate` designs:
-#'   number of replicates minus one. For `survey_twophase`: Phase 1 PSUs
-#'   minus Phase 1 strata. For `survey_nonprob`: `Inf` (no design-based
+#'   number of PSUs minus number of strata, counting only those holding a row
+#'   used in the fit. For `survey_replicate` designs: number of replicates
+#'   minus one. For `survey_twophase`: phase-2 clusters minus phase-2
+#'   strata over the rows used in the fit, as `survey::degf()` counts it
+#'   (each phase-2 row is a cluster when `ids2` is not set). For `survey_nonprob`: `Inf` (no design-based
 #'   df). This is *not* the residual degrees of freedom used for
 #'   t-statistics and confidence intervals; those are computed as
 #'   `degf - (p - 1)` where `p` is the number of model coefficients.
@@ -581,10 +583,14 @@ survey_glm_fit <- S7::new_class(
 #
 # @param design     Survey design object.
 # @param n_coef     Total coefficients p (including intercept).
-# @return Numeric(1): max(1, .degf(design) - (p - 1)).
+# @param rows       Logical, full length: the rows used in the fit. The df
+#                   counts only their PSUs and strata, as survey::svyglm()
+#                   takes degf() of the subset, complete-case design (#326).
+# @return Numeric(1): max(1, .degf(design, rows)); the residual df
+#   .degf(design, rows) - (p - 1) is clamped in .glm_confint().
 #' @noRd
-.glm_degrees_of_freedom <- function(design, n_coef) {
-  degf_raw <- .degf(design)
+.glm_degrees_of_freedom <- function(design, n_coef, rows) {
+  degf_raw <- .degf(design, rows = rows)
   df_resid <- degf_raw - (n_coef - 1L)
   if (df_resid <= 0) {
     cli::cli_warn(
@@ -670,7 +676,10 @@ survey_glm_fit <- S7::new_class(
 #'
 #' **Domain estimation:** Use `surveytidy::filter()` before calling
 #' `survey_glm()`. The GLM is fit on in-domain rows only; variance
-#' estimation uses the full design for correct design-based SEs.
+#' estimation uses the full design for correct design-based SEs. The design
+#' degrees of freedom count only the PSUs and strata holding a row used in
+#' the fit (in the domain and not dropped by `na.action`), matching
+#' `survey::svyglm()` on a `subset()` design.
 #'
 #' **Multinomial response:** `cbind()` on the LHS of `formula` is not
 #' supported. Multinomial logistic regression is deferred to a later phase.
@@ -1181,7 +1190,11 @@ survey_glm <- function(
   dimnames(vcov_mat) <- list(coef_names, coef_names)
 
   # ── Step 6: Check degf and assemble survey_glm_fit ────────────────────────
-  degf_val <- .glm_degrees_of_freedom(design, n_coef = length(coef_names))
+  degf_val <- .glm_degrees_of_freedom(
+    design,
+    n_coef = length(coef_names),
+    rows = domain_for_score
+  )
 
   survey_glm_fit(
     coefficients = stats::coef(fit),

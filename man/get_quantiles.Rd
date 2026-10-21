@@ -40,8 +40,12 @@ variable(s). Combined with any grouping set by \code{group_by()}. Default
 \item{variance}{\code{NULL} or a character vector from \code{"se"}, \code{"ci"}, \code{"var"},
 \code{"cv"}, \code{"moe"}, \code{"deff"}. Controls which uncertainty columns appear in
 the output. CIs use the Woodruff (1952) back-transformation method and
-are \strong{not} symmetric around the estimate. \code{"deff"} is always \code{NA} for
-quantiles (no closed-form SRS SE). Default \code{"ci"}.}
+are \strong{not} symmetric around the estimate. The t critical value takes
+its degrees of freedom from the rows each estimate uses: only PSUs and
+strata holding a row in the filtered domain, the group, and (with
+\code{na.rm = TRUE}) the non-missing values count, as \code{survey::degf()} does
+on the design \code{survey::svyquantile()} receives. \code{"deff"} is always \code{NA}
+for quantiles (no closed-form SRS SE). Default \code{"ci"}.}
 
 \item{conf_level}{Numeric scalar in (0, 1). Confidence level for Woodruff
 intervals. Default \code{0.95}.}

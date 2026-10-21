@@ -677,8 +677,9 @@ test_that(".degf() returns design-based finite df for survey_replicate", {
   expect_equal(.degf(d), length(repwt_cols) - 1L)
 })
 
-test_that(".degf() returns design-based finite df for survey_twophase", {
-  # Phase 1 is the same Taylor design → same degf as phase1
+test_that(".degf() counts phase-2 rows as clusters for survey_twophase with no ids2", {
+  # No ids2 or strata2: each phase-2 row is its own cluster in one stratum,
+  # so degf = n2 - 1, as survey::degf() returns degf(design$phase2)
   df <- make_survey_data(
     n = 100L,
     n_psu = 10L,
@@ -698,9 +699,124 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
     as_survey_twophase(phase1, subset = subset, method = "approx")
   )
 
-  expect_equal(.degf(twophase), .degf(phase1))
-  expect_true(is.finite(.degf(phase1)))
-  expect_gte(.degf(phase1), 1L)
+  expect_equal(.degf(twophase), sum(df$subset) - 1)
+})
+
+test_that(".degf() counts only the PSUs and strata of the active domain", {
+  # 10 PSUs across 2 strata; the domain keeps stratum_1 only (5 PSUs) → 5 - 1
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d@data[[SURVEYCORE_DOMAIN_COL]] <- df$strata == "stratum_1"
+  expect_identical(length(unique(df$psu[df$strata == "stratum_1"])), 5L)
+
+  expect_equal(.degf(d), 4)
+})
+
+test_that(".degf() counts only the PSUs and strata of the rows supplied", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  rows <- df$psu %in% c("psu_1", "psu_2", "psu_6", "psu_7", "psu_8")
+  # 2 PSUs in stratum_1 + 3 PSUs in stratum_2 → 5 - 2
+  expect_identical(
+    as.character(unique(df$strata[rows])),
+    c("stratum_1", "stratum_2")
+  )
+
+  expect_equal(.degf(d, rows = rows), 3)
+})
+
+test_that(".degf() floors at 1 when the rows supplied hold one PSU", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_equal(.degf(d, rows = df$psu == "psu_1"), 1)
+})
+
+test_that(".degf() ignores the rows supplied for survey_replicate", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 11L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+
+  expect_equal(
+    .degf(d, rows = df$strata == "stratum_1"),
+    length(repwt_cols) - 1L
+  )
+})
+
+test_that(".degf() counts only the phase-2 rows supplied for survey_twophase", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 12L
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  twophase <- suppressWarnings(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
+  rows <- df$strata == "stratum_1"
+
+  expect_equal(.degf(twophase, rows = rows), sum(rows & df$subset) - 1)
+})
+
+test_that(".degf() matches survey::degf() for each two-phase phase-2 structure [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$ssu <- paste0(df$psu, "_", seq_len(nrow(df)) %% 3L)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  tp_none <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  tp_ids2 <- as_survey_twophase(
+    phase1,
+    ids2 = ssu,
+    subset = subset,
+    method = "approx"
+  )
+  tp_strata2 <- as_survey_twophase(
+    phase1,
+    strata2 = strata,
+    subset = subset,
+    method = "approx"
+  )
+  sv_twophase <- function(id2, strata2) {
+    survey::twophase(
+      id = list(~psu, id2),
+      strata = list(~strata, strata2),
+      weights = list(~wt, NULL),
+      data = df,
+      subset = ~subset,
+      method = "approx"
+    )
+  }
+
+  expect_equal(.degf(tp_none), survey::degf(sv_twophase(~1, NULL)))
+  expect_equal(.degf(tp_ids2), survey::degf(sv_twophase(~ssu, NULL)))
+  expect_equal(.degf(tp_strata2), survey::degf(sv_twophase(~1, ~strata)))
 })
 
 test_that(".degf() returns design-based finite df for SRS-style design", {

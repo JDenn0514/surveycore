@@ -26,8 +26,12 @@
 #' @param variance `NULL` or a character vector from `"se"`, `"ci"`, `"var"`,
 #'   `"cv"`, `"moe"`, `"deff"`. Controls which uncertainty columns appear in
 #'   the output. CIs use the Woodruff (1952) back-transformation method and
-#'   are **not** symmetric around the estimate. `"deff"` is always `NA` for
-#'   quantiles (no closed-form SRS SE). Default `"ci"`.
+#'   are **not** symmetric around the estimate. The t critical value takes
+#'   its degrees of freedom from the rows each estimate uses: only PSUs and
+#'   strata holding a row in the filtered domain, the group, and (with
+#'   `na.rm = TRUE`) the non-missing values count, as `survey::degf()` does
+#'   on the design `survey::svyquantile()` receives. `"deff"` is always `NA`
+#'   for quantiles (no closed-form SRS SE). Default `"ci"`.
 #' @param conf_level Numeric scalar in (0, 1). Confidence level for Woodruff
 #'   intervals. Default `0.95`.
 #' @param n_weighted Logical. If `TRUE`, add an `n_weighted` column with the
@@ -200,7 +204,6 @@ get_quantiles <- function(
 
   group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
-  degf_w <- .degf_woodruff(design)
 
   # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {
@@ -250,6 +253,7 @@ get_quantiles <- function(
   acc_ci_high <- numeric(0)
   acc_n <- integer(0)
   acc_nw <- numeric(0)
+  acc_df <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
 
   small_cell_ns <- integer(0)
@@ -268,6 +272,11 @@ get_quantiles <- function(
     has_na_in_domain <- any(is.na(x_col[active_mask]))
     active_domain <- as.numeric(active_mask & !is.na(x_col))
     n_d_combo <- as.integer(sum(active_domain > 0))
+
+    # Woodruff df over the rows this cell's quantile uses, as
+    # survey::svyquantile() takes degf() of the subset, na.rm-reduced,
+    # svyby() group design (issue #326).
+    degf_w <- .degf(design, rows = active_domain > 0)
 
     # Small cell check: once per combo (n is the same across all probs)
     if (n_d_combo > 0L && n_d_combo < min_cell_n) {
@@ -307,6 +316,7 @@ get_quantiles <- function(
       acc_ci_high <- c(acc_ci_high, cell$ci_high)
       acc_n <- c(acc_n, cell$n)
       acc_nw <- c(acc_nw, cell$n_weighted)
+      acc_df <- c(acc_df, degf_w)
 
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -425,13 +435,13 @@ get_quantiles <- function(
     statistic = "quantile"
   )
 
-  # For Taylor/twophase designs, store finite design df in .survey_result.
+  # For Taylor/twophase designs, store each cell's Woodruff df in
+  # .survey_result.
   is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
     S7::S7_inherits(design, survey_twophase)
   if (is_taylor_like) {
-    design_df <- .degf(design)
     sr <- attr(result, ".survey_result")
-    sr$df <- rep(design_df, nrow(result))
+    sr$df <- acc_df
     attr(result, ".survey_result") <- sr
   }
 

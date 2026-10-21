@@ -1405,3 +1405,160 @@ test_that("get_means() on survey_nonprob with repweights: finite mean and se, no
   expect_true(all(is.finite(result$mean)))
   expect_true(all(is.finite(result$ci_low)))
 })
+
+# ---------------------------------------------------------------------------
+# Issue #326: design df counts only the rows used in the fit
+# ---------------------------------------------------------------------------
+#
+# survey::svyglm() takes degf() of the design it fits: restricted by subset()
+# and to the complete cases. 40 PSUs in 8 strata give a full design df of 32;
+# strata 1 and 2 alone give 8.
+
+make_glm_df_oracle_326 <- function() {
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 8L, seed = 7L)
+  df$s12 <- df$strata %in% c("stratum_1", "stratum_2")
+  df
+}
+
+test_that("survey_glm() on a filtered Taylor design stores the domain df [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_glm_df_oracle_326()
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  fit_sc <- survey_glm(sc, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, subset(sv, s12))
+
+  expect_equal(fit_sc@degf, survey::degf(subset(sv, s12)))
+  expect_equal(stats::df.residual(fit_sv), 7)
+})
+
+test_that("confint() on a filtered survey_glm() fit matches svyglm(subset()) [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_glm_df_oracle_326()
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  fit_sc <- survey_glm(sc, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, subset(sv, s12))
+
+  expect_equal(
+    as.numeric(sqrt(diag(fit_sc@vcov))),
+    as.numeric(survey::SE(fit_sv)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    unname(confint(fit_sc)),
+    unname(confint(fit_sv)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("confint() on survey_glm() with NA rows matches svyglm() complete cases [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_glm_df_oracle_326()
+  # Missing in strata 3 to 8: the complete cases hold 10 PSUs in 2 strata.
+  df$y1[!df$s12] <- NA
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  fit_sc <- survey_glm(sc, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, sv)
+
+  expect_equal(fit_sc@degf, 8)
+  expect_equal(stats::df.residual(fit_sv), 7)
+  expect_equal(
+    unname(confint(fit_sc)),
+    unname(confint(fit_sv)),
+    tolerance = 1e-6
+  )
+})
+
+# survey::degf() on a two-phase design is degf(design$phase2): phase-2
+# clusters minus phase-2 strata. With no ids2 or strata2 each of the 167
+# phase-2 rows is a cluster, so df = 166 where phase-1 PSUs give 32.
+
+make_glm_twophase_oracle_326 <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$s12 <- df$strata %in% c("stratum_1", "stratum_2")
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- as_survey_twophase(phase1, subset = subset, method = "approx")
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+  list(df = df, sc = sc, sv = sv)
+}
+
+test_that("confint() on a two-phase survey_glm() fit matches svyglm() [oracle]", {
+  skip_if_not_installed("survey")
+  o <- make_glm_twophase_oracle_326()
+
+  fit_sc <- survey_glm(o$sc, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, o$sv)
+
+  expect_equal(fit_sc@degf, survey::degf(o$sv))
+  expect_equal(
+    as.numeric(sqrt(diag(fit_sc@vcov))),
+    as.numeric(survey::SE(fit_sv)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    unname(confint(fit_sc)),
+    unname(confint(fit_sv)),
+    tolerance = 1e-6
+  )
+})
+
+test_that("confint() on a filtered two-phase survey_glm() fit matches svyglm(subset()) [oracle]", {
+  skip_if_not_installed("survey")
+  o <- make_glm_twophase_oracle_326()
+  sc_dom <- o$sc
+  sc_dom@data[[SURVEYCORE_DOMAIN_COL]] <- o$df$s12
+  sv_dom <- subset(o$sv, s12)
+
+  fit_sc <- survey_glm(sc_dom, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, sv_dom)
+
+  expect_equal(fit_sc@degf, survey::degf(sv_dom))
+  expect_equal(
+    as.numeric(sqrt(diag(fit_sc@vcov))),
+    as.numeric(survey::SE(fit_sv)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    unname(confint(fit_sc)),
+    unname(confint(fit_sv)),
+    tolerance = 1e-6
+  )
+})
