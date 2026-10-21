@@ -537,7 +537,11 @@ SE.survey_result <- function(object, ...) {
 #' For non-calibrated Taylor, replicate, and nonprob designs, `df = Inf` is
 #' stored, so `qt(1 - (1 - level)/2, df = Inf)` equals `qnorm(...)` — a normal
 #' approximation. For calibrated Taylor designs, per-cell finite df values are
-#' used.
+#' used. Either way the stored df is the one behind the result's `ci_low` and
+#' `ci_high` columns, so for `get_means()`, `get_totals()`, `get_freqs()`,
+#' `get_ratios()` and `get_covariance()`, `confint(object, level = l)` returns
+#' the same interval as those columns when the result was computed at
+#' `conf_level = l`. This holds on a filtered (domain) design too.
 #'
 #' When `SE(object)[i]` is `NA`, the corresponding CI row is `c(NA, NA)`.
 #'

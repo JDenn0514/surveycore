@@ -501,16 +501,9 @@ get_freqs <- function(
     statistic = "freq"
   )
 
-  # For Taylor/twophase designs, store finite design df in .survey_result.
-  # Replicate and nonprob designs use Inf (default from .make_result_tibble).
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
-  if (is_taylor_like) {
-    design_df <- .degf(design)
-    sr <- attr(result, ".survey_result")
-    sr$df <- rep(design_df, nrow(result))
-    attr(result, ".survey_result") <- sr
-  }
+  # The .survey_result df is left at its Inf default (from
+  # .make_result_tibble()), the same df the ci_low/ci_high columns use, so
+  # confint() returns the same interval.
 
   # ── Step 13: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {

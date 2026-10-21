@@ -614,15 +614,9 @@ get_covariance <- function(
     statistic = "covariance"
   )
 
-  # For Taylor/twophase designs, store finite design df in .survey_result.
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
-  if (is_taylor_like) {
-    design_df <- .degf(design)
-    sr <- attr(result, ".survey_result")
-    sr$df <- rep(design_df, nrow(result))
-    attr(result, ".survey_result") <- sr
-  }
+  # The .survey_result df is left at its Inf default (from
+  # .make_result_tibble()), the same df the ci_low/ci_high columns use, so
+  # confint() returns the same interval.
 
   # ── Step 20: Convert var1/var2 to factors (supply order) ────────────────────
   uniq_display <- unique(display_names)

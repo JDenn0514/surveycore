@@ -69,7 +69,8 @@
 #'   \item `df` — degrees of freedom used for CI calculation. Present only for
 #'     `survey_taylor` designs with an active `@calibration` object
 #'     (GREG-corrected SE). For all other designs the normal approximation
-#'     (`Inf`) is used and `df` is not included.
+#'     (`Inf`) is used and `df` is not included. `confint()` on the result
+#'     uses the same df, so it reproduces `ci_low` and `ci_high`.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
@@ -313,19 +314,14 @@ get_means <- function(
   )
 
   # ── Step 11: Assemble result ────────────────────────────────────────────────
-  # Determine cell_df for .survey_result attribute:
+  # Determine cell_df for .survey_result attribute. It must equal the df
+  # behind the ci_low/ci_high columns, so confint() returns the same interval:
   #   - Calibrated Taylor: per-cell df from .taylor_mean_cell()
-  #   - Non-calibrated Taylor / twophase: design df (finite, from .degf())
-  #   - Replicate / nonprob: Inf (normal approximation)
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
+  #   - Everything else: Inf (NULL defaults to Inf in .make_result_tibble())
   cell_df_attr <- if (has_calibration) {
     cell_df_vec <- acc_df
     cell_df_vec[is.na(cell_df_vec)] <- Inf
     cell_df_vec
-  } else if (is_taylor_like) {
-    design_df <- .degf(design)
-    rep(design_df, n_combos)
   } else {
     NULL
   }

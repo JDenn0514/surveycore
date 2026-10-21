@@ -420,16 +420,8 @@ get_ratios <- function(
   )
 
   # ── Step 12: Assemble result ───────────────────────────────────────────────
-  # For Taylor/twophase designs, store finite design df in .survey_result.
-  is_taylor_like <- S7::S7_inherits(design, survey_taylor) ||
-    S7::S7_inherits(design, survey_twophase)
-  cell_df_attr <- if (is_taylor_like) {
-    design_df <- .degf(design)
-    rep(design_df, n_combos)
-  } else {
-    NULL
-  }
-
+  # The .survey_result df is left at its Inf default, the same df the
+  # ci_low/ci_high columns use, so confint() returns the same interval.
   result <- .make_result_tibble(
     col_vecs,
     groups_df,
@@ -438,8 +430,7 @@ get_ratios <- function(
     meta_args,
     RATIOS_META_KEYS,
     estimate_cols = c("ratio"),
-    statistic = "ratio",
-    cell_df = cell_df_attr
+    statistic = "ratio"
   )
 
   # ── Step 13: Apply decimals and name style ────────────────────────────────
