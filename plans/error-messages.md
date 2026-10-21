@@ -697,3 +697,19 @@ missing key reads as `NULL`, so a design saved before #320, or built by
   template gains one `"i"` bullet, second in order: `"i" = "The design does
   not record whether the correction is already inside the replicate scales
   or weights."`
+
+### update-design-repweights-count rows (2026-10-21)
+
+Issue #300. `UD` is the prefix for `update_design()`. A `survey_replicate`
+design stores `scale`, `rscales` and `fpc_fraction` for the replicate count it
+was built with, and does not record whether `scale` was the type's default or
+supplied by the caller. A `repweights` update that changes the count is
+refused rather than re-scaled. An update that keeps the count keeps all three
+as they are.
+
+**Variable bindings.** `{n_new}` = the number of columns `repweights`
+resolves to; `{n_old}` = `length(x@variables$repweights)`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| UD-1 | `update_design()` | `x` is a `survey_replicate` and `repweights` resolves to a number of columns other than the design's current replicate count. Checked after `repweights` is resolved and before any `@variables` key is changed | ERROR | `surveycore_error_repweights_count_changed` | `"x" = "{.arg repweights} selects {n_new} column{?s}, but the design has {n_old} replicate{?s}.", "i" = "The design's {.field scale} and {.field rscales} were set for {n_old} replicate{?s} and would no longer match.", "v" = "Rebuild the design with {.fn as_survey_replicate} to change the number of replicates."` |

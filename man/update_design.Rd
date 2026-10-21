@@ -35,7 +35,11 @@ Only used for \code{survey_taylor} objects.}
 
 \item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> New replicate
 weight columns (one or more). \code{NULL} (default) means no change. Only
-used for \code{survey_replicate} objects.}
+used for \code{survey_replicate} objects. Must select the same number of
+columns the design already has: the design's \code{scale} and \code{rscales} were
+set for that number of replicates and are kept as they are. To change
+the number of replicates, rebuild the design with
+\code{\link[=as_survey_replicate]{as_survey_replicate()}}.}
 
 \item{validate}{Logical. If \code{FALSE}, temporarily marks the object to
 suppress validation during the variable update. In practice this has

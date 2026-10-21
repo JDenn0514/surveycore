@@ -4,6 +4,7 @@
 #
 # Coverage map (error-messages.md):
 #   Row 36: cli_inform fires when at least one design variable changes
+#   Row UD-1: repweights that change the replicate count are refused (#300)
 
 # ── Happy path: survey_taylor ──────────────────────────────────────────────────
 
@@ -87,11 +88,128 @@ test_that("update_design() updates repweights on survey_replicate", {
     repweights = tidyselect::starts_with("repwt"),
     type = "BRR"
   )
-  # Update to use only the first 3 replicate columns
+  # Copies under new names: same replicate count, so the update is accepted
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  alt_cols <- sub("^repwt_", "alt_", repwt_cols)
+  d@data[alt_cols] <- d@data[repwt_cols]
   d2 <- suppressMessages(
+    update_design(d, repweights = tidyselect::starts_with("alt_"))
+  )
+  test_invariants(d2)
+  expect_identical(d2@variables$repweights, alt_cols)
+  expect_identical(d2@variables$scale, d@variables$scale)
+})
+
+test_that("update_design() with same-count repweights matches a fresh build [numerical]", {
+  # JK1's default scale (R - 1) / R depends on R; with R unchanged the kept
+  # scale is the one as_survey_replicate() would compute (issue #300)
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "jk1",
+    seed = 12L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  alt_cols <- sub("^repwt_", "alt_", repwt_cols)
+  df[alt_cols] <- lapply(df[repwt_cols], function(w) w * 1.1)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "JK1",
+    mse = TRUE
+  )
+  d_fresh <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("alt_"),
+    type = "JK1",
+    mse = TRUE
+  )
+  d2 <- suppressMessages(
+    update_design(d, repweights = tidyselect::starts_with("alt_"))
+  )
+  test_invariants(d2)
+  expect_equal(d2@variables$scale, d_fresh@variables$scale, tolerance = 1e-8)
+  expect_equal(
+    get_means(d2, y1, variance = "se")$se,
+    get_means(d_fresh, y1, variance = "se")$se,
+    tolerance = 1e-8
+  )
+})
+
+
+# ── Error: repweights count change (issue #300) ────────────────────────────────
+
+test_that("update_design() refuses repweights that select fewer replicate columns", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 20L,
+    design = "replicate",
+    type = "brr",
+    seed = 11L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt"),
+    type = "BRR"
+  )
+  expect_error(
+    update_design(d, repweights = c(repwt_1, repwt_2, repwt_3)),
+    class = "surveycore_error_repweights_count_changed"
+  )
+  expect_snapshot(
+    error = TRUE,
     update_design(d, repweights = c(repwt_1, repwt_2, repwt_3))
   )
-  expect_identical(d2@variables$repweights, c("repwt_1", "repwt_2", "repwt_3"))
+})
+
+test_that("update_design() refuses repweights that select more replicate columns", {
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "jk1",
+    seed = 13L
+  )
+  df$repwt_extra <- df$repwt_1
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::matches("^repwt_[0-9]+$"),
+    type = "JK1"
+  )
+  expect_error(
+    update_design(d, repweights = tidyselect::starts_with("repwt_")),
+    class = "surveycore_error_repweights_count_changed"
+  )
+})
+
+test_that("update_design() leaves the design unchanged when it refuses a repweights count change", {
+  df <- make_survey_data(
+    n = 60L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "jk1",
+    seed = 14L
+  )
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::starts_with("repwt_"),
+    type = "JK1"
+  )
+  vars_before <- d@variables
+  expect_error(
+    update_design(d, weights = wt, repweights = c(repwt_1, repwt_2)),
+    class = "surveycore_error_repweights_count_changed"
+  )
+  expect_identical(d@variables, vars_before)
 })
 
 
