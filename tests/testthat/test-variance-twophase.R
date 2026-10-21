@@ -606,9 +606,22 @@ expect_full_total_oracle <- function(designs) {
   expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
 }
 
-expect_full_glm_oracle <- function(designs) {
+# On a domain, survey's restricted object carries zero-weight rows, and
+# svyglm() reports them once from each of its two summary.glm() calls.
+expect_full_glm_oracle <- function(designs, domain = FALSE) {
   sc_fit <- survey_glm(designs$sc, y1 ~ y2)
-  sv_fit <- survey::svyglm(y1 ~ y2, designs$sv)
+  if (domain) {
+    zero_weight <- "observations with zero weight not used"
+    expect_warning(
+      expect_warning(
+        sv_fit <- survey::svyglm(y1 ~ y2, designs$sv),
+        zero_weight
+      ),
+      zero_weight
+    )
+  } else {
+    sv_fit <- survey::svyglm(y1 ~ y2, designs$sv)
+  }
   expect_equal(
     unname(coef(sc_fit)),
     unname(coef(sv_fit)),
@@ -670,7 +683,10 @@ test_that("survey_glm() full method with strata2 matches survey twophase2 [oracl
 
 test_that("survey_glm() full method with strata2 on a domain matches survey twophase2 [oracle]", {
   skip_if_not_installed("survey")
-  expect_full_glm_oracle(full_oracle_filter(full_oracle_strata2()))
+  expect_full_glm_oracle(
+    full_oracle_filter(full_oracle_strata2()),
+    domain = TRUE
+  )
 })
 
 test_that("survey_glm() full method with ids2 matches survey twophase2 [oracle]", {
@@ -680,7 +696,10 @@ test_that("survey_glm() full method with ids2 matches survey twophase2 [oracle]"
 
 test_that("survey_glm() full method with ids2 on a domain matches survey twophase2 [oracle]", {
   skip_if_not_installed("survey")
-  expect_full_glm_oracle(full_oracle_filter(full_oracle_ids2()))
+  expect_full_glm_oracle(
+    full_oracle_filter(full_oracle_ids2()),
+    domain = TRUE
+  )
 })
 
 # A phase-1 fpc makes the phase-1 term without-replacement: pairs of clusters
