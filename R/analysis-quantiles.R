@@ -204,6 +204,13 @@ get_quantiles <- function(
 
   group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
+  # A two-phase design keeps its phase-1-only rows in @data with a finite
+  # phase-1 weight. They carry no phase-2 measurement, so every quantile
+  # cell, its weighted ECDF and its group combinations use phase-2 rows only,
+  # as survey::svyquantile() does (issue #328).
+  if (S7::S7_inherits(design, survey_twophase)) {
+    domain_mask <- domain_mask & design@data[[design@variables$subset]]
+  }
 
   # ── Step 3: Single-level warning for group variables ────────────────────────
   if (length(group_vars) > 0L) {

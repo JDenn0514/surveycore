@@ -315,6 +315,157 @@ test_that("get_quantiles() SRS matches svyquantile() [oracle]", {
   )
 })
 
+# Two-phase oracle fixture (issue #328): both sides built from the same frame,
+# with method = "approx" on both. survey reads only the phase-2 rows; the
+# surveycore design keeps all 400 phase-1 rows in @data.
+.twophase_quantile_pair <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  ph1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d_sc <- as_survey_twophase(ph1, subset = subset, method = "approx")
+  d_sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+  list(df = df, sc = d_sc, sv = d_sv)
+}
+
+test_that("get_quantiles() twophase approx matches svyquantile() [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_quantile_pair()
+
+  sc <- get_quantiles(
+    pair$sc,
+    y1,
+    probs = c(0.25, 0.5, 0.75),
+    variance = c("ci", "se")
+  )
+  sv <- survey::svyquantile(
+    ~y1,
+    pair$sv,
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE,
+    interval.type = "mean"
+  )
+
+  expect_equal(sc$estimate, as.numeric(coef(sv)), tolerance = 1e-10)
+  expect_equal(sc$se, as.numeric(survey::SE(sv)), tolerance = 1e-8)
+  expect_equal(sc$ci_low, as.numeric(confint(sv)[, "l"]), tolerance = 1e-6)
+  expect_equal(sc$ci_high, as.numeric(confint(sv)[, "u"]), tolerance = 1e-6)
+})
+
+test_that("get_quantiles() twophase n counts phase-2 rows only", {
+  pair <- .twophase_quantile_pair()
+
+  sc <- get_quantiles(pair$sc, y1, probs = c(0.25, 0.5, 0.75))
+
+  expect_identical(sc$n, rep(sum(pair$df$subset), 3L))
+})
+
+test_that("get_quantiles() filtered twophase matches svyquantile() [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_quantile_pair()
+  mask <- pair$df$y2 > -0.5
+  d_sc <- pair$sc
+  d_sc@data[[SURVEYCORE_DOMAIN_COL]] <- mask
+  d_sv <- subset(pair$sv, mask[pair$df$subset])
+
+  sc <- get_quantiles(
+    d_sc,
+    y1,
+    probs = c(0.25, 0.5, 0.75),
+    variance = c("ci", "se")
+  )
+  sv <- survey::svyquantile(
+    ~y1,
+    d_sv,
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE,
+    interval.type = "mean"
+  )
+
+  expect_equal(sc$estimate, as.numeric(coef(sv)), tolerance = 1e-10)
+  expect_equal(sc$se, as.numeric(survey::SE(sv)), tolerance = 1e-8)
+  expect_equal(sc$ci_low, as.numeric(confint(sv)[, "l"]), tolerance = 1e-6)
+  expect_equal(sc$ci_high, as.numeric(confint(sv)[, "u"]), tolerance = 1e-6)
+})
+
+test_that("get_quantiles() grouped twophase matches svyby(svyquantile) [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_quantile_pair()
+  probs <- c(0.25, 0.5, 0.75)
+
+  sc <- suppressWarnings(
+    get_quantiles(
+      pair$sc,
+      y1,
+      probs = probs,
+      group = group,
+      variance = c("ci", "se")
+    )
+  )
+  sv <- survey::svyby(
+    ~y1,
+    ~group,
+    pair$sv,
+    survey::svyquantile,
+    quantiles = probs,
+    ci = TRUE,
+    interval.type = "mean",
+    vartype = c("se", "ci")
+  )
+  # svyby() returns one row per group and one column per quantile; the
+  # surveycore result is long, quantiles varying fastest within each group.
+  sv_long <- function(prefix) {
+    as.numeric(t(as.matrix(sv[paste0(prefix, "y1.", probs)])))
+  }
+
+  expect_identical(as.character(sc$group), rep(sv$group, each = 3L))
+  expect_equal(sc$estimate, sv_long(""), tolerance = 1e-10)
+  expect_equal(sc$se, sv_long("se."), tolerance = 1e-8)
+  expect_equal(sc$ci_low, sv_long("ci_l."), tolerance = 1e-6)
+  expect_equal(sc$ci_high, sv_long("ci_u."), tolerance = 1e-6)
+})
+
+test_that("get_quantiles() twophase ignores NA in phase-1-only rows with na.rm = FALSE [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_quantile_pair()
+  df <- pair$df
+  # Phase-1-only rows carry no phase-2 measurement.
+  df$y1[!df$subset] <- NA_real_
+  ph1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d_sc <- as_survey_twophase(ph1, subset = subset, method = "approx")
+  d_sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  sc <- get_quantiles(d_sc, y1, probs = 0.5, variance = "se", na.rm = FALSE)
+  sv <- survey::svyquantile(
+    ~y1,
+    d_sv,
+    quantiles = 0.5,
+    ci = TRUE,
+    interval.type = "mean"
+  )
+
+  expect_equal(sc$estimate, as.numeric(coef(sv)), tolerance = 1e-10)
+  expect_equal(sc$se, as.numeric(survey::SE(sv)), tolerance = 1e-8)
+})
+
 # ---------------------------------------------------------------------------
 # Category 3: probs behaviour
 # ---------------------------------------------------------------------------
