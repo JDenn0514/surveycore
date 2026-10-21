@@ -822,3 +822,48 @@ test_that("get_totals() full method with a phase-1 fpc and unequal strata matche
   expect_equal(sc_est$total, sum(x), tolerance = 1e-10)
   expect_equal(sc_est$se, sqrt(v), tolerance = 1e-8)
 })
+
+test_that("get_means() full method with an unclustered phase 1 matches survey twophase2 [oracle]", {
+  skip_if_not_installed("survey")
+  df <- full_oracle_data()
+  ph1 <- as_survey(df, weights = wt, strata = strata)
+  sc <- as_survey_twophase(
+    ph1,
+    strata2 = strata,
+    subset = subset,
+    method = "full"
+  )
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_full_mean_oracle(list(sc = sc, sv = sv))
+})
+
+# survey::as.fpc() reads an fpc column of values <= 1 as sampling fractions
+test_that("get_totals() full method with fpc2 as sampling fractions matches survey twophase2 [oracle]", {
+  skip_if_not_installed("survey")
+  df <- full_oracle_data()
+  df$frac2 <- as.numeric(stats::ave(df$subset, df$strata, FUN = mean))
+  sc <- as_survey_twophase(
+    full_oracle_phase1(df),
+    strata2 = strata,
+    fpc2 = frac2,
+    subset = subset,
+    method = "full"
+  )
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(NULL, ~frac2),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_full_total_oracle(list(sc = sc, sv = sv))
+})

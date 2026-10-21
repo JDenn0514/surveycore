@@ -4580,6 +4580,30 @@ test_that("get_means() agrees with svymean() on a converted unfiltered two-phase
 })
 
 
+# A phase 1 with no weights, strata or fpc is an iid sample on both sides.
+# The conversion passes survey no probs and no fpc list for it: twophase2()
+# tests is.null(fpc)[[1]] on the whole list, so list(NULL, NULL) would turn
+# its phase1_is_iid branch off and the standard errors would part.
+test_that("get_means() agrees with svymean() on a converted two-phase design with an iid phase 1 [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 200L, design = "twophase", seed = 11L)
+  df$row_id <- seq_len(nrow(df))
+  expect_warning(
+    phase1 <- as_survey(df, ids = row_id),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  d <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
+  sv <- as_svydesign(d)
+
+  sc <- get_means(d, y1, variance = "se", min_cell_n = 1L)
+  sm <- survey::svymean(~y1, sv)
+
+  expect_true(sv$phase1$full$phase1_is_iid)
+  expect_equal(sc$mean[[1L]], coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc$se[[1L]], as.numeric(survey::SE(sm)), tolerance = 1e-8)
+})
+
+
 # `[.twophase` removes no row, so the count that records the restriction is
 # the count of finite probabilities. Each excluded row keeps its place and
 # takes an infinite probability, which weights it out of every estimate. This
