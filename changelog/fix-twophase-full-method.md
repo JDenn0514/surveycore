@@ -61,6 +61,8 @@ Correcting that one index makes `survey` reproduce surveycore's value.
 - `R/methods-conversion.R` — `as_svydesign()` passes the phase-1 weights as
   `probs` for `"full"`, passes `probs2`, and passes an all-`NULL` `fpc` as
   `NULL` so `survey` takes the iid branch
+- `VENDORED.md` — records `.twophase_full_var()` and the revised
+  `.compute_phase2_probs()`
 - `R/core-constructors.R`, `man/as_survey_twophase.Rd`, `man/as_svydesign.Rd`
   — documents the `"full"` estimator, the `ids2` probability and the
   conversion
