@@ -50,7 +50,8 @@ GPL-2/GPL-3 code into a GPL-3 package is compliant with both licenses.
 | `.twophasevar()` | `survey:::twophasevar` | 4.4.8 | Yes | S7 class access; three-method dispatch made explicit; cli errors |
 | `.twophase_phase1_var()` | `survey:::svyrecvar.phase1` | 4.4.8 | Yes | S7 `@variables` access; FPC matrix built inline; cli errors |
 | `.twophase_phase2_var()` | Phase 2 component of `survey:::twophasevar` | 4.4.8 | Yes | S7 access; auto-popsize computation; RCPP path removed |
-| `.compute_phase2_probs()` | Internal prob computation in `survey/R/twophase.R` | 4.4.8 | Yes | S7 `@variables` access; three-priority rule made explicit |
+| `.twophase_full_var()` | `survey:::twophase2var` with `Dcheck_multi_subset`, `Dcheck_subset`, `Dcheck_strat`, `twophaseDcheck` | 4.5 | Yes | `method = "full"`; check matrices reduced to grouped sums (no n x n matrix); first-stage clusters only; reads each stratum's own n_h where survey 4.5 indexes `sampsize` by cluster position |
+| `.compute_phase2_probs()` | Phase 2 design probabilities in `survey/R/twophase.R` | 4.5 | Yes | S7 `@variables` access; priority probs2, fpc2, then the per-stratum fraction of phase-2 sampling units (clusters under `ids2`) |
 
 ### Correlation Variance (R/06-variance-taylor.R, R/06-variance-replicate.R, R/06-variance-srs.R, R/06-variance-twophase.R)
 
