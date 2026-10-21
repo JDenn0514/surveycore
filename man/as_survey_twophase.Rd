@@ -66,13 +66,13 @@ for all Phase 2 design variable arguments.
 both phases. Requires Phase 2 design information (\code{probs2}, \code{ids2},
 \code{strata2}) when Phase 2 is not a simple random subsample. If none of
 these are provided, an error is raised.
-\item \code{"approx"} — Approximation that ignores Phase 1 sampling variability.
-Faster but less accurate than \code{"full"} when the Phase 1 sampling fraction
-is non-negligible.
-\item \code{"simple"} — Treats Phase 2 as a single-phase design, ignoring Phase 1.
-Only valid when Phase 1 is a census (no sampling). Issues a warning when
-Phase 1 has PSU cluster variables, because this understates variance for
-clustered designs.
+\item \code{"approx"} — The two-phase variance formula from survey 3.14 and
+earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than
+\code{"full"}, and is exact for some special cases, most importantly Phase 1
+simple random sampling with stratified random sampling at Phase 2.
+\item \code{"simple"} — The same method as \code{"approx"}, as in
+\code{survey::twophase()}. The design records \code{"simple"}, and every
+estimate and standard error equals the \code{"approx"} one.
 }
 }
 }
