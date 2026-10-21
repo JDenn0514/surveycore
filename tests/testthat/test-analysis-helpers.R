@@ -703,6 +703,84 @@ test_that(".degf() returns design-based finite df for survey_twophase", {
   expect_gte(.degf(phase1), 1L)
 })
 
+test_that(".degf() counts only the PSUs and strata of the active domain", {
+  # 10 PSUs across 2 strata; the domain keeps stratum_1 only (5 PSUs) → 5 - 1
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d@data[[SURVEYCORE_DOMAIN_COL]] <- df$strata == "stratum_1"
+  expect_identical(length(unique(df$psu[df$strata == "stratum_1"])), 5L)
+
+  expect_equal(.degf(d), 4)
+})
+
+test_that(".degf() counts only the PSUs and strata of the rows supplied", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  rows <- df$psu %in% c("psu_1", "psu_2", "psu_6", "psu_7", "psu_8")
+  # 2 PSUs in stratum_1 + 3 PSUs in stratum_2 → 5 - 2
+  expect_identical(
+    as.character(unique(df$strata[rows])),
+    c("stratum_1", "stratum_2")
+  )
+
+  expect_equal(.degf(d, rows = rows), 3)
+})
+
+test_that(".degf() floors at 1 when the rows supplied hold one PSU", {
+  df <- make_survey_data(n = 100L, n_psu = 10L, n_strata = 2L, seed = 10L)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_equal(.degf(d, rows = df$psu == "psu_1"), 1)
+})
+
+test_that(".degf() ignores the rows supplied for survey_replicate", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "replicate",
+    type = "brr",
+    seed = 11L
+  )
+  repwt_cols <- grep("^repwt_", names(df), value = TRUE)
+  d <- as_survey_replicate(
+    df,
+    weights = wt,
+    repweights = tidyselect::all_of(repwt_cols),
+    type = "BRR"
+  )
+
+  expect_equal(
+    .degf(d, rows = df$strata == "stratum_1"),
+    length(repwt_cols) - 1L
+  )
+})
+
+test_that(".degf() restricts the phase-1 count to the rows supplied for survey_twophase", {
+  df <- make_survey_data(
+    n = 100L,
+    n_psu = 10L,
+    n_strata = 2L,
+    design = "twophase",
+    seed = 12L
+  )
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  twophase <- suppressWarnings(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
+  rows <- df$strata == "stratum_1"
+  ph2_psus <- unique(df$psu[rows & df$subset])
+
+  expect_equal(.degf(twophase, rows = rows), length(ph2_psus) - 1)
+})
+
 test_that(".degf() returns design-based finite df for SRS-style design", {
   # SRS with 50 rows → degf = 50 - 1 = 49
   df <- make_survey_data(n = 50L, n_psu = 6L, n_strata = 1L, seed = 13L)

@@ -12,8 +12,7 @@
 #   .apply_group_labels()   — convert coded group columns to labelled factors
 #   .build_group_combos()   — unique group value combinations from domain data
 #   .match_group_combo()    — row mask matching one group combination
-#   .degf_taylor()          — Taylor df formula (retained; not called by
-#                             .degf())
+#   .degf_taylor()          — Taylor df formula over a data frame
 #   .resolve_groups()       — combine @groups + group= arg
 #   .apply_domain()         — extract domain membership mask
 #   .build_meta()           — assemble .meta list
@@ -23,7 +22,7 @@
 #   .apply_name_style()     — rename columns for broom compatibility
 #   .check_unsupported_class() — throw for non-survey-base objects
 #   .add_variance_cols()    — compute requested uncertainty columns
-#   .degf()                 — design degrees of freedom
+#   .degf()                 — design degrees of freedom over estimate rows
 
 #' Analysis Helper Standards
 #'
@@ -396,10 +395,8 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' Compute Taylor series degrees of freedom
 #'
 #' Computes design-based degrees of freedom from a data frame and variables
-#' list using the Taylor series rules. Retained for potential future use (e.g.,
-#' design effect computation, user-accessible `degf()`). Not called by
-#' `.degf()` — Phase 1 analysis functions use `Inf` directly (normal
-#' approximation, matching `survey::svymean()` defaults).
+#' list using the Taylor series rules. Callers pass only the rows that enter
+#' an estimate; `.degf()` is the usual entry point.
 #'
 #' Rules applied, in order:
 #' 1. Stratified cluster: `Σ_h(n_h - 1)` = total PSUs − number of strata.
@@ -1064,24 +1061,36 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 
 #' Compute design-based degrees of freedom
 #'
-#' Returns the design-based degrees of freedom as a numeric scalar. Used by
-#' `survey_glm()` for t-distribution critical values in confidence intervals
-#' and Wald tests. Phase 1 analysis functions (`get_means()`, `get_totals()`,
-#' etc.) use `Inf` directly (normal approximation, matching
-#' `survey::svymean()` defaults) and do **not** call `.degf()`, so that
-#' `confint()` agrees with their `ci_low`/`ci_high` columns (issue #271).
-#' `get_quantiles()` and `get_corr()` still store it on their result.
+#' Returns the design-based degrees of freedom over the rows that enter an
+#' estimate. `get_quantiles()` uses it for the Woodruff t critical value,
+#' `survey_glm()` for its residual df, and the calibrated Taylor cells for
+#' their per-cell df. `get_means()`, `get_totals()` and the other Phase 1
+#' functions use `Inf` (normal approximation, matching `survey::svymean()`
+#' defaults) and do **not** call `.degf()`, so that `confint()` agrees with
+#' their `ci_low`/`ci_high` columns (issue #271).
 #'
-#' Design-specific formulas (matching `survey::degf()`):
-#' - Taylor: `Σ_h(n_h - 1)` = total PSUs − number of strata.
+#' Only rows in `rows` are counted, so a PSU or stratum with no row in the
+#' estimate adds nothing (issue #326). This is what `survey::degf()` returns
+#' on the design `survey` analyses: one restricted by `subset()`, by the
+#' NA removal of `na.rm = TRUE`, by a `svyby()` group, or to the complete
+#' cases of `svyglm()`. The variance itself still sums over every PSU; only
+#' the df is restricted.
+#'
+#' Design-specific formulas:
+#' - Taylor: `Σ_h(n_h - 1)` over the PSUs and strata holding a row in `rows`.
 #' - Replicate: `R - 1` where `R` is the number of replicate weight columns.
-#' - Twophase: Phase-1 Taylor degrees of freedom.
+#'   `rows` is ignored: `survey::degf()` on a replicate design does not change
+#'   under `subset()`.
+#' - Twophase: phase-1 Taylor degrees of freedom over the phase-2 rows in
+#'   `rows`. (`survey::degf()` uses the phase-2 design instead.)
 #' - Non-probability (`survey_nonprob`): `Inf` — no design-based df.
 #'
 #' @param design A survey design object inheriting from `survey_base`.
+#' @param rows Logical vector of length `nrow(design@data)`: the rows that
+#'   enter the estimate. Defaults to the active domain.
 #' @return Numeric(1). Design-based degrees of freedom, always ≥ 1.
 #' @noRd
-.degf <- function(design) {
+.degf <- function(design, rows = .apply_domain(design)) {
   if (!S7::S7_inherits(design, survey_base)) {
     cli::cli_abort(
       c(
@@ -1094,7 +1103,8 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     )
   }
   if (S7::S7_inherits(design, survey_taylor)) {
-    max(1, .degf_taylor(design@data, design@variables))
+    est_data <- design@data[rows, , drop = FALSE]
+    max(1, .degf_taylor(est_data, design@variables))
   } else if (S7::S7_inherits(design, survey_replicate)) {
     rep_mat <- as.matrix(
       design@data[, design@variables$repweights, drop = FALSE]
@@ -1102,12 +1112,12 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     max(1L, ncol(rep_mat) - 1L)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     subset <- design@data[[design@variables$subset]]
-    ph1_data <- design@data[subset, , drop = FALSE]
+    ph1_data <- design@data[subset & rows, , drop = FALSE]
     max(1, .degf_taylor(ph1_data, design@variables$phase1))
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     Inf
   } else {
-    max(1L, nrow(design@data) - 1L)
+    max(1L, sum(rows) - 1L)
   }
 }
 

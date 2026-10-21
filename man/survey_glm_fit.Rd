@@ -39,9 +39,10 @@ survey_glm_fit(
 
 \item{degf}{Raw design degrees of freedom (positive scalar). For
 \code{survey_taylor} designs (including SRS, which is absorbed into Taylor):
-number of PSUs minus number of strata. For \code{survey_replicate} designs:
-number of replicates minus one. For \code{survey_twophase}: Phase 1 PSUs
-minus Phase 1 strata. For \code{survey_nonprob}: \code{Inf} (no design-based
+number of PSUs minus number of strata, counting only those holding a row
+used in the fit. For \code{survey_replicate} designs: number of replicates
+minus one. For \code{survey_twophase}: Phase 1 PSUs minus Phase 1 strata,
+counted over the phase-2 rows used in the fit. For \code{survey_nonprob}: \code{Inf} (no design-based
 df). This is \emph{not} the residual degrees of freedom used for
 t-statistics and confidence intervals; those are computed as
 \code{degf - (p - 1)} where \code{p} is the number of model coefficients.}

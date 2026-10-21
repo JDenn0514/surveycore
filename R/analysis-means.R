@@ -68,7 +68,8 @@
 #'     `deff`) — only those requested via `variance`.
 #'   \item `df` — degrees of freedom used for CI calculation. Present only for
 #'     `survey_taylor` designs with an active `@calibration` object
-#'     (GREG-corrected SE). For all other designs the normal approximation
+#'     (GREG-corrected SE); counts only the PSUs and strata holding a row in
+#'     the cell. For all other designs the normal approximation
 #'     (`Inf`) is used and `df` is not included. `confint()` on the result
 #'     uses the same df, so it reproduces `ci_low` and `ci_high`.
 #'   \item `n` — unweighted count of non-NA observations used in the estimate.

@@ -551,6 +551,28 @@ test_that("df column in get_means() decreases by qr$rank for each caldata entry"
   expect_equal(result2$df, base_df - 1L - 2L)
 })
 
+test_that("calibrated df on a filtered design counts only the domain's PSUs [issue #326]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 8L, seed = 7L)
+  df$s12 <- df$strata %in% c("stratum_1", "stratum_2")
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@calibration <- list(
+    as_caldata(df$wt, rep(1.01, nrow(df)), model.matrix(~1, df))
+  )
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_means(sc, y1, variance = "se")
+  # Domain df from survey (8), less the rank-1 calibration projection
+  expect_equal(result$df, survey::degf(subset(sv, s12)) - 1L)
+})
+
 test_that("calibration-adjusted SE from get_means() matches oracle with ridageyr aux [alternative calibration, nhanes]", {
   skip_if_not_installed("survey")
   # Second oracle test using ridageyr as auxiliary — verifies calibration works

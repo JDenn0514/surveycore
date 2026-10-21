@@ -542,7 +542,7 @@ test_that("get_quantiles() Woodruff CI: se derived from CI width", {
 
   result <- get_quantiles(d, y1, variance = c("se", "ci"), conf_level = 0.95)
   # se = (ci_high - ci_low) / (2 * t_crit)
-  degf_w <- surveycore:::.degf_woodruff(d)
+  degf_w <- surveycore:::.degf(d)
   t_crit <- qt(0.975, df = degf_w)
   expected_se <- (result$ci_high - result$ci_low) / (2 * t_crit)
   expect_equal(result$se, expected_se, tolerance = 1e-10)
@@ -1278,8 +1278,8 @@ test_that("get_quantiles() NA group row estimate matches filtered srs design [or
   )
   na_row <- get_na_group_rows(result, "grp")
   expect_equal(na_row$estimate, expected$estimate, tolerance = 1e-10)
-  # SE legitimately differs: .degf_woodruff() for SRS uses nrow(design@data);
-  # domain estimation (full design) != pre-filtered oracle.
+  # SE legitimately differs: domain estimation keeps every row in the
+  # variance sum, which a pre-filtered design does not.
   expect_true(all(is.finite(na_row$se)))
   expect_equal(na_row$n, expected$n)
 })
@@ -1445,4 +1445,141 @@ test_that("get_quantiles() .survey_result$df is finite for non-calibrated Taylor
   expect_true(all(is.finite(sr$df)))
   expect_true(all(sr$df >= 1))
   expect_equal(length(sr$df), nrow(result))
+})
+
+# ---------------------------------------------------------------------------
+# Issue #326: Woodruff df counts only the rows the quantile uses
+# ---------------------------------------------------------------------------
+#
+# survey::svyquantile() takes degf() of the design it receives: restricted by
+# subset(), by its own na.rm = TRUE row drop, or to one svyby() group. The
+# fixture has 40 PSUs in 8 strata, so the full design df is 32; strata 1 and 2
+# alone give 8, a gap that moves the Woodruff bounds at every probability.
+
+make_quantile_df_oracle_326 <- function() {
+  df <- make_survey_data(n = 400L, n_psu = 40L, n_strata = 8L, seed = 7L)
+  df$s12 <- df$strata %in% c("stratum_1", "stratum_2")
+  df
+}
+
+test_that("get_quantiles() CI on a filtered Taylor design matches svyquantile(subset()) [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_quantile_df_oracle_326()
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_quantiles(
+    sc,
+    y1,
+    probs = c(0.25, 0.5, 0.75),
+    variance = c("se", "ci")
+  )
+  sv_q <- survey::svyquantile(
+    ~y1,
+    subset(sv, s12),
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE
+  )
+  sv_ci <- confint(sv_q)
+
+  expect_equal(result$estimate, as.numeric(coef(sv_q)), tolerance = 1e-10)
+  expect_equal(result$se, as.numeric(survey::SE(sv_q)), tolerance = 1e-8)
+  expect_equal(result$ci_low, unname(sv_ci[, 1]), tolerance = 1e-6)
+  expect_equal(result$ci_high, unname(sv_ci[, 2]), tolerance = 1e-6)
+})
+
+test_that("get_quantiles() stores the domain df on a filtered Taylor design", {
+  skip_if_not_installed("survey")
+  df <- make_quantile_df_oracle_326()
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc@data[[SURVEYCORE_DOMAIN_COL]] <- df$s12
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_quantiles(sc, y1, probs = c(0.25, 0.5))
+  expected_df <- survey::degf(subset(sv, s12))
+
+  expect_equal(expected_df, 8L)
+  expect_equal(attr(result, ".survey_result")$df, rep(expected_df, 2L))
+})
+
+test_that("get_quantiles() grouped CI matches svyquantile() on each group subset [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_quantile_df_oracle_326()
+  df$g <- ifelse(df$s12, "a", "b")
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_quantiles(
+    sc,
+    y1,
+    probs = 0.25,
+    group = g,
+    variance = c("se", "ci")
+  )
+  sv_a <- confint(
+    survey::svyquantile(~y1, subset(sv, g == "a"), quantiles = 0.25, ci = TRUE)
+  )
+  sv_b <- confint(
+    survey::svyquantile(~y1, subset(sv, g == "b"), quantiles = 0.25, ci = TRUE)
+  )
+
+  expect_identical(as.character(result$g), c("a", "b"))
+  expect_equal(result$ci_low, c(sv_a[1, 1], sv_b[1, 1]), tolerance = 1e-6)
+  expect_equal(result$ci_high, c(sv_a[1, 2], sv_b[1, 2]), tolerance = 1e-6)
+})
+
+test_that("get_quantiles() na.rm = TRUE CI matches svyquantile(na.rm = TRUE) [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_quantile_df_oracle_326()
+  # Missing in strata 3 to 8 and in every seventh row: the complete rows hold
+  # 10 PSUs in 2 strata, so svyquantile() uses df 8 where the design has 32.
+  df$y1[!df$s12] <- NA
+  df$y1[seq(1L, nrow(df), by = 7L)] <- NA
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  result <- get_quantiles(
+    sc,
+    y1,
+    probs = c(0.25, 0.5, 0.75),
+    variance = c("se", "ci"),
+    na.rm = TRUE
+  )
+  sv_q <- survey::svyquantile(
+    ~y1,
+    sv,
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE,
+    na.rm = TRUE
+  )
+  sv_ci <- confint(sv_q)
+
+  expect_equal(result$se, as.numeric(survey::SE(sv_q)), tolerance = 1e-8)
+  expect_equal(result$ci_low, unname(sv_ci[, 1]), tolerance = 1e-6)
+  expect_equal(result$ci_high, unname(sv_ci[, 2]), tolerance = 1e-6)
 })
