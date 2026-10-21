@@ -52,9 +52,8 @@ in every analysis function and in `survey_glm()`. On a 400-row, 40-PSU,
   method list
 - `plans/error-messages.md` — row 24 marked retired
 - `tests/testthat/test-variance-twophase.R` — oracle blocks against
-  `svymean()`, `svytotal()` and `svyglm()` under `"simple"`, and a block
-  showing `get_quantiles()` gives identical results under `"simple"` and
-  `"approx"`
+  `svymean()`, `svytotal()`, `svyglm()` and `svyquantile()` under
+  `"simple"`
 - `tests/testthat/test-constructors.R`, `tests/testthat/_snaps/constructors.md`
   — the three warning-24 blocks and their snapshot replaced by one block
   asserting no warning

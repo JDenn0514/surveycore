@@ -551,15 +551,21 @@ test_that("survey_glm() simple method matches survey::svyglm [oracle]", {
   )
 })
 
-test_that("get_quantiles() simple method equals approx method", {
+test_that("get_quantiles() simple method matches survey::svyquantile [oracle]", {
+  skip_if_not_installed("survey")
   pair <- .twophase_simple_pair()
-  d_approx <- as_survey_twophase(pair$ph1, subset = subset, method = "approx")
 
-  sc_simple <- get_quantiles(pair$sc, y1, variance = c("se", "ci"))
-  sc_approx <- get_quantiles(d_approx, y1, variance = c("se", "ci"))
+  sc <- get_quantiles(pair$sc, y1, variance = c("se", "ci"))
+  sv <- survey::svyquantile(
+    ~y1,
+    pair$sv,
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE,
+    interval.type = "mean"
+  )
 
-  expect_equal(sc_simple$estimate, sc_approx$estimate, tolerance = 1e-10)
-  expect_equal(sc_simple$se, sc_approx$se, tolerance = 1e-8)
-  expect_equal(sc_simple$ci_low, sc_approx$ci_low, tolerance = 1e-6)
-  expect_equal(sc_simple$ci_high, sc_approx$ci_high, tolerance = 1e-6)
+  expect_equal(sc$estimate, as.numeric(coef(sv)), tolerance = 1e-10)
+  expect_equal(sc$se, as.numeric(survey::SE(sv)), tolerance = 1e-8)
+  expect_equal(sc$ci_low, as.numeric(confint(sv)[, "l"]), tolerance = 1e-6)
+  expect_equal(sc$ci_high, as.numeric(confint(sv)[, "u"]), tolerance = 1e-6)
 })
