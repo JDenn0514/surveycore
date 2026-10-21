@@ -1081,8 +1081,10 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 #' - Replicate: `R - 1` where `R` is the number of replicate weight columns.
 #'   `rows` is ignored: `survey::degf()` on a replicate design does not change
 #'   under `subset()`.
-#' - Twophase: phase-1 Taylor degrees of freedom over the phase-2 rows in
-#'   `rows`. (`survey::degf()` uses the phase-2 design instead.)
+#' - Twophase: phase-2 clusters minus phase-2 strata over the phase-2 rows in
+#'   `rows`, as `survey::degf()` takes `degf(design$phase2)`. With no `ids2`
+#'   each phase-2 row is its own cluster; with no `strata2` there is one
+#'   stratum. Phase-1 clustering does not enter.
 #' - Non-probability (`survey_nonprob`): `Inf` — no design-based df.
 #'
 #' @param design A survey design object inheriting from `survey_base`.
@@ -1112,8 +1114,19 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
     max(1L, ncol(rep_mat) - 1L)
   } else if (S7::S7_inherits(design, survey_twophase)) {
     subset <- design@data[[design@variables$subset]]
-    ph1_data <- design@data[subset & rows, , drop = FALSE]
-    max(1, .degf_taylor(ph1_data, design@variables$phase1))
+    ph2_data <- design@data[subset & rows, , drop = FALSE]
+    p2 <- design@variables$phase2
+    n_clusters <- if (length(p2$ids) > 0L) {
+      length(unique(ph2_data[[p2$ids[[1L]]]]))
+    } else {
+      nrow(ph2_data)
+    }
+    n_strata <- if (!is.null(p2$strata)) {
+      length(unique(ph2_data[[p2$strata]]))
+    } else {
+      min(1L, nrow(ph2_data))
+    }
+    max(1, n_clusters - n_strata)
   } else if (S7::S7_inherits(design, survey_nonprob)) {
     Inf
   } else {

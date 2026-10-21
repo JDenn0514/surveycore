@@ -118,8 +118,9 @@ NULL
 #'   `survey_taylor` designs (including SRS, which is absorbed into Taylor):
 #'   number of PSUs minus number of strata, counting only those holding a row
 #'   used in the fit. For `survey_replicate` designs: number of replicates
-#'   minus one. For `survey_twophase`: Phase 1 PSUs minus Phase 1 strata,
-#'   counted over the phase-2 rows used in the fit. For `survey_nonprob`: `Inf` (no design-based
+#'   minus one. For `survey_twophase`: phase-2 clusters minus phase-2
+#'   strata over the rows used in the fit, as `survey::degf()` counts it
+#'   (each phase-2 row is a cluster when `ids2` is not set). For `survey_nonprob`: `Inf` (no design-based
 #'   df). This is *not* the residual degrees of freedom used for
 #'   t-statistics and confidence intervals; those are computed as
 #'   `degf - (p - 1)` where `p` is the number of model coefficients.
