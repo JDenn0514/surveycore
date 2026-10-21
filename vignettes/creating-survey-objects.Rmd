@@ -395,9 +395,11 @@ The `method` argument:
 
 - `"full"`: Correct variance accounting for both phases. Requires Phase 1
   cluster information.
-- `"approx"`: Faster approximation; adequate when the Phase 1 sampling
-  fraction is small.
-- `"simple"`: Ignores the Phase 1 design. Use only if Phase 1 is a census.
+- `"approx"`: The lighter formula from survey 3.14 and earlier, a Phase 1
+  term plus a Phase 2 term. Exact for some special cases, most importantly
+  simple random sampling at Phase 1 with stratified random sampling at
+  Phase 2.
+- `"simple"`: The same method as `"approx"`, as in `survey::twophase()`.
 
 ### 4.3 Worked example: National Wilms Tumor Study
 

@@ -3783,33 +3783,13 @@ test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not prov
 
 # ── Warning paths ─────────────────────────────────────────────────────────────
 
-# Row 24: method = "simple" with clustered Phase 1
-test_that("as_survey_twophase() warns when method = 'simple' with clustered Phase 1 [row 24]", {
+# Row 24 retired (issue #330): method = "simple" is method = "approx"
+test_that("as_survey_twophase() does not warn for method = 'simple' with clustered Phase 1", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 13L)
   phase1 <- suppressWarnings(
     as_survey(df, ids = psu, weights = wt, strata = strata)
   )
-  expect_warning(
-    as_survey_twophase(phase1, subset = subset, method = "simple"),
-    class = "surveycore_warning_simple_clustered"
-  )
-})
-
-test_that("as_survey_twophase() does NOT warn for method = 'simple' when Phase 1 has no PSUs [row 24]", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 14L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata)) # no ids
   expect_no_warning(
-    as_survey_twophase(phase1, subset = subset, method = "simple"),
-    message = "surveycore_warning_simple_clustered"
-  )
-})
-
-test_that("as_survey_twophase() snapshot: method = 'simple' + clustered Phase 1 warning", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 17L)
-  phase1 <- suppressWarnings(
-    as_survey(df, ids = psu, weights = wt, strata = strata)
-  )
-  expect_snapshot(
     as_survey_twophase(phase1, subset = subset, method = "simple")
   )
 })

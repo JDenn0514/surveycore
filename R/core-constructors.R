@@ -1457,14 +1457,14 @@ as_survey_replicate <- function(
 #'   not a simple random subsample. If none of these are provided, an error
 #'   is raised.
 #'
-#' * `"approx"` — Approximation that ignores Phase 1 sampling variability.
-#'   Faster but less accurate than `"full"` when the Phase 1 sampling fraction
-#'   is non-negligible.
+#' * `"approx"` — The two-phase variance formula from survey 3.14 and
+#'   earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than
+#'   `"full"`, and is exact for some special cases, most importantly Phase 1
+#'   simple random sampling with stratified random sampling at Phase 2.
 #'
-#' * `"simple"` — Treats Phase 2 as a single-phase design, ignoring Phase 1.
-#'   Only valid when Phase 1 is a census (no sampling). Issues a warning when
-#'   Phase 1 has PSU cluster variables, because this understates variance for
-#'   clustered designs.
+#' * `"simple"` — The same method as `"approx"`, as in
+#'   `survey::twophase()`. The design records `"simple"`, and every
+#'   estimate and standard error equals the `"approx"` one.
 #'
 #' @return A `survey_twophase` object. Columns imported with `haven`-style
 #'   value labels are stored as their underlying type: the `label` and `labels`
@@ -1705,22 +1705,6 @@ as_survey_twophase <- function(
     class_none = "surveycore_error_fpc_not_found",
     class_multi = "surveycore_error_fpc_multiple"
   )
-
-  # ── Warning 24: method = "simple" with clustered Phase 1 ────────────────────
-
-  if (method == "simple" && !is.null(phase1@variables$ids)) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          '{.code method = "simple"} ignores the Phase 1 cluster design ',
-          "(PSUs: {.field {phase1@variables$ids}}). ",
-          "This understates variance. ",
-          'Use {.code method = "full"} or {.code method = "approx"}.'
-        )
-      ),
-      class = "surveycore_warning_simple_clustered"
-    )
-  }
 
   # ── Build @variables list ───────────────────────────────────────────────────
 
