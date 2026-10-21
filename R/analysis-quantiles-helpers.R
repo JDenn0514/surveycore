@@ -62,9 +62,10 @@
 # (phase1_weight / phase2_sampling_probability); for all others, the standard
 # survey weight column.
 #
-# Note: For twophase designs, Phase 1-only rows receive Inf (division by 0).
-# These rows are always excluded from the quantile domain (subset = FALSE),
-# so the Inf values never contribute.
+# Note: For twophase designs, Phase 1-only rows receive a finite weight:
+# .compute_phase2_probs() gives them a placeholder probability of 1. The
+# caller must exclude them from the quantile domain; get_quantiles() does so
+# by restricting its domain mask to the phase-2 subset (issue #328).
 #
 # @param design A survey design object.
 # @return Numeric vector of length nrow(design@data).
