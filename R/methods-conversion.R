@@ -190,13 +190,13 @@
 #' The two-phase route applies the domain by weighting the excluded rows out
 #' rather than by removing them. Each excluded row takes an infinite
 #' probability, so the converted object's row count does not change while its
-#' estimates answer for the domain. Its point estimate still differs from
-#' `get_means()` on the filtered design, for a reason independent of the
-#' domain: surveycore's two-phase estimator weights by the phase-1 weight
-#' column, and `survey`'s two-phase object weights by the combined two-phase
-#' probability. On one measured design `get_means()` answers 58.458 where
-#' `survey::svymean()` on the converted object answers 58.067. The same
-#' difference sits on the unfiltered design, 48.9245 against 49.20304.
+#' estimates answer for the domain.
+#'
+#' A two-phase design with `method = "full"` converts to a `twophase2` object.
+#' `survey::twophase()` refuses a `weights` argument for that method, so the
+#' phase-1 weights are passed as inclusion probabilities, `probs = ~I(1 / w)`.
+#' A phase 1 with no weights, strata or `fpc` passes none, and `survey` then
+#' treats it as an iid sample, as surveycore does.
 #'
 #' A round trip through `from_svydesign()` recovers the restricted rows and
 #' not the original sample. On the four routes that remove rows, the rebuilt
@@ -526,16 +526,38 @@ as_svydesign <- function(x) {
   p2_strata <- if (!is.null(p2)) .to_formula(p2$strata) else NULL
   p2_fpc <- if (!is.null(p2)) .to_formula(p2$fpc) else NULL
 
-  # method="full" derives phase 2 weights from the phase 1 design and rejects
-  # an explicit weights argument.  For "simple" and "approx" we pass phase 1
-  # weights so survey can compute the probability-weighted estimates.
-  weights_arg <- if (method == "full") NULL else list(p1_weights, NULL)
+  p2_probs <- if (!is.null(p2)) .to_formula(p2$probs) else NULL
+
+  # method = "full" rejects a weights argument, so the phase 1 weights go in
+  # as probabilities. Passing neither would make survey treat phase 1 as
+  # equal-probability (issue #261). A phase 1 with no design information at
+  # all passes no probs, so survey takes it as iid, as surveycore does.
+  if (method == "full") {
+    weights_arg <- NULL
+    p1_probs <- if (.twophase_phase1_is_iid(x)) {
+      NULL
+    } else {
+      rlang::new_formula(NULL, rlang::expr(I(1 / !!rlang::sym(p1$weights))))
+    }
+  } else {
+    weights_arg <- list(p1_weights, NULL)
+    p1_probs <- NULL
+  }
+
+  # twophase2() tests is.null(fpc)[[1]], i.e. the whole list, before taking
+  # phase 1 as iid, so an all-NULL fpc goes in as NULL and not as a list
+  fpc_arg <- if (is.null(p1_fpc) && is.null(p2_fpc)) {
+    NULL
+  } else {
+    list(p1_fpc, p2_fpc)
+  }
 
   converted <- survey::twophase(
     id = list(p1_id, p2_id),
     strata = list(p1_strata, p2_strata),
+    probs = list(p1_probs, p2_probs),
     weights = weights_arg,
-    fpc = list(p1_fpc, p2_fpc),
+    fpc = fpc_arg,
     data = x@data,
     subset = .to_formula(subset_var),
     method = method

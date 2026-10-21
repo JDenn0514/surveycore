@@ -1428,7 +1428,9 @@ as_survey_replicate <- function(
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
 #'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
 #'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
-#'   clustering.
+#'   clustering. Without `probs2` or `fpc2`, the Phase 2 inclusion
+#'   probability is the fraction of first-stage clusters selected within each
+#'   Phase 2 stratum, not the fraction of rows.
 #' @param strata2 <[`tidy-select`][tidyselect::language]> Phase 2
 #'   stratification column (a single column). Optional.
 #' @param probs2 <[`tidy-select`][tidyselect::language]> Phase 2 inclusion
@@ -1446,10 +1448,14 @@ as_survey_replicate <- function(
 #' @details
 #' ## Variance methods
 #'
-#' * `"full"` — Full two-phase variance formula. Accounts for variability in
-#'   both phases. Requires Phase 2 design information (`probs2`, `ids2`,
-#'   `strata2`) when Phase 2 is not a simple random subsample. If none of
-#'   these are provided, an error is raised.
+#' * `"full"` — Full two-phase variance formula: the double-expansion
+#'   Horvitz-Thompson estimator of `survey::twophase(method = "full")`
+#'   (Breslow and Chatterjee, 1999). Accounts for variability in both phases,
+#'   using the Phase 1 weights as inclusion probabilities, and treats a
+#'   Phase 1 with no weights, strata or `fpc` as an iid sample. Requires
+#'   Phase 2 design information (`probs2`, `ids2`, `strata2`) when Phase 2 is
+#'   not a simple random subsample. If none of these are provided, an error
+#'   is raised.
 #'
 #' * `"approx"` — The two-phase variance formula from survey 3.14 and
 #'   earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than

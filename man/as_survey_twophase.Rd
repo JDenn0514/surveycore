@@ -25,7 +25,9 @@ indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
 column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:
 \code{ids2 = c(psu2, ssu2)}. Omit if Phase 2 has no within-stratum
-clustering.}
+clustering. Without \code{probs2} or \code{fpc2}, the Phase 2 inclusion
+probability is the fraction of first-stage clusters selected within each
+Phase 2 stratum, not the fraction of rows.}
 
 \item{strata2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2
 stratification column (a single column). Optional.}
@@ -62,10 +64,14 @@ for all Phase 2 design variable arguments.
 \details{
 \subsection{Variance methods}{
 \itemize{
-\item \code{"full"} — Full two-phase variance formula. Accounts for variability in
-both phases. Requires Phase 2 design information (\code{probs2}, \code{ids2},
-\code{strata2}) when Phase 2 is not a simple random subsample. If none of
-these are provided, an error is raised.
+\item \code{"full"} — Full two-phase variance formula: the double-expansion
+Horvitz-Thompson estimator of \code{survey::twophase(method = "full")}
+(Breslow and Chatterjee, 1999). Accounts for variability in both phases,
+using the Phase 1 weights as inclusion probabilities, and treats a
+Phase 1 with no weights, strata or \code{fpc} as an iid sample. Requires
+Phase 2 design information (\code{probs2}, \code{ids2}, \code{strata2}) when Phase 2 is
+not a simple random subsample. If none of these are provided, an error
+is raised.
 \item \code{"approx"} — The two-phase variance formula from survey 3.14 and
 earlier: a Phase 1 term plus a Phase 2 term. Needs less memory than
 \code{"full"}, and is exact for some special cases, most importantly Phase 1

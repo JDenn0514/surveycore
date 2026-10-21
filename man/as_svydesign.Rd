@@ -103,13 +103,13 @@ an error from \code{survey} at estimation time.
 The two-phase route applies the domain by weighting the excluded rows out
 rather than by removing them. Each excluded row takes an infinite
 probability, so the converted object's row count does not change while its
-estimates answer for the domain. Its point estimate still differs from
-\code{get_means()} on the filtered design, for a reason independent of the
-domain: surveycore's two-phase estimator weights by the phase-1 weight
-column, and \code{survey}'s two-phase object weights by the combined two-phase
-probability. On one measured design \code{get_means()} answers 58.458 where
-\code{survey::svymean()} on the converted object answers 58.067. The same
-difference sits on the unfiltered design, 48.9245 against 49.20304.
+estimates answer for the domain.
+
+A two-phase design with \code{method = "full"} converts to a \code{twophase2} object.
+\code{survey::twophase()} refuses a \code{weights} argument for that method, so the
+phase-1 weights are passed as inclusion probabilities, \code{probs = ~I(1 / w)}.
+A phase 1 with no weights, strata or \code{fpc} passes none, and \code{survey} then
+treats it as an iid sample, as surveycore does.
 
 A round trip through \code{from_svydesign()} recovers the restricted rows and
 not the original sample. On the four routes that remove rows, the rebuilt
