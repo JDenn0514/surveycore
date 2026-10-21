@@ -56,14 +56,11 @@
     }
   }
 
-  # Phase 1 variance contribution
-  v1 <- .twophase_phase1_var(influence, design, method, lonely.psu)
+  # Phase 1 variance contribution. "simple" is "approx": survey documents
+  # the two as the same method and never branches on "simple" (issue #330).
+  v1 <- .twophase_phase1_var(influence, design, lonely.psu)
 
-  if (identical(method, "simple")) {
-    return(v1)
-  }
-
-  # Phase 2 variance contribution (full and approx only)
+  # Phase 2 variance contribution
   v2 <- .twophase_phase2_var(influence, design, subset, lonely.psu)
 
   v1 + v2
@@ -76,8 +73,7 @@
 
 # Compute phase 1 variance contribution.
 # Adapted from survey:::svyrecvar.phase1 / onestrat.phase1.
-# For "simple": standard .svy_recvar() with raw influence scores.
-# For "full"/"approx": implements the onestrat.phase1 formula directly:
+# Implements the onestrat.phase1 formula directly, for every method:
 #   V1 = sum_s { f_s * nPSUfull_s/(nPSUfull_s-1) *
 #                sum_j { ((x_j * pi2_j - xcenter_s) / sqrt(pi2_j))^2 } }
 # where nPSU_s = phase 2 PSUs in stratum, nPSUfull_s = phase 1 PSUs in stratum,
@@ -87,7 +83,7 @@
 # and f_s = (N_s - n_s) / N_s is the Phase 1 FPC factor for stratum s
 # (1 when no FPC column is provided).
 # Returns a numeric scalar.
-.twophase_phase1_var <- function(influence, design, method, lonely.psu) {
+.twophase_phase1_var <- function(influence, design, lonely.psu) {
   ph1_data <- design@data
   ph1_vars <- design@variables$phase1
   subset <- design@data[[design@variables$subset]]
@@ -111,43 +107,7 @@
     seq_len(n_ph1)
   }
 
-  if (identical(method, "simple")) {
-    # simple: raw influence for Phase 2 rows; 0 for Phase 1-only
-    score <- numeric(n_ph1)
-    score[subset] <- influence[subset]
-
-    clusters_mat <- matrix(psu_all, ncol = 1L)
-    strata_mat <- matrix(strata_all, ncol = 1L)
-
-    psu_per_stratum <- tapply(psu_all, strata_all, function(ps) {
-      length(unique(ps))
-    })
-    sampsize_vec <- as.integer(psu_per_stratum[as.character(strata_all)])
-    sampsize_mat <- matrix(sampsize_vec, ncol = 1L)
-
-    fpc_col <- if (!is.null(ph1_vars$fpc)) ph1_data[[ph1_vars$fpc]] else NULL
-    popsize_mat <- if (!is.null(fpc_col)) {
-      if (any(fpc_col > 1, na.rm = TRUE)) {
-        matrix(as.numeric(fpc_col), ncol = 1L)
-      } else {
-        matrix(as.numeric(sampsize_vec / fpc_col), ncol = 1L)
-      }
-    } else {
-      NULL
-    }
-
-    fpcs <- list(sampsize = sampsize_mat, popsize = popsize_mat)
-    v <- .svy_recvar(
-      matrix(score, ncol = 1L),
-      clusters_mat,
-      strata_mat,
-      fpcs,
-      lonely.psu = lonely.psu
-    )
-    return(v[1L, 1L])
-  }
-
-  # full or approx: implement onestrat.phase1 formula using phase 2 rows only
+  # onestrat.phase1 formula using phase 2 rows only
   ph2_idx <- which(subset)
   infl_ph2 <- influence[ph2_idx]
   strata_ph2 <- strata_all[ph2_idx]

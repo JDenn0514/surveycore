@@ -418,9 +418,7 @@ test_that("get_means() twophase with method='simple' returns finite estimates", 
     fpc = fpc,
     nest = TRUE
   )
-  sc <- suppressWarnings(
-    as_survey_twophase(phase1, subset = subset, method = "simple")
-  )
+  sc <- as_survey_twophase(phase1, subset = subset, method = "simple")
   result <- get_means(sc, y1, variance = "se")
   test_result_invariants(result, "survey_means")
   expect_true(is.finite(result$mean[[1L]]))
@@ -483,4 +481,91 @@ test_that("two-phase with SRS phase-1 get_totals matches survey [oracle]", {
   expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
   expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
   expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+})
+
+# ── Section 6: method = "simple" is method = "approx" (issue #330) ──────────
+#
+# survey 4.5 documents "simple" and "approx" as the same method and never
+# branches on "simple". Both sides are built with method = "simple" from the
+# same frame, on a clustered, stratified phase 1.
+
+.twophase_simple_pair <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  ph1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  d_sc <- as_survey_twophase(ph1, subset = subset, method = "simple")
+  d_sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "simple"
+  )
+  list(df = df, ph1 = ph1, sc = d_sc, sv = d_sv)
+}
+
+test_that("get_means() simple method matches survey::svymean [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_simple_pair()
+
+  sc_est <- get_means(pair$sc, y1, variance = c("se", "ci"))
+  sv_est <- survey::svymean(~y1, pair$sv)
+
+  expect_equal(sc_est$mean, coef(sv_est)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+})
+
+test_that("get_totals() simple method matches survey::svytotal [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_simple_pair()
+
+  sc_est <- get_totals(pair$sc, y1, variance = c("se", "ci"))
+  sv_est <- survey::svytotal(~y1, pair$sv)
+
+  expect_equal(sc_est$total, coef(sv_est)[["y1"]], tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+})
+
+test_that("survey_glm() simple method matches survey::svyglm [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_simple_pair()
+
+  fit_sc <- survey_glm(pair$sc, y1 ~ y2)
+  fit_sv <- survey::svyglm(y1 ~ y2, pair$sv)
+
+  expect_equal(coef(fit_sc), coef(fit_sv), tolerance = 1e-10)
+  expect_equal(
+    sqrt(diag(vcov(fit_sc))),
+    sqrt(diag(vcov(fit_sv))),
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_quantiles() simple method matches survey::svyquantile [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- .twophase_simple_pair()
+
+  sc <- get_quantiles(pair$sc, y1, variance = c("se", "ci"))
+  sv <- survey::svyquantile(
+    ~y1,
+    pair$sv,
+    quantiles = c(0.25, 0.5, 0.75),
+    ci = TRUE,
+    interval.type = "mean"
+  )
+
+  expect_equal(sc$estimate, as.numeric(coef(sv)), tolerance = 1e-10)
+  expect_equal(sc$se, as.numeric(survey::SE(sv)), tolerance = 1e-8)
+  expect_equal(sc$ci_low, as.numeric(confint(sv)[, "l"]), tolerance = 1e-6)
+  expect_equal(sc$ci_high, as.numeric(confint(sv)[, "u"]), tolerance = 1e-6)
 })
