@@ -45,8 +45,9 @@ phase-1-only rows no longer produces an empty group row.
 Under `method = "approx"` the quantiles now match `survey` exactly. Under
 `"simple"` and `"full"` the estimates match but the SEs do not. The same SE
 gaps show up in `get_means()`, so they come from the two-phase variance, not
-the quantile path: `"full"` is #329, and `"simple"` gives a different
-`get_means()` SE from `survey` on the same fixture (0.8512 against 0.8688).
+the quantile path: `"full"` is #329, and `"simple"` is #330: `survey`
+treats it as `"approx"`, and surveycore computes a phase-1 term only, so
+`get_means()` gives 0.8512 against `survey`'s 0.8688 on the same fixture.
 
 ## Files Modified
 
