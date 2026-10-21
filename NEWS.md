@@ -100,6 +100,17 @@
 
 ## Breaking changes
 
+* `update_design()` now refuses a `repweights` update that changes the number
+  of replicate columns on a `survey_replicate` design, with
+  `surveycore_error_repweights_count_changed`. Before this change the design
+  kept the `scale` and `rscales` it was built with, so for every type whose
+  scale depends on the replicate count (JK1, BRR, Fay, bootstrap, ACS and
+  successive-difference) each later standard error used the wrong factor, with
+  no signal. Dropping a JK1 design from 10 replicates to 4 overstated the
+  standard error by about 10%. To change the number of replicates, rebuild the
+  design with `as_survey_replicate()`. An update that keeps the count still
+  works. (#300)
+
 * `as_survey_replicate()` now refuses an `fpc` column, and an `fpctype` given
   without `fpc`, with `surveycore_error_replicate_fpc_unsupported`. The column
   never changed a replicate standard error: no replicate variance formula read

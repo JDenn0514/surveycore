@@ -55,7 +55,11 @@
 #'   Only used for `survey_taylor` objects.
 #' @param repweights <[`tidy-select`][tidyselect::language]> New replicate
 #'   weight columns (one or more). `NULL` (default) means no change. Only
-#'   used for `survey_replicate` objects.
+#'   used for `survey_replicate` objects. Must select the same number of
+#'   columns the design already has: the design's `scale` and `rscales` were
+#'   set for that number of replicates and are kept as they are. To change
+#'   the number of replicates, rebuild the design with
+#'   [as_survey_replicate()].
 #' @param validate Logical. If `FALSE`, temporarily marks the object to
 #'   suppress validation during the variable update. In practice this has
 #'   no observable effect on the returned object; `validate` is accepted
@@ -185,6 +189,30 @@ update_design <- function(
       changed_vars <- c(changed_vars, "weights")
     }
     if (!is.null(new_repweights)) {
+      # scale, rscales and fpc_fraction were set for the old replicate count
+      # and the design does not record whether scale was a default, so a new
+      # count cannot be re-scaled safely (issue #300).
+      n_old <- length(x@variables$repweights)
+      n_new <- length(new_repweights)
+      if (n_new != n_old) {
+        cli::cli_abort(
+          c(
+            "x" = paste0(
+              "{.arg repweights} selects {n_new} column{?s}, but the design ",
+              "has {n_old} replicate{?s}."
+            ),
+            "i" = paste0(
+              "The design's {.field scale} and {.field rscales} were set for ",
+              "{n_old} replicate{?s} and would no longer match."
+            ),
+            "v" = paste0(
+              "Rebuild the design with {.fn as_survey_replicate} to change ",
+              "the number of replicates."
+            )
+          ),
+          class = "surveycore_error_repweights_count_changed"
+        )
+      }
       new_variables$repweights <- new_repweights
       changed_vars <- c(changed_vars, "repweights")
     }
