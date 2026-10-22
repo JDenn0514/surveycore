@@ -1075,6 +1075,74 @@ test_that("get_freqs() replicate (BRR) pct matches survey::svymean [numerical]",
   )
 })
 
+# Calibrated Taylor fixture shared by the two oracle blocks below: a GREG
+# calibration on x = y2 built with survey::calibrate(), mirrored in surveycore
+# by as_caldata() + as_survey(calibration =).
+make_freqs_cal_fixture <- function() {
+  df <- make_survey_data(seed = 42)
+  set.seed(1)
+  df$f <- factor(sample(c("a", "b", "c"), nrow(df), replace = TRUE))
+  df$g <- factor(sample(c("G1", "G2"), nrow(df), replace = TRUE))
+  df$x <- df$y2
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  pop <- c(
+    "(Intercept)" = sum(df$wt) * 1.05,
+    x = sum(df$wt * df$x) * 1.08
+  )
+  sv_cal <- survey::calibrate(sv, ~x, pop)
+  cd <- as_caldata(df$wt, weights(sv_cal) / df$wt, model.matrix(~x, df))
+  df$cal_wt <- weights(sv_cal)
+  sc_cal <- as_survey(
+    df,
+    ids = psu,
+    strata = strata,
+    weights = cal_wt,
+    nest = TRUE,
+    calibration = list(cd)
+  )
+  list(sv_cal = sv_cal, sc_cal = sc_cal)
+}
+
+test_that("get_freqs() SE on a calibrated Taylor design matches survey::svymean() [oracle]", {
+  skip_if_not_installed("survey")
+  fx <- make_freqs_cal_fixture()
+
+  r_sc <- get_freqs(fx$sc_cal, f, variance = "se")
+  sv_est <- survey::svymean(~f, fx$sv_cal)
+
+  expect_equal(r_sc$pct, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(r_sc$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that("get_freqs() grouped SE on a calibrated Taylor design matches survey::svyby() [oracle]", {
+  skip_if_not_installed("survey")
+  fx <- make_freqs_cal_fixture()
+
+  r_sc <- get_freqs(fx$sc_cal, f, group = g, variance = "se")
+  sv_by <- survey::svyby(~f, ~g, fx$sv_cal, survey::svymean)
+
+  for (gv in c("G1", "G2")) {
+    sc_g <- r_sc[r_sc$g == gv, ]
+    sv_g <- sv_by[sv_by$g == gv, ]
+    expect_equal(
+      sc_g$pct,
+      as.numeric(sv_g[, c("fa", "fb", "fc")]),
+      tolerance = 1e-10
+    )
+    expect_equal(
+      sc_g$se,
+      as.numeric(sv_g[, c("se.fa", "se.fb", "se.fc")]),
+      tolerance = 1e-8
+    )
+  }
+})
+
 test_that("get_freqs() pct sums to 1 for all design types [oracle sanity]", {
   skip_if_not_installed("survey")
 
