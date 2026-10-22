@@ -658,6 +658,31 @@ as_tbl_svy <- function(x) {
 }
 
 
+# The weight column a probs = ~I(1/w) formula names, or NULL for any other
+# probs formula.
+#' @noRd
+.weights_from_probs_formula <- function(f, data) {
+  if (!rlang::is_formula(f)) {
+    return(NULL)
+  }
+  rhs <- rlang::f_rhs(f)
+  if (!rlang::is_call(rhs, "I", n = 1L)) {
+    return(NULL)
+  }
+  inner <- rhs[[2L]]
+  if (
+    rlang::is_call(inner, "/", n = 2L) &&
+      identical(inner[[2L]], 1) &&
+      is.symbol(inner[[3L]]) &&
+      as.character(inner[[3L]]) %in% names(data)
+  ) {
+    as.character(inner[[3L]])
+  } else {
+    NULL
+  }
+}
+
+
 # Find the first column in data whose numeric values exactly match vals.
 # Returns the column name, or NULL if no matching column exists.
 # Used to recover weight/subset column names from stored vectors in survey
@@ -719,6 +744,27 @@ as_tbl_svy <- function(x) {
 #'
 #' Either way, the `repweights` design variable of the returned object names
 #' those columns, in replicate order.
+#'
+#' @section Two-phase designs:
+#'
+#' The variance method comes from the object's class: a `twophase2` object,
+#' which [survey::twophase()] returns for `method = "full"`, converts to
+#' `method = "full"`, and a `twophase` object converts to `method = "approx"`.
+#' `survey` builds `method = "simple"` as a `twophase` object too, and
+#' surveycore treats `"simple"` as `"approx"`.
+#'
+#' The phase 2 design, `ids2`, `strata2`, `probs2` and `fpc2`, is read from
+#' the formulas the `survey` object stores for it. A formula that names data
+#' columns directly, such as `~psu2` or `~strata`, keeps those names. Any other
+#' formula, such as `~I(1/w2)`, is evaluated on the phase 1 data as `survey`
+#' evaluates it, and the values go into a generated column named
+#' `..surveycore_ids2..`, `..surveycore_strata2..`, `..surveycore_probs2..`
+#' or `..surveycore_fpc2..`. A multi-stage `ids2` generates one column per
+#' stage, `..surveycore_ids2_1..` and so on. A phase 2 `weights` formula,
+#' which `method = "approx"` accepts, goes in as `..surveycore_probs2..`,
+#' because surveycore records phase 2 probabilities and not weights. The
+#' phase 1 weights of a `twophase2` object, which `survey` stores as
+#' `probs = ~I(1/w)`, keep the column name `w`.
 #'
 #' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
 #'   `survey::twophase2`, or `srvyr::tbl_svy` object. Both `"twophase"` and
@@ -792,8 +838,16 @@ from_svydesign <- function(x) {
   fpc_var <- if (!is.null(fpc_raw)) fpc_raw[[1L]] else NULL
   nest <- tryCatch(isTRUE(x$call$nest), error = function(e) FALSE)
 
-  # Weight column: try the call formula first, then value-matching.
+  # Weight column: try the call formula first, then value-matching. A
+  # probs = ~I(1/w) formula names the weight column w; as_svydesign() writes
+  # that form for a two-phase method = "full" design (issue #329).
   weights_var <- .call_vars("weights")
+  if (is.null(weights_var)) {
+    weights_var <- tryCatch(
+      .weights_from_probs_formula(x$call[["probs"]], data),
+      error = function(e) NULL
+    )
+  }
   if (is.null(weights_var)) {
     weights_var <- .find_col_by_value(data, 1 / x$prob)
   }
@@ -1080,49 +1134,187 @@ from_svydesign <- function(x) {
   # Convert the phase 1 full design to survey_taylor.
   phase1_sc <- .from_svydesign_taylor(x$phase1$full)
   phase1_data <- phase1_sc@data
+  in_phase2 <- as.logical(x$subset)
 
-  # Locate the subset column by matching x$subset to logical columns in data.
-  subset_var <- .find_col_by_value(phase1_data, as.numeric(x$subset))
+  # Subset column: read the formula in the stored call, then fall back to
+  # matching x$subset against the data columns.
+  subset_f <- if (is.call(x$call)) x$call$subset else NULL
+  subset_var <- .formula_cols(subset_f, phase1_data)
+  if (
+    length(subset_var) != 1L ||
+      !identical(phase1_data[[subset_var]], in_phase2)
+  ) {
+    subset_var <- .find_col_by_value(phase1_data, as.numeric(x$subset))
+  }
   if (is.null(subset_var)) {
     subset_var <- "..surveycore_subset.."
     phase1_data[[subset_var]] <- x$subset
   }
 
-  # Derive method: check x$method first, fall back to class-based inference.
-  # survey::twophase() never stores x$method — the branch below is defensive
-  # for survey-compatible packages that may set it explicitly. # nocov start
-  method <- if (
-    !is.null(x$method) && x$method %in% c("full", "approx", "simple")
-  ) {
-    x$method # nocov end
-  } else if (inherits(x, "twophase2")) {
-    "full"
-  } else {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "Could not determine two-phase variance method ",
-          "from the survey object."
-        ),
-        "i" = 'Defaulting to {.val "approx"}.'
-      ),
-      class = "surveycore_warning_twophase_method_unknown"
-    )
-    "approx"
-  }
+  # survey::twophase() stores no method. It returns a twophase2 object for
+  # method = "full" and a twophase object for "approx" and "simple", and
+  # surveycore treats "simple" as "approx" (issue #330), so the class decides.
+  method <- if (inherits(x, "twophase2")) "full" else "approx"
+
+  phase2 <- .from_svydesign_phase2(x, phase1_data)
 
   variables <- list(
     phase1 = phase1_sc@variables,
-    phase2 = list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
+    phase2 = phase2$vars,
     subset = subset_var,
-    method = method
+    method = method,
+    visible_vars = NULL
   )
 
   survey_twophase(
-    data = phase1_data,
+    data = phase2$data,
     variables = variables,
     metadata = phase1_sc@metadata
   )
+}
+
+
+# Recover the phase 2 design variables of a survey twophase or twophase2
+# object. Both classes keep the phase 2 formulas as written in
+# x$phase2$call: svydesign(ids =, strata =, probs =, [weights =,] fpc =),
+# with fpc = `*phase1*` when no phase 2 fpc was given. A formula that names
+# columns directly gives those names. Any other formula is evaluated on the
+# phase 1 data, as survey evaluates it, and the values go into a generated
+# column; so does a phase 2 weights formula, as probabilities, because
+# surveycore has no phase 2 weights. strata2 and ids2 must hold a value on
+# every phase 1 row, since the variance counts the phase 2 population over
+# all of them. Returns list(vars, data).
+#' @noRd
+.from_svydesign_phase2 <- function(x, data) {
+  d2 <- x$phase2
+  d2call <- d2$call
+  full <- x$phase1$full$variables
+  vars <- list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL)
+  generated <- list()
+
+  if (is.call(d2call)) {
+    # The stored ids slot is ~1 or ~0 when phase 2 has no clusters.
+    ids_f <- d2call$ids
+    if (!is.null(.vars_from_formula(ids_f))) {
+      ids_cols <- .formula_cols(ids_f, data)
+      if (is.null(ids_cols)) {
+        generated$ids <- .eval_design_formula(ids_f, full)
+      } else {
+        vars$ids <- ids_cols
+      }
+    }
+
+    for (nm in c("strata", "probs", "fpc")) {
+      f <- d2call[[nm]]
+      if (is.null(f) || identical(f, as.name("*phase1*"))) {
+        next
+      }
+      col <- .formula_cols(f, data)
+      if (length(col) >= 1L) {
+        vars[[nm]] <- col[[1L]]
+      } else {
+        generated[[nm]] <- .eval_design_formula(f, full)[1L]
+      }
+    }
+
+    if (!is.null(d2call$weights) && is.null(vars$probs)) {
+      w2 <- .eval_design_formula(d2call$weights, full)[[1L]]
+      generated$probs <- list(1 / w2)
+    }
+  } else {
+    # No call to read. Rebuild from the evaluated values survey stores on
+    # the phase 2 rows: the probabilities and the population sizes it drew
+    # from the phase 1 data carry what strata2 and ids2 would contribute
+    # over the rows outside phase 2.
+    in_phase2 <- as.logical(x$subset)
+    widen <- function(v) {
+      out <- v[rep(NA_integer_, length(in_phase2))]
+      out[in_phase2] <- v
+      out
+    }
+    if (isTRUE(d2$has.strata)) {
+      generated$strata <- list(widen(d2$strata[[1L]]))
+    }
+    generated$ids <- lapply(d2$cluster, widen)
+    generated$probs <- list(widen(d2$prob))
+    if (!is.null(d2$fpc$popsize)) {
+      generated$fpc <- list(widen(d2$fpc$popsize[, 1L]))
+    }
+  }
+
+  for (nm in names(generated)) {
+    vals <- generated[[nm]]
+    cols <- if (length(vals) == 1L) {
+      paste0("..surveycore_", nm, "2..")
+    } else {
+      paste0("..surveycore_", nm, "2_", seq_along(vals), "..")
+    }
+    collisions <- cols[cols %in% names(data)]
+    if (length(collisions) > 0L) {
+      cli::cli_abort(
+        c(
+          "x" = paste0(
+            "{.fn from_svydesign} cannot store the phase 2 design under ",
+            "generated names."
+          ),
+          "i" = paste0(
+            "The design data already {cli::qty(length(collisions))}",
+            "{?has a column/has columns} named {.field {collisions}}."
+          ),
+          "v" = paste0(
+            "Rename the conflicting {cli::qty(length(collisions))}",
+            "column{?s} in the design data, then convert again."
+          )
+        ),
+        class = "surveycore_error_phase2_name_collision"
+      )
+    }
+    for (j in seq_along(vals)) {
+      data[[cols[[j]]]] <- unname(vals[[j]])
+    }
+    vars[[nm]] <- cols
+  }
+
+  list(vars = vars, data = data)
+}
+
+
+# Column names a design formula names directly: ~a or ~a + b. Returns NULL
+# when f is not a formula, is ~1, holds any other expression (~I(1/w),
+# ~interaction(a, b)), or names a column that data does not have.
+#' @noRd
+.formula_cols <- function(f, data) {
+  if (!rlang::is_formula(f)) {
+    return(NULL)
+  }
+  terms <- .plus_terms(rlang::f_rhs(f))
+  if (!all(vapply(terms, is.symbol, logical(1L)))) {
+    return(NULL)
+  }
+  cols <- vapply(terms, as.character, character(1L))
+  if (!all(cols %in% names(data))) {
+    return(NULL)
+  }
+  cols
+}
+
+
+# Split a + b + c into its terms.
+#' @noRd
+.plus_terms <- function(e) {
+  if (rlang::is_call(e, "+", n = 2L)) {
+    c(.plus_terms(e[[2L]]), .plus_terms(e[[3L]]))
+  } else {
+    list(e)
+  }
+}
+
+
+# Evaluate a design formula on data the way survey::svydesign() does, one
+# list element per term.
+#' @noRd
+.eval_design_formula <- function(f, data) {
+  as.list(stats::model.frame(f, data = data, na.action = stats::na.pass))
 }
 
 

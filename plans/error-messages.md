@@ -93,7 +93,7 @@ against the messages defined here.
 | 59 | `as_survey_srs()` | `fpc` population size < sample size | ERROR | `surveycore_error_fpc_below_sample` | `"{.arg fpc} column {.field {fpc_var}} has {n_bad} value(s) smaller than the sample size ({n}). Population size cannot be smaller than the number of sampled units."` |
 | 60 | `as_survey()` | No `ids` or `strata` — dispatching to `survey_srs` | INFO | `surveycore_message_as_survey_srs_fallback` | `c("i" = "No {.arg ids} or {.arg strata} specified; creating a {.cls survey_srs} design.", "i" = "Use {.fn as_survey_srs} to avoid this message.")` |
 | 61 | `as_survey_srs()` | No `weights` provided — auto-assigning uniform weights | WARN | `surveycore_warning_srs_no_weights` | `"No {.arg weights} provided to {.fn as_survey_srs}. Assigning uniform weights ({.code ..surveycore_wt.. = 1}). Population size unknown — total estimates will use {.code \u03a3w_i = n} as the estimated N."` |
-| 62 | `from_svydesign()` (twophase) | Could not determine two-phase variance method | WARN | `surveycore_warning_twophase_method_unknown` | `"Could not determine two-phase variance method from the survey object. Defaulting to {.val \"approx\"}."` |
+| 62 | `from_svydesign()` (twophase) | *Retired by issue #335.* `survey::twophase()` stores no method, and the object's class decides it: `twophase2` is `"full"`, `twophase` is `"approx"` (surveycore treats `"simple"` as `"approx"`, issue #330), so nothing is left to guess | — | ~~`surveycore_warning_twophase_method_unknown`~~ | — |
 | 63 | `.twophasevar()` (via `.twophase_mean()` / `.twophase_total()`) | `method = "full"` but `@variables$phase2` has no `ids`, `strata`, or `probs` | ERROR | `surveycore_error_full_requires_phase2` | `"x" = "Two-phase variance method {.val full} requires phase 2 design structure.", "i" = "No {.arg ids2}, {.arg strata2}, or {.arg probs2} were specified in {.fn as_survey_twophase}.", "v" = 'Reconstruct with {.arg method = "approx"} or supply phase 2 design variables.'` |
 | 64 | `.check_unsupported_class()`, `.build_meta()` fallback | Object does not inherit from `survey_base` (`.check_unsupported_class()`), or inherits from `survey_base` but is not one of the five supported subclasses (`.build_meta()`) | ERROR | `surveycore_error_unsupported_class` | `.check_unsupported_class()`: `"{.fn {fn_name}} requires a survey design object. Got {.cls {class(design)[[1]]}}."` / `.build_meta()`: `"Unrecognized design class {.cls {class(design)[1]}}."` |
 | 65 | `survey_glm()` | `formula` is `NULL` (not supplied by caller) | ERROR | `surveycore_error_formula_missing` | `"{.arg formula} is required."` |
@@ -713,3 +713,20 @@ resolves to; `{n_old}` = `length(x@variables$repweights)`.
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
 | UD-1 | `update_design()` | `x` is a `survey_replicate` and `repweights` resolves to a number of columns other than the design's current replicate count. Checked after `repweights` is resolved and before any `@variables` key is changed | ERROR | `surveycore_error_repweights_count_changed` | `"x" = "{.arg repweights} selects {n_new} column{?s}, but the design has {n_old} replicate{?s}.", "i" = "The design's {.field scale} and {.field rscales} were set for {n_old} replicate{?s} and would no longer match.", "v" = "Rebuild the design with {.fn as_survey_replicate} to change the number of replicates."` |
+
+### from-svydesign-twophase rows (2026-10-22)
+
+Issue #335. `from_svydesign()` recovers the phase 2 design of a
+`survey::twophase()` object from the formulas in `x$phase2$call`. A formula
+that names no column directly, a phase 2 `weights` formula, or a phase 2
+design with no stored call goes into a generated column named
+`..surveycore_{key}2..` (`..surveycore_{key}2_{k}..` for a multi-stage
+`ids2`), with no condition, as the `..surveycore_wt..` fallback does. The one
+condition is a generated name that already names a data column.
+
+**Variable bindings.** `{collisions}` = the generated names that already name
+a column of the design data.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-1 | `from_svydesign()` (twophase) | The route generated a phase 2 column name, and it already names a column of the design data | ERROR | `surveycore_error_phase2_name_collision` | `"x" = "{.fn from_svydesign} cannot store the phase 2 design under generated names.", "i" = "The design data already {cli::qty(length(collisions))}{?has a column/has columns} named {.field {collisions}}.", "v" = "Rename the conflicting {cli::qty(length(collisions))}column{?s} in the design data, then convert again."` |
