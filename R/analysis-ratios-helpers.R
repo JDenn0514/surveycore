@@ -35,6 +35,11 @@
   n_d <- as.integer(sum(domain))
   N_d <- sum(w * domain)
 
+  # Defensive: get_ratios() never calls this for an empty or zero-weight
+  # domain. An empty domain gives an NA denominator total, which get_ratios()
+  # skips before the SE dispatch; a zero-weight domain gives a zero total,
+  # which raises surveycore_error_ratio_zero_denominator first.
+  # nocov start
   if (n_d == 0L || N_d <= 0) {
     return(list(
       se = NA_real_,
@@ -43,6 +48,7 @@
       joint = .joint_na()
     ))
   }
+  # nocov end
 
   y_safe <- ifelse(domain > 0, y_vec, 0)
   x_safe <- ifelse(domain > 0, x_vec, 0)

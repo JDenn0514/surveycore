@@ -1991,6 +1991,29 @@ test_that("grouped get_means() vcov on a calibrated Taylor design matches survey
   expect_equal(v, sv_v, tolerance = 1e-8)
 })
 
+test_that("a nonprob get_means() cell with no weight in any replicate gets an NA row in the stored matrix", {
+  df <- make_survey_data(n = 100L, design = "replicate", seed = 4L)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  df$f2 <- factor(ifelse(seq_len(nrow(df)) <= 10L, "rare", "common"))
+  # Every replicate gives the "rare" group zero weight
+  df[df$f2 == "rare", rep_cols] <- 0
+  d <- as_survey_nonprob(df, weights = wt, repweights = all_of(rep_cols))
+
+  expect_warning(
+    expect_warning(
+      r <- get_means(d, y1, group = f2, variance = "se"),
+      class = "surveycore_warning_domain_replicates_na"
+    ),
+    class = "surveycore_warning_small_cell"
+  )
+  v <- vcov(r)
+  rare <- which(r$f2 == "rare")
+
+  expect_true(all(is.na(v[rare, ])))
+  expect_true(all(is.na(v[, rare])))
+  expect_equal(unname(diag(v)[-rare]), r$se[-rare]^2, tolerance = 1e-10)
+})
+
 test_that("vcov() on a two-phase get_means() result has NA off-diagonals", {
   df <- make_survey_data(
     design = "twophase",
