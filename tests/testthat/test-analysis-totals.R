@@ -1002,6 +1002,27 @@ test_that("get_totals() works for survey_nonprob design", {
   expect_true(is.finite(result$se[[1L]]))
 })
 
+test_that("get_totals() does not warn about calibration df on a calibrated Taylor design", {
+  # Calibration rank (40) exceeds the SRS design df (39). get_totals() uses
+  # normal-approximation CIs, so the reduced df is never used and the
+  # zero-df warning must not fire.
+  set.seed(55L)
+  n <- 40L
+  df <- data.frame(y = rnorm(n), wt = rep(1, n))
+  d <- as_survey(df, weights = wt)
+  cd_high <- as_caldata(df$wt, rep(1.001, n), diag(n))
+  d@calibration <- list(cd_high)
+
+  expect_no_warning(
+    result <- get_totals(d, y, variance = c("se", "ci")),
+    class = "surveycore_warning_zero_df_after_calibration"
+  )
+  expect_false("df" %in% names(result))
+  z <- stats::qnorm(0.975)
+  expect_equal(result$ci_low, result$total - z * result$se, tolerance = 1e-10)
+  expect_equal(result$ci_high, result$total + z * result$se, tolerance = 1e-10)
+})
+
 test_that("get_totals() calibrated empty domain returns NA (covers .calibrated_total_cell() n_d=0)", {
   set.seed(702)
   df <- data.frame(y = rnorm(20), w = runif(20, 0.5, 2))

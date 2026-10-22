@@ -1426,6 +1426,22 @@ test_that("get_ratios() attaches .survey_result with statistic = 'ratio'", {
   expect_identical(sr$statistic, "ratio")
 })
 
+test_that("get_ratios() does not warn about calibration df on a calibrated Taylor design", {
+  # Calibration rank (40) exceeds the SRS design df (39). get_ratios() uses
+  # normal-approximation CIs, so the zero-df warning must not fire.
+  set.seed(55L)
+  n <- 40L
+  df <- data.frame(y = rnorm(n), x = runif(n, 1, 2), wt = rep(1, n))
+  d <- as_survey(df, weights = wt)
+  cd_high <- as_caldata(df$wt, rep(1.001, n), diag(n))
+  d@calibration <- list(cd_high)
+
+  expect_no_warning(
+    get_ratios(d, y, x, variance = "se"),
+    class = "surveycore_warning_zero_df_after_calibration"
+  )
+})
+
 test_that("get_ratios() .survey_result$df is Inf for non-calibrated Taylor design", {
   df <- make_survey_data(n = 200, seed = 3)
   d <- as_survey(df, ids = psu, weights = wt, strata = strata)
