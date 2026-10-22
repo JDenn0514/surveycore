@@ -19,7 +19,8 @@
 #                (level AND domain/group).
 # @param denom   Numeric vector (0/1): rows in the group/domain (denominator).
 #
-# @return Named list: pct, se, se_srs, n (unweighted cell count), n_weighted.
+# @return Named list: pct, se, se_srs, n (unweighted cell count), n_weighted,
+#   joint (see .joint_vcov()).
 .taylor_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
@@ -35,7 +36,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -72,7 +74,8 @@
     se = se,
     se_srs = se_srs,
     n = n_cell,
-    n_weighted = Y
+    n_weighted = Y,
+    joint = .joint_infl(infl_mat)
   )
 }
 
@@ -85,7 +88,8 @@
 # @param num     Numeric vector (0/1): cell membership (level AND domain/group).
 # @param denom   Numeric vector (0/1): group/domain membership.
 #
-# @return Named list: pct, se, se_srs, n, n_weighted.
+# @return Named list: pct, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()).
 .replicate_freq_cell <- function(design, num, denom) {
   data <- design@data
   vars <- design@variables
@@ -100,7 +104,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -127,7 +132,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = n_cell,
-      n_weighted = Y
+      n_weighted = Y,
+      joint = .joint_na()
     ))
   }
 
@@ -151,7 +157,8 @@
     se = se,
     se_srs = se_srs,
     n = n_cell,
-    n_weighted = Y
+    n_weighted = Y,
+    joint = .joint_rep(rep_p, p)
   )
 }
 

@@ -1232,6 +1232,117 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 }
 
 
+# ── Joint covariance across result rows ──────────────────────────────────────
+#
+# Each cell helper that can contribute to a joint covariance matrix returns a
+# `joint` element alongside its scalar SE, built by one of three
+# constructors:
+#   .joint_infl(infl_mat) — Taylor: the cell's influence column (after any
+#                           calibration projection), full design length.
+#   .joint_rep(theta, est) — replicate: the cell's R per-replicate estimates
+#                           and its full-sample estimate.
+#   .joint_na()           — the cell has no variance (empty cell, or too many
+#                           NA replicates); its row and column are NA.
+# A cell helper with no joint form (two-phase, the SRS fallback for a
+# survey_nonprob design without replicate weights) returns no `joint`, so the
+# result stores no matrix and vcov() falls back to NA off-diagonals.
+#
+# Every cell's influence is computed on the full design with zeros outside its
+# domain, so one reduction over the stacked columns gives the covariances
+# between levels, between groups and across domains: the same matrix as
+# survey::svyby(covmat = TRUE).
+
+.joint_infl <- function(infl_mat) {
+  list(kind = "infl", value = infl_mat[, 1L], est = NA_real_)
+}
+
+.joint_rep <- function(theta, est) {
+  list(kind = "rep", value = theta, est = est)
+}
+
+.joint_na <- function() {
+  list(kind = "na", value = NULL, est = NA_real_)
+}
+
+
+# ── .joint_vcov() ─────────────────────────────────────────────────────────────
+#
+# Reduce the per-cell `joint` elements of one result to its k x k covariance
+# matrix, in row order. The diagonal equals each cell's own se^2: the Taylor
+# reduction is .svy_recvar() over the same columns, and the replicate one is
+# .svy_rep_vcov(), whose diagonal is .svy_rep_var() on each column.
+#
+# @param design  The design the cells were computed on.
+# @param joint   List of length k: each element NULL or a .joint_*() value.
+# @return k x k numeric matrix, or NULL when any cell has no joint form.
+.joint_vcov <- function(design, joint) {
+  k <- length(joint)
+  if (any(vapply(joint, is.null, logical(1L)))) {
+    return(NULL)
+  }
+  kinds <- vapply(joint, function(j) j$kind, character(1L))
+  live <- kinds != "na"
+  out <- matrix(NA_real_, nrow = k, ncol = k)
+  if (!any(live)) {
+    return(out)
+  }
+
+  vals <- do.call(cbind, lapply(joint[live], function(j) j$value))
+  if (all(kinds[live] == "infl")) {
+    mats <- .build_cluster_matrices(design@data, design@variables)
+    v <- .svy_recvar(
+      vals,
+      mats$clusters_mat,
+      mats$strata_mat,
+      mats$fpcs,
+      lonely.psu = getOption("survey.lonely.psu", "remove")
+    )
+  } else {
+    vars <- design@variables
+    est <- vapply(joint[live], function(j) j$est, numeric(1L))
+    v <- .svy_rep_vcov(
+      vals,
+      scale = vars$scale,
+      rscales = if (!is.null(vars$rscales)) {
+        vars$rscales
+      } else {
+        rep(1L, nrow(vals))
+      },
+      mse = isTRUE(vars$mse),
+      coef = est
+    )
+  }
+  out[live, live] <- v
+  out
+}
+
+
+# ── .attach_joint_vcov() ──────────────────────────────────────────────────────
+#
+# Store a result's joint covariance matrix in attr(result, ".vcov"), named by
+# names(coef(result)), for vcov.survey_result() to read. Call after
+# .make_result_tibble() and before .apply_decimals(), so the names come from
+# the unrounded, unrenamed result. Stores nothing when no cell has a joint
+# form or the result has no rows.
+#
+# @param result  A survey_result tibble with its .survey_result attribute.
+# @param design  The design the cells were computed on.
+# @param joint   List of per-cell `joint` elements, in row order.
+# @return result, possibly with a ".vcov" attribute.
+.attach_joint_vcov <- function(result, design, joint) {
+  if (nrow(result) == 0L) {
+    return(result)
+  }
+  v <- .joint_vcov(design, joint)
+  if (!is.null(v)) {
+    nms <- .build_coef_names(result, attr(result, ".survey_result"))
+    dimnames(v) <- list(nms, nms)
+    attr(result, ".vcov") <- v
+  }
+  result
+}
+
+
 # ── .nonprob_rep_na_warn() ────────────────────────────────────────────────────
 #
 # Issue a warning when >5% of bootstrap replicates produce NA estimates for a

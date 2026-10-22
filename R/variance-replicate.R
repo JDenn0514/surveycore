@@ -46,6 +46,33 @@
   sum((thetas - meantheta)^2 * rscales) * scale
 }
 
+# Matrix form of .svy_rep_var(): the k x k covariance of k statistics from
+# their R x k matrix of per-replicate estimates,
+#   sigma[j, l] = scale * sum_r(rscales_r * dev_r[j] * dev_r[l]).
+# An NA replicate estimate drops that replicate from its own column only, so
+# entry [j, l] sums over the replicates where both columns are non-NA and the
+# diagonal equals .svy_rep_var() on each column. mse = FALSE centres each
+# column on the mean of its non-NA replicates with rscales > 0, as
+# .svy_rep_var() does.
+#
+# thetas: R x k numeric matrix of per-replicate estimates (may hold NA).
+# coef:   numeric(k) full-sample estimates (used only when mse = TRUE).
+.svy_rep_vcov <- function(thetas, scale, rscales, mse = TRUE, coef = NULL) {
+  ok <- !is.na(thetas)
+  if (isTRUE(mse)) {
+    center <- coef
+  } else {
+    center <- vapply(
+      seq_len(ncol(thetas)),
+      function(j) mean(thetas[ok[, j] & rscales > 0, j]),
+      numeric(1L)
+    )
+  }
+  diff_mat <- sweep(thetas, 2L, center, "-")
+  diff_mat[!ok] <- 0
+  t(diff_mat * rscales) %*% diff_mat * scale
+}
+
 # Shared scaffolding for replicate-weight variance estimation.
 #
 # Replicate weights are full survey weights (surveycore always uses the
@@ -253,9 +280,7 @@
     rep_abc <- rep_abc[ok, , drop = FALSE]
   }
 
-  center <- if (mse) coef else colMeans(rep_abc[rscales > 0, , drop = FALSE])
-  diff_mat <- sweep(rep_abc, 2L, center, "-")
-  sigma <- t(diff_mat * rscales) %*% diff_mat * scale
+  sigma <- .svy_rep_vcov(rep_abc, scale, rscales, mse = mse, coef = coef)
 
   list(a = a, b = b, c = c_val, sigma = sigma, n = n_d, n_weighted = W_d)
 }
