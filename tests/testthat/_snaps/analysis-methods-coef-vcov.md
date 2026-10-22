@@ -104,13 +104,13 @@
       i Wide-format correlation results do not have an `estimate_cols` mapping.
       v Use `format = "long"` in `get_corr()` before calling `coef()`.
 
-# vcov() on grouped means emits surveycore_warning_vcov_incomplete
+# vcov() on grouped quantiles emits surveycore_warning_vcov_incomplete
 
     Code
       invisible(vcov(r))
     Condition
       Warning:
-      ! Off-diagonal elements of `vcov()` are `NA_real_` for this <survey_means> result.
+      ! Off-diagonal elements of `vcov()` are `NA_real_` for this <survey_quantiles> result.
       i No joint covariance is stored for it; only the diagonal variances are available.
       i Use `diag(vcov(result))` for the variances, or `result$se` directly.
 

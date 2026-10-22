@@ -87,6 +87,11 @@
 #' as output columns. Use `meta(result)$numerator` and
 #' `meta(result)$denominator` to access them.
 #'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
+#'
 #' @examples
 #' d <- as_survey(pew_npors_2025, weights = weight, strata = stratum)
 #'
@@ -256,6 +261,7 @@ get_ratios <- function(
   acc_n <- integer(0)
   acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
+  acc_joint <- list()
 
   small_cell_ns <- integer(0)
   tmp_col <- "..surveycore_ratio_lin.."
@@ -314,6 +320,7 @@ get_ratios <- function(
       acc_se_srs <- c(acc_se_srs, NA_real_)
       acc_n <- c(acc_n, n_cell)
       acc_nw <- c(acc_nw, NA_real_)
+      acc_joint <- c(acc_joint, list(.joint_na()))
       if (length(group_vars) > 0L) {
         acc_grp_rows <- c(acc_grp_rows, list(combo_row))
       }
@@ -353,6 +360,7 @@ get_ratios <- function(
     acc_se_srs <- c(acc_se_srs, se_result$se_srs)
     acc_n <- c(acc_n, n_cell)
     acc_nw <- c(acc_nw, cell_x$n_weighted)
+    acc_joint <- c(acc_joint, list(se_result$joint))
 
     if (length(group_vars) > 0L) {
       acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -432,6 +440,7 @@ get_ratios <- function(
     estimate_cols = c("ratio"),
     statistic = "ratio"
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
   # ── Step 13: Apply decimals and name style ────────────────────────────────
   if (!is.null(decimals)) {

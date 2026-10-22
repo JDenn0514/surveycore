@@ -18,7 +18,7 @@
 # @param domain     Numeric 0/1 vector (full length): in-domain indicator.
 # @param ratio_est  Numeric scalar: full-sample ratio estimate.
 # @param total_x    Numeric scalar: full-sample denominator weighted total.
-# @return Named list: se, se_srs, n_weighted.
+# @return Named list: se, se_srs, n_weighted, joint (see .joint_vcov()).
 #' @noRd
 .replicate_ratio_cell <- function(
   design,
@@ -35,9 +35,20 @@
   n_d <- as.integer(sum(domain))
   N_d <- sum(w * domain)
 
+  # Defensive: get_ratios() never calls this for an empty or zero-weight
+  # domain. An empty domain gives an NA denominator total, which get_ratios()
+  # skips before the SE dispatch; a zero-weight domain gives a zero total,
+  # which raises surveycore_error_ratio_zero_denominator first.
+  # nocov start
   if (n_d == 0L || N_d <= 0) {
-    return(list(se = NA_real_, se_srs = NA_real_, n_weighted = 0))
+    return(list(
+      se = NA_real_,
+      se_srs = NA_real_,
+      n_weighted = 0,
+      joint = .joint_na()
+    ))
   }
+  # nocov end
 
   y_safe <- ifelse(domain > 0, y_vec, 0)
   x_safe <- ifelse(domain > 0, x_vec, 0)
@@ -68,7 +79,12 @@
     0
   }
 
-  list(se = se, se_srs = se_srs, n_weighted = N_d)
+  list(
+    se = se,
+    se_srs = se_srs,
+    n_weighted = N_d,
+    joint = .joint_rep(rep_ratio, ratio_est)
+  )
 }
 
 
@@ -86,7 +102,10 @@
 # @param ratio_est  Numeric scalar: full-sample ratio estimate.
 # @param total_x    Numeric scalar: full-sample denominator weighted total.
 # @param tmp_col    Character(1): temp column name for the linearized variable.
-# @return Named list: se, se_srs, n_weighted.
+# @return Named list: se, se_srs, n_weighted, joint (see .joint_vcov()).
+#   The ratio's linearization is z / total_x, so the joint element of z's
+#   total is divided by total_x (signed: the SE takes abs(), a covariance
+#   needs the sign).
 #' @noRd
 .delta_ratio_cell <- function(
   design,
@@ -109,5 +128,16 @@
   se <- cell_z$se / abs(total_x)
   se_srs <- cell_z$se_srs / abs(total_x)
 
-  list(se = se, se_srs = se_srs, n_weighted = cell_z$n_weighted)
+  joint <- cell_z$joint
+  if (!is.null(joint)) {
+    joint$value <- joint$value / total_x
+    joint$est <- joint$est / total_x
+  }
+
+  list(
+    se = se,
+    se_srs = se_srs,
+    n_weighted = cell_z$n_weighted,
+    joint = joint
+  )
 }

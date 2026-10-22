@@ -12,10 +12,11 @@
 #   6. Edge cases (zero-row, NA estimates, absent SE column)
 #   7. Error paths (unsupported class, stripped attribute, invalid level, invalid df)
 #   8. Warning paths (vcov_incomplete, parm_na, parm_unmatched)
-#   9. Joint covariance stored by get_freqs() and get_totals() (issue #200)
 #   9. Cross-method consistency
 #   10. Numerical oracle tests (survey package comparison)
 #   11. coef() naming by result class
+#   12. Joint covariance stored by get_freqs() and get_totals() (issue #200)
+#   13. Joint covariance stored by get_means() and get_ratios() (issue #200)
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,14 @@ get_result_ug <- function() {
 # Grouped mean result with SE (group = "group")
 get_result_gr <- function() {
   suppressWarnings(get_means(d_taylor, y1, group = group, variance = "se"))
+}
+
+# Grouped median result with SE: get_quantiles() stores no joint covariance,
+# so vcov() takes the NA off-diagonal fallback
+get_result_q <- function() {
+  suppressWarnings(
+    get_quantiles(d_taylor, y1, probs = 0.5, group = group, variance = "se")
+  )
 }
 
 # ── 1. SE generic and default method ──────────────────────────────────────────
@@ -105,8 +114,8 @@ test_that("vcov() diagonal equals se^2 for ungrouped mean (within 1e-14)", {
   expect_equal(diag(v), c(y1 = r$se^2), tolerance = 1e-14)
 })
 
-test_that("vcov() off-diagonal is NA_real_ for grouped means, never a structural 0", {
-  r <- get_result_gr()
+test_that("vcov() off-diagonal is NA_real_ for grouped quantiles, never a structural 0", {
+  r <- get_result_q()
   expect_warning(v <- vcov(r), class = "surveycore_warning_vcov_incomplete")
   p <- nrow(r)
   expect_equal(dim(v), c(p, p))
@@ -146,7 +155,7 @@ test_that("SE(result) equals sqrt(diag(vcov(result))) within 1e-14", {
 })
 
 test_that("SE(result) does NOT emit vcov_incomplete for grouped result", {
-  r <- get_result_gr()
+  r <- get_result_q()
   expect_no_warning(SE(r), class = "surveycore_warning_vcov_incomplete")
 })
 
@@ -210,21 +219,23 @@ test_that("confint() returns 0x2 matrix for parm = integer(0)", {
 
 # ── 6. Edge cases ─────────────────────────────────────────────────────────────
 
-test_that("vcov() returns NA_real_ matrix when se column is absent", {
+test_that("vcov() returns NA_real_ matrix when se column and stored matrix are absent", {
   r <- get_result_ug()
-  # Remove se column
+  # Remove se column; the stored joint covariance is not carried across
   r_nose <- r[, setdiff(names(r), "se")]
   attr(r_nose, ".survey_result") <- attr(r, ".survey_result")
   attr(r_nose, ".meta") <- attr(r, ".meta")
+  attr(r_nose, ".vcov") <- NULL
   class(r_nose) <- class(r)
   v <- vcov(r_nose)
   expect_true(all(is.na(v)))
   expect_equal(dim(v), c(1L, 1L))
 })
 
-test_that("NaN in se column is coerced to NA_real_ in vcov()", {
+test_that("NaN in se column is coerced to NA_real_ in vcov() with no stored matrix", {
   r <- get_result_ug()
   r_nan <- r
+  attr(r_nan, ".vcov") <- NULL
   r_nan$se <- NaN
   attr(r_nan, ".survey_result") <- attr(r, ".survey_result")
   attr(r_nan, ".meta") <- attr(r, ".meta")
@@ -372,8 +383,8 @@ test_that("coef() on wide-format survey_corr throws surveycore_error_result_meth
 
 # ── 8. Warning paths ──────────────────────────────────────────────────────────
 
-test_that("vcov() on grouped means emits surveycore_warning_vcov_incomplete", {
-  r <- get_result_gr()
+test_that("vcov() on grouped quantiles emits surveycore_warning_vcov_incomplete", {
+  r <- get_result_q()
   expect_warning(
     vcov(r),
     class = "surveycore_warning_vcov_incomplete"
@@ -1283,7 +1294,7 @@ test_that(".survey_result$df is Inf on a filtered Taylor design", {
   expect_identical(df_val, rep(Inf, nrow(result)))
 })
 
-# ── 9. Joint covariance stored by get_freqs() and get_totals() (issue #200) ───
+# ── 12. Joint covariance stored by get_freqs() and get_totals() (issue #200) ──
 #
 # survey names a factor's coefficients "<var><level>" and svyby() names them
 # "<group>:<var><level>"; surveycore names them "<var>.<level>" and
@@ -1749,4 +1760,286 @@ test_that("a nonprob get_totals() cell whose replicates are all NA gets an NA ro
   expect_identical(dim(v), c(2L, 2L))
   expect_true(all(is.na(v)))
   expect_identical(r$se, c(NA_real_, NA_real_))
+})
+
+# ── 13. Joint covariance stored by get_means() and get_ratios() (issue #200) ──
+#
+# svyby() names a one-variable statistic by group level alone; surveycore
+# names it "<group>:<var>" for means and "<group>:<num>/<den>" for ratios.
+
+# Reorder a svyby() vcov to surveycore's grouped coefficient names, which end
+# in ":<suffix>".
+svyby_vcov_in_sc_order <- function(sv_vcov, sc_names, suffix) {
+  sv_names <- sub(paste0(":", suffix, "$"), "", sc_names, fixed = FALSE)
+  out <- as.matrix(sv_vcov)[sv_names, sv_names]
+  dimnames(out) <- list(sc_names, sc_names)
+  out
+}
+
+test_that("grouped get_means() vcov matches survey::svyby(covmat = TRUE) — NHANES Taylor [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- make_nhanes_vcov_pair()
+
+  v <- vcov(get_means(pair$sc, ridageyr, group = race_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~ridageyr,
+      ~race_f,
+      pair$sv,
+      survey::svymean,
+      covmat = TRUE
+    )),
+    rownames(v),
+    "ridageyr"
+  )
+  expect_gt(max(abs(v[row(v) != col(v)])), 0)
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_means() vcov on a filtered design matches survey::subset() — NHANES Taylor [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- make_nhanes_vcov_pair()
+  mask <- pair$data$ridageyr >= 18
+
+  sc <- set_domain_marker(pair$sc, "logical", mask)
+  v <- vcov(get_means(sc, ridageyr, group = race_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~ridageyr,
+      ~race_f,
+      subset(pair$sv, mask),
+      survey::svymean,
+      covmat = TRUE
+    )),
+    rownames(v),
+    "ridageyr"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_means() vcov matches survey::svyby(covmat = TRUE) — ACS replicate [oracle]", {
+  skip_if_not_installed("survey")
+  expect_no_warning(pair <- make_acs_vcov_pair())
+
+  v <- vcov(get_means(pair$sc, agep, group = educ_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~agep,
+      ~educ_f,
+      pair$sv,
+      survey::svymean,
+      covmat = TRUE
+    )),
+    rownames(v),
+    "agep"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_means() vcov on a filtered design matches survey::subset() — ACS replicate [oracle]", {
+  skip_if_not_installed("survey")
+  expect_no_warning(pair <- make_acs_vcov_pair())
+  mask <- pair$data$sex_f == "Female"
+
+  sc <- set_domain_marker(pair$sc, "logical", mask)
+  v <- vcov(get_means(sc, agep, group = educ_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~agep,
+      ~educ_f,
+      subset(pair$sv, mask),
+      survey::svymean,
+      covmat = TRUE
+    )),
+    rownames(v),
+    "agep"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_ratios() vcov matches survey::svyby(svyratio, covmat = TRUE) — NHANES Taylor [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- make_nhanes_vcov_pair()
+
+  v <- vcov(get_ratios(
+    pair$sc,
+    bpxsy1,
+    ridageyr,
+    group = sex_f,
+    variance = "se"
+  ))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~bpxsy1,
+      ~sex_f,
+      denominator = ~ridageyr,
+      pair$sv,
+      survey::svyratio,
+      covmat = TRUE,
+      na.rm = TRUE
+    )),
+    rownames(v),
+    "bpxsy1/ridageyr"
+  )
+  expect_gt(max(abs(v[row(v) != col(v)])), 0)
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_ratios() vcov on a filtered design matches survey::subset() — NHANES Taylor [oracle]", {
+  skip_if_not_installed("survey")
+  pair <- make_nhanes_vcov_pair()
+  mask <- pair$data$ridageyr >= 40
+
+  sc <- set_domain_marker(pair$sc, "logical", mask)
+  v <- vcov(get_ratios(sc, bpxsy1, ridageyr, group = sex_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~bpxsy1,
+      ~sex_f,
+      denominator = ~ridageyr,
+      subset(pair$sv, mask),
+      survey::svyratio,
+      covmat = TRUE,
+      na.rm = TRUE
+    )),
+    rownames(v),
+    "bpxsy1/ridageyr"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_ratios() vcov matches survey::svyby(svyratio, covmat = TRUE) — ACS replicate [oracle]", {
+  skip_if_not_installed("survey")
+  expect_no_warning(pair <- make_acs_vcov_pair())
+
+  v <- vcov(get_ratios(pair$sc, wagp, agep, group = sex_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~wagp,
+      ~sex_f,
+      denominator = ~agep,
+      pair$sv,
+      survey::svyratio,
+      covmat = TRUE,
+      na.rm = TRUE
+    )),
+    rownames(v),
+    "wagp/agep"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_ratios() vcov on a filtered design matches survey::subset() — ACS replicate [oracle]", {
+  skip_if_not_installed("survey")
+  expect_no_warning(pair <- make_acs_vcov_pair())
+  mask <- pair$data$agep >= 25
+
+  sc <- set_domain_marker(pair$sc, "logical", mask)
+  v <- vcov(get_ratios(sc, wagp, agep, group = sex_f, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(
+      ~wagp,
+      ~sex_f,
+      denominator = ~agep,
+      subset(pair$sv, mask),
+      survey::svyratio,
+      covmat = TRUE,
+      na.rm = TRUE
+    )),
+    rownames(v),
+    "wagp/agep"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("grouped get_means() vcov on a calibrated Taylor design matches survey::calibrate() [oracle]", {
+  skip_if_not_installed("survey")
+  df <- make_survey_data(seed = 42L)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+  pop <- c(
+    "(Intercept)" = sum(df$wt) * 1.05,
+    y2 = sum(df$wt * df$y2) * 1.08
+  )
+  sv_cal <- survey::calibrate(sv, ~y2, pop)
+  cd <- as_caldata(
+    df$wt,
+    stats::weights(sv_cal) / df$wt,
+    stats::model.matrix(~y2, df)
+  )
+  df$wt_cal <- stats::weights(sv_cal)
+  sc <- as_survey(
+    df,
+    ids = psu,
+    strata = strata,
+    weights = wt_cal,
+    nest = TRUE,
+    calibration = list(cd)
+  )
+
+  v <- vcov(get_means(sc, y1, group = group, variance = "se"))
+  sv_v <- svyby_vcov_in_sc_order(
+    vcov(survey::svyby(~y1, ~group, sv_cal, survey::svymean, covmat = TRUE)),
+    rownames(v),
+    "y1"
+  )
+  expect_equal(v, sv_v, tolerance = 1e-8)
+})
+
+test_that("a nonprob get_means() cell with no weight in any replicate gets an NA row in the stored matrix", {
+  df <- make_survey_data(n = 100L, design = "replicate", seed = 4L)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  df$f2 <- factor(ifelse(seq_len(nrow(df)) <= 10L, "rare", "common"))
+  # Every replicate gives the "rare" group zero weight
+  df[df$f2 == "rare", rep_cols] <- 0
+  d <- as_survey_nonprob(df, weights = wt, repweights = all_of(rep_cols))
+
+  expect_warning(
+    expect_warning(
+      r <- get_means(d, y1, group = f2, variance = "se"),
+      class = "surveycore_warning_domain_replicates_na"
+    ),
+    class = "surveycore_warning_small_cell"
+  )
+  v <- vcov(r)
+  rare <- which(r$f2 == "rare")
+
+  expect_true(all(is.na(v[rare, ])))
+  expect_true(all(is.na(v[, rare])))
+  expect_equal(unname(diag(v)[-rare]), r$se[-rare]^2, tolerance = 1e-10)
+})
+
+test_that("vcov() on a two-phase get_means() result has NA off-diagonals", {
+  df <- make_survey_data(
+    design = "twophase",
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 2L,
+    seed = 6L
+  )
+  ph1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  d <- as_survey_twophase(ph1, subset = subset, method = "approx")
+  r <- get_means(d, y1, group = group, variance = "se", min_cell_n = 0L)
+
+  expect_null(attr(r, ".vcov"))
+  expect_warning(v <- vcov(r), class = "surveycore_warning_vcov_incomplete")
+  expect_true(all(is.na(v[row(v) != col(v)])))
+})
+
+test_that("get_ratios() stores an NA row for a cell with no denominator total", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 3L)
+  df$y2[df$group == "A"] <- NA
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  r <- get_ratios(d, y1, y2, group = group, variance = "se", na.rm = FALSE)
+  v <- vcov(r)
+  empty <- which(r$group == "A")
+
+  expect_true(all(is.na(v[empty, ])))
+  expect_false(anyNA(v[-empty, -empty]))
+  expect_equal(unname(diag(v)[-empty]), r$se[-empty]^2, tolerance = 1e-10)
 })
