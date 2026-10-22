@@ -145,10 +145,14 @@
     statistic,
     "mean" = ,
     "total" = {
-      # Variable name from .meta$x; "N" in no-variable mode
+      # Variable name from .meta$x; "N" in no-variable mode. A categorical
+      # get_totals() result carries a focal column named after the variable
+      # and is named variable.level, as for get_freqs().
       x_names <- names(meta$x)
       if (is.null(x_names) || length(x_names) == 0L) {
         rep("N", n_rows)
+      } else if (statistic == "total" && x_names[[1L]] %in% names(object)) {
+        paste0(x_names[[1L]], ".", as.character(object[[x_names[[1L]]]]))
       } else {
         rep(x_names[[1L]], n_rows)
       }

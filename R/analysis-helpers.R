@@ -1135,6 +1135,103 @@ ANOVA_META_KEYS <- c("model", "method", "test", "terms")
 }
 
 
+# ── .get_levels() ─────────────────────────────────────────────────────────────
+#
+# Return unique levels for a variable column, preserving factor level order
+# (or ascending sort for non-factors). When na.rm = FALSE, NA is appended last
+# regardless of factor ordering. When na.rm = TRUE, only non-NA values are
+# returned, and factor levels absent from the data are dropped.
+#
+# @param x_col  Atomic vector (factor or plain vector).
+# @param na.rm  Logical. If FALSE, NA is appended as a level.
+# @return Atomic vector of levels (same type as x_col, except NA is always
+#   NA_character_ for factors since factor levels are character).
+.get_levels <- function(x_col, na.rm) {
+  has_na <- anyNA(x_col)
+
+  if (is.factor(x_col)) {
+    # Factor: use declared level order; drop levels not present in data
+    all_lvls <- levels(x_col)
+    present <- unique(as.character(x_col[!is.na(x_col)]))
+    kept_lvls <- all_lvls[all_lvls %in% present]
+    if (!na.rm && has_na) {
+      c(kept_lvls, NA_character_)
+    } else {
+      kept_lvls
+    }
+  } else {
+    # Non-factor: sort unique non-NA values ascending
+    non_na <- sort(unique(x_col[!is.na(x_col)]))
+    if (!na.rm && has_na) {
+      c(non_na, NA)
+    } else {
+      non_na
+    }
+  }
+}
+
+
+# ── .level_display() ──────────────────────────────────────────────────────────
+#
+# Display string for one level of a categorical focal variable. With
+# label_values = TRUE and a value-label map, a numeric code is replaced by its
+# label; a factor level is already its label string and falls through.
+#
+# @param lvl           One element of .get_levels() output.
+# @param vl_map        Named character vector (labels named by code) or NULL.
+# @param label_values  Logical.
+# @return Character(1); NA_character_ for the NA level.
+.level_display <- function(lvl, vl_map, label_values) {
+  if (is.na(lvl)) {
+    return(NA_character_)
+  }
+  key <- as.character(lvl)
+  if (label_values && !is.null(vl_map) && key %in% names(vl_map)) {
+    vl_map[[key]]
+  } else {
+    key
+  }
+}
+
+
+# ── .value_label_map() ────────────────────────────────────────────────────────
+#
+# Invert a value-label vector (codes named by label) into a lookup of labels
+# named by code, for .level_display(). A factor's levels are already its label
+# strings, and the labels inferred from a factor are coded 1..k by position,
+# so a factor gets no lookup: mapping a level such as "6" through the codes
+# would relabel it with whichever level sits sixth.
+#
+# @param vl     Named vector from .extract_var_meta()$value_labels, or NULL.
+# @param x_col  The focal column.
+# @return Named character vector, or NULL.
+.value_label_map <- function(vl, x_col) {
+  if (is.null(vl) || is.factor(x_col)) {
+    return(NULL)
+  }
+  structure(names(vl), names = as.character(vl))
+}
+
+
+# ── .focal_level_column() ─────────────────────────────────────────────────────
+#
+# Build the focal output column of a one-row-per-level result from the
+# accumulated display strings. Returns a factor ordered by the value labels
+# when label_values = TRUE and labels exist, else a character vector.
+#
+# @param acc_focal     Character vector of display strings.
+# @param vl            Named vector of value labels, or NULL.
+# @param label_values  Logical.
+# @return Character vector or factor.
+.focal_level_column <- function(acc_focal, vl, label_values) {
+  if (label_values && !is.null(vl)) {
+    factor(acc_focal, levels = names(vl))
+  } else {
+    acc_focal
+  }
+}
+
+
 # ── .nonprob_rep_na_warn() ────────────────────────────────────────────────────
 #
 # Issue a warning when >5% of bootstrap replicates produce NA estimates for a

@@ -10,24 +10,33 @@
 #' Weighted Total for a Survey Design
 #'
 #' Compute the estimated population total of a numeric variable in a survey
-#' design, or the estimated population size when no variable is supplied.
+#' design, one total per level of a categorical variable, or the estimated
+#' population size when no variable is supplied.
 #' Supports optional grouping, uncertainty quantification, and metadata-driven
 #' labelling.
 #'
 #' @param design A survey design object: `survey_taylor`, `survey_replicate`,
 #'   `survey_twophase`, or `survey_nonprob`.
 #' @param x <[`tidy-select`][tidyselect::language]> Optional single unquoted
-#'   numeric variable name. When `NULL` (default), estimates the population
-#'   size (sum of weights). When supplied, estimates the weighted sum
-#'   (sum of w_i * x_i).
+#'   variable name. When `NULL` (default), estimates the population
+#'   size (sum of weights). When numeric, estimates the weighted sum
+#'   (sum of w_i * x_i). When a factor or character vector, returns one row
+#'   per level: the level's total is the weighted sum of its 0/1 indicator,
+#'   the same estimate and standard error as `survey::svytotal()` on a factor.
+#'   Factor levels keep their declared order and character levels sort
+#'   ascending. A level with no observed rows in the active domain is dropped,
+#'   as in [get_freqs()]; `survey::svytotal()` returns it as a zero row.
+#'   Logical and other column types are rejected.
 #' @param group <[`tidy-select`][tidyselect::language]> Optional grouping
 #'   variable(s). Default `NULL`.
 #' @param variance `NULL` or a character vector from `"se"`, `"ci"`, `"var"`,
 #'   `"cv"`, `"moe"`, `"deff"`. Default `"ci"`.
 #' @param conf_level Numeric scalar in (0, 1). Default `0.95`.
 #' @param n_weighted Logical. For `get_totals(d)` (no variable), equals the
-#'   `total` column and is included for API uniformity. For variable mode,
-#'   adds the sum of weights for non-NA observations. Default `FALSE`.
+#'   `total` column and is included for API uniformity. For a numeric `x`,
+#'   adds the sum of weights for non-NA observations. For a categorical `x`,
+#'   adds the sum of weights at each level, which equals `total`. Default
+#'   `FALSE`.
 #' @param decimals Integer or `NULL`. If an integer, rounds all numeric output
 #'   columns (e.g., `total`, `se`, `ci_low`, `ci_high`) to this many decimal
 #'   places. Default `NULL` (no rounding).
@@ -38,10 +47,12 @@
 #'   excluded from the output. If `FALSE`, `NA` observations in the analysis
 #'   variable are included in calculations, and observations where a group
 #'   variable is `NA` are collected into their own group row in the output
-#'   (appearing after all non-`NA` group rows).
-#' @param label_values Logical. Accepted for API consistency across `get_*()`
-#'   functions. For `get_totals()`, no value-level cells appear in the output,
-#'   so this parameter has no effect. Default `TRUE`.
+#'   (appearing after all non-`NA` group rows). For a categorical `x`,
+#'   `FALSE` also adds an `NA` level row after the other levels, holding the
+#'   total of the rows where `x` is `NA`.
+#' @param label_values Logical. If `TRUE` (default), group columns and the
+#'   level column of a categorical `x` show value labels where they exist.
+#'   For a numeric `x`, no value-level cells appear in the output.
 #' @param label_vars Logical. Accepted for API uniformity. Default `TRUE`.
 #' @param name_style `"surveycore"` (default) or `"broom"`.
 #' @param ... Additional arguments forwarded to `.dispatch_over_collection()`
@@ -61,9 +72,12 @@
 #' @return A `survey_totals` tibble (also inheriting `survey_result`). Columns:
 #' \itemize{
 #'   \item `[group_cols...]` — group variable columns (when active), first.
+#'   \item `[x]` — the level of a categorical `x`, named after the variable
+#'     (categorical `x` only).
 #'   \item `total` — the weighted sum estimate.
 #'   \item Variance columns — only those requested via `variance`.
-#'   \item `n` — unweighted count (omitted in no-variable mode).
+#'   \item `n` — unweighted count (omitted in no-variable mode). For a
+#'     categorical `x`, the count of rows at the level.
 #'   \item `n_weighted` — sum of weights (only when requested).
 #' }
 #' The variable name (or `NULL` for no-variable mode) is in
@@ -85,6 +99,17 @@
 #'
 #' # Grouped
 #' get_totals(d, agep, group = sex)
+#'
+#' # One total per level of a factor
+#' acs <- acs_pums_wy
+#' acs$sex_f <- factor(acs$sex, levels = 1:2, labels = c("Male", "Female"))
+#' d_f <- as_survey_replicate(
+#'   acs,
+#'   weights = pwgtp,
+#'   repweights = pwgtp1:pwgtp80,
+#'   type = "successive-difference"
+#' )
+#' get_totals(d_f, sex_f)
 #' @family analysis
 #' @export
 get_totals <- function(
@@ -150,16 +175,20 @@ get_totals <- function(
     x_name <- x_names[[1L]]
     x_col <- design@data[[x_name]]
 
-    if (!is.numeric(x_col)) {
+    if (!is.numeric(x_col) && !is.factor(x_col) && !is.character(x_col)) {
       cli::cli_abort(
         c(
-          "x" = "{.arg x} must be numeric, not {.cls {class(x_col)}}.",
+          "x" = paste0(
+            "{.arg x} must be numeric, a factor, or a character vector, ",
+            "not {.cls {class(x_col)}}."
+          ),
           "i" = "Column {.field {x_name}} cannot be used with {.fn get_totals}."
         ),
         class = "surveycore_error_non_numeric_variable"
       )
     }
   }
+  is_categorical <- !no_variable && !is.numeric(x_col)
 
   group_vars <- .resolve_groups(design, group_quo)
   domain_mask <- .apply_domain(design)
@@ -202,7 +231,56 @@ get_totals <- function(
   # ── Step 5: Collect variable metadata ───────────────────────────────────────
   x_meta <- if (!no_variable) .extract_var_meta(design, x_name) else NULL
 
+  # ── Step 5b: Expand a categorical x into one 0/1 indicator per level ────────
+  # A level total is the total of its indicator (matches survey::svytotal()
+  # on a factor). The indicators are written to temporary columns so every
+  # design class reuses the numeric .total_cell() path unchanged.
+  if (is_categorical) {
+    x_domain <- x_col[domain_mask]
+    if (!na.rm && all(is.na(x_domain))) {
+      cli::cli_abort(
+        c(
+          "x" = "All values of {.field {x_name}} are {.code NA}.",
+          "i" = paste0(
+            "Cannot compute estimate with {.arg na.rm = FALSE}. ",
+            "Set {.arg na.rm = TRUE} to exclude {.code NA} values."
+          )
+        ),
+        class = "surveycore_error_all_na"
+      )
+    }
+    x_levels <- .get_levels(x_domain, na.rm)
+    if (length(x_levels) == 0L) {
+      cli::cli_warn(
+        c(
+          "!" = paste0(
+            "All values of {.field {x_name}} are {.code NA} with ",
+            "{.arg na.rm = TRUE}. Returning 0 rows."
+          )
+        ),
+        class = "surveycore_warning_all_na_totals"
+      )
+    }
+    vl_map <- .value_label_map(x_meta$value_labels, x_col)
+    ind_cols <- paste0("..surveycore_level_", seq_along(x_levels), "..")
+    ind_data <- design@data
+    for (li in seq_along(x_levels)) {
+      lvl <- x_levels[[li]]
+      ind_data[[ind_cols[[li]]]] <- if (is.na(lvl)) {
+        as.numeric(is.na(x_col))
+      } else {
+        as.numeric(!is.na(x_col) & x_col == lvl)
+      }
+    }
+    design@data <- ind_data
+  } else {
+    # One pass per group combination, totalling x itself (or the weights)
+    x_levels <- list(NULL)
+    ind_cols <- list(x_name)
+  }
+
   # ── Step 6: Main accumulation loop ──────────────────────────────────────────
+  acc_focal <- character(0)
   acc_total <- numeric(0)
   acc_se <- numeric(0)
   acc_sesrs <- numeric(0)
@@ -229,23 +307,38 @@ get_totals <- function(
       domain <- .mean_domain_vec(active_mask, x_col, na.rm)
     }
 
-    cell <- .total_cell(design, x_name, domain)
+    for (li in seq_along(x_levels)) {
+      cell <- .total_cell(design, ind_cols[[li]], domain)
 
-    if (!no_variable && !is.na(cell$n) && cell$n > 0L && cell$n < min_cell_n) {
-      small_cell_ns <- c(small_cell_ns, cell$n)
-    }
+      if (is_categorical) {
+        # A level's n and n_weighted count the rows at that level, as in
+        # get_freqs(), not the rows of the whole group
+        cell$n <- as.integer(sum(domain * design@data[[ind_cols[[li]]]]))
+        cell$n_weighted <- if (is.na(cell$total)) 0 else cell$total
+        acc_focal <- c(
+          acc_focal,
+          .level_display(x_levels[[li]], vl_map, label_values)
+        )
+      }
 
-    acc_total <- c(acc_total, cell$total)
-    acc_se <- c(acc_se, cell$se)
-    acc_sesrs <- c(acc_sesrs, cell$se_srs)
-    acc_nw <- c(acc_nw, cell$n_weighted)
+      if (
+        !no_variable && !is.na(cell$n) && cell$n > 0L && cell$n < min_cell_n
+      ) {
+        small_cell_ns <- c(small_cell_ns, cell$n)
+      }
 
-    if (!no_variable) {
-      acc_n <- c(acc_n, cell$n)
-    }
+      acc_total <- c(acc_total, cell$total)
+      acc_se <- c(acc_se, cell$se)
+      acc_sesrs <- c(acc_sesrs, cell$se_srs)
+      acc_nw <- c(acc_nw, cell$n_weighted)
 
-    if (length(group_vars) > 0L) {
-      acc_grp_rows <- c(acc_grp_rows, list(combo_row))
+      if (!no_variable) {
+        acc_n <- c(acc_n, cell$n)
+      }
+
+      if (length(group_vars) > 0L) {
+        acc_grp_rows <- c(acc_grp_rows, list(combo_row))
+      }
     }
   }
 
@@ -275,6 +368,13 @@ get_totals <- function(
   )
 
   col_vecs <- list()
+  if (is_categorical) {
+    col_vecs[[x_name]] <- .focal_level_column(
+      acc_focal,
+      x_meta$value_labels,
+      label_values
+    )
+  }
   col_vecs$total <- acc_total
   col_vecs <- c(col_vecs, var_cols)
 
