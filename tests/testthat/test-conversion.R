@@ -5142,6 +5142,49 @@ test_that("from_svydesign() reads the twophase2 phase 1 weight column from probs
 })
 
 
+# survey::twophase() evaluates subset = ~v in the data and then in the
+# caller's frame, so ~v can name a vector that is no data column. The route
+# then falls back to matching the stored subset against the data columns.
+test_that("from_svydesign() matches the subset column by value when the subset formula names no data column", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  in_phase2 <- df$subset
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~in_phase2,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$subset, "subset")
+})
+
+
+# Any other probs expression names no weight column, so the route falls back
+# to matching 1 / prob against the data columns.
+test_that("from_svydesign() matches the weight column by value for a probs expression other than ~I(1/w)", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$wt2 <- 2 * df$wt
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / (2 * wt)), NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase1$weights, "wt2")
+})
+
+
 test_that("from_svydesign(twophase2 with strata2) agrees with survey [numerical]", {
   skip_if_not_installed("survey")
   df <- make_twophase_frame()

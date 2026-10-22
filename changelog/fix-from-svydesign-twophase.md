@@ -50,8 +50,9 @@ writes; `test_invariants()` caught it, and the key is now present.
   roxygen section
 - `man/from_svydesign.Rd` — regenerated
 - `plans/error-messages.md` — row 62 retired; row TP-1 added
-- `tests/testthat/test-conversion.R` — the method-warning block replaced; 21
-  new blocks: structural recovery, `svymean()`/`svytotal()`/`svyglm()` oracles
+- `tests/testthat/test-conversion.R` — the method-warning block replaced; 23
+  new blocks: structural recovery, the value-match fallbacks for the phase 1
+  weights and the subset column, `svymean()`/`svytotal()`/`svyglm()` oracles
   for full and approx with `strata2` and with `ids2`, filtered and unfiltered,
   the `as_svydesign()` round trip, the generated-column fallbacks and the
   collision error
