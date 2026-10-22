@@ -952,3 +952,160 @@ test_that("get_totals() full method with fpc2 as sampling fractions matches surv
   )
   expect_full_total_oracle(list(sc = sc, sv = sv))
 })
+
+# ── Section 8: Oracle — method = "approx" phase-2 score scale (issue #334) ──
+#
+# survey::twophase() rescales the phase-2 score by sqrt(pi1) only when some
+# phase-1 sampling unit holds more than one phase-2 unit. When ids2 names the
+# phase-1 cluster, or phase 1 is unclustered, it uses the score unscaled
+# (`samescale`). Both sides take the same weight column as weights =; no
+# number surveycore computed reaches survey. The fixture keeps three of five
+# clusters per stratum, so no stratum is left with one PSU.
+#
+# Domains compare against survey's zero-filled form: svytotal() of y1 * A and
+# svyratio() of y1 * A over A, on the unfiltered design. survey's subset()
+# drops the rows, and onestrat.phase1() pads the missing domain units with a
+# phase-2 probability of 1 in place of their own, so under ids2 or an
+# unclustered phase 1 its domain SE disagrees with its own zero-filled total.
+# surveycore treats a domain as zero influence, which is the zero-filled form.
+
+approx_oracle_ids2 <- function() {
+  df <- full_oracle_data()
+  sc <- as_survey_twophase(
+    full_oracle_phase1(df),
+    ids2 = psu,
+    subset = in_clusters,
+    method = "approx"
+  )
+  sv <- survey::twophase(
+    id = list(~psu, ~psu),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~in_clusters,
+    method = "approx"
+  )
+  list(sc = sc, sv = sv)
+}
+
+# Unclustered, stratified phase 1 with unequal weights; strata2 subsamples rows
+approx_oracle_unclustered <- function() {
+  df <- full_oracle_data()
+  sc <- as_survey_twophase(
+    as_survey(df, weights = wt, strata = strata),
+    strata2 = strata,
+    subset = subset,
+    method = "approx"
+  )
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(~strata, ~strata),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+  list(sc = sc, sv = sv)
+}
+
+# Mark the domain group == "A" on the surveycore side only; survey keeps the
+# unfiltered design and takes the domain as zero-filled variables
+approx_oracle_domain <- function(designs) {
+  designs$sc@data[[SURVEYCORE_DOMAIN_COL]] <- designs$sc@data$group == "A"
+  designs
+}
+
+expect_approx_domain_mean_oracle <- function(designs) {
+  sc_est <- get_means(
+    designs$sc,
+    y1,
+    variance = c("se", "ci"),
+    min_cell_n = 1L
+  )
+  sv_est <- survey::svyratio(
+    ~ I(y1 * (group == "A")),
+    ~ I(as.numeric(group == "A")),
+    designs$sv
+  )
+  expect_equal(sc_est$mean, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+}
+
+expect_approx_domain_total_oracle <- function(designs) {
+  sc_est <- get_totals(
+    designs$sc,
+    y1,
+    variance = c("se", "ci"),
+    min_cell_n = 1L
+  )
+  sv_est <- survey::svytotal(~ I(y1 * (group == "A")), designs$sv)
+  expect_equal(sc_est$total, as.numeric(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, as.numeric(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, confint(sv_est)[1], tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, confint(sv_est)[2], tolerance = 1e-6)
+}
+
+test_that("get_means() approx method with ids2 matches survey::twophase [oracle]", {
+  skip_if_not_installed("survey")
+  expect_full_mean_oracle(approx_oracle_ids2())
+})
+
+test_that("get_means() approx method with ids2 on a domain matches survey's zero-filled ratio [oracle]", {
+  skip_if_not_installed("survey")
+  expect_approx_domain_mean_oracle(approx_oracle_domain(approx_oracle_ids2()))
+})
+
+test_that("get_totals() approx method with ids2 matches survey::twophase [oracle]", {
+  skip_if_not_installed("survey")
+  expect_full_total_oracle(approx_oracle_ids2())
+})
+
+test_that("get_totals() approx method with ids2 on a domain matches survey's zero-filled total [oracle]", {
+  skip_if_not_installed("survey")
+  expect_approx_domain_total_oracle(approx_oracle_domain(approx_oracle_ids2()))
+})
+
+test_that("survey_glm() approx method with ids2 matches survey::twophase [oracle]", {
+  skip_if_not_installed("survey")
+  expect_full_glm_oracle(approx_oracle_ids2())
+})
+
+# survey has no zero-filled form of a domain GLM, and its subset() SE carries
+# the padding above, so only the coefficients are compared on a domain
+test_that("survey_glm() approx method with ids2 on a domain matches survey's coefficients", {
+  skip_if_not_installed("survey")
+  designs <- full_oracle_filter(approx_oracle_ids2())
+  sc_fit <- survey_glm(designs$sc, y1 ~ y2)
+  sv_fit <- survey::svyglm(y1 ~ y2, designs$sv)
+  expect_equal(
+    unname(coef(sc_fit)),
+    unname(coef(sv_fit)),
+    tolerance = 1e-10
+  )
+})
+
+test_that("get_means() approx method with an unclustered weighted phase 1 matches survey::twophase [oracle]", {
+  skip_if_not_installed("survey")
+  expect_full_mean_oracle(approx_oracle_unclustered())
+})
+
+test_that("get_totals() approx method with an unclustered weighted phase 1 matches survey::twophase [oracle]", {
+  skip_if_not_installed("survey")
+  expect_full_total_oracle(approx_oracle_unclustered())
+})
+
+test_that("get_means() approx method with an unclustered weighted phase 1 on a domain matches survey's zero-filled ratio [oracle]", {
+  skip_if_not_installed("survey")
+  expect_approx_domain_mean_oracle(
+    approx_oracle_domain(approx_oracle_unclustered())
+  )
+})
+
+test_that("get_totals() approx method with an unclustered weighted phase 1 on a domain matches survey's zero-filled total [oracle]", {
+  skip_if_not_installed("survey")
+  expect_approx_domain_total_oracle(
+    approx_oracle_domain(approx_oracle_unclustered())
+  )
+})
