@@ -102,3 +102,13 @@
       i The returned survey object records nothing about the approximation, so no later call warns again.
       v Run `surveywts::create_bootstrap_weights()` on this design, then convert the design it returns.
 
+# from_svydesign() refuses a generated phase 2 name that names a data column
+
+    Code
+      from_svydesign(sv)
+    Condition
+      Error in `.from_svydesign_phase2()`:
+      x `from_svydesign()` cannot store the phase 2 design under generated names.
+      i The design data already has a column named ..surveycore_probs2...
+      v Rename the conflicting column in the design data, then convert again.
+

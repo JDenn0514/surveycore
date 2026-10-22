@@ -50,6 +50,29 @@ Either way, the \code{repweights} design variable of the returned object names
 those columns, in replicate order.
 }
 
+\section{Two-phase designs}{
+
+
+The variance method comes from the object's class: a \code{twophase2} object,
+which \code{\link[survey:twophase]{survey::twophase()}} returns for \code{method = "full"}, converts to
+\code{method = "full"}, and a \code{twophase} object converts to \code{method = "approx"}.
+\code{survey} builds \code{method = "simple"} as a \code{twophase} object too, and
+surveycore treats \code{"simple"} as \code{"approx"}.
+
+The phase 2 design, \code{ids2}, \code{strata2}, \code{probs2} and \code{fpc2}, is read from
+the formulas the \code{survey} object stores for it. A formula that names data
+columns directly, such as \code{~psu2} or \code{~strata}, keeps those names. Any other
+formula, such as \code{~I(1/w2)}, is evaluated on the phase 1 data as \code{survey}
+evaluates it, and the values go into a generated column named
+\code{..surveycore_ids2..}, \code{..surveycore_strata2..}, \code{..surveycore_probs2..}
+or \code{..surveycore_fpc2..}. A multi-stage \code{ids2} generates one column per
+stage, \code{..surveycore_ids2_1..} and so on. A phase 2 \code{weights} formula,
+which \code{method = "approx"} accepts, goes in as \code{..surveycore_probs2..},
+because surveycore records phase 2 probabilities and not weights. The
+phase 1 weights of a \code{twophase2} object, which \code{survey} stores as
+\code{probs = ~I(1/w)}, keep the column name \code{w}.
+}
+
 \examples{
 if (requireNamespace("survey", quietly = TRUE)) {
   sv <- survey::svydesign(

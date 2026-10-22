@@ -49,8 +49,8 @@
 #    27. rejects plain data.frame
 #   as_svydesign() — survey_taylor with no ids uses ids = ~1
 #    37. as_svydesign(survey_taylor) with ids = NULL produces ids = ~1
-#   from_svydesign() — twophase method unknown fallback warning
-#    38. warns when twophase x$method is unrecognised
+#   from_svydesign() — twophase method from the object's class
+#    38. a twophase object converts to "approx" with no condition
 #   from_tbl_svy() — happy path
 #    28. tbl_svy → survey_taylor
 #   from_tbl_svy() — error on non-tbl_svy input
@@ -774,30 +774,25 @@ test_that("as_svydesign() uses ids = ~1 when survey_taylor has ids = NULL", {
 })
 
 
-# 38. from_svydesign() warns when twophase x$method is unrecognised (lines 465-472)
-test_that("from_svydesign() warns surveycore_warning_twophase_method_unknown for unknown method", {
+# 38. survey::twophase() stores no method: twophase2 is "full" and twophase
+# is "approx". The route once guessed the second and warned
+# surveycore_warning_twophase_method_unknown on every approx object (#335).
+test_that("from_svydesign() converts a twophase object to method approx with no warning", {
   skip_if_not_installed("survey")
   set.seed(42)
   n <- 30L
   df <- data.frame(x = rnorm(n), wt = rep(1, n))
   sub <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.6, 0.4))
-  # method = "approx" creates a plain "twophase" object (not "twophase2"), so
-  # the class-based fallback does not fire and only x$method controls dispatch.
   sv <- survey::twophase(
     id = list(~1, ~1),
     strata = list(NULL, NULL),
-    probs = list(NULL, NULL),
+    weights = list(~wt, NULL),
     data = df,
     subset = sub,
     method = "approx"
   )
-  # Replace method with an unrecognised value to trigger the fallback warning.
-  sv$method <- "nonexistent_method"
 
-  expect_warning(
-    d <- from_svydesign(sv),
-    class = "surveycore_warning_twophase_method_unknown"
-  )
+  expect_no_warning(d <- from_svydesign(sv))
   expect_true(S7::S7_inherits(d, survey_twophase))
   expect_identical(d@variables$method, "approx")
 })
@@ -4948,4 +4943,487 @@ test_that("as_svydesign() restricts an approx two-phase design to the domain", {
   # count and the phase-2 count are different numbers on this data and the
   # block above cannot pass on an unrestricted object.
   expect_lt(in_domain_and_phase2, in_phase2)
+})
+
+
+# ── from_svydesign(): the phase 2 design of a two-phase object (#335) ────────
+#
+# The two-phase route once kept the phase 1 design and wrote an empty phase 2
+# whatever the source held. A twophase2 (method = "full") object then raised
+# surveycore_error_full_requires_phase2 on every estimate, and a twophase
+# (method = "approx") object estimated without its phase 2 strata, so the
+# estimate and the SE both differed from survey's. Both classes keep the
+# phase 2 formulas in x$phase2$call, and the route now reads them there.
+#
+# Oracle blocks below compare the converted design against the survey object
+# it came from. Both sides are built from the same frame by survey itself;
+# surveycore hands survey no number.
+
+# Fixture. 400 rows, 167 of them in phase 2. ssu is a phase 2 cluster of
+# three consecutive rows, and w2 is the phase 2 weight 1 / phase2_prob.
+make_twophase_frame <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$ssu <- seq_len(nrow(df)) %/% 3L
+  df$w2 <- 1 / df$phase2_prob
+  df
+}
+
+# A survey two-phase object on the fixture, in one of the four shapes the
+# blocks below name. method = "full" refuses weights, so its phase 1 weights
+# go in as probabilities, as as_svydesign() passes them (issue #329).
+make_svy_twophase <- function(df, method, phase2) {
+  id <- if (phase2 == "ids2") list(~psu, ~ssu) else list(~psu, ~1)
+  strata <- if (phase2 == "ids2") {
+    list(~strata, NULL)
+  } else {
+    list(~strata, ~strata)
+  }
+  if (method == "full") {
+    survey::twophase(
+      id = id,
+      strata = strata,
+      probs = list(~ I(1 / wt), NULL),
+      data = df,
+      subset = ~subset,
+      method = "full"
+    )
+  } else {
+    survey::twophase(
+      id = id,
+      strata = strata,
+      weights = list(~wt, NULL),
+      data = df,
+      subset = ~subset,
+      method = "approx"
+    )
+  }
+}
+
+# The domain mask: y1 above its median over all 400 phase 1 rows, which keeps
+# 81 of the 167 phase 2 rows.
+twophase_mask <- function(df) df$y1 > stats::median(df$y1)
+
+# The oracle. Mean, total and a two-coefficient GLM on the surveycore side
+# against svymean(), svytotal() and svyglm() on the survey side, at the house
+# tolerances: estimate 1e-10, SE 1e-8, CI 1e-6.
+expect_twophase_oracle <- function(d, sv) {
+  m <- get_means(d, y1, variance = c("se", "ci"))
+  sm <- survey::svymean(~y1, sv)
+  expect_equal(m$mean, coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(m$se, as.numeric(survey::SE(sm)), tolerance = 1e-8)
+  ci <- confint(sm)
+  expect_equal(m$ci_low, ci[1L, 1L], tolerance = 1e-6)
+  expect_equal(m$ci_high, ci[1L, 2L], tolerance = 1e-6)
+
+  t <- get_totals(d, y1, variance = "se")
+  st <- survey::svytotal(~y1, sv)
+  expect_equal(t$total, coef(st)[["y1"]], tolerance = 1e-10)
+  expect_equal(t$se, as.numeric(survey::SE(st)), tolerance = 1e-8)
+
+  fit <- survey_glm(d, y1 ~ y2, quiet = TRUE)
+  sfit <- survey::svyglm(y1 ~ y2, sv)
+  expect_equal(coef(fit), coef(sfit), tolerance = 1e-10)
+  expect_equal(
+    sqrt(diag(vcov(fit))),
+    sqrt(diag(vcov(sfit))),
+    tolerance = 1e-8
+  )
+}
+
+# The domain oracle. survey's own domain is `[` on the phase 2 sample, whose
+# rows are the subset rows of the frame. On a twophase2 object `[` keeps the
+# excluded rows at zero weight, and survey's summary.glm() warns that they do
+# not enter the dispersion, once from svyglm() and once from its summary; on
+# a twophase object `[` removes them and nothing warns. The warning is
+# survey's own and untyped, so it is matched by text.
+# survey_glm() raises nothing on either class.
+expect_twophase_domain_oracle <- function(d, sv, mask) {
+  df <- survey_data(d)
+  df[[SURVEYCORE_DOMAIN_COL]] <- mask
+  d@data <- df
+  sv_dom <- sv[mask[sv$subset], ]
+
+  m <- get_means(d, y1, variance = "se")
+  sm <- survey::svymean(~y1, sv_dom)
+  expect_equal(m$mean, coef(sm)[["y1"]], tolerance = 1e-10)
+  expect_equal(m$se, as.numeric(survey::SE(sm)), tolerance = 1e-8)
+
+  t <- get_totals(d, y1, variance = "se")
+  st <- survey::svytotal(~y1, sv_dom)
+  expect_equal(t$total, coef(st)[["y1"]], tolerance = 1e-10)
+  expect_equal(t$se, as.numeric(survey::SE(st)), tolerance = 1e-8)
+
+  expect_no_warning(fit <- survey_glm(d, y1 ~ y2, quiet = TRUE))
+  if (inherits(sv, "twophase2")) {
+    expect_warning(
+      expect_warning(sfit <- survey::svyglm(y1 ~ y2, sv_dom), "zero weight"),
+      "zero weight"
+    )
+  } else {
+    expect_no_warning(sfit <- survey::svyglm(y1 ~ y2, sv_dom))
+  }
+  expect_equal(coef(fit), coef(sfit), tolerance = 1e-10)
+  expect_equal(
+    sqrt(diag(vcov(fit))),
+    sqrt(diag(vcov(sfit))),
+    tolerance = 1e-8
+  )
+}
+
+
+test_that("from_svydesign() recovers strata2 and the phase 1 weights of a twophase2 object", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+
+  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+  test_invariants(d)
+
+  expect_identical(d@variables$method, "full")
+  expect_identical(d@variables$subset, "subset")
+  expect_identical(d@variables$phase1$weights, "wt")
+  expect_identical(
+    d@variables$phase2,
+    list(ids = NULL, strata = "strata", probs = NULL, fpc = NULL)
+  )
+})
+
+test_that("from_svydesign() recovers ids2 of a twophase object", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+
+  d <- from_svydesign(make_svy_twophase(df, "approx", "ids2"))
+
+  expect_identical(d@variables$method, "approx")
+  expect_identical(
+    d@variables$phase2,
+    list(ids = "ssu", strata = NULL, probs = NULL, fpc = NULL)
+  )
+})
+
+test_that("from_svydesign() recovers probs2 and fpc2 named in a twophase2 call", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$n2 <- df$phase2_prob * 0 + 400
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~phase2_prob),
+    fpc = list(NULL, ~n2),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(
+    d@variables$phase2,
+    list(ids = NULL, strata = "strata", probs = "phase2_prob", fpc = "n2")
+  )
+})
+
+# A probs = ~I(1/w) formula names its weight column directly. Value matching
+# takes the first column holding equal values, which here is a copy that sits
+# ahead of wt in the frame.
+test_that("from_svydesign() reads the twophase2 phase 1 weight column from probs = ~I(1/w)", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df <- cbind(wt_copy = df$wt, df)
+
+  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+
+  expect_identical(d@variables$phase1$weights, "wt")
+})
+
+
+# survey::twophase() evaluates subset = ~v in the data and then in the
+# caller's frame, so ~v can name a vector that is no data column. The route
+# then falls back to matching the stored subset against the data columns.
+test_that("from_svydesign() matches the subset column by value when the subset formula names no data column", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  in_phase2 <- df$subset
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~in_phase2,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$subset, "subset")
+})
+
+
+# Any other probs expression names no weight column, so the route falls back
+# to matching 1 / prob against the data columns.
+test_that("from_svydesign() matches the weight column by value for a probs expression other than ~I(1/w)", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$wt2 <- 2 * df$wt
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / (2 * wt)), NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase1$weights, "wt2")
+})
+
+
+test_that("from_svydesign(twophase2 with strata2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+test_that("from_svydesign(twophase2 with ids2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "ids2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+test_that("from_svydesign(twophase with strata2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "strata2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+test_that("from_svydesign(twophase with ids2) agrees with survey [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  expect_twophase_oracle(from_svydesign(sv), sv)
+})
+
+
+test_that("a filtered from_svydesign(twophase2 with strata2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase2 with ids2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "ids2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase with strata2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "strata2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+test_that("a filtered from_svydesign(twophase with ids2) agrees with survey's domain [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+})
+
+
+# A round trip: survey → surveycore → survey gives back the same estimate and
+# SE in all four shapes, and the same class.
+test_that("as_svydesign(from_svydesign(sv)) round-trips a two-phase object [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  for (method in c("full", "approx")) {
+    for (phase2 in c("strata2", "ids2")) {
+      sv <- make_svy_twophase(df, method, phase2)
+      back <- as_svydesign(from_svydesign(sv))
+      expect_identical(class(back), class(sv))
+      sm <- survey::svymean(~y1, sv)
+      sm_back <- survey::svymean(~y1, back)
+      expect_equal(coef(sm_back), coef(sm), tolerance = 1e-10)
+      expect_equal(
+        as.numeric(survey::SE(sm_back)),
+        as.numeric(survey::SE(sm)),
+        tolerance = 1e-8
+      )
+    }
+  }
+})
+
+
+# ── Phase 2 variables no formula names directly ──────────────────────────────
+#
+# A phase 2 formula that is an expression, a phase 2 weights formula, and a
+# phase 2 design with no stored call each go into a generated column, with
+# no condition. strata2 and ids2 are evaluated on every phase 1 row, because
+# the variance counts the phase 2 population over all of them.
+
+test_that("from_svydesign() stores an expression probs2 in ..surveycore_probs2.. [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~ I(1 / w2)),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(d@variables$phase2$probs, "..surveycore_probs2..")
+  expect_equal(d@data[["..surveycore_probs2.."]], df$phase2_prob)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores an expression strata2 evaluated on every phase 1 row [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~ as.character(strata)),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase2$strata, "..surveycore_strata2..")
+  expect_identical(d@data[["..surveycore_strata2.."]], df$strata)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores an expression ids2 in ..surveycore_ids2.. [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~ I(ssu + 0L)),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(d@variables$phase2$ids, "..surveycore_ids2..")
+  expect_equal(d@data[["..surveycore_ids2.."]], df$ssu)
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() stores approx phase 2 weights as probs2 [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    weights = list(~wt, ~w2),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(d@variables$phase2$probs, "..surveycore_probs2..")
+  expect_equal(d@data[["..surveycore_probs2.."]], df$phase2_prob)
+  expect_twophase_oracle(d, sv)
+})
+
+# With no call to read, the route rebuilds phase 2 from the values survey
+# evaluated on the phase 2 rows, and leaves the other rows NA.
+test_that("from_svydesign() rebuilds a twophase2 phase 2 with no stored call [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  sv$phase2$call <- NULL
+
+  expect_no_warning(d <- from_svydesign(sv))
+
+  expect_identical(
+    d@variables$phase2,
+    list(
+      ids = "..surveycore_ids2..",
+      strata = "..surveycore_strata2..",
+      probs = "..surveycore_probs2..",
+      fpc = "..surveycore_fpc2.."
+    )
+  )
+  expect_true(all(is.na(d@data[["..surveycore_probs2.."]][!df$subset])))
+  expect_twophase_oracle(d, sv)
+})
+
+test_that("from_svydesign() rebuilds a twophase phase 2 with no stored call [numerical]", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "approx", "ids2")
+  sv$phase2$call <- NULL
+
+  d <- from_svydesign(sv)
+
+  expect_null(d@variables$phase2$strata)
+  expect_twophase_oracle(d, sv)
+})
+
+# A multi-stage ids2 expression generates one column per stage.
+test_that("from_svydesign() numbers the generated columns of a multi-stage ids2", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$row <- seq_len(nrow(df))
+  sv <- survey::twophase(
+    id = list(~psu, ~ I(ssu + 0L) + I(row + 0L)),
+    strata = list(~strata, NULL),
+    weights = list(~wt, NULL),
+    data = df,
+    subset = ~subset,
+    method = "approx"
+  )
+
+  d <- from_svydesign(sv)
+
+  expect_identical(
+    d@variables$phase2$ids,
+    c("..surveycore_ids2_1..", "..surveycore_ids2_2..")
+  )
+  expect_equal(d@data[["..surveycore_ids2_2.."]], df$row)
+})
+
+
+test_that("from_svydesign() refuses a generated phase 2 name that names a data column", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df[["..surveycore_probs2.."]] <- 0
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), ~ I(1 / w2)),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_phase2_name_collision"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
 })
