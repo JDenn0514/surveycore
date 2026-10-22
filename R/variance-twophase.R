@@ -5,8 +5,8 @@
 #
 # ATTRIBUTION — VENDORED CODE:
 # The functions .twophasevar(), .twophase_phase1_var(), .twophase_phase2_var(),
-# .twophase_full_var() and .compute_phase2_probs() are adapted from the survey
-# package by Thomas Lumley
+# .twophase_same_scale(), .twophase_full_var() and .compute_phase2_probs() are
+# adapted from the survey package by Thomas Lumley
 # (https://cran.r-project.org/package=survey), licensed under GPL-2 | GPL-3.
 # Modifications: integrated with S7 classes; three-method dispatch made
 # explicit; RCPP path removed; error messages converted to cli format;
@@ -200,6 +200,9 @@
 
 # Compute phase 2 variance contribution (used by "approx" and "simple").
 # Adapted from the phase 2 component of survey:::twophasevar.
+# The Phase 2 score is the influence itself when no Phase 1 sampling unit
+# holds more than one Phase 2 unit (survey's `samescale`), and the influence
+# times sqrt(1 / w1) otherwise.
 # Returns a numeric scalar (extracts [1L, 1L] from the .svy_recvar() matrix).
 #' @noRd
 .twophase_phase2_var <- function(influence, design, subset, lonely.psu) {
@@ -208,10 +211,13 @@
   ph2_data <- design@data[subset, , drop = FALSE]
   n_ph2 <- nrow(ph2_data)
 
-  # Phase 2 score: influence[i] * sqrt(1 / w1[i])
-  w1 <- design@data[[ph1_vars$weights]]
-  w1_ph2 <- w1[subset]
-  score_ph2 <- influence[subset] * sqrt(1 / w1_ph2)
+  # Phase 2 score
+  score_ph2 <- if (.twophase_same_scale(design, subset)) {
+    influence[subset]
+  } else {
+    w1 <- design@data[[ph1_vars$weights]]
+    influence[subset] * sqrt(1 / w1[subset])
+  }
   score_mat <- matrix(score_ph2, ncol = 1L)
 
   # Phase 2 strata column
@@ -276,6 +282,37 @@
     lonely.psu = lonely.psu
   )
   v[1L, 1L]
+}
+
+
+# Does each Phase 1 sampling unit hold at most one Phase 2 unit? This is
+# survey::twophase()'s `samescale`: it takes the last-stage Phase 1 cluster of
+# the first row of each Phase 2 first-stage unit and checks for repeats. It
+# holds for an unclustered Phase 1 and when ids2 names the Phase 1 cluster; it
+# fails when Phase 2 subsamples rows or smaller units within Phase 1 clusters.
+# A Phase 1 unit is keyed by its stratum and every id stage, so nested ids
+# count once per stratum.
+#' @noRd
+.twophase_same_scale <- function(design, subset) {
+  ph1_vars <- design@variables$phase1
+  data <- design@data
+  n <- nrow(data)
+
+  unit1 <- if (is.null(ph1_vars$ids)) {
+    as.character(seq_len(n))
+  } else {
+    strata1 <- if (!is.null(ph1_vars$strata)) {
+      as.character(data[[ph1_vars$strata]])
+    } else {
+      rep("1", n)
+    }
+    stages <- lapply(ph1_vars$ids, function(v) as.character(data[[v]]))
+    do.call(paste, c(list(strata1), stages, sep = "\r"))
+  }
+  unit2 <- .phase2_units(design)$psu
+
+  first_rows <- !duplicated(unit2[subset])
+  anyDuplicated(unit1[subset][first_rows]) == 0L
 }
 
 
