@@ -368,13 +368,14 @@ coef.survey_result <- function(object, ...) {
 #'   `names(coef(object))`.
 #'
 #' @details
-#' For [get_freqs()] and [get_totals()] on a Taylor or replicate design
+#' For [get_freqs()], [get_totals()], [get_means()] and [get_ratios()] on a
+#' Taylor or replicate design
 #' (including a `survey_nonprob` design with replicate weights), the full
 #' covariance matrix is computed when the result is built and stored with it.
 #' It covers every pair of rows: two levels of one variable, the same level in
 #' two groups, and rows on a filtered design. It is the same matrix
-#' `survey::vcov()` returns for `survey::svymean()`, `survey::svytotal()` or
-#' `survey::svyby(covmat = TRUE)`. Two complementary proportions, for example,
+#' `survey::vcov()` returns for `survey::svymean()`, `survey::svytotal()`,
+#' `survey::svyratio()` or `survey::svyby(covmat = TRUE)`. Two complementary proportions, for example,
 #' have covariance `-var`. The stored matrix is read by name, so `vcov()` still
 #' returns the right block after the result's rows are filtered or reordered,
 #' and it does not need an `se` column.
@@ -382,21 +383,14 @@ coef.survey_result <- function(object, ...) {
 #' Every other result holds no joint covariance. `vcov()` then returns the
 #' per-estimate variances (`se^2`) on the diagonal and `NA_real_` off it, and
 #' emits `surveycore_warning_vcov_incomplete` when `p > 1`. These are results
-#' from [get_means()], [get_ratios()], [get_quantiles()], [get_corr()],
-#' [get_covariance()] and [get_diffs()]; [get_freqs()] and [get_totals()] on a
-#' two-phase design or on a `survey_nonprob` design without replicate weights;
-#' and a stored matrix that no longer matches the result's rows. When the
+#' from [get_quantiles()], [get_corr()], [get_covariance()] and [get_diffs()];
+#' the four functions above on a two-phase design or on a `survey_nonprob`
+#' design without replicate weights; and a stored matrix that no longer
+#' matches the result's rows. When the
 #' `se` column is absent as well, the matrix is all `NA_real_`, with no
 #' warning.
 #'
 #' @examples
-#' d <- as_survey(
-#'   nhanes_2017,
-#'   ids = sdmvpsu,
-#'   weights = wtint2yr,
-#'   strata = sdmvstra,
-#'   nest = TRUE
-#' )
 #' d_sex <- as_survey(
 #'   transform(nhanes_2017, sex = factor(riagendr, 1:2, c("Male", "Female"))),
 #'   ids = sdmvpsu,
@@ -407,8 +401,8 @@ coef.survey_result <- function(object, ...) {
 #' # Two complementary proportions: the covariance is -var
 #' vcov(get_freqs(d_sex, sex))
 #'
-#' # One estimate
-#' vcov(get_means(d, ridageyr, variance = "se"))
+#' # Means by group: the groups share PSUs, so they covary
+#' vcov(get_means(d_sex, ridageyr, group = sex))
 #' @export
 #' @method vcov survey_result
 vcov.survey_result <- function(object, ...) {

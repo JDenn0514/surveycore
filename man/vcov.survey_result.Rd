@@ -21,13 +21,14 @@ covariance matrix of the estimates in \code{coef(object)}, with the
 per-estimate variances on the diagonal.
 }
 \details{
-For \code{\link[=get_freqs]{get_freqs()}} and \code{\link[=get_totals]{get_totals()}} on a Taylor or replicate design
+For \code{\link[=get_freqs]{get_freqs()}}, \code{\link[=get_totals]{get_totals()}}, \code{\link[=get_means]{get_means()}} and \code{\link[=get_ratios]{get_ratios()}} on a
+Taylor or replicate design
 (including a \code{survey_nonprob} design with replicate weights), the full
 covariance matrix is computed when the result is built and stored with it.
 It covers every pair of rows: two levels of one variable, the same level in
 two groups, and rows on a filtered design. It is the same matrix
-\code{survey::vcov()} returns for \code{survey::svymean()}, \code{survey::svytotal()} or
-\code{survey::svyby(covmat = TRUE)}. Two complementary proportions, for example,
+\code{survey::vcov()} returns for \code{survey::svymean()}, \code{survey::svytotal()},
+\code{survey::svyratio()} or \code{survey::svyby(covmat = TRUE)}. Two complementary proportions, for example,
 have covariance \code{-var}. The stored matrix is read by name, so \code{vcov()} still
 returns the right block after the result's rows are filtered or reordered,
 and it does not need an \code{se} column.
@@ -35,21 +36,14 @@ and it does not need an \code{se} column.
 Every other result holds no joint covariance. \code{vcov()} then returns the
 per-estimate variances (\code{se^2}) on the diagonal and \code{NA_real_} off it, and
 emits \code{surveycore_warning_vcov_incomplete} when \code{p > 1}. These are results
-from \code{\link[=get_means]{get_means()}}, \code{\link[=get_ratios]{get_ratios()}}, \code{\link[=get_quantiles]{get_quantiles()}}, \code{\link[=get_corr]{get_corr()}},
-\code{\link[=get_covariance]{get_covariance()}} and \code{\link[=get_diffs]{get_diffs()}}; \code{\link[=get_freqs]{get_freqs()}} and \code{\link[=get_totals]{get_totals()}} on a
-two-phase design or on a \code{survey_nonprob} design without replicate weights;
-and a stored matrix that no longer matches the result's rows. When the
+from \code{\link[=get_quantiles]{get_quantiles()}}, \code{\link[=get_corr]{get_corr()}}, \code{\link[=get_covariance]{get_covariance()}} and \code{\link[=get_diffs]{get_diffs()}};
+the four functions above on a two-phase design or on a \code{survey_nonprob}
+design without replicate weights; and a stored matrix that no longer
+matches the result's rows. When the
 \code{se} column is absent as well, the matrix is all \code{NA_real_}, with no
 warning.
 }
 \examples{
-d <- as_survey(
-  nhanes_2017,
-  ids = sdmvpsu,
-  weights = wtint2yr,
-  strata = sdmvstra,
-  nest = TRUE
-)
 d_sex <- as_survey(
   transform(nhanes_2017, sex = factor(riagendr, 1:2, c("Male", "Female"))),
   ids = sdmvpsu,
@@ -60,6 +54,6 @@ d_sex <- as_survey(
 # Two complementary proportions: the covariance is -var
 vcov(get_freqs(d_sex, sex))
 
-# One estimate
-vcov(get_means(d, ridageyr, variance = "se"))
+# Means by group: the groups share PSUs, so they covary
+vcov(get_means(d_sex, ridageyr, group = sex))
 }

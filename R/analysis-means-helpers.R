@@ -45,7 +45,8 @@
 #                survey_nonprob without repweights).
 # @param y_col   Character: name of the numeric variable column.
 # @param domain  Numeric 0/1 vector (full length): 1 = in domain and non-NA.
-# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted.
+# @return Named list: mean, se, df (Taylor only), se_srs, n, n_weighted,
+#   joint (see .joint_vcov()).
 .taylor_mean_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -62,7 +63,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -127,7 +129,8 @@
     se_srs = se_srs,
     n = n_d,
     n_weighted = N_d,
-    df = df_final
+    df = df_final,
+    joint = .joint_infl(infl_mat)
   )
 }
 
@@ -139,7 +142,8 @@
 # @param design  A survey_replicate object.
 # @param y_col   Character: variable name.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: mean, se, se_srs, n, n_weighted.
+# @return Named list: mean, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()).
 .replicate_mean_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -157,7 +161,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -183,7 +188,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = n_d,
-      n_weighted = N_d
+      n_weighted = N_d,
+      joint = .joint_na()
     ))
   }
 
@@ -205,7 +211,14 @@
     0
   }
 
-  list(mean = ybar, se = se, se_srs = se_srs, n = n_d, n_weighted = N_d)
+  list(
+    mean = ybar,
+    se = se,
+    se_srs = se_srs,
+    n = n_d,
+    n_weighted = N_d,
+    joint = .joint_rep(rep_p, ybar)
+  )
 }
 
 

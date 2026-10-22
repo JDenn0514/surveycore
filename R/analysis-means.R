@@ -79,6 +79,11 @@
 #' Use `meta(result)` to access design type, variable labels, and other
 #' metadata.
 #'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
+#'
 #' @examples
 #' d <- as_survey(
 #'   nhanes_2017,
@@ -212,6 +217,7 @@ get_means <- function(
   acc_nw <- numeric(0)
   acc_df <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
+  acc_joint <- list()
 
   small_cell_ns <- integer(0)
 
@@ -237,6 +243,7 @@ get_means <- function(
     acc_sesrs <- c(acc_sesrs, cell$se_srs)
     acc_n <- c(acc_n, cell$n)
     acc_nw <- c(acc_nw, cell$n_weighted)
+    acc_joint <- c(acc_joint, list(cell$joint))
     acc_df <- c(acc_df, if (!is.null(cell$df)) cell$df else Inf)
 
     if (length(group_vars) > 0L) {
@@ -338,6 +345,7 @@ get_means <- function(
     statistic = "mean",
     cell_df = cell_df_attr
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {
