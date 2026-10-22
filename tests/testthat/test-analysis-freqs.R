@@ -58,6 +58,18 @@ test_that("get_freqs() respects factor level order", {
   expect_identical(levels(r$group_f), c("C", "B", "A"))
 })
 
+test_that("get_freqs() labels each row of a numeric-looking factor with its own level", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 12L)
+  # Level "6" is the fifth level: a code lookup would relabel it "7"
+  codes <- c(1, 2, 3, 4, 6, 7)
+  df$coded_f <- factor(codes[(seq_len(nrow(df)) %% 6L) + 1L])
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  r <- get_freqs(d, coded_f)
+  expect_identical(as.character(r$coded_f), c("1", "2", "3", "4", "6", "7"))
+  expect_identical(r$n, as.integer(table(df$coded_f)))
+})
+
 test_that("get_freqs() sorts non-factor levels ascending", {
   df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 4L, seed = 13L)
   d <- as_survey(

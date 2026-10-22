@@ -3,48 +3,11 @@
 # Internal helpers for get_freqs().
 #
 # Functions:
-#   .get_levels()            — ordered unique levels for a variable
 #   .taylor_freq_cell()      — ratio linearization (survey_taylor)
 #   .replicate_freq_cell()   — replicate-weight proportion variance
 #   .twophase_freq_cell()    — two-phase proportion via .twophasevar()
 #   .calibrated_freq_cell()  — HT proportion variance (survey_nonprob)
 #   .freq_cell()             — dispatcher
-
-# ── .get_levels() ─────────────────────────────────────────────────────────────
-#
-# Return unique levels for a variable column, preserving factor level order
-# (or ascending sort for non-factors). When na.rm = FALSE, NA is appended last
-# regardless of factor ordering. When na.rm = TRUE, only non-NA values are
-# returned, and factor levels absent from the data are dropped.
-#
-# @param x_col  Atomic vector (factor or plain vector).
-# @param na.rm  Logical. If FALSE, NA is appended as a level.
-# @return Atomic vector of levels (same type as x_col, except NA is always
-#   NA_character_ for factors since factor levels are character).
-.get_levels <- function(x_col, na.rm) {
-  has_na <- anyNA(x_col)
-
-  if (is.factor(x_col)) {
-    # Factor: use declared level order; drop levels not present in data
-    all_lvls <- levels(x_col)
-    present <- unique(as.character(x_col[!is.na(x_col)]))
-    kept_lvls <- all_lvls[all_lvls %in% present]
-    if (!na.rm && has_na) {
-      c(kept_lvls, NA_character_)
-    } else {
-      kept_lvls
-    }
-  } else {
-    # Non-factor: sort unique non-NA values ascending
-    non_na <- sort(unique(x_col[!is.na(x_col)]))
-    if (!na.rm && has_na) {
-      c(non_na, NA)
-    } else {
-      non_na
-    }
-  }
-}
-
 
 # ── .taylor_freq_cell() ───────────────────────────────────────────────────────
 #
