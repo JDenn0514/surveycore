@@ -83,6 +83,11 @@
 #' The variable name (or `NULL` for no-variable mode) is in
 #' `meta(result)$x`. Use `meta(result)` for additional metadata.
 #'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
+#'
 #' @examples
 #' d <- as_survey_replicate(
 #'   acs_pums_wy,
@@ -287,6 +292,7 @@ get_totals <- function(
   acc_n <- integer(0)
   acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L)
+  acc_joint <- list()
 
   small_cell_ns <- integer(0)
 
@@ -331,6 +337,7 @@ get_totals <- function(
       acc_se <- c(acc_se, cell$se)
       acc_sesrs <- c(acc_sesrs, cell$se_srs)
       acc_nw <- c(acc_nw, cell$n_weighted)
+      acc_joint <- c(acc_joint, list(cell$joint))
 
       if (!no_variable) {
         acc_n <- c(acc_n, cell$n)
@@ -428,6 +435,7 @@ get_totals <- function(
     estimate_cols = c("total"),
     statistic = "total"
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
   # ── Step 12: Apply decimals and name style ──────────────────────────────────
   if (!is.null(decimals)) {

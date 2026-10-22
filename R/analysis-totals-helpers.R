@@ -20,7 +20,8 @@
 #                survey_nonprob without repweights).
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
+# @return Named list: total, se, se_srs, n, n_weighted,
+#   joint (see .joint_vcov()).
 .taylor_total_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -45,7 +46,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = if (is.null(y_col)) NULL else 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -88,7 +90,8 @@
     se = se,
     se_srs = se_srs,
     n = if (is.null(y_col)) NULL else n_d,
-    n_weighted = N_d
+    n_weighted = N_d,
+    joint = .joint_infl(infl_mat)
   )
 }
 
@@ -100,7 +103,8 @@
 # @param design  A survey_replicate or survey_nonprob object (with repweights).
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, se_srs, n, n_weighted.
+# @return Named list: total, se, se_srs, n, n_weighted, joint (see
+#   .joint_vcov()).
 .replicate_total_cell <- function(design, y_col, domain) {
   data <- design@data
   vars <- design@variables
@@ -123,7 +127,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = if (is.null(y_col)) NULL else 0L,
-      n_weighted = 0
+      n_weighted = 0,
+      joint = .joint_na()
     ))
   }
 
@@ -146,7 +151,8 @@
       se = NA_real_,
       se_srs = NA_real_,
       n = n_d,
-      n_weighted = N_d
+      n_weighted = N_d,
+      joint = .joint_na()
     ))
   }
 
@@ -176,7 +182,8 @@
     se = se,
     se_srs = se_srs,
     n = if (is.null(y_col)) NULL else n_d,
-    n_weighted = N_d
+    n_weighted = N_d,
+    joint = .joint_rep(rep_Y, T_hat)
   )
 }
 

@@ -13,34 +13,47 @@
 }
 \value{
 A \verb{p × p} numeric matrix with \code{rownames} and \code{colnames} equal to
-\code{names(coef(object))}. When \code{p > 1}, emits
-\code{surveycore_warning_vcov_diagonal_only}. When the \code{se} column is absent,
-returns a \verb{p × p} matrix of \code{NA_real_} with no warning.
+\code{names(coef(object))}.
 }
 \description{
-Returns a named numeric matrix from a \code{survey_result} object. The diagonal
-contains per-parameter variances (\code{se^2}). Off-diagonal elements are
-structural zeros for most classes (except \code{survey_corr} with multiple pair
-rows, which uses \code{NA_real_}).
+Returns a named numeric matrix from a \code{survey_result} object: the
+covariance matrix of the estimates in \code{coef(object)}, with the
+per-estimate variances on the diagonal.
 }
 \details{
-Off-diagonal elements represent the covariance between estimates. For
-survey results, only the diagonal (per-estimate variances) is available
-from stored per-row data. Cross-estimate covariances require joint
-influence-function estimation from the original design. Zeros in off-diagonal
-positions are approximations that may not hold when groups share PSUs.
+For \code{\link[=get_freqs]{get_freqs()}}, \code{\link[=get_totals]{get_totals()}}, \code{\link[=get_means]{get_means()}} and \code{\link[=get_ratios]{get_ratios()}} on a
+Taylor or replicate design
+(including a \code{survey_nonprob} design with replicate weights), the full
+covariance matrix is computed when the result is built and stored with it.
+It covers every pair of rows: two levels of one variable, the same level in
+two groups, and rows on a filtered design. It is the same matrix
+\code{survey::vcov()} returns for \code{survey::svymean()}, \code{survey::svytotal()},
+\code{survey::svyratio()} or \code{survey::svyby(covmat = TRUE)}. Two complementary proportions, for example,
+have covariance \code{-var}. The stored matrix is read by name, so \code{vcov()} still
+returns the right block after the result's rows are filtered or reordered,
+and it does not need an \code{se} column.
 
-\code{survey_corr} (long-format) results with more than one pair row have
-\code{NA_real_} off-diagonal elements and emit \code{surveycore_warning_vcov_incomplete}.
+Every other result holds no joint covariance. \code{vcov()} then returns the
+per-estimate variances (\code{se^2}) on the diagonal and \code{NA_real_} off it, and
+emits \code{surveycore_warning_vcov_incomplete} when \code{p > 1}. These are results
+from \code{\link[=get_quantiles]{get_quantiles()}}, \code{\link[=get_corr]{get_corr()}}, \code{\link[=get_covariance]{get_covariance()}} and \code{\link[=get_diffs]{get_diffs()}};
+the four functions above on a two-phase design or on a \code{survey_nonprob}
+design without replicate weights; and a stored matrix that no longer
+matches the result's rows. When the
+\code{se} column is absent as well, the matrix is all \code{NA_real_}, with no
+warning.
 }
 \examples{
-d <- as_survey(
-  nhanes_2017,
+d_sex <- as_survey(
+  transform(nhanes_2017, sex = factor(riagendr, 1:2, c("Male", "Female"))),
   ids = sdmvpsu,
   weights = wtint2yr,
   strata = sdmvstra,
   nest = TRUE
 )
-result <- get_means(d, ridageyr, variance = "se")
-vcov(result)
+# Two complementary proportions: the covariance is -var
+vcov(get_freqs(d_sex, sex))
+
+# Means by group: the groups share PSUs, so they covary
+vcov(get_means(d_sex, ridageyr, group = sex))
 }

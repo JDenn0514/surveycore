@@ -105,6 +105,11 @@ categorical \code{x}, the count of rows at the level.
 }
 The variable name (or \code{NULL} for no-variable mode) is in
 \code{meta(result)$x}. Use \code{meta(result)} for additional metadata.
+
+On a Taylor or replicate design (including a \code{survey_nonprob} design with
+replicate weights), the result also stores the joint covariance matrix of
+its estimates, covering every pair of rows. Read it with \code{vcov(result)}; see
+\code{\link[=vcov.survey_result]{vcov.survey_result()}}.
 }
 \description{
 Compute the estimated population total of a numeric variable in a survey

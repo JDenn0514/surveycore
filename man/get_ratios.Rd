@@ -108,6 +108,11 @@ are non-NA.
 Numerator and denominator variable names are stored in \code{meta(result)}, not
 as output columns. Use \code{meta(result)$numerator} and
 \code{meta(result)$denominator} to access them.
+
+On a Taylor or replicate design (including a \code{survey_nonprob} design with
+replicate weights), the result also stores the joint covariance matrix of
+its estimates, covering every pair of rows. Read it with \code{vcov(result)}; see
+\code{\link[=vcov.survey_result]{vcov.survey_result()}}.
 }
 \description{
 Estimate the ratio of two survey-weighted totals (numerator / denominator)
