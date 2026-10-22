@@ -12,10 +12,11 @@
 #   6. Edge cases (zero-row, NA estimates, absent SE column)
 #   7. Error paths (unsupported class, stripped attribute, invalid level, invalid df)
 #   8. Warning paths (vcov_incomplete, parm_na, parm_unmatched)
-#   9. Joint covariance stored by get_freqs() and get_totals() (issue #200)
 #   9. Cross-method consistency
 #   10. Numerical oracle tests (survey package comparison)
 #   11. coef() naming by result class
+#   12. Joint covariance stored by get_freqs() and get_totals() (issue #200)
+#   13. Joint covariance stored by get_means() and get_ratios() (issue #200)
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -1293,7 +1294,7 @@ test_that(".survey_result$df is Inf on a filtered Taylor design", {
   expect_identical(df_val, rep(Inf, nrow(result)))
 })
 
-# ── 9. Joint covariance stored by get_freqs() and get_totals() (issue #200) ───
+# ── 12. Joint covariance stored by get_freqs() and get_totals() (issue #200) ──
 #
 # survey names a factor's coefficients "<var><level>" and svyby() names them
 # "<group>:<var><level>"; surveycore names them "<var>.<level>" and
@@ -1710,7 +1711,58 @@ test_that(".svy_rep_vcov() diagonal equals .svy_rep_var() with NA replicates and
   expect_equal(v[1L, 2L], expected, tolerance = 1e-14)
 })
 
-# ── 10. Joint covariance stored by get_means() and get_ratios() (issue #200) ──
+test_that("a nonprob cell with no weight in any replicate gets an NA row in the stored get_freqs() matrix", {
+  df <- make_survey_data(n = 100L, design = "replicate", seed = 4L)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  df$hi <- factor(ifelse(df$y1 > 50, "yes", "no"))
+  df$f2 <- factor(ifelse(seq_len(nrow(df)) <= 10L, "rare", "common"))
+  # Every replicate gives the "rare" group zero weight
+  df[df$f2 == "rare", rep_cols] <- 0
+  d <- as_survey_nonprob(df, weights = wt, repweights = all_of(rep_cols))
+
+  # One warning per "rare" cell, then the small-cell warning
+  expect_warning(
+    expect_warning(
+      expect_warning(
+        r <- get_freqs(d, hi, group = f2, variance = "se"),
+        class = "surveycore_warning_domain_replicates_na"
+      ),
+      class = "surveycore_warning_domain_replicates_na"
+    ),
+    class = "surveycore_warning_small_cell"
+  )
+  v <- vcov(r)
+  rare <- which(r$f2 == "rare")
+
+  expect_true(all(is.na(v[rare, ])))
+  expect_true(all(is.na(v[, rare])))
+  expect_false(anyNA(v[-rare, -rare]))
+  expect_equal(v[1L, 2L], -v[1L, 1L], tolerance = 1e-8)
+})
+
+test_that("a nonprob get_totals() cell whose replicates are all NA gets an NA row in the stored matrix", {
+  df <- make_survey_data(n = 100L, design = "replicate", seed = 4L)
+  rep_cols <- grep("^repwt_", names(df), value = TRUE)
+  df$f2 <- factor(rep(c("x", "y"), length.out = nrow(df)))
+  # A row with NA in every replicate makes every replicate total NA
+  df[1L, rep_cols] <- NA
+  d <- as_survey_nonprob(df, weights = wt, repweights = all_of(rep_cols))
+
+  expect_warning(
+    expect_warning(
+      r <- get_totals(d, f2, variance = "se"),
+      class = "surveycore_warning_domain_replicates_na"
+    ),
+    class = "surveycore_warning_domain_replicates_na"
+  )
+  v <- vcov(r)
+
+  expect_identical(dim(v), c(2L, 2L))
+  expect_true(all(is.na(v)))
+  expect_identical(r$se, c(NA_real_, NA_real_))
+})
+
+# ── 13. Joint covariance stored by get_means() and get_ratios() (issue #200) ──
 #
 # svyby() names a one-variable statistic by group level alone; surveycore
 # names it "<group>:<var>" for means and "<group>:<num>/<den>" for ratios.
