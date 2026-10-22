@@ -108,6 +108,11 @@ A \code{survey_freqs} tibble (also inheriting \code{survey_result}). Columns:
 }
 Use \code{meta(result)} to access design type, variable labels, value labels,
 and other metadata.
+
+On a Taylor or replicate design (including a \code{survey_nonprob} design with
+replicate weights), the result also stores the joint covariance matrix of
+its estimates, covering every pair of rows. Read it with \code{vcov(result)}; see
+\code{\link[=vcov.survey_result]{vcov.survey_result()}}.
 }
 \description{
 Compute weighted proportions (percentages) for one or more categorical

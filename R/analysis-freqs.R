@@ -99,6 +99,11 @@
 #' Use `meta(result)` to access design type, variable labels, value labels,
 #' and other metadata.
 #'
+#' On a Taylor or replicate design (including a `survey_nonprob` design with
+#' replicate weights), the result also stores the joint covariance matrix of
+#' its estimates, covering every pair of rows. Read it with `vcov(result)`; see
+#' [vcov.survey_result()].
+#'
 #' @examples
 #' # NHANES exam weights are 0 for non-examined participants; filter first
 #' nhanes_sub <- nhanes_2017[nhanes_2017$wtmec2yr > 0, ]
@@ -266,6 +271,7 @@ get_freqs <- function(
   acc_n <- integer(0)
   acc_nw <- numeric(0)
   acc_grp_rows <- vector("list", 0L) # list of single-row data.frames
+  acc_joint <- list() # per-cell joint-covariance inputs
 
   small_cell_ns <- integer(0) # for small-cell warning
 
@@ -372,6 +378,7 @@ get_freqs <- function(
         acc_sesrs <- c(acc_sesrs, cell$se_srs)
         acc_n <- c(acc_n, cell$n)
         acc_nw <- c(acc_nw, cell$n_weighted)
+        acc_joint <- c(acc_joint, list(cell$joint))
 
         if (length(group_vars) > 0L) {
           acc_grp_rows <- c(acc_grp_rows, list(combo_row))
@@ -488,6 +495,7 @@ get_freqs <- function(
     estimate_cols = c("pct"),
     statistic = "freq"
   )
+  result <- .attach_joint_vcov(result, design, acc_joint)
 
   # The .survey_result df is left at its Inf default (from
   # .make_result_tibble()), the same df the ci_low/ci_high columns use, so

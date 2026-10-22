@@ -2,7 +2,8 @@
 #
 # S3 methods for extracting model-like summaries from survey_result objects:
 #   coef.survey_result()   — named estimate vector
-#   vcov.survey_result()   — named variance-covariance matrix (diagonal)
+#   vcov.survey_result()   — named variance-covariance matrix (joint when
+#                            stored at estimation, else NA off-diagonals)
 #   SE()                   — new generic (masks survey::SE)
 #   SE.default()           — default method for non-survey_result objects
 #   SE.survey_result()     — named SE vector via sqrt(diag(vcov()))
@@ -13,7 +14,6 @@
 #   surveycore_error_invalid_conf_level        (SCR-2, reuses row 45a class)
 #   surveycore_error_invalid_df                (SCR-3)
 #   surveycore_warning_vcov_incomplete         (SCR-W1)
-#   surveycore_warning_vcov_diagonal_only      (SCR-W2)
 #   surveycore_warning_parm_na                 (SCR-W3)
 #   surveycore_warning_parm_unmatched          (SCR-W4)
 
@@ -357,28 +357,37 @@ coef.survey_result <- function(object, ...) {
 
 #' Extract variance-covariance matrix from a survey result object
 #'
-#' Returns a named numeric matrix from a `survey_result` object. The diagonal
-#' contains per-parameter variances (`se^2`). Off-diagonal elements are
-#' structural zeros for most classes (except `survey_corr` with multiple pair
-#' rows, which uses `NA_real_`).
+#' Returns a named numeric matrix from a `survey_result` object: the
+#' covariance matrix of the estimates in `coef(object)`, with the
+#' per-estimate variances on the diagonal.
 #'
 #' @param object A `survey_result` object from any supported `get_*()` function.
 #' @param ... Unused.
 #'
 #' @return A `p × p` numeric matrix with `rownames` and `colnames` equal to
-#'   `names(coef(object))`. When `p > 1`, emits
-#'   `surveycore_warning_vcov_diagonal_only`. When the `se` column is absent,
-#'   returns a `p × p` matrix of `NA_real_` with no warning.
+#'   `names(coef(object))`.
 #'
 #' @details
-#' Off-diagonal elements represent the covariance between estimates. For
-#' survey results, only the diagonal (per-estimate variances) is available
-#' from stored per-row data. Cross-estimate covariances require joint
-#' influence-function estimation from the original design. Zeros in off-diagonal
-#' positions are approximations that may not hold when groups share PSUs.
+#' For [get_freqs()] and [get_totals()] on a Taylor or replicate design
+#' (including a `survey_nonprob` design with replicate weights), the full
+#' covariance matrix is computed when the result is built and stored with it.
+#' It covers every pair of rows: two levels of one variable, the same level in
+#' two groups, and rows on a filtered design. It is the same matrix
+#' `survey::vcov()` returns for `survey::svymean()`, `survey::svytotal()` or
+#' `survey::svyby(covmat = TRUE)`. Two complementary proportions, for example,
+#' have covariance `-var`. The stored matrix is read by name, so `vcov()` still
+#' returns the right block after the result's rows are filtered or reordered,
+#' and it does not need an `se` column.
 #'
-#' `survey_corr` (long-format) results with more than one pair row have
-#' `NA_real_` off-diagonal elements and emit `surveycore_warning_vcov_incomplete`.
+#' Every other result holds no joint covariance. `vcov()` then returns the
+#' per-estimate variances (`se^2`) on the diagonal and `NA_real_` off it, and
+#' emits `surveycore_warning_vcov_incomplete` when `p > 1`. These are results
+#' from [get_means()], [get_ratios()], [get_quantiles()], [get_corr()],
+#' [get_covariance()] and [get_diffs()]; [get_freqs()] and [get_totals()] on a
+#' two-phase design or on a `survey_nonprob` design without replicate weights;
+#' and a stored matrix that no longer matches the result's rows. When the
+#' `se` column is absent as well, the matrix is all `NA_real_`, with no
+#' warning.
 #'
 #' @examples
 #' d <- as_survey(
@@ -388,8 +397,18 @@ coef.survey_result <- function(object, ...) {
 #'   strata = sdmvstra,
 #'   nest = TRUE
 #' )
-#' result <- get_means(d, ridageyr, variance = "se")
-#' vcov(result)
+#' d_sex <- as_survey(
+#'   transform(nhanes_2017, sex = factor(riagendr, 1:2, c("Male", "Female"))),
+#'   ids = sdmvpsu,
+#'   weights = wtint2yr,
+#'   strata = sdmvstra,
+#'   nest = TRUE
+#' )
+#' # Two complementary proportions: the covariance is -var
+#' vcov(get_freqs(d_sex, sex))
+#'
+#' # One estimate
+#' vcov(get_means(d, ridageyr, variance = "se"))
 #' @export
 #' @method vcov survey_result
 vcov.survey_result <- function(object, ...) {
@@ -418,6 +437,17 @@ vcov.survey_result <- function(object, ...) {
     # nocov end
   }
 
+  # Joint covariance stored at estimation time, read by name so a filtered
+  # or reordered result gets its own block
+  stored <- attr(object, ".vcov")
+  if (
+    !is.null(stored) &&
+      !anyDuplicated(nms) &&
+      all(nms %in% rownames(stored))
+  ) {
+    return(stored[nms, nms, drop = FALSE])
+  }
+
   # Check if se column is present
   if (!"se" %in% names(object)) {
     # Return NA matrix — no warning
@@ -429,52 +459,27 @@ vcov.survey_result <- function(object, ...) {
   se_vals <- as.numeric(object[["se"]])
   se_vals[is.nan(se_vals)] <- NA_real_
 
-  # Compute diagonal variances
-  var_vals <- se_vals^2
+  # Diagonal = se^2; off-diagonal = NA_real_ (no joint covariance available)
+  mat <- matrix(NA_real_, nrow = p, ncol = p, dimnames = list(nms, nms))
+  diag(mat) <- se_vals^2
 
-  # survey_corr with multiple pair rows: off-diagonal = NA_real_
-  is_corr_multi <- inherits(object, "survey_corr") && nrow(object) > 1L
-
-  if (is_corr_multi) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "Off-diagonal elements of {.fn vcov} are {.code NA_real_} for ",
-          "{.cls survey_corr} results."
-        ),
-        "i" = paste0(
-          "Cross-pair covariances require joint estimation and are not ",
-          "available from per-pair stored data."
-        ),
-        "i" = paste0(
-          "Use {.code diag(vcov(result))} for per-pair variances, or ",
-          "{.code result$se} directly."
-        )
-      ),
-      class = "surveycore_warning_vcov_incomplete"
-    )
-    mat <- matrix(NA_real_, nrow = p, ncol = p, dimnames = list(nms, nms))
-    diag(mat) <- var_vals
-  } else {
-    # Block-diagonal: diagonal = se^2, off-diagonal = 0
-    mat <- matrix(0, nrow = p, ncol = p, dimnames = list(nms, nms))
-    diag(mat) <- var_vals
-  }
-
-  # Emit warning when p > 1 (off-diagonal approximation)
   if (p > 1L) {
     cli::cli_warn(
       c(
         "!" = paste0(
-          "Off-diagonal elements of {.fn vcov} are structural zeros ",
-          "(only diagonal variances are estimated)."
+          "Off-diagonal elements of {.fn vcov} are {.code NA_real_} for ",
+          "this {.cls {class(object)[1L]}} result."
         ),
-        "i" = "This matches {.fn survey::vcov.svyby} behavior.",
         "i" = paste0(
-          "For joint multi-parameter inference, see {.fn survey::svycontrast}."
+          "No joint covariance is stored for it; only the diagonal ",
+          "variances are available."
+        ),
+        "i" = paste0(
+          "Use {.code diag(vcov(result))} for the variances, or ",
+          "{.code result$se} directly."
         )
       ),
-      class = "surveycore_warning_vcov_diagonal_only"
+      class = "surveycore_warning_vcov_incomplete"
     )
   }
 
@@ -496,10 +501,11 @@ vcov.survey_result <- function(object, ...) {
 #' @return A named numeric vector. Names are identical to `names(coef(object))`.
 #'   `NA` entries propagate from missing `se` column or `NA` in `se`.
 #'
-#' @note `vcov.survey_result()` emits `surveycore_warning_vcov_diagonal_only`
-#'   when `p > 1`. This warning is suppressed inside `SE.survey_result()` because
-#'   the off-diagonal structure is irrelevant when only standard errors are
-#'   requested. Call `vcov(result)` directly to observe this warning.
+#' @note `vcov.survey_result()` emits `surveycore_warning_vcov_incomplete`
+#'   when it has no joint covariance for a result with `p > 1`. This warning is
+#'   suppressed inside `SE.survey_result()` because the off-diagonal structure
+#'   is irrelevant when only standard errors are requested. Call
+#'   `vcov(result)` directly to observe this warning.
 #'
 #' @examples
 #' d <- as_survey(
