@@ -88,6 +88,7 @@
   lonely.psu <- getOption("survey.lonely.psu", "remove")
 
   infl_mat <- matrix(w * u / N_d, ncol = 1L, dimnames = list(NULL, "prop"))
+  infl_mat <- .maybe_apply_calibration(infl_mat, design)
   v <- .svy_recvar(
     infl_mat,
     mats$clusters_mat,
