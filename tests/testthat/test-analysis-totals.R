@@ -298,8 +298,8 @@ test_that("get_totals() errors for non-survey-design object", {
   )
 })
 
-test_that("get_totals() errors for non-numeric variable", {
-  df <- data.frame(y = letters[1:10], w = rep(1, 10))
+test_that("get_totals() errors for a logical variable", {
+  df <- data.frame(y = rep(c(TRUE, FALSE), 5), w = rep(1, 10))
   d <- as_survey(df, weights = w)
   expect_error(
     get_totals(d, y),
@@ -1084,4 +1084,315 @@ test_that("get_totals() .survey_result$df is Inf for non-calibrated Taylor desig
   sr <- attr(result, ".survey_result")
   # Inf is the df behind the ci_low/ci_high columns (issue #271).
   expect_identical(sr$df, rep(Inf, nrow(result)))
+})
+
+
+# ---------------------------------------------------------------------------
+# Categorical x: one total per level (issue #199)
+# ---------------------------------------------------------------------------
+
+# Fixture for the categorical blocks: a three-level factor with unequal level
+# sizes, three NA values, and a declared level that never occurs.
+make_categorical_totals_data <- function(seed = 42L) {
+  df <- make_survey_data(seed = seed)
+  set.seed(seed)
+  df$cat3 <- factor(
+    sample(c("a", "b", "c"), nrow(df), TRUE, c(0.5, 0.3, 0.2)),
+    levels = c("c", "a", "b", "z")
+  )
+  df$cat3[c(3L, 9L, 40L)] <- NA
+  df$g <- factor(ifelse(df$y1 > stats::median(df$y1), "hi", "lo"))
+  df
+}
+
+test_that("get_totals() returns one row per observed level of a factor x", {
+  df <- make_categorical_totals_data()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_totals(d, cat3, n_weighted = TRUE)
+  test_result_invariants(result, "survey_totals")
+  expect_identical(
+    names(result),
+    c("cat3", "total", "ci_low", "ci_high", "n", "n_weighted")
+  )
+  # Declared order, the unused level "z" dropped, NA excluded
+  expect_identical(as.character(result$cat3), c("c", "a", "b"))
+  for (lvl in c("c", "a", "b")) {
+    in_lvl <- !is.na(df$cat3) & df$cat3 == lvl
+    row <- result[as.character(result$cat3) == lvl, ]
+    expect_equal(row$total, sum(df$wt[in_lvl]), tolerance = 1e-10)
+    expect_identical(row$n, sum(in_lvl))
+    expect_equal(row$n_weighted, row$total, tolerance = 1e-10)
+  }
+})
+
+test_that("get_totals() treats a character x like a factor with sorted levels", {
+  df <- make_categorical_totals_data()
+  df$chr3 <- as.character(df$cat3)
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  by_chr <- get_totals(d, chr3, variance = "se")
+  by_fct <- get_totals(d, cat3, variance = "se")
+  expect_identical(by_chr$chr3, c("a", "b", "c"))
+  ord <- match(c("a", "b", "c"), as.character(by_fct$cat3))
+  expect_equal(by_chr$total, by_fct$total[ord], tolerance = 1e-10)
+  expect_equal(by_chr$se, by_fct$se[ord], tolerance = 1e-8)
+})
+
+test_that("get_totals() factor totals match survey::svytotal() — NHANES Taylor [oracle]", {
+  skip_if_not_installed("survey")
+
+  d <- nhanes_2017
+  d$race_f <- factor(d$ridreth3)
+  sc <- as_survey(
+    d,
+    ids = sdmvpsu,
+    strata = sdmvstra,
+    weights = wtint2yr,
+    nest = TRUE
+  )
+  sv <- survey::svydesign(
+    ids = ~sdmvpsu,
+    strata = ~sdmvstra,
+    weights = ~wtint2yr,
+    data = d,
+    nest = TRUE
+  )
+
+  sc_est <- get_totals(sc, race_f, variance = c("se", "ci"))
+  sv_est <- survey::svytotal(~race_f, sv)
+  sv_ci <- confint(sv_est)
+
+  expect_identical(
+    paste0("race_f", as.character(sc_est$race_f)),
+    names(coef(sv_est))
+  )
+  expect_equal(sc_est$total, unname(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, unname(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, unname(sv_ci[, 1L]), tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, unname(sv_ci[, 2L]), tolerance = 1e-6)
+})
+
+test_that("get_totals() factor totals match survey::svytotal() — ACS replicate [oracle]", {
+  skip_if_not_installed("survey")
+
+  d <- acs_pums_wy
+  d$sex_f <- factor(d$sex, levels = 1:2, labels = c("Male", "Female"))
+  rep_cols <- paste0("pwgtp", 1:80)
+  sc <- as_survey_replicate(
+    d,
+    weights = pwgtp,
+    repweights = all_of(rep_cols),
+    type = "successive-difference",
+    mse = TRUE
+  )
+  expect_no_warning(
+    sv <- survey::svrepdesign(
+      data = d,
+      weights = ~pwgtp,
+      repweights = d[rep_cols],
+      type = "successive-difference",
+      combined.weights = TRUE,
+      mse = TRUE
+    )
+  )
+
+  sc_est <- get_totals(sc, sex_f, variance = c("se", "ci"))
+  sv_est <- survey::svytotal(~sex_f, sv)
+  sv_ci <- confint(sv_est)
+
+  expect_equal(sc_est$total, unname(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, unname(survey::SE(sv_est)), tolerance = 1e-8)
+  expect_equal(sc_est$ci_low, unname(sv_ci[, 1L]), tolerance = 1e-6)
+  expect_equal(sc_est$ci_high, unname(sv_ci[, 2L]), tolerance = 1e-6)
+})
+
+test_that("get_totals() grouped factor totals match survey::svyby() [oracle]", {
+  skip_if_not_installed("survey")
+
+  df <- make_categorical_totals_data()
+  df <- df[!is.na(df$cat3), ]
+  df$cat3 <- droplevels(df$cat3)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  sc_est <- get_totals(sc, cat3, group = g, variance = "se")
+  sv_est <- survey::svyby(~cat3, ~g, sv, survey::svytotal, covmat = TRUE)
+
+  # svyby() is variable-major; surveycore rows are group-major
+  sv_names <- paste0(
+    as.character(sc_est$g),
+    ":cat3",
+    as.character(sc_est$cat3)
+  )
+  expect_equal(sc_est$total, unname(coef(sv_est)[sv_names]), tolerance = 1e-10)
+  expect_equal(
+    sc_est$se,
+    unname(sqrt(diag(vcov(sv_est)))[sv_names]),
+    tolerance = 1e-8
+  )
+})
+
+test_that("get_totals() factor totals on a filtered design match survey::subset() [oracle]", {
+  skip_if_not_installed("survey")
+
+  df <- make_categorical_totals_data()
+  df <- df[!is.na(df$cat3), ]
+  df$cat3 <- droplevels(df$cat3)
+  mask <- df$y2 > stats::median(df$y2)
+  sc <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  sc <- set_domain_marker(sc, "logical", mask)
+  sv <- survey::svydesign(
+    ids = ~psu,
+    strata = ~strata,
+    weights = ~wt,
+    data = df,
+    nest = TRUE
+  )
+
+  sc_est <- get_totals(sc, cat3, variance = "se")
+  sv_est <- survey::svytotal(~cat3, subset(sv, mask))
+
+  expect_equal(sc_est$total, unname(coef(sv_est)), tolerance = 1e-10)
+  expect_equal(sc_est$se, unname(survey::SE(sv_est)), tolerance = 1e-8)
+})
+
+test_that("get_totals() level SE equals the SE of the hand-built 0/1 indicator", {
+  df <- make_categorical_totals_data()
+  df$ind_a <- as.numeric(!is.na(df$cat3) & df$cat3 == "a")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  by_level <- get_totals(d, cat3, variance = "se")
+  by_ind <- get_totals(d, ind_a, variance = "se")
+  row_a <- by_level[as.character(by_level$cat3) %in% "a", ]
+  expect_equal(row_a$total, by_ind$total, tolerance = 1e-10)
+  expect_equal(row_a$se, by_ind$se, tolerance = 1e-8)
+})
+
+test_that("get_totals() with na.rm = FALSE adds an NA level row last", {
+  df <- make_categorical_totals_data()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_warning(
+    result <- get_totals(d, cat3, na.rm = FALSE, variance = "se"),
+    class = "surveycore_warning_small_cell"
+  )
+  expect_identical(nrow(result), 4L)
+  expect_true(is.na(result$cat3[[4L]]))
+  expect_identical(result$n[[4L]], 3L)
+  expect_equal(
+    result$total[[4L]],
+    sum(df$wt[is.na(df$cat3)]),
+    tolerance = 1e-10
+  )
+  expect_equal(sum(result$total), sum(df$wt), tolerance = 1e-10)
+})
+
+test_that("get_totals() factor x warns and returns 0 rows when all NA with na.rm = TRUE", {
+  df <- make_categorical_totals_data()
+  df$all_na <- factor(rep(NA_character_, nrow(df)), levels = "a")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_warning(
+    result <- get_totals(d, all_na),
+    class = "surveycore_warning_all_na_totals"
+  )
+  expect_identical(nrow(result), 0L)
+})
+
+test_that("get_totals() factor x errors when all NA with na.rm = FALSE", {
+  df <- make_categorical_totals_data()
+  df$all_na <- factor(rep(NA_character_, nrow(df)), levels = "a")
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_error(
+    get_totals(d, all_na, na.rm = FALSE),
+    class = "surveycore_error_all_na"
+  )
+  expect_snapshot(error = TRUE, get_totals(d, all_na, na.rm = FALSE))
+})
+
+test_that("get_totals() factor level totals sum to the population size on every design class", {
+  df <- make_survey_data(n = 200L, n_psu = 20L, n_strata = 2L, seed = 6L)
+  set.seed(6L)
+  df$f2 <- factor(sample(c("x", "y"), nrow(df), TRUE))
+
+  tay <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  np <- as_survey_nonprob(df, weights = wt)
+
+  df_tp <- make_survey_data(
+    design = "twophase",
+    n = 200L,
+    n_psu = 20L,
+    n_strata = 2L,
+    seed = 6L
+  )
+  df_tp$f2 <- factor(sample(c("x", "y"), nrow(df_tp), TRUE))
+  ph1 <- as_survey(df_tp, ids = psu, weights = wt, strata = strata, fpc = fpc)
+  tp <- as_survey_twophase(ph1, subset = subset, method = "approx")
+
+  df_rep <- make_survey_data(n = 100L, design = "replicate", seed = 4L)
+  df_rep$f2 <- factor(sample(c("x", "y"), nrow(df_rep), TRUE))
+  rep_cols <- grep("^repwt_", names(df_rep), value = TRUE)
+  rep <- as_survey_replicate(
+    df_rep,
+    weights = wt,
+    repweights = all_of(rep_cols),
+    type = "BRR"
+  )
+
+  for (d in list(tay, rep, tp)) {
+    by_level <- get_totals(d, f2, variance = "se")
+    expect_identical(as.character(by_level$f2), c("x", "y"))
+    expect_true(all(is.finite(by_level$se)))
+    expect_equal(
+      sum(by_level$total),
+      get_totals(d)$total,
+      tolerance = 1e-10
+    )
+  }
+  # The SRS-fallback warning fires once per level cell: two levels, two
+  # warnings
+  expect_warning(
+    expect_warning(
+      by_level <- get_totals(np, f2, variance = "se"),
+      class = "surveycore_warning_nonprob_srs_fallback"
+    ),
+    class = "surveycore_warning_nonprob_srs_fallback"
+  )
+  expect_equal(sum(by_level$total), sum(df$wt), tolerance = 1e-10)
+})
+
+test_that("coef() names categorical get_totals() rows variable.level", {
+  df <- make_categorical_totals_data()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  result <- get_totals(d, cat3, group = g, variance = "se")
+  expect_identical(
+    names(coef(result)),
+    c(
+      "hi:cat3.c",
+      "hi:cat3.a",
+      "hi:cat3.b",
+      "lo:cat3.c",
+      "lo:cat3.a",
+      "lo:cat3.b"
+    )
+  )
+})
+
+test_that("get_means() still rejects a factor x after get_totals() accepts one", {
+  df <- make_categorical_totals_data()
+  d <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+
+  expect_error(
+    get_means(d, cat3),
+    class = "surveycore_error_non_numeric_variable"
+  )
 })

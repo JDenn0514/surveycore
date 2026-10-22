@@ -27,9 +27,15 @@ get_totals(
 \code{survey_twophase}, or \code{survey_nonprob}.}
 
 \item{x}{<\code{\link[tidyselect:language]{tidy-select}}> Optional single unquoted
-numeric variable name. When \code{NULL} (default), estimates the population
-size (sum of weights). When supplied, estimates the weighted sum
-(sum of w_i * x_i).}
+variable name. When \code{NULL} (default), estimates the population
+size (sum of weights). When numeric, estimates the weighted sum
+(sum of w_i * x_i). When a factor or character vector, returns one row
+per level: the level's total is the weighted sum of its 0/1 indicator,
+the same estimate and standard error as \code{survey::svytotal()} on a factor.
+Factor levels keep their declared order and character levels sort
+ascending. A level with no observed rows in the active domain is dropped,
+as in \code{\link[=get_freqs]{get_freqs()}}; \code{survey::svytotal()} returns it as a zero row.
+Logical and other column types are rejected.}
 
 \item{group}{<\code{\link[tidyselect:language]{tidy-select}}> Optional grouping
 variable(s). Default \code{NULL}.}
@@ -40,8 +46,10 @@ variable(s). Default \code{NULL}.}
 \item{conf_level}{Numeric scalar in (0, 1). Default \code{0.95}.}
 
 \item{n_weighted}{Logical. For \code{get_totals(d)} (no variable), equals the
-\code{total} column and is included for API uniformity. For variable mode,
-adds the sum of weights for non-NA observations. Default \code{FALSE}.}
+\code{total} column and is included for API uniformity. For a numeric \code{x},
+adds the sum of weights for non-NA observations. For a categorical \code{x},
+adds the sum of weights at each level, which equals \code{total}. Default
+\code{FALSE}.}
 
 \item{decimals}{Integer or \code{NULL}. If an integer, rounds all numeric output
 columns (e.g., \code{total}, \code{se}, \code{ci_low}, \code{ci_high}) to this many decimal
@@ -55,11 +63,13 @@ from calculations, and observations where any group variable is \code{NA} are
 excluded from the output. If \code{FALSE}, \code{NA} observations in the analysis
 variable are included in calculations, and observations where a group
 variable is \code{NA} are collected into their own group row in the output
-(appearing after all non-\code{NA} group rows).}
+(appearing after all non-\code{NA} group rows). For a categorical \code{x},
+\code{FALSE} also adds an \code{NA} level row after the other levels, holding the
+total of the rows where \code{x} is \code{NA}.}
 
-\item{label_values}{Logical. Accepted for API consistency across \verb{get_*()}
-functions. For \code{get_totals()}, no value-level cells appear in the output,
-so this parameter has no effect. Default \code{TRUE}.}
+\item{label_values}{Logical. If \code{TRUE} (default), group columns and the
+level column of a categorical \code{x} show value labels where they exist.
+For a numeric \code{x}, no value-level cells appear in the output.}
 
 \item{label_vars}{Logical. Accepted for API uniformity. Default \code{TRUE}.}
 
@@ -85,9 +95,12 @@ Ignored when \code{design} is a single survey.}
 A \code{survey_totals} tibble (also inheriting \code{survey_result}). Columns:
 \itemize{
 \item \verb{[group_cols...]} — group variable columns (when active), first.
+\item \verb{[x]} — the level of a categorical \code{x}, named after the variable
+(categorical \code{x} only).
 \item \code{total} — the weighted sum estimate.
 \item Variance columns — only those requested via \code{variance}.
-\item \code{n} — unweighted count (omitted in no-variable mode).
+\item \code{n} — unweighted count (omitted in no-variable mode). For a
+categorical \code{x}, the count of rows at the level.
 \item \code{n_weighted} — sum of weights (only when requested).
 }
 The variable name (or \code{NULL} for no-variable mode) is in
@@ -95,7 +108,8 @@ The variable name (or \code{NULL} for no-variable mode) is in
 }
 \description{
 Compute the estimated population total of a numeric variable in a survey
-design, or the estimated population size when no variable is supplied.
+design, one total per level of a categorical variable, or the estimated
+population size when no variable is supplied.
 Supports optional grouping, uncertainty quantification, and metadata-driven
 labelling.
 }
@@ -115,6 +129,17 @@ get_totals(d, agep)
 
 # Grouped
 get_totals(d, agep, group = sex)
+
+# One total per level of a factor
+acs <- acs_pums_wy
+acs$sex_f <- factor(acs$sex, levels = 1:2, labels = c("Male", "Female"))
+d_f <- as_survey_replicate(
+  acs,
+  weights = pwgtp,
+  repweights = pwgtp1:pwgtp80,
+  type = "successive-difference"
+)
+get_totals(d_f, sex_f)
 }
 \seealso{
 Other analysis:

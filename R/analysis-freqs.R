@@ -272,11 +272,7 @@ get_freqs <- function(
   for (vn in var_names) {
     x_col <- design@data[[vn]]
     vl <- x_meta_list[[vn]]$value_labels # named vector or NULL
-    vl_map <- if (!is.null(vl)) {
-      structure(names(vl), names = as.character(vl))
-    } else {
-      NULL
-    }
+    vl_map <- .value_label_map(vl, x_col)
 
     # domain-only x values for level detection
     x_domain <- x_col[domain_mask]
@@ -361,15 +357,7 @@ get_freqs <- function(
         }
 
         # ── Level display value ────────────────────────────────────────────
-        if (label_values && !is.null(vl_map) && !is.na(lvl)) {
-          key <- as.character(lvl)
-          # vl_map keys are numeric codes (as character strings) for
-          # haven-labelled columns. For factor columns, lvl is already the
-          # label string and may not be a key in vl_map — fall back to lvl.
-          lvl_display <- if (key %in% names(vl_map)) vl_map[[key]] else key
-        } else {
-          lvl_display <- if (is.na(lvl)) NA_character_ else as.character(lvl)
-        }
+        lvl_display <- .level_display(lvl, vl_map, label_values)
 
         # ── Accumulate ────────────────────────────────────────────────────
         if (is_multi) {
@@ -449,11 +437,11 @@ get_freqs <- function(
     }
 
     # Convert to factor when label_values=TRUE and value labels exist
-    vl_single <- x_meta_list[[var_names[[1L]]]]$value_labels
-    if (label_values && !is.null(vl_single)) {
-      focal_out <- factor(focal_out, levels = names(vl_single))
-    }
-    col_vecs[[var_names[[1L]]]] <- focal_out
+    col_vecs[[var_names[[1L]]]] <- .focal_level_column(
+      focal_out,
+      x_meta_list[[var_names[[1L]]]]$value_labels,
+      label_values
+    )
   }
 
   col_vecs$pct <- acc_pct
