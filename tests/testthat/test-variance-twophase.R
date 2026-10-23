@@ -1109,3 +1109,46 @@ test_that("get_totals() approx method with an unclustered weighted phase 1 on a 
     approx_oracle_domain(approx_oracle_unclustered())
   )
 })
+
+# ---------------------------------------------------------------------------
+# approx with strata2 cutting across phase 1 PSUs (issue #341)
+# ---------------------------------------------------------------------------
+# Every phase 1 PSU is split across two strata2 strata, so a PSU's rows carry
+# different phase 2 sampling fractions. survey 4.5 pairs onestrat.phase1()'s
+# sorted PSU totals with those fractions in row order, so its SE moves when
+# rows are reordered or PSUs relabelled, and it cannot be the oracle here.
+# surveycore averages each PSU's fractions; the block pins that the SE
+# depends on the design and not on row order or labels.
+
+approx_crosscut_se <- function(df) {
+  d <- as_survey_twophase(
+    as_survey(df, ids = psu, strata = strata, weights = wt),
+    strata2 = s2,
+    subset = subset,
+    method = "approx"
+  )
+  c(
+    mean = get_means(d, y1, variance = "se")$se,
+    total = get_totals(d, y1, variance = "se")$se
+  )
+}
+
+test_that("approx SE with strata2 cutting across phase 1 PSUs ignores row order and PSU labels", {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
+  )
+  df$half <- ifelse(seq_len(nrow(df)) %% 2L == 0L, "a", "b")
+  df$s2 <- as.character(interaction(df$strata, df$half))
+
+  relabelled <- df
+  relabelled$psu <- sprintf("psu_%02d", as.integer(sub("psu_", "", df$psu)))
+  reversed <- df[rev(seq_len(nrow(df))), ]
+
+  se <- approx_crosscut_se(df)
+  expect_equal(approx_crosscut_se(relabelled), se, tolerance = 1e-8)
+  expect_equal(approx_crosscut_se(reversed), se, tolerance = 1e-8)
+})
