@@ -167,7 +167,10 @@
     nPSU_s <- length(x_agg)
 
     # Aggregate usu to PSU level (mean handles PSUs spanning multiple
-    # phase 2 strata)
+    # phase 2 strata). Deliberately not survey's rule: onestrat.phase1()
+    # pairs rowsum()'s sorted PSU totals with usu in row order, so its SE
+    # moves with row order and PSU labels when strata2 cuts across phase 1
+    # PSUs. Nested strata give the same answer either way (issue #341).
     pi2_agg <- as.numeric(tapply(usu_ph2[idx_s], psu_s, mean))
 
     if (nPSU_s <= 1L) {
