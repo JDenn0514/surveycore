@@ -179,8 +179,9 @@ test_that("get_means() nonprob SE is sqrt((R-1)/R) of the replicate SE", {
   expect_identical(result_np$mean, result_rep$mean)
 })
 
-test_that("get_ratios() SE matches equivalent survey_replicate for survey_nonprob", {
-  df_rep <- .make_nonprob_rep(n = 200L, R = 20L, seed = 42L)
+test_that("get_ratios() nonprob SE is sqrt((R-1)/R) of the replicate SE", {
+  n_rep <- 20L
+  df_rep <- .make_nonprob_rep(n = 200L, R = n_rep, seed = 42L)
 
   d_np <- as_survey_nonprob(
     df_rep,
@@ -195,10 +196,25 @@ test_that("get_ratios() SE matches equivalent survey_replicate for survey_nonpro
     mse = TRUE
   )
 
-  result_np <- get_ratios(d_np, y1, y2)
-  result_rep <- get_ratios(d_rep, y1, y2)
+  result_np <- get_ratios(d_np, y1, y2, variance = "se")
+  result_rep <- get_ratios(d_rep, y1, y2, variance = "se")
 
-  expect_equal(result_np$se, result_rep$se, tolerance = 1e-10)
+  # Same scale gap as the get_means() block above: decision D1 of
+  # plans/issue-cleanup.md keeps 1/R for as_survey_nonprob(), and issue #253
+  # moved as_survey_replicate() to 1/(R-1). The nonprob standard error is
+  # therefore smaller by sqrt((R-1)/R). Before issue #292 this block called
+  # get_ratios() without variance = "se" and compared NULL to NULL.
+  # Measured at R = 20: 0.97467943448089644 against
+  # sqrt(19 / 20) = 0.97467943448089633. SE/variance row, 1e-8.
+  expect_equal(
+    result_np$se / result_rep$se,
+    sqrt((n_rep - 1) / n_rep),
+    tolerance = 1e-8
+  )
+
+  # The scale enters the variance only, so the ratio is unmoved and stays
+  # bitwise identical.
+  expect_identical(result_np$ratio, result_rep$ratio)
 })
 
 
