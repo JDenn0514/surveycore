@@ -20,7 +20,7 @@
 #                survey_nonprob without repweights).
 # @param y_col   Character: variable name, OR NULL for population size.
 # @param domain  Numeric 0/1 vector (full length).
-# @return Named list: total, se, df (Taylor only), se_srs, n, n_weighted,
+# @return Named list: total, se, se_srs, n, n_weighted,
 #   joint (see .joint_vcov()).
 .taylor_total_cell <- function(design, y_col, domain) {
   data <- design@data
@@ -63,7 +63,6 @@
   lbl <- if (is.null(y_col)) "pop_total" else y_col
   infl_mat <- matrix(w * u, ncol = 1L, dimnames = list(NULL, lbl))
   infl_mat <- .maybe_apply_calibration(infl_mat, design)
-  cal_df_reduction <- .get_calibration_df_reduction(design)
 
   v <- .svy_recvar(
     infl_mat,
@@ -74,26 +73,6 @@
   )
 
   se <- sqrt(max(0, v[1L, 1L]))
-
-  # Calibration-adjusted degrees of freedom
-  # df over the cell's rows, not the full design (issue #326)
-  df_design <- max(1L, .degf_taylor(data[domain > 0, , drop = FALSE], vars))
-  df_final <- df_design - cal_df_reduction
-  if (df_final <= 0L) {
-    cli::cli_warn(
-      c(
-        "!" = paste0(
-          "Calibration reduces design df ({df_design}) to {df_final}."
-        ),
-        "i" = "CIs and p-values may be invalid.",
-        "v" = paste0(
-          "Reduce the number of calibration columns or use a larger design."
-        )
-      ),
-      class = "surveycore_warning_zero_df_after_calibration"
-    )
-    df_final <- max(1L, df_final)
-  }
 
   # SRS-equivalent SE
   y_domain <- y_safe[domain > 0]
@@ -112,7 +91,6 @@
     se_srs = se_srs,
     n = if (is.null(y_col)) NULL else n_d,
     n_weighted = N_d,
-    df = df_final,
     joint = .joint_infl(infl_mat)
   )
 }
