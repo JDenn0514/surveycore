@@ -26,7 +26,8 @@ test_that("get_means() replicate SE matches survey::svymean() — BRR design", {
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "BRR"
+    type = "BRR",
+    mse = TRUE
   )
   test_invariants(sc)
 
@@ -69,7 +70,8 @@ test_that("get_totals() replicate SE matches survey::svytotal() — BRR design",
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "BRR"
+    type = "BRR",
+    mse = TRUE
   )
   expect_no_warning(
     sv <- survey::svrepdesign(
@@ -171,7 +173,7 @@ test_that("get_means() replicate SE matches survey::svymean() — JK2 design", {
     type = "JK2",
     mse = TRUE
   )
-  expect_equal(sc@variables$scale, 1)
+  expect_equal(sc@variables$scale, 1, tolerance = 1e-8)
 
   # survey warns for JK2 unconditionally, even when the caller supplies
   # neither scale nor rscales, so the block asserts the warning instead of
@@ -327,7 +329,8 @@ test_that("get_means() BRR scale formula 1/n_rep is correct for n_rep != 4", {
     d,
     weights = wt,
     repweights = all_of(repwt_cols),
-    type = "BRR"
+    type = "BRR",
+    mse = TRUE
   )
   # survey hardcodes scale = 1/R for BRR internally; the scale= argument is
   # ignored. Both packages independently compute (1/n_rep) * sum((theta_r - theta)^2).
@@ -376,7 +379,7 @@ test_that("as_survey_replicate() stores scale = 4/n_rep for successive-differenc
     type = "successive-difference"
   )
 
-  expect_equal(sc@variables$scale, 4 / n_rep)
+  expect_equal(sc@variables$scale, 4 / n_rep, tolerance = 1e-8)
 })
 
 test_that("as_survey_replicate() stores scale = 4/n_rep for ACS", {
@@ -397,7 +400,7 @@ test_that("as_survey_replicate() stores scale = 4/n_rep for ACS", {
     type = "ACS"
   )
 
-  expect_equal(sc@variables$scale, 4 / n_rep)
+  expect_equal(sc@variables$scale, 4 / n_rep, tolerance = 1e-8)
 })
 
 test_that("get_means() successive-difference SE matches survey::svymean()", {
