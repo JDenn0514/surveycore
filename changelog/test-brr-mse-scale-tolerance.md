@@ -52,3 +52,8 @@ every assertion of `survey`'s stored scale carries `tolerance = 1e-8`.
   confidence bounds, and the point estimate still passes. The file was
   then restored.
 - `air format --check` passes on the whole file
+- Full suite (`devtools::test()` under `C.UTF-8`), measured with the same
+  instrument on `develop` at `5f453c4` and on this branch: 4315 blocks,
+  14017 expectations, 0 failed, 0 errors, 39 skipped and 369 warnings on
+  both. `surveytidy` and `srr` are not installed, so 35 `surveytidy`
+  guards skip, and those tests did not run
