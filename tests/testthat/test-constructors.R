@@ -3825,7 +3825,7 @@ test_that("as_survey_twophase() does not warn for method = 'simple' with cluster
 })
 
 # Warning TP-2 (issue #340): method = "full" with a weighted phase 1 and no
-# fpc. The rule ignores clustering and stratification, so each of the three
+# fpc. The rule ignores clustering and stratification, so each of the four
 # shapes below warns; the four blocks after them are the cases that must not.
 test_that("as_survey_twophase() warns for a clustered, stratified phase 1 with no fpc", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 40L)
@@ -3870,6 +3870,15 @@ test_that("as_survey_twophase() warns for a stratified, unclustered phase 1 with
 test_that("as_survey_twophase() warns for a clustered, unstratified phase 1 with no fpc", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- as_survey(df, ids = psu, weights = wt)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() warns for a weighted, unclustered, unstratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 48L)
+  phase1 <- as_survey(df, weights = wt)
   expect_warning(
     as_survey_twophase(phase1, subset = subset, method = "full"),
     class = "surveycore_warning_twophase_full_no_fpc"
@@ -3988,12 +3997,8 @@ test_that("as_survey_twophase() errors when phase1 is a plain list [row 19]", {
 
 test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no ids/strata)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt))
-  # A weighted phase 1 with no fpc under method = "full" (issue #340)
-  expect_warning(
-    tp <- as_survey_twophase(phase1, subset = subset),
-    class = "surveycore_warning_twophase_full_no_fpc"
-  )
+  phase1 <- suppressWarnings(as_survey(df, weights = wt, fpc = fpc))
+  tp <- as_survey_twophase(phase1, subset = subset)
   test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
 })
@@ -4112,13 +4117,11 @@ test_that("as_survey_twophase() refuses a Fay phase-1 with a half-rows subset", 
 test_that("as_survey_twophase() does not refuse a survey_nonprob phase-1 as replicate", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- as_survey_nonprob(df, weights = wt)
-  # A weighted phase 1 with no fpc under method = "full" (issue #340)
-  expect_warning(
-    expect_no_error(
-      as_survey_twophase(phase1, subset = subset),
-      class = "surveycore_error_twophase_replicate_phase1"
-    ),
-    class = "surveycore_warning_twophase_full_no_fpc"
+  # "approx": a nonprob phase 1 has no fpc, and under "full" it would raise
+  # the issue #340 warning, which is not what this block is about
+  expect_no_error(
+    as_survey_twophase(phase1, subset = subset, method = "approx"),
+    class = "surveycore_error_twophase_replicate_phase1"
   )
 })
 
