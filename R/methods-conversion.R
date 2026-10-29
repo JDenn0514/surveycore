@@ -752,6 +752,9 @@ as_tbl_svy <- function(x) {
 #' `method = "full"`, and a `twophase` object converts to `method = "approx"`.
 #' `survey` builds `method = "simple"` as a `twophase` object too, and
 #' surveycore treats `"simple"` as `"approx"`.
+#' A `twophase2` object whose phase 1 has weights other than 1 and no `fpc`
+#' raises the warning `surveycore_warning_twophase_full_no_fpc`, as
+#' [as_survey_twophase()] does; see its section on the Phase 1 fpc.
 #'
 #' The phase 2 design, `ids2`, `strata2`, `probs2` and `fpc2`, is read from
 #' the formulas the `survey` object stores for it. A formula that names data
@@ -1166,11 +1169,15 @@ from_svydesign <- function(x) {
     visible_vars = NULL
   )
 
-  survey_twophase(
+  design <- survey_twophase(
     data = phase2$data,
     variables = variables,
     metadata = phase1_sc@metadata
   )
+
+  .warn_twophase_full_no_fpc(phase1_sc@variables, phase2$data, method)
+
+  design
 }
 
 

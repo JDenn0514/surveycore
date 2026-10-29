@@ -371,6 +371,43 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
+# Warn when a method = "full" two-phase design has a weighted Phase 1 with no
+# fpc (issue #340). Without a Phase 1 fpc, the full variance (survey's
+# twophase2var) puts 1 - p on each Phase 1 unit and nothing off the
+# diagonal: Poisson sampling of units. Each unit's expanded total is never
+# centred, so the variance of a total runs many times the true one, whether
+# Phase 1 is clustered, stratified, both or neither. A Phase 1 whose weights
+# are all 1 is the iid fallback or a census and gets no warning. Called once
+# at construction by as_survey_twophase() and from_svydesign().
+#' @noRd
+.warn_twophase_full_no_fpc <- function(phase1_vars, data, method) {
+  if (!identical(method, "full") || !is.null(phase1_vars$fpc)) {
+    return(invisible(FALSE))
+  }
+  if (isTRUE(all(data[[phase1_vars$weights]] == 1))) {
+    return(invisible(FALSE))
+  }
+  cli::cli_warn(
+    c(
+      "!" = paste0(
+        "Phase 1 has no {.arg fpc}, so {.code method = \"full\"} treats its ",
+        "sampling units as Poisson-sampled."
+      ),
+      "i" = paste0(
+        "Standard errors are then conservative, often several times too ",
+        "large for a total."
+      ),
+      "i" = paste0(
+        "With an {.arg fpc} on the phase 1 design, the variance is that of ",
+        "a fixed-size sample."
+      )
+    ),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  invisible(TRUE)
+}
+
+
 # ── Internal tidy-select resolvers ───────────────────────────────────────────
 
 # Resolve a tidy-select quosure against a data frame.

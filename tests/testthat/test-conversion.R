@@ -664,7 +664,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
   skip_if_not_installed("survey")
   df <- make_survey_data(n = 100L, design = "twophase", seed = 301L)
   # phase1 with no ids (SRS-like) — p1$ids will be NULL
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2 <- as_survey_twophase(phase1, subset = subset)
   sv <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
@@ -674,7 +674,7 @@ test_that("as_svydesign() handles twophase design with SRS phase1 (no ids)", {
 test_that("as_svydesign() handles twophase design with phase2 ids", {
   skip_if_not_installed("survey")
   df <- make_survey_data(n = 100L, design = "twophase", seed = 302L)
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
   sv <- suppressWarnings(as_svydesign(d2))
   expect_true(inherits(sv, "survey.design"))
@@ -5081,7 +5081,10 @@ test_that("from_svydesign() recovers strata2 and the phase 1 weights of a twopha
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
 
-  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+  expect_warning(
+    d <- from_svydesign(make_svy_twophase(df, "full", "strata2")),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
   test_invariants(d)
 
   expect_identical(d@variables$method, "full")
@@ -5120,7 +5123,10 @@ test_that("from_svydesign() recovers probs2 and fpc2 named in a twophase2 call",
     method = "full"
   )
 
-  d <- from_svydesign(sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(
     d@variables$phase2,
@@ -5136,7 +5142,10 @@ test_that("from_svydesign() reads the twophase2 phase 1 weight column from probs
   df <- make_twophase_frame()
   df <- cbind(wt_copy = df$wt, df)
 
-  d <- from_svydesign(make_svy_twophase(df, "full", "strata2"))
+  expect_warning(
+    d <- from_svydesign(make_svy_twophase(df, "full", "strata2")),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(d@variables$phase1$weights, "wt")
 })
@@ -5158,7 +5167,10 @@ test_that("from_svydesign() matches the subset column by value when the subset f
     method = "full"
   )
 
-  d <- from_svydesign(sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(d@variables$subset, "subset")
 })
@@ -5179,7 +5191,10 @@ test_that("from_svydesign() matches the weight column by value for a probs expre
     method = "full"
   )
 
-  d <- from_svydesign(sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(d@variables$phase1$weights, "wt2")
 })
@@ -5189,14 +5204,22 @@ test_that("from_svydesign(twophase2 with strata2) agrees with survey [numerical]
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
   sv <- make_svy_twophase(df, "full", "strata2")
-  expect_twophase_oracle(from_svydesign(sv), sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_twophase_oracle(d, sv)
 })
 
 test_that("from_svydesign(twophase2 with ids2) agrees with survey [numerical]", {
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
   sv <- make_svy_twophase(df, "full", "ids2")
-  expect_twophase_oracle(from_svydesign(sv), sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_twophase_oracle(d, sv)
 })
 
 test_that("from_svydesign(twophase with strata2) agrees with survey [numerical]", {
@@ -5218,14 +5241,22 @@ test_that("a filtered from_svydesign(twophase2 with strata2) agrees with survey'
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
   sv <- make_svy_twophase(df, "full", "strata2")
-  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_twophase_domain_oracle(d, sv, twophase_mask(df))
 })
 
 test_that("a filtered from_svydesign(twophase2 with ids2) agrees with survey's domain [numerical]", {
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
   sv <- make_svy_twophase(df, "full", "ids2")
-  expect_twophase_domain_oracle(from_svydesign(sv), sv, twophase_mask(df))
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_twophase_domain_oracle(d, sv, twophase_mask(df))
 })
 
 test_that("a filtered from_svydesign(twophase with strata2) agrees with survey's domain [numerical]", {
@@ -5251,7 +5282,15 @@ test_that("as_svydesign(from_svydesign(sv)) round-trips a two-phase object [nume
   for (method in c("full", "approx")) {
     for (phase2 in c("strata2", "ids2")) {
       sv <- make_svy_twophase(df, method, phase2)
-      back <- as_svydesign(from_svydesign(sv))
+      if (method == "full") {
+        expect_warning(
+          d <- from_svydesign(sv),
+          class = "surveycore_warning_twophase_full_no_fpc"
+        )
+      } else {
+        d <- from_svydesign(sv)
+      }
+      back <- as_svydesign(d)
       expect_identical(class(back), class(sv))
       sm <- survey::svymean(~y1, sv)
       sm_back <- survey::svymean(~y1, back)
@@ -5263,6 +5302,53 @@ test_that("as_svydesign(from_svydesign(sv)) round-trips a two-phase object [nume
       )
     }
   }
+})
+
+
+# ── The phase 1 fpc warning (issue #340) ─────────────────────────────────────
+#
+# from_svydesign() builds a survey_twophase without calling
+# as_survey_twophase(), so it raises the warning itself, under the same rule:
+# a twophase2 object whose phase 1 has weights other than 1 and no fpc.
+
+test_that("from_svydesign() warns for a twophase2 phase 1 with weights and no fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- make_svy_twophase(df, "full", "strata2")
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_identical(d@variables$method, "full")
+})
+
+test_that("from_svydesign() does not warn for a twophase2 phase 1 with an fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~psu, ~1),
+    strata = list(~strata, ~strata),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_no_warning(d <- from_svydesign(sv))
+  expect_identical(d@variables$phase1$fpc, "fpc")
+})
+
+test_that("from_svydesign() does not warn for a twophase2 phase 1 with no probs", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  sv <- survey::twophase(
+    id = list(~1, ~1),
+    strata = list(NULL, ~strata),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_no_warning(from_svydesign(sv))
 })
 
 
@@ -5285,7 +5371,11 @@ test_that("from_svydesign() stores an expression probs2 in ..surveycore_probs2..
     method = "full"
   )
 
-  expect_no_warning(d <- from_svydesign(sv))
+  # The one condition is the phase 1 fpc warning (issue #340)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(d@variables$phase2$probs, "..surveycore_probs2..")
   expect_equal(d@data[["..surveycore_probs2.."]], df$phase2_prob)
@@ -5304,7 +5394,10 @@ test_that("from_svydesign() stores an expression strata2 evaluated on every phas
     method = "full"
   )
 
-  d <- from_svydesign(sv)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(d@variables$phase2$strata, "..surveycore_strata2..")
   expect_identical(d@data[["..surveycore_strata2.."]], df$strata)
@@ -5357,7 +5450,11 @@ test_that("from_svydesign() rebuilds a twophase2 phase 2 with no stored call [nu
   sv <- make_svy_twophase(df, "full", "strata2")
   sv$phase2$call <- NULL
 
-  expect_no_warning(d <- from_svydesign(sv))
+  # The one condition is the phase 1 fpc warning (issue #340)
+  expect_warning(
+    d <- from_svydesign(sv),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
 
   expect_identical(
     d@variables$phase2,

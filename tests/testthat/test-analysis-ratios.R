@@ -1349,7 +1349,14 @@ test_that("get_ratios() empty domain for twophase returns NA", {
     design = "twophase",
     seed = 903
   )
-  phase1 <- as_survey(d, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    d,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   sc <- as_survey_twophase(
     phase1,
     subset = subset,

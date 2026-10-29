@@ -443,6 +443,7 @@ test_that(".corr_latent_pair() raises PC-7 on survey_twophase before any MLE wor
     ids = psu,
     weights = wt,
     strata = strata,
+    fpc = fpc,
     nest = TRUE
   )
   d <- as_survey_twophase(phase1, subset = subset)

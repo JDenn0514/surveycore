@@ -731,3 +731,26 @@ a column of the design data.
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
 | TP-1 | `from_svydesign()` (twophase) | The route generated a phase 2 column name, and it already names a column of the design data | ERROR | `surveycore_error_phase2_name_collision` | `"x" = "{.fn from_svydesign} cannot store the phase 2 design under generated names.", "i" = "The design data already {cli::qty(length(collisions))}{?has a column/has columns} named {.field {collisions}}.", "v" = "Rename the conflicting {cli::qty(length(collisions))}column{?s} in the design data, then convert again."` |
+
+### twophase-full-no-fpc rows (2026-10-29)
+
+Issue #340. `method = "full"` computes `survey::twophase2()`'s variance.
+Without a phase-1 `fpc` that variance treats each phase-1 sampling unit as
+Poisson-sampled: the expanded unit totals are never centred, so the variance
+of a total is many times the true one for a fixed-size phase-1 sample. A
+simulation of a stratified cluster sample measured about 13 times the
+variance (3.7 times the SE); an unclustered, unstratified phase 1 is
+overstated by a similar amount. surveycore matches `survey` here, so the
+condition is a warning, not a change to the estimator. `survey` itself raises
+no condition. The warning fires once, when the design is built, and never
+from an analysis function.
+
+**Trigger.** All three hold: the method is `"full"`; the phase-1
+`@variables$fpc` is `NULL`; the phase-1 weight column is not all 1. Phase-1
+weights of all 1 are the no-weights fallback, which `"full"` treats as iid,
+or a census, which contributes no phase-1 variance; neither is overstated.
+Clustering and stratification do not enter the rule.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-2 | `as_survey_twophase()`, `from_svydesign()` (`twophase2`) | The trigger above holds. Raised after the design is built | WARN | `surveycore_warning_twophase_full_no_fpc` | `"!" = "Phase 1 has no {.arg fpc}, so {.code method = \"full\"} treats its sampling units as Poisson-sampled.", "i" = "Standard errors are then conservative, often several times too large for a total.", "i" = "With an {.arg fpc} on the phase 1 design, the variance is that of a fixed-size sample."` |
