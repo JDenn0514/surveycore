@@ -606,10 +606,12 @@ test_that("get_quantiles() simple method matches survey::svyquantile [oracle]", 
 # phase-2 probability is the cluster fraction, which the row fraction
 # surveycore used before #329 got wrong for totals.
 #
-# Phase 1 has no fpc here: these blocks pin parity on the Poisson phase-1
-# branch, and the fpc branch has its own blocks below. So every surveycore
-# design in this section raises the issue #340 warning at construction, and
-# each builder asserts it.
+# Phase 1 carries an fpc on both sides, so the phase-1 term is
+# without-replacement: pairs of clusters in one stratum get the off-diagonal
+# -(1 - p) / (n_h - 1). Every stratum keeps five clusters, so survey's
+# misread n_h (see the pairwise block below) reads the right count and survey
+# is a valid oracle. Without an fpc, surveycore warns (issue #340); the one
+# block that pins parity for that design is further down.
 
 full_oracle_data <- function() {
   df <- make_survey_data(
@@ -627,24 +629,29 @@ full_oracle_data <- function() {
 }
 
 full_oracle_phase1 <- function(df) {
-  as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
 }
 
 full_oracle_strata2 <- function() {
   df <- full_oracle_data()
-  expect_warning(
-    sc <- as_survey_twophase(
-      full_oracle_phase1(df),
-      strata2 = strata,
-      subset = subset,
-      method = "full"
-    ),
-    class = "surveycore_warning_twophase_full_no_fpc"
+  sc <- as_survey_twophase(
+    full_oracle_phase1(df),
+    strata2 = strata,
+    subset = subset,
+    method = "full"
   )
   sv <- survey::twophase(
     id = list(~psu, ~1),
     strata = list(~strata, ~strata),
     probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
     data = df,
     subset = ~subset,
     method = "full"
@@ -654,19 +661,17 @@ full_oracle_strata2 <- function() {
 
 full_oracle_ids2 <- function() {
   df <- full_oracle_data()
-  expect_warning(
-    sc <- as_survey_twophase(
-      full_oracle_phase1(df),
-      ids2 = psu,
-      subset = in_clusters,
-      method = "full"
-    ),
-    class = "surveycore_warning_twophase_full_no_fpc"
+  sc <- as_survey_twophase(
+    full_oracle_phase1(df),
+    ids2 = psu,
+    subset = in_clusters,
+    method = "full"
   )
   sv <- survey::twophase(
     id = list(~psu, ~psu),
     strata = list(~strata, NULL),
     probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, NULL),
     data = df,
     subset = ~in_clusters,
     method = "full"
@@ -805,24 +810,14 @@ test_that("survey_glm() full method with ids2 on a domain matches survey twophas
   )
 })
 
-# A phase-1 fpc makes the phase-1 term without-replacement: pairs of clusters
-# in one stratum get the off-diagonal -(1 - p) / (n_h - 1). Every stratum
-# here keeps five clusters, so survey's misread n_h (see the block below)
-# reads the right count and survey is a valid oracle.
-test_that("get_means() full method with a phase-1 fpc matches survey twophase2 [oracle]", {
+test_that("get_totals() full method with fpc2 matches survey twophase2 [oracle]", {
   skip_if_not_installed("survey")
   df <- full_oracle_data()
-  ph1 <- as_survey(
-    df,
-    ids = psu,
-    weights = wt,
-    strata = strata,
-    fpc = fpc,
-    nest = TRUE
-  )
+  df$n_stratum <- as.numeric(stats::ave(df$y1, df$strata, FUN = length))
   sc <- as_survey_twophase(
-    ph1,
+    full_oracle_phase1(df),
     strata2 = strata,
+    fpc2 = n_stratum,
     subset = subset,
     method = "full"
   )
@@ -830,34 +825,7 @@ test_that("get_means() full method with a phase-1 fpc matches survey twophase2 [
     id = list(~psu, ~1),
     strata = list(~strata, ~strata),
     probs = list(~ I(1 / wt), NULL),
-    fpc = list(~fpc, NULL),
-    data = df,
-    subset = ~subset,
-    method = "full"
-  )
-  expect_full_mean_oracle(list(sc = sc, sv = sv))
-  expect_full_total_oracle(list(sc = sc, sv = sv))
-})
-
-test_that("get_totals() full method with fpc2 matches survey twophase2 [oracle]", {
-  skip_if_not_installed("survey")
-  df <- full_oracle_data()
-  df$n_stratum <- as.numeric(stats::ave(df$y1, df$strata, FUN = length))
-  expect_warning(
-    sc <- as_survey_twophase(
-      full_oracle_phase1(df),
-      strata2 = strata,
-      fpc2 = n_stratum,
-      subset = subset,
-      method = "full"
-    ),
-    class = "surveycore_warning_twophase_full_no_fpc"
-  )
-  sv <- survey::twophase(
-    id = list(~psu, ~1),
-    strata = list(~strata, ~strata),
-    probs = list(~ I(1 / wt), NULL),
-    fpc = list(NULL, ~n_stratum),
+    fpc = list(~fpc, ~n_stratum),
     data = df,
     subset = ~subset,
     method = "full"
@@ -929,7 +897,11 @@ test_that("get_totals() full method with a phase-1 fpc and unequal strata matche
   expect_equal(sc_est$se, sqrt(v), tolerance = 1e-8)
 })
 
-test_that("get_means() full method with an unclustered phase 1 matches survey twophase2 [oracle]", {
+# The one parity block for a phase 1 with no fpc, the design the issue #340
+# warning is about: phase-1 units are Poisson-sampled, with no off-diagonal
+# stratum term. Phase 1 is unclustered, so its units are rows, and rows per
+# stratum are unequal; with an fpc that would trip survey's misread n_h.
+test_that("get_means(), get_totals() and survey_glm() full method with no phase-1 fpc match survey twophase2 [oracle]", {
   skip_if_not_installed("survey")
   df <- full_oracle_data()
   ph1 <- as_survey(df, weights = wt, strata = strata)
@@ -950,7 +922,10 @@ test_that("get_means() full method with an unclustered phase 1 matches survey tw
     subset = ~subset,
     method = "full"
   )
-  expect_full_mean_oracle(list(sc = sc, sv = sv))
+  designs <- list(sc = sc, sv = sv)
+  expect_full_mean_oracle(designs)
+  expect_full_total_oracle(designs)
+  expect_full_glm_oracle(designs)
 })
 
 # survey::as.fpc() reads an fpc column of values <= 1 as sampling fractions
@@ -958,21 +933,18 @@ test_that("get_totals() full method with fpc2 as sampling fractions matches surv
   skip_if_not_installed("survey")
   df <- full_oracle_data()
   df$frac2 <- as.numeric(stats::ave(df$subset, df$strata, FUN = mean))
-  expect_warning(
-    sc <- as_survey_twophase(
-      full_oracle_phase1(df),
-      strata2 = strata,
-      fpc2 = frac2,
-      subset = subset,
-      method = "full"
-    ),
-    class = "surveycore_warning_twophase_full_no_fpc"
+  sc <- as_survey_twophase(
+    full_oracle_phase1(df),
+    strata2 = strata,
+    fpc2 = frac2,
+    subset = subset,
+    method = "full"
   )
   sv <- survey::twophase(
     id = list(~psu, ~1),
     strata = list(~strata, ~strata),
     probs = list(~ I(1 / wt), NULL),
-    fpc = list(NULL, ~frac2),
+    fpc = list(~fpc, ~frac2),
     data = df,
     subset = ~subset,
     method = "full"
@@ -999,7 +971,7 @@ test_that("get_totals() full method with fpc2 as sampling fractions matches surv
 approx_oracle_ids2 <- function() {
   df <- full_oracle_data()
   sc <- as_survey_twophase(
-    full_oracle_phase1(df),
+    as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE),
     ids2 = psu,
     subset = in_clusters,
     method = "approx"
