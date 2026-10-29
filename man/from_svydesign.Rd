@@ -58,6 +58,9 @@ which \code{\link[survey:twophase]{survey::twophase()}} returns for \code{method
 \code{method = "full"}, and a \code{twophase} object converts to \code{method = "approx"}.
 \code{survey} builds \code{method = "simple"} as a \code{twophase} object too, and
 surveycore treats \code{"simple"} as \code{"approx"}.
+A \code{twophase2} object whose phase 1 has weights other than 1 and no \code{fpc}
+raises the warning \code{surveycore_warning_twophase_full_no_fpc}, as
+\code{\link[=as_survey_twophase]{as_survey_twophase()}} does; see its section on the Phase 1 fpc.
 
 The phase 2 design, \code{ids2}, \code{strata2}, \code{probs2} and \code{fpc2}, is read from
 the formulas the \code{survey} object stores for it. A formula that names data

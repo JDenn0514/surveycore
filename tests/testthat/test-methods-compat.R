@@ -46,7 +46,7 @@ test_that("names() returns @data column names for survey_replicate", {
 
 test_that("names() returns @data column names for survey_twophase", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 3)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   d <- as_survey_twophase(
     phase1,
     probs2 = phase2_prob,
@@ -148,7 +148,7 @@ test_that("the five size functions report @data size for survey_twophase", {
     design = "twophase",
     seed = 103
   )
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata)
+  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, fpc = fpc)
   d <- as_survey_twophase(phase1, probs2 = phase2_prob, subset = subset)
   stored <- survey_data(d)
 
@@ -196,7 +196,7 @@ test_that("the array predicates stay FALSE on the other three classes", {
     seed = 106
   )
   d_tp <- as_survey_twophase(
-    as_survey(df_tp, ids = psu, weights = wt, strata = strata),
+    as_survey(df_tp, ids = psu, weights = wt, strata = strata, fpc = fpc),
     probs2 = phase2_prob,
     subset = subset
   )

@@ -395,6 +395,16 @@
       Error in `.validate_rscales()`:
       x Length of `rscales` (2) must equal number of replicate weights (10).
 
+# as_survey_twophase() full-no-fpc warning message
+
+    Code
+      invisible(as_survey_twophase(phase1, subset = subset, method = "full"))
+    Condition
+      Warning:
+      ! Phase 1 has no `fpc`, so `method = "full"` treats its sampling units as Poisson-sampled.
+      i Standard errors are then conservative, often several times too large for a total.
+      i With an `fpc` on the phase 1 design, the variance is that of a fixed-size sample.
+
 # as_survey_twophase() errors when phase1 is a data.frame [row 19]
 
     Code

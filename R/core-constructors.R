@@ -1445,6 +1445,27 @@ as_survey_replicate <- function(
 #'   and Phase 2 variability. One of `"full"` (default), `"approx"`, or
 #'   `"simple"`. Case-sensitive. See Details.
 #'
+#'   `"full"` and `"approx"` both match `survey::twophase()`, and both can give
+#'   standard errors that are too large (conservative) for some designs:
+#'
+#'   * `"full"` without an `fpc` on the Phase 1 design treats the Phase 1
+#'     sampling units (clusters, or rows when Phase 1 is unclustered) as
+#'     Poisson-sampled. For a fixed-size Phase 1 sample that is very
+#'     conservative for totals: in a simulation of a stratified cluster
+#'     sample, about 13 times the true variance, or 3.7 times the standard
+#'     error, and an unclustered, unstratified Phase 1 was overstated by a
+#'     similar amount. Means are much less affected when Phase 1 is
+#'     unstratified, but are still overstated when it is stratified. Supply
+#'     `fpc` to [as_survey()] for Phase 1; a weighted Phase 1 with no `fpc`
+#'     raises a warning; see Details.
+#'   * `"approx"` (and so `"simple"`) is conservative when Phase 1 is
+#'     clustered and Phase 2 subsamples rows within the Phase 1 clusters,
+#'     that is, when `ids2` is absent or finer than the Phase 1 cluster: in a
+#'     simulation, about 2.4 times the true variance, or 1.55 times the
+#'     standard error. It is close to unbiased when Phase 2 draws whole Phase 1
+#'     clusters or Phase 1 is unclustered. For the first kind of design,
+#'     `method = "full"` with a Phase 1 `fpc` is the alternative.
+#'
 #' @details
 #' ## Variance methods
 #'
@@ -1466,6 +1487,26 @@ as_survey_replicate <- function(
 #'   `survey::twophase()`. The design records `"simple"`, and every
 #'   estimate and standard error equals the `"approx"` one.
 #'
+#' ## Phase 1 fpc and `method = "full"`
+#'
+#' The `"full"` variance needs the Phase 1 sampling probabilities and, for a
+#' fixed-size sample, the Phase 1 population sizes. Without a Phase 1 `fpc` it
+#' treats each Phase 1 sampling unit as drawn independently with probability
+#' `1 / weight` (Poisson sampling), so it never centres the unit totals. For
+#' a fixed-size Phase 1 sample the resulting standard error of a total can be
+#' several times too large, whether or not Phase 1 is clustered or
+#' stratified. With an `fpc`, the variance is that of a fixed-size sample in
+#' each Phase 1 stratum, and is close to unbiased.
+#'
+#' `as_survey_twophase()` raises a warning of class
+#' `surveycore_warning_twophase_full_no_fpc` when all three hold:
+#' `method = "full"`, the Phase 1 design has no `fpc`, and the Phase 1
+#' weights are not all 1. Phase 1 weights of all 1 mean the design was built
+#' with no weights, which `"full"` treats as an iid sample, or is a census,
+#' which contributes no Phase 1 variance; neither is overstated. The warning
+#' fires once, when the design is built. [from_svydesign()] raises the same
+#' warning for a `twophase2` object under the same rule.
+#'
 #' @return A `survey_twophase` object. Columns imported with `haven`-style
 #'   value labels are stored as their underlying type: the `label` and `labels`
 #'   attributes are kept, and the value labels are also recorded in the
@@ -1474,26 +1515,29 @@ as_survey_replicate <- function(
 #'   rebuilt.
 #'
 #' @examples
-#' # Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
+#' # Minimal two-phase design: Phase 1 = a sample of 20 from 40, Phase 2 =
+#' # random subset. The Phase 1 fpc gives method = "full" the population size.
 #' df <- data.frame(
 #'   id = 1:20,
 #'   wt = rep(2, 20),
+#'   pop = rep(40, 20),
 #'   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
 #'   y = rnorm(20)
 #' )
-#' phase1 <- as_survey(df, ids = id, weights = wt)
+#' phase1 <- as_survey(df, ids = id, weights = wt, fpc = pop)
 #' d2 <- as_survey_twophase(phase1, subset = in_phase2)
 #'
 #' # With Phase 2 stratification and inclusion probabilities
 #' df2 <- data.frame(
 #'   id = 1:30,
 #'   wt = rep(3, 30),
+#'   pop = rep(90, 30),
 #'   in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
 #'   arm = rep(c("A", "B", "C"), 10),
 #'   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
 #'   y = rnorm(30)
 #' )
-#' phase1b <- as_survey(df2, ids = id, weights = wt)
+#' phase1b <- as_survey(df2, ids = id, weights = wt, fpc = pop)
 #' d2b <- as_survey_twophase(
 #'   phase1b,
 #'   strata2 = arm,
@@ -1729,12 +1773,18 @@ as_survey_twophase <- function(
 
   # ── Construct and return survey_twophase object ─────────────────────────────
 
-  survey_twophase(
+  design <- survey_twophase(
     data = data,
     metadata = metadata,
     variables = variables,
     call = call
   )
+
+  # ── Warning TP-2: method = "full" with a weighted phase 1 and no fpc ────────
+
+  .warn_twophase_full_no_fpc(phase1@variables, data, method)
+
+  design
 }
 
 

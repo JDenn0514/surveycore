@@ -3666,7 +3666,14 @@ test_that("as_survey_replicate() accepts bare name for weights", {
 
 test_that("as_survey_twophase() creates survey_twophase for minimal two-phase design", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 1L)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expect_true(S7::S7_inherits(d2, survey_twophase))
   expect_identical(d2@variables$subset, "subset")
@@ -3690,7 +3697,9 @@ test_that("as_survey_twophase() creates survey_twophase with method = 'simple' (
 
 test_that("as_survey_twophase() stores Phase 2 stratification in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 4L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
   expect_identical(d2@variables$phase2$strata, "strata")
   expect_null(d2@variables$phase2$ids)
@@ -3702,7 +3711,9 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 5L)
   # Add a fake probs2 column
   df$subsamprate <- rep(0.4, nrow(df))
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(
     phase1,
     probs2 = subsamprate,
@@ -3714,21 +3725,32 @@ test_that("as_survey_twophase() stores Phase 2 probs in @variables$phase2", {
 
 test_that("as_survey_twophase() stores Phase 2 cluster ids in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 6L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
   expect_identical(d2@variables$phase2$ids, "psu")
 })
 
 test_that("as_survey_twophase() stores Phase 2 fpc in @variables$phase2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 7L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, fpc2 = fpc, subset = subset)
   expect_identical(d2@variables$phase2$fpc, "fpc")
 })
 
 test_that("as_survey_twophase() stores Phase 1 @variables in @variables$phase1", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 8L)
-  phase1 <- as_survey(df, ids = psu, weights = wt, strata = strata, nest = TRUE)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # Phase 1 variables preserved in nested structure
   expect_identical(d2@variables$phase1$weights, "wt")
@@ -3744,7 +3766,9 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
     with_labels = TRUE,
     seed = 9L
   )
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # Metadata inherited from phase1
   expect_identical(
@@ -3755,7 +3779,9 @@ test_that("as_survey_twophase() inherits metadata from phase1", {
 
 test_that("as_survey_twophase() stores call in @call", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 10L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expect_false(is.null(d2@call))
   expect_true(is.call(d2@call))
@@ -3763,7 +3789,9 @@ test_that("as_survey_twophase() stores call in @call", {
 
 test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 11L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # @data should be the same data as phase1@data
   expect_identical(nrow(d2@data), nrow(phase1@data))
@@ -3772,7 +3800,9 @@ test_that("as_survey_twophase() uses @data from phase1 (no copy)", {
 
 test_that("as_survey_twophase() sets all Phase 2 variables to NULL when not provided", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 12L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expect_null(d2@variables$phase2$ids)
   expect_null(d2@variables$phase2$strata)
@@ -3792,6 +3822,130 @@ test_that("as_survey_twophase() does not warn for method = 'simple' with cluster
   expect_no_warning(
     as_survey_twophase(phase1, subset = subset, method = "simple")
   )
+})
+
+# Warning TP-2 (issue #340): method = "full" with a weighted phase 1 and no
+# fpc. The rule ignores clustering and stratification, so each of the three
+# shapes below warns; the four blocks after them are the cases that must not.
+test_that("as_survey_twophase() warns for a clustered, stratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 40L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_warning(
+    d2 <- as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_true(S7::S7_inherits(d2, survey_twophase))
+  expect_identical(d2@variables$method, "full")
+})
+
+test_that("as_survey_twophase() full-no-fpc warning message", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 40L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_snapshot(
+    invisible(as_survey_twophase(phase1, subset = subset, method = "full"))
+  )
+})
+
+test_that("as_survey_twophase() warns for a stratified, unclustered phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 41L)
+  phase1 <- as_survey(df, weights = wt, strata = strata)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() warns for a clustered, unstratified phase 1 with no fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
+  phase1 <- as_survey(df, ids = psu, weights = wt)
+  expect_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full"),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+})
+
+test_that("as_survey_twophase() does not warn when phase 1 has an fpc", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 43L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    fpc = fpc,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() does not warn about the phase 1 fpc for method = 'approx'", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 44L)
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = wt,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "approx")
+  )
+})
+
+test_that("as_survey_twophase() does not warn for an unweighted, unclustered, unstratified phase 1", {
+  # No weights: the SRS fallback weight is 1 on every row, which "full"
+  # treats as an iid sample
+  df <- make_survey_data(n = 200, design = "twophase", seed = 45L)
+  expect_warning(
+    phase1 <- as_survey(df[c("y1", "subset")]),
+    class = "surveycore_warning_srs_no_weights"
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() does not warn for a census phase 1 (weights all 1)", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 46L)
+  df$w1 <- 1
+  phase1 <- as_survey(
+    df,
+    ids = psu,
+    weights = w1,
+    strata = strata,
+    nest = TRUE
+  )
+  expect_no_warning(
+    as_survey_twophase(phase1, subset = subset, method = "full")
+  )
+})
+
+test_that("as_survey_twophase() full-no-fpc warning fires at construction, not on estimates", {
+  df <- make_survey_data(n = 200, design = "twophase", seed = 47L)
+  phase1 <- as_survey(df, weights = wt, strata = strata)
+  expect_warning(
+    d2 <- as_survey_twophase(
+      phase1,
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    ),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
+  expect_no_warning(get_means(d2, y1))
 })
 
 # Warning 26: phase-2 design column all NA within the phase-2 subset
@@ -3835,7 +3989,11 @@ test_that("as_survey_twophase() errors when phase1 is a plain list [row 19]", {
 test_that("as_survey_twophase() accepts survey_taylor phase-1 (weights only, no ids/strata)", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- suppressWarnings(as_survey(df, weights = wt))
-  tp <- as_survey_twophase(phase1, subset = subset)
+  # A weighted phase 1 with no fpc under method = "full" (issue #340)
+  expect_warning(
+    tp <- as_survey_twophase(phase1, subset = subset),
+    class = "surveycore_warning_twophase_full_no_fpc"
+  )
   test_invariants(tp)
   expect_true(S7::S7_inherits(tp, survey_twophase))
 })
@@ -3954,9 +4112,13 @@ test_that("as_survey_twophase() refuses a Fay phase-1 with a half-rows subset", 
 test_that("as_survey_twophase() does not refuse a survey_nonprob phase-1 as replicate", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 42L)
   phase1 <- as_survey_nonprob(df, weights = wt)
-  expect_no_error(
-    as_survey_twophase(phase1, subset = subset),
-    class = "surveycore_error_twophase_replicate_phase1"
+  # A weighted phase 1 with no fpc under method = "full" (issue #340)
+  expect_warning(
+    expect_no_error(
+      as_survey_twophase(phase1, subset = subset),
+      class = "surveycore_error_twophase_replicate_phase1"
+    ),
+    class = "surveycore_warning_twophase_full_no_fpc"
   )
 })
 
@@ -4075,14 +4237,18 @@ test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
   # Add a secondary sampling unit column for Phase 2
   df$psu2 <- rep(1:5, length.out = nrow(df))
   df$ssu2 <- rep(1:4, length.out = nrow(df))
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, ids2 = c(psu2, ssu2), subset = subset)
   expect_identical(d2@variables$phase2$ids, c("psu2", "ssu2"))
 })
 
 test_that("as_survey_twophase() preserves all Phase 1 data columns in @data", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 27L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   # All original columns must be in @data (none dropped)
   expect_true(all(names(df) %in% names(d2@data)))
@@ -4092,11 +4258,12 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
   df <- data.frame(
     id = 1:20,
     wt = rep(2, 20),
+    fpc = rep(20, 20),
     strata = rep(c("A", "B"), 10),
     in_phase2 = c(TRUE, rep(FALSE, 19)),
     y = rnorm(20)
   )
-  phase1 <- as_survey(df, weights = wt, strata = strata)
+  phase1 <- as_survey(df, weights = wt, strata = strata, fpc = fpc)
   # 1 TRUE and 19 FALSE — not degenerate
   d2 <- as_survey_twophase(phase1, subset = in_phase2)
   expect_true(S7::S7_inherits(d2, survey_twophase))
@@ -4105,7 +4272,9 @@ test_that("as_survey_twophase() subset with only 1 TRUE row is valid (not degene
 test_that("as_survey_twophase() with method = 'full' and strata2 does not produce unsupported warning", {
   # Providing strata2 is valid Phase 2 design info for method = 'full'
   df <- make_survey_data(n = 200, design = "twophase", seed = 28L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   expect_no_warning(
     as_survey_twophase(
       phase1,
@@ -4118,7 +4287,9 @@ test_that("as_survey_twophase() with method = 'full' and strata2 does not produc
 
 test_that("as_survey_twophase() populates all expected @variables keys", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 29L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expected_keys <- c("phase1", "phase2", "subset", "method")
   expect_true(all(expected_keys %in% names(d2@variables)))
@@ -4129,21 +4300,27 @@ test_that("as_survey_twophase() populates all expected @variables keys", {
 
 test_that("as_survey_twophase() accepts bare name for subset", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 30L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, subset = subset)
   expect_identical(d2@variables$subset, "subset")
 })
 
 test_that("as_survey_twophase() accepts bare name for strata2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 31L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, strata2 = strata, subset = subset)
   expect_identical(d2@variables$phase2$strata, "strata")
 })
 
 test_that("as_survey_twophase() accepts bare name for ids2", {
   df <- make_survey_data(n = 200, design = "twophase", seed = 32L)
-  phase1 <- suppressWarnings(as_survey(df, weights = wt, strata = strata))
+  phase1 <- suppressWarnings(
+    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+  )
   d2 <- as_survey_twophase(phase1, ids2 = psu, subset = subset)
   expect_identical(d2@variables$phase2$ids, "psu")
 })

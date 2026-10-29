@@ -606,7 +606,9 @@ test_that("S-23g: as_survey_nonprob() still raises on a zero weight", {
 test_that("S-23h: labelled phase-2 design columns estimate as plain ones", {
   build <- function(labelled) {
     d <- .ls_mark(.ls_frame(), c("strata", "prob", "fpc"), labelled)
-    phase1 <- as_survey(d, ids = psu, weights = wt)
+    # A phase-1 population of 100 PSUs keeps the issue #340 warning away
+    d$psu_pop <- 100
+    phase1 <- as_survey(d, ids = psu, weights = wt, fpc = psu_pop)
     as_survey_twophase(
       phase1,
       strata2 = strata,

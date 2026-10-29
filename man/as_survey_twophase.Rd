@@ -45,7 +45,29 @@ values (non-degenerate).}
 
 \item{method}{Character. Variance estimation method for combining Phase 1
 and Phase 2 variability. One of \code{"full"} (default), \code{"approx"}, or
-\code{"simple"}. Case-sensitive. See Details.}
+\code{"simple"}. Case-sensitive. See Details.
+
+Both methods match \code{survey::twophase()}, and both can give standard
+errors that are too large (conservative) for some designs:
+\itemize{
+\item \code{"full"} without an \code{fpc} on the Phase 1 design treats the Phase 1
+sampling units (clusters, or rows when Phase 1 is unclustered) as
+Poisson-sampled. For a fixed-size Phase 1 sample that is very
+conservative for totals: in a simulation of a stratified cluster
+sample, about 13 times the true variance, or 3.7 times the standard
+error, and an unclustered, unstratified Phase 1 was overstated by a
+similar amount. Means are much less affected when Phase 1 is
+unstratified, but are still overstated when it is stratified. Supply
+\code{fpc} to \code{\link[=as_survey]{as_survey()}} for Phase 1; a weighted Phase 1 with no \code{fpc}
+raises a warning; see Details.
+\item \code{"approx"} (and so \code{"simple"}) is conservative when Phase 1 is
+clustered and Phase 2 subsamples rows within the Phase 1 clusters,
+that is, when \code{ids2} is absent or finer than the Phase 1 cluster: in a
+simulation, about 2.4 times the true variance, or 1.55 times the
+standard error. It is close to unbiased when Phase 2 draws whole Phase 1
+clusters or Phase 1 is unclustered. For the first kind of design,
+\code{method = "full"} with a Phase 1 \code{fpc} is the alternative.
+}}
 }
 \value{
 A \code{survey_twophase} object. Columns imported with \code{haven}-style
@@ -81,28 +103,52 @@ simple random sampling with stratified random sampling at Phase 2.
 estimate and standard error equals the \code{"approx"} one.
 }
 }
+
+\subsection{Phase 1 fpc and \code{method = "full"}}{
+
+The \code{"full"} variance needs the Phase 1 sampling probabilities and, for a
+fixed-size sample, the Phase 1 population sizes. Without a Phase 1 \code{fpc} it
+treats each Phase 1 sampling unit as drawn independently with probability
+\code{1 / weight} (Poisson sampling), so it never centres the unit totals. For
+a fixed-size Phase 1 sample the resulting standard error of a total can be
+several times too large, whether or not Phase 1 is clustered or
+stratified. With an \code{fpc}, the variance is that of a fixed-size sample in
+each Phase 1 stratum, and is close to unbiased.
+
+\code{as_survey_twophase()} raises a warning of class
+\code{surveycore_warning_twophase_full_no_fpc} when all three hold:
+\code{method = "full"}, the Phase 1 design has no \code{fpc}, and the Phase 1
+weights are not all 1. Phase 1 weights of all 1 mean the design was built
+with no weights, which \code{"full"} treats as an iid sample, or is a census,
+which contributes no Phase 1 variance; neither is overstated. The warning
+fires once, when the design is built. \code{\link[=from_svydesign]{from_svydesign()}} raises the same
+warning for a \code{twophase2} object under the same rule.
+}
 }
 \examples{
-# Minimal two-phase design: Phase 1 = full cohort, Phase 2 = random subset
+# Minimal two-phase design: Phase 1 = a sample of 20 from 40, Phase 2 =
+# random subset. The Phase 1 fpc gives method = "full" the population size.
 df <- data.frame(
   id = 1:20,
   wt = rep(2, 20),
+  pop = rep(40, 20),
   in_phase2 = c(rep(TRUE, 10), rep(FALSE, 10)),
   y = rnorm(20)
 )
-phase1 <- as_survey(df, ids = id, weights = wt)
+phase1 <- as_survey(df, ids = id, weights = wt, fpc = pop)
 d2 <- as_survey_twophase(phase1, subset = in_phase2)
 
 # With Phase 2 stratification and inclusion probabilities
 df2 <- data.frame(
   id = 1:30,
   wt = rep(3, 30),
+  pop = rep(90, 30),
   in_phase2 = c(rep(TRUE, 15), rep(FALSE, 15)),
   arm = rep(c("A", "B", "C"), 10),
   subsamprate = rep(c(0.5, 0.7, 0.3), 10),
   y = rnorm(30)
 )
-phase1b <- as_survey(df2, ids = id, weights = wt)
+phase1b <- as_survey(df2, ids = id, weights = wt, fpc = pop)
 d2b <- as_survey_twophase(
   phase1b,
   strata2 = arm,

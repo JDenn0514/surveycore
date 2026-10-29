@@ -60,7 +60,7 @@ df <- data.frame(
   in_phase2 = c(rep(TRUE, 40), rep(FALSE, 60))
 )
 phase1 <- as_survey(df, weights = wt)
-d <- as_survey_twophase(phase1, subset = in_phase2)
+d <- as_survey_twophase(phase1, subset = in_phase2, method = "approx")
 class(d)
 }
 \seealso{

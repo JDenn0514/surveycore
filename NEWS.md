@@ -98,6 +98,20 @@
   `surveycore_error_replicate_fpc_record_invalid`. No replicate variance
   formula reads either key. (#320)
 
+* `as_survey_twophase()` and `from_svydesign()` now warn with
+  `surveycore_warning_twophase_full_no_fpc` when a `method = "full"` design
+  has a phase 1 with weights other than 1 and no `fpc`. Without a phase-1
+  `fpc`, the full variance treats the phase-1 sampling units as
+  Poisson-sampled, and for a fixed-size sample the standard error of a total
+  runs several times too large: about 3.7 times in a simulation of a
+  stratified cluster sample. Clustered, stratified and unclustered phase 1
+  designs are all affected. Supply `fpc` to the phase-1 design. The estimator
+  is unchanged and still matches `survey::twophase(method = "full")`, which
+  raises no warning. `?as_survey_twophase` now also documents that
+  `method = "approx"` is conservative, by about 1.55 times the standard
+  error, when phase 2 subsamples rows within phase-1 clusters.
+  (#339, #340)
+
 ## Breaking changes
 
 * `as_survey_replicate()` now refuses an `fpc` column, and an `fpctype` given
