@@ -2033,12 +2033,18 @@ test_that("an all-NA marker names the same empty domain as an all-FALSE one", {
   expect_identical(result_na$n, 0L)
 })
 
-test_that(".apply_domain() returns logical(0) for a zero-row design", {
+# Until issue #248 this row built a zero-row marked design by `@data <-` and
+# asserted that .apply_domain() returned logical(0) for it. The class
+# validators now refuse a zero-row frame, so no design reaches .apply_domain()
+# with zero rows; the row asserts that refusal on a design carrying a marker.
+test_that("a marked design cannot be emptied, so .apply_domain() never sees zero rows", {
   pair <- make_domain_pair("taylor")
   design <- pair$b
-  design@data <- design@data[0L, , drop = FALSE]
-
-  expect_identical(.apply_domain(design), logical(0))
+  expect_error(
+    design@data <- design@data[0L, , drop = FALSE],
+    class = "surveycore_error_empty_data"
+  )
+  expect_identical(length(.apply_domain(design)), nrow(design@data))
 })
 
 

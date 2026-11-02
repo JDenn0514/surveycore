@@ -458,6 +458,12 @@ survey_taylor <- S7::new_class(
     calibration = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     # ── Gather all named design column names ─────────────────────────────────
     # c() with NULL args drops them automatically
     design_vars <- c(
@@ -679,6 +685,12 @@ survey_replicate <- S7::new_class(
     calibration = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     weights_var <- self@variables$weights
     repweights_vars <- self@variables$repweights
     all_design_vars <- c(weights_var, repweights_vars)
@@ -864,6 +876,14 @@ survey_twophase <- S7::new_class(
   parent = survey_base,
   properties = list(),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # The count is nrow(@data), the full phase 1 sample. The phase 2 subset
+    # is not counted: no constructor applies a row-count rule to it, and
+    # as_survey_twophase() refuses an all-TRUE or all-FALSE subset with
+    # surveycore_error_subset_degenerate, a different rule kept at Layer 3.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     subset_var <- self@variables$subset
     phase2_vars <- self@variables$phase2
 
@@ -1298,6 +1318,12 @@ survey_nonprob <- S7::new_class(
     reference_sample = S7::new_property(default = NULL)
   ),
   validator = function(self) {
+    # ── Row count: the constructors' rule, on every write (issue #248) ──────
+    # Runs first, so a 0-row frame reports its row count and not a weight
+    # condition that an empty column trips incidentally.
+    .validate_not_empty(self@data, call = NULL)
+    .validate_not_single_row(self@data, call = NULL)
+
     weights_var <- self@variables$weights
 
     # ── Weight column must exist in @data ─────────────────────────────────────
@@ -1355,6 +1381,16 @@ survey_nonprob <- S7::new_class(
           class = "surveycore_error_weights_all_zero"
         )
       }
+
+      # Conditions 4a and 4b are deliberately looser than .validate_weights()
+      # in R/core-validators.R, which as_survey_nonprob() calls and which
+      # refuses any non-positive weight. surveywts's adjust_nonresponse() sets
+      # nonrespondent weights to 0 by writing `@data` on a survey_nonprob, and
+      # S7 re-runs this validator on that write, so a zero must pass here.
+      # The constructor stays strict so that zeros arise only from adjustment
+      # after construction, never from input data. Recorded in
+      # archive/nonprob-zero-weights/ (#80) and plans/error-messages.md rows
+      # 33 and 101; confirmed as intended in issue #248.
 
       # Condition 4a — reject negative weights
       n_neg <- sum(non_na < 0)

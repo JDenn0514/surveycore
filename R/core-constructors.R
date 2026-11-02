@@ -1860,12 +1860,14 @@ as_survey_twophase <- function(
 #' non-probability samples.
 #'
 #' @param data A `data.frame` containing the survey responses with
-#'   pre-computed calibration weights. Must have at least one row and
+#'   pre-computed calibration weights. Must have at least two rows and
 #'   unique column names.
 #' @param weights <[`tidy-select`][tidyselect::language]> Calibration weight
 #'   column (a single column, values strictly > 0). Typically produced by
 #'   an external raking function (e.g., `anesrake::anesrake()`) or a
-#'   \pkg{surveywts} calibration function.
+#'   \pkg{surveywts} calibration function. Zero weights are refused here
+#'   but may appear later, after a \pkg{surveywts} adjustment such as
+#'   nonresponse sets some weights to 0.
 #' @param repweights <[`tidy-select`][tidyselect::language]> Replicate weight
 #'   columns (bootstrap or jackknife; at least 2). Each column must be numeric
 #'   and represents one set of calibrated weights re-estimated on one replicate

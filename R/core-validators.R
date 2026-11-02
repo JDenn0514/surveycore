@@ -11,7 +11,8 @@
 #   Layer 2 — these helpers          (R/core-validators.R)  <-- this file
 #   Layer 3 — constructor validation (R/core-constructors.R)
 #
-# No logic from one layer is duplicated in another.
+# No logic from one layer is duplicated in another. Where Layer 1 needs a
+# Layer 2 rule, it calls the helper here (the row-count guards, issue #248).
 # Error classes match plans/error-messages.md exactly.
 # All functions are internal (not exported), prefixed with `.`.
 
@@ -49,13 +50,7 @@ NULL
   }
 
   # Error 2: data must have at least one row
-  if (nrow(data) == 0L) {
-    cli::cli_abort(
-      c("x" = "{.arg data} must have at least one row"),
-      class = "surveycore_error_empty_data",
-      call = call
-    )
-  }
+  .validate_not_empty(data, call = call)
 
   # Error 3: column names must be unique
   if (anyDuplicated(names(data)) > 0L) {
@@ -73,6 +68,34 @@ NULL
   }
 
   # Error 4: single-row data cannot support variance estimation
+  .validate_not_single_row(data, call = call)
+
+  invisible(TRUE)
+}
+
+
+# ── Row-count guards ──────────────────────────────────────────────────────────
+
+# The two row-count rules, shared by .validate_data_frame() (Layer 2, before
+# construction) and the four design-class validators in R/core-classes.R
+# (Layer 1, on construction and on every `@data <-` write). One rule, one
+# implementation (issue #248). They stay two functions, not one, so that
+# .validate_data_frame() keeps its order: 0 rows, then duplicate names, then
+# 1 row. The class validators pass `call = NULL`.
+#' @noRd
+.validate_not_empty <- function(data, call = rlang::caller_call()) {
+  if (nrow(data) == 0L) {
+    cli::cli_abort(
+      c("x" = "{.arg data} must have at least one row"),
+      class = "surveycore_error_empty_data",
+      call = call
+    )
+  }
+  invisible(TRUE)
+}
+
+#' @noRd
+.validate_not_single_row <- function(data, call = rlang::caller_call()) {
   if (nrow(data) == 1L) {
     cli::cli_abort(
       c(
@@ -85,7 +108,6 @@ NULL
       call = call
     )
   }
-
   invisible(TRUE)
 }
 
@@ -95,6 +117,14 @@ NULL
 # Validates that `weights_var` column exists in `data`, is numeric, and has
 # all non-NA values strictly positive (with the all-zero/all-missing case
 # caught first for a more actionable error).
+#
+# Stricter than the survey_nonprob class validator on purpose. That validator
+# accepts a zero weight (it refuses negatives and an all-zero column) because
+# surveywts's adjust_nonresponse() writes zero nonrespondent weights into
+# `@data` after construction. Every constructor, as_survey_nonprob() included,
+# stays strict here so that zeros never come from input data. Recorded in
+# archive/nonprob-zero-weights/ (#80) and plans/error-messages.md rows 33 and
+# 101; confirmed as intended in issue #248.
 #' @noRd
 .validate_weights <- function(weights_var, data) {
   # Existence check

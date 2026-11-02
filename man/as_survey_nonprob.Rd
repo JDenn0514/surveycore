@@ -18,13 +18,15 @@ as_survey_nonprob(
 }
 \arguments{
 \item{data}{A \code{data.frame} containing the survey responses with
-pre-computed calibration weights. Must have at least one row and
+pre-computed calibration weights. Must have at least two rows and
 unique column names.}
 
 \item{weights}{<\code{\link[tidyselect:language]{tidy-select}}> Calibration weight
 column (a single column, values strictly > 0). Typically produced by
 an external raking function (e.g., \code{anesrake::anesrake()}) or a
-\pkg{surveywts} calibration function.}
+\pkg{surveywts} calibration function. Zero weights are refused here
+but may appear later, after a \pkg{surveywts} adjustment such as
+nonresponse sets some weights to 0.}
 
 \item{repweights}{<\code{\link[tidyselect:language]{tidy-select}}> Replicate weight
 columns (bootstrap or jackknife; at least 2). Each column must be numeric
