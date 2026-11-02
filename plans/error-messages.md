@@ -783,3 +783,19 @@ Clustering and stratification do not enter the rule.
 | # | Function | Condition | Level | Error Class | cli Message Template |
 |---|---|---|---|---|---|
 | TP-2 | `as_survey_twophase()`, `from_svydesign()` (`twophase2`) | The trigger above holds. Raised after the design is built | WARN | `surveycore_warning_twophase_full_no_fpc` | `"!" = "Phase 1 has no {.arg fpc}, so {.code method = \"full\"} treats its sampling units as Poisson-sampled.", "i" = "Standard errors are then conservative, often several times too large for a total.", "i" = "With an {.arg fpc} on the phase 1 design, the variance is that of a fixed-size sample."` |
+
+### diffs-na-guards rows (2026-11-02)
+
+Issue #294, optional hardening. `.build_diffs_output()` told reference rows
+from comparison rows with bare `estimate == 0` / `estimate != 0` guards, so an
+`NA` estimate aborted with base R's "missing value where TRUE/FALSE needed".
+That is how the marginaleffects 1.0.0 `rowid` defect surfaced on CRAN before
+#174 fixed it. No supported model returns an `NA` difference today (an
+aliased treatment coefficient is refused earlier by
+`surveycore_error_singular_model_matrix`), so the warning guards against an
+upstream regression rather than a reachable input. The row keeps its `NA`
+estimate, is left out of p-value adjustment, and gets an `NA` `pct_change`.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| DN-1 | `get_diffs()` | One or more comparison rows carry an `NA` estimate. Raised once per call, naming each affected level once | WARN | `surveycore_warning_diffs_na_estimate` | `"!" = "The difference for treatment level{?s} {.val {na_est_levels}} could not be estimated and is reported as {.code NA}.", "i" = "Rows with an {.code NA} estimate are excluded from p-value adjustment and have an {.code NA} percentage change."` |

@@ -1356,3 +1356,187 @@ test_that(".build_diffs_output() grouped path with pct_change: group combo loop 
   # 6 rows: 2 groups * 3 levels
   expect_equal(length(out$col_vecs[["treats"]]), 6L)
 })
+
+# -- Category 8: NA-safe row guards (issue #294) -------------------------------
+#
+# No supported model returns an NA difference, so these rows feed a hand-built
+# result list straight to .build_diffs_output(). Level A carries an NA
+# estimate with a non-NA p-value, so its exclusion from p-value adjustment is
+# observable: B is adjusted alone and A keeps its raw p-value.
+
+.make_na_result <- function(groups = NULL) {
+  n_lvl <- if (is.null(groups)) 2L else 2L * nlevels(groups)
+  levels_vec <- rep(c("A", "B"), length.out = n_lvl)
+  est <- ifelse(levels_vec == "A", NA_real_, 2)
+  pv <- ifelse(levels_vec == "A", 0.02, 0.01)
+  result_groups <- if (is.null(groups)) {
+    NULL
+  } else {
+    data.frame(gender = rep(levels(groups), each = 2L))
+  }
+  list(
+    result_levels = levels_vec,
+    result_estimates = est,
+    result_ses = rep(1, n_lvl),
+    result_ci_lows = est - 2,
+    result_ci_highs = est + 2,
+    result_p_values = pv,
+    result_means = 50 + est,
+    result_groups = result_groups,
+    reference_mean = 50,
+    preds_df = NULL
+  )
+}
+
+.call_na_build <- function(design, result, group_names, show_means) {
+  .build_diffs_output(
+    result = result,
+    design = design,
+    treats_name = "treats",
+    group_names = group_names,
+    ref_level = "Control",
+    domain_mask = .apply_domain(design),
+    wt_var = design@variables$weights,
+    show_means = show_means,
+    use_marginaleffects = FALSE,
+    pval_adj = "bonferroni",
+    show_pct_change = TRUE,
+    suppress_mean = FALSE,
+    min_cell_n = 0L,
+    variance = "ci",
+    n_weighted = FALSE
+  )
+}
+
+test_that(".build_diffs_output() no-group: NA estimate warns and stays NA", {
+  design <- .make_build_design()
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(), character(0), TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  expect_identical(out$col_vecs[["treats"]], c("Control", "A", "B"))
+  expect_identical(out$col_vecs[["estimate"]], c(0, NA_real_, 2))
+})
+
+test_that(".build_diffs_output() no-group: NA-estimate row is excluded from p-value adjustment", {
+  design <- .make_build_design()
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(), character(0), TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  # Bonferroni over B alone leaves 0.01; A keeps its raw 0.02
+  expect_equal(out$col_vecs[["p_value"]], c(NA_real_, 0.02, 0.01))
+})
+
+test_that(".build_diffs_output() no-group: NA-estimate row has NA pct_change", {
+  design <- .make_build_design()
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(), character(0), FALSE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  # show_means = FALSE: no reference row, ref mean from result$reference_mean
+  expect_equal(out$col_vecs[["pct_change"]], c(NA_real_, 2 / 50))
+})
+
+test_that(".build_diffs_output() grouped: NA estimate no longer aborts", {
+  design <- .make_build_design()
+  groups <- factor(c("F", "M"))
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(groups), "gender", TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  expect_identical(
+    out$col_vecs[["estimate"]],
+    c(0, NA_real_, 2, 0, NA_real_, 2)
+  )
+  expect_identical(
+    out$groups_df$gender,
+    rep(c("F", "M"), each = 3L)
+  )
+})
+
+test_that(".build_diffs_output() grouped: NA-estimate rows are excluded from within-group adjustment", {
+  design <- .make_build_design()
+  groups <- factor(c("F", "M"))
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(groups), "gender", TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  expect_equal(
+    out$col_vecs[["p_value"]],
+    c(NA_real_, 0.02, 0.01, NA_real_, 0.02, 0.01)
+  )
+})
+
+test_that(".build_diffs_output() grouped: NA-estimate rows have NA pct_change", {
+  design <- .make_build_design()
+  groups <- factor(c("F", "M"))
+  expect_warning(
+    out <- .call_na_build(design, .make_na_result(groups), "gender", TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  # Reference mean is reference_mean (clean path) in each group
+  expect_equal(
+    out$col_vecs[["pct_change"]],
+    c(NA_real_, NA_real_, 2 / 50, NA_real_, NA_real_, 2 / 50)
+  )
+})
+
+test_that(".build_diffs_output() NA-estimate warning names each level once", {
+  design <- .make_build_design()
+  groups <- factor(c("F", "M"))
+  w <- expect_warning(
+    .call_na_build(design, .make_na_result(groups), "gender", TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+  msg <- cli::ansi_strip(conditionMessage(w))
+  expect_identical(lengths(regmatches(msg, gregexpr("\"A\"", msg))), 1L)
+  expect_false(grepl("\"B\"", msg))
+})
+
+test_that(".build_diffs_output() raises no NA-estimate warning when every estimate is present", {
+  design <- .make_build_design()
+  result <- .make_na_result()
+  result$result_estimates <- c(1, 2)
+  expect_no_warning(
+    .call_na_build(design, result, character(0), TRUE),
+    class = "surveycore_warning_diffs_na_estimate"
+  )
+})
+
+test_that(".diffs_is_ref_row() is TRUE for 0 only, FALSE for NA", {
+  expect_true(.diffs_is_ref_row(list(estimate = 0)))
+  expect_false(.diffs_is_ref_row(list(estimate = 1.5)))
+  expect_false(.diffs_is_ref_row(list(estimate = NA_real_)))
+})
+
+test_that(".diffs_is_comparison_row() is TRUE for non-zero, FALSE for 0 and NA", {
+  expect_true(.diffs_is_comparison_row(list(estimate = -0.3)))
+  expect_false(.diffs_is_comparison_row(list(estimate = 0)))
+  expect_false(.diffs_is_comparison_row(list(estimate = NA_real_)))
+})
+
+test_that(".diffs_same_group() matches NA to NA and never returns NA", {
+  combo <- data.frame(g = NA_character_, h = "x")
+  expect_true(
+    .diffs_same_group(
+      data.frame(g = NA_character_, h = "x"),
+      combo,
+      c("g", "h")
+    )
+  )
+  expect_false(
+    .diffs_same_group(data.frame(g = "a", h = "x"), combo, c("g", "h"))
+  )
+  expect_false(
+    .diffs_same_group(
+      data.frame(g = NA_character_, h = "y"),
+      combo,
+      c("g", "h")
+    )
+  )
+})
+
+test_that(".diffs_same_group() is TRUE when there are no group columns", {
+  expect_true(.diffs_same_group(data.frame(), NULL, character(0)))
+})
