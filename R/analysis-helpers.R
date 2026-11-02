@@ -24,69 +24,6 @@
 #   .add_variance_cols()    — compute requested uncertainty columns
 #   .degf()                 — design degrees of freedom over estimate rows
 
-#' Analysis Helper Standards
-#'
-#' @srrstats {EA2.4} surveycore uses an explicit S7 class system
-#'   (survey_taylor, survey_replicate, survey_twophase) that encodes the design
-#'   type and all associated parameters.
-#'
-#' @srrstats {EA2.6} Routines process vector columns regardless of additional
-#'   attributes: haven-style "label" and "labels" attributes are automatically
-#'   detected and preserved in @metadata during construction, and restored in
-#'   analysis output when requested.
-#'
-#' @srrstats {EA3.0} The get_*() family (get_freqs(), get_means(),
-#'   get_totals(), get_corr(), get_quantiles(), get_ratios(), get_diffs())
-#'   provides automated, reproducible extraction of survey statistics without
-#'   requiring manual formula-writing or post-processing.
-#'
-#' @srrstats {EA3.1} All get_*() functions return tidy tibbles with consistent
-#'   column naming conventions, enabling direct comparison of estimates across
-#'   variables, groups, and designs.
-#'
-#' @srrstats {EA4.0} All get_*() functions return tibble-based objects;
-#'   survey_glm() returns a survey_glm_fit S7 object. Return types do not
-#'   vary by input class within the accepted input space.
-#'
-#' @srrstats {EA4.1} All seven get_*() analysis functions implement a
-#'   decimals parameter (integer or NULL) that rounds all numeric output
-#'   columns to the specified number of decimal places. Numeric precision
-#'   control is consistently available across the full analysis API.
-#'
-#' @srrstats {EA4.2} All survey design objects have a print method that
-#'   provides a structured summary (design type, sample size, variable
-#'   preview). survey_glm_fit has both print and summary methods.
-#'
-#' @srrstats {EA5.2} The print.survey_glm_fit() and print.survey_glm_summary()
-#'   methods format numeric output via format(round(x, digits), nsmall =
-#'   digits) rather than relying on default numeric printing.
-#'
-#' @srrstats {EA5.3} The tibble print method for get_*() output includes
-#'   column type abbreviations (<dbl>, <int>, <fct>, etc.), indicating the
-#'   class and storage mode of each column.
-#'
-#' @srrstats {EA6.0} Return values from all get_*() functions are tested for
-#'   class, dimensions, column names, column types, and numeric values.
-#'
-#' @srrstats {EA6.0a} Tests verify the class of all return objects: get_*()
-#'   functions return tibbles; constructors return the correct S7 subclass.
-#'
-#' @srrstats {EA6.0b} Tests verify the dimensions (number of rows and columns)
-#'   of all tabular return objects for representative inputs.
-#'
-#' @srrstats {EA6.0c} Tests verify that returned tibbles carry the expected
-#'   column names (e.g. mean, se, ci_low, ci_high, n for get_means()).
-#'
-#' @srrstats {EA6.0d} Tests verify column classes within returned tibbles
-#'   (e.g. numeric estimates, integer counts, factor group columns).
-#'
-#' @srrstats {EA6.0e} Numeric return values are tested with
-#'   expect_equal(..., tolerance = 1e-10) or equivalent against reference
-#'   values from the survey package.
-#'
-#' @noRd
-NULL
-
 
 # ── haven availability ────────────────────────────────────────────────────────
 
