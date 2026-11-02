@@ -302,6 +302,32 @@ surveycore had no `rho` argument. Issue #243 added `rho`, and the Fay
 comparisons against `survey` are now ordinary oracle tests. Do not
 reintroduce `testthat::expect_failure()` wrappers into that file.
 
+## Simulating `haven`'s absence — what the wrapper proves
+
+`haven` is in Suggests, but the suite installs and loads it, so no test runs
+with it genuinely absent. `.ls_without_haven()` in
+`tests/testthat/test-labelled-storage.R` stands in: for the duration of one
+call it removes every S3 method haven registered in another loaded
+namespace's method table — vctrs, base, stats, pillar, forcats — and restores
+them on exit, including on an error.
+
+**Know the generic type of a row's failure path.** Until issue #218 the
+wrapper emptied only the vctrs table. A row whose failure path runs through a
+base generic (`as.character()`, `format()`, `levels()`, `summary()`) looked
+like a fence under that wrapper and was not one: haven's base method
+survived, the call succeeded, and the row passed on a tree with the defect.
+S-16 was the case — `.validate_psu_strata()` calls `as.character()`, which
+returns the codes with haven's method present and raises `vctrs_error_cast`
+with it absent. Before reading a passing row as evidence, check that every
+generic on its failure path has lost haven's method under the wrapper.
+
+**The wrapper is still a bound, not the real state.** The haven namespace
+stays loaded, `haven::` calls still work, haven's methods for its own
+generics stay registered, and another installed package can pull haven in.
+The comment at the helper's definition lists the bounds. A claim that a path
+works "with haven not installed" is measured only in a library where haven is
+not installed.
+
 ## S7 error testing layers
 
 - **Layer 1 — S7 class validators** (`R/00-s7-classes.R`): structural

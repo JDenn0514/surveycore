@@ -85,34 +85,92 @@
   any(vapply(survey_data(design), inherits, logical(1L), "haven_labelled"))
 }
 
-# Evaluate `expr` with haven's vctrs methods removed, then put them back.
+# Evaluate `expr` with every S3 method haven registered for another package's
+# generic removed, then put them back.
 #
-# The construction failures this file covers are vctrs dispatch failures. They
-# fire only when haven's `vec_ptype2`, `vec_cast` and `vec_arith` methods are
-# absent — the state on a machine that reads a .sav file written elsewhere and
-# has no haven installed. `haven` is in Suggests, the suite installs it, and
-# several test files load it, so by the time this file runs the methods are
-# registered and every constructor row below would pass with the strip and
-# without it.
+# The construction failures this file covers are dispatch failures. They fire
+# only when haven's methods are absent — the state on a machine that reads a
+# .sav file written elsewhere and has no haven installed. `haven` is in
+# Suggests, the suite installs it, and several test files load it, so by the
+# time this file runs the methods are registered and every constructor row
+# below would pass with the strip and without it.
 #
 # `unloadNamespace("haven")` does not undo the registration. Measured: R leaves
-# all 42 entries haven wrote into the `vctrs` S3 method table in place, and the
-# labelled design still constructs. Removing those entries for the duration of
-# one call is the only way to put a row back under the condition the strip is
-# for, and it is exact — measured on the unfixed tree, a labelled `weights` or
-# `fpc` column aborts with `vctrs_error_ptype2` with the entries removed and
-# constructs with them present.
+# every entry haven wrote into another namespace's S3 method table in place,
+# and the labelled design still constructs. Removing those entries for the
+# duration of one call is the only way to put a row back under the condition
+# the strip is for.
 #
-# The removal is reversed on exit, including on an error, so no later test sees
-# a changed table. When haven has never been loaded there is nothing to remove
-# and `expr` already runs under the right condition.
+# WHAT IT REMOVES (issue #218). Every entry, in the S3 method table of every
+# loaded namespace other than haven's own, whose function was defined in the
+# haven namespace. Measured with haven 2.5.5 and all five loaded: 42 in vctrs
+# (`vec_ptype2`, `vec_cast`, `vec_arith`, ...), 8 in base (`as.character`,
+# `format`, `levels`, `names<-`, `summary`, `is.na`), 2 in stats, 1 in pillar
+# and 3 in forcats. Before #218 only the vctrs table was emptied, so a failure
+# path that ran through a base generic still succeeded: under that wrapper
+# `as.character()` on a labelled vector returned its codes, and with haven
+# absent it raises `vctrs_error_cast` from `as.character.vctrs_vctr`. Haven
+# registers no method for `as.numeric()`, `[` or `c()`; those already fell
+# through to vctrs.
+#
+# WHAT IT DOES NOT SIMULATE. This is not haven genuinely absent:
+#   - the haven namespace stays loaded, so `requireNamespace("haven")`,
+#     `isNamespaceLoaded("haven")` and any `haven::` call still succeed;
+#   - haven's methods for its own generics (`zap_labels()`, `as_factor()`,
+#     ...) stay registered, because nothing outside haven can call them
+#     without haven;
+#   - exported functions of an attached haven stay on the search path;
+#   - another installed package can still pull haven in, and a method a
+#     package registers lazily during `expr` is not removed.
+# A row is evidence that the strip works without haven only as far as these
+# bounds; the full measurement needs a library with haven not installed.
+#
+# Each table's restoration is registered before its entries are removed, and
+# each runs independently of the others, so an error in `expr` or in a later
+# table's removal cannot leave any table changed for a later test. When haven
+# has never been loaded there is nothing to remove and `expr` already runs
+# under the right condition.
 .ls_without_haven <- function(expr) {
-  tbl <- asNamespace("vctrs")[[".__S3MethodsTable__."]]
-  hits <- grep("haven", ls(tbl, all.names = TRUE), value = TRUE)
-  if (length(hits) > 0L) {
-    saved <- mget(hits, envir = tbl)
-    rm(list = hits, envir = tbl)
-    on.exit(list2env(saved, envir = tbl), add = TRUE)
+  if (!isNamespaceLoaded("haven")) {
+    return(expr)
+  }
+  haven_ns <- asNamespace("haven")
+  tables <- list()
+  for (ns in setdiff(loadedNamespaces(), "haven")) {
+    tbl <- asNamespace(ns)[[".__S3MethodsTable__."]]
+    seen <- vapply(tables, identical, logical(1L), tbl)
+    if (is.environment(tbl) && !any(seen)) {
+      tables[[length(tables) + 1L]] <- tbl
+    }
+  }
+  .restore <- function(tbl, saved) {
+    force(tbl)
+    force(saved)
+    function() list2env(saved, envir = tbl)
+  }
+  restorers <- list()
+  on.exit(
+    for (restore in rev(restorers)) {
+      try(restore())
+    },
+    add = TRUE
+  )
+  for (tbl in tables) {
+    entries <- ls(tbl, all.names = TRUE)
+    from_haven <- vapply(
+      entries,
+      function(nm) {
+        fn <- get(nm, envir = tbl, inherits = FALSE)
+        is.function(fn) && identical(environment(fn), haven_ns)
+      },
+      logical(1L)
+    )
+    hits <- entries[from_haven]
+    if (length(hits) > 0L) {
+      saved <- mget(hits, envir = tbl, inherits = FALSE)
+      restorers[[length(restorers) + 1L]] <- .restore(tbl, saved)
+      rm(list = hits, envir = tbl)
+    }
   }
   expr
 }
