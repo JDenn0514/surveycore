@@ -234,6 +234,15 @@
 
 ## Bug fixes
 
+* `get_diffs()` no longer aborts with "missing value where TRUE/FALSE needed"
+  when a treatment comparison comes back with an `NA` estimate. That row now
+  keeps its `NA` estimate, is left out of `pval_adj` adjustment, gets an `NA`
+  `pct_change`, and the call warns with
+  `surveycore_warning_diffs_na_estimate` naming the affected levels. No
+  supported model produces an `NA` difference; this is how the grouped
+  failures under marginaleffects 1.0.0 surfaced before they were fixed, and
+  results for every other input are unchanged. (#294)
+
 * `print(x, full = TRUE)` now shows every data column of a design whose
   `@variables$visible_vars` is set, as surveytidy's `select()` sets it. It used
   to keep hiding the columns and repeat the note telling you to use

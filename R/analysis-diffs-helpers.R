@@ -8,6 +8,8 @@
 #   .stars_pval()               — significance stars from p-values
 #   .extract_clean_estimates()  — clean-path estimate extraction
 #   .extract_me_estimates()     — ME-path estimate extraction
+#   .diffs_is_ref_row(), .diffs_is_comparison_row(), .diffs_same_group()
+#                               — NA-safe row predicates for the builder
 #   .build_diffs_output()       — unified output row builder
 
 # -- .stars_pval() ------------------------------------------------------------
@@ -246,6 +248,39 @@
   )
 }
 
+# -- NA-safe row predicates --------------------------------------------------
+#
+# .build_diffs_output() tells rows apart by their estimate: a reference row
+# carries a literal 0, a comparison row carries the model's estimate. These
+# predicates make that test NA-safe, so an NA estimate (which no supported
+# model returns, but an upstream defect can produce — issue #294) is read as
+# "a comparison that could not be estimated" instead of aborting with
+# "missing value where TRUE/FALSE needed".
+#
+# .diffs_is_ref_row(): TRUE only for an estimate of exactly 0; NA is FALSE.
+# .diffs_is_comparison_row(): TRUE only for a non-NA, non-zero estimate.
+#   An NA-estimate row is neither, so it is excluded from p-value adjustment
+#   and gets an NA pct_change.
+# .diffs_same_group(): TRUE when a row's group values equal a combo's on
+#   every group column. Uses %in%, so an NA group value matches an NA combo
+#   value and never yields NA. TRUE when group_names is empty.
+.diffs_is_ref_row <- function(r) {
+  isTRUE(r$estimate == 0)
+}
+
+.diffs_is_comparison_row <- function(r) {
+  !is.na(r$estimate) && r$estimate != 0
+}
+
+.diffs_same_group <- function(row_groups, combo, group_names) {
+  for (gn in group_names) {
+    if (!(row_groups[[gn]] %in% combo[[gn]])) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
 # -- .build_diffs_output() ----------------------------------------------------
 #
 # Unified replacement for the duplicated non-group and grouped branches of
@@ -438,6 +473,28 @@
     }
   }
 
+  # ── NA-estimate warning ───────────────────────────────────────────────────
+  na_est_levels <- unique(vapply(
+    Filter(function(r) is.na(r$estimate), all_rows),
+    function(r) r$level,
+    character(1L)
+  ))
+  if (length(na_est_levels) > 0L) {
+    cli::cli_warn(
+      c(
+        "!" = paste0(
+          "The difference for treatment level{?s} {.val {na_est_levels}} ",
+          "could not be estimated and is reported as {.code NA}."
+        ),
+        "i" = paste0(
+          "Rows with an {.code NA} estimate are excluded from p-value ",
+          "adjustment and have an {.code NA} percentage change."
+        )
+      ),
+      class = "surveycore_warning_diffs_na_estimate"
+    )
+  }
+
   # ── Small-cell warnings ───────────────────────────────────────────────────
   for (r in all_rows) {
     if (!is.na(r$n) && r$n > 0L && r$n < min_cell_n) {
@@ -458,7 +515,7 @@
     if (!has_group) {
       # Global adjustment across all non-reference rows
       comp_idx <- which(
-        vapply(all_rows, function(r) r$estimate != 0, logical(1L))
+        vapply(all_rows, .diffs_is_comparison_row, logical(1L))
       )
       if (length(comp_idx) > 0L) {
         pvals <- vapply(all_rows[comp_idx], function(r) r$p_value, double(1L))
@@ -473,15 +530,11 @@
         gc_adj <- unique_group_combos[gi, , drop = FALSE]
         comp_idx <- integer(0)
         for (ri in seq_along(all_rows)) {
-          if (all_rows[[ri]]$estimate != 0) {
-            grp_match <- TRUE
-            for (gn in group_names) {
-              grp_match <- grp_match &&
-                (all_group_rows[[ri]][[gn]] == gc_adj[[gn]])
-            }
-            if (grp_match) {
-              comp_idx <- c(comp_idx, ri)
-            }
+          if (
+            .diffs_is_comparison_row(all_rows[[ri]]) &&
+              .diffs_same_group(all_group_rows[[ri]], gc_adj, group_names)
+          ) {
+            comp_idx <- c(comp_idx, ri)
           }
         }
         if (length(comp_idx) > 0L) {
@@ -521,18 +574,12 @@
       # Try to find from existing rows (show_means = TRUE)
       ref_mean_val <- NA_real_
       for (ri in seq_along(all_rows)) {
-        if (all_rows[[ri]]$estimate == 0) {
-          grp_ok <- TRUE
-          if (has_group) {
-            for (gn in group_names) {
-              grp_ok <- grp_ok &&
-                (all_group_rows[[ri]][[gn]] == gc_pct[[gn]])
-            }
-          }
-          if (grp_ok) {
-            ref_mean_val <- all_rows[[ri]]$mean
-            break
-          }
+        if (
+          .diffs_is_ref_row(all_rows[[ri]]) &&
+            .diffs_same_group(all_group_rows[[ri]], gc_pct, group_names)
+        ) {
+          ref_mean_val <- all_rows[[ri]]$mean
+          break
         }
       }
 
@@ -587,12 +634,7 @@
         combo_idx <- NA_integer_
         for (gi in seq_len(n_combos)) {
           gc_row <- unique_group_combos[gi, , drop = FALSE]
-          match_g <- TRUE
-          for (gn in group_names) {
-            match_g <- match_g &&
-              (all_group_rows[[i]][[gn]] == gc_row[[gn]])
-          }
-          if (match_g) {
+          if (.diffs_same_group(all_group_rows[[i]], gc_row, group_names)) {
             combo_idx <- gi
             break
           }
@@ -605,7 +647,7 @@
       ref_g_is_zero <- !is.na(ref_mean_g) &&
         abs(ref_mean_g) < .Machine$double.eps * 100
 
-      if (r$estimate == 0) {
+      if (!.diffs_is_comparison_row(r)) {
         all_rows[[i]]$pct_change <- NA_real_
       } else if (!is.na(ref_mean_g) && !ref_g_is_zero) {
         all_rows[[i]]$pct_change <- r$estimate / ref_mean_g
