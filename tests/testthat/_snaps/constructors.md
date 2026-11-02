@@ -56,6 +56,16 @@
       Error in `as_survey()`:
       x `weights` must select exactly one column, not 2
 
+# as_survey() errors when a weight is non-positive [row 33]
+
+    Code
+      as_survey(df, weights = wt)
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column wt has 2 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where wt is 0 or negative.
+
 # as_survey() errors when strata expression selects multiple columns [row 11]
 
     Code
@@ -377,6 +387,26 @@
     Condition
       Error in `as_survey_replicate()`:
       x `data` must have at least one row
+
+# as_survey_replicate() errors when all weights are zero [row 10]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+    Condition
+      Error in `.validate_weights()`:
+      x All values in weight column wt are zero or missing.
+      i No valid (non-NA, positive) weights found.
+      v Check wt for data issues or supply a different column.
+
+# as_survey_replicate() errors when a weight is non-positive [row 33]
+
+    Code
+      as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+    Condition
+      Error in `.validate_weights()`:
+      x Weight column wt has 2 non-positive value(s).
+      i All non-NA weights must be strictly greater than 0.
+      v Remove or replace rows where wt is 0 or negative.
 
 # as_survey_replicate() errors when repweights matches no columns [row 16]
 
