@@ -1426,17 +1426,24 @@ as_survey_replicate <- function(
 #'   Its `@data` must contain ALL rows from both phases, plus a logical
 #'   indicator column for Phase 2 membership. Create with [as_survey()].
 #' @param ids2 <[`tidy-select`][tidyselect::language]> Phase 2 cluster ID
-#'   column(s). For single-stage Phase 2: `ids2 = psu2`. For multi-stage:
-#'   `ids2 = c(psu2, ssu2)`. Omit if Phase 2 has no within-stratum
-#'   clustering. Without `probs2` or `fpc2`, the Phase 2 inclusion
-#'   probability is the fraction of first-stage clusters selected within each
+#'   column: a single column, such as `ids2 = psu2`. Omit if Phase 2 has no
+#'   within-stratum clustering. Without `probs2` or `fpc2`, the Phase 2
+#'   inclusion probability is the fraction of clusters selected within each
 #'   Phase 2 stratum, not the fraction of rows.
+#'
+#'   Multi-stage Phase 2 is not supported. The two-phase variance uses one
+#'   Phase 2 sampling stage, so selecting more than one column, such as
+#'   `ids2 = c(psu2, ssu2)`, is an error
+#'   (`surveycore_error_twophase_multistage_phase2`) rather than a standard
+#'   error that silently ignores the later stages.
 #' @param strata2 <[`tidy-select`][tidyselect::language]> Phase 2
-#'   stratification column (a single column). Optional.
+#'   stratification column (a single column; more than one is an error, as
+#'   Phase 2 has one sampling stage). Optional.
 #' @param probs2 <[`tidy-select`][tidyselect::language]> Phase 2 inclusion
 #'   probability column (a single column, values in (0, 1]). Optional.
 #' @param fpc2 <[`tidy-select`][tidyselect::language]> Phase 2 finite
-#'   population correction column (a single column). Optional.
+#'   population correction column (a single column; more than one is an
+#'   error, as Phase 2 has one sampling stage). Optional.
 #' @param subset <[`tidy-select`][tidyselect::language]> Single logical column
 #'   in `phase1@data`. `TRUE` = row selected into Phase 2;
 #'   `FALSE` = Phase 1 only. Required. Must contain both `TRUE` and `FALSE`
@@ -1719,7 +1726,9 @@ as_survey_twophase <- function(
 
   # ── Resolve optional Phase 2 design columns via tidy-select ─────────────────
 
-  # ids2 (may select multiple columns for multi-stage Phase 2 clustering)
+  # ids2 is resolved with eval_select() rather than .resolve_single_col() so
+  # that a multi-column selection reaches the typed refusal below instead of
+  # the generic "must select exactly one column" error.
   ids2_quo <- rlang::enquo(ids2)
   if (rlang::quo_is_null(ids2_quo)) {
     ids2_vars <- NULL
@@ -1727,6 +1736,16 @@ as_survey_twophase <- function(
     ids2_cols <- tidyselect::eval_select(ids2_quo, data)
     ids2_vars <- if (length(ids2_cols) == 0L) NULL else names(ids2_cols)
   }
+
+  # ── Error TP-3: multi-stage phase 2 is refused (issue #338) ─────────────────
+  # The two-phase variance reads one phase 2 stage. strata2 and fpc2 need no
+  # check here: .resolve_single_col() below already refuses more than one
+  # column for each.
+
+  .abort_twophase_multistage_phase2(
+    c(ids2 = length(ids2_vars)),
+    fn = "as_survey_twophase"
+  )
 
   strata2_var <- .resolve_single_col(
     rlang::enquo(strata2),

@@ -753,6 +753,74 @@ test_that("survey_twophase validator: warning 26 — phase2 col all-NA in ph2", 
 })
 
 
+# Issue #338: the validator refuses a multi-stage phase 2, so the exported
+# class constructor and an @variables assignment cannot install one either.
+multistage_validator_frame <- function() {
+  data.frame(
+    wt = rep(1, 10),
+    ph2 = c(rep(TRUE, 5), rep(FALSE, 5)),
+    a = rep(1:5, 2),
+    b = 1:10,
+    y = 1:10
+  )
+}
+
+multistage_validator_vars <- function(phase2) {
+  list(
+    phase1 = .taylor_vars(weights = "wt"),
+    phase2 = utils::modifyList(
+      list(ids = NULL, strata = NULL, probs = NULL, fpc = NULL),
+      phase2
+    ),
+    subset = "ph2",
+    method = "approx"
+  )
+}
+
+test_that("survey_twophase validator refuses two phase 2 ids columns", {
+  expect_error(
+    survey_twophase(
+      data = multistage_validator_frame(),
+      variables = multistage_validator_vars(list(ids = c("a", "b")))
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("survey_twophase validator refuses two phase 2 strata columns", {
+  expect_error(
+    survey_twophase(
+      data = multistage_validator_frame(),
+      variables = multistage_validator_vars(list(strata = c("a", "b")))
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("survey_twophase validator refuses two phase 2 fpc columns", {
+  expect_error(
+    survey_twophase(
+      data = multistage_validator_frame(),
+      variables = multistage_validator_vars(list(fpc = c("a", "b")))
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("survey_twophase validator refuses a multi-stage ids assigned after construction", {
+  d <- survey_twophase(
+    data = multistage_validator_frame(),
+    variables = multistage_validator_vars(list(ids = "a"))
+  )
+  vars <- d@variables
+  vars$phase2$ids <- c("a", "b")
+  expect_error(
+    d@variables <- vars,
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+
 # ── Cross-class structural tests ───────────────────────────────────────────────
 
 test_that("survey_taylor and survey_replicate are different classes", {

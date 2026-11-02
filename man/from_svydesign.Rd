@@ -68,12 +68,20 @@ columns directly, such as \code{~psu2} or \code{~strata}, keeps those names. Any
 formula, such as \code{~I(1/w2)}, is evaluated on the phase 1 data as \code{survey}
 evaluates it, and the values go into a generated column named
 \code{..surveycore_ids2..}, \code{..surveycore_strata2..}, \code{..surveycore_probs2..}
-or \code{..surveycore_fpc2..}. A multi-stage \code{ids2} generates one column per
-stage, \code{..surveycore_ids2_1..} and so on. A phase 2 \code{weights} formula,
+or \code{..surveycore_fpc2..}. A phase 2 \code{weights} formula,
 which \code{method = "approx"} accepts, goes in as \code{..surveycore_probs2..},
 because surveycore records phase 2 probabilities and not weights. The
 phase 1 weights of a \code{twophase2} object, which \code{survey} stores as
 \code{probs = ~I(1/w)}, keep the column name \code{w}.
+
+Multi-stage phase 2 is not supported. A two-phase object whose phase 2
+\code{id}, \code{strata} or \code{fpc} has more than one stage, such as
+\code{id = list(~psu, ~psu + ssu)}, raises the error
+\code{surveycore_error_twophase_multistage_phase2}, because surveycore's
+two-phase variance uses one phase 2 stage and would otherwise drop the
+later ones from the standard error. \code{survey} itself refuses a multi-stage
+phase 2 \code{strata} or \code{fpc} unless the phase 2 \code{id} also has more than one
+stage.
 }
 
 \examples{

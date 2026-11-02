@@ -466,6 +466,17 @@
       i The phase 2 membership indicator must be fully observed for all phase 1 units.
       v Remove rows with missing `subset` values before calling `as_survey_twophase()`.
 
+# as_survey_twophase() refuses a multi-stage ids2
+
+    Code
+      as_survey_twophase(phase1, ids2 = c(psu, rowid), strata2 = strata, subset = subset,
+      method = "full")
+    Condition
+      Error in `as_survey_twophase()`:
+      x `as_survey_twophase()` does not support a multi-stage phase 2.
+      i `ids2` names more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.
+      v Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported.
+
 # as_survey_nonprob() rejects non-data-frame input
 
     Code

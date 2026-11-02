@@ -762,12 +762,20 @@ as_tbl_svy <- function(x) {
 #' formula, such as `~I(1/w2)`, is evaluated on the phase 1 data as `survey`
 #' evaluates it, and the values go into a generated column named
 #' `..surveycore_ids2..`, `..surveycore_strata2..`, `..surveycore_probs2..`
-#' or `..surveycore_fpc2..`. A multi-stage `ids2` generates one column per
-#' stage, `..surveycore_ids2_1..` and so on. A phase 2 `weights` formula,
+#' or `..surveycore_fpc2..`. A phase 2 `weights` formula,
 #' which `method = "approx"` accepts, goes in as `..surveycore_probs2..`,
 #' because surveycore records phase 2 probabilities and not weights. The
 #' phase 1 weights of a `twophase2` object, which `survey` stores as
 #' `probs = ~I(1/w)`, keep the column name `w`.
+#'
+#' Multi-stage phase 2 is not supported. A two-phase object whose phase 2
+#' `id`, `strata` or `fpc` has more than one stage, such as
+#' `id = list(~psu, ~psu + ssu)`, raises the error
+#' `surveycore_error_twophase_multistage_phase2`, because surveycore's
+#' two-phase variance uses one phase 2 stage and would otherwise drop the
+#' later ones from the standard error. `survey` itself refuses a multi-stage
+#' phase 2 `strata` or `fpc` unless the phase 2 `id` also has more than one
+#' stage.
 #'
 #' @param x A `survey::svydesign`, `survey::svrepdesign`, `survey::twophase`,
 #'   `survey::twophase2`, or `srvyr::tbl_svy` object. Both `"twophase"` and
@@ -1134,6 +1142,13 @@ from_svydesign <- function(x) {
 # twophase / twophase2 → survey_twophase
 #' @noRd
 .from_svydesign_twophase <- function(x) {
+  # Refuse a multi-stage phase 2 before anything is converted (issue #338).
+  .abort_twophase_multistage_phase2(
+    .twophase_phase2_stages(x$phase2),
+    fn = "from_svydesign",
+    call = rlang::caller_env()
+  )
+
   # Convert the phase 1 full design to survey_taylor.
   phase1_sc <- .from_svydesign_taylor(x$phase1$full)
   phase1_data <- phase1_sc@data
@@ -1178,6 +1193,40 @@ from_svydesign <- function(x) {
   .warn_twophase_full_no_fpc(phase1_sc@variables, phase2$data, method)
 
   design
+}
+
+
+# The number of sampling stages in each of the phase 2 id, strata and fpc of
+# a survey twophase or twophase2 object, named as survey::twophase() names
+# the arguments. Read from the formulas in x$phase2$call when there is one,
+# as .from_svydesign_phase2() reads them: an ids slot of ~1 or ~0 and an fpc
+# slot of `*phase1*` count as no stage. With no call, the evaluated cluster,
+# strata and population-size columns survey stores give the counts.
+# survey 4.5 refuses more strata or fpc stages than id stages ("need at least
+# as many id as fpc stages"), so a multi-stage strata or fpc comes with a
+# multi-stage id.
+#' @noRd
+.twophase_phase2_stages <- function(d2) {
+  d2call <- d2$call
+  if (is.call(d2call)) {
+    n_terms <- function(f) {
+      if (!rlang::is_formula(f) || is.null(.vars_from_formula(f))) {
+        return(0L)
+      }
+      length(.plus_terms(rlang::f_rhs(f)))
+    }
+    c(
+      id = n_terms(d2call$ids),
+      strata = n_terms(d2call$strata),
+      fpc = n_terms(d2call$fpc)
+    )
+  } else {
+    c(
+      id = NCOL(d2$cluster),
+      strata = if (isTRUE(d2$has.strata)) NCOL(d2$strata) else 0L,
+      fpc = if (is.null(d2$fpc$popsize)) 0L else NCOL(d2$fpc$popsize)
+    )
+  }
 }
 
 
@@ -1250,12 +1299,10 @@ from_svydesign <- function(x) {
   }
 
   for (nm in names(generated)) {
+    # One value vector per key: .twophase_phase2_stages() has already
+    # refused a multi-stage phase 2, so ids2 holds one stage here.
     vals <- generated[[nm]]
-    cols <- if (length(vals) == 1L) {
-      paste0("..surveycore_", nm, "2..")
-    } else {
-      paste0("..surveycore_", nm, "2_", seq_along(vals), "..")
-    }
+    cols <- paste0("..surveycore_", nm, "2..")
     collisions <- cols[cols %in% names(data)]
     if (length(collisions) > 0L) {
       cli::cli_abort(
@@ -1276,9 +1323,7 @@ from_svydesign <- function(x) {
         class = "surveycore_error_phase2_name_collision"
       )
     }
-    for (j in seq_along(vals)) {
-      data[[cols[[j]]]] <- unname(vals[[j]])
-    }
+    data[[cols]] <- unname(vals[[1L]])
     vars[[nm]] <- cols
   }
 
