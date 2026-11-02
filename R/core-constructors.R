@@ -819,7 +819,8 @@ as_survey <- function(
 #'   `"JK2"` is the paired jackknife. Each replicate is a half sample, so
 #'   the per-stratum factor is already inside the replicate weights:
 #'   `rscales` stays at `rep(1, R)` and the overall scale stays at `1`.
-#'   `survey::svrepdesign()` forces both, and [as_survey_nonprob()] agrees.
+#'   `survey::svrepdesign()` forces both. [as_survey_nonprob()] uses the
+#'   same scale of `1` but requires `rscales` for `"JK2"`.
 #'
 #'   `"JKn"` is the stratified delete-one jackknife. Its per-stratum factor
 #'   belongs in `rscales` and not in the overall scale. The factor is
@@ -1903,7 +1904,9 @@ as_survey_twophase <- function(
 #'   [as_survey_replicate()], which uses type-specific defaults.
 #' @param rscales Numeric vector of length `R`. Per-replicate scale factors.
 #'   All values must be non-negative and non-NA. Default `NULL`, which sets
-#'   `rscales = rep(1, R)`.
+#'   `rscales = rep(1, R)`, except for `"JK2"` and `"JKn"`, which require
+#'   `rscales`: `rscales = NULL` is refused with
+#'   `surveycore_error_stratified_jk_rscales_unset`.
 #' @param mse Logical. If `TRUE` (the default), the mean-squared-error form
 #'   of the variance estimator is used: `(1/R) * sum((theta_r - theta)^2)`.
 #'   If `FALSE`, the centered form is used instead. Default `TRUE`. Note:

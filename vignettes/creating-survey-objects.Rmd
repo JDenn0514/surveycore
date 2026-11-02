@@ -353,7 +353,9 @@ Some types ignore these arguments, as `survey::svrepdesign()` does. For
 is ignored. For `"JK2"`, `"ACS"` and `"successive-difference"`, a supplied
 `rscales` is ignored. surveycore drops the value, uses the type's own value,
 and warns with `surveycore_warning_replicate_arg_ignored`. For `"Fay"`, the
-scale always comes from `rho`.
+scale always comes from `rho`. A supplied `rscales` is kept as given for
+`"JKn"`, `"JK1"`, `"BRR"`, `"Fay"`, `"bootstrap"` and `"other"`, including
+the two types that ignore a supplied `scale`.
 
 For the other types, override `scale` or `rscales` only when your codebook's
 technical documentation specifies custom values [@wolter2007, ch. 3].

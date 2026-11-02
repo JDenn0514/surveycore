@@ -66,7 +66,9 @@ number of replicate columns). Note: this default differs from
 
 \item{rscales}{Numeric vector of length \code{R}. Per-replicate scale factors.
 All values must be non-negative and non-NA. Default \code{NULL}, which sets
-\code{rscales = rep(1, R)}.}
+\code{rscales = rep(1, R)}, except for \code{"JK2"} and \code{"JKn"}, which require
+\code{rscales}: \code{rscales = NULL} is refused with
+\code{surveycore_error_stratified_jk_rscales_unset}.}
 
 \item{mse}{Logical. If \code{TRUE} (the default), the mean-squared-error form
 of the variance estimator is used: \code{(1/R) * sum((theta_r - theta)^2)}.

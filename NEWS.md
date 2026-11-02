@@ -503,6 +503,15 @@
   records that the dataset carries variable labels only and points to its
   Format section for the code meanings. The dataset is unchanged. (#214)
 
+* `?as_survey_nonprob` said `rscales = NULL` always sets `rep(1, R)`. For
+  `type = "JK2"` and `"JKn"` a `NULL` `rscales` is refused with
+  `surveycore_error_stratified_jk_rscales_unset`, and the help page now says
+  so. `?as_survey_replicate` said `as_survey_nonprob()` agrees with its JK2
+  handling; the two share the scale of `1`, but only `as_survey_nonprob()`
+  requires `rscales`. `vignette("creating-survey-objects")` §3.4 now names the
+  types that keep a supplied `rscales` as given, including `"BRR"` and
+  `"Fay"`, which ignore a supplied `scale`. The behaviour is unchanged. (#318)
+
 ## Notes
 
 * **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
