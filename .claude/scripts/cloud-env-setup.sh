@@ -21,7 +21,7 @@
 #   security.ubuntu.com
 #
 # The default "Trusted" list has no R hosts. That is why an earlier session
-# fell back to R 4.4 from conda-forge and could not install srr.
+# fell back to R 4.4 from conda-forge.
 #
 # .claude/scripts/cloud-session-start.sh runs at each session start and
 # installs any package that DESCRIPTION gained after this cache was built.
@@ -81,12 +81,6 @@ pkgs <- c(
   "devtools", "roxygen2", "rcmdcheck", "lintr"
 )
 pak::pkg_install(pkgs, upgrade = FALSE, ask = FALSE)
-
-# srr is the roxygen roclet that DESCRIPTION names. It is not on CRAN.
-install.packages(
-  "srr",
-  repos = c("https://ropensci-review-tools.r-universe.dev", getOption("repos"))
-)
 
 # surveytidy comes from GitHub (DESCRIPTION Remotes). The cloud GitHub proxy
 # serves only the repositories attached to the session, so this install can

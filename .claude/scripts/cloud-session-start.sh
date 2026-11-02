@@ -21,18 +21,15 @@ Rscript - <<'EOF' || true
 fields <- read.dcf("DESCRIPTION", c("Imports", "Suggests"))
 pkgs <- unlist(strsplit(fields[!is.na(fields)], ","))
 pkgs <- trimws(sub("\\(.*", "", pkgs))
-pkgs <- c(pkgs, "devtools", "roxygen2", "rcmdcheck", "srr")
+pkgs <- c(pkgs, "devtools", "roxygen2", "rcmdcheck")
 pkgs <- setdiff(pkgs, c("", rownames(installed.packages(priority = "base"))))
 installed <- vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)
 missing <- pkgs[!installed]
 
 github <- c(surveytidy = "JDenn0514/surveytidy")
-universe <- c(srr = "https://ropensci-review-tools.r-universe.dev")
 for (pkg in missing) {
   tryCatch(
-    if (pkg %in% names(universe)) {
-      install.packages(pkg, repos = c(universe[[pkg]], getOption("repos")))
-    } else if (pkg %in% names(github)) {
+    if (pkg %in% names(github)) {
       pak::pkg_install(github[[pkg]], upgrade = FALSE, ask = FALSE)
     } else {
       pak::pkg_install(pkg, upgrade = FALSE, ask = FALSE)
@@ -50,7 +47,7 @@ if (length(still_missing) > 0) {
     "\nTests that need them skip. Report this limit with the results.\n"
   )
 } else {
-  cat("All DESCRIPTION packages and srr are installed.\n")
+  cat("All DESCRIPTION packages are installed.\n")
 }
 if (!nzchar(Sys.which("air"))) {
   cat("air is not installed, so `air format --check` cannot run here.\n")

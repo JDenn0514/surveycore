@@ -1,62 +1,8 @@
-# tests/testthat/test-srr-compliance.R
-#
-# rOpenSci srr compliance tests.
-
-#' @srrstats {G5.3} Absence of NA/NaN/Inf in return objects is explicitly
-#'   tested here: survey_glm_fit coefficients, vcov, and fitted values are
-#'   checked for finiteness after standard fits; get_means() and get_freqs()
-#'   output numeric columns are checked for finiteness and valid range.
-#'
-#' @srrstats {G5.8} Edge condition behaviour is tested here across four
-#'   categories: G5.8a (zero-length data), G5.8b (unsupported types),
-#'   G5.8c (all-NA fields), G5.8d (data outside algorithm scope).
-#'
-#' @srrstats {G5.8a} Zero-length data produces surveycore_error_empty_data
-#'   for as_survey() and as_survey_replicate(). survey_glm() with an
-#'   all-excluded active domain produces surveycore_error_empty_domain.
-#'
-#' @srrstats {G5.8b} Unsupported column types for design variables produce
-#'   typed errors: character weights -> surveycore_error_weights_not_numeric;
-#'   character FPC -> surveycore_error_fpc_not_numeric.
-#'
-#' @srrstats {G5.8c} All-NA outcome fields are handled gracefully: analysis
-#'   functions with na.rm = TRUE return NA estimates when all outcome values
-#'   are NA. survey_glm() with all-NA response and na.omit produces an error.
-#'
-#' @srrstats {G5.8d} Data outside algorithm scope (more predictors than
-#'   observations, or perfectly collinear predictors) produces
-#'   surveycore_error_singular_model_matrix.
-#'
-#' @srrstats {G5.9} Noise susceptibility is tested here: adding trivial noise
-#'   (at .Machine$double.eps scale) to predictors and response in survey_glm()
-#'   produces coefficient changes below 1e-6.
-#'
-#' @srrstats {G5.9a} Adding .Machine$double.eps-scale noise to the predictor
-#'   or the response produces GLM coefficient changes < 1e-6 in absolute
-#'   value, tested with tolerance 1e-6.
-#'
-#' @srrstats {G5.10} Extended tests are included here under the standard
-#'   guard: skip_if(!identical(Sys.getenv("SURVEYCORE_EXTENDED_TESTS"),
-#'   "true")). Extended tests run all 8 GLM families with oracle comparison.
-#'
-#' @srrstats {G5.12} Conditions for running extended tests are documented in
-#'   .github/CONTRIBUTING.md ("Extended tests" section): set environment
-#'   variable SURVEYCORE_EXTENDED_TESTS=true before running devtools::test().
-#'
-#' @srrstats {RE7.0} Exact predictor-predictor relationships (perfect
-#'   collinearity) are tested here: survey_glm() detects the rank-deficient
-#'   model matrix and throws surveycore_error_singular_model_matrix.
-#'
-#' @srrstats {RE7.1} Exact predictor-response relationships are tested here:
-#'   with noiseless data y = 10 - 3*x and uniform weights, survey_glm()
-#'   recovers the intercept = 10 and slope = -3 within tolerance 1e-8.
-#'
-#' @srrstats {RE7.2} Output objects retain row names from input data.
-#'   model.frame.survey_glm_fit() returns the model frame with row names
-#'   matching the rows used in fitting.
-#'
-#' @noRd
-NULL
+# Edge-condition and GLM robustness tests: zero-length data, unsupported
+# column types, all-NA outcomes, singular model matrices, noise
+# susceptibility, parameter recovery and row-name preservation. Extended
+# tests (all eight GLM families against survey) run only when
+# SURVEYCORE_EXTENDED_TESTS=true; see .github/CONTRIBUTING.md.
 
 library(surveycore)
 
