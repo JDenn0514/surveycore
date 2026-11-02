@@ -43,6 +43,9 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          # surveytidy is in Suggests but not on CRAN; this r-universe serves it
+          # (it replaces the old Remotes: field, which CRAN rejects).
+          extra-repositories: https://jdenn0514.r-universe.dev
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
