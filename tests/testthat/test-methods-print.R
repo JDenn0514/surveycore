@@ -2113,3 +2113,82 @@ test_that("a non-Fay design with a stored rho key prints no rho", {
   lines <- c(cli_lines(print(d, full = TRUE)), cli_lines(summary(d)))
   expect_false(any(grepl("rho", lines, ignore.case = TRUE)))
 })
+
+
+# ── visible_vars: the column filter and the hidden-variable note (#234) ──────
+# `@variables$visible_vars` is set by surveytidy's select(), and also by a
+# direct assignment, which needs no suggested package. Post-construction
+# property assignment is a supported route (issue #248), so both print paths
+# below are reachable and tested here, on all four print methods.
+
+# Captures what a print call writes to stdout (the tibble) and to the message
+# stream (cli), ANSI-stripped.
+print_lines <- function(expr) {
+  msg <- character(0L)
+  out <- utils::capture.output(
+    msg <- utils::capture.output(expr, type = "message")
+  )
+  cli::ansi_strip(c(out, msg))
+}
+
+make_visible_designs <- function() {
+  df_np <- make_survey_data(n = 30L, n_psu = 6L, n_strata = 2L, seed = 42L)
+  designs <- list(
+    taylor = make_taylor_design(),
+    replicate = make_rep_design(),
+    twophase = make_twophase_design(),
+    nonprob = as_survey_nonprob(df_np, weights = wt)
+  )
+  lapply(designs, function(d) {
+    d@variables[["visible_vars"]] <- c("y1", "y2")
+    d
+  })
+}
+
+tibble_header <- function(d, n_col) {
+  paste0("^# A tibble: ", nrow(d@data), " \\S+ ", n_col, "$")
+}
+
+test_that("print() shows only the visible_vars columns on every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  for (d in make_visible_designs()) {
+    lines <- print_lines(print(d))
+    expect_true(any(grepl(tibble_header(d, 2L), lines)))
+    expect_false(any(grepl(tibble_header(d, ncol(d@data)), lines)))
+  }
+})
+
+test_that("print() notes the design variables visible_vars hides on every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  for (d in make_visible_designs()) {
+    lines <- print_lines(print(d))
+    expect_true(any(grepl(
+      "Design variables preserved but hidden:",
+      lines,
+      fixed = TRUE
+    )))
+    expect_true(any(grepl(
+      "Use `print(x, full = TRUE)` to show all variables.",
+      lines,
+      fixed = TRUE
+    )))
+  }
+})
+
+test_that("print(full = TRUE) shows every column despite visible_vars on every design class", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  for (d in make_visible_designs()) {
+    lines <- print_lines(print(d, full = TRUE))
+    expect_true(any(grepl(tibble_header(d, ncol(d@data)), lines)))
+    expect_false(any(grepl("preserved but hidden", lines, fixed = TRUE)))
+  }
+})
+
+test_that("print() with visible_vars output matches snapshot", {
+  withr::local_options(list(width = 80L, cli.width = 80L))
+  d <- make_visible_designs()$taylor
+  expect_snapshot({
+    print(d, n = 3L)
+    print(d, n = 3L, full = TRUE)
+  })
+})
