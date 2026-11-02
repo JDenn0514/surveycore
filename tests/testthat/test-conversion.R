@@ -1990,6 +1990,24 @@ test_that("from_svydesign() rejects a zero-row replicate design", {
   expect_snapshot(error = TRUE, from_svydesign(sv))
 })
 
+# The Taylor route has no row check of its own: until issue #248 a zero-row
+# survey.design converted to a zero-row survey_taylor. The survey_taylor
+# validator now refuses it. Class only: the error is raised at Layer 1.
+test_that("from_svydesign() rejects a zero-row Taylor design", {
+  skip_if_not_installed("survey")
+  df0 <- data.frame(
+    psu = integer(0),
+    wt = numeric(0),
+    y1 = numeric(0)
+  )
+  sv <- suppressWarnings(
+    survey::svydesign(ids = ~psu, weights = ~wt, data = df0)
+  )
+  expect_identical(nrow(sv$variables), 0L)
+
+  expect_error(from_svydesign(sv), class = "surveycore_error_empty_data")
+})
+
 # R-27. Step 7, first of its two triggers. survey accepts a matrix whose
 #       colnames() holds one or more empty strings, and an empty string
 #       cannot name a column (§V.1).
@@ -3609,7 +3627,10 @@ test_that("default confint() on a converted plain nonprob matches [numerical]", 
 # survey_nonprob validator checks only that no weight is negative and that the
 # column holds at least one positive value, so a single zero passes it. The
 # survey_taylor and survey_replicate validators repeat the strict check, which
-# is why this fixture exists on this class alone.
+# is why this fixture exists on this class alone. The two nonprob rules differ
+# on purpose: surveywts's adjust_nonresponse() writes zero weights this same
+# way. The reason is recorded in archive/nonprob-zero-weights/ and in
+# plans/error-messages.md rows 33 and 101 (confirmed in issue #248).
 make_nonprob_zero_wt <- function(seed = 601L) {
   d <- make_nonprob("plain", seed = seed)
   df <- survey_data(d)

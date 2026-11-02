@@ -948,7 +948,9 @@ from_svydesign <- function(x) {
   # 0, a 0 x 0 replicate matrix and length(pweights) 0. The row-count check
   # in .validate_data_frame() runs only in as_survey_replicate(), and this
   # route does not call it. An empty replicate design supports no estimate
-  # and no variance, so the route refuses it here.
+  # and no variance, so the route refuses it here. The survey_replicate
+  # validator would also refuse it (issue #248); this check runs first so
+  # the message speaks of the survey design, not of an argument named data.
   if (nrow(data) == 0L) {
     cli::cli_abort(
       c(

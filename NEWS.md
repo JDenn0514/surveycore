@@ -114,6 +114,19 @@
 
 ## Breaking changes
 
+* Assigning a frame with 0 rows or 1 row to a design's `@data` now errors, on
+  all four design classes, with the classes the constructors already raise for
+  the same frames: `surveycore_error_empty_data` and
+  `surveycore_error_single_row`. Such a write used to be accepted, and the
+  malformed design failed later, sometimes with an untyped error from
+  `survey` (for example, `as_svydesign()` on a 1-row design).
+  `from_svydesign()` on a zero-row Taylor `survey` design now raises
+  `surveycore_error_empty_data` as well; it used to return an empty design.
+  For a two-phase design the count is the full phase 1 sample; the phase 2
+  subset is not counted. Weight rules are unchanged: `as_survey_nonprob()` still refuses a
+  zero weight, and a `survey_nonprob` design still accepts one written after
+  construction, as surveywts's `adjust_nonresponse()` does. (#248)
+
 * A two-phase design whose phase 2 has more than one sampling stage is now
   refused with `surveycore_error_twophase_multistage_phase2`.
   `as_survey_twophase()` refuses an `ids2` that selects more than one column,

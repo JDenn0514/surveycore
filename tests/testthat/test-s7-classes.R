@@ -2140,22 +2140,25 @@ test_that("a label attribute on a logical marker survives the write", {
   )
 })
 
-test_that("survey_base validator accepts a logical(0) marker on zero rows", {
+# These two rows ran on a 0-row design until issue #248 made one unreachable:
+# the design-class validators now refuse a 0-row or 1-row @data. They run on
+# the smallest frame a design can hold, 2 rows.
+test_that("survey_base validator accepts a logical marker on a 2-row design", {
   design <- make_all_designs(seed = 7L)$taylor
-  design@data <- design@data[0L, , drop = FALSE]
+  design@data <- design@data[1:2, , drop = FALSE]
   expect_no_error(
     marked <- set_domain_marker(design, "logical"),
     class = "surveycore_error_domain_not_logical"
   )
-  expect_identical(nrow(marked@data), 0L)
-  expect_identical(marked@data[[SURVEYCORE_DOMAIN_COL]], logical(0))
+  expect_identical(nrow(marked@data), 2L)
+  expect_identical(marked@data[[SURVEYCORE_DOMAIN_COL]], c(TRUE, FALSE))
 })
 
-# The zero-row reject counterpart of the row above: the type is wrong whatever
-# the column length.
-test_that("survey_base validator rejects an integer(0) marker on zero rows", {
+# The reject counterpart of the row above: the type is wrong whatever the
+# column length.
+test_that("survey_base validator rejects an integer marker on a 2-row design", {
   design <- make_all_designs(seed = 7L)$taylor
-  design@data <- design@data[0L, , drop = FALSE]
+  design@data <- design@data[1:2, , drop = FALSE]
   expect_error(
     set_domain_marker(design, "integer"),
     class = "surveycore_error_domain_not_logical"
@@ -2193,4 +2196,71 @@ test_that("survey_base validator accepts a haven_labelled logical marker", {
   expect_true(is.logical(stored))
   expect_identical(class(stored), "logical")
   expect_false(inherits(stored, "haven_labelled"))
+})
+
+# ── Row count on @data assignment (issue #248) ────────────────────────────────
+# Each design-class validator repeats the constructors' row-count rule, so a
+# 0-row or 1-row frame cannot reach any design class through `@data <-`.
+
+test_that("survey_taylor validator rejects a 0-row frame assigned to @data", {
+  d <- make_all_designs()$taylor
+  expect_error(d@data <- d@data[0L, ], class = "surveycore_error_empty_data")
+})
+
+test_that("survey_taylor validator rejects a 1-row frame assigned to @data", {
+  d <- make_all_designs()$taylor
+  expect_error(d@data <- d@data[1L, ], class = "surveycore_error_single_row")
+})
+
+test_that("survey_replicate validator rejects a 0-row frame assigned to @data", {
+  d <- make_all_designs()$replicate
+  expect_error(d@data <- d@data[0L, ], class = "surveycore_error_empty_data")
+})
+
+test_that("survey_replicate validator rejects a 1-row frame assigned to @data", {
+  d <- make_all_designs()$replicate
+  expect_error(d@data <- d@data[1L, ], class = "surveycore_error_single_row")
+})
+
+test_that("survey_twophase validator rejects a 0-row frame assigned to @data", {
+  d <- make_all_designs()$twophase
+  expect_error(d@data <- d@data[0L, ], class = "surveycore_error_empty_data")
+})
+
+test_that("survey_twophase validator rejects a 1-row frame assigned to @data", {
+  d <- make_all_designs()$twophase
+  expect_error(d@data <- d@data[1L, ], class = "surveycore_error_single_row")
+})
+
+test_that("survey_nonprob validator rejects a 0-row frame assigned to @data", {
+  # Before issue #248 this frame was refused only incidentally, by the
+  # all-zero weight check; the row-count check now fires first.
+  d <- make_all_designs()$calibrated
+  expect_error(d@data <- d@data[0L, ], class = "surveycore_error_empty_data")
+})
+
+test_that("survey_nonprob validator rejects a 1-row frame assigned to @data", {
+  d <- make_all_designs()$calibrated
+  expect_error(d@data <- d@data[1L, ], class = "surveycore_error_single_row")
+})
+
+test_that("survey_taylor validator accepts a 2-row frame assigned to @data", {
+  d <- make_all_designs()$srs
+  d@data <- d@data[1:2, ]
+  expect_identical(nrow(d@data), 2L)
+})
+
+test_that("survey_twophase validator counts phase 1 rows, not phase 2 rows", {
+  d <- make_all_designs()$twophase
+  in_p2 <- d@data[[d@variables$subset]]
+  rows <- c(which(in_p2)[[1L]], which(!in_p2)[[1L]])
+  d@data <- d@data[rows, ]
+  expect_identical(nrow(d@data), 2L)
+  expect_identical(sum(d@data[[d@variables$subset]]), 1L)
+})
+
+test_that("a refused @data assignment leaves the design's rows unchanged", {
+  d <- make_all_designs()$calibrated
+  expect_error(d@data <- d@data[1L, ], class = "surveycore_error_single_row")
+  expect_identical(nrow(d@data), 100L)
 })

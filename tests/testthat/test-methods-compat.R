@@ -341,23 +341,22 @@ test_that("as_survey() rejects a one-row frame", {
   )
 })
 
-test_that("the size functions report one row for a design holding one row", {
+test_that("the size functions never see a design shrunk below two rows", {
   df <- data.frame(y = c(1, 2), w = c(1.5, 2.5))
   d <- as_survey(df, weights = w)
 
-  # A one-row design is not reachable through a constructor (E1b), but the
-  # @data property assignment accepts it: no class validator checks the row
-  # count. One row is not special-cased anywhere, and this row proves it.
-  d@data <- d@data[1, , drop = FALSE]
-  stored <- survey_data(d)
-
-  # E1c
-  expect_identical(dim(d), c(1L, 2L))
-  expect_identical(nrow(d), 1L)
-  expect_identical(NROW(d), 1L)
-  expect_identical(ncol(d), 2L)
-  expect_identical(NCOL(d), 2L)
-  expect_identical(dim(d), dim(stored))
+  # E1c — until issue #248 the @data property assignment accepted a one-row
+  # frame, and this row measured the size functions on it. The class
+  # validators now repeat the constructor floor, so the write is refused and
+  # the design keeps its two rows. Class assertion only: validator errors are
+  # Layer 1.
+  expect_error(
+    d@data <- d@data[1, , drop = FALSE],
+    class = "surveycore_error_single_row"
+  )
+  expect_identical(dim(d), c(2L, 2L))
+  expect_identical(nrow(d), 2L)
+  expect_identical(dim(d), dim(survey_data(d)))
 })
 
 test_that("a domain filter widens the columns and keeps the rows", {
