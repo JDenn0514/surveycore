@@ -408,6 +408,48 @@ SURVEYCORE_DOMAIN_COL <- "..surveycore_domain.."
 }
 
 
+# ── .abort_twophase_multistage_phase2() ──────────────────────────────────────
+#
+# Refuses a two-phase design whose phase 2 has more than one sampling stage
+# (issue #338). The two-phase variance in R/variance-twophase.R reads one
+# phase 2 cluster column, one strata column and one fpc column, so every
+# later stage would drop out of the standard error with no condition.
+#
+# `stages` is a named integer vector of stage counts, named by the argument
+# the caller's user wrote: `ids2` for as_survey_twophase(), `id`, `strata`
+# and `fpc` for from_svydesign(), the @variables$phase2 keys for the
+# survey_twophase validator. Aborts when any count exceeds 1, naming those
+# arguments; returns invisible(TRUE) otherwise. Three call sites:
+# as_survey_twophase(), .from_svydesign_twophase() and the survey_twophase
+# validator.
+.abort_twophase_multistage_phase2 <- function(
+  stages,
+  fn,
+  call = rlang::caller_env()
+) {
+  multi <- names(stages)[stages > 1L]
+  if (length(multi) == 0L) {
+    return(invisible(TRUE))
+  }
+  cli::cli_abort(
+    c(
+      "x" = "{.fn {fn}} does not support a multi-stage phase 2.",
+      "i" = paste0(
+        "{.arg {multi}} {cli::qty(length(multi))}{?names/name} more than one ",
+        "phase 2 sampling stage, and the two-phase variance uses only the ",
+        "first, so the standard error would be wrong."
+      ),
+      "v" = paste0(
+        "Use a single-stage phase 2: one cluster, one strata and one fpc ",
+        "column. Multi-stage phase 2 is not supported."
+      )
+    ),
+    class = "surveycore_error_twophase_multistage_phase2",
+    call = call
+  )
+}
+
+
 # ── Internal tidy-select resolvers ───────────────────────────────────────────
 
 # Resolve a tidy-select quosure against a data frame.

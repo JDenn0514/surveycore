@@ -5451,8 +5451,93 @@ test_that("from_svydesign() rebuilds a twophase phase 2 with no stored call [num
   expect_twophase_oracle(d, sv)
 })
 
-# A multi-stage ids2 expression generates one column per stage.
-test_that("from_svydesign() numbers the generated columns of a multi-stage ids2", {
+# ── Multi-stage phase 2 is refused (issue #338) ──────────────────────────────
+#
+# The two-phase variance reads one phase 2 stage, so a survey object whose
+# phase 2 id, strata or fpc has more than one stage used to convert with the
+# later stages dropped and a standard error about 5.6% too small. survey 4.5
+# refuses a multi-stage phase 2 strata or fpc unless the phase 2 id has more
+# than one stage too ("need at least as many id as fpc stages"), so every
+# reachable case below has a two-stage id. Each refusal fires before phase 1
+# is converted, so surveycore_warning_twophase_full_no_fpc never fires here.
+
+# Issue #338's reproduction: two-stage phase 2 id and strata, method = "full".
+make_svy_multistage <- function(method = "full", strata2 = ~ strata + half) {
+  df <- make_twophase_frame()
+  df$rowid <- seq_len(nrow(df))
+  df$half <- ifelse(df$rowid %% 2L == 0L, "a", "b")
+  survey::twophase(
+    id = list(~psu, ~ psu + rowid),
+    strata = list(~strata, strata2),
+    probs = list(~ I(1 / wt), NULL),
+    data = df,
+    subset = ~subset,
+    method = method
+  )
+}
+
+test_that("from_svydesign() refuses a twophase2 object with a two-stage phase 2 id and strata", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage()
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+test_that("from_svydesign() refuses a twophase object with a two-stage phase 2 id and strata", {
+  skip_if_not_installed("survey")
+  expect_error(
+    from_svydesign(make_svy_multistage("approx")),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 id with single-stage strata", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage(strata2 = ~strata)
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 strata expression", {
+  skip_if_not_installed("survey")
+  expect_error(
+    from_svydesign(make_svy_multistage(strata2 = ~ strata + I(half))),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("from_svydesign() refuses a two-stage phase 2 id and fpc", {
+  skip_if_not_installed("survey")
+  df <- make_twophase_frame()
+  df$rowid <- seq_len(nrow(df))
+  df$n_stage1 <- 1000
+  df$n_stage2 <- 100
+  sv <- survey::twophase(
+    id = list(~psu, ~ psu + rowid),
+    strata = list(~strata, NULL),
+    probs = list(~ I(1 / wt), NULL),
+    fpc = list(~fpc, ~ n_stage1 + n_stage2),
+    data = df,
+    subset = ~subset,
+    method = "full"
+  )
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(error = TRUE, from_svydesign(sv))
+})
+
+# A multi-stage ids2 expression used to generate one column per stage,
+# ..surveycore_ids2_1.. and so on. This block asserted that numbering; it now
+# asserts the refusal, and the numbering code is gone.
+test_that("from_svydesign() refuses a two-stage phase 2 id expression", {
   skip_if_not_installed("survey")
   df <- make_twophase_frame()
   df$row <- seq_len(nrow(df))
@@ -5464,14 +5549,21 @@ test_that("from_svydesign() numbers the generated columns of a multi-stage ids2"
     subset = ~subset,
     method = "approx"
   )
-
-  d <- from_svydesign(sv)
-
-  expect_identical(
-    d@variables$phase2$ids,
-    c("..surveycore_ids2_1..", "..surveycore_ids2_2..")
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
   )
-  expect_equal(d@data[["..surveycore_ids2_2.."]], df$row)
+})
+
+# With no call, the stage counts come from the evaluated slots survey stores.
+test_that("from_svydesign() refuses a two-stage phase 2 with no stored call", {
+  skip_if_not_installed("survey")
+  sv <- make_svy_multistage()
+  sv$phase2$call <- NULL
+  expect_error(
+    from_svydesign(sv),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
 })
 
 

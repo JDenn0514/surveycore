@@ -114,6 +114,17 @@
 
 ## Breaking changes
 
+* A two-phase design whose phase 2 has more than one sampling stage is now
+  refused with `surveycore_error_twophase_multistage_phase2`.
+  `as_survey_twophase()` refuses an `ids2` that selects more than one column,
+  such as `ids2 = c(psu2, ssu2)`, and `from_svydesign()` refuses a `survey`
+  two-phase object whose phase 2 `id`, `strata` or `fpc` has more than one
+  stage, such as `id = list(~psu, ~psu + ssu)`. The two-phase variance uses one
+  phase 2 stage, so these designs used to build and then got a standard error
+  from the first stage alone, about 5.6% too small on the issue's example,
+  with no condition. A single-stage phase 2 is unchanged and still matches
+  `survey`. Multi-stage phase 2 is not supported. (#338)
+
 * `as_survey_replicate()` now refuses an `fpc` column, and an `fpctype` given
   without `fpc`, with `surveycore_error_replicate_fpc_unsupported`. The column
   never changed a replicate standard error: no replicate variance formula read

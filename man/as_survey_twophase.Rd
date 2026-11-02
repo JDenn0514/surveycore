@@ -23,20 +23,27 @@ Its \verb{@data} must contain ALL rows from both phases, plus a logical
 indicator column for Phase 2 membership. Create with \code{\link[=as_survey]{as_survey()}}.}
 
 \item{ids2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 cluster ID
-column(s). For single-stage Phase 2: \code{ids2 = psu2}. For multi-stage:
-\code{ids2 = c(psu2, ssu2)}. Omit if Phase 2 has no within-stratum
-clustering. Without \code{probs2} or \code{fpc2}, the Phase 2 inclusion
-probability is the fraction of first-stage clusters selected within each
-Phase 2 stratum, not the fraction of rows.}
+column: a single column, such as \code{ids2 = psu2}. Omit if Phase 2 has no
+within-stratum clustering. Without \code{probs2} or \code{fpc2}, the Phase 2
+inclusion probability is the fraction of clusters selected within each
+Phase 2 stratum, not the fraction of rows.
+
+Multi-stage Phase 2 is not supported. The two-phase variance uses one
+Phase 2 sampling stage, so selecting more than one column, such as
+\code{ids2 = c(psu2, ssu2)}, is an error
+(\code{surveycore_error_twophase_multistage_phase2}) rather than a standard
+error that silently ignores the later stages.}
 
 \item{strata2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2
-stratification column (a single column). Optional.}
+stratification column (a single column; more than one is an error, as
+Phase 2 has one sampling stage). Optional.}
 
 \item{probs2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 inclusion
 probability column (a single column, values in (0, 1]). Optional.}
 
 \item{fpc2}{<\code{\link[tidyselect:language]{tidy-select}}> Phase 2 finite
-population correction column (a single column). Optional.}
+population correction column (a single column; more than one is an
+error, as Phase 2 has one sampling stage). Optional.}
 
 \item{subset}{<\code{\link[tidyselect:language]{tidy-select}}> Single logical column
 in \code{phase1@data}. \code{TRUE} = row selected into Phase 2;
@@ -47,8 +54,8 @@ values (non-degenerate).}
 and Phase 2 variability. One of \code{"full"} (default), \code{"approx"}, or
 \code{"simple"}. Case-sensitive. See Details.
 
-Both methods match \code{survey::twophase()}, and both can give standard
-errors that are too large (conservative) for some designs:
+\code{"full"} and \code{"approx"} both match \code{survey::twophase()}, and both can give
+standard errors that are too large (conservative) for some designs:
 \itemize{
 \item \code{"full"} without an \code{fpc} on the Phase 1 design treats the Phase 1
 sampling units (clusters, or rows when Phase 1 is unclustered) as

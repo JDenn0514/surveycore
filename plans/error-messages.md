@@ -368,6 +368,36 @@ Tests should use BOTH:
 
 ---
 
+### twophase-multistage-phase2 rows (2026-11-02)
+
+Issue #338. The two-phase variance in `R/variance-twophase.R` reads one phase
+2 cluster column (`ids[[1L]]`), one strata column and one fpc column. A
+multi-stage phase 2 used to build and then got a standard error from its first
+stage alone (about 5.6% too small on the issue's fixture), with no condition.
+Multi-stage phase 2 is refused, not supported. One class serves all three
+entry points; `{fn}` names the one that raised it.
+
+`as_survey_twophase()` needs the check on `ids2` only: `strata2` and `fpc2`
+go through `.resolve_single_col()`, which already refuses more than one column
+with `surveycore_error_strata_multiple` and `surveycore_error_fpc_multiple`.
+`from_svydesign()` counts the stages of the phase 2 `id`, `strata` and `fpc`
+formulas in `x$phase2$call`, or the columns of the evaluated cluster, strata
+and population-size slots when there is no call. `survey` 4.5 refuses more
+`strata` or `fpc` stages than `id` stages, so a multi-stage `strata` or `fpc`
+always comes with a multi-stage `id`. The `survey_twophase` validator checks
+the `ids`, `strata` and `fpc` keys of `@variables$phase2`, which covers the
+exported class constructor and every `@variables` assignment.
+`update_design()` refuses every `survey_twophase` already.
+
+**Variable bindings.** `{fn}` = `as_survey_twophase`, `from_svydesign` or
+`survey_twophase`. `{multi}` = the arguments that name more than one stage:
+`ids2` from the constructor; any of `id`, `strata`, `fpc` from
+`from_svydesign()`; any of `ids`, `strata`, `fpc` from the validator.
+
+| # | Function | Condition | Level | Error Class | cli Message Template |
+|---|---|---|---|---|---|
+| TP-3 | `as_survey_twophase()`, `from_svydesign()` (twophase), S7 validator (`survey_twophase`) | Phase 2 has more than one sampling stage: `ids2` resolves to more than one column; a phase 2 `id`, `strata` or `fpc` of a `survey` two-phase object has more than one stage; or `@variables$phase2$ids`, `$strata` or `$fpc` holds more than one name. Checked in the constructor directly after `ids2` is resolved, in `from_svydesign()` before phase 1 is converted | ERROR | `surveycore_error_twophase_multistage_phase2` | `"x" = "{.fn {fn}} does not support a multi-stage phase 2.", "i" = "{.arg {multi}} {cli::qty(length(multi))}{?names/name} more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.", "v" = "Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported."` |
+
 ## Coverage Map
 
 Which test files cover which error table rows:
@@ -721,8 +751,7 @@ Issue #335. `from_svydesign()` recovers the phase 2 design of a
 `survey::twophase()` object from the formulas in `x$phase2$call`. A formula
 that names no column directly, a phase 2 `weights` formula, or a phase 2
 design with no stored call goes into a generated column named
-`..surveycore_{key}2..` (`..surveycore_{key}2_{k}..` for a multi-stage
-`ids2`), with no condition, as the `..surveycore_wt..` fallback does. The one
+`..surveycore_{key}2..`, with no condition, as the `..surveycore_wt..` fallback does. The one
 condition is a generated name that already names a data column.
 
 **Variable bindings.** `{collisions}` = the generated names that already name

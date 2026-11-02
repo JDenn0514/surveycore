@@ -916,6 +916,19 @@ survey_twophase <- S7::new_class(
       }
     }
 
+    # ── Phase 2 must have one sampling stage (issue #338) ────────────────────
+    # The exported constructor and every @variables assignment reach this
+    # check, so a design built or modified without as_survey_twophase() or
+    # from_svydesign() cannot carry a phase 2 stage the variance ignores.
+    if (!is.null(phase2_vars)) {
+      p2_keys <- c("ids", "strata", "fpc")
+      .abort_twophase_multistage_phase2(
+        stats::setNames(lengths(phase2_vars[p2_keys]), p2_keys),
+        fn = "survey_twophase",
+        call = NULL
+      )
+    }
+
     # ── Warning 26: phase 2 design var all-NA within phase 2 subset ──────────
     if (
       !is.null(subset_var) &&

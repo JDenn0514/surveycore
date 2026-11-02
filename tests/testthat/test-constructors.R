@@ -4235,16 +4235,75 @@ test_that("as_survey_twophase() degenerate check uses non-NA count in message [r
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
 
-test_that("as_survey_twophase() with multi-stage Phase 2 ids (c())", {
-  df <- make_survey_data(n = 200, design = "twophase", seed = 26L)
-  # Add a secondary sampling unit column for Phase 2
-  df$psu2 <- rep(1:5, length.out = nrow(df))
-  df$ssu2 <- rep(1:4, length.out = nrow(df))
-  phase1 <- suppressWarnings(
-    as_survey(df, weights = wt, strata = strata, fpc = fpc)
+# Issue #338: the two-phase variance reads one phase 2 stage, so a
+# multi-stage ids2 used to build and get a standard error from its first stage
+# alone. It is now refused. This block replaces the one that asserted a
+# two-column ids2 was stored. Phase 1 carries an fpc, so the
+# surveycore_warning_twophase_full_no_fpc warning (issue #340) cannot fire.
+multistage_phase1 <- function() {
+  df <- make_survey_data(
+    n = 400L,
+    n_psu = 40L,
+    n_strata = 8L,
+    design = "twophase",
+    seed = 7L
   )
-  d2 <- as_survey_twophase(phase1, ids2 = c(psu2, ssu2), subset = subset)
-  expect_identical(d2@variables$phase2$ids, c("psu2", "ssu2"))
+  df$rowid <- seq_len(nrow(df))
+  as_survey(df, ids = psu, strata = strata, weights = wt, fpc = fpc)
+}
+
+test_that("as_survey_twophase() refuses a multi-stage ids2", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      strata2 = strata,
+      subset = subset,
+      method = "full"
+    )
+  )
+})
+
+test_that("as_survey_twophase() refuses a multi-stage ids2 for method = \"approx\"", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = c(psu, rowid),
+      subset = subset,
+      method = "approx"
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("as_survey_twophase() refuses a multi-stage ids2 selected by tidyselect helper", {
+  phase1 <- multistage_phase1()
+  expect_error(
+    as_survey_twophase(
+      phase1,
+      ids2 = tidyselect::all_of(c("psu", "rowid")),
+      subset = subset
+    ),
+    class = "surveycore_error_twophase_multistage_phase2"
+  )
+})
+
+test_that("as_survey_twophase() still builds with a single-column ids2", {
+  d2 <- as_survey_twophase(multistage_phase1(), ids2 = psu, subset = subset)
+  expect_identical(d2@variables$phase2$ids, "psu")
 })
 
 test_that("as_survey_twophase() preserves all Phase 1 data columns in @data", {

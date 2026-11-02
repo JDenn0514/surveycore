@@ -102,6 +102,36 @@
       i The returned survey object records nothing about the approximation, so no later call warns again.
       v Run `surveywts::create_bootstrap_weights()` on this design, then convert the design it returns.
 
+# from_svydesign() refuses a twophase2 object with a two-stage phase 2 id and strata
+
+    Code
+      from_svydesign(sv)
+    Condition
+      Error in `from_svydesign()`:
+      x `from_svydesign()` does not support a multi-stage phase 2.
+      i `id` and `strata` name more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.
+      v Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported.
+
+# from_svydesign() refuses a two-stage phase 2 id with single-stage strata
+
+    Code
+      from_svydesign(sv)
+    Condition
+      Error in `from_svydesign()`:
+      x `from_svydesign()` does not support a multi-stage phase 2.
+      i `id` names more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.
+      v Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported.
+
+# from_svydesign() refuses a two-stage phase 2 id and fpc
+
+    Code
+      from_svydesign(sv)
+    Condition
+      Error in `from_svydesign()`:
+      x `from_svydesign()` does not support a multi-stage phase 2.
+      i `id` and `fpc` name more than one phase 2 sampling stage, and the two-phase variance uses only the first, so the standard error would be wrong.
+      v Use a single-stage phase 2: one cluster, one strata and one fpc column. Multi-stage phase 2 is not supported.
+
 # from_svydesign() refuses a generated phase 2 name that names a data column
 
     Code
