@@ -288,6 +288,19 @@ test_that("as_survey() errors when all weights are NA [row 10]", {
   )
 })
 
+# Row 33: weights mix non-positive values with positive ones
+test_that("as_survey() errors when a weight is non-positive [row 33]", {
+  df <- data.frame(x = 1:5, wt = c(1, 0, 2, -1, 3))
+  expect_error(
+    as_survey(df, weights = wt),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey(df, weights = wt)
+  )
+})
+
 # Row 11: strata selects >1 column
 test_that("as_survey() errors when strata expression selects multiple columns [row 11]", {
   df <- data.frame(
@@ -3495,6 +3508,25 @@ test_that("as_survey_replicate() errors when all weights are zero [row 10]", {
   expect_error(
     as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1"),
     class = "surveycore_error_weights_all_zero"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
+  )
+})
+
+# Row 33: weights mix non-positive values with positive ones. The
+# constructor route raises it from .validate_weights(), a Layer 3 abort, so
+# it takes the dual pattern.
+test_that("as_survey_replicate() errors when a weight is non-positive [row 33]", {
+  df <- data.frame(y = 1:5, wt = c(1, 0, 2, -1, 3), r1 = c(1, 1, 2, 1, 3))
+  expect_error(
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1"),
+    class = "surveycore_error_weights_nonpositive"
+  )
+  expect_snapshot(
+    error = TRUE,
+    as_survey_replicate(df, weights = wt, repweights = r1, type = "JK1")
   )
 })
 
