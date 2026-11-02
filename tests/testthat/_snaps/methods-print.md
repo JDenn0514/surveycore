@@ -1448,3 +1448,67 @@
       
       Metadata: 0 of 18 variable(s) labeled
 
+# print() with visible_vars output matches snapshot
+
+    Code
+      print(d, n = 3L)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      
+    Output
+      # A tibble: 50 x 2
+           y1     y2
+        <dbl>  <dbl>
+      1  50.9 -0.122
+      2  20.1  0.188
+      3  52.8  0.119
+      # i 47 more rows
+    Message
+      
+      i Design variables preserved but hidden: psu, wt, strata, and fpc.
+      i Use `print(x, full = TRUE)` to show all variables.
+    Code
+      print(d, n = 3L, full = TRUE)
+    Message
+      
+      -- Survey Design ---------------------------------------------------------------
+      <survey_taylor> (Taylor series linearization)
+      Sample size: 50
+      Weighted N: 625
+      
+      
+      -- Design specification --
+      
+      * IDs: psu (10 PSUs)
+      * Strata: strata (2 strata)
+      * Weights: wt
+      * Weights provided as: sampling weights
+      * FPC: fpc
+      * Nesting: TRUE
+      
+      Design variables: psu, wt, strata, and fpc
+      
+      
+      -- Weight distribution --
+      
+      * Range: 6.04 – 22.97
+      * Mean: 12.5
+      * CV: 0.323
+      
+      
+      -- Metadata --
+      
+      0 variable(s) labeled
+      
+    Output
+      # A tibble: 50 x 8
+        psu   strata      fpc    wt    y1     y2    y3 group
+        <chr> <chr>     <dbl> <dbl> <dbl>  <dbl> <int> <chr>
+      1 psu_1 stratum_1   378  14.3  50.9 -0.122     1 A    
+      2 psu_1 stratum_1   378  21.8  20.1  0.188     0 B    
+      3 psu_1 stratum_1   378  14.4  52.8  0.119     1 B    
+      # i 47 more rows
+

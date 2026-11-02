@@ -17,33 +17,33 @@
 # ── Internal helpers ────────────────────────────────────────────────────────
 
 # Return the subset of @data to display, converted to tibble for printing.
-# Respects @variables$visible_vars when set by surveytidy's select().
-# NULL (the surveycore default) → all columns shown.
+# Respects @variables$visible_vars, which surveytidy's select() sets and a
+# direct `@variables` assignment can also set (issue #234). NULL (the
+# surveycore default) → all columns shown. `full = TRUE` shows every column
+# whatever visible_vars holds, as the hidden-variable note promises.
 #' @noRd
-.data_for_print <- function(x) {
+.data_for_print <- function(x, full = FALSE) {
   visible <- x@variables[["visible_vars"]]
-  data <- if (!is.null(visible)) {
-    x@data[, visible, drop = FALSE] # nocov — only set by surveytidy
+  data <- if (!is.null(visible) && !full) {
+    x@data[, visible, drop = FALSE]
   } else {
     x@data
   }
   tibble::as_tibble(data)
 }
 
-# Print a note about design variables that are not in data_shown.
-# Only fires when surveytidy's select() has hidden design variables
-# (i.e., visible_vars is set). Never fires in standalone surveycore use.
+# Print a note about design variables that are not in data_shown. Fires
+# whenever visible_vars hides a design variable and `full` is FALSE.
 #' @noRd
 .print_hidden_note <- function(design_vars, data_shown) {
   hidden <- setdiff(design_vars, names(data_shown))
   if (length(hidden) > 0L) {
-    # nocov start — only set by surveytidy
     cli::cli_text("")
     cli::cli_bullets(c(
       "i" = "Design variables preserved but hidden: {.field {hidden}}.",
       "i" = "Use {.code print(x, full = TRUE)} to show all variables."
     ))
-  } # nocov end
+  }
   invisible(NULL)
 }
 
@@ -250,7 +250,8 @@
 # @param strata_info Currently bundled into design_info.
 # @param cluster_info Currently bundled into design_info.
 # @param metadata_info Show metadata summary?
-# @param full If TRUE, show all sections.
+# @param full If TRUE, show all sections and every data column,
+#   including any that visible_vars hides.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
 # Class defined in R/core-classes.R
@@ -370,7 +371,7 @@ S7::method(print, survey_taylor) <- function(
 
   # ── Data ──────────────────────────────────────────────────────────────────
   cli::cli_text("")
-  data_shown <- .data_for_print(x)
+  data_shown <- .data_for_print(x, full = full)
   print(data_shown, n = n, ...)
 
   design_vars_all <- unique(c(
@@ -408,7 +409,8 @@ S7::method(print, survey_taylor) <- function(
 # @param strata_info Reserved.
 # @param cluster_info Reserved.
 # @param metadata_info Show metadata summary?
-# @param full If TRUE, show all sections.
+# @param full If TRUE, show all sections and every data column,
+#   including any that visible_vars hides.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
 # Class defined in R/core-classes.R
@@ -500,7 +502,7 @@ S7::method(print, survey_replicate) <- function(
 
   # ── Data ──────────────────────────────────────────────────────────────────
   cli::cli_text("")
-  data_shown <- .data_for_print(x)
+  data_shown <- .data_for_print(x, full = full)
   print(data_shown, n = n, ...)
 
   design_vars_all <- unique(c(x@variables$weights, x@variables$repweights))
@@ -521,7 +523,8 @@ S7::method(print, survey_replicate) <- function(
 # @param strata_info Reserved.
 # @param cluster_info Reserved.
 # @param metadata_info Show metadata summary?
-# @param full If TRUE, show all sections.
+# @param full If TRUE, show all sections and every data column,
+#   including any that visible_vars hides.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
 # Class defined in R/core-classes.R
@@ -617,7 +620,7 @@ S7::method(print, survey_twophase) <- function(
 
   # ── Data ──────────────────────────────────────────────────────────────────
   cli::cli_text("")
-  data_shown <- .data_for_print(x)
+  data_shown <- .data_for_print(x, full = full)
   print(data_shown, n = n, ...)
 
   p1 <- x@variables$phase1
@@ -650,7 +653,8 @@ S7::method(print, survey_twophase) <- function(
 # @param design_info Show design specification section?
 # @param weights_info Show weight distribution statistics?
 # @param metadata_info Show metadata summary?
-# @param full If TRUE, show all sections.
+# @param full If TRUE, show all sections and every data column,
+#   including any that visible_vars hides.
 # @param ... Passed to tibble print.
 # @return x, invisibly.
 # Class defined in R/core-classes.R
@@ -752,7 +756,7 @@ S7::method(print, survey_nonprob) <- function(
 
   # ── Data ──────────────────────────────────────────────────────────────────
   cli::cli_text("")
-  data_shown <- .data_for_print(x)
+  data_shown <- .data_for_print(x, full = full)
   print(data_shown, n = n, ...)
 
   .print_hidden_note(wts_var, data_shown)

@@ -234,6 +234,12 @@
 
 ## Bug fixes
 
+* `print(x, full = TRUE)` now shows every data column of a design whose
+  `@variables$visible_vars` is set, as surveytidy's `select()` sets it. It used
+  to keep hiding the columns and repeat the note telling you to use
+  `print(x, full = TRUE)` to see them. The default print still shows only the
+  visible columns and the note. (#234)
+
 * `as_svydesign()` no longer passes `scale` to `survey::svrepdesign()` for
   `"BRR"`, `"Fay"`, `"JK2"`, `"ACS"` and `"successive-difference"`, or
   `rscales` for `"JK2"`, `"ACS"` and `"successive-difference"`. `survey`
