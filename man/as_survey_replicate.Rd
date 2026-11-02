@@ -92,7 +92,8 @@ For \code{"Fay"}, a supplied \code{scale} is discarded with no warning, as
 \code{"JK2"} is the paired jackknife. Each replicate is a half sample, so
 the per-stratum factor is already inside the replicate weights:
 \code{rscales} stays at \code{rep(1, R)} and the overall scale stays at \code{1}.
-\code{survey::svrepdesign()} forces both, and \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} agrees.
+\code{survey::svrepdesign()} forces both. \code{\link[=as_survey_nonprob]{as_survey_nonprob()}} uses the
+same scale of \code{1} but requires \code{rscales} for \code{"JK2"}.
 
 \code{"JKn"} is the stratified delete-one jackknife. Its per-stratum factor
 belongs in \code{rscales} and not in the overall scale. The factor is
