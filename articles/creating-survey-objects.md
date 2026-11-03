@@ -358,10 +358,12 @@ documentation.
 | `"successive-difference"` | Successive Difference | “SDR” or “successive difference replication” | ACS 1-year PUMS ([U.S. Census Bureau 2022](#ref-census2022)) |
 | `"ACS"` | ACS variant | Specific to ACS 5-year methodology | ACS 5-year PUMS |
 
-The Fay epsilon parameter (`fay_rho`) controls how much each replicate
-weight differs from the full-sample weight. Its value is specified in
-the survey’s technical documentation ([Fay 1989](#ref-fay1989); [Judkins
+The Fay shrinkage factor (`rho`) controls how much each replicate weight
+differs from the full-sample weight. Its value is specified in the
+survey’s technical documentation ([Fay 1989](#ref-fay1989); [Judkins
 1990](#ref-judkins1990)).
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+requires `rho` when `type = "Fay"`.
 
 ### 3.2 Worked example: ACS PUMS 2022 — Wyoming
 
@@ -471,8 +473,23 @@ svy_jewish
 ### 3.4 The `scale` and `rscales` arguments
 
 Most users can omit `scale` and `rscales`. surveycore computes defaults
-based on `type` and the number of replicates. Override them only when
-your codebook’s technical documentation specifies custom values ([Wolter
+based on `type` and the number of replicates. One type is an exception:
+`type = "JKn"` requires `rscales`, and a call with no `rscales` is
+refused.
+
+Some types ignore these arguments, as
+[`survey::svrepdesign()`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
+does. For `"BRR"`, `"JK2"`, `"ACS"` and `"successive-difference"`, a
+supplied `scale` is ignored. For `"JK2"`, `"ACS"` and
+`"successive-difference"`, a supplied `rscales` is ignored. surveycore
+drops the value, uses the type’s own value, and warns with
+`surveycore_warning_replicate_arg_ignored`. For `"Fay"`, the scale
+always comes from `rho`. A supplied `rscales` is kept as given for
+`"JKn"`, `"JK1"`, `"BRR"`, `"Fay"`, `"bootstrap"` and `"other"`,
+including the two types that ignore a supplied `scale`.
+
+For the other types, override `scale` or `rscales` only when your
+codebook’s technical documentation specifies custom values ([Wolter
 2007](#ref-wolter2007), ch. 3).
 
 ------------------------------------------------------------------------
@@ -517,10 +534,12 @@ The `method` argument:
 
 - `"full"`: Correct variance accounting for both phases. Requires Phase
   1 cluster information.
-- `"approx"`: Faster approximation; adequate when the Phase 1 sampling
-  fraction is small.
-- `"simple"`: Ignores the Phase 1 design. Use only if Phase 1 is a
-  census.
+- `"approx"`: The lighter formula from survey 3.14 and earlier, a Phase
+  1 term plus a Phase 2 term. Exact for some special cases, most
+  importantly simple random sampling at Phase 1 with stratified random
+  sampling at Phase 2.
+- `"simple"`: The same method as `"approx"`, as in
+  [`survey::twophase()`](https://rdrr.io/pkg/survey/man/twophase.html).
 
 ### 4.3 Worked example: National Wilms Tumor Study
 
@@ -1014,7 +1033,261 @@ unless the sample can be independently defended as representative.
 
 ------------------------------------------------------------------------
 
-## 8. Reference: Common Codebook Variables
+## 8. Dataset-level metadata
+
+The constructors carry two kinds of metadata. Variable-level metadata
+describes one column — a variable label, value labels, a question
+preface. Dataset-level metadata describes the whole dataset: what the
+survey is called, who fielded it, and when it was in the field.
+
+There are exactly six dataset-level keys. The vocabulary is closed, so
+any other name is rejected:
+
+| Key | Type | Meaning | Example |
+|----|----|----|----|
+| `survey_name` | `character(1)` | Full formal survey name. No dates. | `"Antisemitic Attitudes in America 2026"` |
+| `data_name` | `character(1)` | Display label for this dataset. | `"AAA Ipsos (February-March 2026)"` |
+| `vendor` | `character(1)` | Fielding vendor. | `"Ipsos KnowledgePanel Omnibus"` |
+| `field_start` | `Date(1)` | First day in the field. | `as.Date("2026-02-10")` |
+| `field_end` | `Date(1)` | Last day in the field. | `as.Date("2026-03-04")` |
+| `field_period` | `character(1)` | Prose field period, for display. | `"February-March 2026"` |
+
+### 8.1 The `data-raw/` workflow
+
+On a data frame, dataset metadata lives in whole-object attributes. Set
+them in the `data-raw/` script that prepares the dataset, then save the
+frame:
+
+``` r
+
+aaa <- data.frame(
+  psu = rep(1:10, each = 20),
+  stratum = rep(1:5, each = 40),
+  wt = rep(c(0.8, 1.2), 100),
+  approve = rep(c(1, 0), 100)
+)
+
+aaa <- set_dataset_metadata(
+  aaa,
+  survey_name = "Antisemitic Attitudes in America 2026",
+  data_name = "AAA Ipsos (February-March 2026)",
+  vendor = "Ipsos KnowledgePanel Omnibus",
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04"),
+  field_period = "February-March 2026"
+)
+
+extract_dataset_metadata(aaa, format = "data_frame")
+```
+
+    ## # A tibble: 6 × 2
+    ##   key          value                                
+    ##   <chr>        <chr>                                
+    ## 1 survey_name  Antisemitic Attitudes in America 2026
+    ## 2 data_name    AAA Ipsos (February-March 2026)      
+    ## 3 vendor       Ipsos KnowledgePanel Omnibus         
+    ## 4 field_start  2026-02-10                           
+    ## 5 field_end    2026-03-04                           
+    ## 6 field_period February-March 2026
+
+In a real `data-raw/` script the last line is `usethis::use_data(aaa)`.
+The attributes travel with the saved object.
+
+Every constructor promotes those attributes into the design’s metadata,
+so no extra step is needed at construction:
+
+``` r
+
+svy_aaa <- as_survey(aaa, ids = psu, weights = wt, strata = stratum)
+
+print(svy_aaa, metadata_info = TRUE, n = 3)
+```
+
+    ## 
+
+    ## ── Survey Design ───────────────────────────────────────────────────────────────
+
+    ## <survey_taylor> (Taylor series linearization)
+
+    ## Dataset: AAA Ipsos (February-March 2026)
+
+    ## Sample size: 200
+
+    ## 
+
+    ## ── Metadata ──
+
+    ## 
+
+    ## Survey: Antisemitic Attitudes in America 2026
+
+    ## Vendor: Ipsos KnowledgePanel Omnibus
+
+    ## Field dates: 2026-02-10 to 2026-03-04 (February-March 2026)
+
+    ## 0 variable(s) labeled
+
+    ## 
+
+    ## # A tibble: 200 × 4
+    ##     psu stratum    wt approve
+    ##   <int>   <int> <dbl>   <dbl>
+    ## 1     1       1   0.8       1
+    ## 2     1       1   1.2       0
+    ## 3     1       1   0.8       1
+    ## # ℹ 197 more rows
+
+You can also set the keys directly on a design. That is the better
+choice when the values were not available when the dataset was built:
+
+``` r
+
+svy_aaa <- set_vendor(svy_aaa, "Ipsos KnowledgePanel Omnibus")
+svy_aaa <- set_field_dates(
+  svy_aaa,
+  field_start = as.Date("2026-02-10"),
+  field_end = as.Date("2026-03-04")
+)
+
+extract_field_dates(svy_aaa)
+```
+
+    ## $field_start
+    ## [1] "2026-02-10"
+    ## 
+    ## $field_end
+    ## [1] "2026-03-04"
+
+### 8.2 `survey_name` and `data_name` are independent
+
+The two name keys answer two different questions, and nothing in
+surveycore derives one from the other:
+
+``` r
+
+extract_survey_name(svy_aaa)
+```
+
+    ## [1] "Antisemitic Attitudes in America 2026"
+
+``` r
+
+extract_data_name(svy_aaa)
+```
+
+    ## [1] "AAA Ipsos (February-March 2026)"
+
+- `survey_name` is the full formal name of the **survey** — the study,
+  the instrument, the thing you cite. It carries no dates.
+- `data_name` is a short display label for **this dataset** — usually a
+  short name plus the field period. It is what the print header shows.
+
+No function reads one key to compute, fill, or check the other. Set one
+and the other stays unset. Change one and the other keeps its old value,
+so the two can drift apart. The print output shows both, which is how
+you see the drift.
+
+### 8.3 Attribute persistence: set the metadata last
+
+Whole-object attributes on a data frame are fragile. Several everyday
+operations return a new frame without them:
+
+| Operation | Attributes |
+|----|----|
+| `df[, cols]` — the **column** form of `[` | dropped |
+| `df[rows, ]` — the **row** form of `[` | kept |
+| [`merge()`](https://rdrr.io/r/base/merge.html) | dropped |
+| [`subset()`](https://rdrr.io/r/base/subset.html), either form | dropped |
+| [`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html) | version dependent — do not rely on it |
+
+The column form of `[` drops the attributes; the row form keeps them. So
+a row filter is safe and a column selection is not:
+
+``` r
+
+extract_vendor(aaa[1:5, ])
+```
+
+    ## [1] "Ipsos KnowledgePanel Omnibus"
+
+``` r
+
+extract_vendor(aaa[, c("psu", "wt")])
+```
+
+    ## [1] NA
+
+[`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
+has dropped these attributes in some tibble versions and kept them in
+others, so neither behavior is safe to rely on.
+
+The practical advice follows from the table. Either:
+
+- set dataset metadata **last** in the `data-raw/` script, directly
+  before `usethis::use_data()`, after every reshape, join, and column
+  selection is done; or
+- set it on the survey design instead. There it lives in the design’s
+  metadata, where no data-frame operation can drop it.
+
+A constructor **copies** these attributes into the design; it never
+strips them. The data frame inside a design therefore still carries the
+values it was built with:
+
+``` r
+
+svy_cint <- set_vendor(svy_aaa, "Cint")
+
+# The design reports the new value.
+extract_vendor(svy_cint)
+```
+
+    ## [1] "Cint"
+
+``` r
+
+# The data frame inside it still carries the original.
+extract_vendor(survey_data(svy_cint))
+```
+
+    ## [1] "Ipsos KnowledgePanel Omnibus"
+
+Rebuilding a design from the frame that
+[`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md)
+returns therefore re-promotes the original attributes, and an edited or
+deleted key comes back. Avoid that round trip and keep working with the
+design object.
+
+### 8.4 `extract_metadata()` reports variables only
+
+[`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
+is deliberately separate from the dataset-level API. It reports
+per-variable fields only, and a dataset-level key is not a variable, so
+the six keys never appear in its output. They have their own accessors —
+[`extract_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_dataset_metadata.md)
+and the five convenience extractors:
+
+``` r
+
+svy_aaa <- set_var_label(svy_aaa, approve = "Approves of current policy")
+
+# Variable names only — no dataset-level keys.
+names(extract_metadata(svy_aaa))
+```
+
+    ## [1] "approve"
+
+``` r
+
+# The dataset-level keys live here.
+names(extract_dataset_metadata(svy_aaa))
+```
+
+    ## [1] "survey_name"  "data_name"    "vendor"       "field_start"  "field_end"   
+    ## [6] "field_period"
+
+------------------------------------------------------------------------
+
+## 9. Reference: Common Codebook Variables
 
 A lookup table for common codebook terms and how they map to constructor
 arguments:
@@ -1027,7 +1300,7 @@ arguments:
 | “FPC”, “finite population correction”, “population size” | `fpc =` |  |
 | “replicate weights”, “bootstrap weights”, “BRR weights” | `repweights =` | Use [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) |
 | “base weight”, “design weight” (with separate replicates) | `weights =` in [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md) |  |
-| “Fay coefficient”, “Fay factor”, “epsilon” | `fay_rho =` | With `type = "Fay"` |
+| “Fay coefficient”, “Fay factor”, “epsilon” | `rho =` | With `type = "Fay"` |
 | “raking weights”, “post-stratification weights”, “cal weights” | `weights =` in [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) | Non-probability design |
 | “two-phase”, “double sampling”, “case-cohort” | Phase 1 → [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md), then [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md) |  |
 

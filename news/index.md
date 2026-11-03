@@ -1,5 +1,415 @@
 # Changelog
 
+## surveycore 1.2.0
+
+### New features
+
+- Survey designs and data frames carry dataset-level metadata in six
+  keys, `survey_name`, `data_name`, `vendor`, `field_start`, `field_end`
+  and `field_period`, stored in the new `dataset_metadata` property. Use
+  [`set_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/set_dataset_metadata.md)
+  and
+  [`extract_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_dataset_metadata.md),
+  or the pairs
+  [`set_survey_name()`](https://jdenn0514.github.io/surveycore/reference/set_survey_name.md)
+  /
+  [`extract_survey_name()`](https://jdenn0514.github.io/surveycore/reference/extract_survey_name.md),
+  [`set_data_name()`](https://jdenn0514.github.io/surveycore/reference/set_data_name.md)
+  /
+  [`extract_data_name()`](https://jdenn0514.github.io/surveycore/reference/extract_data_name.md),
+  [`set_vendor()`](https://jdenn0514.github.io/surveycore/reference/set_vendor.md)
+  /
+  [`extract_vendor()`](https://jdenn0514.github.io/surveycore/reference/extract_vendor.md),
+  [`set_field_dates()`](https://jdenn0514.github.io/surveycore/reference/set_field_dates.md)
+  /
+  [`extract_field_dates()`](https://jdenn0514.github.io/surveycore/reference/extract_field_dates.md)
+  and
+  [`set_field_period()`](https://jdenn0514.github.io/surveycore/reference/set_field_period.md)
+  /
+  [`extract_field_period()`](https://jdenn0514.github.io/surveycore/reference/extract_field_period.md).
+  Constructors copy the six data-frame attributes into the design
+  (`dates` reads as `field_period`), and
+  [`print()`](https://rdrr.io/r/base/print.html) and
+  [`summary()`](https://rdrr.io/r/base/summary.html) show them.
+  ([\#162](https://github.com/JDenn0514/surveycore/issues/162),
+  [\#163](https://github.com/JDenn0514/surveycore/issues/163),
+  [\#164](https://github.com/JDenn0514/surveycore/issues/164),
+  [\#166](https://github.com/JDenn0514/surveycore/issues/166),
+  [\#168](https://github.com/JDenn0514/surveycore/issues/168),
+  [\#170](https://github.com/JDenn0514/surveycore/issues/170),
+  [\#171](https://github.com/JDenn0514/surveycore/issues/171))
+
+- The new `var_extra` property of `survey_metadata`, with
+  [`set_var_extra()`](https://jdenn0514.github.io/surveycore/reference/set_var_extra.md)
+  and
+  [`extract_var_extra()`](https://jdenn0514.github.io/surveycore/reference/extract_var_extra.md),
+  holds per-variable tags for other packages.
+  ([\#176](https://github.com/JDenn0514/surveycore/issues/176))
+
+- [`survey_data()`](https://jdenn0514.github.io/surveycore/reference/survey_data.md)
+  gains `haven_class`. With `TRUE` it rebuilds the `haven_labelled`
+  class on labelled columns, for
+  [`haven::write_sav()`](https://haven.tidyverse.org/reference/read_spss.html).
+  ([\#175](https://github.com/JDenn0514/surveycore/issues/175))
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  accepts a numeric `fpc` with `fpctype` and applies it to `rscales` for
+  `"JK1"`, `"JKn"` and `"other"`, as `survey` does. Other types raise
+  `surveycore_error_replicate_fpc_type_unsupported`, and a bad value
+  raises `surveycore_error_replicate_fpc_invalid`. A design records the
+  result in `@variables$fpc_applied` and `@variables$fpc_fraction`; a
+  bad record raises `surveycore_error_replicate_fpc_record_invalid`.
+  ([\#320](https://github.com/JDenn0514/surveycore/issues/320))
+
+- [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  and
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  warn with `surveycore_warning_twophase_full_no_fpc` for a
+  `method = "full"` design with phase-1 weights and no `fpc`. The SE of
+  a total can then run several times too large.
+  ([\#339](https://github.com/JDenn0514/surveycore/issues/339),
+  [\#340](https://github.com/JDenn0514/surveycore/issues/340))
+
+- [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
+  accepts a factor or character `x` and returns one total per level. It
+  used to raise `surveycore_error_non_numeric_variable`. An all-`NA` `x`
+  warns with `surveycore_warning_all_na_totals` when `na.rm = TRUE` and
+  raises `surveycore_error_all_na` otherwise.
+  ([\#199](https://github.com/JDenn0514/surveycore/issues/199),
+  [\#342](https://github.com/JDenn0514/surveycore/issues/342))
+
+- [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  and
+  [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md)
+  convert a `survey_nonprob` design. They used to raise
+  `surveycore_error_not_survey_object`. A design without replicate
+  weights warns with `surveycore_warning_nonprob_srs_conversion`,
+  because its SEs use a simple random sample approximation.
+  ([\#237](https://github.com/JDenn0514/surveycore/issues/237))
+
+### Breaking changes
+
+- A write of 0 or 1 row to a design’s `@data`, and
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  on a zero-row Taylor design, raise `surveycore_error_empty_data` or
+  `surveycore_error_single_row`.
+  ([\#248](https://github.com/JDenn0514/surveycore/issues/248))
+
+- [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  and
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  refuse a multi-stage phase 2 with
+  `surveycore_error_twophase_multistage_phase2`. Its SE was about 5.6%
+  too small.
+  ([\#338](https://github.com/JDenn0514/surveycore/issues/338))
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  refuses an `fpc` column, or `fpctype` without `fpc`, with
+  `surveycore_error_replicate_fpc_unsupported`. No SE moves. Pass a
+  numeric `fpc`, or use `rscales = rscales * (1 - f)`.
+  ([\#251](https://github.com/JDenn0514/surveycore/issues/251),
+  [\#320](https://github.com/JDenn0514/surveycore/issues/320))
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  ignores a supplied `scale` for `"BRR"`, `"JK2"`, `"ACS"` and
+  `"successive-difference"`, and `rscales` for the last three, as
+  `survey` does. It warns with
+  `surveycore_warning_replicate_arg_ignored`, which
+  `surveycore_warning_rho_ignored` also carries. `type = "JKn"` refuses
+  `rscales = NULL` with `surveycore_error_stratified_jk_rscales_unset`;
+  pass one entry per replicate, for example `(n_h - 1) / n_h`, where
+  `n_h` is the number of PSUs in the stratum the replicate drops a PSU
+  from. ([\#255](https://github.com/JDenn0514/surveycore/issues/255),
+  [\#244](https://github.com/JDenn0514/surveycore/issues/244))
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  gains `rho` after `type`, which `type = "Fay"` requires
+  (`surveycore_error_fay_rho_missing`). The Fay scale is
+  `1 / (R * (1 - rho)^2)`, not `1/R`, so Fay SEs rise by
+  `1 / (1 - rho)`: 1.43 times at `rho = 0.3`. Rebuild saved Fay designs.
+  `rho` with another type warns with `surveycore_warning_rho_ignored`.
+  `scale`, `rscales`, `fpc`, `fpctype`, `mse` and `calibration` move one
+  place later, so name them in positional calls.
+  ([\#243](https://github.com/JDenn0514/surveycore/issues/243))
+
+- [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  refuses a `survey_replicate` phase 1 with
+  `surveycore_error_twophase_replicate_phase1`, which reverses
+  [\#74](https://github.com/JDenn0514/surveycore/issues/74). Build phase
+  1 with
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).
+  ([\#243](https://github.com/JDenn0514/surveycore/issues/243),
+  [\#74](https://github.com/JDenn0514/surveycore/issues/74))
+
+- A non-logical domain marker column (`SURVEYCORE_DOMAIN_COL`) raises
+  `surveycore_error_domain_not_logical`.
+  ([\#262](https://github.com/JDenn0514/surveycore/issues/262))
+
+- A design drops the whole class vector of a `haven_labelled` column, a
+  class stacked above it included. It keeps the `label`, `labels`,
+  `na_values` and `na_range` attributes.
+  ([\#175](https://github.com/JDenn0514/surveycore/issues/175))
+
+- `get_corr(method = "polyserial")` raises
+  `surveycore_error_polyserial_requires_mixed_types` for a whole-valued
+  numeric column paired with an ordinal one. Use `"polychoric"`.
+  ([\#175](https://github.com/JDenn0514/surveycore/issues/175))
+
+- `update_design(x, repweights = )` refuses a changed replicate count
+  with `surveycore_error_repweights_count_changed`, because the scale
+  went stale: a JK1 SE was 9.5% too large in one case. Rebuild the
+  design with
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
+  ([\#300](https://github.com/JDenn0514/surveycore/issues/300),
+  [\#324](https://github.com/JDenn0514/surveycore/issues/324))
+
+### Bug fixes
+
+- [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md)
+  keeps a comparison with an `NA` estimate, leaves it out of `pval_adj`,
+  and warns with `surveycore_warning_diffs_na_estimate`. surveycore
+  requires `marginaleffects (>= 0.24.0)`, up from 0.18.0.
+  ([\#294](https://github.com/JDenn0514/surveycore/issues/294),
+  [\#361](https://github.com/JDenn0514/surveycore/issues/361))
+
+- [`nrow()`](https://rdrr.io/r/base/nrow.html),
+  [`ncol()`](https://rdrr.io/r/base/nrow.html),
+  [`dim()`](https://rdrr.io/r/base/dim.html),
+  [`NROW()`](https://rdrr.io/r/base/nrow.html) and
+  [`NCOL()`](https://rdrr.io/r/base/nrow.html) on a design return the
+  dimensions of its data, not `NULL`.
+  [`dim()`](https://rdrr.io/r/base/dim.html) on a `survey_collection`
+  raises `surveycore_error_collection_no_dim`. `print(x, full = TRUE)`
+  shows every column when `@variables$visible_vars` is set.
+  ([\#203](https://github.com/JDenn0514/surveycore/issues/203),
+  [\#234](https://github.com/JDenn0514/surveycore/issues/234),
+  [\#236](https://github.com/JDenn0514/surveycore/issues/236),
+  [\#238](https://github.com/JDenn0514/surveycore/issues/238),
+  [\#240](https://github.com/JDenn0514/surveycore/issues/240))
+
+- Design df counts only the PSUs and strata of the rows an estimate
+  uses, as
+  [`survey::degf()`](https://rdrr.io/pkg/survey/man/svychisq.html) does.
+  Intervals widen for filtered designs, grouped
+  [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
+  and
+  [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
+  (`@degf`, p-values,
+  [`get_diffs()`](https://jdenn0514.github.io/surveycore/reference/get_diffs.md),
+  [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md)),
+  and usually narrow on two-phase designs.
+  [`confint()`](https://rdrr.io/r/stats/confint.html) on Taylor and
+  two-phase results of
+  [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  and
+  [`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md)
+  uses `df = Inf`, as their CI columns do, so it narrows: 8% at df 15.
+  ([\#271](https://github.com/JDenn0514/surveycore/issues/271),
+  [\#325](https://github.com/JDenn0514/surveycore/issues/325),
+  [\#326](https://github.com/JDenn0514/surveycore/issues/326),
+  [\#327](https://github.com/JDenn0514/surveycore/issues/327))
+
+- [`vcov()`](https://rdrr.io/r/stats/vcov.html) on
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+  [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
+  and
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  results gives the full covariance matrix on Taylor and replicate
+  designs. A result with no stored matrix gets `NA_real_` off the
+  diagonal and `surveycore_warning_vcov_incomplete`.
+  `surveycore_warning_vcov_diagonal_only` is retired.
+  ([\#200](https://github.com/JDenn0514/surveycore/issues/200),
+  [\#344](https://github.com/JDenn0514/surveycore/issues/344),
+  [\#346](https://github.com/JDenn0514/surveycore/issues/346))
+
+- On a calibrated Taylor design,
+  [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  SEs include the calibration step, as `survey` does, and
+  [`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md)
+  and
+  [`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+  no longer warn with `surveycore_warning_zero_df_after_calibration`.
+  ([\#343](https://github.com/JDenn0514/surveycore/issues/343),
+  [\#345](https://github.com/JDenn0514/surveycore/issues/345))
+
+- [`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md)
+  on a factor with number-like levels labels each row with its own
+  level. ([\#342](https://github.com/JDenn0514/surveycore/issues/342))
+
+- [`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md)
+  SEs for a domain of a `survey_nonprob` design without replicate
+  weights fall: `n/(n-1)` uses the full sample. They were 4.9% too large
+  at 10 rows of 100.
+  ([\#245](https://github.com/JDenn0514/surveycore/issues/245),
+  [\#263](https://github.com/JDenn0514/surveycore/issues/263))
+
+- `get_*()` functions read an `NA` domain marker as outside the domain,
+  and no longer fail.
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  and
+  [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md)
+  on a filtered design return the domain, not the full sample, for every
+  design class.
+  ([\#245](https://github.com/JDenn0514/surveycore/issues/245),
+  [\#262](https://github.com/JDenn0514/surveycore/issues/262),
+  [\#266](https://github.com/JDenn0514/surveycore/issues/266),
+  [\#267](https://github.com/JDenn0514/surveycore/issues/267),
+  [\#268](https://github.com/JDenn0514/surveycore/issues/268),
+  [\#269](https://github.com/JDenn0514/surveycore/issues/269),
+  [\#276](https://github.com/JDenn0514/surveycore/issues/276))
+
+- `as_survey_replicate(type = "JK2")` defaults `scale` to `1`, not
+  `(R-1)/R`. **This moves published numbers:** SEs rise by
+  `1/sqrt((R-1)/R)`; they ran 6.5% low on 8 replicates. To reproduce the
+  old numbers, use `type = "other"` and `scale = (R-1)/R`, and keep any
+  `rscales` the old call passed.
+  ([\#242](https://github.com/JDenn0514/surveycore/issues/242))
+
+- [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  defaults `scale` to `1` for `"JKn"` and `1/(R-1)` for `"bootstrap"`,
+  not `(R-1)/R` and `1/R`. **This moves published numbers:** SEs rise by
+  `1/sqrt((R-1)/R)`, 2.6% on 20 replicates. To reproduce the old
+  numbers, pass `scale = (R-1)/R` for `"JKn"`, plus
+  `rscales = rep(1, R)` if the old call passed none, or `scale = 1/R`
+  for `"bootstrap"`.
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  keeps `1/R`.
+  ([\#253](https://github.com/JDenn0514/surveycore/issues/253))
+
+- Two-phase variance follows `survey`. `method = "simple"` uses the
+  `"approx"` variance, so its SEs rise slightly;
+  `surveycore_warning_simple_clustered` is retired. `"approx"` and
+  `"simple"` SEs rise, from about 40% low, when phase 2 draws whole
+  phase 1 units. `"full"` uses the double-expansion variance of
+  `survey::twophase2()`: on the issue’s fixture a mean’s SE falls from
+  0.8881 to 0.8200 and a total’s rises from 14,446 to 36,479. Under
+  `ids2` without `probs2` or `fpc2`, totals move under every method.
+  [`get_quantiles()`](https://jdenn0514.github.io/surveycore/reference/get_quantiles.md)
+  uses phase 2 rows only.
+  ([\#261](https://github.com/JDenn0514/surveycore/issues/261),
+  [\#328](https://github.com/JDenn0514/surveycore/issues/328),
+  [\#329](https://github.com/JDenn0514/surveycore/issues/329),
+  [\#330](https://github.com/JDenn0514/surveycore/issues/330),
+  [\#331](https://github.com/JDenn0514/surveycore/issues/331),
+  [\#332](https://github.com/JDenn0514/surveycore/issues/332),
+  [\#333](https://github.com/JDenn0514/surveycore/issues/333),
+  [\#334](https://github.com/JDenn0514/surveycore/issues/334),
+  [\#337](https://github.com/JDenn0514/surveycore/issues/337))
+
+- [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  keeps the phase 2 design of a
+  [`survey::twophase()`](https://rdrr.io/pkg/survey/man/twophase.html)
+  or `survey::twophase2()` object, so `"full"` no longer raises
+  `surveycore_error_full_requires_phase2`. A generated column name that
+  is taken raises `surveycore_error_phase2_name_collision`.
+  `surveycore_warning_twophase_method_unknown` is retired.
+  ([\#335](https://github.com/JDenn0514/surveycore/issues/335),
+  [\#336](https://github.com/JDenn0514/surveycore/issues/336))
+
+- [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  on a
+  [`survey::svrepdesign`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
+  object keeps the replicate weights, which it lost
+  (`surveycore_error_all_replicates_na` followed), and folds in the base
+  weight, which moved SEs by up to 35% either way. It raises
+  `surveycore_error_replicate_type_unsupported`,
+  `surveycore_error_empty_data`,
+  `surveycore_error_repweights_names_lost` or
+  `surveycore_error_repwt_name_collision` for a design it cannot carry.
+  ([\#197](https://github.com/JDenn0514/surveycore/issues/197),
+  [\#239](https://github.com/JDenn0514/surveycore/issues/239),
+  [\#241](https://github.com/JDenn0514/surveycore/issues/241),
+  [\#247](https://github.com/JDenn0514/surveycore/issues/247))
+
+- [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  on a `survey_replicate` design no longer passes `scale` or `rscales`
+  where `survey` computes its own, and succeeds with an FPC: it drops
+  the column and warns with `surveycore_warning_replicate_fpc_dropped`
+  only when the design does not record where the FPC went. No replicate
+  column raises `surveycore_error_repweights_empty`. A Fay design with
+  no stored `rho` raises `surveycore_error_fay_rho_unrecoverable`;
+  rebuild it with `as_survey_replicate(type = "Fay", rho = )`.
+  ([\#198](https://github.com/JDenn0514/surveycore/issues/198),
+  [\#243](https://github.com/JDenn0514/surveycore/issues/243),
+  [\#249](https://github.com/JDenn0514/surveycore/issues/249),
+  [\#250](https://github.com/JDenn0514/surveycore/issues/250),
+  [\#255](https://github.com/JDenn0514/surveycore/issues/255),
+  [\#320](https://github.com/JDenn0514/surveycore/issues/320))
+
+- `survey_data(x, haven_class = TRUE)` leaves a factor, `Date` or other
+  classed column unchanged, and returns labels set on the design with
+  [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
+  and
+  [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md).
+  ([\#205](https://github.com/JDenn0514/surveycore/issues/205),
+  [\#206](https://github.com/JDenn0514/surveycore/issues/206))
+
+- `get_corr(method = "polychoric")` accepts a numeric column of at most
+  10 distinct finite whole values; recode missing codes such as `8` and
+  `9` to `NA` first. It runs about 30 times faster with identical
+  results. An all-`NA` numeric column raises
+  `surveycore_error_polychoric_requires_ordinal` for either storage
+  type, and `"polyserial"` raises a typed error for an infinite
+  continuous value.
+  ([\#175](https://github.com/JDenn0514/surveycore/issues/175),
+  [\#177](https://github.com/JDenn0514/surveycore/issues/177),
+  [\#181](https://github.com/JDenn0514/surveycore/issues/181),
+  [\#208](https://github.com/JDenn0514/surveycore/issues/208),
+  [\#209](https://github.com/JDenn0514/surveycore/issues/209))
+
+- The four constructors,
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md),
+  [`from_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.md)
+  and
+  [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
+  accept `haven_labelled` columns, where `vctrs` aborted, so
+  `surveycore_warning_missing_labels` can fire on them.
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  and
+  [`from_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.md)
+  keep the source’s labels for
+  [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md)
+  and
+  [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
+  and `from_svydesign(as_svydesign(d))` no longer raises
+  `surveycore_error_design_var_missing`.
+  ([\#175](https://github.com/JDenn0514/surveycore/issues/175),
+  [\#193](https://github.com/JDenn0514/surveycore/issues/193),
+  [\#195](https://github.com/JDenn0514/surveycore/issues/195),
+  [\#196](https://github.com/JDenn0514/surveycore/issues/196))
+
+- [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  copies weighting history from the data frame, so
+  [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
+  reports it.
+  ([\#168](https://github.com/JDenn0514/surveycore/issues/168))
+
+- `get_predict.survey_glm_fit()` keeps a `rowid` column in `newdata`, so
+  grouped `avg_slopes()` and `avg_predictions()` keep their groups.
+  ([\#153](https://github.com/JDenn0514/surveycore/issues/153))
+
+### Notes
+
+- **Reading objects saved under surveycore 1.1.0 or earlier.**
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html) and the six
+  extractors report no dataset metadata. The six setters raise
+  `surveycore_error_dataset_metadata_unavailable`; rebuild the object
+  with
+  [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md),
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md),
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  or
+  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md).
+
+- [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
+  is unchanged and never shows the six dataset-level keys, because they
+  are not variables.
+
 ## surveycore 1.1.0
 
 ### New features

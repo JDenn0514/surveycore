@@ -56,7 +56,11 @@ update_design(
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
   New replicate weight columns (one or more). `NULL` (default) means no
-  change. Only used for `survey_replicate` objects.
+  change. Only used for `survey_replicate` objects. Must select the same
+  number of columns the design already has: the design's `scale` and
+  `rscales` were set for that number of replicates and are kept as they
+  are. To change the number of replicates, rebuild the design with
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - validate:
 

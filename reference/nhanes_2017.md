@@ -102,19 +102,22 @@ stratum, and `wtmec2yr` as the weight for examination-based analyses:
 Use `wtint2yr` instead of `wtmec2yr` for interview-only variables (e.g.,
 income, education).
 
-**Metadata:** All columns carry variable labels and value labels as R
-attributes, automatically extracted into surveycore's metadata system
-when you call
+**Metadata:** All columns carry a variable label as an R attribute,
+automatically extracted into surveycore's metadata system when you call
 [`as_survey()`](https://jdenn0514.github.io/surveycore/reference/as_survey.md).
+No column carries value labels.
 
 - **Variable labels** (`"label"` attribute): A human-readable
   description of each column. Example:
   `attr(nhanes_2017$riagendr, "label")` returns `"Gender"`.
 
-- **Value labels** (`"labels"` attribute): A named numeric vector
-  mapping each code to its meaning. Example:
-  `attr(nhanes_2017$riagendr, "labels")` returns
-  `c(Male = 1, Female = 2)`.
+- **Value labels** (`"labels"` attribute): None. NHANES publishes the
+  data as SAS XPORT files. That format stores a label for each variable,
+  but it does not store labels for the codes inside a variable. The code
+  meanings are in the Format section above and in the NHANES codebooks.
+  Use
+  [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
+  to attach them if you need them.
 
 **Source files:** DEMO_J.xpt (demographics) merged with BPX_J.xpt (blood
 pressure) on `seqn`. Prepared by `data-raw/download-nhanes.R`.
@@ -146,11 +149,7 @@ exam_only <- nhanes_2017[nhanes_2017$ridstatr == 2, ]
 attr(nhanes_2017$riagendr, "label")
 #> [1] "Gender"
 
-# Inspect value labels
-attr(nhanes_2017$riagendr, "labels")
-#> NULL
-
-# Inspect value labels for race/ethnicity
-attr(nhanes_2017$ridreth3, "labels")
-#> NULL
+# Inspect variable label for race/ethnicity
+attr(nhanes_2017$ridreth3, "label")
+#> [1] "Race/Hispanic origin w/ NH Asian"
 ```

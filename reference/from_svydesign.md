@@ -1,10 +1,9 @@
 # Convert a survey Package Design to a surveycore Design Object
 
 Converts a `survey` package design object (`svydesign`, `svrepdesign`,
-or `twophase`) to the corresponding surveycore S7 object. The data,
-design variables, and replicate weights are preserved; metadata
-(variable labels, value labels) is not — the `survey` package has no
-metadata system.
+or `twophase`) to the corresponding surveycore S7 object. The data and
+the design variables are preserved; metadata (variable labels, value
+labels) is not — the `survey` package has no metadata system.
 
 ## Usage
 
@@ -36,6 +35,64 @@ When the call does not contain a formula (e.g., weights were passed as a
 vector), the weight column is identified by matching the stored weight
 values against columns in the data. If no match is found, a
 `..surveycore_wt..` column is added.
+
+## Replicate weights
+
+A `svrepdesign` object stores either finished replicate weights or
+replication factors, and reports which through its `combined.weights`
+field. On a design that reports replication factors the conversion
+transforms the replicate weights rather than preserving them: it
+multiplies each replicate column by the base weight, so the returned
+design always carries finished weights.
+
+When the source design does not name its replicate columns — the case
+for every design that
+[`survey::as.svrepdesign()`](https://rdrr.io/pkg/survey/man/as.svrepdesign.html)
+builds — the conversion writes a generated block into the data, one
+column per replicate, named on the same `..surveycore_wt..` pattern as
+the manufactured weight column above: `..surveycore_repwt_1..`,
+`..surveycore_repwt_2..`, and so on, with the index zero-padded to the
+width of the replicate count. When the source does name its replicate
+columns, those names pass through unchanged.
+
+Either way, the `repweights` design variable of the returned object
+names those columns, in replicate order.
+
+## Two-phase designs
+
+The variance method comes from the object's class: a `twophase2` object,
+which
+[`survey::twophase()`](https://rdrr.io/pkg/survey/man/twophase.html)
+returns for `method = "full"`, converts to `method = "full"`, and a
+`twophase` object converts to `method = "approx"`. `survey` builds
+`method = "simple"` as a `twophase` object too, and surveycore treats
+`"simple"` as `"approx"`. A `twophase2` object whose phase 1 has weights
+other than 1 and no `fpc` raises the warning
+`surveycore_warning_twophase_full_no_fpc`, as
+[`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+does; see its section on the Phase 1 fpc.
+
+The phase 2 design, `ids2`, `strata2`, `probs2` and `fpc2`, is read from
+the formulas the `survey` object stores for it. A formula that names
+data columns directly, such as `~psu2` or `~strata`, keeps those names.
+Any other formula, such as `~I(1/w2)`, is evaluated on the phase 1 data
+as `survey` evaluates it, and the values go into a generated column
+named `..surveycore_ids2..`, `..surveycore_strata2..`,
+`..surveycore_probs2..` or `..surveycore_fpc2..`. A phase 2 `weights`
+formula, which `method = "approx"` accepts, goes in as
+`..surveycore_probs2..`, because surveycore records phase 2
+probabilities and not weights. The phase 1 weights of a `twophase2`
+object, which `survey` stores as `probs = ~I(1/w)`, keep the column name
+`w`.
+
+Multi-stage phase 2 is not supported. A two-phase object whose phase 2
+`id`, `strata` or `fpc` has more than one stage, such as
+`id = list(~psu, ~psu + ssu)`, raises the error
+`surveycore_error_twophase_multistage_phase2`, because surveycore's
+two-phase variance uses one phase 2 stage and would otherwise drop the
+later ones from the standard error. `survey` itself refuses a
+multi-stage phase 2 `strata` or `fpc` unless the phase 2 `id` also has
+more than one stage.
 
 ## See also
 

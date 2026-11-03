@@ -10,7 +10,3 @@ mark domain membership. Exposed here so that sibling packages
 ``` r
 SURVEYCORE_DOMAIN_COL
 ```
-
-## Format
-
-An object of class `character` of length 1.

@@ -35,7 +35,8 @@ survey_replicate(
 - variables:
 
   A named list of design specification (weights, repweights, type,
-  scale, rscales, fpc, fpctype, mse). Set automatically by
+  scale, rscales, fpc, fpctype, fpc_applied, fpc_fraction, mse, rho).
+  Set automatically by
   [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md).
 
 - groups:
@@ -87,15 +88,36 @@ A `survey_replicate` object.
 
 - `fpc`:
 
-  FPC column name or `NULL`.
+  Name of the FPC column the design was built from, or `NULL`.
+  Provenance only: no replicate variance formula reads it.
 
 - `fpctype`:
 
-  `"fraction"` or `"correction"`.
+  `"fraction"` or `"correction"`: how to read the `fpc` column.
+
+- `fpc_applied`:
+
+  Where the finite population correction reached the variance:
+  `"rscales"` (inside `rscales`), `"repweights"` (inside the replicate
+  weight columns), `"none"` (an FPC was available and was not applied),
+  or `NULL` (no FPC was available, or the design predates this key).
+  With `fpc` set and `fpc_applied` `NULL`, whether the FPC was applied
+  is not recorded.
+
+- `fpc_fraction`:
+
+  The sampling fraction `f` per replicate, a numeric vector with one
+  value per replicate column, when
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  applied a numeric `fpc`; otherwise `NULL`.
 
 - `mse`:
 
   Logical. Use MSE estimates?
+
+- `rho`:
+
+  Fay shrinkage factor for `type = "Fay"`; `NULL` for every other type.
 
 ## References
 
@@ -112,7 +134,7 @@ procedures in survey sampling. *Journal of the American Statistical
 Association* **88**(423), 1013–1020.
 
 Judkins, D.R. (1990) Fay's method for variance estimation. *Journal of
-the American Statistical Association* **85**(410), 895–904.
+Official Statistics* **6**(3), 223–239.
 
 Rao, J.N.K., Wu, C.F.J. and Yue, K. (1992) Some recent work on
 resampling methods for complex surveys. *Survey Methodology* **18**(2),

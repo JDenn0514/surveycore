@@ -57,8 +57,15 @@ get_quantiles(
   `NULL` or a character vector from `"se"`, `"ci"`, `"var"`, `"cv"`,
   `"moe"`, `"deff"`. Controls which uncertainty columns appear in the
   output. CIs use the Woodruff (1952) back-transformation method and are
-  **not** symmetric around the estimate. `"deff"` is always `NA` for
-  quantiles (no closed-form SRS SE). Default `"ci"`.
+  **not** symmetric around the estimate. The t critical value takes its
+  degrees of freedom from the rows each estimate uses: only PSUs and
+  strata holding a row in the filtered domain, the group, and (with
+  `na.rm = TRUE`) the non-missing values count, as
+  [`survey::degf()`](https://rdrr.io/pkg/survey/man/svychisq.html) does
+  on the design
+  [`survey::svyquantile()`](https://rdrr.io/pkg/survey/man/svyquantile.html)
+  receives. `"deff"` is always `NA` for quantiles (no closed-form SRS
+  SE). Default `"ci"`.
 
 - conf_level:
 

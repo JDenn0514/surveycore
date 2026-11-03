@@ -44,7 +44,17 @@ format). Rownames are `names(coef(object))[parm]`. Dimensions:
 For non-calibrated Taylor, replicate, and nonprob designs, `df = Inf` is
 stored, so `qt(1 - (1 - level)/2, df = Inf)` equals `qnorm(...)` — a
 normal approximation. For calibrated Taylor designs, per-cell finite df
-values are used.
+values are used. Either way the stored df is the one behind the result's
+`ci_low` and `ci_high` columns, so for
+[`get_means()`](https://jdenn0514.github.io/surveycore/reference/get_means.md),
+[`get_totals()`](https://jdenn0514.github.io/surveycore/reference/get_totals.md),
+[`get_freqs()`](https://jdenn0514.github.io/surveycore/reference/get_freqs.md),
+[`get_ratios()`](https://jdenn0514.github.io/surveycore/reference/get_ratios.md)
+and
+[`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md),
+`confint(object, level = l)` returns the same interval as those columns
+when the result was computed at `conf_level = l`. This holds on a
+filtered (domain) design too.
 
 When `SE(object)[i]` is `NA`, the corresponding CI row is `c(NA, NA)`.
 
@@ -61,8 +71,8 @@ d <- as_survey(
 result <- get_means(d, ridageyr, variance = "se")
 confint(result)
 #>             2.5 %   97.5 %
-#> ridageyr 37.30623 39.54172
+#> ridageyr 37.39616 39.45179
 confint(result, level = 0.90)
-#>               5 %     95 %
-#> ridageyr 37.50466 39.34328
+#>              5 %     95 %
+#> ridageyr 37.5614 39.28654
 ```

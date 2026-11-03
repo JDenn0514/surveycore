@@ -159,6 +159,12 @@ Numerator and denominator variable names are stored in `meta(result)`,
 not as output columns. Use `meta(result)$numerator` and
 `meta(result)$denominator` to access them.
 
+On a Taylor or replicate design (including a `survey_nonprob` design
+with replicate weights), the result also stores the joint covariance
+matrix of its estimates, covering every pair of rows. Read it with
+`vcov(result)`; see
+[`vcov.survey_result()`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md).
+
 ## See also
 
 Other analysis:

@@ -134,8 +134,11 @@ A `survey_means` tibble (also inheriting `survey_result`). Columns:
 
 - `df` — degrees of freedom used for CI calculation. Present only for
   `survey_taylor` designs with an active `@calibration` object
-  (GREG-corrected SE). For all other designs the normal approximation
-  (`Inf`) is used and `df` is not included.
+  (GREG-corrected SE); counts only the PSUs and strata holding a row in
+  the cell. For all other designs the normal approximation (`Inf`) is
+  used and `df` is not included.
+  [`confint()`](https://rdrr.io/r/stats/confint.html) on the result uses
+  the same df, so it reproduces `ci_low` and `ci_high`.
 
 - `n` — unweighted count of non-NA observations used in the estimate.
 
@@ -144,6 +147,12 @@ A `survey_means` tibble (also inheriting `survey_result`). Columns:
 The variable name is stored in `meta(result)$x`, not as a column. Use
 `meta(result)` to access design type, variable labels, and other
 metadata.
+
+On a Taylor or replicate design (including a `survey_nonprob` design
+with replicate weights), the result also stores the joint covariance
+matrix of its estimates, covering every pair of rows. Read it with
+`vcov(result)`; see
+[`vcov.survey_result()`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md).
 
 ## See also
 

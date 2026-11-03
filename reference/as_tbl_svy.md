@@ -17,12 +17,16 @@ as_tbl_svy(x)
 
 - x:
 
-  A `survey_taylor`, `survey_replicate`, or `survey_twophase` object.
-  `survey_nonprob` is not supported and will error.
+  A `survey_taylor`, `survey_replicate`, `survey_twophase`, or
+  `survey_nonprob` object.
 
 ## Value
 
 A [`srvyr::tbl_svy`](http://gdfe.co/srvyr/reference/tbl_svy.md) object.
+Value labels are not carried into the returned object — the `survey`
+package has no metadata system. To read the data back with `haven`-style
+classes rebuilt, use `survey_data(x, haven_class = TRUE)` on the
+surveycore design instead.
 
 ## Details
 

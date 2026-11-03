@@ -1450,8 +1450,60 @@ information is lost after estimation.
 | **Weighted N** | Separate call | Separate call | `n_weighted = TRUE` |
 | **Correlation CIs** | None (`svycor()`) | No verb | Fisher-Z CIs via [`get_corr()`](https://jdenn0514.github.io/surveycore/reference/get_corr.md) |
 | **Non-probability design** | No dedicated constructor | No dedicated constructor | [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md) |
+| **Conversion to `survey`** | Is `survey` | `as_survey(svydesign(...))` | [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md) and [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md) |
 | **Manipulation** | Pre/post construction | Bundled via pipe | `surveytidy` (companion package) |
 | **Runtime `survey` dep.** | Is `survey` | Wraps `survey` | Vendored — `survey` not required |
+
+### 5.1 Converting a Design to a `survey` Object
+
+[`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+converts a surveycore design to the matching `survey` design object.
+[`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md)
+does the same and then wraps the result as an `srvyr` `tbl_svy`. Use
+either one to reach a `survey` function that surveycore does not
+provide.
+[`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+and
+[`from_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/from_tbl_svy.md)
+convert back.
+
+``` r
+
+strat_conv <- surveycore::as_svydesign(strat_sc)
+class(strat_conv)
+```
+
+    #> [1] "survey.design2" "survey.design"
+
+``` r
+
+svymean(~api00, strat_conv)
+```
+
+    #>         mean     SE
+    #> api00 662.29 9.4089
+
+All four surveycore design classes convert. A `survey_nonprob` design
+converts on the shape of its weights, and
+[`?as_svydesign`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+states what that costs. One difference is worth reading here, because
+the rule that produces it lives in the `survey` package’s own source.
+
+**Degrees of freedom differ on a non-probability design.** surveycore
+reports `Inf` for a `survey_nonprob` design. `survey` computes a finite
+number from the converted object, by one of two counting rules.
+[`survey::degf`](https://rdrr.io/pkg/survey/man/svychisq.html) for a
+`svydesign` object counts distinct clusters minus distinct strata among
+the rows whose sampling weight is not zero. So a 40-row non-probability
+design converts to 39, and the same design with one zero-weight row
+converts to 38.
+[`survey::degf`](https://rdrr.io/pkg/survey/man/svychisq.html) for a
+`svrepdesign` object computes
+`qr(weights(design, "analysis"), tol = 1e-5)$rank - 1`. So 8 independent
+replicate columns give 7, and 8 columns with one an exact duplicate give
+6. The difference reaches an answer only when you ask for it: a default
+[`confint()`](https://rdrr.io/r/stats/confint.html) call uses `df = Inf`
+on both sides.
 
 ------------------------------------------------------------------------
 

@@ -26,7 +26,7 @@ as_survey_nonprob(
 - data:
 
   A `data.frame` containing the survey responses with pre-computed
-  calibration weights. Must have at least one row and unique column
+  calibration weights. Must have at least two rows and unique column
   names.
 
 - weights:
@@ -34,7 +34,9 @@ as_survey_nonprob(
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
   Calibration weight column (a single column, values strictly \> 0).
   Typically produced by an external raking function (e.g.,
-  `anesrake::anesrake()`) or a surveywts calibration function.
+  `anesrake::anesrake()`) or a surveywts calibration function. Zero
+  weights are refused here but may appear later, after a surveywts
+  adjustment such as nonresponse sets some weights to 0.
 
 - repweights:
 
@@ -72,6 +74,12 @@ as_survey_nonprob(
   :   Stratified jackknife. Default scale: `1`. Requires explicit
       `rscales` (stratum-specific scale factors of the form
       `(n_h - 1) / n_h`).
+      [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+      accepts `"JK2"` with no `rscales`, as
+      [`survey::svrepdesign()`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
+      does; `as_survey_nonprob()` keeps the refusal, because `survey`
+      has no non-probability design class and so is not the reference
+      for this constructor.
 
   `"JKn"`
 
@@ -90,7 +98,9 @@ as_survey_nonprob(
 
   Numeric vector of length `R`. Per-replicate scale factors. All values
   must be non-negative and non-NA. Default `NULL`, which sets
-  `rscales = rep(1, R)`.
+  `rscales = rep(1, R)`, except for `"JK2"` and `"JKn"`, which require
+  `rscales`: `rscales = NULL` is refused with
+  `surveycore_error_stratified_jk_rscales_unset`.
 
 - mse:
 
@@ -126,7 +136,12 @@ as_survey_nonprob(
 
 ## Value
 
-A `survey_nonprob` object.
+A `survey_nonprob` object. Columns imported with `haven`-style value
+labels are stored as their underlying type: the `label` and `labels`
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the `haven_labelled` class is not stored. Use
+`survey_data(x, haven_class = TRUE)` to read the data back with that
+class rebuilt.
 
 ## Details
 
@@ -148,9 +163,19 @@ variance for non-probability samples.
 When `repweights` is supplied, the variance estimator uses the replicate
 formula: `V = scale * sum(rscales * (theta_r - theta)^2)`. For bootstrap
 replicates (`type = "bootstrap"`), the default `scale = 1/R` follows Wu
-(2022) and Chen et al. (2021). For jackknife replicates (`type = "JK1"`,
-`"JK2"`, or `"JKn"`), scale and rscales follow the standard jackknife
-variance conventions; see `type` for defaults.
+(2022) and Chen et al. (2021).
+[`survey::svrepdesign()`](https://rdrr.io/pkg/survey/man/svrepdesign.html)
+uses `1/(R - 1)` for the bootstrap, and
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+matches that value. This constructor keeps `1/R` because `survey` has no
+non-probability design class and so is not an oracle for one. On the
+same frame the bootstrap standard error from `as_survey_nonprob()` is
+therefore smaller than the one from
+[`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+by a factor of `sqrt((R - 1)/R)`, a fall of 2.5% at `R = 20`. For
+jackknife replicates (`type = "JK1"`, `"JK2"`, or `"JKn"`), scale and
+rscales follow the standard jackknife variance conventions; see `type`
+for defaults.
 
 When `repweights = NULL`, standard errors use an SRS approximation
 (treating each observation as its own PSU). This understates calibration

@@ -97,7 +97,12 @@ as_survey(
 
 ## Value
 
-A `survey_taylor` object.
+A `survey_taylor` object. Columns imported with `haven`-style value
+labels are stored as their underlying type: the `label` and `labels`
+attributes are kept, and the value labels are also recorded in the
+metadata system, but the `haven_labelled` class is not stored. Use
+`survey_data(x, haven_class = TRUE)` to read the data back with that
+class rebuilt.
 
 ## Tidy-select
 

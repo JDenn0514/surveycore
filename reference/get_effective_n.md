@@ -156,6 +156,14 @@ get_effective_n(d)
 #>   <int> <dbl>     <dbl>
 #> 1  9254 3820.      2.42
 
+# Kish effective N by group (one row per level of riagendr)
+get_effective_n(d, group = riagendr)
+#> # A tibble: 2 × 4
+#>   riagendr     n n_eff deff_kish
+#>      <dbl> <int> <dbl>     <dbl>
+#> 1        1  4557 1799.      2.53
+#> 2        2  4697 2026.      2.32
+
 # Full DEFF effective N for a specific variable
 get_effective_n(d, ridageyr, method = "deff")
 #> # A tibble: 1 × 3

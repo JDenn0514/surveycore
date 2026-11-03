@@ -30,10 +30,11 @@ A named numeric vector. Names are identical to `names(coef(object))`.
 ## Note
 
 [`vcov.survey_result()`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md)
-emits `surveycore_warning_vcov_diagonal_only` when `p > 1`. This warning
-is suppressed inside `SE.survey_result()` because the off-diagonal
-structure is irrelevant when only standard errors are requested. Call
-`vcov(result)` directly to observe this warning.
+emits `surveycore_warning_vcov_incomplete` when it has no joint
+covariance for a result with `p > 1`. This warning is suppressed inside
+`SE.survey_result()` because the off-diagonal structure is irrelevant
+when only standard errors are requested. Call `vcov(result)` directly to
+observe this warning.
 
 ## Examples
 

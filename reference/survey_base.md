@@ -36,7 +36,9 @@ for concrete subclasses.
 
 - `data`:
 
-  A `data.frame` containing the survey data.
+  A `data.frame` containing the survey data. A column that carries the
+  domain marker name must be logical; a column of any other type is
+  rejected on construction and on every property write.
 
 - `metadata`:
 

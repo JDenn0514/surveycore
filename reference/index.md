@@ -110,6 +110,8 @@ argument.
   : Set Universe Description(s)
 - [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md)
   : Set Missing Code(s)
+- [`set_var_extra()`](https://jdenn0514.github.io/surveycore/reference/set_var_extra.md)
+  : Set Variable Extension Slot Payload(s)
 - [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md)
   : Set SATA (Select-All-That-Apply) Flag
 - [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md)
@@ -118,6 +120,18 @@ argument.
   : Set Reverse-Coded Flag
 - [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md)
   : Infer Question Prefaces from Variable Labels
+- [`set_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/set_dataset_metadata.md)
+  : Set Dataset-Level Metadata
+- [`set_survey_name()`](https://jdenn0514.github.io/surveycore/reference/set_survey_name.md)
+  : Set the Formal Survey Name
+- [`set_data_name()`](https://jdenn0514.github.io/surveycore/reference/set_data_name.md)
+  : Set the Dataset Display Name
+- [`set_vendor()`](https://jdenn0514.github.io/surveycore/reference/set_vendor.md)
+  : Set the Fielding Vendor
+- [`set_field_dates()`](https://jdenn0514.github.io/surveycore/reference/set_field_dates.md)
+  : Set the Field Dates
+- [`set_field_period()`](https://jdenn0514.github.io/surveycore/reference/set_field_period.md)
+  : Set the Prose Field Period
 
 ## Metadata — extractors
 
@@ -135,6 +149,8 @@ Retrieve metadata for one or more variables.
   : Extract Universe Descriptions
 - [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md)
   : Extract Missing Value Codes
+- [`extract_var_extra()`](https://jdenn0514.github.io/surveycore/reference/extract_var_extra.md)
+  : Extract Extension Slot Payload(s)
 - [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md)
   : Extract SATA (Select-All-That-Apply) Flags
 - [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md)
@@ -143,6 +159,18 @@ Retrieve metadata for one or more variables.
   : Extract Reverse-Coded Flags
 - [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md)
   : Extract All Metadata for Variables
+- [`extract_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_dataset_metadata.md)
+  : Extract Dataset-Level Metadata
+- [`extract_survey_name()`](https://jdenn0514.github.io/surveycore/reference/extract_survey_name.md)
+  : Extract the Formal Survey Name
+- [`extract_data_name()`](https://jdenn0514.github.io/surveycore/reference/extract_data_name.md)
+  : Extract the Dataset Display Name
+- [`extract_vendor()`](https://jdenn0514.github.io/surveycore/reference/extract_vendor.md)
+  : Extract the Fielding Vendor
+- [`extract_field_dates()`](https://jdenn0514.github.io/surveycore/reference/extract_field_dates.md)
+  : Extract the Field Dates
+- [`extract_field_period()`](https://jdenn0514.github.io/surveycore/reference/extract_field_period.md)
+  : Extract the Prose Field Period
 - [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md)
   : Classify Variable Question Types
 - [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)

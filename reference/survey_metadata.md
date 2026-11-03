@@ -14,13 +14,15 @@ survey_metadata(
   value_labels = list(),
   question_prefaces = list(),
   notes = list(),
+  var_extra = list(),
   universe = list(),
   missing_codes = list(),
   sata = list(),
   higher_is = list(),
   reverse_coded = list(),
   transformations = list(),
-  weighting_history = list()
+  weighting_history = list(),
+  dataset_metadata = list()
 )
 ```
 
@@ -44,6 +46,18 @@ survey_metadata(
 - notes:
 
   A named list mapping variable names to analyst notes.
+
+- var_extra:
+
+  A named list mapping variable names to a pass-through extension
+  payload — itself a named list, or `NULL`. surveycore never inspects,
+  type-checks, or acts on the payload's values; it stores and returns
+  them as-is. Use
+  [`set_var_extra()`](https://jdenn0514.github.io/surveycore/reference/set_var_extra.md)
+  and
+  [`extract_var_extra()`](https://jdenn0514.github.io/surveycore/reference/extract_var_extra.md)
+  to access this property. Default
+  [`list()`](https://rdrr.io/r/base/list.html).
 
 - universe:
 
@@ -95,6 +109,44 @@ survey_metadata(
   [`list()`](https://rdrr.io/r/base/list.html) until a surveywts
   weighting function is applied. Reserved for Phase 2.5.
 
+- dataset_metadata:
+
+  A named list of whole-dataset facts. The key vocabulary is **closed**
+  — exactly six keys are valid, each with a declared type:
+
+  - `survey_name` — `character(1)`, the full formal survey name.
+
+  - `data_name` — `character(1)`, the display label for this dataset.
+
+  - `vendor` — `character(1)`, the fielding vendor.
+
+  - `field_start` — `Date` of length 1, the first day in the field.
+
+  - `field_end` — `Date` of length 1, the last day in the field.
+
+  - `field_period` — `character(1)`, the prose field period.
+
+  No value may be `NA` and no element may be `NULL`. Any other key is
+  rejected. `survey_name` and `data_name` are independent: no function
+  derives one from the other. Use
+  [`set_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/set_dataset_metadata.md)
+  to write keys and
+  [`extract_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_dataset_metadata.md)
+  to read them; the default is
+  [`list()`](https://rdrr.io/r/base/list.html). Each key also has a
+  convenience pair:
+  [`set_survey_name()`](https://jdenn0514.github.io/surveycore/reference/set_survey_name.md),
+  [`set_data_name()`](https://jdenn0514.github.io/surveycore/reference/set_data_name.md),
+  [`set_vendor()`](https://jdenn0514.github.io/surveycore/reference/set_vendor.md),
+  [`set_field_dates()`](https://jdenn0514.github.io/surveycore/reference/set_field_dates.md),
+  [`set_field_period()`](https://jdenn0514.github.io/surveycore/reference/set_field_period.md),
+  and the matching
+  [`extract_survey_name()`](https://jdenn0514.github.io/surveycore/reference/extract_survey_name.md),
+  [`extract_data_name()`](https://jdenn0514.github.io/surveycore/reference/extract_data_name.md),
+  [`extract_vendor()`](https://jdenn0514.github.io/surveycore/reference/extract_vendor.md),
+  [`extract_field_dates()`](https://jdenn0514.github.io/surveycore/reference/extract_field_dates.md),
+  [`extract_field_period()`](https://jdenn0514.github.io/surveycore/reference/extract_field_period.md).
+
 ## Value
 
 A `survey_metadata` object.
@@ -103,26 +155,40 @@ A `survey_metadata` object.
 
 Other metadata:
 [`classify_question_type()`](https://jdenn0514.github.io/surveycore/reference/classify_question_type.md),
+[`extract_data_name()`](https://jdenn0514.github.io/surveycore/reference/extract_data_name.md),
+[`extract_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_dataset_metadata.md),
+[`extract_field_dates()`](https://jdenn0514.github.io/surveycore/reference/extract_field_dates.md),
+[`extract_field_period()`](https://jdenn0514.github.io/surveycore/reference/extract_field_period.md),
 [`extract_higher_is()`](https://jdenn0514.github.io/surveycore/reference/extract_higher_is.md),
 [`extract_metadata()`](https://jdenn0514.github.io/surveycore/reference/extract_metadata.md),
 [`extract_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/extract_missing_codes.md),
 [`extract_question_preface()`](https://jdenn0514.github.io/surveycore/reference/extract_question_preface.md),
 [`extract_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/extract_reverse_coded.md),
 [`extract_sata()`](https://jdenn0514.github.io/surveycore/reference/extract_sata.md),
+[`extract_survey_name()`](https://jdenn0514.github.io/surveycore/reference/extract_survey_name.md),
 [`extract_universe()`](https://jdenn0514.github.io/surveycore/reference/extract_universe.md),
 [`extract_val_labels()`](https://jdenn0514.github.io/surveycore/reference/extract_val_labels.md),
+[`extract_var_extra()`](https://jdenn0514.github.io/surveycore/reference/extract_var_extra.md),
 [`extract_var_label()`](https://jdenn0514.github.io/surveycore/reference/extract_var_label.md),
 [`extract_var_note()`](https://jdenn0514.github.io/surveycore/reference/extract_var_note.md),
+[`extract_vendor()`](https://jdenn0514.github.io/surveycore/reference/extract_vendor.md),
 [`infer_question_prefaces()`](https://jdenn0514.github.io/surveycore/reference/infer_question_prefaces.md),
+[`set_data_name()`](https://jdenn0514.github.io/surveycore/reference/set_data_name.md),
+[`set_dataset_metadata()`](https://jdenn0514.github.io/surveycore/reference/set_dataset_metadata.md),
+[`set_field_dates()`](https://jdenn0514.github.io/surveycore/reference/set_field_dates.md),
+[`set_field_period()`](https://jdenn0514.github.io/surveycore/reference/set_field_period.md),
 [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md),
 [`set_missing_codes()`](https://jdenn0514.github.io/surveycore/reference/set_missing_codes.md),
 [`set_question_preface()`](https://jdenn0514.github.io/surveycore/reference/set_question_preface.md),
 [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md),
 [`set_sata()`](https://jdenn0514.github.io/surveycore/reference/set_sata.md),
+[`set_survey_name()`](https://jdenn0514.github.io/surveycore/reference/set_survey_name.md),
 [`set_universe()`](https://jdenn0514.github.io/surveycore/reference/set_universe.md),
 [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md),
+[`set_var_extra()`](https://jdenn0514.github.io/surveycore/reference/set_var_extra.md),
 [`set_var_label()`](https://jdenn0514.github.io/surveycore/reference/set_var_label.md),
 [`set_var_note()`](https://jdenn0514.github.io/surveycore/reference/set_var_note.md),
+[`set_vendor()`](https://jdenn0514.github.io/surveycore/reference/set_vendor.md),
 [`survey_weighting_history()`](https://jdenn0514.github.io/surveycore/reference/survey_weighting_history.md)
 
 ## Examples
@@ -143,4 +209,9 @@ m@variable_labels$age
 m@value_labels$sex
 #>   Male Female 
 #>      1      2 
+
+# Dataset-level metadata (closed six-key vocabulary)
+m <- survey_metadata(dataset_metadata = list(vendor = "Ipsos"))
+m@dataset_metadata$vendor
+#> [1] "Ipsos"
 ```

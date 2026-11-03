@@ -157,6 +157,12 @@ A `survey_freqs` tibble (also inheriting `survey_result`). Columns:
 Use `meta(result)` to access design type, variable labels, value labels,
 and other metadata.
 
+On a Taylor or replicate design (including a `survey_nonprob` design
+with replicate weights), the result also stores the joint covariance
+matrix of its estimates, covering every pair of rows. Read it with
+`vcov(result)`; see
+[`vcov.survey_result()`](https://jdenn0514.github.io/surveycore/reference/vcov.survey_result.md).
+
 ## Details
 
 **Single-variable mode** (when `x` resolves to exactly one variable):

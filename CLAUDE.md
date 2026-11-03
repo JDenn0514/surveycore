@@ -96,6 +96,16 @@ naming, and Conventional Commits format. See
   that depend on optional/in-development packages with
   `eval = requireNamespace("pkg", quietly = TRUE)`. Test locally before
   pushing.
+- **Test warning baseline: 369.** The full suite
+  (`LANG=C.UTF-8 LC_ALL=C.UTF-8 Rscript -e 'devtools::test()'`) raises
+  369 pre-existing warnings on `develop`, measured 2026-10-29 at
+  `46c2b4d` with `surveytidy` and `srr` not installed (#167). By source:
+  120 are [`glm()`](https://rdrr.io/r/stats/glm.html)’s “contrasts
+  dropped” warning, 104 the `survey_nonprob` SRS-approximation warning,
+  84 AAPOR small-cell warnings, and 61 others. A PR must leave that set
+  unchanged: assert any warning it adds with `expect_warning(class = )`.
+  The figure of 256 in the archive entries below is what those arcs
+  measured at the time.
 
 ## R Package Conventions
 
@@ -132,61 +142,324 @@ so this rarely bites — but keep it in mind.
 
 - `plans/error-messages.md` — canonical error/warning class names and
   CLI message templates
-- `archive/get-t-test-pairwise/` — spec, plan, and decisions for
-  [`get_t_test()`](https://jdenn0514.github.io/surveycore/reference/get_t_test.md) +
-  [`get_pairwise()`](https://jdenn0514.github.io/surveycore/reference/get_pairwise.md)
-  (shipped; PR \#88)
-- `archive/sata-metadata/` — SATA metadata spec, plan, and decisions
-  (shipped; PRs \#89–#92)
-- `archive/get-anova/` — design-based ANOVA spec, plan, and decisions
-  (shipped; PRs \#93, \#94, \#95)
-- `archive/get-anova-polymorphic/` — polymorphic `object` dispatch for
-  [`get_anova()`](https://jdenn0514.github.io/surveycore/reference/get_anova.md)
-  (shipped; PR \#96)
-- `archive/survey-collection/` — `survey_collection` container +
-  `get_*()` dispatch spec, plan, and decisions (shipped; PRs \#97, \#98)
-- `archive/get-covariance/` —
-  [`get_covariance()`](https://jdenn0514.github.io/surveycore/reference/get_covariance.md)
-  spec, plan, decisions, and test spec (shipped; PR \#105)
-- `archive/collection-uniform-groups/` — uniform `@groups` enforcement
-  across `survey_collection` (shipped; PR \#106)
-- `archive/polychoric-corr/` — polychoric / polyserial correlation spec,
-  plan, decisions, and test spec (shipped; PRs \#107, \#108, \#109)
-- `archive/variable-direction/` —
-  [`set_higher_is()`](https://jdenn0514.github.io/surveycore/reference/set_higher_is.md),
-  [`set_reverse_coded()`](https://jdenn0514.github.io/surveycore/reference/set_reverse_coded.md),
-  and `get_diffs(show_favorability)` spec, plan, and decisions (shipped;
-  PRs \#124, \#125, \#126)
-- `archive/nonprob-bootstrap-variance/` — non-probability bootstrap
-  variance spec, impl plans, and decisions (shipped; PRs \#127, \#130,
-  \#131)
-- `archive/nonprob-jackknife/` — non-probability jackknife variance
-  spec, impl plan, comprehension, MI reviews, and decisions (shipped;
-  PRs \#133–#136)
-- `archive/corr-nonprob-latent/` — polychoric/polyserial on
-  `survey_nonprob` with repweights: spec, impl plan, test spec, plan
-  review (shipped; PR \#137)
-- `archive/glm-nonprob-replicate/` —
-  [`survey_glm()`](https://jdenn0514.github.io/surveycore/reference/survey_glm.md)
-  nonprob replicate routing: spec, test spec, impl plan, plan review
-  (shipped; PR \#138)
-- `archive/calibrate-survey-taylor/` — calibration-adjusted variance
-  ([`as_caldata()`](https://jdenn0514.github.io/surveycore/reference/as_caldata.md),
-  GREG SE correction): spec, test spec, impl plan, comprehension, plan
-  review, decisions (shipped; PRs \#139, \#140)
-- `archive/surveywts-calibration/` — `calibration =` constructor
-  validation (CAL-15, CAL-16) and raking oracle update: spec, test-spec,
-  impl plan, comprehension, decisions, plan review (shipped; PRs \#141,
-  \#142)
-- `archive/doc-fixes/` — documentation corrections (D1–D75, W1–W3,
-  S1–S7, T1–T5, M1–M4, X1–X13) across 40+ R files: spec, test-spec, impl
-  plan, plan review, decisions (shipped; PRs \#143, \#144)
-- `archive/coef-vcov-methods/` —
-  [`SE()`](https://jdenn0514.github.io/surveycore/reference/SE.md)
-  generic and `coef`/`vcov`/`SE`/`confint` methods for `survey_result`:
-  spec, test-spec, impl plan, plan review, decisions (shipped; PRs
-  \#148, \#149, \#150)
-- `archive/` — completed phase docs (specs, impl plans, decisions — all
-  historical)
+- `archive/` — completed phase docs, one directory per shipped feature
+  (spec, impl plan, decisions); `ls archive/` lists them and `git log`
+  has the PR numbers
+- `archive/dataset-level-metadata/` — dataset-level metadata: the
+  `@dataset_metadata` property, twelve exported setters and extractors,
+  construction promotion, and print/summary output (shipped; PRs \#162,
+  \#163, \#164, \#166, \#168, \#170, \#171)
+- `archive/polychoric-performance/` — polychoric speed fix: vectorised
+  CDF grid, lean refit mode, delta refit setup; 30x on the issue \#177
+  benchmark, bit-identical results (shipped; PR \#181)
+- `archive/var-extension-slot/` — per-variable extension slot: the
+  `var_extra` property on `survey_metadata`,
+  [`set_var_extra()`](https://jdenn0514.github.io/surveycore/reference/set_var_extra.md)/[`extract_var_extra()`](https://jdenn0514.github.io/surveycore/reference/extract_var_extra.md),
+  and rename/delete lifecycle wiring (shipped; PR \#185)
+- `archive/test-suite-simplification/` — test suite simplification: the
+  `_snaps/` line-ending rule, `test_invariants()` narrowed to one call
+  per constructor per file (645 calls → 70), and the two-speed local
+  test workflow; its polychoric investigation became issue \#177 and
+  shipped separately as PR \#181 (shipped; issues \#161, \#169). Read
+  the ARCHIVED block at the top first: the checkboxes were never marked,
+  one task was deliberately dropped, and every measurement in the file
+  predates \#181
+- `archive/haven-labelled/` — `haven_labelled` handling: designs strip
+  the class on every `@data` write and on entry to all four
+  constructors, `survey_data(haven_class = TRUE)` rebuilds it, the
+  `survey`-package conversion routes capture metadata,
+  [`set_val_labels()`](https://jdenn0514.github.io/surveycore/reference/set_val_labels.md)
+  accepts a labelled column, and polychoric accepts whole-valued doubles
+  (shipped; PRs \#186–#204). Read `decisions-haven-labelled.md` first:
+  it records seven SETTLED decisions, D1 to D7, and three of them
+  resolve a HOLD. The planning documents were corrected nine times
+  against measurement during the build. Nine documents the decisions
+  cite are not in the repository — the pipeline archived no measurement
+  artifacts until issue \#217. Every citation of them carries
+  `[not archived]`, and each affected file lists them below its title
+- `archive/svydesign-replicate-bridge/` — the two replicate conversion
+  routes in `R/methods-conversion.R`:
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  now expands survey’s compressed replicate matrix, generates column
+  names when survey supplies none, writes one column per replicate on
+  every conversion, folds the base weight into a factor-form matrix, and
+  refuses four unusable sources;
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  drops the FPC with a typed warning, refuses a design naming no
+  replicate column, and recovered Fay’s shrinkage factor from the
+  recorded scale until issue \#243 replaced the recovery with a stored
+  `rho` (shipped; issues \#197, \#198; PRs \#239, \#241, \#247, \#249,
+  \#250). Read `decisions-svydesign-replicate-bridge.md` first: it holds
+  19 decisions, D11 to D19 all recorded during the build rather than the
+  planning. Four matter to anyone reading the gates. D12: gate 2’s “0
+  warnings” is unmeetable — clean `develop` carried 256 pre-existing
+  AAPOR small-cell warnings at the time (369 as of 2026-10-29; see CI /
+  Package Development), so the gate reads as “no new warning”. D16: gate
+  9 cannot run as written — `air` is a CLI here, not an R package, and
+  24 files repo-wide are already not air-clean, so the gate reads as
+  “the PR’s own files pass `air format --check`”. D17: `spec.md` §V.2
+  carried a `{qty()}` erratum that would have made a typed-condition
+  test impossible to pass; the spec copy here is corrected and says so
+  under §Errata applied at archive time. D11: test-spec row ids were
+  stripped from every builder task list, so no test block is named after
+  a row
+- `archive/as-svydesign-bridge/` —
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  and
+  [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md)
+  accept a `survey_nonprob` design: a fourth dispatch branch routes on
+  the shape of the weights, sending a design that names replicate
+  weights to the replicate helper and one that names none to the Taylor
+  helper behind the new warning
+  `surveycore_warning_nonprob_srs_conversion`;
+  [`as_tbl_svy()`](https://jdenn0514.github.io/surveycore/reference/as_tbl_svy.md)
+  gained the input class with no body edit, because its guard already
+  tested `survey_base` (shipped; issue \#237; PR \#259). Read
+  `decisions-as-svydesign-bridge.md` first, then §Out of the spec — that
+  section is unusually load-bearing, because D-9 narrowed this work from
+  two issues to one and moved the replicate FPC to the neighbouring arc.
+  Four things a later reader needs. **The spec names four deferred
+  issues, none of them a defect in this PR:** \#245 the dropped domain
+  restriction, \#246 the consolidation of eight in-place copies of the
+  nonprob routing predicate, \#248 a class validator weaker than the
+  constructor that feeds it, and \#251 two documentation corrections
+  that had to wait for the warning they describe. **Two planner errata
+  survive in the plan and test-spec:** both write
+  `ncol(survey::weights(converted, "analysis"))`, which cannot run —
+  `survey` registers a method for the base `weights` generic and exports
+  no function of that name — so the shipped block uses
+  [`stats::weights()`](https://rdrr.io/r/stats/weights.html); and AC-6
+  asks for “the two pre-approved notes only” where the run has one
+  pre-approved note plus a pre-existing `.git` hidden-file note that
+  `.Rbuildignore` causes and this PR cannot fix. **The coverage Before
+  column is empty:** both baseline attempts were killed by a low-memory
+  watchdog at 2.06 GB free, so judge the 95% floor, which the measured
+  96.24% clears, and not a delta. **The merge took three CI cycles and
+  none of them failed:** branch protection requires an up-to-date head
+  branch, repository auto-merge is refused, and two other sessions
+  merged into `develop` meanwhile — see
+  `prs/pr-1-as-svydesign-bridge/shipper.md`, which records that updating
+  the branch before opening the PR would have cost one cycle instead of
+  three
+- `archive/as-svydesign-domain/` —
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  on a filtered design returns the domain and not the full stored
+  sample: one internal helper indexes the converted object with `[` on
+  the marker column, each of the three routes calls it once, the
+  two-phase route removes no row and gives excluded rows an infinite
+  probability (true of `twophase2` only — corrected in
+  `archive/domain-marker-logical/`, PR \#279), and the roxygen and
+  changelog landed last (shipped; issue \#245; PRs \#263, \#266, \#267,
+  \#268, \#269, \#270). Read `decisions-as-svydesign-domain.md` first:
+  D1 to D17, then one record per PR. Three things a later reader needs.
+  PR 4 drew the arc’s only tester BLOCK, for three blocks that asserted
+  nothing about conditions. Gates 4 and 5 of PR 4’s first run died to
+  the host’s memory watchdog and were re-run as a detached process, so
+  the gate logs stay in the run directory and are not archived. One
+  deferred item carries no GitHub issue, unlike \#246, \#261, \#262 and
+  \#265: the stored call surviving the restriction is pinned on the
+  Taylor route only
+- `archive/domain-marker-logical/` — the domain marker column is logical
+  everywhere, and an `NA` marker means outside the domain: a
+  `survey_base` validator rejects a non-logical marker at the write,
+  `.apply_domain()` resolves `NA` to `FALSE`, `.restrict_to_domain()`
+  drops the coercion the validator made dead, and the printed
+  `Domain: n of N` line is proved to agree with the analysis count
+  (shipped; issue \#262; PRs \#272, \#273, \#274, \#275, \#277, \#278,
+  \#279). Read `decisions-domain-marker-logical.md` first: D1 to D26, of
+  which D21 to D26 were recorded during the build rather than the
+  planning. Five things a later reader needs. **D23 is the one that cost
+  a BLOCK:** `spec.md` names no analysis function anywhere, so the six
+  functions `test-spec.md` §3 fixes by name were unreachable for a
+  builder forbidden to read the test-spec — a closed list that lives in
+  only one of the two artifacts cannot be hit. **D26 corrects the plan’s
+  own ordering rationale:** PR 6 was ordered after PR 4 because PR 4
+  “changes the count they compare against”, and that holds for one row
+  of four; `.print_domain_info()` counts straight off the marker column
+  and never calls `.apply_domain()`. **D25 records a defect found and
+  deferred, not fixed in place:** `.restrict_to_domain()` tested only
+  the `twophase2` class, so a `method = "approx"` design was returned
+  unrestricted with nothing signalled; it became issue \#276 and shipped
+  as PR \#279 with its own test row. **The two two-phase classes are not
+  interchangeable:** `[` on a `twophase2` object keeps every row and
+  voids the excluded ones to `Inf`, `[` on a `twophase` object removes
+  them, so the observable is the finite-probability count on one and the
+  row count on the other — measured at 312/156 against 156/156. **One
+  planner erratum survives in the archived test-spec:** §5 says
+  `sum(mask)` gives the expected count for rows 5.2 to 5.4, which is
+  wrong for row 5.3 — the two-phase row needs `sum(mask & subset)`, 52
+  against 149 on the fixture. The shipped block asserts the corrected
+  count; D25 records it
+- `archive/replicate-oracle-tests/` — the oracle rule, and nine oracle
+  blocks that can actually fail:
+  `tests/testthat/test-variance-replicate.R` gains a no-warning and a
+  stored-scale assertion on the eight agreeing blocks, whole rewrites of
+  JK1 and JK2, four new blocks for JKn, bootstrap, `other` and Fay, and
+  its first `test_invariants()` call;
+  `.claude/rules/testing-surveycore.md` gains the oracle rule in three
+  parts (shipped; issues \#256, \#257; PRs \#281–#289). Read
+  `decisions-replicate-oracle-tests.md` first — S1 to S8, P1, P2 and
+  findings F2, N1 to N3 — and note that its archive note at the end
+  explains why twenty citations are marked `[no such file]` when the
+  documents they name are all in this directory. **Nothing under `R/`
+  changed in any of the nine PRs:** the `R` subtree hash is identical at
+  the arc’s first and last commit. The arc fixes no wrong default; it
+  makes the tests able to detect one, and issues \#253 and \#243 own the
+  fixes. Five things a later reader needs. **The arc’s central
+  measurement is P2:** doubling a design’s stored scale leaves the point
+  estimate bit-for-bit identical on all eight numerical types while
+  moving the standard error by exactly `sqrt(2)` and both bounds by 4.5
+  × 10⁴ times their tolerance — which is why a block asserting only the
+  point estimate is worthless against a scale defect, and how issue
+  \#242 stayed green for 22 releases. **P1 is the other one:** breaking
+  the JK1 default to `1` turns the rewritten block red on the standard
+  error and both bounds and nowhere else, run independently by the
+  builder and the reviewer and agreeing to the digit. **Three planner
+  errata, all the same shape** — a closed count stated in one artifact
+  that the other artifact’s prose makes unreachable: S3, the per-type
+  table’s fifth column, which the test-spec asks for and `spec.md`
+  §III.3 does not have; S6, row 2.22’s “four of four” estimator count
+  where §3.3 fixes the Fay block at two assertions and no estimate; and
+  N3, a title filter that returns four when three is right. A count and
+  the prose governing it should live in the same artifact. **S4 and S5
+  record a rule the arc cannot satisfy:** the stored-scale comment must
+  carry three elements and the shortest plain-prose form carrying all
+  three is 82 characters, so the 80-column limit in `code-style.md` is
+  unreachable — the 13 comments and two pinned titles breach it
+  deliberately, and `air format --check`, which the plan names as the
+  formatting authority, passes because it does not rewrap comments or
+  strings. **Never count constructs in that test file with `grep -c`:**
+  it discusses its own constructs in comments and titles, so
+  `expect_failure` reads 12 textually against 6 real calls and
+  `svrepdesign` reads 18 against 14; six agents miscounted before three
+  independent parsers agreed. Zero tester BLOCKs and zero reviewer
+  BLOCKs across all nine PRs
+- `archive/replicate-scale-jkn-bootstrap/` — the JKn and bootstrap
+  default `scale` move:
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  now stores `1` for `"JKn"` and `1 / (R - 1)` for `"bootstrap"`, the
+  six `expect_failure()` wrappers and two ratio assertions come out of
+  the two oracle blocks, `@param scale` gains eight facts with
+  `@param rscales` and `@param fpc` cross-referencing it,
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  documents why it keeps `1 / R`, and 95 new expectations pin all nine
+  stored defaults, the frame edges, the infinite scale in the variance
+  engine and the two-phase inheritance (shipped; issue \#253; PRs \#293,
+  \#296, \#297, \#298, \#299). Read
+  `decisions-replicate-scale-jkn-bootstrap.md` first: ten errata E-1 to
+  E-10, two builder HOLDs, and the CI HOLD. Six things a later reader
+  needs. **This work moved a published standard error and raises no
+  runtime condition, by explicit decision** (`spec.md` §A runtime
+  transition signal was weighed and declined), so the `NEWS.md` entry is
+  the only artifact that will ever explain a 2.6% rise to a user who
+  hits it. **Six of the ten errata share one mechanism** — a closed
+  count, list or fixture fixed in one artifact and addressed to a reader
+  forbidden to open it: E-1 “exactly one block breaks”, E-2 row 4.5’s
+  two-file list, E-4 AC-5’s “no other line”, E-6 row 1.7’s nine values
+  (the task ordered a `test-spec.md` read the builder contract forbids),
+  E-7 criterion 1’s one-row frame, and E-9 row 2.3’s four-row literals.
+  The rule that prevents all six: a plan task addressed to the builder
+  must transcribe every closed value it needs, because naming the source
+  is not enough when the source is forbidden. **E-7 is the one that cost
+  a HOLD:** `spec.md` E7 claimed a single-row frame builds and stores
+  the default; it cannot, because `.validate_data()` raises
+  `surveycore_error_single_row` before the switch and
+  `tests/testthat/test-constructors.R` has pinned that refusal since PR
+  \#76 — the second time that spec section misdescribed which frames the
+  constructor refuses, so treat its list of “ordinary inputs” as
+  unverified. **The write surface is nine files, not the seven `spec.md`
+  names:** moving the bootstrap default breaks two blocks asserting
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)
+  and
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  agree numerically, which is the identity quality gate 6 deliberately
+  breaks, so `test-nonprob-bootstrap-variance.R` and
+  `test-analysis-corr.R` were retargeted to pin the divergence instead.
+  **The `NaN` branch of E1 needs whole-valued data:** with real-valued
+  weights the replicate deviation lands about 1.8e-15 off zero and the
+  product is `Inf`, not `NaN`, so a plausible fixture tests the `Inf`
+  branch twice — [`is.nan()`](https://rdrr.io/r/base/is.finite.html) is
+  self-proving here and a drifted frame turns it red. **Two percentages,
+  opposite directions, one place each:** `NEWS.md` carries 2.6%, the
+  rise, and
+  [`as_survey_nonprob()`](https://jdenn0514.github.io/surveycore/reference/as_survey_nonprob.md)’s
+  help page carries 2.5%, the fall. Arc suite 12005 → 12100 with
+  warnings held at exactly 256 and coverage at 96.15% at all six gate
+  runs; zero `_snaps/` changes; zero tester BLOCKs and zero reviewer
+  BLOCKs across all five PRs
+- `archive/replicate-fay-rho/` — Fay’s `rho`:
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  gains `rho` as its fifth formal, `type = "Fay"` requires it and stores
+  the scale `1 / (R * (1 - rho)^2)`, `rho` with any other type warns and
+  is discarded, every replicate design stores the key `rho`,
+  [`from_svydesign()`](https://jdenn0514.github.io/surveycore/reference/from_svydesign.md)
+  carries `survey`’s `rho` across,
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  passes the stored `rho` in place of the deleted scale inversion,
+  [`print()`](https://rdrr.io/r/base/print.html) and
+  [`summary()`](https://rdrr.io/r/base/summary.html) show it, the Fay
+  block in `test-variance-replicate.R` became seven real oracle
+  comparisons, and
+  [`as_survey_twophase()`](https://jdenn0514.github.io/surveycore/reference/as_survey_twophase.md)
+  refuses a `survey_replicate` phase 1, which reverses PR \#74 (shipped;
+  issue \#243; PRs \#301–#309). Read `decisions.md` first, then its
+  archive note at the end. Four things a later reader needs. **Every Fay
+  standard error moved, and nothing at runtime says so:** a rebuilt Fay
+  SE is the old one divided by `1 - rho`, and `NEWS.md` is the only
+  record. A Fay design saved before this work has no `rho` key, keeps
+  the old `1/R` scale in the analysis functions, and is refused by
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  with `surveycore_error_fay_rho_unrecoverable`. **The one STOP was a
+  missing tolerance:** PR 1’s new `expect_equal()` used testthat’s
+  default of about 1.49e-8 where the plan fixed 1e-8, and the audit had
+  reported the plan’s value. Every later builder brief demanded an
+  explicit `tolerance =`, and no later PR drew a BLOCK. **`run-gates.sh`
+  reports a dead `R CMD check` as a pass:** with no `Status:` line, gate
+  5 prints PASS with “Status line missing”. PR 4’s check died to the
+  memory watchdog this way and was re-run alone. Read the status line,
+  not the gate result. **One item is deferred:** issue \#300, which
+  covers
+  [`update_design()`](https://jdenn0514.github.io/surveycore/reference/update_design.md)
+  with a changed replicate count. The stale X-13 comment the PR 5
+  reviewer found in `tests/testthat/test-conversion.R` was fixed after
+  the archive, in PR \#310. `R/variance-replicate.R` is byte-identical
+  across the arc. Suite 12100 → 12353 with warnings held at 256, and
+  coverage 96.15% → 96.17%. Issue \#243 stays open until `develop`
+  merges to `main`
+- `archive/replicate-supplied-args/` — a supplied `scale` or `rscales`
+  that `survey` overrides:
+  [`as_svydesign()`](https://jdenn0514.github.io/surveycore/reference/as_svydesign.md)
+  stops passing the two arguments where `survey` overrides them (#311);
+  [`as_survey_replicate()`](https://jdenn0514.github.io/surveycore/reference/as_survey_replicate.md)
+  refuses JKn with no `rscales` (#312), discards a supplied `scale` for
+  BRR, JK2, ACS and successive-difference (#314) and a supplied
+  `rscales` for JK2, ACS and successive-difference (#315), each with
+  `surveycore_warning_replicate_arg_ignored`;
+  `test-variance-replicate.R` gains nine oracle blocks for a supplied
+  `scale` and one export-parity block (#316); and the `rho` warning
+  gains `surveycore_warning_replicate_arg_ignored` as a second class,
+  with the roxygen, `NEWS.md`, changelog and vignette §3.4 (#317)
+  (shipped; issue \#255; PRs \#311, \#312, \#314, \#315, \#316, \#317).
+  Issue \#255 was closed by hand on 2026-10-14, because closing keywords
+  do not act on merges into `develop`. Read `decisions.md` first. Five
+  things a later reader needs. **The one BLOCK was older advice made
+  false:** PRs 2 and 3 made the unreleased `NEWS.md` recipes for \#242
+  (JK2) and \#253 (JKn) wrong, and the spec forbade edits to older
+  entries. Erratum E-1 (HOLD-2) corrected both, and each recipe was
+  measured to 1e-8: `type = "other"` with `scale = (R-1)/R` reproduces
+  the old JK2 result, and an old JKn call also needs
+  `rscales = rep(1, R)`. **S-1 is outside the spec:** the user added the
+  vignette edit to PR 6. **PR 5 added 678 lines for 10 rows**, over the
+  600-line flag; the reviewer traced the size to the plan’s nine
+  one-per-type oracle blocks. **PRs 3 to 6 have no `shipper.md`:** the
+  leader opened and merged them itself. **CI hung during PRs 1 and 2:**
+  the ubuntu jobs waited in setup-r on a stalled Ubuntu mirror, and
+  \#313 added a 45-minute job limit. Issue \#318 holds three older
+  documentation gaps, deferred. PR \#312 covers the JKn half of issue
+  \#244, which was already closed. Suite 12353 → 12757 with warnings
+  held at 256, and coverage 96.17% → 96.18%. Zero tester BLOCKs and one
+  reviewer BLOCK
 - `.claude/rules/` — code style, testing standards, R package
   conventions, GitHub strategy
+- `.claude/references/` — worked examples and rationale moved out of
+  `.claude/rules/`; read when a rule’s application is unclear

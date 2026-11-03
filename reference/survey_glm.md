@@ -124,6 +124,11 @@ survey-weighted binomial model.
 [`surveytidy::filter()`](https://dplyr.tidyverse.org/reference/filter.html)
 before calling `survey_glm()`. The GLM is fit on in-domain rows only;
 variance estimation uses the full design for correct design-based SEs.
+The design degrees of freedom count only the PSUs and strata holding a
+row used in the fit (in the domain and not dropped by `na.action`),
+matching
+[`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) on a
+[`subset()`](https://rdrr.io/r/base/subset.html) design.
 
 **Multinomial response:** [`cbind()`](https://rdrr.io/r/base/cbind.html)
 on the LHS of `formula` is not supported. Multinomial logistic

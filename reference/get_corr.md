@@ -55,17 +55,46 @@ get_corr(
 
   \<[`tidy-select`](https://tidyselect.r-lib.org/reference/language.html)\>
   Two or more unquoted variable names. For `method = "pearson"`,
-  non-numeric columns are dropped with a warning. For
-  `method = "polychoric"`, every selected column must classify as
-  ordinal (ordered factor, unordered factor, or integer with `<= 10`
-  distinct values) — non-ordinal columns raise
-  `surveycore_error_polychoric_requires_ordinal`. For
-  `method = "polyserial"`, each pair is canonicalized by type (one
-  ordinal
+  non-numeric columns are dropped with a warning.
 
-  - one continuous); logical / character / high-cardinality integer
-    columns raise
-    `surveycore_error_polyserial_canonicalization_ambiguous`.
+  For `method = "polychoric"`, every selected column must classify as
+  ordinal — an ordered factor, an unordered factor, or a numeric column
+  whose values are all whole numbers, none of them infinite, with 1 to
+  10 distinct values. Non-ordinal columns raise
+  `surveycore_error_polychoric_requires_ordinal`. Missing values do not
+  count: `NA` and `NaN` are removed before the distinct values are
+  counted.
+
+  A numeric column with no non-missing value at all is not ordinal, and
+  it raises the same error. A factor or ordered column declares its
+  levels, so it stays ordinal even when every value is missing; a bare
+  numeric column has only its values to go on, and an empty one shows no
+  scale. An all-`NA` factor pair returns an `r` of `NA` and an `n` of
+  `0`.
+
+  A numeric column with few distinct whole values is treated as a scale.
+  This is what makes the method work on a value-labelled column read
+  from an SPSS, Stata or SAS file, where every coded scale arrives as a
+  numeric column. It also means a coarse measurement in whole units is
+  accepted as ordinal: three distinct values of `1000`, `2000` and
+  `3000` are read as a three-point scale, not as income in whole
+  dollars. Two consequences to check before you call it:
+
+  - Recode in-band missing codes to `NA` first. A four-point scale that
+    still carries `8` for "Don't know" and `9` for "Refused" is read as
+    a six-category scale, and the two codes become the top two
+    categories.
+
+  - Use `method = "pearson"` for a genuine count with few values, such
+    as the number of people in a household.
+
+  For `method = "polyserial"`, each pair is canonicalized by type: one
+  ordinal column and one continuous column. A pair of ordinal columns —
+  including two numeric columns that both meet the rule above — raises
+  `surveycore_error_polyserial_requires_mixed_types`; use
+  `method = "polychoric"` for that pair. Logical, character and
+  high-cardinality integer columns raise
+  `surveycore_error_polyserial_canonicalization_ambiguous`.
 
 - group:
 
@@ -343,7 +372,7 @@ df <- data.frame(
 d_ord <- as_survey(df, weights = wt)
 get_corr(d_ord, x = c(o1, o2), method = "polychoric")
 #> # A tibble: 1 × 9
-#>   var1  var2       r ci_low ci_high p_value statistic    df     n
-#>   <fct> <fct>  <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
-#> 1 o1    o2    0.0460 -0.233   0.318   0.750     0.319    NA   200
+#>   var1  var2         r ci_low ci_high p_value statistic    df     n
+#>   <fct> <fct>    <dbl>  <dbl>   <dbl>   <dbl>     <dbl> <int> <int>
+#> 1 o1    o2    -0.00636 -0.291   0.279   0.966   -0.0425    NA   200
 ```
