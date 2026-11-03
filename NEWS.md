@@ -1,542 +1,220 @@
-# surveycore (development version)
+# surveycore 1.2.0
 
 ## New features
 
-* Survey designs and data frames now carry **dataset-level metadata** —
-  metadata about the dataset as a whole rather than about one variable. The
-  vocabulary is closed at six keys: `survey_name`, `data_name`, `vendor`,
-  `field_start`, `field_end`, and `field_period`. Any other key is rejected.
-  `survey_name` and `data_name` are independent: no function reads one to
-  compute, fill, or check the other. See
-  `vignette("creating-survey-objects")`, section 8. (#162, #163, #164, #166,
-  #168, #170, #171)
+* Survey designs and data frames carry dataset-level metadata in six keys,
+  `survey_name`, `data_name`, `vendor`, `field_start`, `field_end` and
+  `field_period`, stored in the new `dataset_metadata` property. Use
+  `set_dataset_metadata()` and `extract_dataset_metadata()`, or the pairs
+  `set_survey_name()` / `extract_survey_name()`, `set_data_name()` /
+  `extract_data_name()`, `set_vendor()` / `extract_vendor()`,
+  `set_field_dates()` / `extract_field_dates()` and `set_field_period()` /
+  `extract_field_period()`. Constructors copy the six data-frame attributes
+  into the design (`dates` reads as `field_period`), and `print()` and
+  `summary()` show them. (#162, #163, #164, #166, #168, #170, #171)
 
-* New `dataset_metadata` property on the `survey_metadata` class stores the six
-  keys as a named list, in a fixed canonical key order. It defaults to
-  `list()`, so a design with no dataset metadata behaves exactly as it did in
-  1.1.0. (#162)
+* The new `var_extra` property of `survey_metadata`, with `set_var_extra()`
+  and `extract_var_extra()`, holds per-variable tags for other packages.
+  (#176)
 
-* New unified setter and extractor: `set_dataset_metadata()` and
-  `extract_dataset_metadata()`. Both accept a survey design object or a plain
-  data frame. `set_dataset_metadata()` takes named arguments, a single named
-  list, or the programmatic `key`/`value` pair, and deletes a key when its
-  value is `NULL`. `extract_dataset_metadata()` returns a named list or a
-  two-column tibble, and can fill absent keys with `NA` to give the full
-  six-key schema. (#163, #164)
+* `survey_data()` gains `haven_class`. With `TRUE` it rebuilds the
+  `haven_labelled` class on labelled columns, for `haven::write_sav()`. (#175)
 
-* New convenience wrappers, one pair per key: `set_survey_name()` /
-  `extract_survey_name()`, `set_data_name()` / `extract_data_name()`,
-  `set_vendor()` / `extract_vendor()`, `set_field_dates()` /
-  `extract_field_dates()`, and `set_field_period()` / `extract_field_period()`.
-  Each setter delegates to `set_dataset_metadata()`; each extractor returns one
-  scalar, or the two field dates. (#166)
+* `as_survey_replicate()` accepts a numeric `fpc` with `fpctype` and applies
+  it to `rscales` for `"JK1"`, `"JKn"` and `"other"`, as `survey` does. Other
+  types raise `surveycore_error_replicate_fpc_type_unsupported`, and a bad
+  value raises `surveycore_error_replicate_fpc_invalid`. A design records the
+  result in `@variables$fpc_applied` and `@variables$fpc_fraction`; a bad
+  record raises `surveycore_error_replicate_fpc_record_invalid`. (#320)
 
-* `as_survey()`, `as_survey_replicate()`, and `as_survey_nonprob()` now promote
-  the six whole-data-frame attributes into the design's metadata at
-  construction, so metadata set in a `data-raw/` script survives into the
-  design with no extra step. `as_survey_twophase()` exposes the phase-1 keys.
-  The older attribute name `dates` is read as `field_period` when no
-  `field_period` attribute is present. Promotion **copies** and never strips,
-  so the attributes stay on the underlying data frame; rebuilding a design from
-  that frame re-promotes the original values, and an edited or deleted key
-  comes back. (#168)
+* `as_survey_twophase()` and `from_svydesign()` warn with
+  `surveycore_warning_twophase_full_no_fpc` for a `method = "full"` design
+  with phase-1 weights and no `fpc`. The SE of a total can then run several
+  times too large. (#339, #340)
 
-* `print()` and `summary()` now show the dataset metadata. All four print
-  methods gain a `Dataset:` header line, and the `metadata_info = TRUE` block
-  reports the survey name, the vendor, and the field dates. Output is
-  byte-identical to 1.1.0 whenever no dataset metadata is set. (#170)
+* `get_totals()` accepts a factor or character `x` and returns one total per
+  level. It used to raise `surveycore_error_non_numeric_variable`. An
+  all-`NA` `x` warns with `surveycore_warning_all_na_totals` when
+  `na.rm = TRUE` and raises `surveycore_error_all_na` otherwise. (#199, #342)
 
-* New per-variable **extension slot**: a `var_extra` property on
-  `survey_metadata`, plus `set_var_extra()` and `extract_var_extra()`.
-  `var_extra` is a flat, pass-through named list per variable —
-  surveycore stores and returns each payload unchanged and never reads,
-  validates, or acts on its values. It gives downstream packages
-  (`adldata`, `surveyreports`, and others) a place to attach their own
-  per-variable tags (e.g. `role = "free_text"`) without a surveycore
-  release. `set_var_extra()` follows the same setter conventions as
-  `set_var_note()`; `extract_var_extra()` returns a named list or a
-  long-format tibble of `(variable, key, value)` rows. `var_extra`
-  participates in the same rename/delete lifecycle and data-frame
-  attribute promotion as `notes` and the other per-variable metadata
-  fields. (#176)
-
-* `survey_data()` gains a `haven_class` argument. With `haven_class = TRUE` it
-  returns every column that carried value labels at import with its
-  `haven_labelled` class rebuilt, and a column that arrived as
-  `haven_labelled_spss` comes back as `haven_labelled_spss`. Use it to hand the
-  data to `haven::as_factor()`, `labelled::to_factor()` or
-  `haven::write_sav()`, all of which read the class and not the `labels`
-  attribute. The class is rebuilt with base R, so `haven` does not need to be
-  installed. The default is `FALSE`, which returns base types, because that is
-  what arithmetic and modelling need. (#175)
-
-* `as_survey_replicate()` accepts a numeric `fpc`: a number, recycled to every
-  replicate, or one value per replicate column. It is applied the way
-  `survey::svrepdesign()` applies its own `fpc`, by multiplying each `rscales`
-  entry by `1 - f`, and only for `"JK1"`, `"JKn"` and `"other"`, as in
-  `survey`. `fpctype` (`"fraction"` or `"correction"`) is required with it, as
-  in `survey`. A bare name that names a column of `data` is still read as the
-  column and refused, even when a variable of that name exists, so a function
-  that passes its own `fpc` argument through should write `.env$fpc`.
-  Unsupported types raise `surveycore_error_replicate_fpc_type_unsupported`,
-  and a malformed value raises `surveycore_error_replicate_fpc_invalid`. A
-  design built this way matches `survey::svrepdesign(fpc = , fpctype = )` to
-  1e-8 in the standard error. (#320)
-
-* Every `survey_replicate` design now records whether its finite population
-  correction reached the variance, and where, in `@variables$fpc_applied`:
-  `"rscales"`, `"repweights"`, `"none"`, or `NULL` when no FPC was available
-  or the design predates the key. `@variables$fpc_fraction` holds the
-  per-replicate sampling fraction of a numeric `fpc`. `print()` and
-  `summary()` show the state, for example
-  `FPC: f = 0.1 (applied in replicate scales)` or
-  `FPC: fpc (application not recorded)`. `as_svydesign()` now warns with
-  `surveycore_warning_replicate_fpc_dropped` only when the design records an
-  FPC column and not where it went. `from_svydesign()` records `"rscales"`
-  for a design built with `survey::svrepdesign(fpc = )`. The
-  `survey_replicate` class validator rejects any other value with
-  `surveycore_error_replicate_fpc_record_invalid`. No replicate variance
-  formula reads either key. (#320)
-
-* `as_survey_twophase()` and `from_svydesign()` now warn with
-  `surveycore_warning_twophase_full_no_fpc` when a `method = "full"` design
-  has a phase 1 with weights other than 1 and no `fpc`. Without a phase-1
-  `fpc`, the full variance treats the phase-1 sampling units as
-  Poisson-sampled, and for a fixed-size sample the standard error of a total
-  runs several times too large: about 3.7 times in a simulation of a
-  stratified cluster sample. Clustered, stratified and unclustered phase 1
-  designs are all affected. Supply `fpc` to the phase-1 design. The estimator
-  is unchanged and still matches `survey::twophase(method = "full")`, which
-  raises no warning. `?as_survey_twophase` now also documents that
-  `method = "approx"` is conservative, by about 1.55 times the standard
-  error, when phase 2 subsamples rows within phase-1 clusters.
-  (#339, #340)
+* `as_svydesign()` and `as_tbl_svy()` convert a `survey_nonprob` design. They
+  used to raise `surveycore_error_not_survey_object`. A design without
+  replicate weights warns with `surveycore_warning_nonprob_srs_conversion`,
+  because its SEs use a simple random sample approximation. (#237)
 
 ## Breaking changes
 
-* Assigning a frame with 0 rows or 1 row to a design's `@data` now errors, on
-  all four design classes, with the classes the constructors already raise for
-  the same frames: `surveycore_error_empty_data` and
-  `surveycore_error_single_row`. Such a write used to be accepted, and the
-  malformed design failed later, sometimes with an untyped error from
-  `survey` (for example, `as_svydesign()` on a 1-row design).
-  `from_svydesign()` on a zero-row Taylor `survey` design now raises
-  `surveycore_error_empty_data` as well; it used to return an empty design.
-  For a two-phase design the count is the full phase 1 sample; the phase 2
-  subset is not counted. Weight rules are unchanged: `as_survey_nonprob()` still refuses a
-  zero weight, and a `survey_nonprob` design still accepts one written after
-  construction, as surveywts's `adjust_nonresponse()` does. (#248)
+* A write of 0 or 1 row to a design's `@data`, and `from_svydesign()` on a
+  zero-row Taylor design, raise `surveycore_error_empty_data` or
+  `surveycore_error_single_row`. (#248)
 
-* A two-phase design whose phase 2 has more than one sampling stage is now
-  refused with `surveycore_error_twophase_multistage_phase2`.
-  `as_survey_twophase()` refuses an `ids2` that selects more than one column,
-  such as `ids2 = c(psu2, ssu2)`, and `from_svydesign()` refuses a `survey`
-  two-phase object whose phase 2 `id`, `strata` or `fpc` has more than one
-  stage, such as `id = list(~psu, ~psu + ssu)`. The two-phase variance uses one
-  phase 2 stage, so these designs used to build and then got a standard error
-  from the first stage alone, about 5.6% too small on the issue's example,
-  with no condition. A single-stage phase 2 is unchanged and still matches
-  `survey`. Multi-stage phase 2 is not supported. (#338)
+* `as_survey_twophase()` and `from_svydesign()` refuse a multi-stage phase 2
+  with `surveycore_error_twophase_multistage_phase2`. Its SE was about 5.6%
+  too small. (#338)
 
-* `as_survey_replicate()` now refuses an `fpc` column, and an `fpctype` given
-  without `fpc`, with `surveycore_error_replicate_fpc_unsupported`. The column
-  never changed a replicate standard error: no replicate variance formula read
-  it. No published number moves. A number, or one value per replicate, is
-  accepted instead and applied; see New features. Folding the correction into
-  `rscales` by hand, `rscales = rscales * (1 - f)`, gives the same design. A
-  replicate design built with `survey_replicate()` directly, as surveywts
-  does, can still record an FPC column. (#251, #320)
+* `as_survey_replicate()` refuses an `fpc` column, or `fpctype` without
+  `fpc`, with `surveycore_error_replicate_fpc_unsupported`. No SE moves. Pass
+  a numeric `fpc`, or use `rscales = rscales * (1 - f)`. (#251, #320)
 
-* `as_survey_replicate()` now ignores a supplied `scale` for `"BRR"`, `"JK2"`,
-  `"ACS"` and `"successive-difference"`, and a supplied `rscales` for `"JK2"`,
-  `"ACS"` and `"successive-difference"`, as `survey::svrepdesign()` does. It
-  stores the type's own value and warns with
-  `surveycore_warning_replicate_arg_ignored`. A caller who passed one of these
-  gets the standard error `survey` computes, which differs from the one
-  surveycore returned before. Nothing changes when the caller supplies
-  neither, and surveycore then raises no warning, unlike `survey` for `"JK2"`.
-  `"Fay"` already ignored `scale` with no warning. The `rho` warning,
-  `surveycore_warning_rho_ignored`, now also carries the new class. (#255)
+* `as_survey_replicate()` ignores a supplied `scale` for `"BRR"`, `"JK2"`,
+  `"ACS"` and `"successive-difference"`, and `rscales` for the last three, as
+  `survey` does. It warns with `surveycore_warning_replicate_arg_ignored`,
+  which `surveycore_warning_rho_ignored` also carries. `type = "JKn"` refuses
+  `rscales = NULL` with `surveycore_error_stratified_jk_rscales_unset`; pass
+  one entry per replicate, for example `(n_h - 1) / n_h`, where `n_h` is the
+  number of PSUs in the stratum the replicate drops a PSU from. (#255, #244)
 
-* `as_survey_replicate(type = "JKn")` now requires `rscales` and refuses
-  `rscales = NULL` with `surveycore_error_stratified_jk_rscales_unset`, as
-  `survey::svrepdesign()` refuses combined JKn weights without it. Before this
-  change the design built with `rep(1, R)` and left the jackknife factor out of
-  the variance. To migrate, pass `rscales` with one entry per replicate column,
-  for example `(n_h - 1) / n_h`, where `n_h` is the number of PSUs in the
-  stratum the replicate drops a PSU from. `"JK2"` with no `rscales` still
-  builds. (#255, #244)
+* `as_survey_replicate()` gains `rho` after `type`, which `type = "Fay"`
+  requires (`surveycore_error_fay_rho_missing`). The Fay scale is
+  `1 / (R * (1 - rho)^2)`, not `1/R`, so Fay SEs rise by `1 / (1 - rho)`:
+  1.43 times at `rho = 0.3`. Rebuild saved Fay designs. `rho` with another
+  type warns with `surveycore_warning_rho_ignored`. `scale`, `rscales`,
+  `fpc`, `fpctype`, `mse` and `calibration` move one place later, so name
+  them in positional calls. (#243)
 
-* `as_survey_replicate()` gains `rho`, the Fay shrinkage factor, and
-  `type = "Fay"` now requires it (`surveycore_error_fay_rho_missing`). The Fay
-  scale is now `1 / (R * (1 - rho)^2)`. Before this change a Fay design used
-  the BRR scale `1/R`, so every Fay standard error was too small. Rebuilt with
-  the correct `rho`, a standard error is the old one divided by `1 - rho`: 1.43
-  times as large at `rho = 0.3`, and twice as large at `rho = 0.5`. Point
-  estimates do not change. Rebuild saved Fay designs with `rho`: a saved design
-  keeps the old scale. A supplied `scale` is now discarded for Fay, as in
-  `survey`. `rho` passed with any other type raises
-  `surveycore_warning_rho_ignored` and is discarded. `from_svydesign()` carries
-  a `survey` Fay design's `rho` across. `print()` and `summary()` show `rho`
-  for a Fay design. (#243)
+* `as_survey_twophase()` refuses a `survey_replicate` phase 1 with
+  `surveycore_error_twophase_replicate_phase1`, which reverses #74. Build
+  phase 1 with `as_survey()`. (#243, #74)
 
-* `as_survey_replicate()`'s new `rho` argument sits after `type` and before
-  `scale`, the order `survey::svrepdesign()` uses. `scale`, `rscales`, `fpc`,
-  `fpctype`, `mse` and `calibration` each move one position later. A call that
-  passed any of them by position now binds the value to the wrong argument;
-  name those arguments. Calls that name them are unaffected. (#243)
+* A non-logical domain marker column (`SURVEYCORE_DOMAIN_COL`) raises
+  `surveycore_error_domain_not_logical`. (#262)
 
-* `as_survey_twophase()` now refuses a `survey_replicate` phase 1 with
-  `surveycore_error_twophase_replicate_phase1`. The phase-1 variance code reads
-  only the phase-1 strata, cluster and FPC columns, so a replicate phase 1 got
-  a standard error that ignored its replicate weights. `survey` has no such
-  design. This reverses PR #74. Build phase 1 with `as_survey()`. (#243)
+* A design drops the whole class vector of a `haven_labelled` column, a class
+  stacked above it included. It keeps the `label`, `labels`, `na_values` and
+  `na_range` attributes. (#175)
 
-* A survey design object now rejects a domain marker column that is not
-  logical. The column named by `SURVEYCORE_DOMAIN_COL` marks which rows sit
-  inside the active domain, and the design's class validator tests its storage
-  type on construction and on every property write. A column of any other type
-  aborts with the new error class `surveycore_error_domain_not_logical`. Code
-  that wrote an integer, double, character or factor marker raised no condition
-  before and reported an estimate computed from a mask the package had coerced
-  for it. `surveytidy::filter()` writes a logical column, so a design built
-  through it is unaffected. (#262)
+* `get_corr(method = "polyserial")` raises
+  `surveycore_error_polyserial_requires_mixed_types` for a whole-valued
+  numeric column paired with an ordinal one. Use `"polychoric"`. (#175)
 
-* A survey design object no longer stores the `haven_labelled` class on any
-  column of its data. Every write to the design's data drops that class and
-  keeps every other attribute, so the `label` string, the `labels` value-label
-  vector and the SPSS `na_values` and `na_range` vectors all stay on the
-  column, and the value labels stay in the metadata system. A previously
-  labelled column now prints with the type token for its underlying type —
-  `<dbl>`, `<int>` or `<chr>`. Such a column used to print `<dbl+lbl>`,
-  `<int+lbl>` or `<chr+lbl>` when the `haven` namespace was loaded, and
-  `<hvn_lbll>` when it was not.
-
-  The whole class vector goes, not the `haven_labelled` entry alone. A caller
-  who stacked their own class **above** `haven_labelled` loses that class too:
-  a column classed `c("my_class", "haven_labelled", "vctrs_vctr", "double")` is
-  stored as a bare numeric. Removing only the haven entries would leave a class
-  whose `vctrs_vctr` parent is gone, which no package can dispatch on
-  correctly, so the whole vector goes. No known package stacks a class there.
-  Re-apply the class after reading the data back with `survey_data()` if you
-  depend on it. (#175)
-
-* `get_corr(method = "polyserial")` now raises
-  `surveycore_error_polyserial_requires_mixed_types` for a pair of a
-  whole-valued numeric column and an ordinal column — an ordered factor, an
-  unordered factor, or a small-cardinality integer. Such a pair returned a
-  number in 1.1.0, because the numeric column read as continuous. Both sides
-  are ordinal now, and `polyserial` needs exactly one ordinal side and one
-  continuous side. Use `method = "polychoric"` for a pair of ordinal columns;
-  the error message says so. A numeric column with a fractional value, an
-  infinite value, or more than 10 distinct values is still continuous, so
-  `polyserial` on that pair is unaffected. (#175)
+* `update_design(x, repweights = )` refuses a changed replicate count with
+  `surveycore_error_repweights_count_changed`, because the scale went stale:
+  a JK1 SE was 9.5% too large in one case. Rebuild the design with
+  `as_survey_replicate()`. (#300, #324)
 
 ## Bug fixes
 
-* `get_diffs()` no longer aborts with "missing value where TRUE/FALSE needed"
-  when a treatment comparison comes back with an `NA` estimate. That row now
-  keeps its `NA` estimate, is left out of `pval_adj` adjustment, gets an `NA`
-  `pct_change`, and the call warns with
-  `surveycore_warning_diffs_na_estimate` naming the affected levels. No
-  supported model produces an `NA` difference; this is how the grouped
-  failures under marginaleffects 1.0.0 surfaced before they were fixed, and
-  results for every other input are unchanged. (#294)
+* `get_diffs()` keeps a comparison with an `NA` estimate, leaves it out of
+  `pval_adj`, and warns with `surveycore_warning_diffs_na_estimate`.
+  surveycore requires `marginaleffects (>= 0.24.0)`, up from 0.18.0.
+  (#294, #361)
 
-* `print(x, full = TRUE)` now shows every data column of a design whose
-  `@variables$visible_vars` is set, as surveytidy's `select()` sets it. It used
-  to keep hiding the columns and repeat the note telling you to use
-  `print(x, full = TRUE)` to see them. The default print still shows only the
-  visible columns and the note. (#234)
+* `nrow()`, `ncol()`, `dim()`, `NROW()` and `NCOL()` on a design return the
+  dimensions of its data, not `NULL`. `dim()` on a `survey_collection`
+  raises `surveycore_error_collection_no_dim`. `print(x, full = TRUE)` shows
+  every column when `@variables$visible_vars` is set.
+  (#203, #234, #236, #238, #240)
 
-* `as_svydesign()` no longer passes `scale` to `survey::svrepdesign()` for
-  `"BRR"`, `"Fay"`, `"JK2"`, `"ACS"` and `"successive-difference"`, or
-  `rscales` for `"JK2"`, `"ACS"` and `"successive-difference"`. `survey`
-  computes those values itself. The exported design computes the same numbers,
-  and `survey` no longer warns about the ignored arguments for `"ACS"` and
-  `"successive-difference"`. It still warns for every `"JK2"` design. (#255)
+* Design df counts only the PSUs and strata of the rows an estimate uses, as
+  `survey::degf()` does. Intervals widen for filtered designs, grouped
+  `get_quantiles()` and `survey_glm()` (`@degf`, p-values, `get_diffs()`,
+  `get_t_test()`), and usually narrow on two-phase designs. `confint()` on
+  Taylor and two-phase results of `get_means()`, `get_totals()`,
+  `get_freqs()`, `get_ratios()` and `get_covariance()` uses `df = Inf`, as
+  their CI columns do, so it narrows: 8% at df 15. (#271, #325, #326, #327)
 
-* `as_svydesign()` on a filtered two-phase design built with
-  `method = "approx"` now returns the domain. It returned the full stored
-  sample and raised no condition, so the caller read a full-sample estimate
-  as a domain estimate. The internal restriction tested only the class
-  `survey::twophase(method = "full")` returns, so an `"approx"` object looked
-  for its frame in a place that class does not use, found none, and passed
-  the object through untouched. On the package's own two-phase fixture the
-  converted object reported 74 finite probabilities where the domain holds
-  52. Both two-phase classes now take the same branch. (#276)
+* `vcov()` on `get_freqs()`, `get_totals()`, `get_means()` and `get_ratios()`
+  results gives the full covariance matrix on Taylor and replicate designs.
+  A result with no stored matrix gets `NA_real_` off the diagonal and
+  `surveycore_warning_vcov_incomplete`.
+  `surveycore_warning_vcov_diagonal_only` is retired. (#200, #344, #346)
 
-* An analysis of a filtered design whose domain marker holds `NA` no longer
-  fails. The `NA` marker selected a row of `NA` values, and the call then
-  stopped with `missing value where TRUE/FALSE needed`, or with `variable
-  lengths differ`, instead of returning an estimate. A grouped call stopped
-  on the group combination that the `NA` row created. Every `get_*()`
-  function now reads an `NA` marker as outside the domain, and the numbers
-  agree with a design whose marker stores `FALSE` in that place. (#262)
+* On a calibrated Taylor design, `get_freqs()` SEs include the calibration
+  step, as `survey` does, and `get_totals()` and `get_ratios()` no longer
+  warn with `surveycore_warning_zero_df_after_calibration`. (#343, #345)
 
-* `as_survey_replicate(type = "JK2")` now defaults `scale` to `1` instead of
-  `(R-1)/R`. **This moves published numbers.** Every JK2 design built without
-  an explicit `scale` reported a standard error low by a factor of
-  `sqrt((R-1)/R)`; its standard errors rise by `1/sqrt((R-1)/R)` under this
-  release. On an 8-replicate design the error was 6.5%. `(R-1)/R` is the
-  delete-one jackknife factor. JK2 is the paired jackknife, where each
-  replicate is a half sample and the per-stratum factors belong in `rscales`,
-  so the overall scale stays at `1`. `survey::svrepdesign()` fixes it at `1`
-  and `as_survey_nonprob()` already did too, so the two surveycore replicate
-  constructors disagreed with each other about the same replicate type. They
-  now agree, and both agree with `survey`. To reproduce the old numbers, build
-  the design with `type = "other"` and `scale = (R-1)/R`, and keep any
-  `rscales` the old call passed. `type = "JK2"` cannot reproduce them,
-  because it now ignores a supplied `scale` and `rscales`. (#242)
+* `get_freqs()` on a factor with number-like levels labels each row with its
+  own level. (#342)
 
-* `as_survey_replicate()` now defaults `scale` to `1` for `type = "JKn"` and
-  to `1/(R-1)` for `type = "bootstrap"`, instead of `(R-1)/R` and `1/R`.
-  **This moves published numbers.** Both old defaults multiplied the variance
-  by `(R-1)/R`, so a standard error from either type rises by
-  `1/sqrt((R-1)/R)` under this release — 2.6% on a 20-replicate design. Pass
-  `scale = (R-1)/R` for `"JKn"`, or `scale = 1/R` for `"bootstrap"`, to
-  reproduce the old numbers. An old `"JKn"` call that passed no `rscales` also
-  needs `rscales = rep(1, R)`, because `"JKn"` now refuses `rscales = NULL`.
-  The other seven replicate types are unchanged.
+* `get_means()` SEs for a domain of a `survey_nonprob` design without
+  replicate weights fall: `n/(n-1)` uses the full sample. They were 4.9% too
+  large at 10 rows of 100. (#245, #263)
 
-  The two corrections do not have the same standing. For `"JKn"`, `(R-1)/R`
-  is the factor of the *unstratified* delete-one jackknife and names `"JK1"`
-  only. JKn is the stratified form, whose per-stratum factor belongs in
-  `rscales` and not in the overall scale, so the overall scale stays at `1`
-  (Wolter 2007, *Introduction to Variance Estimation*, 2nd ed., ch. 4). That
-  is a formula error, and the old default was wrong for every stratified
-  design. For `"bootstrap"`, `1/(R-1)` is the value `survey::svrepdesign()`
-  computes, and this change aligns surveycore with that convention; it does
-  **not** mean an older `1/R` number was wrong. `1/R` is the population form
-  of the bootstrap variance divisor, and `as_survey_nonprob()` keeps it,
-  because `survey` has no non-probability design class and so is not an
-  oracle for one. See `?as_survey_nonprob` for the size of that divergence.
-  (#253)
+* `get_*()` functions read an `NA` domain marker as outside the domain, and
+  no longer fail. `as_svydesign()` and `as_tbl_svy()` on a filtered design
+  return the domain, not the full sample, for every design class.
+  (#245, #262, #266, #267, #268, #269, #276)
 
-* `from_svydesign()` on a `survey::svrepdesign` object no longer loses the
-  replicate weights. It read the replicate column names straight off the
-  object, and `survey::as.svrepdesign()` names the columns of the matrix it
-  builds for no replicate type and on neither `compress` setting, so the route
-  stored zero names, wrote no columns, and raised nothing. The converted design
-  carried no replicate weights, and the loss surfaced later during analysis as
-  `surveycore_error_all_replicates_na`, pointing at the analysis call. The
-  route now expands the matrix — including survey's compressed storage form —
-  generates names on the `..surveycore_repwt_N..` pattern when survey supplies
-  none, and writes one column per replicate on every conversion. (#197, #239)
+* `as_survey_replicate(type = "JK2")` defaults `scale` to `1`, not `(R-1)/R`.
+  **This moves published numbers:** SEs rise by `1/sqrt((R-1)/R)`; they ran
+  6.5% low on 8 replicates. To reproduce the old numbers, use
+  `type = "other"` and `scale = (R-1)/R`, and keep any `rscales` the old call
+  passed. (#242)
 
-* `from_svydesign()` now folds the base weight into a replicate matrix that
-  holds replication factors. `survey::as.svrepdesign()` reports
-  `combined.weights` as `FALSE` for every replicate type, and storing those
-  factors unchanged left the point estimate correct while moving the standard
-  error by a design-dependent amount — measured at 35%, 8%, 4%, 10% and 0.1%
-  across five designs, in both directions, with nothing warning. Each replicate
-  column is now multiplied by the base weight, so the returned design carries
-  finished weights. The correction is silent: both forms describe the same
-  design, the product is exact, and `survey` performs the same multiplication
-  itself at call time. `?from_svydesign` no longer claims the replicate weights
-  are preserved, and documents the generated column block. (#197, #241)
+* `as_survey_replicate()` defaults `scale` to `1` for `"JKn"` and `1/(R-1)`
+  for `"bootstrap"`, not `(R-1)/R` and `1/R`. **This moves published
+  numbers:** SEs rise by `1/sqrt((R-1)/R)`, 2.6% on 20 replicates. To
+  reproduce the old numbers, pass `scale = (R-1)/R` for `"JKn"`, plus
+  `rscales = rep(1, R)` if the old call passed none, or `scale = 1/R` for
+  `"bootstrap"`. `as_survey_nonprob()` keeps `1/R`. (#253)
 
-* `from_svydesign()` now refuses four `survey` designs it cannot carry, each
-  with a typed condition instead of a silently wrong design or a bare `survey`
-  error: an unsupported replicate type
-  (`surveycore_error_replicate_type_unsupported` — `survey::as.svrepdesign()`
-  also produces `"subbootstrap"` and `"mrbbootstrap"`), a zero-row design
-  (`surveycore_error_empty_data`), a replicate matrix with no usable distinct
-  name per column (`surveycore_error_repweights_names_lost`), and a generated
-  name that already names a column of the design data
-  (`surveycore_error_repwt_name_collision`). (#197, #247)
+* Two-phase variance follows `survey`. `method = "simple"` uses the
+  `"approx"` variance, so its SEs rise slightly;
+  `surveycore_warning_simple_clustered` is retired. `"approx"` and `"simple"`
+  SEs rise, from about 40% low, when phase 2 draws whole phase 1 units.
+  `"full"` uses the double-expansion variance of `survey::twophase2()`: on
+  the issue's fixture a mean's SE falls from 0.8881 to 0.8200 and a total's
+  rises from 14,446 to 36,479. Under `ids2` without `probs2` or `fpc2`, totals
+  move under every method. `get_quantiles()` uses phase 2 rows only.
+  (#261, #328, #329, #330, #331, #332, #333, #334, #337)
 
-* `as_svydesign()` on a `survey_replicate` design that records a finite
-  population correction now succeeds. It passed the per-row FPC column to
-  `survey::svrepdesign()`, which takes one value per replicate and checks the
-  length against the replicate count, so every such design failed with
-  survey's own `fpc is wrong length` and the caller had no way around it. The
-  FPC is now dropped with a typed warning naming the column,
-  `surveycore_warning_replicate_fpc_dropped`. Dropping is correct rather than
-  translating: surveycore's replicate variance never reads the FPC, so the
-  exported design reproduces surveycore's own standard errors, while a
-  per-replicate translation would return numbers surveycore does not produce.
-  The FPC stays on the surveycore design. (#198, #249)
+* `from_svydesign()` keeps the phase 2 design of a `survey::twophase()` or
+  `survey::twophase2()` object, so `"full"` no longer raises
+  `surveycore_error_full_requires_phase2`. A generated column name that is
+  taken raises `surveycore_error_phase2_name_collision`.
+  `surveycore_warning_twophase_method_unknown` is retired. (#335, #336)
 
-* `as_svydesign()` now exports a Fay replicate design. It passes the design's
-  stored `rho` to `survey::svrepdesign()`, which requires one for
-  `type = "Fay"`. A Fay design that records no `rho`, such as one saved by an
-  earlier version, raises `surveycore_error_fay_rho_unrecoverable`; rebuild it
+* `from_svydesign()` on a `survey::svrepdesign` object keeps the replicate
+  weights, which it lost (`surveycore_error_all_replicates_na` followed), and
+  folds in the base weight, which moved SEs by up to 35% either way. It
+  raises `surveycore_error_replicate_type_unsupported`,
+  `surveycore_error_empty_data`, `surveycore_error_repweights_names_lost` or
+  `surveycore_error_repwt_name_collision` for a design it cannot carry.
+  (#197, #239, #241, #247)
+
+* `as_svydesign()` on a `survey_replicate` design no longer passes `scale`
+  or `rscales` where `survey` computes its own, and succeeds with an FPC: it
+  drops the column and warns with `surveycore_warning_replicate_fpc_dropped`
+  only when the design does not record where the FPC went. No replicate
+  column raises `surveycore_error_repweights_empty`. A Fay design with no
+  stored `rho` raises `surveycore_error_fay_rho_unrecoverable`; rebuild it
   with `as_survey_replicate(type = "Fay", rho = )`.
-  `as_svydesign(from_svydesign(x))` returns the estimate and standard error it
-  started with, for every replicate type. (#198, #250, #243)
+  (#198, #243, #249, #250, #255, #320)
 
-* `as_svydesign()` now refuses a `survey_replicate` design that names no
-  replicate weight column, with `surveycore_error_repweights_empty`, rather
-  than letting `survey::svrepdesign()` fail with an untyped
-  `missing value where TRUE/FALSE needed`. (#198, #249)
+* `survey_data(x, haven_class = TRUE)` leaves a factor, `Date` or other
+  classed column unchanged, and returns labels set on the design with
+  `set_val_labels()` and `set_var_label()`. (#205, #206)
 
-* `survey_data(x, haven_class = TRUE)` now leaves a column that carries a class
-  of its own alone. The rebuild wrote the `haven_labelled` class chain over the
-  whole class vector, so a `factor` that carried a `labels` attribute came back
-  as a labelled vector of its level codes, with the levels gone, and a `Date`
-  came back as its day count. `set_val_labels()` on a data frame writes the
-  attribute onto any column, so the route in needed no `haven` and warned at no
-  step. A factor, a `Date`, and any other classed column now come back
-  unchanged. The variable label and the value labels still follow the design's
-  metadata, so `set_var_label()` on a factor reaches the returned column.
-  (#206)
+* `get_corr(method = "polychoric")` accepts a numeric column of at most 10
+  distinct finite whole values; recode missing codes such as `8` and `9` to
+  `NA` first. It runs about 30 times faster with identical results. An
+  all-`NA` numeric column raises `surveycore_error_polychoric_requires_ordinal`
+  for either storage type, and `"polyserial"` raises a typed error for an
+  infinite continuous value. (#175, #177, #181, #208, #209)
 
-* `survey_data(x, haven_class = TRUE)` now reads the design's metadata before
-  the column's own attributes. It read the `labels` attribute and nothing else,
-  and a design's `set_val_labels()` writes only `@metadata@value_labels`, so
-  labels corrected on the design came back stale and labels created on the
-  design never appeared at all. `haven::write_sav()` on the rebuilt frame then
-  wrote the labels the import set, or none. The variable label follows the same
-  order, so `set_var_label()` on the design now reaches the returned column's
-  `label` attribute. Value labels from either store are still the whole class
-  test, so an `sjlabelled` column is promoted as before. One limit stays:
-  `set_val_labels(x, v = NULL)` clears the metadata entry without touching the
-  column, so the fallback rebuilds the class from the column's own attribute.
-  (#205)
+* The four constructors, `from_svydesign()`, `from_tbl_svy()` and
+  `set_val_labels()` accept `haven_labelled` columns, where `vctrs` aborted,
+  so `surveycore_warning_missing_labels` can fire on them. `from_svydesign()`
+  and `from_tbl_svy()` keep the source's labels for `extract_var_label()`
+  and `extract_val_labels()`, and `from_svydesign(as_svydesign(d))` no longer
+  raises `surveycore_error_design_var_missing`. (#175, #193, #195, #196)
 
-* `get_corr(method = "polychoric")` now treats a numeric column with no
-  non-missing value the same way whichever type it is stored as. An all-`NA`
-  `integer` column counted as an ordinal scale with zero categories, so the
-  call returned a row of `NA` for the pair, while the identical all-`NA`
-  `double` column counted as continuous and the call raised. Both now raise
-  `surveycore_error_polychoric_requires_ordinal`. Ordinality of a bare numeric
-  column is read off its observed values, and a column with none shows no
-  scale. A `factor` or `ordered` column declares its levels, so an all-`NA`
-  factor is still ordinal and its pair still returns `r = NA` and `n = 0`. Two
-  `method = "polyserial"` outcomes move with this: an all-`NA` integer paired
-  with an ordered factor now returns `r = NA` and `n = 0` instead of raising,
-  and paired with a continuous column it now raises instead of returning
-  `NA` — both matching the all-`NA` double. (#209)
+* `as_survey_nonprob()` copies weighting history from the data frame, so
+  `survey_weighting_history()` reports it. (#168)
 
-* `get_corr(method = "polyserial")` now raises a typed error when the
-  continuous side of a pair holds `Inf` or `-Inf` on the rows it analyses. An
-  infinite value made the weighted mean, variance and standard deviation all
-  `NaN`, and the call then failed with the base R message
-  `missing value where TRUE/FALSE needed` — no class, no column name. The new
-  error names the column and the count of infinite values, and it fires before
-  any estimation work. `NA` and `NaN` are unaffected: the weighted-moment
-  helper removes them, in both `na.rm` modes. An infinite value on a row the
-  active domain excludes is also unaffected, so `filter()` remains a way to
-  drop it. (#208)
-
-* `get_corr(method = "polychoric")` now accepts a value-labelled numeric
-  column. A numeric column counts as an ordinal scale when its non-missing
-  values are all whole numbers, none of them infinite, and it has no more than
-  10 distinct values; `NA` and `NaN` are removed before the distinct values are
-  counted. Until now every `double` column read as continuous and the call
-  aborted, which refused every coded scale from an SPSS, Stata or SAS file,
-  because those formats store a coded scale as a `double`. The rule is about
-  storage type, not about labels, so a plain numeric scale is accepted too.
-  Two things to check before you call it: recode in-band missing codes to `NA`
-  first, or a four-point scale carrying `8` for "Don't know" and `9` for
-  "Refused" is read as a six-category scale; and use `method = "pearson"` for a
-  genuine count with few values, because a numeric column with few distinct
-  whole values is read as a scale. An infinite value keeps the column
-  continuous, so a column carrying `Inf` still raises rather than counting
-  `Inf` as a category. (#175)
-
-* A design now constructs from a data frame whose **design variables** carry
-  the `haven_labelled` class. `as_survey()`, `as_survey_replicate()`,
-  `as_survey_nonprob()` and `as_survey_twophase()` drop the class from every
-  column of the incoming frame before any validation reads it. Until now a
-  labelled `weights` or `fpc` column aborted with a `vctrs` coercion error on a
-  machine with no `haven` installed, which is the usual state after someone
-  else reads the `.sav` file and passes on the data. Value labels are
-  untouched: the `labels`, `label`, `na_values` and `na_range` attributes stay
-  on the column, and the value labels stay in the metadata system. Validation
-  is unchanged, so a zero weight, a non-positive FPC, a missing FPC and a
-  non-logical two-phase `subset` all still raise the errors they did. (#175)
-
-* `from_svydesign()` and `from_tbl_svy()` now fill the design's metadata
-  instead of storing an empty `survey_metadata` object. The three conversion
-  helpers each built a fresh empty object, so every variable label and value
-  label the source data carried was lost on the way in. A design converted
-  from a `survey` or `srvyr` object now carries those labels, and
-  `extract_var_label()` and `extract_val_labels()` report them. The two
-  helpers that assemble their own data frame also drop the `haven_labelled`
-  class before any column is read, so a labelled weight column no longer stops
-  the conversion with a `vctrs` coercion error. (#196)
-
-* `set_val_labels()` now accepts a column that carries the `haven_labelled`
-  class. The validation cast the observed codes with `as.character()`, `vctrs`
-  refused that cast on a labelled column, and the call aborted with
-  `vctrs_error_cast`. The class is now dropped locally, on the unique values,
-  before the cast. A design's stored column is already plain, so the fix
-  reaches the plain data frame route. The
-  `surveycore_warning_missing_labels` warning is now reachable on a labelled
-  data frame column too, because the validation no longer aborts on the line
-  above it. (#193)
-
-* `from_svydesign(as_svydesign(d))` no longer aborts for every Taylor design.
-  `survey::svydesign()` stores its own call, and R records the unevaluated
-  argument expressions in it, so the stored call held the names of local
-  variables inside `as_svydesign()` — `ids_formula`, `weights_var`,
-  `strata_var` and `fpc_var`. `from_svydesign()` reads those names back to
-  recover the design columns. No such column exists, so the rebuild raised
-  `surveycore_error_design_var_missing`. The formulas are inlined before the
-  call runs, so the stored call names real columns. All four Taylor shapes
-  round trip now: ids only, with strata, with fpc, and SRS with no ids.
-  Replicate designs were never affected, because that reader recovers its
-  columns from the replicate weight matrix and not from the call. (#195)
-
-* `as_survey_nonprob()` now promotes weighting history from the data frame into
-  the design's metadata, matching `as_survey()` and `as_survey_replicate()`.
-  Previously the promotion call was missing from this one constructor, so
-  `survey_weighting_history()` reported no history for a non-probability design
-  even when the data frame carried it. This is a pre-existing inconsistency,
-  independent of the dataset-metadata feature. (#168)
-
-* `get_predict.survey_glm_fit()` now preserves a `rowid` column already
-  present in `newdata` instead of always fabricating a fresh sequential one.
-  marginaleffects 1.0.0 relies on `rowid` to reattach grouping columns onto
-  stacked contrast rows, and the fabricated sequence did not match once a
-  contrast block's row identity reset partway through, so grouped
-  `avg_slopes()`/`avg_predictions()` calls on `survey_glm_fit` objects lost
-  or misattributed the grouping column. (#153)
-
-* The `haven_class` documentation in `survey_data()` said the argument
-  rebuilds the class "on every column that carried it at import". It has no
-  such record. The rebuild fires on every column carrying a `labels`
-  attribute, so a column that never carried the class is promoted too — an
-  `sjlabelled`-labelled column, or one labelled by `set_val_labels()` before
-  construction. The behaviour is unchanged and the documentation now matches
-  it. (#207)
-
-* The `nhanes_2017` documentation said every column carries value labels, and
-  gave two `attr(nhanes_2017$<col>, "labels")` calls to read them with. No
-  column carries value labels. NHANES publishes the data as SAS XPORT files,
-  and that format stores a label for each variable but no labels for the codes
-  inside a variable. Both calls returned `NULL`, and `NULL` is a legal result,
-  so the examples ran clean and `R CMD check` passed. `?nhanes_2017` now
-  records that the dataset carries variable labels only and points to its
-  Format section for the code meanings. The dataset is unchanged. (#214)
-
-* `?as_survey_nonprob` said `rscales = NULL` always sets `rep(1, R)`. For
-  `type = "JK2"` and `"JKn"` a `NULL` `rscales` is refused with
-  `surveycore_error_stratified_jk_rscales_unset`, and the help page now says
-  so. `?as_survey_replicate` said `as_survey_nonprob()` agrees with its JK2
-  handling; the two share the scale of `1`, but only `as_survey_nonprob()`
-  requires `rscales`. `vignette("creating-survey-objects")` §3.4 now names the
-  types that keep a supplied `rscales` as given, including `"BRR"` and
-  `"Fay"`, which ignore a supplied `scale`. The behaviour is unchanged. (#318)
+* `get_predict.survey_glm_fit()` keeps a `rowid` column in `newdata`, so
+  grouped `avg_slopes()` and `avg_predictions()` keep their groups. (#153)
 
 ## Notes
 
-* **Reading objects saved under surveycore 1.1.0 or earlier.** A design saved
-  with `saveRDS()` or in an `.rda` file under an older version stores a frozen
-  copy of the old metadata class, which has no `dataset_metadata` property.
-  Every read path handles this: all four `print()` methods, all four
-  `summary()` methods, and all six extractors succeed on such an object and
-  report no dataset metadata. A **write** — any of the six setters — raises
-  `surveycore_error_dataset_metadata_unavailable` instead of a raw S7 property
-  error. The remedy the error names is to rebuild the object with the matching
-  constructor, `as_survey()`, `as_survey_replicate()`,
-  `as_survey_nonprob()`, or `as_survey_twophase()`.
+* **Reading objects saved under surveycore 1.1.0 or earlier.** `print()`,
+  `summary()` and the six extractors report no dataset metadata. The six
+  setters raise `surveycore_error_dataset_metadata_unavailable`; rebuild the
+  object with `as_survey()`, `as_survey_replicate()`, `as_survey_nonprob()`
+  or `as_survey_twophase()`.
 
-* `extract_metadata()` is deliberately unchanged. It reports per-variable
-  fields only, and a dataset-level key is not a variable, so the six keys never
-  appear in its output. They have their own accessors.
+* `extract_metadata()` is unchanged and never shows the six dataset-level
+  keys, because they are not variables.
 
 # surveycore 1.1.0
 
